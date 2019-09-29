@@ -8,9 +8,6 @@ namespace Peachpie.Library.PDO
 {
     partial class PDO
     {
-        internal const uint PARAM_FLAGS = 0xFFFF0000;
-        internal static uint PARAM_TYPE(uint x) => x & ~PARAM_FLAGS;
-
         /// <summary>
         /// 
         /// </summary>

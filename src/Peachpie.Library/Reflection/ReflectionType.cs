@@ -40,9 +40,14 @@ namespace Pchp.Library.Reflection
                 return false;
             }
 
+            if (type.IsByRef)
+            {
+                type = type.GetElementType();
+            }
+
             nullable = !type.IsValueType;
 
-            if (type == typeof(long) || type == typeof(int))
+            if (type == typeof(long) || type == typeof(int) || type.IsEnum)
             {
                 name = PhpVariable.TypeNameInt;
                 builtin = true;

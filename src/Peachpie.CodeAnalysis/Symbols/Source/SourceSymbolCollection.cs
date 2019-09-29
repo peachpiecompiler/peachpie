@@ -278,12 +278,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public NamedTypeSymbol GetType(QualifiedName name)
+        public NamedTypeSymbol GetType(QualifiedName name, Dictionary<QualifiedName, INamedTypeSymbol> resolved = null)
         {
             NamedTypeSymbol first = null;
             List<NamedTypeSymbol> alternatives = null;
 
-            var types = _types.GetAll(name).SelectMany(t => t.AllReachableVersions());   // get all types with {name} and their versions
+            var types = _types.GetAll(name).SelectMany(t => t.AllReachableVersions(resolved));   // get all types with {name} and their versions
             foreach (var t in types)
             {
                 if (first == null)
@@ -301,9 +301,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-            return
+            var result = 
                 (alternatives != null) ? new AmbiguousErrorTypeSymbol(alternatives.AsImmutable())   // ambiguity
                 : first ?? new MissingMetadataTypeSymbol(name.ClrName(), 0, false);
+
+            if (resolved != null)
+            {
+                resolved[name] = result;
+            }
+
+            return result;
         }
 
         /// <summary>

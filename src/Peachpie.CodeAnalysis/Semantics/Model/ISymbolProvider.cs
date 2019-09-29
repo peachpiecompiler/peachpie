@@ -29,8 +29,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets type symbol by its name in current context.
         /// Can be <c>null</c> if type cannot be found.
+        /// Gets <see cref="AmbiguousErrorTypeSymbol"/> in case of an ambiguity.
         /// </summary>
-        INamedTypeSymbol ResolveType(QualifiedName name);
+        INamedTypeSymbol ResolveType(QualifiedName name, Dictionary<QualifiedName, INamedTypeSymbol> resolved = null);
 
         /// <summary>
         /// Get global function symbol by its name in current context.

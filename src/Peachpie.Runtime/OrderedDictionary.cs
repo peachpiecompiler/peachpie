@@ -565,7 +565,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Methods: Add*, Get*, Remove, Clear
+        #region Methods: Add*, Get*, Remove, TryRemoveLast, Clear
 
         /// <summary>
         /// Gets index of the item within private <see cref="_data"/> array.
@@ -880,6 +880,35 @@ namespace Pchp.Core
 
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Remove the last item in the array and return it, if it exists. If the next free index was its index,
+        /// decrement it (semantics of <c>array_pop</c>).
+        /// </summary>
+        /// <param name="value">The removed item with its key.</param>
+        /// <returns><c>true</c> if the array was non-empty and the item was removed, otherwise <c>false</c></returns>
+        public bool TryRemoveLast(out KeyValuePair<IntStringKey, TValue> value)
+        {
+            var enumerator = GetEnumerator();
+            if (enumerator.MoveLast())
+            {
+                value = enumerator.Current;
+                enumerator.DeleteCurrent();
+
+                // array_pop decrements the next free index if it removed the last record before it
+                if (value.Key.IsInteger && value.Key.Integer == _nextFreeKey - 1)
+                {
+                    _nextFreeKey--;
+                }
+
+                return true;
+            }
+
+            //
+
+            value = default;
+            return false;
         }
 
         /// <summary>
@@ -1872,22 +1901,6 @@ namespace Pchp.Core
         {
             var enumerator = array.GetEnumerator();
             if (enumerator.MoveNext())
-            {
-                value = enumerator.Current;
-                enumerator.DeleteCurrent();
-                return true;
-            }
-
-            //
-
-            value = default;
-            return false;
-        }
-
-        public static bool TryRemoveLast(this OrderedDictionary/*<TValue>*/ array, out KeyValuePair<IntStringKey, TValue> value)
-        {
-            var enumerator = array.GetEnumerator();
-            if (enumerator.MoveLast())
             {
                 value = enumerator.Current;
                 enumerator.DeleteCurrent();

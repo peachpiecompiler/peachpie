@@ -9,33 +9,25 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Library.Resources;
+using System.Data.Common;
+using System.Collections.ObjectModel;
 
 namespace Peachpie.Library.MySql
 {
     internal sealed class MySqlResultResource : ResultResource
     {
         ///// <summary>
-        ///// Custom data associated with single field in row. Created by <see cref="GetCustomData"/> method when data are loaded.
+        ///// Custom data associated with single field in row.
+        ///// Created by <see cref="GetCustomData"/> method when data are loaded.
         ///// </summary>
-        //public class FieldCustomData
+        //public struct FieldCustomData
         //{
-        //    /// <summary>
-        //    /// see Field[i].RealTableName
-        //    /// </summary>
-        //    public string RealTableName;
-
-        //    /// <summary>
-        //    /// see Field[i].corflags
-        //    /// </summary>
-        //    public ColumnFlags Flags;
-
-        //    /// <summary>
-        //    /// see Result.GetColumnSize(i)
-        //    /// </summary>
-        //    public int ColumnSize;
+        //    public MySqlDbColumn DbColumn { get; set; }
         //}
 
         public new MySqlCommand Command => (MySqlCommand)base.Command;
+
+        public new MySqlDataReader Reader => (MySqlDataReader)base.Reader;
 
         public new MySqlConnectionResource Connection => (MySqlConnectionResource)base.Connection;
 
@@ -54,8 +46,7 @@ namespace Peachpie.Library.MySql
 
         internal static MySqlResultResource ValidResult(PhpResource handle)
         {
-            var result = handle as MySqlResultResource;
-            if (result != null && result.IsValid)
+            if (handle is MySqlResultResource result && result.IsValid)
             {
                 return result;
             }
@@ -75,17 +66,16 @@ namespace Peachpie.Library.MySql
         /// <summary>
         /// Gets row values.
         /// </summary>
-        /// <param name="dataTypes">Data type names.</param>
+        /// <param name="dataTypes">Column type names.</param>
         /// <param name="convertTypes">Whether to convert value to PHP types.</param>
         /// <returns>Row data.</returns>
         protected override object[] GetValues(string[] dataTypes, bool convertTypes)
         {
-            var my_reader = (MySqlDataReader)Reader;
+            var my_reader = Reader;
             var oa = new object[my_reader.FieldCount];
 
             if (convertTypes)
             {
-                Debug.Assert(dataTypes.Length >= oa.Length);
                 for (int i = 0; i < oa.Length; i++)
                 {
                     oa[i] = ConvertDbValue(dataTypes[i], my_reader.GetValue(i));
@@ -102,19 +92,49 @@ namespace Peachpie.Library.MySql
             return oa;
         }
 
+        public override string GetFieldType(int fieldIndex)
+        {
+            return CheckFieldIndex(fieldIndex) ? ColumnSchema[fieldIndex].DataTypeName : null;
+        }
+
+        public override int GetFieldLength(int fieldIndex)
+        {
+            if (CheckFieldIndex(fieldIndex))
+            {
+                var size = ColumnSchema[fieldIndex].ColumnSize;
+                if (size.HasValue)
+                {
+                    return size.Value;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// The elements are of type <see cref="MySqlDbColumn"/>.
+        /// </summary>
+        public IReadOnlyList<DbColumn> ColumnSchema => (IReadOnlyList<DbColumn>)GetRowCustomData();
+
+        public MySqlDbColumn GetColumnSchema(int fieldIndex) => CheckFieldIndex(fieldIndex) ? (MySqlDbColumn)ColumnSchema[fieldIndex] : null;
+
         /// <summary>
         /// Collect additional information about current row of Reader.
         /// </summary>
         protected override object GetCustomData()
         {
-            //MySqlDataReader my_reader = (MySqlDataReader)Reader;
+            // see ColumnSchema
 
-            //var data = new FieldCustomData[my_reader.FieldCount];
+            return Reader.FieldCount != 0 ? (IReadOnlyList<DbColumn>)Reader.GetColumnSchema() : Array.Empty<DbColumn>();
 
-            //var resultset = MySqlDataReaderHelper.ResultSet(my_reader);
+            //var reader = this.Reader;
+            //var columns = reader.GetColumnSchema();
 
-            //for (int i = 0; i < my_reader.FieldCount; i++)
+            //var data = new FieldCustomData[columns.Count];
+
+            //foreach (MySqlDbColumn col in columns)
             //{
+
             //    var field = MySqlDataReaderHelper.fields_index(resultset, i);
 
             //    data[i] = new FieldCustomData()
@@ -125,9 +145,8 @@ namespace Peachpie.Library.MySql
             //    };
             //}
 
+            ////
             //return data;
-
-            return null;
         }
 
         /// <summary>
@@ -310,14 +329,5 @@ namespace Peachpie.Library.MySql
                     return "unknown";
             }
         }
-
-        readonly static HashSet<string> _numericTypes = new HashSet<string>(StringComparer.Ordinal) { "int", "real", "year", "timestamp" };
-
-        /// <summary>
-        /// Determines whether a type of a specified PHP name is a numeric type.
-        /// </summary>
-        /// <param name="phpName">PHP type name.</param>
-        /// <returns>Whether the type is numeric ("int", "real", or "year").</returns>
-        public bool IsNumericType(string phpName) => _numericTypes.Contains(phpName);
     }
 }

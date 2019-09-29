@@ -16,7 +16,7 @@ namespace Pchp.Core.Reflection
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
     [DebuggerNonUserCode]
-    public class PhpTypeInfo
+    public class PhpTypeInfo : ICloneable
     {
         /// <summary>
         /// Index to the type slot.
@@ -325,6 +325,8 @@ namespace Pchp.Core.Reflection
             return name;
         }
 
+        object ICloneable.Clone() => this;
+
         /// <summary>
         /// Array of characters used to separate class name from its metadata indexes (order, generics, etc).
         /// These characters and suffixed text has to be ignored.
@@ -422,7 +424,12 @@ namespace Pchp.Core.Reflection
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (type.IsByRef)
+            {
+                type = type.GetElementType();
             }
 
             PhpTypeInfo result = null;

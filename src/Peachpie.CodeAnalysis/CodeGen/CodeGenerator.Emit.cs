@@ -610,8 +610,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (_emitPdbSequencePoints && span.Length > 0)
             {
-                _il.EmitOpCode(ILOpCode.Nop);
                 _il.DefineSequencePoint(ContainingFile.SyntaxTree, span);
+                _il.EmitOpCode(ILOpCode.Nop);
             }
         }
 
@@ -1672,7 +1672,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             int arg_params_index = (arguments.Length != 0 && arguments[arguments.Length - 1].IsUnpacking) ? arguments.Length - 1 : -1; // index of params argument, otherwise -1
             int arg_params_consumed = 0; // count of items consumed from arg_params if any
 
-            Debug.Assert(arg_params_index < 0 || (arguments[arg_params_index].Value is BoundVariableRef v && v.Variable.Type.IsSZArray()));
+            Debug.Assert(arg_params_index < 0 || (arguments[arg_params_index].Value is BoundVariableRef v && v.Variable.Type.IsSZArray()), $"Argument for params is expected to be a variable of type array, at {method.ContainingType.PhpName()}::{method.Name}().");
 
             for (; param_index < parameters.Length; param_index++)
             {
@@ -1691,15 +1691,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (arg_index == arg_params_index) // arg is params
                 {
-                    #region LOAD params PhpValue[]
+                    #region LOAD params T[]
 
                     //
-                    // treat argument as "params PhpValue[]"
+                    // treat argument as "params T[]"
                     //
 
                     var arg_type = (ArrayTypeSymbol)arguments[arg_index].Value.Emit(this); // {args}
-                    Debug.Assert(arg_type.ElementType == CoreTypes.PhpValue);
-
+                    
                     // {args} on STACK:
 
                     if (p.IsParams)
@@ -1707,7 +1706,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // Template: {args}
                         if (arg_type != p.Type || arg_params_consumed > 0)  // we need to create new array from args
                         {
-                            // PhpValue[] arrtmp = {arrtmp};
+                            // T[] arrtmp = {arrtmp};
                             var arrtmp = GetTemporaryLocal(arg_type, false);
                             _il.EmitLocalStore(arrtmp);
 
@@ -1737,7 +1736,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         arguments[arg_index].Value.Emit(this);      // <args>
                         _il.EmitIntConstant(arg_params_consumed);   // <i>
 
-                        if (p.Type == CoreTypes.PhpAlias)
+                        if (p.Type.Is_PhpAlias() && arg_type.ElementType.Is_PhpValue())
                         {
                             // {args}[i].EnsureAlias()
                             _il.EmitOpCode(ILOpCode.Ldelema);               // ref args[i]
@@ -1772,8 +1771,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (p.IsParams)
                 {
-                    Debug.Assert(parameters.Length == param_index + 1); // p is last one
-                    Debug.Assert(p.Type.IsArray());
+                    Debug.Assert(parameters.Length == param_index + 1, $"params should be the last parameter, at {method.ContainingType.PhpName()}::{method.Name}()."); // p is last one
+                    Debug.Assert(p.Type.IsArray(), $"params should be of type array, at {method.ContainingType.PhpName()}::{method.Name}().");
 
                     var p_element = ((ArrayTypeSymbol)p.Type).ElementType;
 
@@ -1794,7 +1793,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                         int arr_size1 = arguments.Length - arg_index - 1; // remaining arguments without arg_params
                         var arg_params = arguments[arg_params_index].Value as BoundVariableRef;
-                        Debug.Assert(arg_params != null);
+                        Debug.Assert(arg_params != null, $"Argument for params is expected to be a variable reference expression, at {method.ContainingType.PhpName()}::{method.Name}().");
 
                         // <params> = new [arr_size1 + arg_params.Length]
 

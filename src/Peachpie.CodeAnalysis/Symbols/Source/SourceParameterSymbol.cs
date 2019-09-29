@@ -253,7 +253,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         var serializedValue = Encoding.UTF8.GetBytes(arr.PhpSerializeOrThrow());
                         var p = new KeyValuePair<string, TypedConstant>(
                             "SerializedValue",
-                            new TypedConstant(DeclaringCompilation.CreateArrayTypeSymbol(byteSymbol), serializedValue.Select(b => new TypedConstant(byteSymbol, TypedConstantKind.Primitive, b)).AsImmutable()));
+                            new TypedConstant(DeclaringCompilation.CreateArrayTypeSymbol(byteSymbol), serializedValue.Select(DeclaringCompilation.CreateTypedConstant).AsImmutable()));
 
                         namedparameters = namedparameters.Add(p);
                     }

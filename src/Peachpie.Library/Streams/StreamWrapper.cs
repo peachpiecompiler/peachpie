@@ -26,7 +26,7 @@ namespace Pchp.Library.Streams
     /// on fopen() and an instance of DirectoryListing on opendir().
     /// </para>
     /// </remarks>
-    public abstract class StreamWrapper : IDisposable
+    public abstract class StreamWrapper : Context.IStreamWrapper, IDisposable
     {
         #region ContextData
 
@@ -53,6 +53,10 @@ namespace Pchp.Library.Streams
 
         public abstract string Label { get; }
 
+        /// <summary>
+        /// Stream scheme/protocol.
+        /// This value must not be empty. Casing is ignored. Common values are <c>file</c>, <c>http</c>, <c>php</c>, <c>phar</c>.
+        /// </summary>
         public abstract string Scheme { get; }
 
         public abstract bool IsUrl { get; }
@@ -138,6 +142,15 @@ namespace Pchp.Library.Streams
         /// <param name="stream">The Wrapper-opened stream to be <c>stat()</c>ed.</param>
         /// <returns></returns>
         public virtual PhpArray OnStat(PhpStream stream) { return null; }
+
+        /// <summary>
+        /// Tries to resolve compiled script at given path.
+        /// </summary>
+        public virtual bool ResolveInclude(Context ctx, string cd, string path, out Context.ScriptInfo script)
+        {
+            script = default;
+            return false;
+        }
 
         #endregion
 
@@ -367,11 +380,12 @@ namespace Pchp.Library.Streams
         /// <returns>True if succeeds, false if the scheme is already registered.</returns>
         public static bool RegisterSystemWrapper(StreamWrapper wrapper)
         {
-            if (!systemStreamWrappers.ContainsKey(wrapper.Scheme))
+            if (Context.GetGlobalStreamWrapper(wrapper.Scheme) == null)
             {
-                systemStreamWrappers.Add(wrapper.Scheme, wrapper);
+                Context.RegisterGlobalStreamWrapper(new Lazy<Context.IStreamWrapper, string>(() => wrapper, wrapper.Scheme));
                 return true;
             }
+
             return false;
         }
 
@@ -425,12 +439,7 @@ namespace Pchp.Library.Streams
         /// Gets the list of built-in stream wrapper schemes.
         /// </summary>
         /// <returns></returns>
-        public static ICollection<string> GetSystemWrapperSchemes()
-        {
-            var keys = new string[systemStreamWrappers.Count];
-            systemStreamWrappers.Keys.CopyTo(keys, 0);
-            return keys;
-        }
+        public static IEnumerable<string> GetSystemWrapperSchemes() => Context.GetGlobalStreamWrappers();
 
         /// <summary>
         /// Gets the list of user wrapper schemes.
@@ -459,8 +468,6 @@ namespace Pchp.Library.Streams
         /// <returns>A StreamWrapper associated with the given scheme.</returns>
         internal static StreamWrapper GetWrapperInternal(Context ctx, string scheme)
         {
-            StreamWrapper result;
-
             // Note: FileStreamWrapper is returned both for "file" and for "".
             if (string.IsNullOrEmpty(scheme))
             {
@@ -468,31 +475,38 @@ namespace Pchp.Library.Streams
             }
 
             // First search the system wrappers (always at least an empty Hashtable)
-            if (!SystemStreamWrappers.TryGetValue(scheme, out result))
+            var wrapper = (StreamWrapper)Context.GetGlobalStreamWrapper(scheme);
+            if (wrapper == null)
             {
 
                 // Then look if the wrapper is implemented but not instantiated
                 switch (scheme)
                 {
                     case FileStreamWrapper.scheme:
-                        return (SystemStreamWrappers[scheme] = new FileStreamWrapper());
+                        RegisterSystemWrapper(wrapper = new FileStreamWrapper());
+                        break;
                     case HttpStreamWrapper.scheme:
                     case HttpStreamWrapper.schemes:
-                        return (SystemStreamWrappers[scheme] = new HttpStreamWrapper());
+                        RegisterSystemWrapper(wrapper = new HttpStreamWrapper(scheme));
+                        break;
                     case InputOutputStreamWrapper.scheme:
-                        return (SystemStreamWrappers[scheme] = new InputOutputStreamWrapper());
+                        RegisterSystemWrapper(wrapper = new InputOutputStreamWrapper());
+                        break;
                 }
 
-                // Next search the user wrappers (if present)
-                var data = ContextData.GetData(ctx);
-                if (data.UserWrappers != null)
+                if (wrapper == null)
                 {
-                    data.UserWrappers.TryGetValue(scheme, out result);
+                    // Next search the user wrappers (if present)
+                    var data = ContextData.GetData(ctx);
+                    if (data.UserWrappers != null)
+                    {
+                        data.UserWrappers.TryGetValue(scheme, out wrapper);
+                    }
                 }
             }
 
             //
-            return result;  // can be null
+            return wrapper;  // can be null
         }
 
         /// <summary>
@@ -503,13 +517,6 @@ namespace Pchp.Library.Streams
         {
             return ContextData.GetData(ctx).EnsureUserWrappers();
         }
-
-        /// <summary>
-        /// Registered system stream wrappers for all requests.
-        /// </summary>
-        public static Dictionary<string, StreamWrapper> SystemStreamWrappers { get { return systemStreamWrappers; } }
-
-        private static readonly Dictionary<string, StreamWrapper> systemStreamWrappers = new Dictionary<string, StreamWrapper>(5, StringComparer.Ordinal);  // TODO: thread safe
 
         #endregion
 
@@ -1120,6 +1127,11 @@ namespace Pchp.Library.Streams
     /// </summary>
     public class HttpStreamWrapper : StreamWrapper
     {
+        public HttpStreamWrapper(string scheme)
+        {
+            this.Scheme = scheme ?? throw new ArgumentNullException(nameof(scheme));
+        }
+
         #region StreamWrapper overrides
 
         public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
@@ -1366,7 +1378,7 @@ namespace Pchp.Library.Streams
 
         public override string Label { get { return "HTTP"; } }
 
-        public override string Scheme { get { return scheme; } }
+        public override string Scheme { get; }
 
         public override bool IsUrl { get { return true; } }
 

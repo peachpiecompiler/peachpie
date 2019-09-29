@@ -210,7 +210,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var scriptAttribute = new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.ScriptAttribute_string,
-                    ImmutableArray.Create(new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, this.RelativeFilePath)),
+                    ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(this.RelativeFilePath)),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 Interlocked.CompareExchange(ref _lazyScriptAttribute, scriptAttribute, null);
             }
@@ -364,7 +364,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var pharAttribute = new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.PharAttribute_string,
-                    ImmutableArray.Create(new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, PharName)),
+                    ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(PharName)),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 Interlocked.CompareExchange(ref _lazyPharAttribute, pharAttribute, null);
             }

@@ -25,7 +25,7 @@ namespace Pchp.Library
             public Registrator()
             {
                 PhpFilter.AddFilterFactory(new ZlibFilterFactory());
-                StreamWrapper.SystemStreamWrappers.Add(ZlibStreamWrapper.scheme, new ZlibStreamWrapper());
+                StreamWrapper.RegisterSystemWrapper(new ZlibStreamWrapper());
                 RegisterLegacyOptions();
             }
 

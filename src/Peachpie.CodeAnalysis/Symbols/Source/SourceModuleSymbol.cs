@@ -101,9 +101,10 @@ namespace Pchp.CodeAnalysis.Symbols
             var ctor = (MethodSymbol)DeclaringCompilation.GetTypeByMetadataName("Pchp.Core.ImportPhpTypeAttribute").InstanceConstructors.Single();
             foreach (var t in DeclaringCompilation.GlobalSemantics.GetReferencedTypes())
             {
-                yield return new SynthesizedAttributeData(ctor,
-                        ImmutableArray.Create(new TypedConstant(DeclaringCompilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, t)),
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                yield return new SynthesizedAttributeData(
+                    ctor,
+                    ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(t)),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
             }
 
             // [ImportPhpFunctions( ... )]
@@ -114,9 +115,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 // only if contains functions
                 if (t.GetMembers().OfType<MethodSymbol>().Any(DeclaringCompilation.GlobalSemantics.IsFunction))
                 {
-                    yield return new SynthesizedAttributeData(ctor,
-                            ImmutableArray.Create(new TypedConstant(DeclaringCompilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, t)),
-                            ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                    yield return new SynthesizedAttributeData(
+                        ctor,
+                        ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(t)),
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
             }
 
@@ -128,9 +130,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 // only if contains constants
                 if (t.GetMembers().Any(DeclaringCompilation.GlobalSemantics.IsGlobalConstant))
                 {
-                    yield return new SynthesizedAttributeData(ctor,
-                            ImmutableArray.Create(new TypedConstant(DeclaringCompilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, t)),
-                            ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                    yield return new SynthesizedAttributeData(
+                        ctor,
+                        ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(t)),
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
             }
 
@@ -143,8 +146,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 var scriptType = a.GetTypeByMetadataName(WellKnownPchpNames.DefaultScriptClassName);
                 if (scriptType.IsValidType())
                 {
-                    yield return new SynthesizedAttributeData(ctor,
-                        ImmutableArray.Create(new TypedConstant(DeclaringCompilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, scriptType)),
+                    yield return new SynthesizedAttributeData(
+                        ctor,
+                        ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(scriptType)),
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
             }

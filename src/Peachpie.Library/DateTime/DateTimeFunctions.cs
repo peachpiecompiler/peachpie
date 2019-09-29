@@ -193,10 +193,9 @@ namespace Pchp.Library.DateTime
 
         #region date_get_last_errors
 
-        /// <summary>
-        /// Returns the warnings and errors.
-        /// </summary>
-        [return: CastToFalse]
+        /// <summary>Returns the warnings and errors.</summary>
+        /// <remarks>Unlike in PHP, we never return <c>FALSE</c>, according to the documentation and for (our) sanity.</remarks>
+        [return: NotNull]
         public static PhpArray date_get_last_errors(Context ctx) => DateTime.getLastErrors(ctx);
 
         #endregion

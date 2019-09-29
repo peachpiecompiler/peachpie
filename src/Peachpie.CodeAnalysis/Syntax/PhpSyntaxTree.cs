@@ -73,8 +73,8 @@ namespace Pchp.CodeAnalysis
 
         static LanguageFeatures DefaultLanguageVersion(ref Version languageVersion)
         {
-            languageVersion = new Version(7, 2);
-            return LanguageFeatures.Php72Set;
+            languageVersion = new Version(7, 3);
+            return LanguageFeatures.Php73Set;
         }
 
         internal static LanguageFeatures ParseLanguageVersion(ref Version languageVersion)
@@ -97,6 +97,8 @@ namespace Pchp.CodeAnalysis
                         case 0: return LanguageFeatures.Php70Set;
                         case 1: return LanguageFeatures.Php71Set;
                         case 2: return LanguageFeatures.Php72Set;
+                        case 3: return LanguageFeatures.Php73Set;
+                        case 4: return LanguageFeatures.Php74Set;
                     }
                 }
 

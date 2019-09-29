@@ -1631,4 +1631,7 @@ Additional information:
   <data name="trait_instantiated" xml:space="preserve">
     <value>Cannot instantiate trait {0}</value>
   </data>
+  <data name="uncloneable_cloned" xml:space="preserve">
+    <value>Trying to clone an uncloneable object of class {0}</value>
+  </data>
 </root>

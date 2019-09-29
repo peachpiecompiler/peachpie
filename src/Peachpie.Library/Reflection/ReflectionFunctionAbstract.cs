@@ -143,7 +143,20 @@ namespace Pchp.Library.Reflection
             var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
             return (sep < 0) ? name : name.Substring(sep + 1);
         }
-        public PhpArray getStaticVariables() { throw new NotImplementedException(); }
+
+        [return: NotNull]
+        public PhpArray getStaticVariables(Context ctx)
+        {
+            var arr = new PhpArray();
+
+            var locals = _routine.GetStaticLocals(ctx);
+            foreach (var local in locals)
+            {
+                arr[local.Key] = (local.Value != null) ? local.Value.DeepCopy() : PhpValue.Null;
+            }
+
+            return arr;
+        }
         public virtual bool hasReturnType()
         {
             return ResolveReturnType(out var _, out var _);
