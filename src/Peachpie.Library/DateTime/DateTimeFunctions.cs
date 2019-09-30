@@ -323,7 +323,7 @@ namespace Pchp.Library.DateTime
                     return local.Second;
 
                 case 't':
-                    return System_DateTime.DaysInMonth(local.Year, local.Month);
+                    return DateInfo.DaysInMonthFixed(local.Year, local.Month);
 
                 case 'U':
                     return DateTimeUtils.UtcToUnixTimeStamp(utc);
@@ -540,7 +540,7 @@ namespace Pchp.Library.DateTime
 
                     case 't':
                         // Number of days in the given month 28 through 31
-                        result.Append(System_DateTime.DaysInMonth(local.Year, local.Month));
+                        result.Append(DateInfo.DaysInMonthFixed(local.Year, local.Month));
                         break;
 
                     case 'T':
@@ -1249,7 +1249,7 @@ namespace Pchp.Library.DateTime
         {
             return month >= 1 && month <= 12
                 && year >= 1 && year <= 32767
-                && day >= 1 && day <= System_DateTime.DaysInMonth(year, month); // this works also with leap years
+                && day >= 1 && day <= DateInfo.DaysInMonthFixed(year, month); // this works also with leap years
         }
 
         #endregion

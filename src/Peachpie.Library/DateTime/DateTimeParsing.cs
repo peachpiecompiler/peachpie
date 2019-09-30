@@ -166,8 +166,7 @@ namespace Pchp.Library.DateTime
             if (d == -1) d = start.Day;
             else if (d == 0) { d = 1; --relative.d; }
 
-            int days_overflow;
-            CheckOverflows(y, m, ref d, ref h, out days_overflow);
+            CheckOverflows(y, m, ref d, ref h, out var days_overflow);
 
             var result = new System.DateTime(y, m, d, h, i, s, DateTimeKind.Unspecified);
 
@@ -288,6 +287,15 @@ namespace Pchp.Library.DateTime
             return year;
         }
 
+        internal static int DaysInMonthFixed(int year, int month)
+        {
+            // NOTE: DateTime only works for years in [1..9999]
+            
+            if (year <= 0) year = 1;    // this is correct, since leap years only exist **after** the year 0 (there is no year 0)
+
+            return System.DateTime.DaysInMonth(year, month);
+        }
+
         /// <summary>
         /// Checks how many days given year/month/day/hour overflows (as it is possible in PHP format).
         /// </summary>
@@ -300,7 +308,7 @@ namespace Pchp.Library.DateTime
         {
             days_overflow = 0;
 
-            int daysinmonth_overflow = d - System.DateTime.DaysInMonth(y, m);
+            int daysinmonth_overflow = d - DateInfo.DaysInMonthFixed(y, m);
             if (daysinmonth_overflow > 0)
             {
                 d -= daysinmonth_overflow;
@@ -1261,8 +1269,8 @@ namespace Pchp.Library.DateTime
             result = ToTimeSpan(years, months, days, hours, minutes, seconds, nanoseconds, negative);
             return true;
 
-            InvalidFormat:
-            Error:
+        InvalidFormat:
+        Error:
 
             result = default(TimeSpan);
             return false;
@@ -1565,7 +1573,7 @@ namespace Pchp.Library.DateTime
                             AddError(ref errors, DateResources.esc_char_expected);
                             break;
                         }
-                        
+
                         if (format[fi] == str[si])
                         {
                             si++;
