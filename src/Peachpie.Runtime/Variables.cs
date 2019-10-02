@@ -515,6 +515,22 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// In case given value contains a string (<see cref="string"/> or <see cref="PhpString"/>),
+        /// its string representation is returned.
+        /// Otherwise <c>null</c>.
+        /// </summary>
+        public static byte[] ToBytesOrNull(this PhpValue value, Context ctx)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String: return Encoding.UTF8.GetBytes(value.String);
+                case PhpTypeCode.MutableString: return value.MutableString.ToBytes(ctx);
+                case PhpTypeCode.Alias: return ToBytesOrNull(value.Alias.Value, ctx);
+                default: return null;
+            }
+        }
+
         public static byte[] ToBytes(this PhpValue value, Context ctx)
         {
             switch (value.TypeCode)

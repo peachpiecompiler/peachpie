@@ -79,7 +79,7 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 (f, d) => new IntStringKey(f.Name),
                 FuncExtensions.Identity<IntStringKey>(),
-                (m) => s_notInternalFieldsPredicate(m) && IsVisible(m, caller));
+                (m) => s_notClrInternalFieldsPredicate(m) && IsVisible(m, caller));
         }
 
         /// <summary>
@@ -92,12 +92,12 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForPrint,
                 s_keyToString,
-                s_notInternalFieldsPredicate);
+                s_notClrInternalFieldsPredicate);
         }
 
         static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
 
-        public static readonly Func<MemberInfo, bool> s_notInternalFieldsPredicate = new Func<MemberInfo, bool>(m =>
+        public static readonly Func<MemberInfo, bool> s_notClrInternalFieldsPredicate = new Func<MemberInfo, bool>(m =>
         {
             // ignore "internal" and "private protected" fields
             // ignore pointer types
@@ -124,21 +124,19 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForPrint = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) =>
         {
-            if (m is FieldInfo f)
+            if (m.IsPhpPublic())
             {
-                if (f.IsPublic) return f.Name;
-                if (f.IsPrivate) return string.Concat(f.Name, ":", declarer.Name, ":private");
-                return f.Name + ":protected";
+                return m.Name;
             }
-            else if (m is PropertyInfo p)
+
+            if (m.IsPhpPrivate())
             {
-                if (p.GetMethod.IsPublic) return p.Name;
-                if (p.GetMethod.IsPrivate) return string.Concat(p.Name, ":", declarer.Name, ":private");
-                return p.Name + ":protected";
+                return string.Concat(m.Name, ":", declarer.Name, ":private");
             }
-            else
+
+            //if (m.IsPhpProtected())
             {
-                throw new ArgumentException();
+                return m.Name + ":protected";
             }
         });
 
@@ -152,7 +150,7 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForDump,
                 s_keyToString,
-                s_notInternalFieldsPredicate);
+                s_notClrInternalFieldsPredicate);
         }
 
         /// <summary>
@@ -165,7 +163,7 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForExport,
                 s_keyToString,
-                s_notInternalFieldsPredicate);
+                s_notClrInternalFieldsPredicate);
         }
 
         static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForExport = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) => m.Name);
@@ -174,21 +172,19 @@ namespace Pchp.Core.Reflection
         {
             var name = "\"" + m.Name + "\"";
 
-            if (m is FieldInfo f)
+            if (m.IsPhpPublic())
             {
-                if (f.IsPublic) return name;
-                if (f.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
-                return name + ":protected";
+                return name;
             }
-            else if (m is PropertyInfo p)
+
+            if (m.IsPhpPrivate())
             {
-                if (p.GetMethod.IsPublic) return name;
-                if (p.GetMethod.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
-                return name + ":protected";
+                return string.Concat(name, ":\"", declarer.Name, "\":private");
             }
-            else
+
+            //if (m.IsPhpProtected())
             {
-                throw new ArgumentException();
+                return name + ":protected";
             }
         });
 
@@ -266,49 +262,34 @@ namespace Pchp.Core.Reflection
             Debug.Assert(instance != null);
             Debug.Assert(arr != null);
 
-            // PhpTypeInfo
-            var tinfo = PhpTypeInfoExtension.GetPhpTypeInfo(instance.GetType());
-
-            // iterate through type and its base types
-            for (var t = tinfo; t != null; t = t.BaseType)
+            foreach (var pair in EnumerateInstanceFields(instance, FieldAsArrayKey, s_keyToString, s_notClrInternalFieldsPredicate, false))
             {
-                // iterate through instance fields
-                foreach (var f in t.DeclaredFields.InstanceFields)
-                {
-                    arr[FieldAsArrayKey(f, t)] = PhpValue.FromClr(f.GetValue(instance)).DeepCopy();
-                }
-
-                // TODO: CLR properties
-            }
-
-            // PhpArray __runtime_fields
-            var runtime_fields = tinfo.GetRuntimeFields(instance);
-            if (runtime_fields != null && runtime_fields.Count != 0)
-            {
-                // all runtime fields are considered public
-                var enumerator = runtime_fields.GetFastEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    arr[enumerator.CurrentKey] = enumerator.CurrentValue.DeepCopy();
-                }
+                arr[pair.Key] = pair.Value.DeepCopy();
             }
         }
 
         /// <summary>
         /// Gets field name to be used as array key when casting object to array.
         /// </summary>
-        static string FieldAsArrayKey(FieldInfo f, PhpTypeInfo declaringType)
+        static string FieldAsArrayKey(MemberInfo m, PhpTypeInfo declaringType)
         {
-            Debug.Assert(f != null);
+            Debug.Assert(m != null);
             Debug.Assert(declaringType != null);
 
-            if (f.IsPublic) return f.Name;
-            if (f.IsFamily) return " * " + f.Name;
-            if (f.IsPrivate) return " " + declaringType.Name + " " + f.Name;
+            if (m.IsPhpPublic())
+            {
+                return m.Name;
+            }
 
-            Debug.Fail($"Unexpected field attributes {f.Attributes}");
+            if (m.IsPhpPrivate())
+            {
+                return " " + declaringType.Name + " " + m.Name;
+            }
 
-            return f.Name;
+            //if (m.IsPhpProtected())
+            {
+                return " * " + m.Name;
+            }
         }
 
         /// <summary>
@@ -710,5 +691,81 @@ namespace Pchp.Core.Reflection
         }
 
         #endregion
+
+        /// <summary>
+        /// Gets routine static local variables and its value in given <see cref="Context"/>.
+        /// </summary>
+        /// <param name="routine">The routine.</param>
+        /// <param name="ctx">Runtime context, variables value will be read with respect to this context.</param>
+        public static KeyValuePair<string, PhpAlias>[] GetStaticLocals(this RoutineInfo routine, Context ctx)
+        {
+            Dictionary<string, Type> locals = null;
+
+            var method = routine.Methods[0];
+            var containingType = method.DeclaringType;
+            var nestedTypes = containingType.GetNestedTypes(BindingFlags.NonPublic);
+
+            if (nestedTypes.Length != 0)
+            {
+                var metadataName = method.Name.Replace('.', '-');
+
+                for (int i = 0; i < nestedTypes.Length; i++)
+                {
+                    // name: {MetadataName}${VariableName}
+                    var name = nestedTypes[i].Name;
+                    var dollar = name.LastIndexOf('$');
+                    if (dollar < 0 || dollar + 1 >= name.Length) continue;
+
+                    var varname = name.Substring(dollar + 1);
+                    var fncname = name.Remove(dollar);
+
+                    if (fncname == metadataName)
+                    {
+                        if (locals == null)
+                        {
+                            locals = new Dictionary<string, Type>();
+                        }
+
+                        locals[varname] = nestedTypes[i];
+                    }
+                }
+            }
+
+            // invoke an resolve static locals value:
+            if (locals != null)
+            {
+                // Holder is a class with "value" field with actual static local value
+                // Holder instance gets resolved using "Context.GetStatic<Holder>()" API
+
+                var GetStatic_T = typeof(Context).GetMethod("GetStatic", Cache.Types.Empty);
+                var result = new KeyValuePair<string, PhpAlias>[locals.Count];
+                int i = 0;
+                foreach (var local in locals)
+                {
+                    PhpAlias alias = null;
+
+                    // holder.value : PhpAlias
+                    var holder = GetStatic_T.MakeGenericMethod(local.Value).Invoke(ctx, Array.Empty<object>());
+                    var valueField = local.Value.GetField("value");
+                    if (valueField != null)
+                    {
+                        alias = valueField.GetValue(holder) as PhpAlias;
+
+                        if (alias == null)
+                        {
+                            Debug.Fail("Unexpected value of type " + (holder != null ? holder.GetType().Name : PhpVariable.TypeNameNull));
+                        }
+                    }
+
+                    result[i++] = new KeyValuePair<string, PhpAlias>(local.Key, alias);
+                }
+
+                return result;
+            }
+            else
+            {
+                return Array.Empty<KeyValuePair<string, PhpAlias>>();
+            }
+        }
     }
 }

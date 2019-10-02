@@ -20,8 +20,7 @@ namespace Peachpie.Library.MsSql
         /// <summary>
         /// Limit on size of a batch. Non-positive values means no limit.
         /// </summary>
-        public int BatchSize { get { return batchSize; } set { batchSize = value; } }
-        private int batchSize = 0;
+        public int BatchSize { get; set; } = 0;
 
         /// <summary>
         /// Creates an instance of a result resource.
@@ -68,11 +67,11 @@ namespace Peachpie.Library.MsSql
 
             return names;
         }
-        
+
         /// <summary>
         /// Gets row values.
         /// </summary>
-        /// <param name="dataTypes">Data type names.</param>
+        /// <param name="dataTypes">Column type names.</param>
         /// <param name="convertTypes">Whether to convert value to PHP types.</param>
         /// <returns>Row data.</returns>
         protected override object[] GetValues(string[] dataTypes, bool convertTypes)

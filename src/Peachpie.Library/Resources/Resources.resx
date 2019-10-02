@@ -153,9 +153,6 @@
   <data name="surrogate_selector_unsupported" xml:space="preserve">
     <value>PhpFormatter does not support surrogate selectors.</value>
   </data>
-  <data name="regexp_duplicate_quantifier" xml:space="preserve">
-    <value>Nothing to repeat - duplicate quantifier at offset {0} in matching part of regular expression.</value>
-  </data>
   <data name="class_has_no_unserializer" xml:space="preserve">
     <value>Class {0} has no unserializer</value>
   </data>
@@ -318,29 +315,11 @@
   <data name="unmathed_format_bracket" xml:space="preserve">
     <value>Unmatched [ in format string</value>
   </data>
-  <data name="preg_match_pattern_set_order" xml:space="preserve">
-    <value>PREG_PATTERN_ORDER and PREG_SET_ORDER flags are mutually exclusive</value>
-  </data>
   <data name="replacement_array_pattern_not" xml:space="preserve">
     <value>Replacement cannot be an array if pattern is not an array</value>
   </data>
-  <data name="regular_expression_empty" xml:space="preserve">
-    <value>Empty regular expression</value>
-  </data>
   <data name="delimiter_alnum_backslash" xml:space="preserve">
     <value>Delimiter must not be alphanumeric or backslash</value>
-  </data>
-  <data name="modifier_not_supported" xml:space="preserve">
-    <value>Ignoring unsupported pattern modifier '{0}' in perl regular expression</value>
-  </data>
-  <data name="modifier_unknown" xml:space="preserve">
-    <value>Ignoring unknown pattern modifier '{0}' in perl regular expression</value>
-  </data>
-  <data name="modifiers_inconsistent" xml:space="preserve">
-    <value>Pattern modifier '{0}' is ignored due to use of modifier '{1}' in perl regular expression</value>
-  </data>
-  <data name="preg_no_end_delimiter" xml:space="preserve">
-    <value>No ending delimiter '{0}' found</value>
   </data>
   <data name="invalid_calendar" xml:space="preserve">
     <value>Invalid calendar id '{0}'</value>
@@ -692,5 +671,14 @@
   </data>
   <data name="var_export_circular_reference" xml:space="preserve">
     <value>var_export does not handle circular references</value>
+  </data>
+  <data name="incorrect_pass_or_login" xml:space="preserve">
+    <value>Login or password incorrect!</value>
+  </data>
+  <data name="invalid_resource" xml:space="preserve">
+    <value>Invalid resource type {0}</value>
+  </data>
+  <data name="pcre_make_error" xml:space="preserve">
+    <value>{0} at offset {1}</value>
   </data>
 </root>

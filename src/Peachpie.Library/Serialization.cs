@@ -294,18 +294,36 @@ namespace Pchp.Library
 
                 public override void Accept(PhpArray value)
                 {
-                    serializedRefs[value] = ++_seq;
+                    ++_seq;
 
-                    Write(Tokens.Array);
-                    Write(Tokens.Colon);
-                    Write(value.Count.ToString());
-                    Write(Tokens.Colon);
-                    Write(Tokens.BraceOpen);
+                    if (serializedRefs.TryGetValue(value, out var seq))
+                    {
+                        // this shouldn't happen
+                        // an array was referenced twice without being enclosed within the same alias (PhpAlias)
 
-                    // write out array items in the correct order
-                    base.Accept(value);
+                        Debug.Fail("Multiple references to the same array instance!");
 
-                    Write(Tokens.BraceClose);
+                        // this reference has already been serialized -> write out its seq. number
+                        Write(Tokens.Reference);
+                        Write(Tokens.Colon);
+                        Write(seq.ToString());
+                        Write(Tokens.Semicolon);
+                    }
+                    else
+                    {
+                        serializedRefs[value] = _seq;
+
+                        Write(Tokens.Array);
+                        Write(Tokens.Colon);
+                        Write(value.Count.ToString());
+                        Write(Tokens.Colon);
+                        Write(Tokens.BraceOpen);
+
+                        // write out array items in the correct order
+                        base.Accept(value);
+
+                        Write(Tokens.BraceClose);
+                    }
                 }
 
                 public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)

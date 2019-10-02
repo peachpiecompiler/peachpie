@@ -40,6 +40,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string GeneratorStateMachineNameFormatString = "<>sm_{0}";
 
         /// <summary>
+        /// Field with flag whether the class's Dispose() was called already.
+        /// </summary>
+        public static string SynthesizedDisposedFieldName => "<>b_disposed";
+
+        /// <summary>
         /// Name of method containing lambda method's implementation.
         /// This is PHP-like name that has to be equal <c>anonymous@function</c>
         /// so PHP <c>__FUNCTION__</c> constant and eventual reflection is compatible with regular PHP.

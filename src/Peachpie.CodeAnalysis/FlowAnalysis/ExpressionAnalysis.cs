@@ -1884,7 +1884,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (x.IsClassConstant)
                 {
-                    Debug.Assert(x.Access.IsRead);
+                    Debug.Assert(x.Access.IsRead || x.Access.IsNone);
                     Debug.Assert(!x.Access.IsEnsure && !x.Access.IsWrite && !x.Access.IsReadRef);
                 }
 

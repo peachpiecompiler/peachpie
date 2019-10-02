@@ -11,7 +11,7 @@ using Pchp.Core.Resources;
 namespace Pchp.Library.Reflection
 {
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
-    public class ReflectionClass : Reflector
+    public class ReflectionClass : Reflector, IPhpCloneable
     {
         #region Constants
 
@@ -469,5 +469,7 @@ namespace Pchp.Library.Reflection
         }
 
         #endregion
+
+        object IPhpCloneable.Clone() => throw PhpException.ErrorException(ErrResources.uncloneable_cloned, nameof(ReflectionClass));
     }
 }

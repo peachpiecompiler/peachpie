@@ -46,12 +46,12 @@ namespace Pchp.Core
         /// <summary>
         /// Name of PHP <c>SID</c> constant to be set when starting session.
         /// </summary>
-        public const string SID_Constant = "SID";
+        public static string SID_Constant => "SID";
 
         /// <summary>
         /// Autoglobal <c>$_SESSION</c> variable name.
         /// </summary>
-        public const string SESSION_Variable = "_SESSION";
+        public static IntStringKey SESSION_Variable => CommonPhpArrayKeys._SESSION;
 
         /// <summary>
         /// Gets or sets the session name.
@@ -121,7 +121,7 @@ namespace Pchp.Core
 
                 // sets the auto-global variable (the previous content of $_SESSION array is discarded):
                 ctx.Session = session_array;
-                ctx.Globals[SESSION_Variable] = PhpValue.Create(session_array);
+                ctx.Globals[SESSION_Variable] = session_array;
 
                 //if (ctx.Configuration.Core.RegisterGlobals)
                 //{
@@ -129,7 +129,7 @@ namespace Pchp.Core
                 //}
 
                 // adds/updates a SID constant:
-                if (!ctx.DefineConstant(SID_Constant, (PhpValue)GetSessionId(webctx), true))
+                if (!ctx.DefineConstant(SID_Constant, GetSessionId(webctx), true))
                 {
                     throw new InvalidOperationException("SID already set.");    // TODO: allow overwriting
                 }

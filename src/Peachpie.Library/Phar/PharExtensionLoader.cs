@@ -13,7 +13,7 @@ namespace Pchp.Library.Phar
 {
     internal sealed class PharExtension
     {
-        sealed class PharWrapper : StreamWrapper, Context.IIncludeResolver
+        sealed class PharWrapper : StreamWrapper
         {
             public static string scheme => "phar";
 
@@ -72,7 +72,7 @@ namespace Pchp.Library.Phar
 
             #endregion
 
-            public Context.ScriptInfo ResolveScript(Context ctx, string cd, string path)
+            public override bool ResolveInclude(Context ctx, string cd, string path, out Context.ScriptInfo script)
             {
                 // Template: include "phar://{path}"
 
@@ -84,12 +84,14 @@ namespace Pchp.Library.Phar
                     {
                         Debug.Assert(pharFile.EndsWith(PharExtensions.PharExtension, CurrentPlatform.PathStringComparison));
                         var pharPath = PharExtensions.PharEntryRelativePath(pharFile, path.Substring(sep + 1));
-                        return Context.TryGetDeclaredScript(pharPath);
+                        script = Context.TryGetDeclaredScript(pharPath);
+                        return script.IsValid;
                     }
                 }
 
                 // invalid
-                return default;
+                script = default;
+                return false;
             }
         }
 
@@ -97,11 +99,8 @@ namespace Pchp.Library.Phar
 
         public PharExtension()
         {
-            var wrapper = new PharWrapper();
-
             //PhpFilter.AddSystemFilter(new PharFilterFactory());
-            StreamWrapper.SystemStreamWrappers.Add(PharWrapper.scheme, wrapper);
-            Context.IncludeProvider.Instance.RegisterSchemeIncluder("phar", wrapper);
+            StreamWrapper.RegisterSystemWrapper(new PharWrapper());
             //RegisterLegacyOptions();
         }
 

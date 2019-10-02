@@ -188,8 +188,8 @@ namespace Pchp.CodeAnalysis.Emit
                     var targetphpversionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.TargetPhpLanguageAttributeFullName).InstanceConstructors.First();
                     _targetphpversionAttribute = new SynthesizedAttributeData(targetphpversionAttributeCtor,
                         ImmutableArray.Create(
-                            new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, parseOptions.LanguageVersion?.ToString(2)),
-                            new TypedConstant(Compilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, parseOptions.AllowShortOpenTags)),
+                            Compilation.CreateTypedConstant(parseOptions.LanguageVersion?.ToString(2)),
+                            Compilation.CreateTypedConstant(parseOptions.AllowShortOpenTags)),
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
             }
@@ -206,8 +206,9 @@ namespace Pchp.CodeAnalysis.Emit
                     var attr = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Reflection.AssemblyInformationalVersionAttribute");
                     if (attr != null)
                     {
-                        _assemblyinformationalversionAttribute = new SynthesizedAttributeData(attr.InstanceConstructors[0],
-                            ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, Compilation.SourceAssembly.FileVersion)),
+                        _assemblyinformationalversionAttribute = new SynthesizedAttributeData(
+                            attr.InstanceConstructors[0],
+                            ImmutableArray.Create(Compilation.CreateTypedConstant(Compilation.SourceAssembly.FileVersion)),
                             ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                     }
                 }

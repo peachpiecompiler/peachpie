@@ -13,7 +13,7 @@ namespace Pchp.Core.Reflection
     /// Runtime information about a function.
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
-    public abstract class RoutineInfo : IPhpCallable
+    public abstract class RoutineInfo : IPhpCallable, ICloneable
     {
         /// <summary>
         /// Index to the routine slot.
@@ -102,6 +102,8 @@ namespace Pchp.Core.Reflection
         PhpValue IPhpCallable.ToPhpValue() => PhpValue.Void;
 
         #endregion
+
+        object ICloneable.Clone() => this;
     }
 
     internal class PhpRoutineInfo : RoutineInfo
