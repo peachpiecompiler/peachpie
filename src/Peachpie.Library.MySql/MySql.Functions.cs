@@ -8,6 +8,7 @@ using System.Text;
 using static Pchp.Library.StandardPhpOptions;
 using Pchp.Library.Resources;
 using System.Linq;
+using Pchp.Core.Utilities;
 
 namespace Peachpie.Library.MySql
 {
@@ -197,7 +198,7 @@ namespace Peachpie.Library.MySql
             if (port == -1) port = defaultport > 0 ? defaultport : config.Port;
             if (user == null) user = config.User;
             if (password == null) password = config.Password;
-            
+
             //
             var builder = new MySqlConnectionStringBuilder()
             {
@@ -213,7 +214,7 @@ namespace Peachpie.Library.MySql
                 UseCompression = (flags & ConnectFlags.Compress) != 0,
                 MaximumPoolSize = (uint)config.MaxPoolSize,
                 Pooling = (flags & ConnectFlags.Pooling) != 0,
-                
+
             };
 
             // optional:
@@ -586,9 +587,14 @@ namespace Peachpie.Library.MySql
         public static int mysql_num_rows(PhpResource resultHandle)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
-            if (result == null) return 0;
-
-            return result.RowCount;
+            if (result != null)
+            {
+                return result.RowCount;
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         #endregion
@@ -689,19 +695,18 @@ namespace Peachpie.Library.MySql
                 return PhpValue.False;
             }
 
-            string field_name;
             object field_value;
             if (!Operators.IsSet(field))
             {
                 field_value = result.GetFieldValue(row, result.CurrentFieldIndex);
             }
-            else if ((field_name = PhpVariable.AsString(field)) != null)
+            else if (field.IsString(out var field_name))
             {
                 field_value = result.GetFieldValue(row, field_name);
             }
             else
             {
-                field_value = result.GetFieldValue(row, (int)field.ToLong());
+                field_value = result.GetFieldValue(row, (int)field);
             }
 
             return PhpValue.FromClr(field_value); // TODO: Core.Convert.Quote(field_value, context);
@@ -738,23 +743,33 @@ namespace Peachpie.Library.MySql
         public static string mysql_field_type(PhpResource resultHandle, int fieldIndex)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
-            if (result == null) return null;
-
-            return result.GetPhpFieldType(fieldIndex);
+            if (result != null)
+            {
+                return result.GetPhpFieldType(fieldIndex);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
         /// Gets a length of a specified column (field) in a result. 
         /// </summary>
         /// <param name="resultHandle">Query result resource.</param>
-        /// <param name="fieldIndex">Column index.</param>
-        /// <returns>Length of the column or a -1 on failure (invalid resource or column index).</returns>
+        /// <param name="fieldIndex">Column index, starts at <c>0</c>.</param>
+        /// <returns>Length of the column or a -1 (<c>FALSE</c>) on failure (invalid resource or column index).</returns>
+        [return: CastToFalse]
         public static int mysql_field_len(PhpResource resultHandle, int fieldIndex)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
-            if (result == null) return -1;
+            if (result != null)
+            {
+                return result.GetFieldLength(fieldIndex);
+            }
 
-            return result.GetFieldLength(fieldIndex);
+            //
+            return -1; // FALSE
         }
 
         #endregion
@@ -795,16 +810,16 @@ namespace Peachpie.Library.MySql
         /// <param name="resultHandle">Query result resource.</param>
         /// <param name="fieldIndex">Field index.</param>
         /// <returns>Name of the base table of the field.</returns>
+        [return: CastToFalse]
         public static string mysql_field_table(PhpResource resultHandle, int fieldIndex)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
-            if (result == null) return null;
+            if (result == null || !result.CheckFieldIndex(fieldIndex))
+            {
+                return null;
+            }
 
-            //var info = result.GetSchemaRowInfo(fieldIndex);
-            //if (info == null) return null;
-
-            //return (string)info["BaseTableName"];
-            throw new NotImplementedException();
+            return result.GetColumnSchema(fieldIndex).BaseTableName;
         }
 
         /// <summary>
@@ -813,58 +828,58 @@ namespace Peachpie.Library.MySql
         /// <param name="resultHandle">Query result resource.</param>
         /// <param name="fieldIndex">Field index.</param>
         /// <returns>Flags of the field.</returns>
+        [return: CastToFalse]
         public static string mysql_field_flags(PhpResource resultHandle, int fieldIndex)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
-            if (result == null) return null;
+            if (result == null || !result.CheckFieldIndex(fieldIndex))
+            {
+                return null;
+            }
 
-            throw new NotImplementedException();
-
+            var col = result.GetColumnSchema(fieldIndex);
             //ColumnFlags flags = result.GetFieldFlags(fieldIndex);
-            //string type_name = result.GetPhpFieldType(fieldIndex);
 
-            //StringBuilder str_fields = new StringBuilder();
+            var flags = new List<string>(16);
 
-            //if ((flags & ColumnFlags.NOT_NULL) != 0)
-            //    str_fields.Append("not_null ");
+            if (col.AllowDBNull.GetValueOrDefault() == false)
+                flags.Add("not_null");
 
-            //if ((flags & ColumnFlags.PRIMARY_KEY) != 0)
-            //    str_fields.Append("primary_key ");
+            if (col.IsKey.GetValueOrDefault())
+                flags.Add("primary_key");
 
-            //if ((flags & ColumnFlags.UNIQUE_KEY) != 0)
-            //    str_fields.Append("unique_key ");
+            if (col.IsUnique.GetValueOrDefault())
+                flags.Add("unique_key");
 
             //if ((flags & ColumnFlags.MULTIPLE_KEY) != 0)
-            //    str_fields.Append("multiple_key ");
+            //    flags.Add("multiple_key");
 
-            //if ((flags & ColumnFlags.BLOB) != 0)
-            //    str_fields.Append("blob ");
+            if (col.IsBlob())
+                flags.Add("blob");
 
-            //if ((flags & ColumnFlags.UNSIGNED) != 0)
-            //    str_fields.Append("unsigned ");
+            if (col.IsUnsigned())
+                flags.Add("unsigned");
 
             //if ((flags & ColumnFlags.ZERO_FILL) != 0)
-            //    str_fields.Append("zerofill ");
+            //    flags.Add("zerofill");
 
-            //if ((flags & ColumnFlags.BINARY) != 0)
-            //    str_fields.Append("binary ");
+            if (col.ProviderType == MySqlDbType.Binary || col.ProviderType == MySqlDbType.VarBinary)
+                flags.Add("binary");
 
-            //if ((flags & ColumnFlags.ENUM) != 0)
-            //    str_fields.Append("enum ");
+            if (col.ProviderType == MySqlDbType.Enum)
+                flags.Add("enum");
 
-            //if ((flags & ColumnFlags.SET) != 0)
-            //    str_fields.Append("set ");
+            if (col.ProviderType == MySqlDbType.Set)
+                flags.Add("set");
 
-            //if ((flags & ColumnFlags.AUTO_INCREMENT) != 0)
-            //    str_fields.Append("auto_increment ");
+            if (col.IsAutoIncrement.GetValueOrDefault())
+                flags.Add("auto_increment");
 
-            //if ((flags & ColumnFlags.TIMESTAMP) != 0)
-            //    str_fields.Append("timestamp ");
+            if (col.ProviderType == MySqlDbType.Timestamp)
+                flags.Add("timestamp");
 
-            //if (str_fields.Length > 0)
-            //    str_fields.Length = str_fields.Length - 1;
-
-            //return str_fields.ToString();
+            //
+            return string.Join(" ", flags);
         }
 
         /// <summary>
@@ -875,7 +890,10 @@ namespace Peachpie.Library.MySql
         public static object mysql_fetch_field(PhpResource resultHandle)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
-            if (result == null) return null;
+            if (result == null)
+            {
+                return null;
+            }
 
             return FetchFieldInternal(result, result.FetchNextField());
         }
@@ -902,35 +920,49 @@ namespace Peachpie.Library.MySql
             //DataRow info = result.GetSchemaRowInfo(fieldIndex);
             //if (info == null) return null;
 
-            Debug.Assert(result.GetRowCustomData() != null);
+            var col = result.GetColumnSchema(fieldIndex);
+            var php_type = result.GetPhpFieldType(fieldIndex);
 
-            string php_type = result.GetPhpFieldType(fieldIndex);
             //PhpMyDbResult.FieldCustomData data = ((PhpMyDbResult.FieldCustomData[])result.GetRowCustomData())[fieldIndex];
             //ColumnFlags flags = data.Flags;//result.GetFieldFlags(fieldIndex);
 
+            //name - column name
+            //table - name of the table the column belongs to, which is the alias name if one is defined
+            //max_length - maximum length of the column
+            //not_null - 1 if the column cannot be NULL
+            //primary_key - 1 if the column is a primary key
+            //unique_key - 1 if the column is a unique key
+            //multiple_key - 1 if the column is a non - unique key
+            //numeric - 1 if the column is numeric
+            //blob - 1 if the column is a BLOB
+            //type - the type of the column
+            //unsigned - 1 if the column is unsigned
+            //zerofill - 1 if the column is zero - filled
+
             // create an array of runtime fields with specified capacity:
-            var objFields = new PhpArray(13);
-
-            // add fields into the hastable directly:
-            // no duplicity check, since array is already valid
-            objFields.Add("name", result.GetFieldName(fieldIndex));
-            //objFields.Add("table", (/*info["BaseTableName"] as string*/data.RealTableName) ?? string.Empty);
-            //objFields.Add("def", ""); // TODO
-            //objFields.Add("max_length", /*result.GetFieldLength(fieldIndex)*/data.ColumnSize);
-
-            //objFields.Add("not_null", ((flags & ColumnFlags.NOT_NULL) != 0) /*(!(bool)info["AllowDBNull"])*/ ? 1 : 0);
-            //objFields.Add("primary_key", ((flags & ColumnFlags.PRIMARY_KEY) != 0) /*((bool)info["IsKey"])*/ ? 1 : 0);
-            //objFields.Add("multiple_key", ((flags & ColumnFlags.MULTIPLE_KEY) != 0) /*((bool)info["IsMultipleKey"])*/ ? 1 : 0);
-            //objFields.Add("unique_key", ((flags & ColumnFlags.UNIQUE_KEY) != 0) /*((bool)info["IsUnique"])*/ ? 1 : 0);
-            //objFields.Add("numeric", result.IsNumericType(php_type) ? 1 : 0);
-            //objFields.Add("blob", ((flags & ColumnFlags.BLOB) != 0) /*((bool)info["IsBlob"])*/ ? 1 : 0);
-
-            //objFields.Add("type", php_type);
-            //objFields.Add("unsigned", ((flags & ColumnFlags.UNSIGNED) != 0) /*((bool)info["IsUnsigned"])*/ ? 1 : 0);
-            //objFields.Add("zerofill", ((flags & ColumnFlags.ZERO_FILL) != 0) /*((bool)info["ZeroFill"])*/ ? 1 : 0);
+            var objFields = new PhpArray(16)
+            {
+                { "name", col.ColumnName },
+                //{ "orgname", col.BaseColumnName },
+                { "table", col.BaseTableName ?? string.Empty },
+                //{ "def", "" }, // undocumented
+                //{ "db", col.BaseSchemaName },
+                //{ "catalog", col.BaseCatalogName },
+                //{ "max_length", /*result.GetFieldLength(fieldIndex)*/data.ColumnSize },
+                //{ "length", col.ColumnSize.GetValueOrDefault() },
+                { "not_null", col.AllowDBNull.GetValueOrDefault() == false },
+                { "primary_key", col.IsKey.GetValueOrDefault() ? 1 : 0 },
+                //{ "multiple_key", ((flags & ColumnFlags.MULTIPLE_KEY) != 0) /*((bool)info["IsMultipleKey"])*/ ? 1 : 0 },
+                { "unique_key", col.IsUnique.GetValueOrDefault() ? 1 : 0 },
+                { "numeric", col.IsNumeric() ? 1 : 0 },
+                { "blob", col.IsBlob() ? 1 : 0 },
+                { "type", php_type },
+                { "unsigned", col.IsUnsigned() ? 1 : 0 }, // ((flags & ColumnFlags.UNSIGNED) != 0) /*((bool)info["IsUnsigned"])*/ ? 1 : 0 },
+                //{ "zerofill", ((flags & ColumnFlags.ZERO_FILL) != 0) /*((bool)info["ZeroFill"])*/ ? 1 : 0 },
+            };
 
             // create new stdClass with runtime fields initialized above:
-            return objFields.ToObject();
+            return objFields.AsStdClass();
         }
 
         /// <summary>
@@ -972,18 +1004,21 @@ namespace Peachpie.Library.MySql
         /// Gets a version of the client library.
         /// </summary>
         /// <returns>Equivalent native library varsion.</returns>
+        [return: NotNull]
         public static string mysql_get_client_info() => EquivalentNativeLibraryVersion.ToString();
 
         /// <summary>
         /// Gets server version.
         /// </summary>
         /// <returns>Server version</returns>
+        [return: CastToFalse]
         public static string mysql_get_server_info(Context ctx) => mysql_get_server_info(LastConnection(ctx) ?? mysql_connect(ctx));
 
         /// <summary>
         /// Gets server version.
         /// </summary>
         /// <returns>Server version</returns>
+        [return: CastToFalse]
         public static string mysql_get_server_info(PhpResource link)
         {
             var connection = ValidConnection(null, link);

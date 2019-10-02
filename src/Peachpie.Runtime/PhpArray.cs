@@ -374,10 +374,11 @@ namespace Pchp.Core
         /// </summary>
         object IPhpConvertible.ToClass() => ToObject();
 
-        public stdClass ToObject() => new stdClass()
-        {
-            __peach__runtimeFields = this.DeepCopy()
-        };
+        /// <summary>
+        /// Creates <see cref="stdClass"/> instance which runtime fields are copied from this array.
+        /// </summary>
+        /// <returns>Instance of <see cref="stdClass"/>. Cannot be <c>null</c>.</returns>
+        public stdClass/*!*/ToObject() => this.DeepCopy().AsStdClass();
 
         public PhpArray ToArray() => this;
 

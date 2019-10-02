@@ -369,11 +369,56 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Whether this declarations or any of the ancestors is unreachable.
         /// </summary>
-        public override bool IsUnreachable =>
-            IsMarkedUnreachable ||
-            (BaseType != null && BaseType != this && BaseType.IsUnreachable) || // TODO: handle circular dependency, stack overflow
-            Interfaces.Any(i => i != this && i.IsUnreachable) ||
-            TraitUses.Any(tu => tu.Symbol.IsUnreachable);
+        public override bool IsUnreachable
+        {
+            get
+            {
+                HashSet<QualifiedName> visited = null;
+                // handle circular dependency, stack overflow
+                return IsUnreachableChecked(ref visited);
+            }
+        }
+
+        bool IsUnreachableChecked(ref HashSet<QualifiedName> visited)
+        {
+            if (IsMarkedUnreachable)
+            {
+                return true;
+            }
+
+            visited?.Add(FullName);
+
+            if (_syntax.BaseClass != null || _syntax.ImplementsList.Length != 0 || HasTraitUses)
+            {
+                if (visited == null) visited = new HashSet<QualifiedName>() { FullName };
+
+                if (_syntax.BaseClass != null)
+                {
+                    if (visited.Add(_syntax.BaseClass.ClassName) && this.BaseType is SourceTypeSymbol s && s.IsUnreachableChecked(ref visited))
+                    {
+                        return true;
+                    }
+                }
+
+                foreach (var i in Interfaces)
+                {
+                    if (i is SourceTypeSymbol s && visited.Add(s.FullName) && s.IsUnreachableChecked(ref visited))
+                    {
+                        return true;
+                    }
+                }
+
+                foreach (var t in TraitUses)
+                {
+                    if (t.Symbol is SourceTypeSymbol s && visited.Add(s.FullName) && s.IsUnreachableChecked(ref visited))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// In case the declaration is ambiguous, this references symbol with alternative declaration.
@@ -390,6 +435,11 @@ namespace Pchp.CodeAnalysis.Symbols
         int _version;
 
         /// <summary>
+        /// Gets value indicating the class uses traits.
+        /// </summary>
+        public bool HasTraitUses => _syntax.Members.OfType<TraitsUse>().Any();
+
+        /// <summary>
         /// Gets value indicating the type declaration is ambiguous.
         /// </summary>
         public bool HasVersions => (_version != 0);
@@ -397,9 +447,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Enumerates all reachable versions of this declaration.
         /// </summary>
-        public ImmutableArray<SourceTypeSymbol> AllReachableVersions()
+        public ImmutableArray<SourceTypeSymbol> AllReachableVersions(Dictionary<QualifiedName, INamedTypeSymbol> resolved = null)
         {
-            ResolveBaseTypes();
+            ResolveBaseTypes(resolved);
 
             if (_nextVersion == null)
             {
@@ -486,20 +536,49 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Writes up <see cref="_lazyBaseType"/> and <see cref="_lazyInterfacesType"/>.
         /// </summary>
-        private void ResolveBaseTypes()
+        private void ResolveBaseTypes(Dictionary<QualifiedName, INamedTypeSymbol> resolved = null)
         {
-            lock (_basetypes_sync) // critical section:
+            if (_lazyInterfacesType.IsDefault) // not resolved yet
             {
-                if (_lazyInterfacesType.IsDefault) // or _nextVersion == null or _lazyBaseType == null
+                if (_syntax.BaseClass == null && _syntax.ImplementsList.Length == 0 && !HasTraitUses)
                 {
-                    DiagnosticBag diagnostics = DiagnosticBag.GetInstance();
-                    ResolveBaseTypesNoLock(diagnostics);
-                    AddDeclarationDiagnostics(diagnostics);
-                    diagnostics.Free();
+                    // simple class - no interfaces, no base class, no traits:
+                    _lazyBaseType = ((_syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) == 0) // not static class nor interface
+                        ? DeclaringCompilation.GetSpecialType(SpecialType.System_Object)
+                        : null;
 
-                    //
-                    Debug.Assert(_lazyInterfacesType.IsDefault == false);
-                    Debug.Assert(_lazyTraitUses.IsDefault == false);
+                    _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
+                    _lazyInterfacesType = ImmutableArray<NamedTypeSymbol>.Empty;
+                }
+                else
+                {
+                    // resolve slowly:
+
+                    // get possible type signature [ BaseType?, Interface1, ..., InterfaceN ]
+                    // Single slots may refer to a MissingTypeSymbol or an ambiguous type symbol
+                    var tsignature = ResolveTypeSignature(
+                        this,
+                        resolved ?? new Dictionary<QualifiedName, INamedTypeSymbol>(),
+                        this.DeclaringCompilation)
+                    .ToArray();
+
+                    Debug.Assert(tsignature.Length >= 1 && tsignature.Skip(1).All(x => x.Symbol != null));  // all the types (except for the base) have bound symbol (it might be ErrorTypeSymbol but never null)
+
+                    lock (_basetypes_sync) // critical section:
+                    {
+                        if (_lazyInterfacesType.IsDefault) // double checked lock :(
+                        {
+                            var diagnostics = DiagnosticBag.GetInstance();
+
+                            ResolveBaseTypesNoLock(tsignature, diagnostics);
+                            AddDeclarationDiagnostics(diagnostics);
+                            diagnostics.Free();
+
+                            //
+                            Debug.Assert(_lazyInterfacesType.IsDefault == false);
+                            Debug.Assert(_lazyTraitUses.IsDefault == false);
+                        }
+                    }
                 }
             }
         }
@@ -542,14 +621,8 @@ namespace Pchp.CodeAnalysis.Symbols
             return (list != null) ? list.AsImmutableOrEmpty() : ImmutableArray<TraitUse>.Empty;
         }
 
-        void ResolveBaseTypesNoLock(DiagnosticBag diagnostics)
+        void ResolveBaseTypesNoLock(TypeRefSymbol[] tsignature, DiagnosticBag diagnostics)
         {
-            Debug.Assert(_lazyInterfacesType.IsDefault, "_lazyInterfacesType should not be resolved yet");    // not resolved yet
-            Debug.Assert(_lazyTraitUses.IsDefault, "_lazyTraitUses should not be resolved yet");         // not resolved yet
-
-            // get possible type signature [ BaseType?, Interface1, ..., InterfaceN ]
-            // Single slots may refer to a MissingTypeSymbol or an ambiguous type symbol
-            var tsignature = ResolveTypeSignature(this, this.DeclaringCompilation).ToArray();
             Debug.Assert(tsignature.Length >= 1, "at least base type should be in tsignature");   // [0] is base class
 
             // check all types are supported
@@ -594,14 +667,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     var v_base = v[0];
                     var v_interfaces = SelectInterfaces(tsignature, v);
-                    
+
                     // create the variation:
 
                     if (self)
                     {
                         _lazyBaseType = v_base;
-                        _lazyInterfacesType = v_interfaces;
                         _lazyTraitUses = SelectTraitUses(this, tsignature, v);
+                        _lazyInterfacesType = v_interfaces;
 
                         self = false;
                     }
@@ -638,8 +711,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // default with unbound error types:
                 _lazyBaseType = tsignature[0].Symbol;
-                _lazyInterfacesType = tsignature.Where(x => x.Attributes.IsInterface()).Select(x => x.Symbol).AsImmutable();
                 _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
+                _lazyInterfacesType = tsignature.Where(x => x.Attributes.IsInterface()).Select(x => x.Symbol).AsImmutable();
             }
             else
             {
@@ -703,6 +776,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        static ErrorTypeSymbol CreateInCycleErrorType(QualifiedName name)
+        {
+            return new MissingMetadataTypeSymbol(name.ClrName(), 0, false);
+        }
+
         static IEnumerable<ImmutableArray<T>> Variations<T>(ImmutableArray<T> types, SourceFileSymbol containingFile) where T : NamedTypeSymbol
         {
             if (types.Length == 0)
@@ -733,7 +811,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ambiguity = (types[i] as ErrorTypeSymbol).CandidateSymbols.Cast<T>().ToList();
 
             // in case there is an ambiguity that is declared in current scope unconditionally, pick this one and ignore the others
-            var best = ambiguity.FirstOrDefault(x => (object)x is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, containingFile) && !srct.Syntax.IsConditional);
+            var best = ambiguity.FirstOrDefault(x => x is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, containingFile) && !srct.Syntax.IsConditional);
             if (best != null)
             {
                 ambiguity = new List<T>(1) { best };
@@ -773,8 +851,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets type signature of the type [BaseType or NULL, Interface1, ..., InterfaceN, Trait1, ..., TraitN]
         /// </summary>
-        private static IEnumerable<TypeRefSymbol> ResolveTypeSignature(SourceTypeSymbol type, PhpCompilation compilation)
+        private static IEnumerable<TypeRefSymbol> ResolveTypeSignature(SourceTypeSymbol type, Dictionary<QualifiedName, INamedTypeSymbol>/*!*/resolved, PhpCompilation compilation)
         {
+            Debug.Assert(!resolved.ContainsKey(type.FullName));
+            resolved[type.FullName] = null; // recursion check
+
             var syntax = type.Syntax;
 
             // base type or NULL
@@ -785,7 +866,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return new TypeRefSymbol()
                 {
                     TypeRef = syntax.BaseClass,
-                    Symbol = (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(baseTypeName),
+                    Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(baseTypeName, resolved) ?? CreateInCycleErrorType(baseTypeName),
                 };
             }
             else if ((syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) != 0) // a static class or an interface
@@ -798,18 +879,27 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // base interfaces
-            var visited = new HashSet<QualifiedName>(); // set of visited interfaces
-            foreach (var i in syntax.ImplementsList)
+            if (syntax.ImplementsList.Length != 0)
             {
-                var qname = i.ClassName;
-                if (visited.Add(qname))
+                var visited = new HashSet<QualifiedName>(); // set of visited interfaces
+
+                if (type.IsInterface)
                 {
-                    yield return new TypeRefSymbol()
+                    visited.Add(type.FullName);
+                }
+
+                foreach (var i in syntax.ImplementsList)
+                {
+                    var qname = i.ClassName;
+                    if (visited.Add(qname))
                     {
-                        TypeRef = i,
-                        Symbol = (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(qname),
-                        Attributes = PhpMemberAttributes.Interface,
-                    };
+                        yield return new TypeRefSymbol()
+                        {
+                            TypeRef = i,
+                            Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(qname, resolved) ?? CreateInCycleErrorType(qname),
+                            Attributes = PhpMemberAttributes.Interface,
+                        };
+                    }
                 }
             }
 
@@ -821,12 +911,15 @@ namespace Pchp.CodeAnalysis.Symbols
                     yield return new TypeRefSymbol()
                     {
                         TypeRef = namedt,
-                        Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(namedt.ClassName),
+                        Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(namedt.ClassName, resolved) ?? CreateInCycleErrorType(namedt.ClassName),
                         Attributes = PhpMemberAttributes.Trait,
                         TraitAdaptations = m.TraitAdaptationBlock?.Adaptations,
                     };
                 }
             }
+
+            // end recursion check:
+            resolved.Remove(type.FullName);
         }
 
         #endregion
@@ -976,6 +1069,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 .SingleOrDefault();
         }
 
+        /// <summary>
+        /// Gets <c>__destruct</c> method of class or <c>null</c>.
+        /// Gets <c>null</c> if the type is trait or interface or <c>__destruct</c> is not defined.
+        /// </summary>
+        MethodSymbol TryGetDestruct()
+        {
+            if (this.IsInterface || this.IsTrait)
+            {
+                return null;
+            }
+
+            return GetMembersByPhpName(Devsense.PHP.Syntax.Name.SpecialMethodNames.Destruct.Value)
+                .OfType<MethodSymbol>()
+                .Where(m => !m.IsStatic)
+                .SingleOrDefault();
+        }
+
         internal override bool HasTypeArgumentsCustomModifiers => false;
 
         public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
@@ -984,8 +1094,24 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                ResolveBaseTypes();
-                return _lazyBaseType;
+                if (_lazyBaseType != null)
+                {
+                    return _lazyBaseType;
+                }
+                else if (_syntax.BaseClass == null)
+                {
+                    // no resolution needed
+                    _lazyBaseType = ((_syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) == 0) // not static class nor interface
+                        ? DeclaringCompilation.GetSpecialType(SpecialType.System_Object)
+                        : null;
+
+                    return _lazyBaseType;
+                }
+                else
+                {
+                    ResolveBaseTypes();
+                    return _lazyBaseType;
+                }
             }
         }
 
@@ -1111,9 +1237,17 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                ResolveBaseTypes();
-                Debug.Assert(!_lazyTraitUses.IsDefault);
+                if (!HasTraitUses)
+                {
+                    _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
+                }
+                else
+                {
+                    // resolve slowly:
+                    ResolveBaseTypes();
+                }
 
+                Debug.Assert(!_lazyTraitUses.IsDefault);
                 return _lazyTraitUses;
             }
         }
@@ -1199,15 +1333,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {
-            var result = new List<NamedTypeSymbol>();
+            var result = ImmutableArray<NamedTypeSymbol>.Empty;
 
             if (!_staticsContainer.IsEmpty)
             {
-                result.Add(_staticsContainer);
+                result = result.Add(_staticsContainer);
             }
 
             //
-            return result.AsImmutable();
+            return result;
         }
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
@@ -1221,8 +1355,8 @@ namespace Pchp.CodeAnalysis.Symbols
             attrs = attrs.Add(new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
                     ImmutableArray.Create(
-                        new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString()),
-                        new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ContainingFile.RelativeFilePath.ToString())),
+                        DeclaringCompilation.CreateTypedConstant(FullName.ToString()),
+                        DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString())),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
 
             // attributes from syntax node
@@ -1251,15 +1385,26 @@ namespace Pchp.CodeAnalysis.Symbols
                 ifaces = ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
             }
 
+            if (TryGetDestruct() != null)
+            {
+                // __destruct => IDisposable
+                ifaces = ifaces.Add(DeclaringCompilation.GetSpecialType(SpecialType.System_IDisposable));
+            }
+
             return ifaces;
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved)
         {
-            ResolveBaseTypes();
-
-            //
-            return _lazyInterfacesType;
+            if (_syntax.ImplementsList.Length == 0)
+            {
+                return ImmutableArray<NamedTypeSymbol>.Empty;
+            }
+            else
+            {
+                ResolveBaseTypes();
+                return _lazyInterfacesType;
+            }
         }
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()

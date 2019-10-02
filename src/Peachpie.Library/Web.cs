@@ -343,7 +343,7 @@ namespace Pchp.Library
                 expires = null;
             }
 
-            httpctx.AddCookie(name, raw ? value : urlencode(value), expires, path ?? "/", domain, secure, httponly);
+            httpctx.AddCookie(name, raw ? value : WebUtility.UrlEncode(value), expires, path ?? "/", domain, secure, httponly);
 
             return true;
         }
@@ -629,9 +629,9 @@ namespace Pchp.Library
 
                 // the query parameter name (key name)
                 // the parameter name is URL encoded
-                string keyName = key.IsInteger()
-                    ? (numericPrefix != null ? urlencode(numericPrefix) : null) + key.ToLong().ToString()
-                    : urlencode(key.ToStringOrThrow(ctx));
+                string keyName = key.IsLong(out var l)
+                    ? WebUtility.UrlEncode(numericPrefix) + l.ToString()
+                    : WebUtility.UrlEncode(key.ToStringOrThrow(ctx));
 
                 if (indexerPrefix != null)
                 {
@@ -640,12 +640,11 @@ namespace Pchp.Library
 
                 // write the query element
 
-                var valueArray = value.ArrayOrNull();
-                if (valueArray != null)
+                if (value.IsPhpArray(out var valueArray))
                 {
                     // value is an array, emit query recursively, use current keyName as an array variable name
 
-                    string queryStr = http_build_query(ctx, (PhpValue)valueArray, null, argSeparator, encType, keyName);  // emit the query recursively
+                    string queryStr = http_build_query(ctx, valueArray, null, argSeparator, encType, keyName);  // emit the query recursively
 
                     if (queryStr != null && queryStr.Length > 0)
                     {
@@ -664,7 +663,7 @@ namespace Pchp.Library
 
                     if (!value.IsEmpty)
                     {
-                        result.Write(keyName + "=" + urlencode(value.ToStringOrThrow(ctx)));    // == "keyName=keyValue"
+                        result.Write(keyName + "=" + WebUtility.UrlEncode(value.ToStringOrThrow(ctx)));    // == "keyName=keyValue"
                     }
                     else
                     {
@@ -726,9 +725,9 @@ namespace Pchp.Library
                 using (var client = new System.Net.Http.HttpClient())
                 {
                     var response = client.GetAsync(url, System.Net.Http.HttpCompletionOption.ResponseHeadersRead).Result;
-                    
+
                     arr.Add($"HTTP/{response.Version} {(int)response.StatusCode} {response.ReasonPhrase}");
-                    
+
                     foreach (var h in response.Headers)
                     {
                         var value = string.Join(", ", h.Value);
@@ -800,9 +799,14 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The URL string (e.g. "hello%20from%20foo%40bar").</param>
         /// <returns>Decoded string (e.g. "hello from foo@bar")</returns>
+        [return: NotNull]
         public static string rawurldecode(string str)
         {
-            if (str == null) return null;
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+
             return WebUtility.UrlDecode(str.Replace("+", "%2B"));  // preserve '+'
         }
 
@@ -811,26 +815,43 @@ namespace Pchp.Library
         /// </summary>  
         /// <param name="str">The string to be encoded.</param>
         /// <returns>The encoded string.</returns>
+        [return: NotNull]
         public static string rawurlencode(string str)
         {
-            if (str == null) return null;
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+
             return UpperCaseEncodedChars(WebUtility.UrlEncode(str)).Replace("+", "%20");   // ' ' => '+' => '%20'
         }
 
         /// <summary>
         /// Decodes a URL string.
-        /// </summary>  
-        public static string urldecode(string str)
+        /// </summary>
+        [return: NotNull]
+        public static string urldecode(Context ctx, string str)
         {
-            return string.IsNullOrEmpty(str) ? string.Empty : WebUtility.UrlDecode(str);
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+
+            return System.Web.HttpUtility.UrlDecode(str, ctx.StringEncoding);
         }
 
         /// <summary>
         /// Encodes a URL string. Spaces are encoded as '+'.
         /// </summary>  
-        public static string urlencode(string str)
+        [return: NotNull]
+        public static string urlencode(Context ctx, string str)
         {
-            return string.IsNullOrEmpty(str) ? string.Empty : UpperCaseEncodedChars(WebUtility.UrlEncode(str));
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+
+            return UpperCaseEncodedChars(System.Web.HttpUtility.UrlEncode(str, ctx.StringEncoding));
         }
 
         static string UpperCaseEncodedChars(string encoded)

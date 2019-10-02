@@ -4239,6 +4239,15 @@ namespace Pchp.Core.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Trying to clone an uncloneable object of class {0}.
+        /// </summary>
+        public static string uncloneable_cloned {
+            get {
+                return ResourceManager.GetString("uncloneable_cloned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Access to undeclared static property: {0}::${1}.
         /// </summary>
         public static string undeclared_static_property_accessed {

@@ -178,8 +178,9 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitSequencePoint(this.PhpSyntax);
 
             // synthesize the holder class H { PhpAlias value }
-            var holder = cg.Factory.DeclareStaticLocalHolder(this.Declaration.Name, cg.CoreTypes.PhpAlias); // (TypeSymbol)((ILocalSymbol)this.Declaration.Variable.Symbol).Type);
-            
+            var holder = _holderClass;
+            cg.Module.SynthesizedManager.AddNestedType(holder.ContainingType, holder);
+
             // Context.GetStatic<H>()
             var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(holder);
 
@@ -229,11 +230,6 @@ namespace Pchp.CodeAnalysis.Semantics
             // default .ctor
             holder.EmitCtor(module, (il) =>
             {
-                // base..ctor()
-                var ctor = holder.BaseType.InstanceConstructors.Single();
-                il.EmitLoadArgumentOpcode(0);   // this
-                il.EmitCall(module, diagnostic, ILOpCode.Call, ctor);   // .ctor()
-
                 if (!requiresContext)
                 {
                     // emit default value only if it won't be initialized by Init above
@@ -256,6 +252,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     valuePlace.EmitStore(il);
                 }
+
+                // base..ctor()
+                var ctor = holder.BaseType.InstanceConstructors.Single();
+                il.EmitLoadArgumentOpcode(0);   // this
+                il.EmitCall(module, diagnostic, ILOpCode.Call, ctor);   // .ctor()
 
                 //
                 il.EmitRet(true);

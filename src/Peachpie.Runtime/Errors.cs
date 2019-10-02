@@ -122,6 +122,8 @@ namespace Pchp.Core
 
         public static Exception ErrorException(string formatstring, string arg1) => ErrorException(string.Format(formatstring, arg1));
 
+        public static Exception ErrorException(string formatstring, string arg1, string arg2) => ErrorException(string.Format(formatstring, arg1, arg2));
+
         public static Exception ErrorException(string message) => Exception(ref _Error, ErrorClass, message);
 
         public static Exception TypeErrorException() => TypeErrorException(string.Empty);

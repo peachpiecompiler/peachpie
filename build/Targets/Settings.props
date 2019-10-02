@@ -5,7 +5,7 @@
 
     <!-- version -->
     <Version Condition=" '$(APPVEYOR_BUILD_VERSION)'!='' ">$(APPVEYOR_BUILD_VERSION)</Version>
-    <Version Condition=" '$(Version)'=='' ">0.9.9-dev</Version>
+    <Version Condition=" '$(Version)'=='' ">1.0.0-dev</Version>
     <PackageVersion>$(Version)</PackageVersion>
 
     <!-- metadata generation -->
@@ -18,8 +18,6 @@
     <GenerateNeutralResourcesLanguageAttribute>true</GenerateNeutralResourcesLanguageAttribute>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
-    <RuntimeFrameworkVersion Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">1.0.4</RuntimeFrameworkVersion>
-    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard1.6' ">1.6.1</NetStandardImplicitPackageVersion>
     <DefineConstants>TRACE</DefineConstants>
     <LangVersion>latest</LangVersion>
 

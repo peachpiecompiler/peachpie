@@ -99,8 +99,7 @@ namespace Peachpie.RequestHandler
             //}
             //else
             {
-                var data = state[PhpNetSessionVars] as byte[];
-                if (data != null)
+                if (state[PhpNetSessionVars] is byte[] data)
                 {
                     result = Serializer.Deserialize((Context)webctx, new PhpString(data), default(RuntimeTypeHandle)).ArrayOrNull();
                 }

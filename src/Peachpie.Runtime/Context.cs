@@ -459,7 +459,7 @@ namespace Pchp.Core
             if (FileSystemUtils.TryGetScheme(path, out var schemespan))
             {
                 // SCHEME://SOMETHING
-                script = HandleIncludeWithScheme(schemespan, cd, path.Substring(schemespan.Length + 3));
+                script = HandleIncludeWithScheme(schemespan, cd, path.AsSpan(schemespan.Length + 3));
             }
             else
             {
@@ -481,6 +481,8 @@ namespace Pchp.Core
 
         PhpValue HandleMissingScript(string cd, string path, bool throwOnError)
         {
+            // TODO: HandleIncludeWithScheme("file", cd, path); // let the StreamWrapper handle it
+
             if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation yet)
             {
                 return PhpValue.Null;
@@ -502,17 +504,18 @@ namespace Pchp.Core
             }
         }
 
-        ScriptInfo HandleIncludeWithScheme(ReadOnlySpan<char> scheme, string cd, string path)
+        ScriptInfo HandleIncludeWithScheme(ReadOnlySpan<char> scheme, string cd, ReadOnlySpan<char> path)
         {
             // SCHEME://PATH
-            if (IncludeProvider.Instance.TryResolveSchemeIncluder(scheme.ToString(), out var resolver))
+            var wrapper = GetGlobalStreamWrapper(scheme.ToString());
+            if (wrapper != null && wrapper.ResolveInclude(this, cd, path.ToString(), out var script))
             {
-                return resolver.ResolveScript(this, cd, path);
+                return script;
             }
-
-            //
-
-            return default;
+            else
+            {
+                return ScriptInfo.Empty;
+            }
         }
 
         /// <summary>

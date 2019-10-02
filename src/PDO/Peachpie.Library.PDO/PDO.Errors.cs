@@ -56,10 +56,16 @@ namespace Peachpie.Library.PDO
             }
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Fetch the SQLSTATE associated with the last operation on the database handle
+        /// </summary>
+        /// <returns></returns>
         public virtual string errorCode() => _errorCode;
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Fetch extended error information associated with the last operation on the database handle
+        /// </summary>
+        /// <returns></returns>
         public virtual PhpArray errorInfo() => new PhpArray(3)
         {
             _errorSqlState, _errorCode, _errorMessage,

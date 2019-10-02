@@ -194,5 +194,7 @@ namespace Pchp.CodeAnalysis.Errors
         INF_RedundantCast,
         /// <summary>Wrong case in class name '{0}', expected '{1}'.</summary>
         INF_ClassNameWrongCase,
+        /// <summary></summary>
+        INF_DestructDiscouraged,
     }
 }

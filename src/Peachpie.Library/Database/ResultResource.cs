@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -173,7 +174,7 @@ namespace Pchp.Library.Database
                     Names = GetNames(),
                     DataTypes = GetDataTypes(),
                     RecordsAffected = reader.RecordsAffected,
-                    CustomData = GetCustomData()
+                    CustomData = GetCustomData(),
                 };
 
                 while (reader.Read())
@@ -351,11 +352,7 @@ namespace Pchp.Library.Database
         /// </remarks>
         public stdClass FetchStdClass()
         {
-            var array = FetchAssocArray();
-
-            return array != null
-                ? array.ToObject()
-                : null;
+            return FetchAssocArray()?.AsStdClass();
         }
 
         /// <summary>
@@ -453,10 +450,7 @@ namespace Pchp.Library.Database
         /// Gets a name of the current field.
         /// </summary>
         /// <returns>The field name.</returns>
-        public string GetFieldName()
-        {
-            return GetFieldName(currentFieldIndex);
-        }
+        public string GetFieldName() => GetFieldName(currentFieldIndex);
 
         /// <summary>
         /// Gets a name of a specified field.
@@ -465,18 +459,14 @@ namespace Pchp.Library.Database
         /// <returns>The field name or a <B>null</B> reference if index is out of range.</returns>
         public string GetFieldName(int fieldIndex)
         {
-            if (!CheckFieldIndex(fieldIndex)) return null;
-            return CurrentSet.Names[fieldIndex];
+            return CheckFieldIndex(fieldIndex) ? CurrentSet.Names[fieldIndex] : null;
         }
 
         /// <summary>
         /// Gets a type of the current field.
         /// </summary>
         /// <returns>The type name.</returns>
-        public string GetFieldType()
-        {
-            return GetFieldType(currentFieldIndex);
-        }
+        public string GetFieldType() => GetFieldType(currentFieldIndex);
 
         /// <summary>
         /// Gets a PHP name of the current field type.
@@ -502,10 +492,11 @@ namespace Pchp.Library.Database
         /// </summary>
         /// <param name="fieldIndex">An index of the field.</param>
         /// <returns>The type name.</returns>
-        public string GetFieldType(int fieldIndex)
+        public virtual string GetFieldType(int fieldIndex)
         {
-            if (!CheckFieldIndex(fieldIndex)) return null;
-            return CurrentSet.DataTypes[fieldIndex];
+            return CheckFieldIndex(fieldIndex)
+                ? CurrentSet.DataTypes[fieldIndex]
+                : null;
         }
 
         /// <summary>
@@ -539,15 +530,19 @@ namespace Pchp.Library.Database
         {
             if (!CheckRowIndex(rowIndex)) return false;
 
-            for (int i = 0; i < CurrentSet.Names.Length; i++)
+            var names = CurrentSet.Names;
+
+            for (int i = 0; i < names.Length; i++)
             {
-                if (string.Compare(CurrentSet.Names[i], fieldName, true) == 0)
+                if (string.Equals(names[i], fieldName, StringComparison.OrdinalIgnoreCase))
+                //if (string.Compare(CurrentSet.Names[i], fieldName, true) == 0)
+                {
                     return CurrentSet.Rows[rowIndex][i];
+                }
             }
 
-            //PhpException.Throw(PhpError.Notice, LibResources.GetString("field_not_exists", fieldName));
-            //return null;
-            throw new ArgumentException();
+            PhpException.Throw(PhpError.Notice, Resources.LibResources.field_not_exists, fieldName);
+            return null;
         }
 
         /// <summary>
@@ -558,12 +553,14 @@ namespace Pchp.Library.Database
         /// <returns>The value or a <B>null</B> reference if row or index are out of range.</returns>
         public object GetFieldValue(int rowIndex, int fieldIndex)
         {
-            if (!CheckRowIndex(rowIndex) || !CheckFieldIndex(fieldIndex))
+            if (CheckRowIndex(rowIndex) && CheckFieldIndex(fieldIndex))
+            {
+                return CurrentSet.Rows[rowIndex][fieldIndex];
+            }
+            else
             {
                 return null;
             }
-
-            return CurrentSet.Rows[rowIndex][fieldIndex];
         }
 
         /// <summary>
