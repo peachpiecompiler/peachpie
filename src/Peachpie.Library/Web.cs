@@ -29,6 +29,15 @@ namespace Pchp.Library
         public const int CONNECTION_ABORTED = 1;
         public const int CONNECTION_TIMEOUT = 2;
 
+        public const int PHP_QUERY_RFC1738 = (int)PhpQueryRfc.RFC1738;
+        public const int PHP_QUERY_RFC3986 = (int)PhpQueryRfc.RFC3986;
+
+        enum PhpQueryRfc
+        {
+            RFC1738 = 1,
+            RFC3986 = 2,
+        }
+
         #endregion
 
         #region base64_decode, base64_encode
@@ -591,6 +600,28 @@ namespace Pchp.Library
 
         #region http_build_query, get_browser
 
+        static string UrlEncode(string value, PhpQueryRfc type)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            switch (type)
+            {
+                case PhpQueryRfc.RFC3986:
+                    // NOTE: this is not correct,
+                    // behavior depends on IRI configuration
+                    // see https://docs.microsoft.com/en-us/dotnet/api/system.uri.escapeuristring#remarks
+                    return Uri.EscapeUriString(value);
+
+                case PhpQueryRfc.RFC1738:
+                default:
+                    // ' ' encoded as '+'
+                    return WebUtility.UrlEncode(value);
+            }
+        }
+
         /// <summary>
         /// Generates a URL-encoded query string from the associative (or indexed) array provided. 
         /// </summary>
@@ -611,17 +642,17 @@ namespace Pchp.Library
         /// </param>
         /// <param name="encType"></param>
         /// <returns>Returns a URL-encoded string </returns>
-        public static string http_build_query(Context ctx, PhpValue formData, string numericPrefix = null, string argSeparator = null, int encType = 0)
-            => http_build_query(ctx, formData, numericPrefix, argSeparator ?? "&", encType, null);
-
-        private static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator, int encType = 0, string indexerPrefix = null)
+        public static string http_build_query(Context ctx, PhpValue formData, string numericPrefix = null, string argSeparator = null, int encType = PHP_QUERY_RFC1738)
         {
-            var str_builder = new StringBuilder(64);  // statistically the length of the result
-            var result = new System.IO.StringWriter(str_builder);
+            return http_build_query(ctx, formData, numericPrefix, argSeparator ?? "&", (PhpQueryRfc)encType, null);
+        }
 
-            bool isNotFirst = false;
+        static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator, PhpQueryRfc encType, string indexerPrefix)
+        {
+            var result = new StringBuilder(64);
+            var first = true;
 
-            var enumerator = formData.GetForeachEnumerator(false, default(RuntimeTypeHandle));
+            var enumerator = formData.GetForeachEnumerator(false, default);
             while (enumerator.MoveNext())
             {
                 var key = enumerator.CurrentKey;
@@ -630,8 +661,8 @@ namespace Pchp.Library
                 // the query parameter name (key name)
                 // the parameter name is URL encoded
                 string keyName = key.IsLong(out var l)
-                    ? WebUtility.UrlEncode(numericPrefix) + l.ToString()
-                    : WebUtility.UrlEncode(key.ToStringOrThrow(ctx));
+                    ? UrlEncode(numericPrefix, encType) + l.ToString()
+                    : UrlEncode(key.ToStringOrThrow(ctx), encType);
 
                 if (indexerPrefix != null)
                 {
@@ -644,40 +675,36 @@ namespace Pchp.Library
                 {
                     // value is an array, emit query recursively, use current keyName as an array variable name
 
-                    string queryStr = http_build_query(ctx, valueArray, null, argSeparator, encType, keyName);  // emit the query recursively
-
-                    if (queryStr != null && queryStr.Length > 0)
+                    var queryStr = http_build_query(ctx, valueArray, null, argSeparator, encType, keyName);  // emit the query recursively
+                    if (string.IsNullOrEmpty(queryStr) == false)
                     {
-                        if (isNotFirst)
-                            result.Write(argSeparator);
+                        if (!first)
+                        {
+                            result.Append(argSeparator);
+                        }
 
-                        result.Write(queryStr);
+                        result.Append(queryStr);
                     }
                 }
                 else
                 {
                     // simple value, emit query in a form of (key=value), URL encoded !
 
-                    if (isNotFirst)
-                        result.Write(argSeparator);
+                    if (!first)
+                    {
+                        result.Append(argSeparator);
+                    }
 
-                    if (!value.IsEmpty)
-                    {
-                        result.Write(keyName + "=" + WebUtility.UrlEncode(value.ToStringOrThrow(ctx)));    // == "keyName=keyValue"
-                    }
-                    else
-                    {
-                        result.Write(keyName + "=");    // == "keyName="
-                    }
+                    result.Append(keyName);
+                    result.Append("=");
+                    result.Append(UrlEncode(value.ToStringOrThrow(ctx), encType));    // == "keyName=keyValue"
                 }
 
                 // separator will be used in next loop
-                isNotFirst = true;
+                first = false;
             }
 
-            result.Flush();
-
-            return str_builder.ToString();
+            return result.ToString();
         }
 
         /// <summary>
@@ -823,7 +850,7 @@ namespace Pchp.Library
                 return string.Empty;
             }
 
-            return UpperCaseEncodedChars(WebUtility.UrlEncode(str)).Replace("+", "%20");   // ' ' => '+' => '%20'
+            return UpperCaseEncodedChars(UrlEncode(str, PhpQueryRfc.RFC3986)); // ' ' => '%20'
         }
 
         /// <summary>
@@ -851,7 +878,7 @@ namespace Pchp.Library
                 return string.Empty;
             }
 
-            return UpperCaseEncodedChars(System.Web.HttpUtility.UrlEncode(str, ctx.StringEncoding));
+            return UpperCaseEncodedChars(System.Web.HttpUtility.UrlEncode(str, ctx.StringEncoding));    // ' ' => '+'
         }
 
         static string UpperCaseEncodedChars(string encoded)

@@ -191,7 +191,7 @@ function Test2($server, $user_name, $user_pass) {
     // ftp_chmod
     echo "Created directory: " . ftp_mkdir($conn_id, $innerDirectory) . "\n";
     if (@ftp_chmod($conn_id, 0777, $innerDirectory) !== false) {
-        echo "$innerDirectory chmoded successfully to 644\n";
+        echo "$innerDirectory chmoded successfully to 0777\n";
     } 
     else {
         echo "could not chmod $innerDirectory\n";   }
