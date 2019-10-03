@@ -57,6 +57,7 @@ namespace Pchp.Library
                 client.DataConnectionReadTimeout = client.ReadTimeout;
 
                 Client = client;
+                Autoseek = true;
             }
 
             public FtpClient Client { get; }
@@ -339,10 +340,10 @@ namespace Pchp.Library
             if (resource == null)
                 return null;
 
-            string workingDirectory = resource.Client.GetWorkingDirectory();
+            //string workingDirectory = resource.Client.GetWorkingDirectory();
 
             if (FtpCommand(directory, resource.Client.CreateDirectory))
-                return $"{workingDirectory.TrimEndSeparator()}/{directory}";
+                return directory;
             else
                 return null;
         }
@@ -823,7 +824,7 @@ namespace Pchp.Library
             if (startpos != 0)
             {
                 // There is no API for this parameter in FluentFTP Library. 
-                throw new NotImplementedException();
+                PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
             }
 
             resource.Client.UploadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
