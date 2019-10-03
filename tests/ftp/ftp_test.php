@@ -44,7 +44,7 @@ function Init() {
         return false;
     }
     else {
-        echo "Enviroment variables were found\nServer name: $server\nUser name: $user_name\nPassword:$user_pass\n";
+        echo "Enviroment variables were found\n";
     }
 
     // Log in to server 
@@ -58,7 +58,7 @@ function Init() {
 }
 
 function Login($server,$user_name,$user_pass) {
-    echo "Login...\nServer name: $server\nUser name: $user_name\nPassword:$user_pass\n";
+    echo "Login...\n";
 
     if(!$conn_id = ftp_connect($server)){
         echo "Can not connect to server\n";
