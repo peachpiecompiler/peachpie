@@ -207,6 +207,7 @@ namespace Pchp.Library
             }
         }
 
+        private static bool append = false;
         /// <summary>
         /// Stores a local file on the FTP server.
         /// </summary>
@@ -238,7 +239,7 @@ namespace Pchp.Library
 
             try
             {
-                return resource.Client.UploadFile(localPath, remote_file, FtpExists.Overwrite);
+                return resource.Client.UploadFile(localPath, remote_file, append ? FtpExists.Append : FtpExists.Overwrite);
             }
             /* FtpException everytime wraps other exceptions (Message from server). 
             * https://github.com/robinrodricks/FluentFTP/blob/master/FluentFTP/Client/FtpClient_HighLevelUpload.cs#L595 */
@@ -339,8 +340,6 @@ namespace Pchp.Library
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
                 return null;
-
-            //string workingDirectory = resource.Client.GetWorkingDirectory();
 
             if (FtpCommand(directory, resource.Client.CreateDirectory))
                 return directory;
@@ -581,9 +580,7 @@ namespace Pchp.Library
                 // FtpClient converts given integer to string,
                 // expecting it to result in unix-chmod like number.
 
-                mode = (mode & 7) + (((mode >> 3) & 7) * 10) + (((mode >> 6) & 7) * 100);   // TODO: move to utils, might be needed for chmod()
-
-                resource.Client.Chmod(filename, mode);
+                resource.Client.Chmod(filename, StringUtils.DecToOct(mode));
                 return mode;
             }
             catch (FtpCommandException ex)
@@ -707,7 +704,7 @@ namespace Pchp.Library
                     list = resource.Client.GetListing(directory, FtpListOption.ForceList);
                 }
 
-                return GetArrayOfInput(list);
+                return GetArrayOfInput(list, true);
             }
             catch (FtpCommandException ex)
             {
@@ -719,18 +716,6 @@ namespace Pchp.Library
             }
 
             return null;
-        }
-
-        private static PhpArray GetArrayOfInput(FtpListItem[] list)
-        {
-            var result = new PhpArray(list.Length);
-
-            foreach (var item in list) // NOTE: compiler makes `for` loop out of it
-            {
-                result.Add(item.Input);
-            }
-
-            return result;
         }
 
         /// <summary>
@@ -875,6 +860,176 @@ namespace Pchp.Library
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Append the contents of a file to another file on the FTP server
+        /// </summary>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_append(Context context, PhpResource ftp_stream, string remote_file, string local_file, int mode = FTP_IMAGE)
+        {
+            append = true;
+            bool result = ftp_put(context, ftp_stream, remote_file, local_file, mode);
+            append = false;
+
+            return result;
+        }
+
+        /// <summary>
+        /// Changes to the parent directory
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_cdup(PhpResource ftp_stream)
+        {
+            return ftp_chdir(ftp_stream, "..");
+        }
+
+        /// <summary>
+        /// Returns a list of files in the given directory
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="directory">The directory to be listed.</param>
+        /// <returns>Returns an array of arrays with file infos from the specified directory on success or FALSE on error.</returns>
+        [return: CastToFalse]
+        public static PhpArray ftp_mlsd(PhpResource ftp_stream, string directory)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return null;
+
+            try
+            {
+                FtpListItem[] list = resource.Client.GetListing(directory, FtpListOption.Auto);
+
+                return GetArrayOfInput(list,false);
+            }
+            catch (FtpCommandException ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName);
+            }
+
+            return null;
+        }
+
+        private static PhpArray GetArrayOfInput(FtpListItem[] list, bool raw)
+        {
+            var result = new PhpArray(list.Length);
+
+            if (raw)
+            {
+                foreach (var item in list) // NOTE: compiler makes `for` loop out of it
+                {
+                    result.Add(item.Input);
+                }
+
+                return result;
+            }
+
+            foreach (var item in list)
+            {
+                var itemArr = new PhpArray();
+                // name
+                if (!String.IsNullOrEmpty(item.Name))
+                    itemArr.Add("name", item.Name);
+                // type of file
+                itemArr.Add("type", item.Type.ToString());
+                // modify
+                if (item.Modified != null) {
+                    itemArr.Add("modify", DateTimeUtils.UtcToUnixTimeStamp(item.Modified.ToUniversalTime()));
+                }
+                // chmod
+                if (item.Chmod != 0) {
+                    itemArr.Add("UNIX.mode", StringUtils.DecToOct(item.Chmod));
+                }
+                // owner perm
+                if (String.IsNullOrEmpty(item.RawOwner)) {
+                    itemArr.Add("UNIX.owner", item.RawOwner);
+                }
+                // group perm
+                if (String.IsNullOrEmpty(item.RawGroup))
+                {
+                    itemArr.Add("UNIX.group", item.RawGroup);
+                }
+                // size
+                if (item.Size != -1)
+                {
+                    itemArr.Add("size", item.Size);
+                }
+
+                result.Add(itemArr);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Alias of ftp_close()
+        /// </summary>
+        /// <param name="ftp_stream"></param>
+        /// <returns></returns>
+        public static bool ftp_quit(PhpResource ftp_stream)
+        {
+            return ftp_close(ftp_stream);
+        }
+
+        /// <summary>
+        /// Sends an arbitrary command to an FTP server
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="command">The command to execute.</param>
+        /// <returns>Returns the server's response as an array of strings. No parsing is performed on the response 
+        /// string, nor does ftp_raw() determine if the command succeeded.</returns>
+        [return:CastToFalse]
+        public static PhpArray ftp_raw(PhpResource ftp_stream, string command)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return null;
+
+            FtpReply reply = resource.Client.Execute(command);
+
+            return new PhpArray($"{reply.InfoMessages} {reply.Code} {reply.Message}");
+        }
+
+        /// <summary>
+        /// Sends an ALLO command to the remote FTP server to allocate space for a file to be uploaded.
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="filesize">The number of bytes to allocate.</param>
+        /// <param name="result">A textual representation of the servers response will be returned by reference in 
+        /// result if a variable is provided.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_alloc(PhpResource ftp_stream, int filesize, ref string result)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return false;
+
+            FtpReply reply = resource.Client.Execute($"ALLO {filesize}");
+
+            if (reply.Message != null)
+                result = reply.Message;
+
+            int code;
+            if (int.TryParse(reply.Code, out code))
+            {
+                if (code < 200 || code > 300)
+                    return false;
+            }
+            
+            return true;
+        }
+
+        public static bool ftp_get(Context ctx, PhpResource ftp_stream, string local_file, string remote_file, int mode = FTP_BINARY, int resumepos = 0)
+        {
+            using (var stream = PhpPath.fopen(ctx, local_file, "w")) {
+                return ftp_fget(ftp_stream, stream, remote_file, mode, resumepos);
+            }
         }
     }
 }
