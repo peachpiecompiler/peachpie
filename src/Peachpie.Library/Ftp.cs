@@ -947,11 +947,11 @@ namespace Pchp.Library
                     itemArr.Add("UNIX.mode", StringUtils.DecToOct(item.Chmod));
                 }
                 // owner perm
-                if (String.IsNullOrEmpty(item.RawOwner)) {
+                if (!String.IsNullOrEmpty(item.RawOwner)) {
                     itemArr.Add("UNIX.owner", item.RawOwner);
                 }
                 // group perm
-                if (String.IsNullOrEmpty(item.RawGroup))
+                if (!String.IsNullOrEmpty(item.RawGroup))
                 {
                     itemArr.Add("UNIX.group", item.RawGroup);
                 }
@@ -992,8 +992,10 @@ namespace Pchp.Library
                 return null;
 
             FtpReply reply = resource.Client.Execute(command);
+            PhpArray result = new PhpArray();
+            result.Add($"{reply.InfoMessages} {reply.Code} {reply.Message}");
 
-            return new PhpArray($"{reply.InfoMessages} {reply.Code} {reply.Message}");
+            return result;
         }
 
         /// <summary>
