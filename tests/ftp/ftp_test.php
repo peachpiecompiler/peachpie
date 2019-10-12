@@ -10,27 +10,29 @@ if (!Init()){
 echo "Initialized\n";
 
 if (!Test1($server, $user_name,$user_pass)){
-   echo "Test1 failed\n";
-   exit(0);
+  echo "Test1 failed\n";
+  exit(0);
 }
 
 echo "Test1 passed\n";
 
 if (!Test2($server, $user_name,$user_pass)){
-   echo "Test2 failed\n";
-   exit(0);
+  echo "Test2 failed\n";
+  exit(0);
 }
 
 echo "Test2 passed\n";
 
 if (!Test3($server, $user_name, $user_pass)){
-    echo 'Test3 failed';
-    exit(0);
+   echo 'Test3 failed';
+  exit(0);
 }
 
 echo "Test3 passed\n";
 
 //Test4($server, $user_name, $user_pass);
+
+Test5($server, $user_name, $user_pass);
 
 function Init() {
     global $server, $user_name,$user_pass;
@@ -381,6 +383,59 @@ function Test4($server, $user_name, $user_pass){
     if (ftp_login($conn_id, $user_name, $user_pass)){
         echo ftp_pwd($conn_id);
     }
+
+    ftp_close($conn_id);
+}
+
+function Test5($server, $user_name, $user_pass){
+    $directory = 'MyDirectory';
+    
+    // Login...
+    if (!$conn_id = Login($server,$user_name,$user_pass)){
+        return false;
+    }
+
+    // Prepare server
+    if(@ftp_chdir($conn_id,'MyDirectory')){
+        @ftp_chdir($conn_id, "..");
+        if (ftp_rmdir($conn_id, $directory)){
+            echo "$directory deleted\n";
+        }
+        else{
+            echo "$directory could not be deleted\n";
+            return false;
+        }
+    }
+
+    if (ftp_mkdir($conn_id, $directory)){
+        echo "Created directory: " . $directory . "\n";
+    }
+
+    if (@ftp_chdir($conn_id, $directory)){
+        echo "Change directory: " . ftp_pwd($conn_id) . "\n";
+    }
+
+    // ftp_cdup
+    if(@ftp_cdup($conn_id)){
+        echo "cdup changed directory: " . ftp_pwd($conn_id) . "\n";
+    }
+
+    if (ftp_rmdir($conn_id, $directory)){
+        echo "$directory deleted\n";
+    }
+    else{
+        echo "$directory could not be deleted\n";
+        return false;
+    }
+
+    // ftp_mlsd
+    print_r(ftp_mlsd($conn_id,ftp_pwd($conn_id)));
+
+    // ftp_raw
+    print_r(ftp_raw($conn_id,"PWD"));
+    
+    echo ftp_alloc($conn_id,1,$answer);
+    echo $answer;
 
     ftp_close($conn_id);
 }
