@@ -898,11 +898,14 @@ namespace Pchp.Library
             if (resource == null)
                 return null;
 
+            if (!resource.Client.HasFeature(FtpCapability.MLSD))
+                return null;
+
             try
             {
                 FtpListItem[] list = resource.Client.GetListing(directory, FtpListOption.Auto);
 
-                return GetArrayOfInput(list,false);
+                return GetArrayOfInput(list, false);
             }
             catch (FtpCommandException ex)
             {
@@ -993,7 +996,8 @@ namespace Pchp.Library
 
             FtpReply reply = resource.Client.Execute(command);
             PhpArray result = new PhpArray();
-            result.Add($"{reply.InfoMessages} {reply.Code} {reply.Message}");
+
+            result.Add($"{reply.InfoMessages} {reply.Code} {reply.Message}".Trim());
 
             return result;
         }
