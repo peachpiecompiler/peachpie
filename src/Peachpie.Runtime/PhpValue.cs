@@ -106,7 +106,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating whether the value is set.
         /// </summary>
-        public bool IsSet => !IsDefault && _type.Type != PhpTypeCode.Undefined;
+        public bool IsSet => !IsDefault && !ReferenceEquals(_type, Void._type);
 
         /// <summary>
         /// Gets value indicating the value is <c>FALSE</c> or <c>&amp;FALSE</c>.

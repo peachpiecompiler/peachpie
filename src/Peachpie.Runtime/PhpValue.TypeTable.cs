@@ -217,7 +217,7 @@ namespace Pchp.Core
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.NewEmpty();
             public override PhpArray ArrayOrThrow(ref PhpValue me) => null;
             public override void Output(ref PhpValue me, Context ctx) { }
-            public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameNull;
+            public override string DisplayString(ref PhpValue me) => "null";    // lowercased `null` as it is shown for other CLR null references
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptNull();
         }
 
@@ -225,7 +225,7 @@ namespace Pchp.Core
         sealed class VoidTable : NullTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Undefined;
-            public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameVoid;
+            //public override string DisplayString(ref PhpValue me) => null;
         }
 
         [DebuggerNonUserCode, DebuggerStepThrough]
