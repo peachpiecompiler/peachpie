@@ -185,7 +185,7 @@ namespace Pchp.Core
         /// Gets the object field of the value as string.
         /// Does not perform a conversion, expects the value is of type (readonly UTF16) string.
         /// </summary>
-        public string String { get { Debug.Assert(_obj.@object is string); return _obj.@string; } }
+        public string String { get { Debug.Assert(_obj.@object is string || _obj.@object == null); return _obj.@string; } }
 
         /// <summary>
         /// Gets underlaying <see cref="PhpString.Blob"/> object.
