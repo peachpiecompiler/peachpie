@@ -329,18 +329,10 @@ namespace Peachpie.AspNetCore.Web
             httpcontext.Items[HttpContextItemKey] = this;
             httpcontext.Response.RegisterForDispose(this);
 
-            // enable synchronous IO until we make everything async
-            // https://github.com/aspnet/Announcements/issues/342
-            var syncIOFeature = httpcontext.Features.Get<IHttpBodyControlFeature>();
-            if (syncIOFeature != null)
-            {
-                syncIOFeature.AllowSynchronousIO = true;
-            }
-
             //
             this.RootPath = rootPath;
 
-            this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, encoding));
+            this.InitOutput(httpcontext.Response.Body, new SynchronizedTextWriter(httpcontext.Response, encoding));
             this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On

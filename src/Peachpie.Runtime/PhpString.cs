@@ -771,7 +771,7 @@ namespace Pchp.Core
                 switch (chunk)
                 {
                     case string str: ctx.Output.Write(str); break;
-                    case byte[] barr: ctx.OutputStream.Write(barr); break;
+                    case byte[] barr: ctx.OutputStream.WriteAsync(barr).GetAwaiter().GetResult(); break;    // NOTE: avoid calling non-async Stream operation on ASP.NET Core 3.0; consider changing to async
                     case Blob b: b.Output(ctx); break;
                     case char[] carr: ctx.Output.Write(carr); break;
                     case BlobChar[] barr: OutputChunk(ctx, barr); break;

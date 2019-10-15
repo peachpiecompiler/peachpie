@@ -30,6 +30,11 @@ namespace Pchp.Core.Utilities
         public static void Write(this Stream stream, byte[] bytes) => stream.Write(bytes, 0, bytes.Length);
 
         /// <summary>
+        /// Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
+        /// </summary>
+        public static Task WriteAsync(this Stream stream, byte[] bytes) => stream.WriteAsync(bytes, 0, bytes.Length);
+
+        /// <summary>
         /// Decodes a sequence of bytes from the specified byte array into a string.
         /// </summary>
         public static string GetString(this Encoding encoding, byte[] bytes) => encoding.GetString(bytes, 0, bytes.Length);
