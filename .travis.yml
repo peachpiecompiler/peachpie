@@ -6,7 +6,7 @@ php:
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install libunwind8 libicu52 liblttng-ust0 -y
+  - sudo apt-get install libunwind8 -y
 
 install:
   - ./build/install_dependencies_ubuntu14.sh
