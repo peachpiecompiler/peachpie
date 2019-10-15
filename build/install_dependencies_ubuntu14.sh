@@ -24,10 +24,9 @@ sudo apt-get install dotnet-sdk-3.0 -y
 sudo apt-get install libunwind8 libicu52 -y
 
 # Download and install Powershell
-wget https://github.com/PowerShell/PowerShell/releases/download/v6.0.0-alpha.11/powershell_6.0.0-alpha.11-1ubuntu1.14.04.1_amd64.deb
-sudo dpkg -i powershell_6.0.0-alpha.11-1ubuntu1.14.04.1_amd64.deb
-rm -f powershell_6.0.0-alpha.11-1ubuntu1.14.04.1_amd64.deb
-
+wget https://github.com/PowerShell/PowerShell/releases/download/v6.1.6/powershell_6.1.6-1.ubuntu.14.04_amd64.deb
+sudo dpkg -i powershell_6.1.6-1.ubuntu.14.04_amd64.deb
+rm -f powershell_6.1.6-1.ubuntu.14.04_amd64.deb
 
 # Install Python Pip and icdiff (http://www.jefftk.com/icdiff)
 
