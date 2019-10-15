@@ -5,7 +5,7 @@ php:
   - '7.3'
 
 install:
-  - ./build/install_dependencies_ubuntu16.sh
+  - ./build/install_dependencies_ubuntu.sh
   - dotnet restore ./Peachpie.sln /p:TargetFrameworks=netcoreapp2.1
   - dotnet restore ./src/Peachpie.NET.Sdk/
   - dotnet build ./src/Peachpie.NET.Sdk/
