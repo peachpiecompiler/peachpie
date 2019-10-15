@@ -1,16 +1,9 @@
-# Install .NET Core # https://www.microsoft.com/net/download/linux-package-manager/ubuntu14-04/sdk-current
+# Install .NET Core
+# https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current
 
 # Register Microsoft key and feed
-#wget -q packages-microsoft-prod.deb https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb
-#sudo dpkg -i packages-microsoft-prod.deb
-
-sudo apt-get install -y gpg
-wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg
-sudo mv microsoft.asc.gpg /etc/apt/trusted.gpg.d/
-wget -q https://packages.microsoft.com/config/ubuntu/16.04/prod.list
-sudo mv prod.list /etc/apt/sources.list.d/microsoft-prod.list
-sudo chown root:root /etc/apt/trusted.gpg.d/microsoft.asc.gpg
-sudo chown root:root /etc/apt/sources.list.d/microsoft-prod.list
+wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
 
 # Install .NET Core SDK
 sudo apt-get update
