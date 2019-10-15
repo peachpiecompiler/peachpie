@@ -6,10 +6,9 @@ php:
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install libunwind8 -y
 
 install:
-  - ./build/install_dependencies_ubuntu14.sh
+  - ./build/install_dependencies_ubuntu.sh
   - dotnet restore ./Peachpie.sln /p:TargetFrameworks=netcoreapp2.1
   - dotnet restore ./src/Peachpie.NET.Sdk/
   - dotnet build ./src/Peachpie.NET.Sdk/
