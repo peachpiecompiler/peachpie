@@ -2,7 +2,8 @@
 
 # Register Microsoft key and feed
 wget -q packages-microsoft-prod.deb https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
+#sudo dpkg -i packages-microsoft-prod.deb
+sudo dpkg --purge packages-microsoft-prod && sudo dpkg -i packages-microsoft-prod.deb
 
 # Install .NET Core SDK
 sudo apt-get update
