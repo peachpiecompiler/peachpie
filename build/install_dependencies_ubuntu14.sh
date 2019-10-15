@@ -21,7 +21,7 @@ sudo apt-get install dotnet-sdk-3.0 -y
 # Install Powershell (https://www.rootusers.com/how-to-install-powershell-on-linux)
 
 # Install Powershell dependencies
-sudo apt-get install libunwind8 libicu52 -y
+sudo apt-get install libunwind8 libicu52 liblttng-ust0 -y
 
 # Download and install Powershell
 wget https://github.com/PowerShell/PowerShell/releases/download/v6.1.6/powershell_6.1.6-1.ubuntu.14.04_amd64.deb
