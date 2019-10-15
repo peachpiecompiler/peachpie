@@ -4,11 +4,8 @@ language: php
 php:
   - '7.3'
 
-before_install:
-  - sudo apt-get update
-
 install:
-  - ./build/install_dependencies_ubuntu.sh
+  - ./build/install_dependencies_ubuntu16.sh
   - dotnet restore ./Peachpie.sln /p:TargetFrameworks=netcoreapp2.1
   - dotnet restore ./src/Peachpie.NET.Sdk/
   - dotnet build ./src/Peachpie.NET.Sdk/
