@@ -174,6 +174,21 @@ namespace Peachpie.Library.MySql.MySqli
             => link.ssl_set(key, cert, ca, capath, cipher);
 
         /// <summary>
+        /// Fetch a result row as an associative array.
+        /// </summary>
+        /// <param name="result">A result set identifier.</param>
+        /// <returns>
+        /// Returns an associative array of strings representing the fetched row in the result set,
+        /// where each key in the array represents the name of one of the result set's columns
+        /// or <c>NULL</c> if there are no more rows in resultset. 
+        /// 
+        /// If two or more columns of the result have the same field names, the last column will take precedence.
+        /// To access the other column(s) of the same name, you either need to access the result with
+        /// numeric indices by using mysqli_fetch_row() or add alias names.
+        /// </returns>
+        public static PhpArray mysqli_fetch_assoc(mysqli_result result) => result.fetch_assoc();
+
+        /// <summary>
         /// Fetch a result row as an associative, a numeric array, or both.
         /// </summary>
         public static PhpArray mysqli_fetch_array(mysqli_result result, int resulttype = Constants.MYSQLI_BOTH) => result.fetch_array(resulttype);
