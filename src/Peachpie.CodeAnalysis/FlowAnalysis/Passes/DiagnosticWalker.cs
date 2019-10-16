@@ -617,18 +617,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             switch (x.Operation)
             {
                 case Operations.Clone:
+                    // check we only pass object instances to the "clone" operation
+                    // anything else causes a runtime warning!
                     var operandTypeMask = x.Operand.TypeRefMask;
-                    if (!operandTypeMask.IsAnyType && !operandTypeMask.IsRef)
+                    if (!operandTypeMask.IsAnyType &&
+                        !operandTypeMask.IsRef &&
+                        !TypeCtx.IsObjectOnly(operandTypeMask))
                     {
-                        var types = TypeCtx.GetTypes(operandTypeMask);
-                        foreach (var t in types)
-                        {
-                            if (!t.IsObject)    // clone called on non-object
-                            {
-                                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, TypeCtx.ToString(operandTypeMask));
-                                break;
-                            }
-                        }
+                        _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, TypeCtx.ToString(operandTypeMask));
                     }
                     break;
             }
