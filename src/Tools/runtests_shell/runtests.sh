@@ -3,7 +3,7 @@
 
 # Absolute paths - https://stackoverflow.com/a/246128/2105235
 TOOL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-OUTPUT_DIR="$TOOL_DIR/bin/Release/netcoreapp2.0"
+OUTPUT_DIR="$TOOL_DIR/bin/Release/netcoreapp3.0"
 
 PHP_TMP_FILE=$OUTPUT_DIR/php.out
 PEACH_TMP_FILE=$OUTPUT_DIR/peach.out
