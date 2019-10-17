@@ -174,6 +174,32 @@ namespace Peachpie.Library.MySql.MySqli
             => link.ssl_set(key, cert, ca, capath, cipher);
 
         /// <summary>
+        /// Prepare an SQL statement for execution.
+        /// </summary>
+        //[return: CastToFalse]
+        public static mysqli_stmt mysqli_prepare([NotNull]mysqli link, string query = null) => new mysqli_stmt(link, query);
+
+        /// <summary>
+        /// Prepare an SQL statement for execution.
+        /// </summary>
+        public static bool mysqli_stmt_prepare([NotNull]mysqli_stmt stmt, string query) => stmt.prepare(query);
+
+        /// <summary>
+        /// Binds variables to a prepared statement as parameters.
+        /// </summary>
+        public static bool mysqli_stmt_bind_param([NotNull]mysqli_stmt stmt, string types, params PhpAlias[] variables) => stmt.bind_param(types, variables);
+
+        /// <summary>
+        /// Send data in blocks.
+        /// </summary>
+        public static bool mysqli_stmt_send_long_data([NotNull]mysqli_stmt stmt, int param_nr, PhpString data) => stmt.send_long_data(param_nr, data);
+
+        /// <summary>
+        /// Executes a prepared Query.
+        /// </summary>
+        public static bool mysqli_stmt_execute([NotNull]mysqli_stmt stmt) => stmt.execute();
+
+        /// <summary>
         /// Fetch a result row as an associative array.
         /// </summary>
         /// <param name="result">A result set identifier.</param>

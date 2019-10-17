@@ -107,7 +107,7 @@ namespace Pchp.Core
     /// <summary>
     /// Marks public declarations that won't be visible in the PHP context.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class PhpHiddenAttribute : Attribute
     {
     }
