@@ -200,6 +200,32 @@ namespace Peachpie.Library.MySql.MySqli
         public static bool mysqli_stmt_execute([NotNull]mysqli_stmt stmt) => stmt.execute();
 
         /// <summary>
+        /// Closes a prepared statement.
+        /// </summary>
+        public static bool mysqli_stmt_close([NotNull]mysqli_stmt stmt) => stmt.close();
+
+        /// <summary>
+        /// Get the ID generated from the previous INSERT operation.
+        /// </summary>
+        public static long mysqli_stmt_insert_id([NotNull]mysqli_stmt stmt) => stmt.insert_id;
+
+        /// <summary>
+        /// Returns the total number of rows changed, deleted, or inserted by the last executed statement .
+        /// </summary>
+        public static int mysqli_stmt_affected_rows([NotNull]mysqli_stmt stmt) => stmt.affected_rows;
+
+        /// <summary>
+        /// Seeks to an arbitrary row in statement result set.
+        /// </summary>
+        public static void mysqli_stmt_data_seek([NotNull]mysqli_stmt stmt, int offset) => stmt.data_seek(offset);
+
+        /// <summary>
+        /// Gets a result set from a prepared statement.
+        /// </summary>
+        [return: CastToFalse]
+        public static mysqli_result mysqli_stmt_get_result([NotNull]mysqli_stmt stmt) => stmt.get_result();
+
+        /// <summary>
         /// Fetch a result row as an associative array.
         /// </summary>
         /// <param name="result">A result set identifier.</param>

@@ -48,6 +48,12 @@ namespace Peachpie.Library.MySql.MySqli
         protected internal MySqlCommand Command { get; private set; }
 
         /// <summary>
+        /// Result of the command execute command.
+        /// </summary>
+        [PhpHidden]
+        MySqlResultResource Result { get; set; }
+
+        /// <summary>
         /// Lazily bound params.
         /// </summary>
         [PhpHidden]
@@ -75,15 +81,31 @@ namespace Peachpie.Library.MySql.MySqli
         }
 
         /* Properties */
-        //int $affected_rows;
+
+        /// <summary>
+        /// Returns the total number of rows changed, deleted, or inserted by the last executed statement.
+        /// </summary>
+        public int affected_rows { get; private set; }
+
         //int $errno;
+
         //array $error_list;
+
         //string $error;
+
         //int $field_count;
-        //int $insert_id;
+
+        /// <summary>
+        /// Get the ID generated from the previous INSERT operation.
+        /// </summary>
+        public long insert_id => Command != null ? Command.LastInsertedId : throw new InvalidOperationException();
+
         //int $num_rows;
+
         //int $param_count;
+
         //string $sqlstate;
+
         /* Methods */
 
         /// <summary>
@@ -105,6 +127,7 @@ namespace Peachpie.Library.MySql.MySqli
         }
 
         //int attr_get(int $attr )
+
         //bool attr_set(int $attr , int $mode )
 
         /// <summary>
@@ -147,8 +170,45 @@ namespace Peachpie.Library.MySql.MySqli
         }
 
         //bool bind_result(mixed &$var1[, mixed &$... ] )
-        //bool close(void )
-        //void data_seek(int $offset )
+
+        /// <summary>
+        /// Closes a prepared statement.
+        /// </summary>
+        public bool close()
+        {
+            Connection.ClosePendingReader();
+
+            if (Command != null)
+            {
+                Command.Dispose();
+                Command = null;
+            }
+
+            if (Result != null)
+            {
+                Result.Dispose();
+                Result = null;
+            }
+
+            _bound_params = null;
+            _bound_params_type = null;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Seeks to an arbitrary row in statement result set.
+        /// </summary>
+        /// <param name="offset">Must be between zero and the total number of rows minus one.</param>
+        public void data_seek(int offset)
+        {
+            if (Result == null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            Result.SeekRow(offset);
+        }
 
         /// <summary>
         /// Executes a prepared Query.
@@ -217,20 +277,35 @@ namespace Peachpie.Library.MySql.MySqli
                 }
             }
 
-            var result = Connection.ExecuteCommandInternal(Command, true, parameters, false);
-            if (result != null)
-            {
-                //
+            // execute and store the result:
+            this.Result = (MySqlResultResource)Connection.ExecuteCommandInternal(Command, true, parameters, false);
 
-                return true;
+            if (this.Result == null)
+            {
+                return false;
             }
 
-            return false;
+            //
+            this.affected_rows = Connection.LastAffectedRows;
+
+            return true;
         }
 
         //bool fetch(void )
+
         //void free_result(void )
-        //mysqli_result get_result(void )
+
+        /// <summary>
+        /// Gets a result set from a prepared statement.
+        /// </summary>
+        [return: CastToFalse]
+        public mysqli_result get_result()
+        {
+            return Result != null
+                ? new mysqli_result(Result)
+                : null; // FALSE
+        }
+
         //object get_warnings(mysqli_stmt $stmt )
         //int num_rows(void )
 
@@ -261,7 +336,9 @@ namespace Peachpie.Library.MySql.MySqli
         }
 
         //bool reset(void )
+
         //mysqli_result result_metadata(void )
+
         //bool store_result(void )
     }
 }
