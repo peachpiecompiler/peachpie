@@ -165,7 +165,7 @@ namespace Pchp.Library.Database
 		public virtual void ClosePendingReader()
         {
             if (_pendingReader != null)
-            {   
+            {
                 _pendingReader.Close();
                 _pendingReader = null;
             }
@@ -218,17 +218,26 @@ namespace Pchp.Library.Database
         public ResultResource ExecuteCommand(string/*!*/ commandText, CommandType commandType, bool convertTypes, IEnumerable<IDataParameter> parameters, bool skipResults)
         {
             if (commandText == null)
-                throw new ArgumentNullException("commandText");
+            {
+                throw new ArgumentNullException(nameof(commandText));
+            }
 
-            return (Connect())
-                ? ExecuteCommandProtected(CreateCommand(commandText, commandType), convertTypes, parameters, skipResults)
-                : null;
+            if (Connect())
+            {
+                ClosePendingReader();   // needs to be closed before creating the command
+
+                var command = CreateCommand(commandText, commandType);
+
+                return ExecuteCommandProtected(command, convertTypes, parameters, skipResults);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         protected virtual ResultResource ExecuteCommandProtected(IDbCommand command, bool convertTypes, IEnumerable<IDataParameter> parameters, bool skipResults)
         {
-            ClosePendingReader();
-
             if (parameters != null)
             {
                 command.Parameters.Clear();

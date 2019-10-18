@@ -320,6 +320,8 @@ namespace Peachpie.Library.MySql.MySqli
                 return false;
             }
 
+            Connection.ClosePendingReader();    // needs to be closed before creating the command
+
             try
             {
                 Command = Connection.CreateCommandInternal(query);
