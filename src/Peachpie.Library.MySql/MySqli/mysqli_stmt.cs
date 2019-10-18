@@ -14,6 +14,29 @@ namespace Peachpie.Library.MySql.MySqli
     [PhpExtension(Constants.ExtensionName)]
     public class mysqli_stmt
     {
+        private struct BoundType
+        {
+            /// <summary>
+            /// corresponding variable has type integer
+            /// </summary>
+            public const char Integer = 'i';
+
+            /// <summary>
+            /// corresponding variable has type double
+            /// </summary>
+            public const char Double = 'd';
+
+            /// <summary>
+            /// corresponding variable has type string
+            /// </summary>
+            public const char String = 's';
+
+            /// <summary>
+            /// corresponding variable is a blob and will be sent in packets
+            /// </summary>
+            public const char Blob = 'b';
+        }
+
         /// <summary>
         /// Associated <see cref="mysqli"/> connection.
         /// </summary>
@@ -107,7 +130,7 @@ namespace Peachpie.Library.MySql.MySqli
         {
             if (param_nr >= 0 && _bound_params_type != null && param_nr < _bound_params_type.Length)
             {
-                if (_bound_params_type[param_nr] == 'b')
+                if (_bound_params_type[param_nr] == BoundType.Blob)
                 {
                     //
                     var alias = _bound_params[param_nr];
@@ -135,7 +158,7 @@ namespace Peachpie.Library.MySql.MySqli
             if (Command == null)
             {
                 // ERR: not prepared
-                return false;
+                throw new InvalidOperationException();
             }
 
             IDataParameter[] parameters;
@@ -149,11 +172,47 @@ namespace Peachpie.Library.MySql.MySqli
                 parameters = new IDataParameter[_bound_params.Length];
                 for (int i = 0; i < parameters.Length; i++)
                 {
-                    // TODO: check type
+                    var variable = _bound_params[i];
 
+                    // convert the type
+                    object boxed;
+                    if (variable.Value.IsNull)
+                    {
+                        boxed = null;
+                    }
+                    else
+                    {
+                        switch (_bound_params_type[i])
+                        {
+                            case BoundType.Integer:
+                                boxed = variable.ToLongOrThrow();
+                                break;
+                            case BoundType.Double:
+                                boxed = variable.ToDouble();
+                                break;
+                            case BoundType.String:
+                            case BoundType.Blob:
+                                var phpstr = variable.Value.ToPhpString(Connection.Context);
+                                if (phpstr.ContainsBinaryData)
+                                {
+                                    boxed = phpstr.ToBytes(Connection.Context);
+                                }
+                                else
+                                {
+                                    boxed = phpstr.ToString();
+                                }
+                                break;
+
+                            default:
+                                throw new InvalidOperationException();
+                        }
+                    }
+
+                    //
                     parameters[i] = new MySqlParameter()
                     {
-                        Value = _bound_params[i].Value.ToClr(),
+                        Value = boxed,
+                        IsNullable = ReferenceEquals(boxed, null),
                     };
                 }
             }
