@@ -136,7 +136,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             var btype = type?.BaseType;
             if (btype != null && btype.SpecialType != SpecialType.System_Object && btype.IsClassType() && !btype.IsAbstract)
             {
-                var bconstruct = btype.ResolvePhpCtor();
+                var bconstruct = btype.ResolvePhpCtor();    // TODO: recursive: true // needs inf recursion prevention
                 if (bconstruct != null && !bconstruct.IsAbstract)
                 {
                     return true;
@@ -552,9 +552,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 CallsParentCtor = true;
             }
 
+            // check the called method is not abstract
+            if (call.TargetMethod.IsValidMethod() && call.TargetMethod.IsAbstract)
+            {
+                // ERR
+                Add(call.PhpSyntax.Span, Devsense.PHP.Errors.Errors.AbstractMethodCalled, call.TargetMethod.ContainingType.PhpName(), call.Name.NameValue.Name.Value);
+            }
+
             //
             return base.VisitStaticFunctionCall(call);
         }
+
         public override T VisitInstanceOf(BoundInstanceOfEx x)
         {
             CheckMissusedPrimitiveType(x.AsType);
