@@ -132,7 +132,7 @@ namespace Peachpie.Library.PDO
         /// <param name="pdo">The pdo.</param>
         /// <param name="attribute">The attribute.</param>
         /// <returns></returns>
-        public virtual PhpValue GetAttribute(PDO pdo, int attribute)
+        public virtual PhpValue GetAttribute(PDO pdo, PDO.PDO_ATTR attribute)
         {
             return PhpValue.Null;
         }
