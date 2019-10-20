@@ -40,8 +40,8 @@ print_r( $x + $y);
 print_r( $x - 1);
 print_r( $y - 1);
 
-print_r( $x - 1.1);
-print_r( $y - 1.1);
+print_r( round($x - 1.1, 2));
+print_r( round($y - 1.1, 2));
 
 print_r( $x - $y);
 
