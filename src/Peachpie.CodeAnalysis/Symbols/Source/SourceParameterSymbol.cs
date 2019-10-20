@@ -226,46 +226,19 @@ namespace Pchp.CodeAnalysis.Symbols
             // [param]   
             if (IsParams)
             {
-                yield return new SynthesizedAttributeData(
-                    (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ParamArrayAttribute__ctor),
-                    ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                yield return DeclaringCompilation.CreateParamsAttribute();
             }
 
             // [NotNull]
             if (IsNotNull && Type.IsReferenceType)
             {
-                yield return new SynthesizedAttributeData(
-                    DeclaringCompilation.CoreMethods.Ctors.NotNullAttribute,
-                    ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                yield return DeclaringCompilation.CreateNotNullAttribute();
             }
 
             // [DefaultValue]
             if (this.Initializer is BoundArrayEx arr)
             {
-                var typeParameter = new KeyValuePair<string, TypedConstant>("Type", new TypedConstant(DeclaringCompilation.CoreTypes.DefaultValueType.Symbol, TypedConstantKind.Enum, 1/*PhpArray*/));
-                var namedparameters = ImmutableArray.Create(typeParameter);
-
-                if (arr.Items.Length != 0)
-                {
-                    try
-                    {
-                        var byteSymbol = DeclaringCompilation.GetSpecialType(SpecialType.System_Byte);
-                        var serializedValue = Encoding.UTF8.GetBytes(arr.PhpSerializeOrThrow());
-                        var p = new KeyValuePair<string, TypedConstant>(
-                            "SerializedValue",
-                            new TypedConstant(DeclaringCompilation.CreateArrayTypeSymbol(byteSymbol), serializedValue.Select(DeclaringCompilation.CreateTypedConstant).AsImmutable()));
-
-                        namedparameters = namedparameters.Add(p);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new InvalidOperationException($"Cannot construct serialized parameter default value. Routine '{Routine.Name}' in {Routine.ContainingFile.RelativeFilePath}, {ex.Message}.", ex);
-                    }
-                }
-
-                yield return new SynthesizedAttributeData(
-                    DeclaringCompilation.CoreMethods.Ctors.DefaultValueAttribute,
-                    ImmutableArray<TypedConstant>.Empty, namedparameters);
+                yield return DeclaringCompilation.CreateDefaultValueAttribute(Routine, arr);
             }
 
             //

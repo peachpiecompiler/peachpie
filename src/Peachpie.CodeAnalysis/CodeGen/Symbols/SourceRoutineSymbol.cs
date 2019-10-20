@@ -92,16 +92,17 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             List<MethodSymbol> list = null;
 
-            var ps = this.Parameters;
-            for (int i = 0; i < ps.Length; i++)
-            {
-                if (ps[i].HasUnmappedDefaultValue)   // => ConstantValue couldn't be resolved for optional parameter
-                {
-                    if (list == null)
-                    {
-                        list = new List<MethodSymbol>();
-                    }
+            var implparams = ImplicitParameters;
+            var srcparams = SourceParameters;
+            var implicitVarArgs = VarargsParam;
 
+            for (int i = 0; i <= srcparams.Length; i++) // how many to be copied from {srcparams}
+            {
+                var isfake = /*srcparams[i - 1].IsFake*/ implicitVarArgs != null && i > 0 && srcparams[i - 1].Ordinal >= implicitVarArgs.Ordinal; // parameter was replaced with [params]
+                var hasdefault = i < srcparams.Length && srcparams[i].HasUnmappedDefaultValue;  // ConstantValue couldn't be resolved for optional parameter
+
+                if (isfake || hasdefault) 
+                {
                     if (this.ContainingType.IsInterface)
                     {
                         // TODO: we can't build instance method in an interface
@@ -109,12 +110,30 @@ namespace Pchp.CodeAnalysis.Symbols
                         // - annotate parameter with attribute and the initializer value?
                         //   ? [Optional(EmptyArray)]
                         //   ? [Optional(array(1,2,3))]
-                        Debug.WriteLine($"we've lost parameter explicit default value {this.ContainingType.Name}::{this.RoutineName}, parameter ${ps[i].Name}");
+                        if (i < srcparams.Length) // always true
+                        {
+                            Debug.WriteLine($"we've lost parameter explicit default value {this.ContainingType.Name}::{this.RoutineName}, parameter ${srcparams[i].Name}");
+                        }
                     }
                     else
                     {
+                        // ghostparams := [...implparams, ...srcparams{0..i-1}]
+                        var ghostparams = new ParameterSymbol[implparams.Length + i];
+                        implparams.CopyTo(ghostparams);
+                        Array.Copy(srcparams, 0, ghostparams, implparams.Length, i);
+
                         // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
-                        list.Add(GhostMethodBuilder.CreateGhostOverload(this, module, diagnostic, i));
+                        var ghost = GhostMethodBuilder.CreateGhostOverload(
+                            this, ContainingType, module, diagnostic,
+                            ReturnType, ghostparams);
+
+                        //
+                        if (list == null)
+                        {
+                            list = new List<MethodSymbol>();
+                        }
+
+                        list.Add(ghost);
                     }
                 }
             }
