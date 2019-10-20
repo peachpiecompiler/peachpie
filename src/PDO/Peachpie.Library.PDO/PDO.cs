@@ -6,6 +6,7 @@ using Pchp.Core;
 using Pchp.Library;
 using System.Data.Common;
 using System.Diagnostics;
+using Pchp.Core.Reflection;
 
 namespace Peachpie.Library.PDO
 {
@@ -20,13 +21,12 @@ namespace Peachpie.Library.PDO
         /// <summary>Runtime context. Cannot be <c>null</c>.</summary>
         protected readonly Context _ctx; // "_ctx" is a special name recognized by compiler. Will be reused by inherited classes.
 
-        IPDODriver m_driver;
         DbConnection m_con;
         DbTransaction m_tx;
         readonly Dictionary<PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
 
         internal DbTransaction CurrentTransaction { get { return this.m_tx; } }
-        internal IPDODriver Driver { get { return this.m_driver; } }
+        internal PDODriver Driver { get; private set; }
         internal DbCommand CurrentCommand { get; private set; }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace Peachpie.Library.PDO
         public PDO(Context ctx, string dsn, string username = null, string password = null, PhpArray options = null)
             : this(ctx)
         {
-            construct(dsn, username, password, options);
+            __construct(dsn, username, password, options);
         }
 
         /// <summary>
@@ -73,13 +73,7 @@ namespace Peachpie.Library.PDO
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
         /// <param name="options">The options.</param>
-        public virtual void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
-        {
-            construct(dsn, username, password, options);
-        }
-
-        [PhpHidden]
-        void construct(string dsn, string username = null, string password = null, PhpArray options = null)
+        public void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
         {
             this.SetDefaultAttributes();
 
@@ -121,12 +115,12 @@ namespace Peachpie.Library.PDO
             }
 
             // DSN mode
-            this.m_driver = PDOEngine.TryGetDriver(driver)
+            Driver = PDOEngine.TryGetDriver(driver)
                 ?? throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
 
             try
             {
-                this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
+                this.m_con = Driver.OpenConnection(connstring, username, password, options);
             }
             catch (Exception e)
             {
@@ -134,8 +128,8 @@ namespace Peachpie.Library.PDO
             }
 
             this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
-            this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)this.m_driver.Name;
-            this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = (PhpValue)this.m_driver.ClientVersion;
+            this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)Driver.Name;
+            this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = (PhpValue)Driver.ClientVersion;
         }
 
         /// <summary>
@@ -147,8 +141,7 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public PhpValue __call(string name, PhpArray arguments)
         {
-            var method =
-                m_driver.TryGetExtensionMethod(name)
+            var method = Driver.TryGetExtensionMethod(name)
                 ?? throw new PDOException($"Method '{name}' not found"); // TODO: resources
 
             return method.Invoke(this, arguments);
@@ -259,7 +252,7 @@ namespace Peachpie.Library.PDO
         /// <returns></returns>
         public virtual string lastInsertId(string name = null)
         {
-            return this.m_driver.GetLastInsertId(this, name);
+            return Driver.GetLastInsertId(this, name);
         }
 
         /// <summary>
@@ -292,7 +285,7 @@ namespace Peachpie.Library.PDO
         {
             try
             {
-                PDOStatement newStatement = this.m_driver.PrepareStatement(_ctx, this, statement, driver_options);
+                PDOStatement newStatement = CreateStatement(statement, driver_options);
                 lastExecutedStatement = newStatement;
                 return newStatement;
             }
@@ -312,7 +305,7 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public virtual PDOStatement query(string statement, params PhpValue[] args)
         {
-            var stmt = lastExecutedStatement = new PDOStatement(_ctx, this, statement, null);
+            var stmt = lastExecutedStatement = CreateStatement(statement, null);
 
             if (args.Length > 0)
             {
@@ -346,10 +339,11 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public virtual string quote(string str, PARAM parameter_type = PARAM.PARAM_STR)
         {
-            return m_driver?.Quote(str, parameter_type);
+            return Driver?.Quote(str, parameter_type);
         }
 
-        private void SetDefaultAttributes()
+        [PhpHidden]
+        void SetDefaultAttributes()
         {
             this.m_attributes[PDO_ATTR.ATTR_AUTOCOMMIT] = (PhpValue)true;
             this.m_attributes[PDO_ATTR.ATTR_PREFETCH] = (PhpValue)0;
@@ -372,6 +366,45 @@ namespace Peachpie.Library.PDO
             this.m_attributes[PDO_ATTR.ATTR_MAX_COLUMN_LEN] = PhpValue.Null;
             //this.m_attributes[PDO_ATTR.ATTR_DEFAULT_FETCH_MODE] = 0;
             this.m_attributes[PDO_ATTR.ATTR_EMULATE_PREPARES] = PhpValue.False;
+        }
+
+        [PhpHidden]
+        PDOStatement CreateStatement(string statement, PhpArray driver_options)
+        {
+            if (m_attributes.TryGetValue(PDO_ATTR.ATTR_STATEMENT_CLASS, out var classattr) && classattr.IsSet && classattr.IsPhpArray(out var classarr))
+            {
+                if (classarr[0].IsString(out var classname))
+                {
+                    var tinfo = _ctx.GetDeclaredTypeOrThrow(classname, autoload: true);
+                    var args = classarr[1].IsPhpArray(out var argsarr) ? argsarr : PhpArray.Empty;
+
+                    var instance = (PDOStatement)tinfo.GetUninitializedInstance(_ctx);
+                    
+                    instance.PrepareStatement(this, statement, driver_options);
+
+                    // __construct
+                    var construct = tinfo.RuntimeMethods[ReflectionUtils.PhpConstructorName];
+                    if (construct != null)
+                    {
+                        construct.Invoke(_ctx, instance, args.GetValues());
+                    }
+                    else if (args.Count != 0)
+                    {
+                        // arguments provided but __construct() was not found
+                        throw new InvalidOperationException();
+                    }
+
+                    //
+                    return instance;
+                }
+
+                throw new PDOException();
+            }
+            else
+            {
+                // shortcut
+                return new PDOStatement(_ctx, this, statement, driver_options);
+            }
         }
     }
 }

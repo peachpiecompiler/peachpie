@@ -24,11 +24,11 @@ namespace Peachpie.Library.PDO
         /// <summary>Runtime context. Cannot be <c>null</c>.</summary>
         protected readonly Context _ctx; // "_ctx" is a special name recognized by compiler. Will be reused by inherited classes.
 
-        private readonly PDO m_pdo;
-        private readonly string m_stmt;
-        private readonly PhpArray m_options;
+        private PDO m_pdo;
+        private string m_stmt;
+        private PhpArray m_options;
 
-        private readonly DbCommand m_cmd;
+        private DbCommand m_cmd;
         private DbDataReader m_dr;
         private readonly Dictionary<PDO.PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
         private string[] m_dr_names;
@@ -85,36 +85,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PDOStatement" /> class.
-        /// </summary>
-        /// <param name="ctx">The php context.</param>
-        /// <param name="pdo">The PDO statement is created for.</param>
-        /// <param name="statement">The statement.</param>
-        /// <param name="driver_options">The driver options.</param>
-        internal PDOStatement(Context ctx, PDO pdo, string statement, PhpArray driver_options)
-        {
-            if (pdo.HasExecutedQuery)
-            {
-                if (!pdo.StoreLastExecutedQuery())
-                {
-                    pdo.HandleError(new PDOException("Last executed PDOStatement result set could not be saved correctly."));
-                }
-            }
-
-            this.m_pdo = pdo;
-            this._ctx = ctx;
-            this.m_stmt = statement;
-            this.m_options = driver_options ?? PhpArray.Empty;
-
-            this.m_cmd = pdo.CreateCommand(this.m_stmt);
-
-            PrepareStatement();
-
-            this.SetDefaultAttributes();
-        }
-
-        /// <summary>
-        /// Empty ctor.
+        /// Default constructor that does not initialize the statement.
         /// </summary>
         [PhpFieldsOnlyCtor]
         protected PDOStatement(Context ctx)
@@ -126,6 +97,38 @@ namespace Peachpie.Library.PDO
             m_stmt = null;
             m_options = PhpArray.Empty;
             m_cmd = null;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PDOStatement" /> class.
+        /// </summary>
+        /// <param name="ctx">The php context.</param>
+        /// <param name="pdo">The PDO statement is created for.</param>
+        /// <param name="statement">The statement.</param>
+        /// <param name="driver_options">The driver options.</param>
+        internal PDOStatement(Context ctx, PDO pdo, string statement, PhpArray driver_options)
+            : this(ctx)
+        {
+            PrepareStatement(pdo, statement, driver_options);
+        }
+
+        internal void PrepareStatement(PDO pdo, string statement, PhpArray driver_options)
+        {
+            if (pdo.HasExecutedQuery)
+            {
+                if (!pdo.StoreLastExecutedQuery())
+                {
+                    pdo.HandleError(new PDOException("Last executed PDOStatement result set could not be saved correctly."));
+                }
+            }
+
+            this.m_pdo = pdo;
+            this.m_stmt = statement;
+            this.m_options = driver_options ?? PhpArray.Empty;
+
+            this.m_cmd = pdo.CreateCommand(this.m_stmt);
+
+            PrepareStatement();
         }
 
         private static readonly Regex regName = new Regex(@"[\w_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -310,11 +313,6 @@ namespace Peachpie.Library.PDO
                     pos++;
             }
             return pos;
-        }
-
-        private void SetDefaultAttributes()
-        {
-            this.m_attributes[PDO.PDO_ATTR.ATTR_CURSOR] = (PhpValue)(int)PDO.PDO_CURSOR.CURSOR_FWDONLY;
         }
 
         /// <inheritDoc />

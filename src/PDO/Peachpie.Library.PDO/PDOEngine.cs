@@ -32,7 +32,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Gets set of loaded PDO drivers.
         /// </summary>
-        static Dictionary<string, IPDODriver> GetDrivers()
+        static Dictionary<string, PDODriver> GetDrivers()
         {
             if (s_lazydrivers == null)
             {
@@ -41,9 +41,9 @@ namespace Peachpie.Library.PDO
 
             return s_lazydrivers;
         }
-        static Dictionary<string, IPDODriver> s_lazydrivers;
+        static Dictionary<string, PDODriver> s_lazydrivers;
 
-        static Dictionary<string, IPDODriver> CollectPdoDrivers()
+        static Dictionary<string, PDODriver> CollectPdoDrivers()
         {
             var drivertypes = new List<Type>();
 
@@ -55,7 +55,7 @@ namespace Peachpie.Library.PDO
 
                     drivertypes.AddRange(ass
                         .GetTypes()
-                        .Where(t => !t.IsInterface && !t.IsValueType && !t.IsAbstract && typeof(IPDODriver).IsAssignableFrom(t)));
+                        .Where(t => !t.IsInterface && !t.IsValueType && !t.IsAbstract && typeof(PDODriver).IsAssignableFrom(t)));
                 }
                 catch
                 {
@@ -66,13 +66,13 @@ namespace Peachpie.Library.PDO
             // instantiate drivers:
 
             return drivertypes
-                .Select(t => (IPDODriver)Activator.CreateInstance(t))
+                .Select(t => (PDODriver)Activator.CreateInstance(t))
                 .ToDictionary(driver => driver.Name, StringComparer.OrdinalIgnoreCase);
         }
 
         internal static IReadOnlyCollection<string> GetDriverNames() => GetDrivers().Keys;
 
-        internal static IPDODriver TryGetDriver(string driverName)
+        internal static PDODriver TryGetDriver(string driverName)
         {
             GetDrivers().TryGetValue(driverName, out var driver);
             return driver;

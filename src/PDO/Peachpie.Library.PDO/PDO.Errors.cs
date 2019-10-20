@@ -33,7 +33,7 @@ namespace Peachpie.Library.PDO
         internal void HandleError(System.Exception ex)
         {
             // fill errorInfo
-            m_driver.HandleException(ex, out _errorSqlState, out _errorCode, out _errorMessage);
+            Driver.HandleException(ex, out _errorSqlState, out _errorCode, out _errorMessage);
 
             //
             PDO_ERRMODE mode = (PDO_ERRMODE)this.m_attributes[PDO_ATTR.ATTR_ERRMODE].ToLong();

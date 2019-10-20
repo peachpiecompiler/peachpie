@@ -22,7 +22,7 @@ namespace Peachpie.Library.PDO
 
             if (attribute > (int)PDO_ATTR.ATTR_DRIVER_SPECIFIC)
             {
-                return m_driver.GetAttribute(this, attribute);
+                return Driver.GetAttribute(this, attribute);
             }
 
             //TODO : what to do on unknown attribute ?
@@ -41,7 +41,7 @@ namespace Peachpie.Library.PDO
             {
                 if (attribute >= (int)PDO_ATTR.ATTR_DRIVER_SPECIFIC)
                 {
-                    return m_driver.TrySetAttribute(m_attributes, (PDO_ATTR)attribute, value);
+                    return Driver.TrySetAttribute(m_attributes, (PDO_ATTR)attribute, value);
                 }
             }
             catch (System.Exception ex)
@@ -108,12 +108,19 @@ namespace Peachpie.Library.PDO
                     }
                     return false;
 
+                case PDO_ATTR.ATTR_STATEMENT_CLASS:
+                    if (value.IsPhpArray(out var arr) && arr.Count != 0)
+                    {
+                        m_attributes[(PDO_ATTR)attribute] = arr.DeepCopy();
+                        return true;
+                    }
+                    return false;
+
                 case PDO_ATTR.ATTR_FETCH_CATALOG_NAMES:
                 case PDO_ATTR.ATTR_FETCH_TABLE_NAMES:
                 case PDO_ATTR.ATTR_MAX_COLUMN_LEN:
                 case PDO_ATTR.ATTR_ORACLE_NULLS:
                 case PDO_ATTR.ATTR_PERSISTENT:
-                case PDO_ATTR.ATTR_STATEMENT_CLASS:
                 case PDO_ATTR.ATTR_STRINGIFY_FETCHES:
                     throw new NotImplementedException();
 
