@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Reflection;
+using Peachpie.AspNetCore.Web.Session;
 
 namespace Peachpie.AspNetCore.Web
 {

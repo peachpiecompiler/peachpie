@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Session;
 using Pchp.Core;
 using Pchp.Library;
 
-namespace Peachpie.AspNetCore.Web
+namespace Peachpie.AspNetCore.Web.Session
 {
     /// <summary>
     /// Session handler for ASP.NET Core.
@@ -20,9 +20,9 @@ namespace Peachpie.AspNetCore.Web
 
         private AspNetCoreSessionHandler() { }
 
-        static ISession GetSession(IHttpPhpContext webctx) => ((RequestContextCore)webctx).HttpContext.Session;
+        static HttpContext GeHttpContext(IHttpPhpContext webctx) => ((RequestContextCore)webctx).HttpContext;
 
-        static PhpSerialization.Serializer Serializer => PhpSerialization.PhpSerializer.Instance;
+        static PhpSerialization.PhpSerializer Serializer => PhpSerialization.PhpSerializer.Instance;
 
         /// <summary>
         /// Gets the session name.
@@ -41,10 +41,10 @@ namespace Peachpie.AspNetCore.Web
         /// </summary>
         public override bool IsEnabled(IHttpPhpContext webctx)
         {
-            var ctx = (RequestContextCore)webctx;
+            var httpctx = GeHttpContext(webctx);
             try
             {
-                var session = ctx.HttpContext.Session; // throws if session is not configured
+                var session = httpctx.Session; // throws if session is not configured
                 return session != null;
             }
             catch
@@ -61,7 +61,7 @@ namespace Peachpie.AspNetCore.Web
 
         public override string GetSessionId(IHttpPhpContext webctx)
         {
-            var isession = GetSession(webctx);
+            var isession = GeHttpContext(webctx).Session;
             if (isession != null)
             {
                 return isession.Id;
@@ -77,19 +77,26 @@ namespace Peachpie.AspNetCore.Web
         /// </summary>
         public override PhpArray Load(IHttpPhpContext webctx)
         {
+            var result = new PhpArray();
+
             var ctx = (RequestContextCore)webctx;
             var isession = ctx.HttpContext.Session; // throws if session is not configured
             if (isession.IsAvailable)
             {
-                var result = new PhpArray();
-
                 foreach (var key in isession.Keys)
                 {
                     if (isession.TryGetValue(key, out byte[] bytes))
                     {
                         // try to deserialize bytes using php serializer
-                        // gets FALSE if bytes are in incorrect format
-                        result[key] = Serializer.Deserialize(ctx, new PhpString(bytes), default(RuntimeTypeHandle));
+                        if (Serializer.TryDeserialize(ctx, bytes, out var value))
+                        {
+                            result[key] = value;
+                        }
+                        else
+                        {
+                            // it was not serialized using PHP serializer or format is invalid
+                            // TODO: deserialize .NET session variable
+                        }
                     }
                 }
 
@@ -100,11 +107,37 @@ namespace Peachpie.AspNetCore.Web
                     isession.Set(DummySessionItem, Array.Empty<byte>());
                     isession.Remove(DummySessionItem);
                 }
-
-                return result;
             }
 
-            return PhpArray.NewEmpty();
+            return result;
+        }
+
+        /// <summary>
+        /// Initiates the session.
+        /// </summary>
+        public override bool StartSession(Context ctx, IHttpPhpContext webctx)
+        {
+            if (base.StartSession(ctx, webctx))
+            {
+                //var httpctx = GeHttpContext(webctx);
+
+                //if (httpctx.Session is SharedSession)
+                //{
+                //    // unexpected; session already bound
+                //}
+                //else
+                //{
+                //    // overwrite ISession
+                //    httpctx.Session = new SharedSession(httpctx.Session, ctx.Session);
+                //}
+
+                //
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public override bool Persist(IHttpPhpContext webctx, PhpArray session)
@@ -113,10 +146,11 @@ namespace Peachpie.AspNetCore.Web
             var isession = ctx.HttpContext.Session; // throws if session is not configured
 
             //
+            // TODO: do not delete .NET session variables
             isession.Clear();
 
             //
-            if (session != null && session.Count != 0)
+            if (session != null)
             {
                 var enumerator = session.GetFastEnumerator();
                 while (enumerator.MoveNext())
@@ -133,6 +167,21 @@ namespace Peachpie.AspNetCore.Web
 
             //
             return true;
+        }
+
+        /// <summary>
+        /// Close the session (either abandon or persist).
+        /// </summary>
+        public override void CloseSession(Context ctx, IHttpPhpContext webctx, bool abandon)
+        {
+            base.CloseSession(ctx, webctx, abandon);
+
+            // set the original ISession back
+            var httpctx = GeHttpContext(webctx);
+            if (httpctx.Session is SharedSession shared && ReferenceEquals(shared.PhpSession, ctx.Session))
+            {
+                httpctx.Session = shared.UnderlayingSession;
+            }
         }
     }
 }
