@@ -30,7 +30,7 @@ do
     echo -e $COLOR_YELLOW"SKIPPED"$COLOR_RESET
     continue;
   fi
-  COMPILE_OUTPUT="$(dotnet build $TOOL_DIR --force -c Release /p:TestFile=$PHP_FILE)"
+  COMPILE_OUTPUT="$(dotnet build $TOOL_DIR --no-incremental -c Release /p:TestFile=$PHP_FILE)"
   if [ $PIPESTATUS != 0 ] ; then
     echo -e $COLOR_RED"Compilation error"$COLOR_RESET
     echo "$COMPILE_OUTPUT"
