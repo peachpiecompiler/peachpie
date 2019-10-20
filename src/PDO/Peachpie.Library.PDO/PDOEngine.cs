@@ -16,7 +16,7 @@ namespace Peachpie.Library.PDO
     public static class PDOEngine
     {
         /// <summary>
-        /// List of known assembly names exporting implementations of <see cref="IPDODriver"/> interface.
+        /// List of known assembly names exporting implementations of <see cref="PDODriver"/> interface.
         /// CONSIDER: TODO: configuration ? We have the 'Context' so we can read the config there ...
         /// </summary>
         static string[] _knownAssemblies => new[]
