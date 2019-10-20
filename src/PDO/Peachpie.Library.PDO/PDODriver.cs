@@ -88,7 +88,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Gets the last insert identifier.
         /// </summary>
-        /// <param name="pDO">The p do.</param>
+        /// <param name="pdo">Reference to corresponding <see cref="PDO"/> instance.</param>
         /// <param name="name">The name.</param>
         /// <returns></returns>
         public abstract string GetLastInsertId(PDO pdo, string name);
