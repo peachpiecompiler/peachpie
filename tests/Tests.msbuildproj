@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="../../../build/Targets/Settings.props" />
+  <Import Project="../build/Targets/Settings.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
-	<EnableDefaultPeachpieCompileItems>false</EnableDefaultPeachpieCompileItems>
+    <StartupObject>program.php</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(TestFile)" />
+    <Compile Include="**/*.php" />
   </ItemGroup>
 
   <ItemGroup>

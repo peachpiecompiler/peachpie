@@ -33,7 +33,10 @@ namespace ScriptsTest
             var files = Directory.GetFiles(testspath, "*.php", SearchOption.AllDirectories);
             Assert.NotEmpty(files);
 
-            return files.Select(f => new object[] { Path.GetDirectoryName(f), Path.GetFileName(f) });
+            // Return only tests located in a subfolder (to prevent running helper test runner file)
+            return files
+                .Where(f => Path.GetDirectoryName(f) != testspath)
+                .Select(f => new object[] { Path.GetDirectoryName(f), Path.GetFileName(f) });
         }
     }
 }

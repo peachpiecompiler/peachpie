@@ -29,4 +29,4 @@ install:
 
 script:
   - dotnet test ./src/Tests/Peachpie.DiagnosticTests/Peachpie.DiagnosticTests.csproj
-  - ./src/Tools/runtests_shell/runtests.sh
+  - ./build/runtests.sh
