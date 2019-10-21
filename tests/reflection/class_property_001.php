@@ -1,4 +1,5 @@
 <?php
+namespace reflection\class_property_001;
 
 class TestClass1
 {

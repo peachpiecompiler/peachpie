@@ -1,4 +1,5 @@
 <?php
+namespace variables\makearray;
 
 /** The test ensures the type analysis correctly handles that Boolean type may change to Array */
 function foo($arr) {

@@ -1,4 +1,5 @@
 <?php
+namespace xml\xpath_003;
 $html_text = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <HTML>
 <HEAD>
@@ -259,13 +260,13 @@ href="https://www.ssl-stormerhobbies.com/cgi-bin/cart.pl?sub=View Cart">Shopping
 </BODY>
 </HTML>';
 
-$html = new DOMDocument();
+$html = new \DOMDocument();
 
 // Parse the HTML into an XML document. This parser is reasonably tolerant.
 $html->loadHtml(str_replace('&nbsp;', ' ', $html_text));
 
 // get a new XPath object rooted at the top of the HTML DOM
-$xpath = new DOMXPath($html);
+$xpath = new \DOMXPath($html);
 
 if (($content = $xpath->query('//b[starts-with(., "Part Number:")]/font|//font[b[.="Price:"]]/following-sibling::text()[1]|//td[font/b[.="Price:"]]/b[3]')) === false || $content->length < 2) {
   echo 'Table had unexpected format';

@@ -1,4 +1,5 @@
-<?php 
+<?php
+namespace web\parse_url; 
 
 function test()
 {

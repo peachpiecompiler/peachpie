@@ -1,4 +1,5 @@
 <?php
+namespace arrays\array_sum;
 
 function f() {
 

@@ -1,4 +1,5 @@
 <?php
+namespace operators\isset_locals;
 
 function foo( $arr ) {
 	// "extract" introduces locals dynamically,

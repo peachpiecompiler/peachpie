@@ -1,4 +1,5 @@
 <?php
+namespace xml\xslt_002;
 // Test 2: Transform To HTML String
 
 function __xml_norm($str)
@@ -11,16 +12,16 @@ function __xml_norm($str)
 }
 
 function test() {
-  $dom = new domDocument;
+  $dom = new \DOMDocument;
   $dom->load("xslt.xml");
 
-  $xsl = new domDocument;
+  $xsl = new \DOMDocument;
   $xsl->load("xslt.xsl");
 
-  $proc = new xsltprocessor;
+  $proc = new \XSLTProcessor;
   $proc->importStylesheet($xsl);
 
-  $xp = new domxpath($xsl);
+  $xp = new \DOMXPath($xsl);
   $res = $xp->query("/xsl:stylesheet/xsl:output/@method");
   if ($res->length != 1) {
     print "No or more than one xsl:output/@method found";

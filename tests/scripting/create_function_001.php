@@ -1,4 +1,5 @@
 <?php
+namespace scripting\create_function_001;
 
 function test()
 {

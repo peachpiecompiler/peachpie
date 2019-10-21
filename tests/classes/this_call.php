@@ -1,4 +1,5 @@
 <?php
+namespace classes\this_call;
 
 class X {
 	

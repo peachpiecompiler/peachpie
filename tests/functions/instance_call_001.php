@@ -1,4 +1,5 @@
 <?php
+namespace functions\instance_call_001;
 
 class A
 {

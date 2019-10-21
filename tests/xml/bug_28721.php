@@ -1,10 +1,11 @@
 <?php
+namespace xml\bug_28721;
 
-function print_node(DomNode $node) {
+function print_node(\DomNode $node) {
   echo "name (value): " . $node->nodeName . " (" . $node->nodeValue . ")\n";
 }
 
-function print_node_r(DomNode $node) {
+function print_node_r(\DomNode $node) {
   static $indent = "";
   echo "\n" . $indent;
   print_node($node);
@@ -48,7 +49,7 @@ function test() {
   // // Record 'DocumentFragment is empty' warnings
   //set_error_handler("err_handler");
 
-  $xml = new DomDocument();
+  $xml = new \DOMDocument();
 
   $p = $xml->createElement("p");
 

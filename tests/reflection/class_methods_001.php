@@ -1,4 +1,5 @@
 <?php
+namespace reflection\class_methods_001;
 
 class myclass {
     // constructor

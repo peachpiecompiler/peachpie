@@ -1,4 +1,5 @@
 <?php
+namespace functions\return_type;
 
 function f(int $x) : ?array
 {

@@ -1,4 +1,5 @@
 <?php
+namespace pcre\reset_match_start_001;
 
 function test($pattern, $subject) {
   preg_match($pattern, $subject, $matches);

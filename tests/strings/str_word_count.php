@@ -1,4 +1,5 @@
 <?php
+namespace strings\str_word_count;
 
 $str = "Hello friend, you're looking          good today!";
 

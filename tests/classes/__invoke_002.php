@@ -1,4 +1,5 @@
 <?php
+namespace classes\__invoke_002;
 
 interface I {
 	function __invoke();

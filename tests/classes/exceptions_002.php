@@ -1,9 +1,10 @@
 <?php
+namespace classes\exceptions_002;
 
-class A extends Exception
+class A extends \Exception
 {}
 
-class B extends Exception
+class B extends \Exception
 {}
 
 try

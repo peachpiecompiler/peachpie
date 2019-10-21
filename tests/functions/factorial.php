@@ -1,4 +1,5 @@
 <?php
+namespace functions\factorial;
 
 /**
  * @param int $number

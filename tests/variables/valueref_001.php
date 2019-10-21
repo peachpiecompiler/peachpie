@@ -1,4 +1,5 @@
 <?php
+namespace variables\valueref_001;
 
 function test()
 {

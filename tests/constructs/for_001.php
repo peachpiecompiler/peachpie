@@ -1,4 +1,5 @@
 <?php
+namespace constructs\for_001;
 
 /** @param int $n */
 function test($n) {

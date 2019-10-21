@@ -1,4 +1,5 @@
 <?php
+namespace classes\field_inheritance_002;
 
 class A {
   protected $x = -1;

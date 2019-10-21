@@ -1,4 +1,5 @@
 <?php
+namespace traits\trait_004;
 
 // Example #10 Static Methods
 

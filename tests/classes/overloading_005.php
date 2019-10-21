@@ -1,4 +1,6 @@
 <?php
+namespace classes\overloading_006;
+
 interface I
 {
     public function foo();

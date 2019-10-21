@@ -1,4 +1,5 @@
 <?php
+namespace arrays\foreach_003;
 
 //
 // Tests whether PhpArray's foreach enumerator correctly 

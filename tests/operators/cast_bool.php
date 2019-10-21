@@ -1,4 +1,5 @@
 <?php
+namespace operators\cast_bool;
 
 function test($x){ echo $x ? "1" : "0"; }
 

@@ -1,4 +1,5 @@
 <?php
+namespace arrays\lazy_copy_002;
 
 // causes lazy copy:
 function foo($x)

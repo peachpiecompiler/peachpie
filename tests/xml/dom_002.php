@@ -1,10 +1,11 @@
 <?php
+namespace xml\dom_002;
 
-function dump(DOMNodeList $elems) {
+function dump(\DOMNodeList $elems) {
 	foreach ($elems as $elem) {
     echo "{$elem->nodeType}|{$elem->nodeName} ";
 
-    if ($elem instanceof DOMCharacterData || $elem instanceof DOMProcessingInstruction) {
+    if ($elem instanceof \DOMCharacterData || $elem instanceof \DOMProcessingInstruction) {
       echo "'". $elem->data ."' ";
     } else if (!is_null($elem->attributes)) {
       foreach ($elem->attributes as $name => $attr) {
@@ -31,7 +32,7 @@ function test() {
 </foo>
 HERE;
 
-  $dom = new DOMDocument();
+  $dom = new \DOMDocument();
   $dom->loadXML($xml);
   $doc = $dom->documentElement;
   dump($dom->getElementsByTagName('bar'));

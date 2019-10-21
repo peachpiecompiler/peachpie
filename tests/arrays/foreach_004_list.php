@@ -1,4 +1,5 @@
 <?php
+namespace arrays\foreach_004_list;
 
 function foo()
 {

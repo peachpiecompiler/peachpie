@@ -1,4 +1,5 @@
 <?php
+namespace operators\ternary_ex;
 
 $a = array(
 

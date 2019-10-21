@@ -1,4 +1,5 @@
 <?php
+namespace variables\hinting_001;
 
 class X {
 	

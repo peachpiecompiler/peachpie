@@ -1,4 +1,5 @@
 <?php
+namespace traits\trait_006;
 
 // Example #11 Defining Properties
 // + static properties and constants

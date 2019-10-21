@@ -1,4 +1,5 @@
 <?php
+namespace pcre\preg_match_003;
 
 function f($iri) {
 	preg_match('/^((?P<scheme>[^:\/?#]+):)?(\/\/(?P<authority>[^\/?#]*))?(?P<path>[^?#]*)(\?(?P<query>[^#]*))?(#(?P<fragment>.*))?$/', $iri, $matches);

@@ -1,4 +1,5 @@
 <?php
+namespace classes\interfaces_002;
 
 interface IA {
   public function foo();

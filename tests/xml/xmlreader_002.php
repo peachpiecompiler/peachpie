@@ -1,4 +1,5 @@
 <?php
+namespace xml\xmlreader_002;
 
 function test() {
   $filename = '_002.xml';
@@ -6,10 +7,10 @@ function test() {
 <books></books>';
   file_put_contents($filename, $xmlstring);
 
-  $reader = new XMLReader();
+  $reader = new \XMLReader();
   if (@$reader->open('')) exit();
 
-  $reader = new XMLReader();
+  $reader = new \XMLReader();
   if (!$reader->open($filename)) {
     $reader->close();
     exit();
@@ -22,7 +23,7 @@ function test() {
   $reader->close();
   unlink($filename);
   touch($filename);
-  $reader = new XMLReader();
+  $reader = new \XMLReader();
   $reader->open($filename);
   $reader->close();
   unlink($filename);

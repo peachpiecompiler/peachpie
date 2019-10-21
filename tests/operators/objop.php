@@ -1,4 +1,5 @@
 <?php
+namespace operators\objop;
 
 class Foo{
 

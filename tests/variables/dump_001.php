@@ -1,4 +1,5 @@
 <?php
+namespace variables\dump_001;
 
 function test($x)
 {

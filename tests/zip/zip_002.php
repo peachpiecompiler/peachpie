@@ -1,4 +1,5 @@
 <?php
+namespace zip\zip_002;
 
 function print_ret($ret) {
   if (is_bool($ret)) {

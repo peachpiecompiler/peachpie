@@ -1,4 +1,5 @@
-<?php 
+<?php
+namespace xml\simplexml_004; 
 
 function __var_dump($x)
 {

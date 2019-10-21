@@ -1,6 +1,7 @@
 <?php
+namespace spl\CachingIterator_001;
 
-function display_state(CachingIterator $it) {
+function display_state(\CachingIterator $it) {
     echo "Current: ". $it->key() ." => ". $it->current() ."  ". ($it->valid() ? "VALID" : "INVALID") ."\n";
 	echo "Inner: ". $it->getInnerIterator()->key() ." => ". $it->getInnerIterator()->current() ."  ". ($it->getInnerIterator()->valid() ? "VALID" : "INVALID") ."\n";
 	echo "HasNext: ". (int)$it->hasNext() ."\n";
@@ -11,8 +12,8 @@ function display_state(CachingIterator $it) {
 }
 
 function test() {
-	$iterator = new ArrayIterator(array(1, "bla" => 5, 2, null));
-	$cache = new CachingIterator($iterator, CachingIterator::FULL_CACHE);
+	$iterator = new \ArrayIterator(array(1, "bla" => 5, 2, null));
+	$cache = new \CachingIterator($iterator, \CachingIterator::FULL_CACHE);
 
     display_state($cache);
     foreach ($cache as $key => $val) {

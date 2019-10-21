@@ -1,4 +1,5 @@
 <?php
+namespace variables\globals_003;
 // Set variable and read it via $GLOBALS
 $a = 5;
 echo $GLOBALS["a"]."<br>";

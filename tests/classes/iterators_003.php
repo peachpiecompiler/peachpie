@@ -1,5 +1,6 @@
 <?php
-class c_iter implements Iterator {
+namespace classes\iterators_003;
+class c_iter implements \Iterator {
 
 	private $obj;
 	private $num = 0;
@@ -29,7 +30,7 @@ class c_iter implements Iterator {
 	}
 }
 	
-class c implements IteratorAggregate {
+class c implements \IteratorAggregate {
 
 	public $max = 4;
 

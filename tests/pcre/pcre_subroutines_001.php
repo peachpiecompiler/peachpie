@@ -1,4 +1,5 @@
 <?php
+namespace pcre\pcre_subroutines_001;
 
 function test($pattern, $subject) {
   echo preg_match($pattern, $subject, $matches);

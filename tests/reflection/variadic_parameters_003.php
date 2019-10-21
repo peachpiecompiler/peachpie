@@ -1,4 +1,5 @@
 <?php
+namespace reflection\variadic_parameters_003;
 
 class X003
 {
@@ -8,5 +9,5 @@ class X003
     }
 }
 
-$method = new ReflectionMethod(X003::class, "foo");
+$method = new \ReflectionMethod(X003::class, "foo");
 print_r($method->getParameters());

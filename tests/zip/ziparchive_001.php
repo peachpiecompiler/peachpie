@@ -1,4 +1,5 @@
 <?php
+namespace zip\ziparchive_001;
 
 function test($filename) {
   // Delete the archive file possibly hanging there from previous test
@@ -7,8 +8,8 @@ function test($filename) {
   }
 
   // Create the archive
-  $zip = new ZipArchive();
-  if ($zip->open($filename, ZipArchive::CREATE)!==TRUE) {
+  $zip = new \ZipArchive();
+  if ($zip->open($filename, \ZipArchive::CREATE)!==TRUE) {
     exit("cannot open <$filename>\n");
   }
 
@@ -29,7 +30,7 @@ function test($filename) {
 }
 
 function list_entries($filename) {
-  $zip = new ZipArchive();
+  $zip = new \ZipArchive();
   if ($zip->open($filename)!==TRUE) {
     exit("cannot open <$filename>\n");
   }
@@ -58,7 +59,7 @@ function clear_stats($stats) {
   unset($stats['crc']);
   unset($stats['encryption_method']);
 
-  // .NET ZipArchive always uses deflating, even if it's inefficient and no compression would be better
+  // .NET \ZipArchive always uses deflating, even if it's inefficient and no compression would be better
   // (if not specified manually, but it is hard to guess beforehand)
   if ($stats['comp_size'] >= $stats['size']) {
     unset($stats['comp_size']);

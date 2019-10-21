@@ -1,4 +1,5 @@
 <?php
+namespace xml\xslt_008;
 // Test 8: php:function Support
 
 function __xml_norm($str)
@@ -27,8 +28,8 @@ function nodeSet($id = null) {
   if ($id and is_array($id)) {
       return $id[0];
   } else {
-      $dom = new domdocument;
-      $dom->loadXML("<root>this is from an external DomDocument</root>");
+      $dom = new \DOMDocument;
+      $dom->loadXML("<root>this is from an external \DOMDocument</root>");
       return $dom->documentElement;
   }
 }
@@ -44,12 +45,12 @@ class aClass {
 }
 
 function test() {
-  $dom = new domDocument();
+  $dom = new \DOMDocument();
   $dom->load("xslt_008.xsl");
-  $proc = new xsltprocessor;
+  $proc = new \XSLTProcessor;
   $xsl = $proc->importStylesheet($dom);
 
-  $xml = new DomDocument();
+  $xml = new \DOMDocument();
   $xml->load("xslt_008.xml");
   $proc->registerPHPFunctions();
   print __xml_norm($proc->transformToXml($xml));

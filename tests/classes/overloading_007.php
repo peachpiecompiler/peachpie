@@ -1,4 +1,5 @@
 <?php
+namespace classes\overloading_007;
 
 interface I {
 	function rollback();

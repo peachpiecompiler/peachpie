@@ -1,4 +1,5 @@
 <?php
+namespace operators\strictequality_001;
 
 function b($b) {
 	echo $b ? 1 : 0;

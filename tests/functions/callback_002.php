@@ -1,4 +1,5 @@
 <?php
+namespace functions\callback_002;
 
 class A {
     function foo($x) {

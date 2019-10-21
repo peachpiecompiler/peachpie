@@ -1,16 +1,17 @@
 <?php
+namespace spl\OuterIterator_001;
 
-class NoDotFilterIterator extends FilterIterator
+class NoDotFilterIterator extends \FilterIterator
 {
   public function accept() {
-    // isDot is called on the underlying DirectoryIterator
+    // isDot is called on the underlying \DirectoryIterator
     return !$this->isDot();
   }
 }
 
 function test() {
-  $dirIt = new DirectoryIterator("subdir");
-  $recDirIt = new RecursiveDirectoryIterator("subdir");
+  $dirIt = new \DirectoryIterator("subdir");
+  $recDirIt = new \RecursiveDirectoryIterator("subdir");
 
   $filtIt = new NoDotFilterIterator($dirIt);
   foreach ($filtIt as $file) {
@@ -25,7 +26,7 @@ function test() {
   }
   echo "-----\n";
 
-  $recDirItIt = new RecursiveIteratorIterator($recDirIt);
+  $recDirItIt = new \RecursiveIteratorIterator($recDirIt);
   foreach ($recDirItIt as $file) {
     if (!$recDirItIt->isDot()) {
       echo $recDirItIt->getFilename() ."\n";

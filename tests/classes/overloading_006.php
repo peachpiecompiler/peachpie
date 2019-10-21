@@ -1,4 +1,5 @@
 <?php
+namespace classes\overloading_006;
 
 class X {
     public final function foo() {

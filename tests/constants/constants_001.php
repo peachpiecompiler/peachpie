@@ -1,4 +1,5 @@
 <?php
+namespace constants\constants_001;
 
 define("X", 123);
 echo constant("X");

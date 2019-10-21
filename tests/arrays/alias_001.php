@@ -1,4 +1,5 @@
 <?php
+namespace arrays\alias_001;
 
 function test() {
   $arr = [ true ];

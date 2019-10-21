@@ -1,4 +1,5 @@
 <?php
+namespace variables\indirect_005;
 
 function f()
 {

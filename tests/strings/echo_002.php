@@ -1,4 +1,5 @@
-<?php 
+<?php
+namespace strings\echo_002; 
 
 /** statically declared, called directly */
 function a() {

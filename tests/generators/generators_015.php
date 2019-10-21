@@ -1,9 +1,10 @@
 <?php
+namespace generators\generators_015;
 function count_to_ten() {
     yield 1;
     yield 2;
     yield from [3, 4];
-    yield from new ArrayIterator([5, 6]);
+    yield from new \ArrayIterator([5, 6]);
     yield from seven_eight();
     return yield from nine_ten();
 }

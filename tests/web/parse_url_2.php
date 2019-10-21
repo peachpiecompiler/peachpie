@@ -1,4 +1,5 @@
 <?php
+namespace web\parse_url_2;
 
 print_r(parse_url('www.example.com/multimedia/item_list.php?something=1'));
 print_r(parse_url('www.example.com:12345/multimedia/item_list.php?is=1'));

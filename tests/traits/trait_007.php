@@ -1,4 +1,5 @@
 <?php
+namespace traits\trait_007;
 
 // trait implementing an interface
 

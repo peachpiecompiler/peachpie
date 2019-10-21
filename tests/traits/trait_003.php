@@ -1,4 +1,5 @@
 <?php
+namespace traits\trait_003;
 
 // Example #5 Conflict Resolution
 

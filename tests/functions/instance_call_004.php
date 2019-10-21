@@ -1,4 +1,5 @@
 <?php
+namespace functions\instance_call_004;
 
 class X {
     private function handleDependencies() : bool {

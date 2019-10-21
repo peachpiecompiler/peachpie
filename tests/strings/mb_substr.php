@@ -1,4 +1,5 @@
 <?php
+namespace strings\mb_substr;
 
 $null = NULL;
 

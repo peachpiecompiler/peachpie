@@ -1,4 +1,5 @@
 <?php
+namespace xml\simplexml_015;
 
 function traverse_xml($xml, $pad = '') {
   $name = $xml->getName();

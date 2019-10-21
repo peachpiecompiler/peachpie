@@ -1,4 +1,5 @@
 <?php
+namespace constants\class_const_001;
 
 class A {
   const A_CONST = 6;
@@ -10,7 +11,7 @@ function test($a) {
 
 echo A::A_CONST;
 
-test('A');
+test('constants\\class_const_001\\A');
 test(new A);
 
 echo "\nDone.";

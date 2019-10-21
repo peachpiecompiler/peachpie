@@ -1,4 +1,5 @@
 <?php
+namespace classes\overloading_011;
 
 class A {
     function foo(string $a) {

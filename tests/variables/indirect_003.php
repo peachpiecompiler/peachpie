@@ -1,4 +1,5 @@
 <?php
+namespace variables\indirect_003;
 
 // Set variable and read it via indirect access
 $a = "a";

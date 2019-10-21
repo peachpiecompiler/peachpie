@@ -1,4 +1,5 @@
 <?php
+namespace xml\xslt_009;
 // Test 9: Using Associative Array of Parameters
 
 function __xml_norm($str)
@@ -11,13 +12,13 @@ function __xml_norm($str)
 }
 
 function test() {
-  $dom = new domDocument;
+  $dom = new \DOMDocument;
   $dom->load("xslt.xml");
 
-  $xsl = new domDocument;
+  $xsl = new \DOMDocument;
   $xsl->load("xslt_009.xsl");
 
-  $proc = new xsltprocessor;
+  $proc = new \XSLTProcessor;
   $proc->importStylesheet($xsl);
 
   $parameters = Array(

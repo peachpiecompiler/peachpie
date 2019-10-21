@@ -1,4 +1,5 @@
 <?php
+namespace variables\static_001;
 
 function test()
 {

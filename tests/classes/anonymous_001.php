@@ -1,4 +1,5 @@
 <?php
+namespace classes\anonymous_001;
 
 function f()
 {
