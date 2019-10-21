@@ -189,24 +189,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Converts decimal number to octal number
-        /// </summary>
-        /// <returns>Converted number</returns>
-        public static int DecToOct(int number)
-        {
-            int result = 0;
-            int position = 1;
-            while (number != 0)
-            {
-                result += number % 8 * position;
-                position *= 10;
-                number /= 8;
-            }
-
-            return result;
-        }
-
-        /// <summary>
         /// Converts binary string <paramref name="str"/> to <see cref="string"/>.
         /// In case if binary string, the conversion routine respects given <paramref name="charSet"/>.
         /// </summary>
