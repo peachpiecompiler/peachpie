@@ -9,6 +9,8 @@ using System.Security.Authentication;
 using Pchp.Core.Utilities;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Pchp.Library
 {
@@ -28,7 +30,9 @@ namespace Pchp.Library
         public const int FTP_TIMEOUT_SEC = 0;
         public const int FTP_USEPASVADDRESS = 2;
         public const int FTP_AUTORESUME = -1;
-
+        public const int FTP_FAILED = 0;
+        public const int FTP_MOREDATA = 2;
+        public const int FTP_FINISHED = 1;
         #endregion
 
         #region FtpResource
@@ -58,6 +62,7 @@ namespace Pchp.Library
 
                 Client = client;
                 Autoseek = true;
+                tokenSource = new CancellationTokenSource();
             }
 
             public FtpClient Client { get; }
@@ -65,6 +70,10 @@ namespace Pchp.Library
             public bool UsePASVAddress { get; set; }
 
             public bool Autoseek { get; set; }
+
+            public Task<bool> NoBlockingFunc { get; set; }
+
+            public CancellationTokenSource tokenSource { get; }
 
             protected override void FreeManaged()
             {
@@ -1070,5 +1079,196 @@ namespace Pchp.Library
                 return ftp_fget(ftp_stream, stream, remote_file, mode, resumepos);
             }
         }
+
+        #region No-Blocking Functions
+
+        /// <summary>
+        /// Continues retrieving/sending a file non-blocking.
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_continue(PhpResource ftp_stream)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return FTP_FAILED;
+
+            if (resource.NoBlockingFunc == null)
+            {
+                // TODO: Warning
+                return FTP_FAILED;
+            }
+
+            if (resource.NoBlockingFunc.IsFaulted)
+            {
+                // TODO: Warning
+                return FTP_FAILED;
+            }
+
+            if (resource.NoBlockingFunc.IsCompleted)
+            {
+                bool result = resource.NoBlockingFunc.Result;
+                resource.NoBlockingFunc = null;
+
+                return result ? FTP_FINISHED : FTP_FAILED;
+            }
+
+            return FTP_MOREDATA;
+        }
+
+        /// <summary>
+        /// Stores a file on the FTP server (non-blocking)
+        /// </summary>
+        /// <param name="ctx">Context of script.</param>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="local_file">The local file path.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="startpos">The position in the remote file to start uploading to.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_put(Context ctx, PhpResource ftp_stream, string remote_file, string local_file, int mode = FTP_BINARY, int startpos = 0)
+        {
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+            {
+                return FTP_FAILED;
+            }
+
+            if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
+                PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
+
+            PrepareNBFunction(resource, mode);
+
+            resource.NoBlockingFunc = resource.Client.UploadFileAsync(local_file, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.tokenSource.Token);
+
+            return ftp_nb_continue(ftp_stream);
+        }
+
+        /// <summary>
+        /// Stores a file from an open file to the FTP server (non-blocking)
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="handle">An open file pointer on the local file. Reading stops at end of file.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="startpos">The position in the remote file to start uploading to.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_fput(PhpResource ftp_stream , string remote_file , PhpResource handle, int mode = FTP_BINARY, int startpos = 0)
+        {
+            // Check file resource
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return FTP_FAILED;
+            }
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+            {
+                return FTP_FAILED;
+            }
+
+            if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
+                PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
+
+            PrepareNBFunction(resource, mode);
+
+            resource.NoBlockingFunc = resource.Client.UploadAsync(stream.RawStream, remote_file,FtpExists.Overwrite,false,null, resource.tokenSource.Token);
+
+            return ftp_nb_continue(ftp_stream);
+        }
+
+        /// <summary>
+        /// Retrieves a file from the FTP server and writes it to a local file (non-blocking).
+        /// </summary>
+        /// <param name="ctx">Constext of script.</param>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="local_file">The local file path (will be overwritten if the file already exists).</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="resumepos">The position in the remote file to start downloading from.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_get(Context ctx, PhpResource ftp_stream, string local_file, string remote_file, int mode = FTP_BINARY, int resumepos = 0)
+        {
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+            {
+                return FTP_FAILED;
+            }
+
+            if (resumepos != 0) // There is no API for this parameter in FluentFTP Library.
+                PhpException.ArgumentValueNotSupported(nameof(resumepos), resumepos);
+
+            PrepareNBFunction(resource, mode);
+
+            resource.NoBlockingFunc = resource.Client.DownloadFileAsync(local_file, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.tokenSource.Token);
+
+            return ftp_nb_continue(ftp_stream);
+        }
+
+        /// <summary>
+        /// Retrieves a file from the FTP server and writes it to a local file (non-blocking).
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="handle">An open file pointer in which we store the data.</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="resumepos">The position in the remote file to start downloading from.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_fget(PhpResource ftp_stream, PhpResource handle, string remote_file, int mode = FTP_BINARY, int resumepos = 0)
+        {
+            // Check file resource
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return FTP_FAILED;
+            }
+
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+            {
+                return FTP_FAILED;
+            }
+
+            // Ignore autoresume if autoseek is switched off 
+            if (resource.Autoseek && resumepos == FTP_AUTORESUME)
+            {
+                resumepos = 0;
+            }
+
+            if (resource.Autoseek && resumepos != 0)
+            {
+                if (resumepos == FTP_AUTORESUME)
+                {
+                    stream.Seek(0, SeekOrigin.End);
+                    resumepos = stream.Tell();
+                }
+                else
+                {
+                    stream.Seek(resumepos, SeekOrigin.Begin);
+                }
+            }
+
+            PrepareNBFunction(resource, mode);
+
+            resource.NoBlockingFunc = resource.Client.DownloadAsync(stream.RawStream, remote_file, resumepos, null, resource.tokenSource.Token);
+
+            return ftp_nb_continue(ftp_stream);
+        }
+
+        private static void PrepareNBFunction(FtpResource resource, int mode)
+        {
+            resource.Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
+
+            if (resource.NoBlockingFunc != null) // Cancel current function and start new
+            {
+                resource.tokenSource.Cancel();
+                resource.NoBlockingFunc = null;
+            }
+        }
+        #endregion
     }
 }
