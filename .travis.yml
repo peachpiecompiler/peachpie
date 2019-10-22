@@ -26,6 +26,7 @@ install:
   - dotnet build ./src/Peachpie.AspNetCore.Mvc/ /p:TargetFrameworks=netcoreapp2.1
   - dotnet restore ./build/dummy
   - dotnet restore ./src/Tests/Peachpie.DiagnosticTests/
+  - dotnet build ./tests -c Release
 
 script:
   - dotnet test ./src/Tests/Peachpie.DiagnosticTests/Peachpie.DiagnosticTests.csproj

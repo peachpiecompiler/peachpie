@@ -14,15 +14,7 @@ COLOR_RED="\033[1;31m"
 COLOR_RESET="\033[0m"
 HR="----------------------------------------------------------------------------------------------------------------------------------------------------------------"
 
-# Build all the tests in order to run them one by one later
-dotnet build $TESTS_DIR -c Release
-
-if [ $PIPESTATUS != 0 ] ; then
-  echo -e $COLOR_RED"Compilation error"$COLOR_RESET
-  exit 1
-fi
-
-# Run every PHP test with Peachpie and check the output against the one from the PHP interpreter
+# Run every PHP test with Peachpie (we expect them to be already compiled) and check the output against PHP interpreter
 for PHP_FILE in $(find $TESTS_DIR \( -name *.php -and ! -name program.php \) )
 do
   # Run each file in the directory it is contained in (in order for relative paths to work)
