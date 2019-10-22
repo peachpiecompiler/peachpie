@@ -1322,7 +1322,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        bool BindParams(PhpParam[] expectedparams, ImmutableArray<BoundArgument> givenargs)
+        bool BindParams(IList<PhpParam> expectedparams, ImmutableArray<BoundArgument> givenargs)
         {
             for (int i = 0; i < givenargs.Length; i++)
             {
@@ -1331,7 +1331,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     break;
                 }
 
-                if (i < expectedparams.Length)
+                if (i < expectedparams.Count)
                 {
                     if (expectedparams[i].IsVariadic)
                     {
@@ -1477,7 +1477,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var expected = m.GetExpectedArguments(this.TypeCtx);
                     var given = x.ArgumentsInSourceOrder;
 
-                    for (int i = 0; i < given.Length && i < expected.Length; i++)
+                    for (int i = 0; i < given.Length && i < expected.Count; i++)
                     {
                         if (expected[i].IsAlias && given[i].Value is BoundVariableRef bvar && bvar.Name.IsDirect)
                         {

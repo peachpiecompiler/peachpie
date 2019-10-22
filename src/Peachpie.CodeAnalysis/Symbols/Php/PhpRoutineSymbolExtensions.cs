@@ -172,31 +172,24 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Implicit parameters passed by compiler are ignored.
         /// </summary>
         /// <param name="routine">Routine.</param>
-        /// <param name="ctx">TYpe context to transmer type masks into.</param>
+        /// <param name="ctx">Type context to transfer type masks into.</param>
         /// <returns>List of input PHP arguments.</returns>
-        public static PhpParam[] GetExpectedArguments(this IPhpRoutineSymbol routine, TypeRefContext ctx)
+        public static IList<PhpParam> GetExpectedArguments(this IPhpRoutineSymbol routine, TypeRefContext ctx)
         {
             Contract.ThrowIfNull(routine);
+            Contract.ThrowIfNull(ctx);
 
-            var ps = routine.Parameters;
-            //var table = (routine as SourceRoutineSymbol)?.LocalsTable;
-            var result = new List<PhpParam>(ps.Length);
+            List<PhpParam> result = null;
 
             int index = 0;
 
+            var ps = routine.Parameters;
             foreach (ParameterSymbol p in ps)
             {
-                if (result.Count == 0 && p.IsImplicitlyDeclared && !p.IsParams)
+                if (result == null && p.IsImplicitlyDeclared && !p.IsParams)
                 {
                     continue;
                 }
-
-                // default value (bound expression)
-                ConstantValue cvalue;
-                var psrc = p as SourceParameterSymbol;
-                var defaultexpr = psrc != null
-                    ? psrc.Initializer
-                    : ((cvalue = p.ExplicitDefaultConstantValue) != null ? new BoundLiteral(cvalue.Value) : null);
 
                 //
                 var phpparam = new PhpParam(
@@ -205,13 +198,18 @@ namespace Pchp.CodeAnalysis.Symbols
                     p.RefKind != RefKind.None,
                     p.IsParams,
                     isPhpRw: p.GetPhpRwAttribute() != null,
-                    defaultValue: defaultexpr);
+                    defaultValue: p.Initializer);
+
+                if (result == null)
+                {
+                    result = new List<PhpParam>(ps.Length);
+                }
 
                 result.Add(phpparam);
             }
 
             //
-            return result.ToArray();
+            return result ?? (IList<PhpParam>)Array.Empty<PhpParam>();
         }
 
         /// <summary>

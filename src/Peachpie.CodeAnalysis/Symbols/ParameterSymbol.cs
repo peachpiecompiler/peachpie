@@ -24,7 +24,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return PhpOperationExtensions.FromDefaultValueAttribute(this.DefaultValueAttribute);
+                ConstantValue cvalue;
+                return
+                    PhpOperationExtensions.FromDefaultValueAttribute(this.DefaultValueAttribute) ??
+                    ((cvalue = ExplicitDefaultConstantValue) != null ? new BoundLiteral(cvalue.Value) : null);
             }
         }
 
