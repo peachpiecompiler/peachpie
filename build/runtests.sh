@@ -30,7 +30,7 @@ do
   cd $PHP_FILE_DIR
 
   # Obtain the relative path to the PHP file so that the inclusion in Peachpie works properly
-  CUT_START=$((${#TESTS_DIR} + 1))
+  CUT_START=$((${#TESTS_DIR} + 2))
   PHP_FILE_REL=$(echo $PHP_FILE | cut -c $CUT_START-)
 
   echo -n "Testing $PHP_FILE_REL..."
