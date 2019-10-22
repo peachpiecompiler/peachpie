@@ -29,5 +29,6 @@ install:
   - dotnet build ./tests -c Release
 
 script:
+  - dotnet test ./src/Tests/Peachpie.RuntimeTests/Peachpie.RuntimeTests.csproj
   - dotnet test ./src/Tests/Peachpie.DiagnosticTests/Peachpie.DiagnosticTests.csproj
   - ./build/runtests.sh
