@@ -683,7 +683,7 @@ namespace Pchp.Library
                     Array.Copy(sub, bytes, length);
                     sub = bytes;
                 }
-
+                
                 return stream.WriteBytes(sub);
             }
         }

@@ -744,7 +744,6 @@ namespace Pchp.Library.Streams
             readBuffers.Enqueue(data);
         }
 
-
         /// <summary>
         /// Remove the (entirely consumed) read buffer from the head of the read buffer queue.
         /// </summary>
@@ -764,7 +763,6 @@ namespace Pchp.Library.Streams
             readPosition = 0;
             return readBuffers.Count != 0;
         }
-
 
         /// <summary>
         /// Joins the read buffers to get at least <paramref name="length"/> characters
@@ -836,7 +834,6 @@ namespace Pchp.Library.Streams
                 return sb.ToString();
             } // else
         }
-
 
         /// <summary>
         /// Joins the read buffers to get at least <paramref name="length"/> bytes
