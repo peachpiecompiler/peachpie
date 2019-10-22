@@ -1283,6 +1283,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region TypeRef
+
+        internal override T VisitIndirectTypeRef(BoundIndirectTypeRef tref)
+        {
+            // visit indirect type
+            base.VisitIndirectTypeRef(tref);
+
+            //
+            return VisitTypeRef(tref);
+        }
+
+        internal override T VisitTypeRef(BoundTypeRef tref)
+        {
+            Debug.Assert(!(tref is BoundMultipleTypeRef));
+
+            // resolve type symbol
+            tref.ResolvedType = (TypeSymbol)tref.ResolveTypeSymbol(DeclaringCompilation);
+
+            return default;
+        }
+
+        #endregion
+
         #region Visit Function Call
 
         protected override T VisitRoutineCall(BoundRoutineCall x)
@@ -1394,7 +1417,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Expecting <see cref="BoundRoutineCall.TargetMethod"/> is resolved.
         /// If the target method cannot be bound at compile time, <see cref="BoundRoutineCall.TargetMethod"/> is nulled.
         /// </summary>
-        void BindTargetMethod(BoundRoutineCall x, bool maybeOverload = false)
+        void BindRoutineCall(BoundRoutineCall x, bool maybeOverload = false)
         {
             if (MethodSymbolExtensions.IsValidMethod(x.TargetMethod))
             {
@@ -1494,7 +1517,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitExit(BoundExitEx x)
         {
             VisitRoutineCall(x);
-            BindTargetMethod(x);
+
+            // no parameters binding
+            // TODO: handle unpacking
+            Debug.Assert(x.ArgumentsInSourceOrder.Length == 0 || !x.ArgumentsInSourceOrder[0].IsUnpacking);
+
+            x.TypeRefMask = 0;  // returns void
+            x.ResultType = DeclaringCompilation.GetSpecialType(SpecialType.System_Void);
 
             return default;
         }
@@ -1502,9 +1531,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitEcho(BoundEcho x)
         {
             VisitRoutineCall(x);
-            x.TypeRefMask = 0;
-            BindTargetMethod(x);
 
+            x.TypeRefMask = 0;  // returns void
+            x.ResultType = DeclaringCompilation.GetSpecialType(SpecialType.System_Void);
+
+            //
             return default;
         }
 
@@ -1523,7 +1554,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             x.TypeRefMask = mustBePhpString ? TypeCtx.GetWritableStringTypeMask() : TypeCtx.GetStringTypeMask();
-            BindTargetMethod(x);
 
             return default;
         }
@@ -1561,7 +1591,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, false);
             }
 
-            BindTargetMethod(x);
+            BindRoutineCall(x);
 
             // if possible resolve ConstantValue and TypeRefMask:
             AnalysisFacts.HandleSpecialFunctionCall(x, this, branch);
@@ -1601,7 +1631,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
 
-            BindTargetMethod(x, maybeOverload: true);
+            BindRoutineCall(x, maybeOverload: true);
 
             return default;
         }
@@ -1609,10 +1639,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
             Accept(x.TypeRef);
+            Accept(x.Name);
 
             VisitRoutineCall(x);
-
-            Accept(x.Name);
 
             var type = (TypeSymbol)x.TypeRef.Type;
 
@@ -1636,7 +1665,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TargetMethod = method;
             }
 
-            BindTargetMethod(x);
+            BindRoutineCall(x);
 
             return default;
         }
@@ -1663,32 +1692,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        internal override T VisitIndirectTypeRef(BoundIndirectTypeRef tref)
-        {
-            // visit indirect type
-            base.VisitIndirectTypeRef(tref);
-
-            //
-            return VisitTypeRef(tref);
-        }
-
-        internal override T VisitTypeRef(BoundTypeRef tref)
-        {
-            Debug.Assert(!(tref is BoundMultipleTypeRef));
-
-            // resolve type symbol
-            tref.ResolvedType = (TypeSymbol)tref.ResolveTypeSymbol(DeclaringCompilation);
-
-            return default;
-        }
-
         public override T VisitNew(BoundNewEx x)
         {
-            Accept(x.TypeRef);
+            Accept(x.TypeRef);      // resolve target type
 
             VisitRoutineCall(x);    // analyse arguments
 
-            // resolve target type
+            // resolve .ctor method:
             var type = (NamedTypeSymbol)x.TypeRef.Type;
             if (type.IsValidType())
             {
@@ -1699,6 +1709,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.ResultType = type;
             }
 
+            // bind arguments:
+            BindRoutineCall(x);
+
+            // resulting type is always known,
+            // not null,
+            // not ref:
             x.TypeRefMask = x.TypeRef.GetTypeRefMask(TypeCtx).WithoutSubclasses;
 
             return default;
@@ -1764,22 +1780,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // reset type analysis (include may change local variables)
             State.SetAllUnknown(true);
-
-            //
-            BindTargetMethod(x);
-
-            return default;
-        }
-
-        public override T VisitArgument(BoundArgument x)
-        {
-            if (x.Parameter != null)
-            {
-                // TODO: write arguments access
-                // TODO: conversion by simplifier visitor
-            }
-
-            Accept(x.Value);
 
             return default;
         }
