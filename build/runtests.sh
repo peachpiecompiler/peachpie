@@ -15,7 +15,7 @@ COLOR_RESET="\033[0m"
 HR="----------------------------------------------------------------------------------------------------------------------------------------------------------------"
 
 # Run every PHP test with Peachpie (we expect them to be already compiled) and check the output against PHP interpreter
-for PHP_FILE in $(find $TESTS_DIR \( -name *.php -and ! -name program.php \) )
+for PHP_FILE in $(find $TESTS_DIR -name *.php)
 do
   # Run each file in the directory it is contained in (in order for relative paths to work)
   PHP_FILE_DIR=$(dirname $PHP_FILE)
