@@ -1,4 +1,5 @@
 <?php
+namespace classes\chaining_test;
 
 class Class1
 {

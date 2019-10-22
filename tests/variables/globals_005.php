@@ -1,4 +1,5 @@
 <?php
+namespace variables\globals_005;
 
 $g1 = 1;
 $g2 = 2;

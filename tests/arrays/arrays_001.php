@@ -1,4 +1,5 @@
 <?php
+namespace arrays\arrays_001;
 
 function testarr()
 {

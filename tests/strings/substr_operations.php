@@ -1,4 +1,5 @@
 <?php
+namespace strings\substr_operations;
 
 $var = "aaaaaaaa";
 

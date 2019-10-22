@@ -1,4 +1,5 @@
 <?php
+namespace operators\cast_002;
 
 interface I
 {

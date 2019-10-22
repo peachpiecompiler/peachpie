@@ -1,4 +1,5 @@
 <?php
+namespace variables\extract_refs;
 
 function foo(&$x)
 {

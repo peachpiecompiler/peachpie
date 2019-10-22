@@ -1,4 +1,5 @@
 <?php
+namespace classes\constant_test;
 
 define("X", 3.14);
 

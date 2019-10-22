@@ -1,4 +1,5 @@
 <?php
+namespace strings\echo_001;
 echo "Hello World";
 
 echo "This spans

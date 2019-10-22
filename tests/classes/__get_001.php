@@ -1,4 +1,5 @@
 <?php
+namespace classes\__get_001;
 
 class X {
 	protected $p = '$p';

@@ -1,4 +1,5 @@
 <?php
+namespace reflection\function_parameters_001;
 
 function foo($a, $b, $c = null) { }
 
@@ -20,12 +21,12 @@ function print_params($params) {
     }
 }
 
-$explode = new ReflectionFunction('explode');
+$explode = new \ReflectionFunction('explode');
 print_params($explode->getParameters());
 
-$foo = new ReflectionFunction('foo');
+$foo = new \ReflectionFunction(__NAMESPACE__ . "\\foo");
 print_params($foo->getParameters());
 
-$a = new ReflectionClass('A');
+$a = new \ReflectionClass(__NAMESPACE__ . "\\A");
 print_params($a->getConstructor()->getParameters());
 print_params($a->getMethod('bar')->getParameters());

@@ -1,4 +1,5 @@
 <?php
+namespace xml\simplexml_002;
 
 function __norm($text) {
   return str_replace("\r\n", "\n", $text);

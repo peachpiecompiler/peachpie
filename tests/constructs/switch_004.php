@@ -1,4 +1,5 @@
 <?php
+namespace constructs\switch_004;
 
 function f($a)
 {

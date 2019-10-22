@@ -1,4 +1,5 @@
 <?php
+namespace operators\assign_001;
 
 function test(int $x) {
   $x |= 1;

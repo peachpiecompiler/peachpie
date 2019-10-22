@@ -1,4 +1,5 @@
 <?php
+namespace web\parse_url_at_bug;
 
 $uri = "http://deki.example.org/@api/deki/site/settings";
 

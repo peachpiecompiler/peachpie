@@ -1,4 +1,5 @@
 <?php
+namespace xml\xmlreader_003;
 
 function test() {
   $filename ='_003.xml';
@@ -7,15 +8,15 @@ function test() {
 <books><book num="1" idx="2">book1</book></books>';
   file_put_contents($filename, $xmlstring);
 
-  $reader = new XMLReader();
+  $reader = new \XMLReader();
   if (!$reader->open($filename)) {
     exit();
   }
 
   // Only go through
   while ($reader->read()) {
-    if ($reader->nodeType != XMLREADER::END_ELEMENT) {
-      if ($reader->nodeType == XMLREADER::ELEMENT && $reader->hasAttributes) {
+    if ($reader->nodeType != \XMLReader::END_ELEMENT) {
+      if ($reader->nodeType == \XMLReader::ELEMENT && $reader->hasAttributes) {
         $attr = $reader->moveToFirstAttribute();
         echo $reader->name . ": ";
         echo $reader->value . "\n";

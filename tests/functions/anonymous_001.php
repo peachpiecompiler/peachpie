@@ -1,4 +1,5 @@
 <?php
+namespace functions\anonymous_001;
 
 function f()
 {

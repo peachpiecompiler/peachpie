@@ -1,4 +1,5 @@
 <?php
+namespace classes\static_003;
 
 class Test
 {

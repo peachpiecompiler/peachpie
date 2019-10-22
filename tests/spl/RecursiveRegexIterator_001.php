@@ -1,4 +1,5 @@
-<?php 
+<?php
+namespace spl\RecursiveRegexIterator_001; 
 
 class A {
     public $bar = 88;

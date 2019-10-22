@@ -1,4 +1,5 @@
 <?php
+namespace strings\sprintf2;
 
 echo sprintf("%e\n", 1.123456789);
 echo sprintf("%.10e\n", 1.123456789);

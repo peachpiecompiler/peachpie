@@ -1,4 +1,5 @@
 <?php
+namespace generators\generators_007;
 
 function bar($txt){
     echo $txt;

@@ -1,4 +1,5 @@
 <?php
+namespace functions\callback_003;
 
 class BaseClass
 {

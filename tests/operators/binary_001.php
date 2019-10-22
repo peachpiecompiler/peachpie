@@ -1,4 +1,5 @@
 <?php
+namespace operators\binary_001;
 
 function test() {
 	echo 12 ^ 9;

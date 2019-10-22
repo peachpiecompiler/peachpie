@@ -1,4 +1,5 @@
 <?php
+namespace strings\json_001;
 
 function test($obj, $opt = 0)
 {

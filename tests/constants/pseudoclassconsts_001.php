@@ -1,6 +1,6 @@
 <?php
 
-namespace A {
+namespace constants\pseudoclassconsts_001 {
 	class X {
 		function foo() {
 			echo static::class;

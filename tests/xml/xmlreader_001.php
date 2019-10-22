@@ -1,10 +1,11 @@
 <?php
+namespace xml\xmlreader_001;
 
 function test() {
   $xmlstring = '<?xml version="1.0" encoding="UTF-8"?>
 <books></books>';
 
-  $reader = new XMLReader();
+  $reader = new \XMLReader();
   $reader->XML($xmlstring);
 
   // Only go through
@@ -13,7 +14,7 @@ function test() {
   }
 
   $xmlstring = '';
-  $reader = new XMLReader();
+  $reader = new \XMLReader();
   echo @$reader->XML($xmlstring);
 }
 

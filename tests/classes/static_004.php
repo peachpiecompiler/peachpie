@@ -1,4 +1,5 @@
 <?php
+namespace classes\static_004;
 
 class A
 {
@@ -26,7 +27,7 @@ class B extends A
 
 $x = new B;
 
-$x->foo("B");
-$x->foo("A");
+$x->foo(__NAMESPACE__ . "\\B");
+$x->foo(__NAMESPACE__ . "\\A");
 
 echo "Done.";

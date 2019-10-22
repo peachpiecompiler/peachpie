@@ -1,4 +1,5 @@
 <?php
+namespace classes\__get_002;
 
 class TestClass {
     function __get($name) {

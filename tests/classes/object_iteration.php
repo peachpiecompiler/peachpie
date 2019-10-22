@@ -1,4 +1,5 @@
 <?php
+namespace classes\object_iteration;
 class MyClass
 {
     public $var1 = 'value 1';

@@ -1,4 +1,5 @@
 <?php
+namespace traits\trait_005;
 
 // Example #9 Static Variables
 

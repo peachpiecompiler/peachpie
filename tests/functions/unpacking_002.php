@@ -1,4 +1,5 @@
 <?php
+namespace functions\unpacking_002;
 
 function test($arg1, $arg2, $arg3 = null)
 {

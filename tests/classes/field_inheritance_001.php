@@ -1,4 +1,5 @@
 <?php
+namespace classes\field_inheritance_001;
 
 class A {
 	var $fld = 1;

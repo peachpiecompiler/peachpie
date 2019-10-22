@@ -1,4 +1,5 @@
 <?php
+namespace classes\iterators_004;
 
 echo "1st try\n";
 

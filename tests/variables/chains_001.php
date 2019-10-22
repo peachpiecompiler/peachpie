@@ -1,4 +1,5 @@
 <?php
+namespace variables\chains_001;
 
 class X {
 	var $data;
@@ -30,7 +31,7 @@ function test() {
 
 	$x->data = 123;
 	
-	$s = new stdClass();
+	$s = new \stdClass();
 	$s->rrr = null;
 	@$s->rrr->qqq = "woaaaa";
 	echo $s->rrr->qqq;

@@ -1,4 +1,5 @@
 <?php
+namespace spl\RecursiveDirectoryIterator_003;
 
 class MySplFileInfo extends \SplFileInfo
 {
@@ -24,7 +25,7 @@ class MyRecursiveDirectoryIterator extends \RecursiveDirectoryIterator
 
 function test() {
     $it = new MyRecursiveDirectoryIterator('subdir');
-    $it = new RecursiveIteratorIterator($it);
+    $it = new \RecursiveIteratorIterator($it);
     foreach ($it as $file) {
         if ($file->getFilename() == '.' || $file->getFilename() == '..') {
           continue;

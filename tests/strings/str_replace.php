@@ -1,4 +1,5 @@
 <?php
+namespace strings\str_replace;
 
 function da($a)
 {

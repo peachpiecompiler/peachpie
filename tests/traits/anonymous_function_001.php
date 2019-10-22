@@ -1,4 +1,5 @@
 <?php
+namespace traits\anonymous_function_001;
 
 trait T {
   private $bar = "bar";

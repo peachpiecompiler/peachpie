@@ -1,4 +1,5 @@
 <?php
+namespace zip\ziparchive_003;
 
 // https://stackoverflow.com/a/8688278/2105235
 function delete_dir($path) {
@@ -16,7 +17,7 @@ function test($filename, $dir) {
   copy($filename, $tmp_filename);
 
   // Create the archive
-  $zip = new ZipArchive();
+  $zip = new \ZipArchive();
   if ($zip->open($tmp_filename)!==TRUE) {
     exit("cannot open <$filename>\n");
   }

@@ -1,4 +1,5 @@
-<?php 
+<?php
+namespace xml\simplexml_009; 
 
 function traverse_xml($pad,$xml) {
   foreach($xml->children() as $name => $node) {

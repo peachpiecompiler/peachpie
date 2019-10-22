@@ -1,4 +1,5 @@
 <?php
+namespace classes\overloading_010;
 
 interface SessionBagInterface {
     public function getName();
@@ -19,7 +20,7 @@ interface I {
 }
 
 abstract class B extends C implements I {
-	
+
 }
 
 class A extends B {

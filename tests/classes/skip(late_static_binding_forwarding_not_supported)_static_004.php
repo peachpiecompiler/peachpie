@@ -1,4 +1,5 @@
 <?php
+namespace classes\static_004;
 // See http://php.net/manual/en/language.oop5.late-static-bindings.php#example-240
 
 class A {

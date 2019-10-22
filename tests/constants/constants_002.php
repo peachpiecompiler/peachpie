@@ -6,7 +6,7 @@ namespace
     echo C1;
 }
 
-namespace A
+namespace constants\constants_002
 {
     echo C1;    // global constant, lookups both /A/C1 and /C1
     const C1 = 34;

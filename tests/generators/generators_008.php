@@ -1,4 +1,5 @@
 <?php
+namespace generators\generators_008;
 
 function bar(){
     static $s = 0;

@@ -1,4 +1,5 @@
 <?php
+namespace functions\anonymous_006_args;
 
 class QQ
 {

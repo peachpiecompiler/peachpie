@@ -1,4 +1,5 @@
 <?php
+namespace functions\instance_call_003;
 
 function factory($opt, $throw = false) {
   if ($opt == 1) {

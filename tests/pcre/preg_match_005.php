@@ -1,4 +1,5 @@
 <?php
+namespace pcre\preg_match_005;
 
 function f() {
 	preg_match_all(

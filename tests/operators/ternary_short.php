@@ -1,4 +1,5 @@
 <?php
+namespace operators\ternary_short;
 
 function foo($x)
 {

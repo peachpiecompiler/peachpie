@@ -1,4 +1,5 @@
 <?php
+namespace hash\password_hash_003;
 /**Test PASSWORD_ARGON2I with options. */
 $password = "rasmuslerdorf";
 $memory_cost = 512;

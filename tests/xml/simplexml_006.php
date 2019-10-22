@@ -1,4 +1,5 @@
-<?php 
+<?php
+namespace xml\simplexml_006; 
 
 function test() {
   $xml =<<<EOF

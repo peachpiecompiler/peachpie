@@ -1,4 +1,5 @@
 <?php
+namespace classes\abstracts_001;
 
 interface LogEntry {
 

@@ -1,4 +1,5 @@
 <?php
+namespace xml\simplexml_011;
 
 function test() {
   $doc = simplexml_load_string('<root><name attr="foo">bar</name></root>');

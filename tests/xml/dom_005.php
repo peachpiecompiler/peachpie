@@ -1,4 +1,5 @@
 <?php
+namespace xml\dom_005;
 
 function sortfunc($a, $b) {
 	return strcmp($a->nodeName, $b->nodeName);
@@ -34,7 +35,7 @@ function test() {
 </courses>
 EOXML;
 
-  $dom = new DOMDocument();
+  $dom = new \DOMDocument();
   $dom->loadXML($xml);
 
   $dtd = $dom->doctype;
@@ -67,7 +68,7 @@ EOXML;
     $ents_[$key] = $node;
   }
   $ents = $ents_;
-  usort($ents, "sortfunc");
+  usort($ents, __NAMESPACE__ . "\\sortfunc");
 
   $length = $dtd->entities->length;
   echo "Length: ".$length."\n";
@@ -80,7 +81,7 @@ EOXML;
   $node = $dtd->entities->item(3);
   echo $node ?? "NULL";
   echo "\n";
-  
+
   $node = $dtd->entities->getNamedItem('xxx');
   echo $node ?? "NULL";
 }

@@ -1,4 +1,5 @@
 <?php
+namespace operators\pow_001;
 
 function test($a, $b, $c, $d)
 {

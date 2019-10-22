@@ -1,4 +1,5 @@
 <?php
+namespace hash\password_hash_002;
 /**Test PASSWORD_BCRYPT  Verify. */
 $password = "rasmuslerdorf";
 $cost = 9;

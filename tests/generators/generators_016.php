@@ -1,4 +1,5 @@
 <?php
+namespace generators\generators_016;
 
 function test() {
   yield 1;

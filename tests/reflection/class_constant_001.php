@@ -1,4 +1,5 @@
 <?php
+namespace reflection\class_constant_001;
 
 class TestClass1
 {

@@ -1,4 +1,5 @@
 <?php
+namespace operators\assign_002;
 
 function test() {
     $a = $b = '';

@@ -1,4 +1,5 @@
 <?php
+namespace traits\static_002;
 
 trait T {
   private static $bar = "right";

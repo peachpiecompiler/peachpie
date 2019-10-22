@@ -1,4 +1,5 @@
-<?php 
+<?php
+namespace web\filter_var; 
 
 // email validation and sanitization
 $email_addresses = array("info@example.org", "a@b!@#$%^&*[].com", "a@456.com", "123@b.com", null, "");

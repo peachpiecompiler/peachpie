@@ -1,4 +1,5 @@
 <?php
+namespace functions\param_out_001;
 
 function foo()
 {

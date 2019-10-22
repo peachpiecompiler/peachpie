@@ -1,6 +1,7 @@
 <?php
+namespace variables\unset_003;
 
-class X implements ArrayAccess {
+class X implements \ArrayAccess {
     private $container = [1,2,3];
 
     public function offsetSet($offset, $value) {

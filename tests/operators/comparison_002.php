@@ -1,4 +1,5 @@
 <?php
+namespace operators\comparison_002;
 
 function test(string $s = null) {
   echo (int)($s === null);

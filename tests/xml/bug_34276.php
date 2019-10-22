@@ -1,4 +1,5 @@
 <?php
+namespace xml\bug_34276;
 
 function test() {
   $xml = <<<HERE
@@ -7,7 +8,7 @@ function test() {
      xmlns:fubar="http://www.example.com/ns/fubar" attra="attra" />
 HERE;
 
-  $dom = new DOMDocument();
+  $dom = new \DOMDocument();
   $dom->loadXML($xml);
   $foo = $dom->documentElement;
   echo $foo->hasAttributeNS('http://www.example.com/ns/foo', 'attra');

@@ -1,4 +1,5 @@
 <?php
+namespace spl\RecursiveCachingIterator_001;
 
 function test() {
     $a = array(
@@ -14,15 +15,15 @@ function test() {
         ),
         "Third category" => "Consecteurer"
     );
-    $cached = new RecursiveCachingIterator(new RecursiveArrayIterator($a), RecursiveCachingIterator::TOSTRING_USE_CURRENT);
-    $it = new RecursiveIteratorIterator($cached);
+    $cached = new \RecursiveCachingIterator(new \RecursiveArrayIterator($a), \RecursiveCachingIterator::TOSTRING_USE_CURRENT);
+    $it = new \RecursiveIteratorIterator($cached);
 
     foreach ($it as $key => $val) {
         for ($i = 0; $i < $it->getDepth(); $i++)
             echo "  ";
         echo "{$key}: {$val}";
 
-        // Use RecursiveCachingIterator to check if there is any item following on the current level
+        // Use \RecursiveCachingIterator to check if there is any item following on the current level
         if (!$it->getInnerIterator()->hasNext()) {
             echo " (last)";
         }

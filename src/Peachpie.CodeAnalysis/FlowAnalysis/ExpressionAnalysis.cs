@@ -2142,6 +2142,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         value = "{closure}";
                     }
+                    else if (Routine is SourceFunctionSymbol function)
+                    {
+                        value = function.QualifiedName.ToString();
+                    }
                     else
                     {
                         value = Routine != null

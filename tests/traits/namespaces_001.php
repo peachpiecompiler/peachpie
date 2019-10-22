@@ -1,6 +1,5 @@
 <?php
-
-namespace N;
+namespace traits\namespaces_001;
 
 trait T {
   public function foo() {

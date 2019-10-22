@@ -1,4 +1,5 @@
 <?php
+namespace classes\properties_001;
 
 class Y {
 	function foo() {

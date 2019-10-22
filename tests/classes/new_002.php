@@ -1,7 +1,8 @@
 <?php
+namespace classes\new_002;
 
 class Dog {
-	function __construct($breed) {		
+	function __construct($breed) {
 		echo __METHOD__, $breed;
 	}
 	function Bark(){
@@ -23,7 +24,7 @@ function test($name) {
 	(new $name("TheDog"))->Bark();
 }
 
-test("dog");
-test("bigDog");
+test(__NAMESPACE__ . "\\dog");
+test(__NAMESPACE__ . "\\bigDog");
 
 echo "Done.";

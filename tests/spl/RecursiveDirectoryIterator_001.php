@@ -1,7 +1,8 @@
 <?php
+namespace spl\RecursiveDirectoryIterator_001;
 
 function test() {
-  $it = new \RecursiveDirectoryIterator(".", RecursiveDirectoryIterator::CURRENT_AS_SELF);
+  $it = new \RecursiveDirectoryIterator(".", \RecursiveDirectoryIterator::CURRENT_AS_SELF);
 
   $it = new \RecursiveIteratorIterator($it);
 
