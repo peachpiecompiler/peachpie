@@ -1461,18 +1461,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (MethodSymbolExtensions.IsValidMethod(x.TargetMethod))
             {
-                x.TypeRefMask = BindValidRoutineCall(x, x.TargetMethod, x.ArgumentsInSourceOrder, maybeOverload);   
+                x.TypeRefMask = BindValidRoutineCall(x, x.TargetMethod, x.ArgumentsInSourceOrder, maybeOverload);
             }
-            else if (x.TargetMethod is MissingMethodSymbol)
+            else if (x.TargetMethod is MissingMethodSymbol || x.TargetMethod == null)
             {
+                // we don't know anything about the target callsite,
                 // locals passed as arguments should be marked as possible refs:
-                x.ArgumentsInSourceOrder.ForEach(a =>
+                foreach (var arg in x.ArgumentsInSourceOrder)
                 {
-                    if (a.Value is BoundVariableRef bvar && bvar.Name.IsDirect && !a.IsUnpacking)
+                    if (arg.Value is BoundVariableRef bvar && bvar.Name.IsDirect && !arg.IsUnpacking)
                     {
                         State.SetLocalRef(State.GetLocalHandle(bvar.Name.NameValue));
                     }
-                });
+                }
             }
             else if (x.TargetMethod is AmbiguousMethodSymbol ambiguity)
             {
