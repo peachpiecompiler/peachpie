@@ -1412,6 +1412,46 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        TypeRefMask BindValidRoutineCall(BoundRoutineCall call, MethodSymbol method, ImmutableArray<BoundArgument> args, bool maybeoverload)
+        {
+            // analyze TargetMethod with x.Arguments
+            // require method result type if access != none
+            if (call.Access.IsRead)
+            {
+                if (Worklist.EnqueueRoutine(method, CurrentBlock, call))
+                {
+                    // target will be reanalysed
+                    // note: continuing current block may be waste of time, but it might gather other called targets
+
+                    // The next blocks will be analysed after this routine is re-enqueued due to the dependency
+                    _flags |= AnalysisFlags.IsCanceled;
+                }
+            }
+
+            if (Routine != null)
+            {
+                var rflags = method.InvocationFlags();
+                Routine.Flags |= rflags;
+
+                if ((rflags & RoutineFlags.UsesLocals) != 0
+                    //&& (x is BoundGlobalFunctionCall gf && gf.Name.NameValue.Name.Value == "extract") // "compact" does not change locals // CONSIDER // TODO
+                    )
+                {
+                    // function may change/add local variables
+                    State.SetAllUnknown(true);
+                }
+            }
+
+            // process arguments
+            if (!BindParams(method.GetExpectedArguments(this.TypeCtx), args) && maybeoverload)
+            {
+                call.TargetMethod = null; // nullify the target method -> call dynamically, arguments cannot be bound at compile time
+            }
+
+            //
+            return method.GetResultType(TypeCtx);
+        }
+
         /// <summary>
         /// Bind arguments to target method and resolve resulting <see cref="BoundExpression.TypeRefMask"/>.
         /// Expecting <see cref="BoundRoutineCall.TargetMethod"/> is resolved.
@@ -1421,42 +1461,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (MethodSymbolExtensions.IsValidMethod(x.TargetMethod))
             {
-                // analyze TargetMethod with x.Arguments
-                // require method result type if access != none
-                if (x.Access.IsRead)
-                {
-                    if (Worklist.EnqueueRoutine(x.TargetMethod, CurrentBlock, x))
-                    {
-                        // target will be reanalysed
-                        // note: continuing current block may be waste of time, but it might gather other called targets
-
-                        // The next blocks will be analysed after this routine is re-enqueued due to the dependency
-                        _flags |= AnalysisFlags.IsCanceled;
-                    }
-                }
-
-                //
-                x.TypeRefMask = x.TargetMethod.GetResultType(TypeCtx);
-
-                if (Routine != null)
-                {
-                    var rflags = x.TargetMethod.InvocationFlags();
-                    Routine.Flags |= rflags;
-
-                    if ((rflags & RoutineFlags.UsesLocals) != 0
-                        //&& (x is BoundGlobalFunctionCall gf && gf.Name.NameValue.Name.Value == "extract") // "compact" does not change locals // CONSIDER // TODO
-                        )
-                    {
-                        // function may change/add local variables
-                        State.SetAllUnknown(true);
-                    }
-                }
-
-                // process arguments
-                if (!BindParams(x.TargetMethod.GetExpectedArguments(this.TypeCtx), x.ArgumentsInSourceOrder) && maybeOverload)
-                {
-                    x.TargetMethod = null; // nullify the target method -> call dynamically, arguments cannot be bound at compile time
-                }
+                x.TypeRefMask = BindValidRoutineCall(x, x.TargetMethod, x.ArgumentsInSourceOrder, maybeOverload);   
             }
             else if (x.TargetMethod is MissingMethodSymbol)
             {
