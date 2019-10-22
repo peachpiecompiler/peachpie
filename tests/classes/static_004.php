@@ -27,7 +27,7 @@ class B extends A
 
 $x = new B;
 
-$x->foo("classes\\static_004\\B");
-$x->foo("classes\\static_004\\A");
+$x->foo(__NAMESPACE__ . "\\B");
+$x->foo(__NAMESPACE__ . "\\A");
 
 echo "Done.";

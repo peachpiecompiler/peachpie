@@ -14,7 +14,7 @@ function test(int $a, $b = ['*'])
     echo $a , ", " , count($b), PHP_EOL;
 }
 
-$func = "functions\\param_default\\test";
+$func = __NAMESPACE__ . "\\test";
 $args = [10];
 
 $func(...$args);

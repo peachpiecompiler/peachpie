@@ -24,7 +24,7 @@ function test($name) {
 	(new $name("TheDog"))->Bark();
 }
 
-test("classes\\new_002\\dog");
-test("classes\\new_002\\bigDog");
+test(__NAMESPACE__ . "\\dog");
+test(__NAMESPACE__ . "\\bigDog");
 
 echo "Done.";

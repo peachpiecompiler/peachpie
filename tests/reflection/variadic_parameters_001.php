@@ -9,8 +9,8 @@ function func2($a)
 {
 }
 
-$tmp1 = new \ReflectionFunction("reflection\\variadic_parameters_001\\func1");
-$tmp2 = new \ReflectionFunction("reflection\\variadic_parameters_001\\func2");
+$tmp1 = new \ReflectionFunction(__NAMESPACE__ . "\\func1");
+$tmp2 = new \ReflectionFunction(__NAMESPACE__ . "\\func2");
 $variadic1 = $tmp1->getParameters()[0]->isVariadic();
 $variadic2 = $tmp2->getParameters()[0]->isVariadic();
 

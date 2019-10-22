@@ -16,7 +16,7 @@ function test($a) {
     $a::bar();
 }
 
-test('functions\\static_call_001\\A');
+test(__NAMESPACE__ . "\\A");
 test(new A);
 
 echo "\nDone.";

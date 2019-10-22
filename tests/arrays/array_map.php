@@ -19,8 +19,8 @@ namespace arrays\array_map;
   $d = array('A' => 1,10 => 2);
   
   print_r(array_map(null,$a,$b,$c));
-  print_r(array_map("arrays\\array_map\\f",$a,$b,$c));
-  print_r(array_map("arrays\\array_map\\g",$d));
+  print_r(array_map(__NAMESPACE__ . "\\f",$a,$b,$c));
+  print_r(array_map(__NAMESPACE__ . "\\g",$d));
 
   print_r($a);
   print_r($b);

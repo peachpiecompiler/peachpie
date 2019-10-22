@@ -22,12 +22,12 @@ class D extends C {
 }
 
 function test() {
-	$m = new \ReflectionMethod("reflection\\ReflectionMethod_001\\D", "f");
+	$m = new \ReflectionMethod(__NAMESPACE__ . "\\D", "f");
 
 	echo $m->class, PHP_EOL;					// C
 	echo $m->getPrototype()->class, PHP_EOL;	// I
 
-	$m = new \ReflectionMethod("reflection\\ReflectionMethod_001\\B", "f");
+	$m = new \ReflectionMethod(__NAMESPACE__ . "\\B", "f");
 	echo $m->getPrototype()->class, PHP_EOL;	// A
 
 	try {

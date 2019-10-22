@@ -68,7 +68,7 @@ EOXML;
     $ents_[$key] = $node;
   }
   $ents = $ents_;
-  usort($ents, "xml\\dom_005\\sortfunc");
+  usort($ents, __NAMESPACE__ . "\\sortfunc");
 
   $length = $dtd->entities->length;
   echo "Length: ".$length."\n";

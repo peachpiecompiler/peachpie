@@ -11,7 +11,7 @@ function test($a) {
 
 echo A::A_CONST;
 
-test('constants\\class_const_001\\A');
+test(__NAMESPACE__ . "\\A");
 test(new A);
 
 echo "\nDone.";

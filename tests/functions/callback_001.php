@@ -14,8 +14,8 @@ function test()
 {
 	$x = new X;
 	call($x);
-	call("functions\\callback_001\\X::bar");
-	call(["functions\\callback_001\\X", "bar"]);
+	call(__NAMESPACE__ . "\\X::bar");
+	call([__NAMESPACE__ . "\\X", "bar"]);
 	call([$x, "foo"]);
 }
 
