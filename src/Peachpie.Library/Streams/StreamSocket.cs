@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -141,11 +142,8 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static PhpResource stream_socket_client(Context ctx, string remoteSocket)
         {
-            int errno;
-            string errstr;
-            int port = 0;
             //SplitSocketAddressPort(ref remoteSocket, out port);
-            return Connect(ctx, remoteSocket, port, out errno, out errstr, Double.NaN, SocketOptions.None, StreamContext.Default);
+            return Connect(ctx, remoteSocket, 0, out var _, out var _, double.NaN, SocketOptions.None, StreamContext.Default);
         }
 
         /// <summary>
@@ -153,10 +151,8 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static PhpResource stream_socket_client(Context ctx, string remoteSocket, out int errno)
         {
-            string errstr;
-            int port = 0;
             //SplitSocketAddressPort(ref remoteSocket, out port);
-            return Connect(ctx, remoteSocket, port, out errno, out errstr, Double.NaN, SocketOptions.None, StreamContext.Default);
+            return Connect(ctx, remoteSocket, 0, out errno, out var _, double.NaN, SocketOptions.None, StreamContext.Default);
         }
 
         /// <summary>
@@ -164,9 +160,8 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static PhpResource stream_socket_client(Context ctx, string remoteSocket, out int errno, out string errstr, double timeout = double.NaN, SocketOptions flags = SocketOptions.None)
         {
-            int port = 0;
             //SplitSocketAddressPort(ref remoteSocket, out port);
-            return Connect(ctx, remoteSocket, port, out errno, out errstr, timeout, flags, StreamContext.Default);
+            return Connect(ctx, remoteSocket, 0, out errno, out errstr, timeout, flags, StreamContext.Default);
         }
 
         /// <summary>
@@ -174,17 +169,18 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static PhpResource stream_socket_client(Context ctx, string remoteSocket, out int errno, out string errstr, double timeout, SocketOptions flags, PhpResource context)
         {
-            StreamContext sc = StreamContext.GetValid(context);
-            if (sc == null)
+            var sc = StreamContext.GetValid(context);
+            if (sc != null)
+            {
+                //SplitSocketAddressPort(ref remoteSocket, out port);
+                return Connect(ctx, remoteSocket, 0, out errno, out errstr, timeout, flags, sc);
+            }
+            else
             {
                 errno = -1;
                 errstr = null;
                 return null;
             }
-
-            int port = 0;
-            //SplitSocketAddressPort(ref remoteSocket, out port);
-            return Connect(ctx, remoteSocket, port, out errno, out errstr, timeout, flags, sc);
         }
 
         #endregion
@@ -330,7 +326,7 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Opens a new SocketStream
         /// </summary>
-        internal static SocketStream Connect(Context ctx, string remoteSocket, int port, out int errno, out string errstr, double timeout, SocketOptions flags, StreamContext/*!*/ context)
+        internal static PhpStream Connect(Context ctx, string remoteSocket, int port, out int errno, out string errstr, double timeout, SocketOptions flags, StreamContext/*!*/ context)
         {
             errno = 0;
             errstr = null;
@@ -341,38 +337,41 @@ namespace Pchp.Library.Streams
                 return null;
             }
 
+            bool IsSsl = false;
+
             // TODO: extract schema (tcp://, udp://) and port from remoteSocket
             // Uri uri = Uri.TryCreate(remoteSocket);
-            ProtocolType protocol = ProtocolType.Tcp;
-            if (remoteSocket.Contains("://"))
+            const string protoSeparator = "://";
+            var protocol = ProtocolType.Tcp;
+            var protoIdx = remoteSocket.IndexOf(protoSeparator, StringComparison.Ordinal);
+            if (protoIdx >= 0)
             {
-                String[] separator = { "://" };
-                String[] socketParts = remoteSocket.Split(separator, 2, StringSplitOptions.None);
-                switch (socketParts[0])
+                var protoStr = remoteSocket.AsSpan(0, protoIdx);
+                if (protoStr.Equals("udp".AsSpan(), StringComparison.Ordinal))
                 {
-                    case "udp":
-                        protocol = ProtocolType.Udp;
-                        break;
-                    case "tcp":
-                    default:
-                        protocol = ProtocolType.Tcp;
-                        break;
+                    protocol = ProtocolType.Udp;
                 }
-                remoteSocket = socketParts[1];
+                else if (protoStr.Equals("ssl".AsSpan(), StringComparison.Ordinal))
+                {
+                    // use SSL encryption
+                    IsSsl = true;
+                }
+
+                remoteSocket = remoteSocket.Substring(protoIdx + protoSeparator.Length);
             }
 
-            if (remoteSocket.Contains(":"))
+            var colonIdx = remoteSocket.IndexOf(':');
+            if (colonIdx >= 0)
             {
-                Char[] separator = { ':' };
-                String[] socketParts = remoteSocket.Split(separator, 2, StringSplitOptions.None);
-                remoteSocket = socketParts[0];
-
-                int result = 0;
-                if (socketParts[1] != "" && int.TryParse(socketParts[1], out result) &&
-                    (0 < result && result < 65536))
+                var portStr = remoteSocket.AsSpan(colonIdx + 1);
+                if (portStr.Length != 0 &&
+                    int.TryParse(portStr.ToString(), out var n) &&    // TODO: (perf) ReadOnlySpan<char>
+                    n > 0 && n <= 0xffff)
                 {
-                    port = result;
+                    port = n;
                 }
+
+                remoteSocket = remoteSocket.Remove(colonIdx);
             }
 
             if (double.IsNaN(timeout))
@@ -406,15 +405,38 @@ namespace Pchp.Library.Streams
                 }
 
                 var socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
-                if (!socket.ConnectAsync(address, port).Wait((int)(timeout * 1000)))
+
+                // socket.Connect(new IPEndPoint(address, port));
+                if (socket.ConnectAsync(address, port).Wait((int)(timeout * 1000)))
+                {
+                    if (IsSsl)
+                    {
+                        // TODO: provide parameters based on context[ssl][verify_peer|verify_peer_name|allow_self_signed]
+                        var sslstream = new SslStream(new NetworkStream(socket, System.IO.FileAccess.ReadWrite, true), false,
+                            null, //(sender, certificate, chain, sslPolicyErrors) => true,
+                            null, //(sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => ??,
+                            EncryptionPolicy.AllowNoEncryption);
+
+                        sslstream.AuthenticateAsClient(remoteSocket);
+
+                        return new NativeStream(ctx, sslstream, null, StreamAccessOptions.Read | StreamAccessOptions.Write, remoteSocket, context)
+                        {
+                            IsWriteBuffered = false,
+                            IsReadBuffered = false,
+                        };
+                    }
+                    else
+                    {
+                        return new SocketStream(ctx, socket, remoteSocket, context, (flags & SocketOptions.Asynchronous) != 0);
+                    }
+                }
+                else
                 {
                     Debug.Assert(!socket.Connected);
                     PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.socket_open_timeout, FileSystemUtils.StripPassword(remoteSocket)));
                     return null;
                 }
 
-                // socket.Connect(new IPEndPoint(address, port));
-                return new SocketStream(ctx, socket, remoteSocket, context, (flags & SocketOptions.Asynchronous) == SocketOptions.Asynchronous);
             }
             catch (SocketException e)
             {
