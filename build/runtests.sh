@@ -29,7 +29,11 @@ do
   PHP_FILE_DIR=$(dirname $PHP_FILE)
   cd $PHP_FILE_DIR
 
-  echo -n "Testing $PHP_FILE..."
+  # Obtain the relative path to the PHP file so that the inclusion in Peachpie works properly
+  CUT_START=$((${#TESTS_DIR} + 1))
+  PHP_FILE_REL=$(echo $PHP_FILE | cut -c $CUT_START-)
+
+  echo -n "Testing $PHP_FILE_REL..."
   echo "$PHP_FILE" | grep -Eq ".*skip(\\([^)/]*\\))?_[^/]*$"
   if [ $? -eq 0 ];then
     echo -e $COLOR_YELLOW"SKIPPED"$COLOR_RESET
@@ -37,7 +41,7 @@ do
   fi
 
   PHP_OUTPUT="$(php -d display_errors=Off -d log_errors=Off $PHP_FILE)"
-  PEACH_OUTPUT="$(dotnet $OUTPUT_DIR/Tests.dll dummyArg $PHP_FILE)"
+  PEACH_OUTPUT="$(dotnet $OUTPUT_DIR/Tests.dll dummyArg $PHP_FILE_REL)"
 
   if [ "$PHP_OUTPUT" = "$PEACH_OUTPUT" ] ; then
     echo -e $COLOR_GREEN"OK"$COLOR_RESET
