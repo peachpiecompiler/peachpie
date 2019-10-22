@@ -4,22 +4,22 @@
   version='1.0'>
 <xsl:output  method="text"/>
 <xsl:template match="/">
-<xsl:value-of select="php:functionString('foobar', /doc/@id, 'secondArg')"/>
+<xsl:value-of select="php:functionString('xml\xslt_008\foobar', /doc/@id, 'secondArg')"/>
 <xsl:text>
 </xsl:text>
-<xsl:value-of select="php:function('foobar', /doc/@id)"/>
+<xsl:value-of select="php:function('xml\xslt_008\foobar', /doc/@id)"/>
 <xsl:text>
 </xsl:text>
-<xsl:value-of select="php:function('nodeSet')"/>
+<xsl:value-of select="php:function('xml\xslt_008\nodeSet')"/>
 <xsl:text>
 </xsl:text>
-<xsl:value-of select="php:function('nodeSet',/doc)/i"/>
+<xsl:value-of select="php:function('xml\xslt_008\nodeSet',/doc)/i"/>
 <xsl:text>
 </xsl:text>
-<xsl:value-of select="php:function('aClass::aStaticFunction','static')"/>
+<xsl:value-of select="php:function('xml\xslt_008\aClass::aStaticFunction','static')"/>
 <xsl:text>
 </xsl:text>
 <!-- TODO: Find out the exact logic of PHP objects conversion -->
-<!--<xsl:value-of select="php:function('nonDomNode')"/>--> 
+<!--<xsl:value-of select="php:function('xml\xslt_008\nonDomNode')"/>--> 
 </xsl:template>
 </xsl:stylesheet>
