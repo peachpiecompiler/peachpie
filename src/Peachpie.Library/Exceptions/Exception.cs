@@ -31,7 +31,7 @@ namespace Pchp.Library.Spl
             set => _trace = value;
         }
 
-        protected PhpValue message; // laravel makes references to this variable hence it cannot be strictly `string` // https://github.com/peachpiecompiler/peachpie/issues/564
+        protected PhpValue message; // laravel makes references to this variable hence it cannot be strictly `string` // https://github.com/peachpiecompiler/peachpie/issues/564 - can be typed as string once we allow making references to any type
         protected long code;
         protected string file;
         protected int line;
