@@ -35,7 +35,7 @@ namespace Peachpie.CodeAnalysis.Utilities
                 // get location from AST
                 var unit = syntax.ContainingSourceUnit;
                 unit.GetLineColumnFromPosition(syntax.Span.Start, out int line, out int col);
-                location = $"{unit.FilePath}({line}, {col})";
+                location = $"{unit.FilePath}({line + 1}, {col + 1})";
             }
             else if (il.SeqPointsOpt != null && il.SeqPointsOpt.Count != 0)
             {
