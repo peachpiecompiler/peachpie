@@ -11,10 +11,10 @@
 > If you run into any inconsistencies, bugs or incompatibilities, kindly let us know and we'll do our best to address them. Take a look at our [Roadmap](https://docs.peachpie.io/roadmap/) to see which features and extensions we still have to implement.
 
 <p align="center">
-<a href="http://www.nuget.org/profiles/peachpie"><img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>
+<a href="https://www.nuget.org/profiles/peachpie"><img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>
 <a href="https://docs.peachpie.io"><img src="https://img.shields.io/badge/docs-peachpie.io-green.svg"></a>  
 <a href="https://gitter.im/iolevel/peachpie"><img src="https://badges.gitter.im/iolevel/peachpie.svg"></a>
-<a href="http://www.peachpie.io"><img src="https://img.shields.io/badge/Web-peachpie.io-orange.svg"></a>
+<a href="https://www.peachpie.io"><img src="https://img.shields.io/badge/Web-peachpie.io-orange.svg"></a>
 <a href="https://twitter.com/pchpcompiler"><img src="https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg"></a>
 <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E" target="_blank"><img src="https://img.shields.io/badge/$-donate-ff69b4.svg?maxAge=2592000&amp;style=flat"></a>
 </p>
@@ -26,8 +26,8 @@ We are now a member of the [.NET Foundation](https://www.dotnetfoundation.org/ab
 
 | Service  | Platform  | Build Status  |
 |---|---|---|
-| Travis CI | Ubuntu  | [![Travis Build status](https://api.travis-ci.org/peachpiecompiler/peachpie.svg?branch=master)](https://travis-ci.org/peachpiecompiler/peachpie)  |
-| AppVeyor  | VS/Windows  | [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/1ym8cd838l0od9oa?svg=true)](https://ci.appveyor.com/project/dotnetfoundation/peachpie) |
+| Travis CI | Ubuntu 18  | [![Travis Build status](https://api.travis-ci.org/peachpiecompiler/peachpie.svg?branch=master)](https://travis-ci.org/peachpiecompiler/peachpie)  |
+| AppVeyor  | Visual Studio 2019  | [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/1ym8cd838l0od9oa?svg=true)](https://ci.appveyor.com/project/dotnetfoundation/peachpie) |
 | Azure DevOps | Windows | ![VSTS Build Status](https://iolevel.visualstudio.com/_apis/public/build/definitions/bd7dcca1-8515-44f8-81d0-bb2acc03d949/1/badge)|
 
 ## What is PeachPie?
@@ -85,7 +85,7 @@ If you found a bug, have a question or if you have an improvement suggestion, th
 ## .NET Foundation
 <a href="https://dotnetfoundation.org"><img src="https://github.com/peachpiecompiler/peachpie/blob/master/docs/logos/dotnet-foundation-logo.png" width="150" alt=".NET Foundation"></a>
   <br>
-This project is supported by the [.NET Foundation](http://www.dotnetfoundation.org).
+This project is supported by the [.NET Foundation](https://www.dotnetfoundation.org/).
 
 
 ## How to get in touch?
