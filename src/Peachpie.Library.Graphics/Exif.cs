@@ -86,13 +86,13 @@ namespace Peachpie.Library.Graphics
             //array.Add("FileDateTime", (int)File.GetCreationTime(filename).ToOADate());
             array.Add("FileSize", (int)bytes.Length);
 
-            Image<Rgba32> image;
+            IImageInfo image;
 
             using (var ms = new MemoryStream(bytes))
             {
                 try
                 {
-                    image = Image.Load<Rgba32>(ms);
+                    image = Image.Identify(ms);
                 }
                 catch
                 {
@@ -111,8 +111,6 @@ namespace Peachpie.Library.Graphics
                         array.Add(item.Tag.ToString(), ExifValueToPhpValue(item.Value));
                     }
                 }
-
-                image.Dispose();
             }
 
             return array;
@@ -327,6 +325,7 @@ namespace Peachpie.Library.Graphics
             {
                 try
                 {
+                    // TODO: Image.Identify needs a new overload that returns the format.
                     using (var image = Image.Load(ms, out format))
                     {
                         // return byte[] ~ image.MetaData.ExifProfile{ this.data, this.thumbnailOffset, this.thumbnailLength }
