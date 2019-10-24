@@ -11,8 +11,8 @@ namespace Peachpie.Library.Graphics
     /// The base class for all pixel specific image processors.
     /// </summary>
     /// <remarks>
-    /// This is a copy of the base class fom the ImageSharp project adjusted to only process
-    /// and preserve the first frame in multi-frame images.
+    /// This is a copy of the base class fom the ImageSharp project and can be deleted 
+    /// once the ImageSharp RC1 is shipped.
     /// </remarks>
     /// <typeparam name="TPixel">The pixel format.</typeparam>
     internal abstract class ImageProcessor<TPixel> : IImageProcessor<TPixel>
@@ -50,15 +50,6 @@ namespace Peachpie.Library.Graphics
         {
             try
             {
-                // PHP will only preserve the first frame of a manipulated image.
-                if (Source.Frames.Count > 0)
-                {
-                    for (int i = 1; i < Source.Frames.Count; i++)
-                    {
-                        Source.Frames.RemoveFrame(i);
-                    }
-                }
-
                 BeforeImageApply();
 
                 foreach (ImageFrame<TPixel> sourceFrame in Source.Frames)

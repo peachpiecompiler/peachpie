@@ -426,7 +426,18 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                return new PhpGdImageResource(Image.Load<Rgba32>(image, out var format), format);
+                var img = Image.Load<Rgba32>(image, out var format);
+
+                // PHP will only preserve the first frame of a multi-frame image.
+                if (img.Frames.Count > 0)
+                {
+                    for (int i = 1; i < img.Frames.Count; i++)
+                    {
+                        img.Frames.RemoveFrame(i);
+                    }
+                }
+
+                return new PhpGdImageResource(img, format);
             }
             catch
             {
@@ -535,7 +546,20 @@ namespace Peachpie.Library.Graphics
             {
                 if (stream != null)
                 {
-                    try { img = Image.Load<Rgba32>(configuration, stream, out format); }
+                    try
+                    {
+                        img = Image.Load<Rgba32>(configuration, stream, out format);
+
+                        // PHP will only preserve the first frame of a multi-frame image.
+                        if (img.Frames.Count > 0)
+                        {
+                            for (int i = 1; i < img.Frames.Count; i++)
+                            {
+                                img.Frames.RemoveFrame(i);
+                            }
+                        }
+
+                    }
                     catch { }
                 }
             }
