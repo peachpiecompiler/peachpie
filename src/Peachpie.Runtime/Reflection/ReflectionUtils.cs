@@ -83,8 +83,23 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(t != null);
             Debug.Assert(t != typeof(PhpAlias));
-            
+
             return !t.IsValueType && !typeof(PhpArray).IsAssignableFrom(t) && t != typeof(string) && t != typeof(IPhpCallable);
+        }
+
+        /// <summary>
+        /// Determines if the given type represents a compiled PHP's trait.
+        /// </summary>
+        /// <param name="t">Type, cannot be <c>null</c>.</param>
+        public static bool IsTraitType(Type t)
+        {
+            // [PhpTraitAttribute]
+            // public sealed class T { ... }
+
+            return
+                t.IsSealed &&
+                t.IsGenericTypeDefinition &&
+                t.GetCustomAttribute<PhpTraitAttribute>(false) != null;
         }
 
         /// <summary>

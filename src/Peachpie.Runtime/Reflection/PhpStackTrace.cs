@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -149,6 +150,12 @@ namespace Pchp.Core.Reflection
                 return false;
             }
 
+            // trait implementation
+            if (ReflectionUtils.IsTraitType(tinfo))
+            {
+                return false;
+            }
+
             // in Peachpie assemblies (runtime, libraries) // implicitly NonUserCode
             var ass = tinfo.Assembly;
             var token = ass.GetName().GetPublicKeyToken();
@@ -173,10 +180,14 @@ namespace Pchp.Core.Reflection
                 }
             }
 
-            // [DebuggerNonUserCodeAttribute] or [DebuggerHiddenAttribute] or [PhpHiddenAttribute]
+            // [DebuggerHiddenAttribute]
+            // [PhpHiddenAttribute]
+            // [CompilerGeneratedAttribute]
+            // [DebuggerNonUserCodeAttribute]
             if (method.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null ||
                 method.GetCustomAttribute<DebuggerHiddenAttribute>() != null ||
                 method.GetCustomAttribute<PhpHiddenAttribute>() != null ||
+                method.GetCustomAttribute<CompilerGeneratedAttribute>() != null ||
                 tinfo.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null)
             {
                 return false;

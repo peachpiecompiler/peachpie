@@ -39,7 +39,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the type is a trait.
         /// </summary>
-        public bool IsTrait => !IsInterface && _type.IsSealed && _type.IsGenericTypeDefinition && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
+        public bool IsTrait => ReflectionUtils.IsTraitType(_type);
 
         /// <summary>
         /// Gets value indicating the type was declared within a PHP code.
