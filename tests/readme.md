@@ -28,6 +28,7 @@ In case an older version of PHP is installed on your system, some PHP7 specific 
 4. put the code into a unique namespace so it will get compiled nicer
 
 ## Skipped tests
+
 Tests whose name starts with either `skip_*` or `skip(*)_*` are skipped. If possible please use the second variant and specify a reason why the test is skipped inside the parentheses.
 - E.g.: `skip(late_static_binding_forwarding_not_supported)_static_004.php`
 > `*` is a wildcard for arbitrary string.
