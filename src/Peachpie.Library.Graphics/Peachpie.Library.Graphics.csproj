@@ -11,9 +11,9 @@
     <Description>Peachpie PHP language library functions for image processing.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" />
-    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta0006" />
-    <PackageReference Include="SixLabors.Shapes.Text" Version="1.0.0-beta0008" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0007" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta0007" />
+    <PackageReference Include="SixLabors.Shapes.Text" Version="1.0.0-beta0009" />
   </ItemGroup>
 
   <ItemGroup>

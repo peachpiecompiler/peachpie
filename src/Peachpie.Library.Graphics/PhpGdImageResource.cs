@@ -56,9 +56,9 @@ namespace Peachpie.Library.Graphics
         internal Rgba32 transparentColor;
         internal bool IsTransparentColSet = false;
 
-        internal IBrush<Rgba32> styled = null;
-        internal IBrush<Rgba32> brushed = null;
-        internal IBrush<Rgba32> tiled = null;
+        internal IBrush styled = null;
+        internal IBrush brushed = null;
+        internal IBrush tiled = null;
 
         internal int LineThickness = 1;
 

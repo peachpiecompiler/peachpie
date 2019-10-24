@@ -5,7 +5,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.MetaData.Profiles.Exif;
+using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace Peachpie.Library.Graphics
@@ -86,13 +86,13 @@ namespace Peachpie.Library.Graphics
             //array.Add("FileDateTime", (int)File.GetCreationTime(filename).ToOADate());
             array.Add("FileSize", (int)bytes.Length);
 
-            Image<Rgba32> image;
+            IImageInfo image;
 
             using (var ms = new MemoryStream(bytes))
             {
                 try
                 {
-                    image = Image.Load(ms);
+                    image = Image.Identify(ms);
                 }
                 catch
                 {
@@ -104,15 +104,13 @@ namespace Peachpie.Library.Graphics
 
                 // TODO: image.MetaData.Properties, image.MetaData.IccProfile, image.MetaData.***Resolution
 
-                if (image.MetaData.ExifProfile != null)
+                if (image.Metadata.ExifProfile != null)
                 {
-                    foreach (var item in image.MetaData.ExifProfile.Values)
+                    foreach (var item in image.Metadata.ExifProfile.Values)
                     {
                         array.Add(item.Tag.ToString(), ExifValueToPhpValue(item.Value));
                     }
                 }
-
-                image.Dispose();
             }
 
             return array;
@@ -327,10 +325,11 @@ namespace Peachpie.Library.Graphics
             {
                 try
                 {
+                    // TODO: Image.Identify needs a new overload that returns the format.
                     using (var image = Image.Load(ms, out format))
                     {
                         // return byte[] ~ image.MetaData.ExifProfile{ this.data, this.thumbnailOffset, this.thumbnailLength }
-                        thumbnail = image.MetaData.ExifProfile.CreateThumbnail<Rgba32>();
+                        thumbnail = image.Metadata.ExifProfile.CreateThumbnail<Rgba32>();
                     }
                 }
                 catch
