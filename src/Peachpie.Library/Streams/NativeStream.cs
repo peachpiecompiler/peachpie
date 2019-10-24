@@ -79,9 +79,10 @@ namespace Pchp.Library.Streams
         protected override int RawWrite(byte[] buffer, int offset, int count)
         {
             long position = stream.CanSeek ? stream.Position : -1;
+
             try
             {
-                stream.Write(buffer, offset, count);
+                stream.WriteAsync(buffer, offset, count).GetAwaiter().GetResult();
                 return stream.CanSeek ? unchecked((int)(stream.Position - position)) : count;
             }
             catch (NotSupportedException)
