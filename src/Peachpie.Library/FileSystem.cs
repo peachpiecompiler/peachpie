@@ -732,7 +732,7 @@ namespace Pchp.Library
                     rv += bytes.Length;
 
                     writing = writing.IsCompleted
-                        ? ctx.OutputStream.WriteAsync(bytes)
+                        ? ctx.OutputStream.WriteAsync(bytes, 0, bytes.Length)
                         : writing.ContinueWith((_) => ctx.OutputStream.WriteAsync(bytes));
                 }
 
