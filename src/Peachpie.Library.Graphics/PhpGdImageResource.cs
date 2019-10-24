@@ -48,7 +48,7 @@ namespace Peachpie.Library.Graphics
         public bool IsIndexed =>
             _format == GifFormat.Instance ||
             _format == BmpFormat.Instance;
-        
+
         internal bool AlphaBlending = false;
         internal bool SaveAlpha = false;
         internal bool AntiAlias = false;
@@ -75,14 +75,27 @@ namespace Peachpie.Library.Graphics
         }
 
         /// <summary>
-        ///  Creates PhpGdImageResource without creating internal image
+        ///  Creates PhpGdImageResource without creating internal image.
         /// </summary>
         internal PhpGdImageResource(TImage/*!*/image, IImageFormat format)
             : this()
         {
             Debug.Assert(image != null);
+
+            // PHP will only preserve the first frame of a multi-frame image.
+            RemoveFramesRange(image, 1, image.Frames.Count - 1);
+
+            //
             _image = image;
             _format = format;
+        }
+
+        static void RemoveFramesRange(TImage/*!*/image, int from, int count)
+        {
+            while (count-- > 0)
+            {
+                image.Frames.RemoveFrame(from);
+            }
         }
 
         /// <summary>
