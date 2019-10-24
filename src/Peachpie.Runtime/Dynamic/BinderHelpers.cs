@@ -951,7 +951,9 @@ namespace Pchp.Core.Dynamic
                     else if (p.IsImportCallerClassParameter())
                     {
                         // TODO: pass classctx from the callsite
-                        throw new NotImplementedException();
+                        Debug.WriteLine("TODO: pass classctx from the callsite");
+
+                        boundargs[i] = Expression.Default(p.ParameterType);
                     }
                     else if (p.IsImportCallerStaticClassParameter())
                     {

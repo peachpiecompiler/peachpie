@@ -398,6 +398,34 @@ namespace Pchp.Core.Dynamic
                 return (_lazyInitBlock.Count != 0) ? (Expression)Expression.Block(_lazyInitBlock) : Expression.Empty();
             }
 
+            /// <summary>
+            /// Creates expression representing value from [DefaultValueAttribute]
+            /// </summary>
+            protected Expression BindDefaultValue(DefaultValueAttribute/*!*/attr)
+            {
+                Debug.Assert(attr != null);
+                Debug.Assert(attr.Type == DefaultValueAttribute.DefaultValueType.PhpArray); // supported values
+
+                if (attr.SerializedValue != null && attr.SerializedValue.Length != 0)
+                {
+                    // _ctx.Call(string "unserialize", PhpValue[] { SerializedValue });
+                    return Expression.Call(_ctx, "Call", Array.Empty<Type>(),
+                        Expression.Constant("unserialize"),
+                        Expression.NewArrayInit(Cache.Types.PhpValue, Expression.Constant(PhpValue.Create(attr.SerializedValue)))
+                    );
+                }
+                else
+                {
+                    switch (attr.Type)
+                    {
+                        case DefaultValueAttribute.DefaultValueType.PhpArray:
+                            return Expression.Constant(PhpArray.Empty); // will be deep-copied if needed
+                        default:
+                            throw new ArgumentException();
+                    }
+                }
+            }
+
             #endregion
 
             #region ArgsArrayBinder
@@ -458,12 +486,14 @@ namespace Pchp.Core.Dynamic
 
                     if (targetparam != null)
                     {
+                        DefaultValueAttribute defaultValueAttr = null;
+
                         // create specialized variable with default value
-                        if (targetparam.HasDefaultValue)
+                        if (targetparam.HasDefaultValue) // || (defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>()) != null)
                         {
                             var @default = targetparam.DefaultValue;
                             var defaultValueExpr = Expression.Constant(@default);
-                            var defaultValueStr = (@default != null) ? @default.ToString() : "NULL";
+                            var defaultValueStr = @default != null ? @default.ToString() : "NULL";
 
                             //
                             var key2 = new TmpVarKey() { Priority = 1 /*after key*/, ArgIndex = srcarg, Prefix = "arg(" + defaultValueStr + ")" };
@@ -482,10 +512,13 @@ namespace Pchp.Core.Dynamic
 
                             return value2.Expression;   // already converted to targetparam.ParameterType
                         }
-                        else if (targetparam.GetCustomAttribute<DefaultValueAttribute>() != null)
+                        else
                         {
-                            // TODO: DefaultValueAttribute 
-                            //Debug.Fail("default value lost");
+                            defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>();
+                            if (defaultValueAttr != null)
+                            {
+                                return ConvertExpression.Bind(BindDefaultValue(defaultValueAttr), targetparam.ParameterType, _ctx);
+                            }
                         }
                     }
 
@@ -612,12 +645,16 @@ namespace Pchp.Core.Dynamic
                             {
                                 return ConvertExpression.Bind(Expression.Constant(targetparam.DefaultValue), targetparam.ParameterType, _ctx);
                             }
-                            else if (targetparam.GetCustomAttribute<DefaultValueAttribute>() != null)
+                            else
                             {
-                                // TODO: DefaultValueAttribute 
-                                //Debug.Fail("default value lost");
+                                var defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>();
+                                if (defaultValueAttr != null)
+                                {
+                                    return ConvertExpression.Bind(BindDefaultValue(defaultValueAttr), targetparam.ParameterType, _ctx);
+                                }
                             }
 
+                            //
                             return ConvertExpression.BindDefault(targetparam.ParameterType);
                         }
 

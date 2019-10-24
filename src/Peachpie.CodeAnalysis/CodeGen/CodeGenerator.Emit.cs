@@ -406,7 +406,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(SpecialType.System_String);
                     }
                 }
-                else if (stack.IsReferenceType && this.Routine != null)
+                else if (stack.Is_PhpArray() || stack.IsStringType())
+                {
+                    // already specialied reference types
+                }
+                else if (stack.IsReferenceType && !stack.IsSealed && this.Routine != null)
                 {
                     var tref = this.TypeRefContext.GetTypes(tmask).FirstOrDefault();
                     if (tref.IsObject)
@@ -2479,6 +2483,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
                 var cg = this;
+
+                // this is basically all wrong:
 
                 if (targetp.OriginalDefinition is SourceParameterSymbol)
                 {
