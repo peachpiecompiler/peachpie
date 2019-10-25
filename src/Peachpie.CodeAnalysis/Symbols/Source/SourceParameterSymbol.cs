@@ -70,7 +70,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     var field = new SynthesizedFieldSymbol(
                         ContainingType,
                         fldtype, $"<{ContainingSymbol.Name}.{Name}>_DefaultValue",
-                        Accessibility.Internal, isStatic: true, isReadOnly: true);
+                        accessibility: Accessibility.Public,
+                        isStatic: true, isReadOnly: true);
 
                     //
                     Interlocked.CompareExchange(ref _lazyDefaultValueField, field, null);

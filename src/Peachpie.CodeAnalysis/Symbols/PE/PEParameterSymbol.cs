@@ -666,7 +666,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     var container = attr.NamedArguments.SingleOrDefault(pair => pair.Key == "ExplicitType").Value.Value as ITypeSymbol
                         ?? ContainingType;
 
-                    return container.GetMembers(fldname).OfType<FieldSymbol>().Single();
+                    var field = container.GetMembers(fldname).OfType<FieldSymbol>().Single();
+                    Debug.Assert(field.IsStatic);
+                    return field;
                 }
 
                 return null;
