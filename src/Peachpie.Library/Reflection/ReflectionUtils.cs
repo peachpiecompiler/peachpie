@@ -71,7 +71,7 @@ namespace Pchp.Library.Reflection
             }
 
             //
-            var field = (attr.ExplicitType ?? containingType).GetField(attr.FieldName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.GetField);
+            var field = (attr.ExplicitType ?? containingType).GetField(attr.FieldName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.GetField);
             if (field != null)
             {
                 Debug.Assert(field.IsStatic);
