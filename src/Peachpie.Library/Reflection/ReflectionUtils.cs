@@ -48,26 +48,39 @@ namespace Pchp.Library.Reflection
         /// TODO: move to Peachpie.Runtime
         /// Creates PhpValue from this attribute.
         /// </summary>
-        public static PhpValue ResolveDefaultValueAttribute(this DefaultValueAttribute attr)
+        public static PhpValue ResolveDefaultValueAttribute(this DefaultValueAttribute attr, Type containingType)
         {
-            if (attr.SerializedValue != null && attr.SerializedValue.Length != 0)
+            if (attr == null)
             {
-                using (var stream = new MemoryStream(attr.SerializedValue))
-                {
-                    var reader = new PhpSerialization.PhpSerializer.ObjectReader(null, Encoding.UTF8, stream, default);
-                    return reader.Deserialize();
-                }
+                return default;
+            }
+
+            // special case, empty array:
+            if (attr.FieldName == "Empty" && attr.ExplicitType == typeof(PhpArray))
+            {
+                // NOTE: make sure the value will be copied when accessed!
+                return PhpArray.Empty;
+            }
+
+            // resolve declaring type (bind trait definitions)
+            if (Core.Reflection.ReflectionUtils.IsTraitType(containingType) && !containingType.IsConstructedGenericType)
+            {
+                // construct something! T<object>
+                // NOTE: "self::class" will refer to "System.Object"
+                containingType = containingType.MakeGenericType(typeof(object));
+            }
+
+            //
+            var field = (attr.ExplicitType ?? containingType).GetField(attr.FieldName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.GetField);
+            if (field != null)
+            {
+                Debug.Assert(field.IsStatic);
+                return PhpValue.FromClr(field.GetValue(null));
             }
             else
             {
-                switch (attr.Type)
-                {
-                    case DefaultValueAttribute.DefaultValueType.PhpArray:
-                        return PhpArray.NewEmpty();
-                    default:
-                        Debug.Fail("Unexpected data.");
-                        return default;
-                }
+                Debug.Fail($"Backing field {attr.FieldName} for parameter default value not found.");
+                return default;
             }
         }
 
@@ -97,7 +110,7 @@ namespace Pchp.Library.Reflection
                     }
                     else if ((defaultValueAttr = p.GetCustomAttribute<DefaultValueAttribute>()) != null)
                     {
-                        defaultValue = ResolveDefaultValueAttribute(defaultValueAttr);
+                        defaultValue = defaultValueAttr.ResolveDefaultValueAttribute(overloads[mi].DeclaringType);
                     }
                     else
                     {

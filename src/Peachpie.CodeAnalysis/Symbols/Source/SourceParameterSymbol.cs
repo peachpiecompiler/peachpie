@@ -37,6 +37,49 @@ namespace Pchp.CodeAnalysis.Symbols
         public override BoundExpression Initializer => _initializer;
         readonly BoundExpression _initializer;
 
+        public override FieldSymbol DefaultValueField
+        {
+            get
+            {
+                if (_lazyDefaultValueField == null && Initializer != null && ExplicitDefaultConstantValue == null)
+                {
+                    TypeSymbol fldtype; // type of the field
+
+                    if (Initializer is BoundArrayEx arr)
+                    {
+                        // special case: empty array
+                        if (arr.Items.Length == 0)
+                        {
+                            // PhpArray.Empty
+                            return DeclaringCompilation.CoreMethods.PhpArray.Empty;
+                        }
+
+                        //   
+                        fldtype = DeclaringCompilation.CoreTypes.PhpArray;
+                    }
+                    else if (Initializer is BoundPseudoClassConst)
+                    {
+                        fldtype = DeclaringCompilation.GetSpecialType(SpecialType.System_String);
+                    }
+                    else
+                    {
+                        fldtype = DeclaringCompilation.CoreTypes.PhpValue;
+                    }
+
+                    // internal static readonly PhpArray ..;
+                    var field = new SynthesizedFieldSymbol(
+                        ContainingType,
+                        fldtype, $"<{ContainingSymbol.Name}.{Name}>_DefaultValue",
+                        Accessibility.Internal, isStatic: true, isReadOnly: true);
+
+                    //
+                    Interlocked.CompareExchange(ref _lazyDefaultValueField, field, null);
+                }
+                return _lazyDefaultValueField;
+            }
+        }
+        FieldSymbol _lazyDefaultValueField;
+
         public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int relindex, PHPDocBlock.ParamTag ptagOpt)
         {
             Contract.ThrowIfNull(routine);
@@ -199,7 +242,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsParams => _syntax.IsVariadic;
 
         public override int Ordinal => _relindex + _routine.ImplicitParameters.Length;
-        
+
         /// <summary>
         /// Zero-based index of the source parameter.
         /// </summary>
@@ -236,9 +279,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // [DefaultValue]
-            if (this.Initializer is BoundArrayEx arr)
+            if (DefaultValueField != null)
             {
-                yield return DeclaringCompilation.CreateDefaultValueAttribute(Routine, arr);
+                yield return DeclaringCompilation.CreateDefaultValueAttribute(ContainingType, DefaultValueField);
             }
 
             //

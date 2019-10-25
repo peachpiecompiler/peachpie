@@ -212,7 +212,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     var ps = phpconstruct.Parameters;
                     for (int i = 0; i < ps.Length; i++)
                     {
-                        if (ps[i].HasUnmappedDefaultValue)
+                        if (ps[i].HasUnmappedDefaultValue())
                         {
                             yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct, i);
                         }

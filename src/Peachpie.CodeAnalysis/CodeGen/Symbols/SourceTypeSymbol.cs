@@ -531,7 +531,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     var ps = m.Parameters;
                     for (int i = 0; i < ps.Length; i++)
                     {
-                        if (ps[i].HasUnmappedDefaultValue)  // => ConstantValue couldn't be resolved for optional parameter
+                        if (ps[i].HasUnmappedDefaultValue())  // => ConstantValue couldn't be resolved for optional parameter
                         {
                             // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
                             GhostMethodBuilder.CreateGhostOverload(m, module, DiagnosticBag.GetInstance(), i);

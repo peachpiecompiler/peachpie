@@ -174,7 +174,7 @@ namespace Pchp.Library.Reflection
 
         public ReflectionFunctionAbstract getDeclaringFunction() => _function;
 
-        public PhpValue getDefaultValue() => _defaultValue.IsDefault ? throw new ReflectionException() : _defaultValue;
+        public PhpValue getDefaultValue() => _defaultValue.IsDefault ? throw new ReflectionException() : _defaultValue.DeepCopy();
 
         public string getDefaultValueConstantName() => null; // we don't know
 

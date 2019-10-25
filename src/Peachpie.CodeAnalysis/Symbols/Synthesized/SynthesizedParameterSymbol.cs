@@ -27,8 +27,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         private int _ordinal;
 
-        public override BoundExpression Initializer => _initializer;
-        private readonly BoundExpression _initializer; // TODO: sanitize this
+        public override BoundExpression Initializer => null;
+
+        public override FieldSymbol DefaultValueField { get; }
 
         public SynthesizedParameterSymbol(
             MethodSymbol container,
@@ -40,7 +41,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ImmutableArray<CustomModifier> customModifiers = default(ImmutableArray<CustomModifier>),
             ushort countOfCustomModifiersPrecedingByRef = 0,
             ConstantValue explicitDefaultConstantValue = null,
-            BoundExpression initializer = null)
+            FieldSymbol defaultValueField = null)
         {
             Debug.Assert((object)type != null);
             Debug.Assert(name != null);
@@ -55,16 +56,41 @@ namespace Pchp.CodeAnalysis.Symbols
             _customModifiers = customModifiers.NullToEmpty();
             _countOfCustomModifiersPrecedingByRef = countOfCustomModifiersPrecedingByRef;
             _explicitDefaultConstantValue = explicitDefaultConstantValue;
-            _initializer = initializer;
+
+            this.DefaultValueField = defaultValueField;
         }
 
         public static SynthesizedParameterSymbol Create(MethodSymbol container, ParameterSymbol p)
         {
+            var defaultValueField = ((ParameterSymbol)p.OriginalDefinition).DefaultValueField;
+            if (defaultValueField != null && defaultValueField.ContainingType.IsTraitType())
+            {
+                var selfcontainer = container.ContainingType;
+                var fieldcontainer = defaultValueField.ContainingType;
+                var newowner = fieldcontainer;
+
+                // this is trait ?
+                if (selfcontainer.OriginalDefinition is SourceTraitTypeSymbol st)
+                {
+                    newowner = fieldcontainer.ConstructedFrom.Construct(st.TSelfParameter);
+                }
+                else if (fieldcontainer.IsTraitType())
+                {
+                    newowner = fieldcontainer.ConstructedFrom.Construct(selfcontainer);
+                }
+
+                //
+                if (newowner != fieldcontainer)
+                {
+                    defaultValueField = defaultValueField.AsMember(newowner);
+                }
+            }
+
             return new SynthesizedParameterSymbol(container, p.Type, p.Ordinal, p.RefKind,
                 name: p.Name,
                 isParams: p.IsParams,
                 explicitDefaultConstantValue: p.ExplicitDefaultConstantValue,
-                initializer: ((IPhpValue)p.OriginalDefinition).Initializer); // TODO: sanitize BoundExpression
+                defaultValueField: defaultValueField);
         }
 
         internal override TypeSymbol Type
@@ -113,9 +139,9 @@ namespace Pchp.CodeAnalysis.Symbols
             // TODO: preserve [NotNull]
 
             // [DefaultValue]
-            if (this.Initializer is BoundArrayEx arr)
+            if (DefaultValueField != null)
             {
-                yield return DeclaringCompilation.CreateDefaultValueAttribute(_container, arr);
+                yield return DeclaringCompilation.CreateDefaultValueAttribute(ContainingType, DefaultValueField);
             }
 
             //

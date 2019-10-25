@@ -2475,16 +2475,22 @@ namespace Pchp.CodeAnalysis.CodeGen
             // emit targetp default value:
             ConstantValue cvalue;
             BoundExpression boundinitializer;
+            FieldSymbol defaultvaluefield;
 
             if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
                 ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
             }
+            else if ((defaultvaluefield = targetp.DefaultValueField) != null)
+            {
+                Debug.Assert(defaultvaluefield.IsStatic);
+                ptype = defaultvaluefield.EmitLoad(this);
+            }
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
+                // DEPRECATED AND NOT USED ANYMORE:
+                
                 var cg = this;
-
-                // this is basically all wrong:
 
                 if (targetp.OriginalDefinition is SourceParameterSymbol)
                 {
@@ -2513,7 +2519,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (targetp.IsParams)
             {
-                // new T[0]
+                // Template: System.Array.Empty<T>()
                 Emit_EmptyArray(((ArrayTypeSymbol)targetp.Type).ElementType);
                 return;
             }

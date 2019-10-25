@@ -401,29 +401,20 @@ namespace Pchp.Core.Dynamic
             /// <summary>
             /// Creates expression representing value from [DefaultValueAttribute]
             /// </summary>
-            protected Expression BindDefaultValue(DefaultValueAttribute/*!*/attr)
+            protected Expression BindDefaultValue(Type containingType, DefaultValueAttribute/*!*/attr)
             {
                 Debug.Assert(attr != null);
-                Debug.Assert(attr.Type == DefaultValueAttribute.DefaultValueType.PhpArray); // supported values
 
-                if (attr.SerializedValue != null && attr.SerializedValue.Length != 0)
-                {
-                    // _ctx.Call(string "unserialize", PhpValue[] { SerializedValue });
-                    return Expression.Call(_ctx, "Call", Array.Empty<Type>(),
-                        Expression.Constant("unserialize"),
-                        Expression.NewArrayInit(Cache.Types.PhpValue, Expression.Constant(PhpValue.Create(attr.SerializedValue)))
-                    );
-                }
-                else
-                {
-                    switch (attr.Type)
-                    {
-                        case DefaultValueAttribute.DefaultValueType.PhpArray:
-                            return Expression.Constant(PhpArray.Empty); // will be deep-copied if needed
-                        default:
-                            throw new ArgumentException();
-                    }
-                }
+                //if (ReflectionUtils.IsTraitType(containingType) && !containingType.IsConstructedGenericType)
+                //{
+                //    // UNREACHABLE
+
+                //    // construct something! T<object>
+                //    // NOTE: "self::class" will refer to "System.Object"
+                //    containingType = containingType.MakeGenericType(typeof(object));
+                //}
+
+                return Expression.Field(null, attr.ExplicitType ?? containingType, attr.FieldName);
             }
 
             #endregion
@@ -517,7 +508,7 @@ namespace Pchp.Core.Dynamic
                             defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>();
                             if (defaultValueAttr != null)
                             {
-                                return ConvertExpression.Bind(BindDefaultValue(defaultValueAttr), targetparam.ParameterType, _ctx);
+                                return ConvertExpression.Bind(BindDefaultValue(targetparam.Member.DeclaringType, defaultValueAttr), targetparam.ParameterType, _ctx);
                             }
                         }
                     }
@@ -650,7 +641,7 @@ namespace Pchp.Core.Dynamic
                                 var defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>();
                                 if (defaultValueAttr != null)
                                 {
-                                    return ConvertExpression.Bind(BindDefaultValue(defaultValueAttr), targetparam.ParameterType, _ctx);
+                                    return ConvertExpression.Bind(BindDefaultValue(targetparam.Member.DeclaringType, defaultValueAttr), targetparam.ParameterType, _ctx);
                                 }
                             }
 

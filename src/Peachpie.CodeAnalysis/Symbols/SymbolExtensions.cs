@@ -183,6 +183,19 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// Determines if parameter has a default value.
+        /// </summary>
+        public static bool IsPhpOptionalParameter(this ParameterSymbol p)
+        {
+            return p.ExplicitDefaultConstantValue != null || p.DefaultValueField != null || p.Initializer != null;
+        }
+
+        /// <summary>
+        /// Gets value indicating the parameter has default value that is not supported by CLR metadata.
+        /// </summary>
+        public static bool HasUnmappedDefaultValue(this ParameterSymbol p) => p.DefaultValueField != null;
+
+        /// <summary>
         /// Gets [PhpType] attribute and its parameters.
         /// </summary>
         public static bool TryGetPhpTypeAttribute(this TypeSymbol symbol, out string typename, out string filename)

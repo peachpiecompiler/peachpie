@@ -56,6 +56,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override BoundExpression Initializer => underlyingParameter.Initializer;
 
+        public override FieldSymbol DefaultValueField => underlyingParameter.DefaultValueField;
+
         internal override TypeSymbol Type => underlyingParameter.Type;
 
         public sealed override RefKind RefKind => underlyingParameter.RefKind;

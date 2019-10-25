@@ -1,5 +1,5 @@
 <?php
-namespace functions\param_default;
+namespace functions\param_default_001;
 
 class C {
     const C = 1;

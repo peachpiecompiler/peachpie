@@ -99,7 +99,7 @@ namespace Pchp.CodeAnalysis.Symbols
             for (int i = 0; i <= srcparams.Length; i++) // how many to be copied from {srcparams}
             {
                 var isfake = /*srcparams[i - 1].IsFake*/ implicitVarArgs != null && i > 0 && srcparams[i - 1].Ordinal >= implicitVarArgs.Ordinal; // parameter was replaced with [params]
-                var hasdefault = i < srcparams.Length && srcparams[i].HasUnmappedDefaultValue;  // ConstantValue couldn't be resolved for optional parameter
+                var hasdefault = i < srcparams.Length && srcparams[i].HasUnmappedDefaultValue();  // ConstantValue couldn't be resolved for optional parameter
 
                 if (isfake || hasdefault) 
                 {
@@ -141,66 +141,116 @@ namespace Pchp.CodeAnalysis.Symbols
             return list ?? (IList<MethodSymbol>)Array.Empty<MethodSymbol>();
         }
 
+        /// <summary>
+        /// Emits initializers of all parameter's non-standard default values (such as PhpArray)
+        /// within the type's static .cctor
+        /// </summary>
+        private void EmitParametersDefaultValue(PEModuleBuilder module)
+        {
+            foreach (var p in this.SourceParameters)
+            {
+                var field = p.DefaultValueField;
+                if (field is SynthesizedFieldSymbol)
+                {
+                    Debug.Assert(p.Initializer != null);
+
+                    module.SynthesizedManager.AddField(field.ContainingType, p.DefaultValueField);
+
+                    // .cctor() {
+                    
+                    var cctor = module.GetStaticCtorBuilder(field.ContainingType);
+                    lock (cctor)
+                    {
+                        using (var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, ContainingType, null, thisPlace: null)
+                        {
+                            CallerType = ContainingType,
+                            ContainingFile = ContainingFile,
+                            IsInCachedArrayExpression = true,   // do not cache array initializers twice
+                        })
+                        {
+                            // {field} = {Initializer};
+                            var fldplace = new FieldPlace(null, field, module);
+                            fldplace.EmitStorePrepare(cg.Builder);
+                            cg.EmitConvert(p.Initializer, field.Type);
+                            fldplace.EmitStore(cg.Builder);
+                        }
+                    }
+                }
+            }
+        }
+
         public virtual void Generate(CodeGenerator cg)
         {
-            if (!this.IsGeneratorMethod())
+            if (this.IsGeneratorMethod())
             {
-                //Proceed with normal method generation
-                cg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
+                // generate method as a state machine (SM) in a separate synthesized method
+                // this routine returns instance of new SM:
+                GenerateGeneratorMethod(cg);
             }
             else
             {
-                var genSymbol = new SourceGeneratorSymbol(this);
-                var il = cg.Builder;
-
-                /* Template:
-                 * return BuildGenerator( <ctx>, this, new PhpArray(){ p1, p2, ... }, new GeneratorStateMachineDelegate((IntPtr)<genSymbol>), (RuntimeMethodHandle)this )
-                 */
-
-                cg.EmitLoadContext(); // ctx for generator
-                cg.EmitThisOrNull();  // @this for generator
-
-                // new PhpArray for generator's locals
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
-
-                var generatorsLocals = cg.GetTemporaryLocal(cg.CoreTypes.PhpArray);
-                cg.Builder.EmitLocalStore(generatorsLocals);
-
-                // initialize parameters (set their _isOptimized and copy them to locals array)
-                InitializeParametersForGeneratorMethod(cg, il, generatorsLocals);
-                cg.Builder.EmitLoad(generatorsLocals);
-                cg.ReturnTemporaryLocal(generatorsLocals);
-
-                // new PhpArray for generator's synthesizedLocals
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
-
-                // new GeneratorStateMachineDelegate(<genSymbol>) delegate for generator
-                cg.Builder.EmitNullConstant(); // null
-                cg.EmitOpCode(ILOpCode.Ldftn); // method
-                cg.EmitSymbolToken(genSymbol, null);
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
-
-                // handleof(this)
-                cg.EmitLoadToken(this, null);
-
-                // create generator object via Operators factory method
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle);
-
-                // .UseDynamicScope( scope ) : Generator
-                if (this is SourceLambdaSymbol lambda)
-                {
-                    lambda.GetCallerTypePlace().EmitLoad(cg.Builder); // RuntimeTypeContext
-                    cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("UseDynamicScope", cg.CoreTypes.Generator, cg.CoreTypes.RuntimeTypeHandle))
-                        .Expect(cg.CoreTypes.Generator);
-                }
-
-                // Convert to return type (Generator or PhpValue, depends on analysis)
-                cg.EmitConvert(cg.CoreTypes.Generator, 0, this.ReturnType);
-                il.EmitRet(false);
-
-                // Generate SM method. Must be generated after EmitInit of parameters (it sets their _isUnoptimized field).
-                CreateStateMachineNextMethod(cg, genSymbol);
+                // normal method generation:
+                cg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
             }
+
+            //
+            EmitParametersDefaultValue(cg.Module);
+        }
+
+        private void GenerateGeneratorMethod(CodeGenerator cg)
+        {
+            Debug.Assert(this.IsGeneratorMethod());
+
+            var genSymbol = new SourceGeneratorSymbol(this);
+            var il = cg.Builder;
+
+            /* Template:
+             * return BuildGenerator( <ctx>, this, new PhpArray(){ p1, p2, ... }, new GeneratorStateMachineDelegate((IntPtr)<genSymbol>), (RuntimeMethodHandle)this )
+             */
+
+            cg.EmitLoadContext(); // ctx for generator
+            cg.EmitThisOrNull();  // @this for generator
+
+            // new PhpArray for generator's locals
+            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
+
+            var generatorsLocals = cg.GetTemporaryLocal(cg.CoreTypes.PhpArray);
+            cg.Builder.EmitLocalStore(generatorsLocals);
+
+            // initialize parameters (set their _isOptimized and copy them to locals array)
+            InitializeParametersForGeneratorMethod(cg, il, generatorsLocals);
+            cg.Builder.EmitLoad(generatorsLocals);
+            cg.ReturnTemporaryLocal(generatorsLocals);
+
+            // new PhpArray for generator's synthesizedLocals
+            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
+
+            // new GeneratorStateMachineDelegate(<genSymbol>) delegate for generator
+            cg.Builder.EmitNullConstant(); // null
+            cg.EmitOpCode(ILOpCode.Ldftn); // method
+            cg.EmitSymbolToken(genSymbol, null);
+            cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
+
+            // handleof(this)
+            cg.EmitLoadToken(this, null);
+
+            // create generator object via Operators factory method
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle);
+
+            // .UseDynamicScope( scope ) : Generator
+            if (this is SourceLambdaSymbol lambda)
+            {
+                lambda.GetCallerTypePlace().EmitLoad(cg.Builder); // RuntimeTypeContext
+                cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("UseDynamicScope", cg.CoreTypes.Generator, cg.CoreTypes.RuntimeTypeHandle))
+                    .Expect(cg.CoreTypes.Generator);
+            }
+
+            // Convert to return type (Generator or PhpValue, depends on analysis)
+            cg.EmitConvert(cg.CoreTypes.Generator, 0, this.ReturnType);
+            il.EmitRet(false);
+
+            // Generate SM method. Must be generated after EmitInit of parameters (it sets their _isUnoptimized field).
+            CreateStateMachineNextMethod(cg, genSymbol);
         }
 
         private void InitializeParametersForGeneratorMethod(CodeGenerator cg, Microsoft.CodeAnalysis.CodeGen.ILBuilder il, Microsoft.CodeAnalysis.CodeGen.LocalDefinition generatorsLocals)
