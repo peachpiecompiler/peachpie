@@ -1284,7 +1284,14 @@ namespace Peachpie.Library.Graphics
                 // not specified stream or filename -> save to the output stream
                 if (Operators.IsEmpty(to)) // ~ is default or empty
                 {
-                    saveaction(img.Image, ctx.OutputStream);
+                    using (var ms = new MemoryStream())
+                    {
+                        saveaction(img.Image, ms);
+
+                        // use WriteAsync() always
+                        ms.Position = 0;
+                        ms.CopyToAsync(ctx.OutputStream).GetAwaiter().GetResult();
+                    }
                     return true;
                 }
 
@@ -1310,12 +1317,13 @@ namespace Peachpie.Library.Graphics
 
                 // save image to byte[] and pass it to php stream
 
-                var ms = new MemoryStream();
+                using (var ms = new MemoryStream())
+                {
+                    saveaction(img.Image, ms);
 
-                saveaction(img.Image, ms);
-
-                phpstream.WriteBytes(ms.ToArray());
-                phpstream.Flush();
+                    phpstream.WriteBytes(ms.ToArray());
+                    phpstream.Flush();
+                }
 
                 // stream is closed after the operation
                 phpstream.Dispose();
