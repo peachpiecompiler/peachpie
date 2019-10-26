@@ -1630,6 +1630,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     candidates = Construct(candidates, x);
 
                     x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, true);
+
+                    //
+                    if (x.TargetMethod.IsValidMethod() && x.TargetMethod.IsStatic && x.Instance.TypeRefMask.IncludesSubclasses)
+                    {
+                        // static method invoked on an instance object,
+                        // must be postponed to runtime since the type may change
+                        x.TargetMethod = new AmbiguousMethodSymbol(ImmutableArray.Create(x.TargetMethod), false);
+                    }
                 }
                 else
                 {
