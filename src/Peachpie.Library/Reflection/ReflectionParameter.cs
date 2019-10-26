@@ -135,7 +135,7 @@ namespace Pchp.Library.Reflection
                     : new ReflectionMethod(declaringclass, routine);
 
                 // resolve parameter:
-                var parameters = ReflectionUtils.ResolveReflectionParameters(func, routine.Methods);
+                var parameters = ReflectionUtils.ResolveReflectionParameters(ctx, func, routine.Methods);
                 var pstr = parameter.AsString();
                 if (pstr != null)
                 {

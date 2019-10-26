@@ -119,9 +119,9 @@ namespace Pchp.Library.Reflection
         /// Get the parameters as an array of <see cref="ReflectionParameter"/>.
         /// </summary>
         /// <returns>The parameters, as <see cref="ReflectionParameter"/> objects.</returns>
-        public PhpArray getParameters()
+        public PhpArray getParameters(Context ctx)
         {
-            var parameters = ReflectionUtils.ResolveReflectionParameters(this, _routine.Methods);
+            var parameters = ReflectionUtils.ResolveReflectionParameters(ctx, this, _routine.Methods);
 
             //
 

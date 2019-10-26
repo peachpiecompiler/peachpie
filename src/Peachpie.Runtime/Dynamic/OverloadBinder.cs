@@ -414,7 +414,19 @@ namespace Pchp.Core.Dynamic
                 //    containingType = containingType.MakeGenericType(typeof(object));
                 //}
 
-                return Expression.Field(null, attr.ExplicitType ?? containingType, attr.FieldName);
+                var field = Expression.Field(null, attr.ExplicitType ?? containingType, attr.FieldName);
+                if (field.Type == typeof(Func<Context, PhpValue>))
+                {
+                    // we can call the stub directly:
+                    // var func = Expression.Call(null, attr.ExplicitType ?? containingType, attr.FieldName + "Func", _ctx);
+
+                    // return {field}(ctx)
+                    return Expression.Call(field, field.Type.GetMethod("Invoke"), _ctx);
+                }
+                else
+                {
+                    return field;
+                }
             }
 
             #endregion

@@ -1702,7 +1702,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     //
 
                     var arg_type = (ArrayTypeSymbol)arguments[arg_index].Value.Emit(this); // {args}
-                    
+
                     // {args} on STACK:
 
                     if (p.IsParams)
@@ -2485,11 +2485,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Debug.Assert(defaultvaluefield.IsStatic);
                 ptype = defaultvaluefield.EmitLoad(this);
+
+                if (ptype.Is_Func_Context_PhpValue())
+                {
+                    this.EmitLoadContext();
+
+                    // .Invoke( ctx )
+                    ptype = this.Builder.EmitCall(Module, Diagnostics, ILOpCode.Callvirt, ptype.DelegateInvokeMethod());
+                }
             }
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
                 // DEPRECATED AND NOT USED ANYMORE:
-                
+
                 var cg = this;
 
                 if (targetp.OriginalDefinition is SourceParameterSymbol)

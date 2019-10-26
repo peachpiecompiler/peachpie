@@ -43,6 +43,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ConstantValue explicitDefaultConstantValue = null,
             FieldSymbol defaultValueField = null)
         {
+            Debug.Assert(container != null);
             Debug.Assert((object)type != null);
             Debug.Assert(name != null);
             Debug.Assert(ordinal >= 0);

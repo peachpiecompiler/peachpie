@@ -44,7 +44,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_lazyDefaultValueField == null && Initializer != null && ExplicitDefaultConstantValue == null)
                 {
                     TypeSymbol fldtype; // type of the field
-
+                    
                     if (Initializer is BoundArrayEx arr)
                     {
                         // special case: empty array
@@ -66,10 +66,19 @@ namespace Pchp.CodeAnalysis.Symbols
                         fldtype = DeclaringCompilation.CoreTypes.PhpValue;
                     }
 
-                    // internal static readonly PhpArray ..;
+                    if (Initializer.RequiresContext)
+                    {
+                        // Func<Context, PhpValue>
+                        fldtype = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Func_T2).Construct(
+                            DeclaringCompilation.CoreTypes.Context,
+                            DeclaringCompilation.CoreTypes.PhpValue);
+                    }
+
+                    // public static readonly T ..;
                     var field = new SynthesizedFieldSymbol(
                         ContainingType,
-                        fldtype, $"<{ContainingSymbol.Name}.{Name}>_DefaultValue",
+                        fldtype,
+                        $"<{ContainingSymbol.Name}.{Name}>_DefaultValue",
                         accessibility: Accessibility.Public,
                         isStatic: true, isReadOnly: true);
 

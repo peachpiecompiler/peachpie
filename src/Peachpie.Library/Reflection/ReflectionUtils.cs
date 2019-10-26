@@ -48,7 +48,7 @@ namespace Pchp.Library.Reflection
         /// TODO: move to Peachpie.Runtime
         /// Creates PhpValue from this attribute.
         /// </summary>
-        public static PhpValue ResolveDefaultValueAttribute(this DefaultValueAttribute attr, Type containingType)
+        public static PhpValue ResolveDefaultValueAttribute(this DefaultValueAttribute attr, Context ctx, Type containingType)
         {
             if (attr == null)
             {
@@ -75,7 +75,15 @@ namespace Pchp.Library.Reflection
             if (field != null)
             {
                 Debug.Assert(field.IsStatic);
-                return PhpValue.FromClr(field.GetValue(null));
+                var value = field.GetValue(null);
+                if (value is Func<Context, PhpValue> func)
+                {
+                    return func(ctx);
+                }
+                else
+                {
+                    return PhpValue.FromClr(value);
+                }
             }
             else
             {
@@ -84,7 +92,7 @@ namespace Pchp.Library.Reflection
             }
         }
 
-        public static List<ReflectionParameter> ResolveReflectionParameters(ReflectionFunctionAbstract function, MethodInfo[] overloads)
+        public static List<ReflectionParameter> ResolveReflectionParameters(Context ctx, ReflectionFunctionAbstract function, MethodInfo[] overloads)
         {
             var parameters = new List<ReflectionParameter>();
 
@@ -110,7 +118,7 @@ namespace Pchp.Library.Reflection
                     }
                     else if ((defaultValueAttr = p.GetCustomAttribute<DefaultValueAttribute>()) != null)
                     {
-                        defaultValue = defaultValueAttr.ResolveDefaultValueAttribute(overloads[mi].DeclaringType);
+                        defaultValue = defaultValueAttr.ResolveDefaultValueAttribute(ctx, overloads[mi].DeclaringType);
                     }
                     else
                     {

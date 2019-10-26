@@ -101,7 +101,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var isfake = /*srcparams[i - 1].IsFake*/ implicitVarArgs != null && i > 0 && srcparams[i - 1].Ordinal >= implicitVarArgs.Ordinal; // parameter was replaced with [params]
                 var hasdefault = i < srcparams.Length && srcparams[i].HasUnmappedDefaultValue();  // ConstantValue couldn't be resolved for optional parameter
 
-                if (isfake || hasdefault) 
+                if (isfake || hasdefault)
                 {
                     if (this.ContainingType.IsInterface)
                     {
@@ -157,21 +157,77 @@ namespace Pchp.CodeAnalysis.Symbols
                     module.SynthesizedManager.AddField(field.ContainingType, p.DefaultValueField);
 
                     // .cctor() {
-                    
+
                     var cctor = module.GetStaticCtorBuilder(field.ContainingType);
                     lock (cctor)
                     {
-                        using (var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, ContainingType, null, thisPlace: null)
+                        SynthesizedMethodSymbol func = null;
+
+                        if (p.DefaultValueField.Type.Is_Func_Context_PhpValue())  // Func<Context, PhpValue>
+                        {
+                            // private static PhpValue func(Context) => INITIALIZER()
+                            func = new SynthesizedMethodSymbol(ContainingType, p.DefaultValueField.Name + "Func", isstatic: true, isvirtual: false, DeclaringCompilation.CoreTypes.PhpValue, isfinal: true);
+                            func.SetParameters(new SynthesizedParameterSymbol(func, DeclaringCompilation.CoreTypes.Context, 0, RefKind.None, name: SpecialParameterSymbol.ContextName));
+
+                            //
+                            module.SetMethodBody(func, MethodGenerator.GenerateMethodBody(module, func, il =>
+                            {
+                                var ctxPlace = new ArgPlace(DeclaringCompilation.CoreTypes.Context, 0);
+                                var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, ContainingType, ctxPlace, null)
+                                {
+                                    CallerType = ContainingType,
+                                    ContainingFile = ContainingFile,
+                                    IsInCachedArrayExpression = true,   // do not cache array initializers twice
+                                };
+
+                                // return {Initializer}
+                                cg.EmitConvert(p.Initializer, func.ReturnType);
+                                cg.EmitRet(func.ReturnType);
+
+                            }, null, DiagnosticBag.GetInstance(), false));
+
+                            module.SynthesizedManager.AddMethod(func.ContainingType, func);
+                        }
+
+                        using (var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, ContainingType,
+                                contextPlace: null,
+                                thisPlace: null)
                         {
                             CallerType = ContainingType,
                             ContainingFile = ContainingFile,
                             IsInCachedArrayExpression = true,   // do not cache array initializers twice
                         })
                         {
-                            // {field} = {Initializer};
                             var fldplace = new FieldPlace(null, field, module);
                             fldplace.EmitStorePrepare(cg.Builder);
-                            cg.EmitConvert(p.Initializer, field.Type);
+                            if (func == null)
+                            {
+                                // {field} = {Initializer};
+                                cg.EmitConvert(p.Initializer, field.Type);
+                            }
+                            else
+                            {
+                                MethodSymbol funcsymbol = func;
+
+                                // bind func in case it is generic
+                                if (func.ContainingType is SourceTraitTypeSymbol st)
+                                {
+                                    funcsymbol = func.AsMember(st.Construct(st.TypeArguments));
+                                }
+
+                                // Func<,>(object @object, IntPtr method)
+                                var func_ctor = ((NamedTypeSymbol)p.DefaultValueField.Type).InstanceConstructors.Single(m =>
+                                    m.ParameterCount == 2 &&
+                                    m.Parameters[0].Type.SpecialType == SpecialType.System_Object &&
+                                    m.Parameters[1].Type.SpecialType == SpecialType.System_IntPtr
+                                );
+
+                                // {field} = new Func<Context, PhpValue>( {func} )
+                                cg.Builder.EmitNullConstant(); // null
+                                cg.EmitOpCode(ILOpCode.Ldftn); // method
+                                cg.Builder.EmitToken(module.Translate(funcsymbol, null, cg.Diagnostics, false), null, cg.Diagnostics); // !! needDeclaration: false
+                                cg.EmitCall(ILOpCode.Newobj, func_ctor);
+                            }
                             fldplace.EmitStore(cg.Builder);
                         }
                     }
