@@ -74,11 +74,21 @@ namespace Pchp.CodeAnalysis.Symbols
                             DeclaringCompilation.CoreTypes.PhpValue);
                     }
 
+                    // determine the field container:
+                    NamedTypeSymbol fieldcontainer = ContainingType; // by default in the containing class/trait/file
+                    string fieldname = $"<{ContainingSymbol.Name}.{Name}>_DefaultValue";
+
+                    //if (fieldcontainer.IsInterface)
+                    //{
+                    //    fieldcontainer = _routine.ContainingFile;
+                    //    fieldname = ContainingType.Name + "." + fieldname;
+                    //}
+
                     // public static readonly T ..;
                     var field = new SynthesizedFieldSymbol(
-                        ContainingType,
+                        fieldcontainer,
                         fldtype,
-                        $"<{ContainingSymbol.Name}.{Name}>_DefaultValue",
+                        fieldname,
                         accessibility: Accessibility.Public,
                         isStatic: true, isReadOnly: true);
 

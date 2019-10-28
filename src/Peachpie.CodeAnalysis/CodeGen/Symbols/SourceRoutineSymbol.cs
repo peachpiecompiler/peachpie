@@ -76,6 +76,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <returns>List of additional overloads.</returns>
         internal virtual IList<MethodSymbol> SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
+            //
+            EmitParametersDefaultValue(module, diagnostic);
+
             // TODO: resolve this already in SourceTypeSymbol.GetMembers(), now it does not get overloaded properly
             return SynthesizeOverloadsWithOptionalParameters(module, diagnostic);
         }
@@ -145,7 +148,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Emits initializers of all parameter's non-standard default values (such as PhpArray)
         /// within the type's static .cctor
         /// </summary>
-        private void EmitParametersDefaultValue(PEModuleBuilder module)
+        private void EmitParametersDefaultValue(PEModuleBuilder module, DiagnosticBag diagnostics)
         {
             foreach (var p in this.SourceParameters)
             {
@@ -154,7 +157,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     Debug.Assert(p.Initializer != null);
 
-                    module.SynthesizedManager.AddField(field.ContainingType, p.DefaultValueField);
+                    module.SynthesizedManager.AddField(field.ContainingType, field);
 
                     // .cctor() {
 
@@ -163,17 +166,17 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         SynthesizedMethodSymbol func = null;
 
-                        if (p.DefaultValueField.Type.Is_Func_Context_PhpValue())  // Func<Context, PhpValue>
+                        if (field.Type.Is_Func_Context_PhpValue())  // Func<Context, PhpValue>
                         {
                             // private static PhpValue func(Context) => INITIALIZER()
-                            func = new SynthesizedMethodSymbol(ContainingType, p.DefaultValueField.Name + "Func", isstatic: true, isvirtual: false, DeclaringCompilation.CoreTypes.PhpValue, isfinal: true);
+                            func = new SynthesizedMethodSymbol(field.ContainingType, field.Name + "Func", isstatic: true, isvirtual: false, DeclaringCompilation.CoreTypes.PhpValue, isfinal: true);
                             func.SetParameters(new SynthesizedParameterSymbol(func, DeclaringCompilation.CoreTypes.Context, 0, RefKind.None, name: SpecialParameterSymbol.ContextName));
 
                             //
                             module.SetMethodBody(func, MethodGenerator.GenerateMethodBody(module, func, il =>
                             {
                                 var ctxPlace = new ArgPlace(DeclaringCompilation.CoreTypes.Context, 0);
-                                var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, ContainingType, ctxPlace, null)
+                                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, field.ContainingType, ctxPlace, null)
                                 {
                                     CallerType = ContainingType,
                                     ContainingFile = ContainingFile,
@@ -184,12 +187,12 @@ namespace Pchp.CodeAnalysis.Symbols
                                 cg.EmitConvert(p.Initializer, func.ReturnType);
                                 cg.EmitRet(func.ReturnType);
 
-                            }, null, DiagnosticBag.GetInstance(), false));
+                            }, null, diagnostics, false));
 
                             module.SynthesizedManager.AddMethod(func.ContainingType, func);
                         }
 
-                        using (var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, ContainingType,
+                        using (var cg = new CodeGenerator(cctor, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, field.ContainingType,
                                 contextPlace: null,
                                 thisPlace: null)
                         {
@@ -216,7 +219,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                 }
 
                                 // Func<,>(object @object, IntPtr method)
-                                var func_ctor = ((NamedTypeSymbol)p.DefaultValueField.Type).InstanceConstructors.Single(m =>
+                                var func_ctor = ((NamedTypeSymbol)field.Type).InstanceConstructors.Single(m =>
                                     m.ParameterCount == 2 &&
                                     m.Parameters[0].Type.SpecialType == SpecialType.System_Object &&
                                     m.Parameters[1].Type.SpecialType == SpecialType.System_IntPtr
@@ -248,9 +251,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 // normal method generation:
                 cg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
             }
-
-            //
-            EmitParametersDefaultValue(cg.Module);
         }
 
         private void GenerateGeneratorMethod(CodeGenerator cg)
