@@ -108,15 +108,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (this.ContainingType.IsInterface)
                     {
-                        // TODO: we can't build instance method in an interface
-                        // - generate static extension method ?
-                        // - annotate parameter with attribute and the initializer value?
-                        //   ? [Optional(EmptyArray)]
-                        //   ? [Optional(array(1,2,3))]
-                        if (i < srcparams.Length) // always true
-                        {
-                            Debug.WriteLine($"we've lost parameter explicit default value {this.ContainingType.Name}::{this.RoutineName}, parameter ${srcparams[i].Name}");
-                        }
+                        // we can't build instance method in an interface
+                        // CONSIDER: generate static extension method ?
                     }
                     else
                     {
