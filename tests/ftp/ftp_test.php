@@ -10,22 +10,22 @@ if (!Init()){
 echo "Initialized\n";
 
 if (!Test1($server, $user_name,$user_pass)){
-  echo "Test1 failed\n";
-  exit(0);
+ echo "Test1 failed\n";
+ exit(0);
 }
 
 echo "Test1 passed\n";
 
 if (!Test2($server, $user_name,$user_pass)){
-  echo "Test2 failed\n";
-  exit(0);
+ echo "Test2 failed\n";
+ exit(0);
 }
 
 echo "Test2 passed\n";
 
 if (!Test3($server, $user_name, $user_pass)){
-   echo 'Test3 failed';
-  exit(0);
+  echo 'Test3 failed';
+ exit(0);
 }
 
 echo "Test3 passed\n";
@@ -33,6 +33,8 @@ echo "Test3 passed\n";
 //Test4($server, $user_name, $user_pass);
 
 Test5($server, $user_name, $user_pass);
+
+Test6($server, $user_name, $user_pass);
 
 function Init() {
     global $server, $user_name,$user_pass;
@@ -185,7 +187,6 @@ function Test2($server, $user_name, $user_pass) {
 
     // ftp_mkdir
     echo "Created directory: " . ftp_mkdir($conn_id, $directory) . "\n";
-
     // ftp_chdir
     ftp_chdir($conn_id,$directory);
     echo "Working Directory: " . ftp_pwd($conn_id) . "\n";
@@ -408,19 +409,14 @@ function Test5($server, $user_name, $user_pass){
     }
 
     if (ftp_mkdir($conn_id, $directory)){
-        echo "Created directory: " . $directory . "\n";
+        echo "Created directory: " .  $directory . "\n";
     }
 
     if (@ftp_chdir($conn_id, $directory)){
         echo "Change directory: " . ftp_pwd($conn_id) . "\n";
     }
 
-    // ftp_cdup
-    if(@ftp_cdup($conn_id)){
-        echo "cdup changed directory: " . ftp_pwd($conn_id) . "\n";
-    }
-
-    if (ftp_rmdir($conn_id, $directory)){
+    if (ftp_rmdir($conn_id, "../" . $directory)){
         echo "$directory deleted\n";
     }
     else{
@@ -438,4 +434,108 @@ function Test5($server, $user_name, $user_pass){
     echo $answer;
 
     ftp_close($conn_id);
+}
+
+function Test6($server, $user_name, $user_pass){
+    // Test no-blocking functions: ftp_nb-continue/get/put/fget/fput
+
+    $fileName = 'TestingFile.txt';
+    $fileName1 = 'TestingFile1.txt';
+
+    // Login...
+    if (!$conn_id = Login($server,$user_name,$user_pass)){
+        return false;
+    }
+
+    if (!GenerateFile($fileName))
+    {
+        echo "Could not create testing file\n";
+        return false;
+    }
+
+    //ftp_nb_put
+    $writeOnlyOnce=false;
+    // Initate the upload
+    $ret = ftp_nb_put($conn_id, $fileName, $fileName, FTP_BINARY);
+    while ($ret == FTP_MOREDATA) {
+    
+    // Do whatever you want
+    if (!$writeOnlyOnce)
+    {
+        echo "Async function in the background..\n";
+        $writeOnlyOnce = true;
+    }
+
+    // Continue uploading...
+    $ret = ftp_nb_continue($conn_id);
+    }
+
+    if ($ret != FTP_FINISHED) {
+    echo "There was an error uploading the file...";
+    exit(1);
+    }
+
+    //ftp_nb_get
+    $writeOnlyOnce=false;
+    // Initate the upload
+    $ret = ftp_nb_get($conn_id, $fileName, $fileName, FTP_BINARY);
+    while ($ret == FTP_MOREDATA) {
+    
+    // Do whatever you want
+    if (!$writeOnlyOnce)
+    {
+        echo "Async function in the background..\n";
+        $writeOnlyOnce = true;
+    }
+
+    // Continue downloading...
+    $ret = ftp_nb_continue($conn_id);
+    }
+
+    if ($ret != FTP_FINISHED) {
+    echo "There was an error downloading the file...";
+    exit(1);
+    }
+
+    //Async interuption
+    $ret = ftp_nb_put($conn_id, $fileName1, $fileName, FTP_BINARY);
+    $ret = ftp_nb_get($conn_id, $fileName, $fileName, FTP_BINARY);
+    while ($ret == FTP_MOREDATA) {
+    
+    // Do whatever you want
+    if (!$writeOnlyOnce)
+    {
+        echo "Async function in the background..\n";
+        $writeOnlyOnce = true;
+    }
+
+    // Continue downloading...
+    $ret = ftp_nb_continue($conn_id);
+    }
+
+    if ($ret != FTP_FINISHED) {
+    echo "There was an error downloading the file...";
+    exit(1);
+    }
+
+    //Delete generated files
+    ftp_delete($conn_id, $fileName);
+    @ftp_delete($conn_id, $fileName1);
+    @unlink($fileName);
+
+    ftp_close($conn_id);
+}
+function GenerateFile($fileName):bool{
+    $newFile = fopen($fileName,'w');
+    if (!$newFile){
+        return false;
+    }
+
+    for($i = 0; $i<3000; $i++)
+    {
+        fwrite($newFile,$i);
+    }
+
+    fclose($newFile);
+    return true;
 }
