@@ -62,7 +62,8 @@ namespace Pchp.Library
 
                 Client = client;
                 Autoseek = true;
-                tokenSource = new CancellationTokenSource();
+                TokenSource = new CancellationTokenSource();
+                
             }
 
             public FtpClient Client { get; }
@@ -71,9 +72,39 @@ namespace Pchp.Library
 
             public bool Autoseek { get; set; }
 
-            public Task<bool> NoBlockingFunc { get; set; }
+            public Task<bool> TaskFunction { get; set; }
 
-            public CancellationTokenSource tokenSource { get; }
+            public CancellationTokenSource TokenSource { get; private set; }
+
+            public void PrepareTaskFunction(FtpResource resource, int mode)
+            {
+                resource.Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
+
+                if (resource.TaskFunction != null) // Cancel current function and start new
+                {
+                    // CancellationTokenSource cannot be reset and cancelled again
+                    resource.TokenSource.Cancel();
+
+                    try
+                    {
+                        // Wait for task is canceled in other to dispose TokenSource
+                        resource.TaskFunction.Wait();
+                    }
+                    catch(AggregateException ex) 
+                    {
+                        if (!(ex.InnerException is TaskCanceledException))
+                            throw;
+                    }
+
+                    resource.TaskFunction = null;
+                }
+
+                if (TokenSource != null)
+                {
+                    resource.TokenSource.Dispose();
+                    resource.TokenSource = new CancellationTokenSource();
+                }
+            }
 
             protected override void FreeManaged()
             {
@@ -317,8 +348,10 @@ namespace Pchp.Library
             if (resource == null)
                 return null;
 
+            string workingDirectory = resource.Client.GetWorkingDirectory();
+
             if (FtpCommand(directory, resource.Client.CreateDirectory))
-                return directory;
+                return $"{workingDirectory.TrimEndSeparator()}/{directory}";
             else
                 return null;
         }
@@ -544,7 +577,6 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int ftp_chmod(PhpResource ftp_stream, int mode, string filename)
         {
-            //TODO: Vytvorit statickou metodu pro octal a pouzit Jakubovu verzi.
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
             {
@@ -657,7 +689,8 @@ namespace Pchp.Library
         /// <returns>Same value in decimal base</returns>
         private static int ConvertUnixModeFromInput(int octalMode)
         {
-            return octalMode = (octalMode & 7) + (((octalMode >> 3) & 7) * 10) + (((octalMode >> 6) & 7) * 100);    // TODO: move to utils, might be needed for chmod()
+            // TODO: Write specificum of FLuent ftp... 
+            return octalMode = (octalMode & 7) + (((octalMode >> 3) & 7) * 10) + (((octalMode >> 6) & 7) * 100);
         }
 
         /// <summary>
@@ -1093,27 +1126,7 @@ namespace Pchp.Library
             if (resource == null)
                 return FTP_FAILED;
 
-            if (resource.NoBlockingFunc == null)
-            {
-                // TODO: Warning
-                return FTP_FAILED;
-            }
-
-            if (resource.NoBlockingFunc.IsFaulted)
-            {
-                // TODO: Warning
-                return FTP_FAILED;
-            }
-
-            if (resource.NoBlockingFunc.IsCompleted)
-            {
-                bool result = resource.NoBlockingFunc.Result;
-                resource.NoBlockingFunc = null;
-
-                return result ? FTP_FINISHED : FTP_FAILED;
-            }
-
-            return FTP_MOREDATA;
+            return TasksGetInfo(resource);
         }
 
         /// <summary>
@@ -1138,11 +1151,11 @@ namespace Pchp.Library
             if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
                 PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
 
-            PrepareNBFunction(resource, mode);
+            resource.PrepareTaskFunction(resource, mode);
+            
+            resource.TaskFunction = resource.Client.UploadFileAsync(local_file, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.TokenSource.Token);
 
-            resource.NoBlockingFunc = resource.Client.UploadFileAsync(local_file, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.tokenSource.Token);
-
-            return ftp_nb_continue(ftp_stream);
+            return TasksGetInfo(resource);
         }
 
         /// <summary>
@@ -1172,11 +1185,11 @@ namespace Pchp.Library
             if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
                 PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
 
-            PrepareNBFunction(resource, mode);
+            resource.PrepareTaskFunction(resource, mode);
 
-            resource.NoBlockingFunc = resource.Client.UploadAsync(stream.RawStream, remote_file,FtpExists.Overwrite,false,null, resource.tokenSource.Token);
-
-            return ftp_nb_continue(ftp_stream);
+            resource.TaskFunction = resource.Client.UploadAsync(stream.RawStream, remote_file,FtpExists.Overwrite,false,null, resource.TokenSource.Token);
+            
+            return TasksGetInfo(resource);
         }
 
         /// <summary>
@@ -1201,11 +1214,11 @@ namespace Pchp.Library
             if (resumepos != 0) // There is no API for this parameter in FluentFTP Library.
                 PhpException.ArgumentValueNotSupported(nameof(resumepos), resumepos);
 
-            PrepareNBFunction(resource, mode);
+            resource.PrepareTaskFunction(resource, mode);
 
-            resource.NoBlockingFunc = resource.Client.DownloadFileAsync(local_file, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.tokenSource.Token);
+            resource.TaskFunction = resource.Client.DownloadFileAsync(local_file, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.TokenSource.Token);
 
-            return ftp_nb_continue(ftp_stream);
+            return TasksGetInfo(resource);
         }
 
         /// <summary>
@@ -1252,23 +1265,37 @@ namespace Pchp.Library
                 }
             }
 
-            PrepareNBFunction(resource, mode);
+            resource.PrepareTaskFunction(resource, mode);
 
-            resource.NoBlockingFunc = resource.Client.DownloadAsync(stream.RawStream, remote_file, resumepos, null, resource.tokenSource.Token);
+            resource.TaskFunction = resource.Client.DownloadAsync(stream.RawStream, remote_file, resumepos, null, resource.TokenSource.Token);
 
-            return ftp_nb_continue(ftp_stream);
+            return TasksGetInfo(resource);
         }
 
-        private static void PrepareNBFunction(FtpResource resource, int mode)
+        private static int TasksGetInfo(FtpResource ftp_stream)
         {
-            resource.Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
-
-            if (resource.NoBlockingFunc != null) // Cancel current function and start new
+            if (ftp_stream.TaskFunction == null)
             {
-                resource.tokenSource.Cancel();
-                resource.NoBlockingFunc = null;
+                PhpException.Throw(PhpError.Warning, Resources.Resources.ftp_error_no_nb);
+                return FTP_FAILED;
             }
+
+            if (ftp_stream.TaskFunction.IsFaulted)
+            {
+                foreach(Exception ex in ftp_stream.TaskFunction.Exception.InnerExceptions)
+                    PhpException.Throw(PhpError.Warning, ex.Message);
+
+                return FTP_FAILED;
+            }
+
+            if (ftp_stream.TaskFunction.IsCompleted)
+            {
+                return ftp_stream.TaskFunction.Result ? FTP_FINISHED : FTP_FAILED;
+            }
+
+            return FTP_MOREDATA;
         }
+       
         #endregion
     }
 }
