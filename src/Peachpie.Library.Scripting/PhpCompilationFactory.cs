@@ -55,7 +55,7 @@ namespace Peachpie.Library.Scripting
         static IEnumerable<string> MetadataReferences()
         {
             // implicit references
-            var impl = new List<Assembly>()
+            var impl = new List<Assembly>(8)
             {
                 typeof(object).Assembly,                 // mscorlib (or System.Runtime)
                 typeof(Pchp.Core.Context).Assembly,      // Peachpie.Runtime
@@ -63,12 +63,16 @@ namespace Peachpie.Library.Scripting
                 typeof(ScriptingProvider).Assembly,      // Peachpie.Library.Scripting
             };
 
-            var xmlDomType = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.XmlDom", "Peachpie.Library.XmlDom.XmlDom"));
-            if (xmlDomType != null)
-            {
-                impl.Add(xmlDomType.Assembly);
-            }
+            // dynamically add well-known assemblies if loaded
+            Type t;
 
+            t = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.XmlDom", "Peachpie.Library.XmlDom.XmlDom"));
+            if (t != null) impl.Add(t.Assembly);
+
+            t = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.Graphics", "Peachpie.Library.Graphics.PhpImage"));
+            if (t != null) impl.Add(t.Assembly);
+
+            //
             var set = new HashSet<Assembly>();
 
             set.UnionWith(impl);
