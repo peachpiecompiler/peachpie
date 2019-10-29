@@ -72,15 +72,15 @@ namespace Pchp.Library
 
             public bool Autoseek { get; set; }
 
-            public Task<bool> TaskFunction { get; set; }
-
+            public Task<bool> FunctionTask { get; set; }
+            
             public CancellationTokenSource TokenSource { get; private set; }
 
             public void PrepareTaskFunction(FtpResource resource, int mode)
             {
                 resource.Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
 
-                if (resource.TaskFunction != null) // Cancel current function and start new
+                if (resource.FunctionTask != null) // Cancel current function and start new
                 {
                     // CancellationTokenSource cannot be reset and cancelled again
                     resource.TokenSource.Cancel();
@@ -88,7 +88,7 @@ namespace Pchp.Library
                     try
                     {
                         // Wait for task is canceled in other to dispose TokenSource
-                        resource.TaskFunction.Wait();
+                        resource.FunctionTask.Wait();
                     }
                     catch(AggregateException ex) 
                     {
@@ -96,7 +96,7 @@ namespace Pchp.Library
                             throw;
                     }
 
-                    resource.TaskFunction = null;
+                    resource.FunctionTask = null;
                 }
 
                 if (TokenSource != null)
@@ -108,6 +108,9 @@ namespace Pchp.Library
 
             protected override void FreeManaged()
             {
+                if (TokenSource != null)
+                    TokenSource.Dispose();
+
                 Client.Dispose();
                 base.FreeManaged();
             }
@@ -683,13 +686,14 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Converts octal number, which represents mode, from input to same value in decimal base.
+        /// This function converts string representation of octal value, which is converted to int value,
+        /// to int value with same digits as string representation. This special method is provided
+        /// because of FluentFTP implementation.
         /// </summary>
         /// <param name="octalMode"></param>
         /// <returns>Same value in decimal base</returns>
         private static int ConvertUnixModeFromInput(int octalMode)
         {
-            // TODO: Write specificum of FLuent ftp... 
             return octalMode = (octalMode & 7) + (((octalMode >> 3) & 7) * 10) + (((octalMode >> 6) & 7) * 100);
         }
 
@@ -1153,7 +1157,7 @@ namespace Pchp.Library
 
             resource.PrepareTaskFunction(resource, mode);
             
-            resource.TaskFunction = resource.Client.UploadFileAsync(local_file, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.TokenSource.Token);
+            resource.FunctionTask = resource.Client.UploadFileAsync(local_file, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }
@@ -1187,7 +1191,7 @@ namespace Pchp.Library
 
             resource.PrepareTaskFunction(resource, mode);
 
-            resource.TaskFunction = resource.Client.UploadAsync(stream.RawStream, remote_file,FtpExists.Overwrite,false,null, resource.TokenSource.Token);
+            resource.FunctionTask = resource.Client.UploadAsync(stream.RawStream, remote_file,FtpExists.Overwrite,false,null, resource.TokenSource.Token);
             
             return TasksGetInfo(resource);
         }
@@ -1216,7 +1220,7 @@ namespace Pchp.Library
 
             resource.PrepareTaskFunction(resource, mode);
 
-            resource.TaskFunction = resource.Client.DownloadFileAsync(local_file, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.TokenSource.Token);
+            resource.FunctionTask = resource.Client.DownloadFileAsync(local_file, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }
@@ -1267,30 +1271,30 @@ namespace Pchp.Library
 
             resource.PrepareTaskFunction(resource, mode);
 
-            resource.TaskFunction = resource.Client.DownloadAsync(stream.RawStream, remote_file, resumepos, null, resource.TokenSource.Token);
+            resource.FunctionTask = resource.Client.DownloadAsync(stream.RawStream, remote_file, resumepos, null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }
 
         private static int TasksGetInfo(FtpResource ftp_stream)
         {
-            if (ftp_stream.TaskFunction == null)
+            if (ftp_stream.FunctionTask == null)
             {
                 PhpException.Throw(PhpError.Warning, Resources.Resources.ftp_error_no_nb);
                 return FTP_FAILED;
             }
 
-            if (ftp_stream.TaskFunction.IsFaulted)
+            if (ftp_stream.FunctionTask.IsFaulted)
             {
-                foreach(Exception ex in ftp_stream.TaskFunction.Exception.InnerExceptions)
+                foreach(Exception ex in ftp_stream.FunctionTask.Exception.InnerExceptions)
                     PhpException.Throw(PhpError.Warning, ex.Message);
 
                 return FTP_FAILED;
             }
 
-            if (ftp_stream.TaskFunction.IsCompleted)
+            if (ftp_stream.FunctionTask.IsCompleted)
             {
-                return ftp_stream.TaskFunction.Result ? FTP_FINISHED : FTP_FAILED;
+                return ftp_stream.FunctionTask.Result ? FTP_FINISHED : FTP_FAILED;
             }
 
             return FTP_MOREDATA;

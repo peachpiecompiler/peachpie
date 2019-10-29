@@ -682,6 +682,6 @@
     <value>{0} at offset {1}</value>
   </data>
   <data name="ftp_error_no_nb" xml:space="preserve">
-    <value>No nbronous transfer to continue.</value>
+    <value>No asynchronous transfer to continue.</value>
   </data>
 </root>
