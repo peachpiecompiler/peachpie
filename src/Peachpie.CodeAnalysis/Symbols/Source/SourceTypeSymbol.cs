@@ -299,6 +299,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 // properties
                 foreach (var p in Symbol.EnumerateProperties())
                 {
+                    if (((Symbol)p).IsPhpHidden(ContainingType.DeclaringCompilation))
+                    {
+                        continue;
+                    }
+
                     yield return new SynthesizedTraitFieldSymbol(ContainingType, (FieldSymbol)TraitInstanceField, p);
                 }
 

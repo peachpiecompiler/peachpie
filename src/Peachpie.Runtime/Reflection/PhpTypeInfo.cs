@@ -310,13 +310,13 @@ namespace Pchp.Core.Reflection
                 name = tinfo.FullName       // full PHP type name instead of CLR type name
                    .Replace('.', '\\')      // namespace separator
                    .Replace('+', '\\');     // nested type separator
+            }
 
-                // remove suffixed indexes (after a special metadata character)
-                var idx = name.IndexOfAny(_metadataSeparators);
-                if (idx >= 0)
-                {
-                    name = name.Remove(idx);
-                }
+            // remove suffixed indexes (after a special metadata character)
+            var idx = name.IndexOfAny(_metadataSeparators);
+            if (idx >= 0)
+            {
+                name = name.Remove(idx);
             }
 
             Debug.Assert(ReflectionUtils.IsAllowedPhpName(name));
