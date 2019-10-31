@@ -83,7 +83,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 //
                 if (newowner != fieldcontainer)
                 {
-                    defaultValueField = defaultValueField.AsMember(newowner);
+                    defaultValueField = defaultValueField.OriginalDefinition.AsMember(newowner);
                 }
             }
 
