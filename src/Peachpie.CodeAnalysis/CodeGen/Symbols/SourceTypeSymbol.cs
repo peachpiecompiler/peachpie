@@ -611,7 +611,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                 returnType: method.ReturnType,
                                 accessibility: method.DeclaredAccessibility);
 
-                            ghost.SetParameters(method.Parameters.Select(p => SynthesizedParameterSymbol.Create(ghost, p)).ToArray());
+                            ghost.SetParameters(SynthesizedParameterSymbol.Create(ghost, method.Parameters));
                             module.SynthesizedManager.AddMethod(this, ghost);
                         }
                     }

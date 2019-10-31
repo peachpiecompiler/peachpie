@@ -94,6 +94,25 @@ namespace Pchp.CodeAnalysis.Symbols
                 defaultValueField: defaultValueField);
         }
 
+        public static ImmutableArray<ParameterSymbol> Create(MethodSymbol container, ImmutableArray<ParameterSymbol> srcparams)
+        {
+            if (srcparams.Length != 0)
+            {
+                var builder = ImmutableArray.CreateBuilder<ParameterSymbol>(srcparams.Length);
+
+                foreach (var p in srcparams)
+                {
+                    builder.Add(Create(container, p));
+                }
+
+                return builder.MoveToImmutable();
+            }
+            else
+            {
+                return ImmutableArray<ParameterSymbol>.Empty;
+            }
+        }
+
         internal override TypeSymbol Type
         {
             get { return _type; }

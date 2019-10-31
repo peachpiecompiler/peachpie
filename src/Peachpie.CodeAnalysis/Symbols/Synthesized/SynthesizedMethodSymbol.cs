@@ -56,9 +56,12 @@ namespace Pchp.CodeAnalysis.Symbols
             SetParameters(ps);
         }
 
-        internal void SetParameters(params ParameterSymbol[] ps)
+        internal void SetParameters(params ParameterSymbol[] ps) => SetParameters(ps.AsImmutable());
+
+        internal void SetParameters(ImmutableArray<ParameterSymbol> ps)
         {
-            _parameters = ps.AsImmutable();
+            Debug.Assert(!ps.IsDefault);
+            _parameters = ps;
         }
 
         public override ImmutableArray<AttributeData> GetAttributes()

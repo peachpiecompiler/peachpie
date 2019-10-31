@@ -10,6 +10,7 @@ using Pchp.CodeAnalysis.Emit;
 using System.Reflection.Metadata;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -114,14 +115,14 @@ namespace Pchp.CodeAnalysis.Symbols
                     else
                     {
                         // ghostparams := [...implparams, ...srcparams{0..i-1}]
-                        var ghostparams = new ParameterSymbol[implparams.Length + i];
-                        implparams.CopyTo(ghostparams);
-                        Array.Copy(srcparams, 0, ghostparams, implparams.Length, i);
+                        var ghostparams = ImmutableArray.CreateBuilder<ParameterSymbol>(implparams.Length + i);
+                        ghostparams.AddRange(implparams);
+                        ghostparams.AddRange(srcparams, i);
 
                         // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
                         var ghost = GhostMethodBuilder.CreateGhostOverload(
                             this, ContainingType, module, diagnostic,
-                            ReturnType, ghostparams);
+                            ReturnType, ghostparams.MoveToImmutable());
 
                         //
                         if (list == null)
