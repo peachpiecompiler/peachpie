@@ -603,28 +603,23 @@ namespace Pchp.CodeAnalysis.Symbols
                         // synthesize abstract method implementing unresolved interface member
                         if (info.IsUnresolvedAbstract && info.ImplementsInterface && this.IsAbstract && !this.IsInterface)
                         {
-                            var method = info.Method;
-
-                            Debug.Assert(!method.IsStatic);
-                            Debug.Assert(method.DeclaredAccessibility != Accessibility.Private);
-                            Debug.Assert(method.ContainingType.IsInterface);
-
-                            // Template: abstract function {name}({parameters})
-                            var ghost = new SynthesizedMethodSymbol(this, method.RoutineName,
-                                isstatic: false, isvirtual: true, isabstract: true, isfinal: false,
-                                returnType: method.ReturnType,
-                                accessibility: method.DeclaredAccessibility);
-
-                            ghost.SetParameters(SynthesizedParameterSymbol.Create(ghost, method.Parameters));
-                            module.SynthesizedManager.AddMethod(this, ghost);
+                            Debug.Fail("Unreachable; The method should be synthesized in 'ResolveOverrides'.");
                         }
                     }
                 }
 
-                // setup synthesized methods explicit override as resolved
-                if (info.Override is SynthesizedMethodSymbol sm && sm.ExplicitOverride == null && sm.ContainingType == this)
+                if (info.Method is SynthesizedMethodSymbol && info.Method.ContainingType == this && info.Method.IsAbstract)
                 {
-                    sm.ExplicitOverride = info.Method;
+                    module.SynthesizedManager.AddMethod(this, info.Method);
+                }
+
+                if (info.Override is SynthesizedMethodSymbol sm && sm.ContainingType == this)
+                {
+                    if (sm.ExplicitOverride == null)
+                    {
+                        // setup synthesized methods explicit override as resolved
+                        sm.ExplicitOverride = info.Method;
+                    }
                 }
             }
 

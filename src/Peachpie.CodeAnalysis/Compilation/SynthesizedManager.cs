@@ -40,7 +40,14 @@ namespace Pchp.CodeAnalysis.Emit
             var members = EnsureList(type);
             lock (members)
             {
-                members.Add(member);
+                if (members.IndexOf(member) < 0)
+                {
+                    members.Add(member);
+                }
+                else
+                {
+                    Debug.Fail("Member added twice!");
+                }
             }
         }
 
