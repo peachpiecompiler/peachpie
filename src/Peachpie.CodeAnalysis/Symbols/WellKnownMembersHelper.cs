@@ -87,12 +87,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (fieldContainer != containingType)
             {
-                if (fieldContainer.IsTraitType())
-                {
-                    fieldContainer = fieldContainer.ConstructedFrom.Construct(
-                        (containingType as SourceTraitTypeSymbol)?.TSelfParameter ?? containingType);
-                }
-
                 namedparameters = ImmutableArray.Create(new KeyValuePair<string, TypedConstant>(
                     "ExplicitType",
                     compilation.CreateTypedConstant(fieldContainer)));

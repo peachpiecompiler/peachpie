@@ -63,15 +63,17 @@ namespace Pchp.Library.Reflection
             }
 
             // resolve declaring type (bind trait definitions)
-            if (Core.Reflection.ReflectionUtils.IsTraitType(containingType) && !containingType.IsConstructedGenericType)
+            var fieldcontainer = attr.ExplicitType ?? containingType;
+
+            if (Core.Reflection.ReflectionUtils.IsTraitType(fieldcontainer) && !fieldcontainer.IsConstructedGenericType)
             {
                 // construct something! T<object>
                 // NOTE: "self::class" will refer to "System.Object"
-                containingType = containingType.MakeGenericType(typeof(object));
+                fieldcontainer = fieldcontainer.MakeGenericType(typeof(object));
             }
 
             //
-            var field = (attr.ExplicitType ?? containingType).GetField(attr.FieldName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.GetField);
+            var field = fieldcontainer.GetField(attr.FieldName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.GetField);
             if (field != null)
             {
                 Debug.Assert(field.IsStatic);

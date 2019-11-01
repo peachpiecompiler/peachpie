@@ -67,16 +67,19 @@ namespace Pchp.CodeAnalysis.Symbols
             if (defaultValueField != null && defaultValueField.ContainingType.IsTraitType())
             {
                 var selfcontainer = container.ContainingType;
-                var fieldcontainer = defaultValueField.ContainingType;
-                var newowner = fieldcontainer;
+                var fieldcontainer = defaultValueField.ContainingType; // trait
 
-                // this is trait ?
-                if (selfcontainer.OriginalDefinition is SourceTraitTypeSymbol st)
+                NamedTypeSymbol newowner;
+
+                if (selfcontainer.IsTraitType())
                 {
-                    newowner = fieldcontainer.ConstructedFrom.Construct(st.TSelfParameter);
+                    // field in a trait must be unbound,
+                    // metadata cannot refer to type parameter
+                    newowner = fieldcontainer.ConstructedFrom.ConstructUnboundGenericType();
                 }
-                else if (fieldcontainer.IsTraitType())
+                else
                 {
+                    // construct the container, map !TSelf
                     newowner = fieldcontainer.ConstructedFrom.Construct(selfcontainer);
                 }
 

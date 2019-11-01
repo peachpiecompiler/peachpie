@@ -10,6 +10,11 @@ trait T
 	}
 }
 
+trait U
+{
+	use T;
+}
+
 class X
 {
 	use T;
