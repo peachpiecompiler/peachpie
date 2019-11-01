@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsExtern => false;
 
-        public override bool IsOverride => OverriddenMethod != null;
+        public override bool IsOverride => OverriddenMethod != null && (OverriddenMethod.ContainingType.TypeKind != TypeKind.Interface);
 
         public override bool IsSealed => _final;
 

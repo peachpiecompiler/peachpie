@@ -81,10 +81,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitPhpCallable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
+            var iphpcallable = DeclaringCompilation.CoreTypes.IPhpCallable;
+
             var __invoke = TryGetMagicInvoke();
             if (__invoke == null ||
                 IsAlreadyImplemented(__invoke) ||
-                IsAlreadyImplemented(DeclaringCompilation.CoreTypes.IPhpCallable))
+                IsAlreadyImplemented(iphpcallable))
             {
                 // already implemented in a base class
                 return;
@@ -93,9 +95,9 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             // IPhpCallable.Invoke(Context <ctx>, PhpVaue[] arguments)
             //
-            var invoke = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: false)
+            var invoke = new SynthesizedMethodSymbol(this, iphpcallable.FullName + ".Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: true)
             {
-                ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("Invoke").Single(),
+                ExplicitOverride = (MethodSymbol)iphpcallable.Symbol.GetMembers("Invoke").Single(),
                 ForwardedCall = __invoke,
             };
             invoke.SetParameters(
@@ -118,9 +120,9 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             // IPhpCallable.ToPhpValue()
             //
-            var tophpvalue = new SynthesizedMethodSymbol(this, "IPhpCallable.ToPhpValue", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: false)
+            var tophpvalue = new SynthesizedMethodSymbol(this, iphpcallable.FullName + ".ToPhpValue", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: true)
             {
-                ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("ToPhpValue").Single(),
+                ExplicitOverride = (MethodSymbol)iphpcallable.Symbol.GetMembers("ToPhpValue").Single(),
             };
 
             //
@@ -179,10 +181,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitDisposable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
+            var idisposable = DeclaringCompilation.GetSpecialType(SpecialType.System_IDisposable);
+
             var __destruct = TryGetDestruct();
             if (__destruct == null ||
                 IsAlreadyImplemented(__destruct) ||
-                IsAlreadyImplemented(DeclaringCompilation.GetSpecialType(SpecialType.System_IDisposable)))
+                IsAlreadyImplemented(idisposable))
             {
                 // already implemented in a base class
                 return;
@@ -191,7 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             // IDisposable.Dispose()
             //
-            var dispose = new SynthesizedMethodSymbol(this, "IDisposable.Dispose", false, true, DeclaringCompilation.GetSpecialType(SpecialType.System_Void), isfinal: true)
+            var dispose = new SynthesizedMethodSymbol(this, idisposable.GetFullName() + ".Dispose", false, true, DeclaringCompilation.CoreTypes.Void, isfinal: true)
             {
                 ExplicitOverride = (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_IDisposable__Dispose),
                 ForwardedCall = __destruct,
