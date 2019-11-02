@@ -646,6 +646,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No asynchronous transfer to continue..
+        /// </summary>
+        public static string ftp_error_no_nb {
+            get {
+                return ResourceManager.GetString("ftp_error_no_nb", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Function not allowed in web server context.
         /// </summary>
         public static string function_disallowed_in_web_context {

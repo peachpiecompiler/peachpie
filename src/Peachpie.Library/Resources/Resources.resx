@@ -681,4 +681,7 @@
   <data name="pcre_make_error" xml:space="preserve">
     <value>{0} at offset {1}</value>
   </data>
+  <data name="ftp_error_no_nb" xml:space="preserve">
+    <value>No asynchronous transfer to continue.</value>
+  </data>
 </root>
