@@ -288,9 +288,10 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (t.Symbol == null)
                 {
+                    var fullname = t.FullName;
+                    
                     // nested types: todo: in Lookup
                     string nested = null;
-                    string fullname = t.FullName;
                     int plus = fullname.IndexOf('+');
                     if (plus > 0)
                     {
@@ -300,11 +301,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     var mdname = MetadataTypeName.FromFullName(fullname, false);
                     var symbol = coreass.LookupTopLevelMetadataType(ref mdname, true);
-                    if (symbol != null && !symbol.IsErrorType())
+                    if (symbol.IsValidType())
                     {
                         if (nested != null)
                         {
-                            symbol = symbol.GetTypeMembers(nested).Single();
+                            symbol = symbol
+                                .GetTypeMembers(nested)
+                                .SingleOrDefault();
+
+                            if (symbol == null)
+                            {
+                                continue;
+                            }
                         }
 
                         _typetable[symbol] = t;

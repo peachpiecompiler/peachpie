@@ -625,7 +625,7 @@ namespace Pchp.Core
             var i = FindIndex(key);
             if (i >= 0)
             {
-                value = _data[i].Value;
+                value = _data[i].Value; // PERF: double array lookup
                 return true;
             }
             else
