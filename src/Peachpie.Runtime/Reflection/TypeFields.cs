@@ -168,10 +168,8 @@ namespace Pchp.Core.Reflection
         /// <remarks>The method return <c>null</c> in case the property is a runtime property. This case has to be handled separately.</remarks>
         public IEnumerable<PhpPropertyInfo> GetPhpProperties(string name)
         {
-            FieldInfo fld;
-
             //
-            if (_fields != null && _fields.TryGetValue(name, out fld))
+            if (_fields != null && _fields.TryGetValue(name, out var fld))
             {
                 yield return new PhpPropertyInfo.ClrFieldProperty(fld.DeclaringType.GetPhpTypeInfo(), fld);
             }
@@ -184,8 +182,7 @@ namespace Pchp.Core.Reflection
             }
 
             //
-            PropertyInfo p;
-            if (_properties != null && _properties.TryGetValue(name, out p))
+            if (_properties != null && _properties.TryGetValue(name, out var p))
             {
                 yield return new PhpPropertyInfo.ClrProperty(p.DeclaringType.GetPhpTypeInfo(), p);
             }

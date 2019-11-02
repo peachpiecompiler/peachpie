@@ -210,6 +210,11 @@ namespace Pchp.Core.Dynamic
             {
                 // we need to set the type restriction
                 restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, value.GetType()));
+
+                if (!value.GetType().IsAssignableFrom(expr.Type))
+                {
+                    expr = Expression.Convert(expr, value.GetType());
+                }
             }
 
             //
@@ -603,6 +608,30 @@ namespace Pchp.Core.Dynamic
             return null;
         }
 
+        /// <summary>
+        /// Resolves property with respect to staticness and visibility.
+        /// </summary>
+        /// <param name="type">Property receiver.</param>
+        /// <param name="classCtx">Current class context (visibility).</param>
+        /// <param name=@static">Whether to lookup static properties.</param>
+        /// <param name="name">Property name.</param>
+        public static PhpPropertyInfo ResolveDeclaredProperty(PhpTypeInfo type, Type classCtx, bool @static, string name)
+        {
+            for (var t = type; t != null; t = t.BaseType)
+            {
+                foreach (var p in t.DeclaredFields.GetPhpProperties(name))
+                {
+                    if (p.IsStatic == @static && p.IsVisible(classCtx))
+                    {
+                        return p;
+                    }
+                }
+            }
+
+            //
+            return null;
+        }
+
         public static Expression BindField(PhpTypeInfo type, Type classCtx, Expression target, string field, Expression ctx, AccessMask access, Expression rvalue)
         {
             if (access.Write() != (rvalue != null))
@@ -611,15 +640,10 @@ namespace Pchp.Core.Dynamic
             }
 
             // lookup a declared field
-            for (var t = type; t != null; t = t.BaseType)
+            var p = ResolveDeclaredProperty(type, classCtx, target == null, field);
+            if (p != null)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties(field))
-                {
-                    if (p.IsStatic == (target == null) && p.IsVisible(classCtx))
-                    {
-                        return BindAccess(p.Bind(ctx, target), ctx, access, rvalue);
-                    }
-                }
+                return BindAccess(p.Bind(ctx, target), ctx, access, rvalue);
             }
 
             //

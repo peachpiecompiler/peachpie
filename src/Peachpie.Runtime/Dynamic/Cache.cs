@@ -89,6 +89,7 @@ namespace Pchp.Core.Dynamic
             public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetField("Default");
             public static readonly PropertyInfo PhpValue_IsNull = Types.PhpValue.GetProperty("IsNull");
             public static readonly PropertyInfo PhpValue_IsFalse = Types.PhpValue.GetProperty("IsFalse");
+            public static readonly PropertyInfo PhpValue_IsDefault = Types.PhpValue.GetProperty("IsDefault");
         }
 
         public static class PhpString

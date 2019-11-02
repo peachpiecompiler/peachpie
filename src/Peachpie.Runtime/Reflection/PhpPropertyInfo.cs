@@ -235,18 +235,29 @@ namespace Pchp.Core.Reflection
             public override PhpValue GetValue(Context ctx, object instance)
             {
                 var runtime_fields = _tinfo.GetRuntimeFields(instance);
-                if (runtime_fields != null)
-                {
-                    // (instance)._runtime_fields[_name]
-                    return runtime_fields.GetItemValue(_name);
-                }
 
-                return PhpValue.Void;
+                // (instance)._runtime_fields[_name]
+                if (runtime_fields != null && runtime_fields.TryGetValue(_name, out var value))
+                {
+                    return value;
+                }
+                else
+                {
+                    return PhpValue.Void;
+                }
             }
 
             public override void SetValue(Context ctx, object instance, PhpValue value)
             {
-                _tinfo.EnsureRuntimeFields(instance)[_name] = value;
+                var fields = _tinfo.EnsureRuntimeFields(instance);
+                if (value.IsAlias)
+                {
+                    fields[_name] = value;
+                }
+                else
+                {
+                    fields.SetItemValue(_name, value);
+                }
             }
 
             public override bool IsPublic => true;
