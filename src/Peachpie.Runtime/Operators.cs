@@ -773,7 +773,10 @@ namespace Pchp.Core
             {
                 // NOTE: magic methods must have public visibility, therefore the visibility check is unnecessary
 
-                using (var token = new Context.RecursionCheckToken(ctx, instance, (int)CodeAnalysis.Semantics.AccessMask.Read))
+                // int subkey1 = access.Write() ? 1 : access.Unset() ? 2 : access.Isset() ? 3 : 4;
+                int subkey = propertyName.GetHashCode() ^ (1 << 4/*subkey1*/);
+
+                using (var token = new Context.RecursionCheckToken(ctx, instance, subkey))
                 {
                     if (!token.IsInRecursion)
                     {
