@@ -192,6 +192,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Gets value indicating the parameter has default value that is not supported by CLR metadata.
+        /// Such value will be stored in its <see cref="ParameterSymbol.DefaultValueField"/> static field.
         /// </summary>
         public static bool HasUnmappedDefaultValue(this ParameterSymbol p) => p.DefaultValueField != null;
 

@@ -37,8 +37,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <remarks>
         /// In PHP it is possible to set parameter's default value which cannot be represented using <see cref="ConstantValue"/>.
         /// In such case, the value is set to this runtime field and read if needed.
-        /// 
-        /// If this field is set, <see cref="HasUnmappedDefaultValue"/> will be <c>true</c>.</remarks>
         public virtual FieldSymbol DefaultValueField => null;
 
         public virtual bool IsOptional => false;
