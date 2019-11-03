@@ -8,6 +8,7 @@ using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.CodeGen;
 using System.Diagnostics;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -18,14 +19,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(original.Parameters.Length > pcount);
             return GhostMethodBuilder.CreateGhostOverload(
                 original, original.ContainingType, module, diagnostic,
-                ghostreturn: original.ReturnType, ghostparams: original.Parameters.Take(pcount), explicitOverride: null);
+                ghostreturn: original.ReturnType, ghostparams: ImmutableArray.Create(original.Parameters, 0, pcount), explicitOverride: null);
         }
 
         /// <summary>
         /// Creates ghost stub that calls method.
         /// </summary>
         public static MethodSymbol CreateGhostOverload(this MethodSymbol method, NamedTypeSymbol containingtype, PEModuleBuilder module, DiagnosticBag diagnostic,
-            TypeSymbol ghostreturn, IEnumerable<ParameterSymbol> ghostparams,
+            TypeSymbol ghostreturn, ImmutableArray<ParameterSymbol> ghostparams,
             bool phphidden = false,
             MethodSymbol explicitOverride = null)
         {
@@ -46,7 +47,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 ForwardedCall = method,
             };
 
-            ghost.SetParameters(ghostparams.Select(p => SynthesizedParameterSymbol.Create(ghost, p)).ToArray());
+            ghost.SetParameters(SynthesizedParameterSymbol.Create(ghost, ghostparams));
 
             // save method symbol to module
             module.SynthesizedManager.AddMethod(containingtype, ghost);

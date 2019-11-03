@@ -1,4 +1,5 @@
 <?php
+namespace classes\static_002;
 
 class X {
 

@@ -1,4 +1,5 @@
 <?php
+namespace operators\cast_001;
 
 // $x = (object)1;
 // $x = (object)1.2;

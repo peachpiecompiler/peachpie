@@ -398,6 +398,37 @@ namespace Pchp.Core.Dynamic
                 return (_lazyInitBlock.Count != 0) ? (Expression)Expression.Block(_lazyInitBlock) : Expression.Empty();
             }
 
+            /// <summary>
+            /// Creates expression representing value from [DefaultValueAttribute]
+            /// </summary>
+            protected Expression BindDefaultValue(Type containingType, DefaultValueAttribute/*!*/attr)
+            {
+                Debug.Assert(attr != null);
+
+                //if (ReflectionUtils.IsTraitType(containingType) && !containingType.IsConstructedGenericType)
+                //{
+                //    // UNREACHABLE
+
+                //    // construct something! T<object>
+                //    // NOTE: "self::class" will refer to "System.Object"
+                //    containingType = containingType.MakeGenericType(typeof(object));
+                //}
+
+                var field = Expression.Field(null, attr.ExplicitType ?? containingType, attr.FieldName);
+                if (field.Type == typeof(Func<Context, PhpValue>))
+                {
+                    // we can call the stub directly:
+                    // var func = Expression.Call(null, attr.ExplicitType ?? containingType, attr.FieldName + "Func", _ctx);
+
+                    // return {field}(ctx)
+                    return Expression.Call(field, field.Type.GetMethod("Invoke"), _ctx);
+                }
+                else
+                {
+                    return field;
+                }
+            }
+
             #endregion
 
             #region ArgsArrayBinder
@@ -458,12 +489,14 @@ namespace Pchp.Core.Dynamic
 
                     if (targetparam != null)
                     {
+                        DefaultValueAttribute defaultValueAttr = null;
+
                         // create specialized variable with default value
-                        if (targetparam.HasDefaultValue)
+                        if (targetparam.HasDefaultValue) // || (defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>()) != null)
                         {
                             var @default = targetparam.DefaultValue;
                             var defaultValueExpr = Expression.Constant(@default);
-                            var defaultValueStr = (@default != null) ? @default.ToString() : "NULL";
+                            var defaultValueStr = @default != null ? @default.ToString() : "NULL";
 
                             //
                             var key2 = new TmpVarKey() { Priority = 1 /*after key*/, ArgIndex = srcarg, Prefix = "arg(" + defaultValueStr + ")" };
@@ -482,10 +515,13 @@ namespace Pchp.Core.Dynamic
 
                             return value2.Expression;   // already converted to targetparam.ParameterType
                         }
-                        else if (targetparam.GetCustomAttribute<DefaultValueAttribute>() != null)
+                        else
                         {
-                            // TODO: DefaultValueAttribute 
-                            //Debug.Fail("default value lost");
+                            defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>();
+                            if (defaultValueAttr != null)
+                            {
+                                return ConvertExpression.Bind(BindDefaultValue(targetparam.Member.DeclaringType, defaultValueAttr), targetparam.ParameterType, _ctx);
+                            }
                         }
                     }
 
@@ -612,12 +648,16 @@ namespace Pchp.Core.Dynamic
                             {
                                 return ConvertExpression.Bind(Expression.Constant(targetparam.DefaultValue), targetparam.ParameterType, _ctx);
                             }
-                            else if (targetparam.GetCustomAttribute<DefaultValueAttribute>() != null)
+                            else
                             {
-                                // TODO: DefaultValueAttribute 
-                                //Debug.Fail("default value lost");
+                                var defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>();
+                                if (defaultValueAttr != null)
+                                {
+                                    return ConvertExpression.Bind(BindDefaultValue(targetparam.Member.DeclaringType, defaultValueAttr), targetparam.ParameterType, _ctx);
+                                }
                             }
 
+                            //
                             return ConvertExpression.BindDefault(targetparam.ParameterType);
                         }
 

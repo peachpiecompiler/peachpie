@@ -1,4 +1,5 @@
 <?php
+namespace classes\ctor_overloading;
 
 class X {
 	function __construct($a, $b = []) {

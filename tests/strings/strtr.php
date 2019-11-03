@@ -1,4 +1,5 @@
 <?php
+namespace strings\strtr;
 
 $addr = "this is some address.\n";
 echo strtr($addr, "aaimm", "AEIOU");

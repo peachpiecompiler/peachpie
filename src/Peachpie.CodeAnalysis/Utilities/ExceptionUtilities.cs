@@ -35,14 +35,14 @@ namespace Peachpie.CodeAnalysis.Utilities
                 // get location from AST
                 var unit = syntax.ContainingSourceUnit;
                 unit.GetLineColumnFromPosition(syntax.Span.Start, out int line, out int col);
-                location = $"{unit.FilePath}({line}, {col})";
+                location = $"{unit.FilePath}({line + 1}, {col + 1})";
             }
             else if (il.SeqPointsOpt != null && il.SeqPointsOpt.Count != 0)
             {
                 // get location from last sequence point
                 var pt = il.SeqPointsOpt.Last();
                 ((PhpSyntaxTree)pt.SyntaxTree).Source.GetLineColumnFromPosition(pt.Span.Start, out int line, out int col);
-                location = $"{pt.SyntaxTree.FilePath}({line}, {col})";
+                location = $"{pt.SyntaxTree.FilePath}({line + 1}, {col + 1})";
             }
             else if (routine != null)
             {

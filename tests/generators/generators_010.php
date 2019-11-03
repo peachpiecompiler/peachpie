@@ -1,4 +1,5 @@
 <?php
+namespace generators\generators_010;
 
 function f($a, $b)
 {

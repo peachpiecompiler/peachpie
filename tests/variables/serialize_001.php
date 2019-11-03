@@ -1,4 +1,5 @@
 <?php
+namespace variables\serialize_001;
 
 function f()
 {

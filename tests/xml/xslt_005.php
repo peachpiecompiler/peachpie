@@ -1,4 +1,5 @@
 <?php
+namespace xml\xslt_005;
 // Test 5: Checking Indent
 
 function __xml_norm($str)
@@ -11,13 +12,13 @@ function __xml_norm($str)
 }
 
 function test() {
-  $dom = new domDocument;
+  $dom = new \DOMDocument;
   $dom->load("xslt.xml");
 
-  $xsl = new domDocument;
+  $xsl = new \DOMDocument;
   $xsl->load("xslt.xsl");
 
-  $xp = new domxpath($xsl);
+  $xp = new \DOMXPath($xsl);
   $res = $xp->query("/xsl:stylesheet/xsl:output/@indent");
   if ($res->length != 1) {
     print "No or more than one xsl:output/@indent found";
@@ -25,7 +26,7 @@ function test() {
   }
   $res->item(0)->value = "yes";
 
-  $proc = new xsltprocessor;
+  $proc = new \XSLTProcessor;
   $proc->importStylesheet($xsl);
 
   print __xml_norm($proc->transformToXml($dom));

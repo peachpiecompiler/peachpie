@@ -299,6 +299,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 // properties
                 foreach (var p in Symbol.EnumerateProperties())
                 {
+                    if (((Symbol)p).IsPhpHidden(ContainingType.DeclaringCompilation))
+                    {
+                        continue;
+                    }
+
                     yield return new SynthesizedTraitFieldSymbol(ContainingType, (FieldSymbol)TraitInstanceField, p);
                 }
 
@@ -1431,15 +1436,19 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return t.TraitInstanceField;
             }
 
-            foreach (var f in GetMembers().OfType<FieldSymbol>())
+            foreach (var m in GetMembers())
             {
-                if (f is SourceFieldSymbol srcf && srcf.IsRedefinition)
+                if (m is FieldSymbol f)
                 {
-                    // field redeclares its parent member, discard
-                    continue;
-                }
+                    // declared fields
+                    if (m is SourceFieldSymbol srcf && srcf.IsRedefinition)
+                    {
+                        // field redeclares its parent member, discard
+                        continue;
+                    }
 
-                yield return f;
+                    yield return f;
+                }
             }
         }
 

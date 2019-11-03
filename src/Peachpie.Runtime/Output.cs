@@ -472,6 +472,7 @@ namespace Pchp.Core
                 if (_level.Index == 0)
                 {
                     // TODO: PhpString buffers
+                    // NOTE: avoid calling non-async on ASP.NET Core 3.0; consider changing to async
 
                     // writes top-level data to sinks:
                     for (int i = 0; i < _level.buffers.Count; i++)
@@ -483,7 +484,10 @@ namespace Pchp.Core
                         }
                         else
                         {
-                            _byteSink.Write((byte[])element.data, 0, element.size);
+                            _byteSink
+                                .WriteAsync((byte[])element.data, 0, element.size)
+                                .GetAwaiter()
+                                .GetResult();
                         }
                     }
                 }

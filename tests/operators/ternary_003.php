@@ -1,4 +1,5 @@
 <?php
+namespace operators\ternary_003;
 
 function dump($x) {
     print_r($x);

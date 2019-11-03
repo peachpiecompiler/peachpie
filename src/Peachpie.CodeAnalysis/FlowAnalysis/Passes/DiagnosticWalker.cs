@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
 
-        private bool _callsParentCtor;
+        private bool CallsParentCtor { get; set; }
 
         PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
 
@@ -111,8 +111,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             CheckParams();
 
-            if (!_callsParentCtor && _routine.Name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value
-                && _routine.ContainingType.BaseType?.ResolvePhpCtor() != null)
+            if (CallsParentCtor == false &&
+                new Name(_routine.Name).IsConstructName &&
+                HasBaseConstruct(_routine.ContainingType))
             {
                 // Missing calling parent::__construct
                 _diagnostics.Add(_routine, _routine.SyntaxSignature.Span.ToTextSpan(), ErrorCode.WRN_ParentCtorNotCalled, _routine.ContainingType.Name);
@@ -123,6 +124,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             // report unreachable blocks
             CheckUnreachableCode(x);
+        }
+
+        /// <summary>
+        /// Checks the base class has implementation of `__construct` which should be called.
+        /// </summary>
+        /// <param name="type">Self.</param>
+        /// <returns>Whether the base of <paramref name="type"/> has `__construct` method implementation.</returns>
+        static bool HasBaseConstruct(NamedTypeSymbol type)
+        {
+            var btype = type?.BaseType;
+            if (btype != null && btype.SpecialType != SpecialType.System_Object && btype.IsClassType() && !btype.IsAbstract)
+            {
+                var bconstruct = btype.ResolvePhpCtor();    // TODO: recursive: true // needs inf recursion prevention
+                if (bconstruct != null && !bconstruct.IsAbstract)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void CheckParams()
@@ -423,8 +444,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     else
                     {
-                        bool isoptional = ps[i].IsOptional || (ps[i] is IPhpValue srcp && srcp.Initializer != null);
-                        if (!isoptional && (i < ps.Length - 1 /*check for IsParams only for last parameter*/ || !ps[i].IsParams))
+                        if (!ps[i].IsPhpOptionalParameter() && (i < ps.Length - 1 /*check for IsParams only for last parameter*/ || !ps[i].IsParams))
                         {
                             expectsmin = i - skippedps + 1;
                         }
@@ -523,16 +543,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             // check deprecated
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod, isMemberCall: true);
 
-            // Mark that parent::__construct was called (to be checked later)
-            if (call.Name.IsDirect && call.Name.NameValue.Name.IsConstructName
-                && call.TypeRef is BoundReservedTypeRef rt && rt.ReservedType == ReservedTypeRef.ReservedType.parent)
+            // remember there is call to `parent::__construct`
+            if (call.TypeRef is BoundReservedTypeRef rt && rt.ReservedType == ReservedTypeRef.ReservedType.parent &&
+                call.Name.IsDirect &&
+                call.Name.NameValue.Name.IsConstructName)
             {
-                _callsParentCtor = true;
+                CallsParentCtor = true;
+            }
+
+            // check the called method is not abstract
+            if (call.TargetMethod.IsValidMethod() && call.TargetMethod.IsAbstract)
+            {
+                // ERR
+                Add(call.PhpSyntax.Span, Devsense.PHP.Errors.Errors.AbstractMethodCalled, call.TargetMethod.ContainingType.PhpName(), call.Name.NameValue.Name.Value);
             }
 
             //
             return base.VisitStaticFunctionCall(call);
         }
+
         public override T VisitInstanceOf(BoundInstanceOfEx x)
         {
             CheckMissusedPrimitiveType(x.AsType);
@@ -617,18 +646,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             switch (x.Operation)
             {
                 case Operations.Clone:
+                    // check we only pass object instances to the "clone" operation
+                    // anything else causes a runtime warning!
                     var operandTypeMask = x.Operand.TypeRefMask;
-                    if (!operandTypeMask.IsAnyType && !operandTypeMask.IsRef)
+                    if (!operandTypeMask.IsAnyType &&
+                        !operandTypeMask.IsRef &&
+                        !TypeCtx.IsObjectOnly(operandTypeMask))
                     {
-                        var types = TypeCtx.GetTypes(operandTypeMask);
-                        foreach (var t in types)
-                        {
-                            if (!t.IsObject)    // clone called on non-object
-                            {
-                                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, TypeCtx.ToString(operandTypeMask));
-                                break;
-                            }
-                        }
+                        _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, TypeCtx.ToString(operandTypeMask));
                     }
                     break;
             }

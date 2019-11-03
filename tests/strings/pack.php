@@ -1,4 +1,5 @@
 <?php
+namespace strings\pack;
 
 echo bin2hex(pack("ccc",-5,"0001x","-8")),"\n";
 echo bin2hex(pack("cCsS",1,1,1,1)),"\n";

@@ -1,4 +1,5 @@
 <?php
+namespace xml\simplexml_008;
 
 function print_xml($xml) {
   foreach($xml->children() as $person) {

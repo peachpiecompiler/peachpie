@@ -140,7 +140,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison, PhpException,
-            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, DefaultValueType, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute,
+            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
@@ -199,7 +199,6 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
             NotNullAttribute = Create("NotNullAttribute");
             DefaultValueAttribute = Create("DefaultValueAttribute");
-            DefaultValueType = Create("DefaultValueAttribute+DefaultValueType");
             PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
@@ -289,9 +288,10 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (t.Symbol == null)
                 {
+                    var fullname = t.FullName;
+                    
                     // nested types: todo: in Lookup
                     string nested = null;
-                    string fullname = t.FullName;
                     int plus = fullname.IndexOf('+');
                     if (plus > 0)
                     {
@@ -301,11 +301,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     var mdname = MetadataTypeName.FromFullName(fullname, false);
                     var symbol = coreass.LookupTopLevelMetadataType(ref mdname, true);
-                    if (symbol != null && !symbol.IsErrorType())
+                    if (symbol.IsValidType())
                     {
                         if (nested != null)
                         {
-                            symbol = symbol.GetTypeMembers(nested).Single();
+                            symbol = symbol
+                                .GetTypeMembers(nested)
+                                .SingleOrDefault();
+
+                            if (symbol == null)
+                            {
+                                continue;
+                            }
                         }
 
                         _typetable[symbol] = t;

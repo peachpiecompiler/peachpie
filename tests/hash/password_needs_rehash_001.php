@@ -1,4 +1,5 @@
 <?php
+namespace hash\password_needs_rehash_001;
 
 $password = 'rasmuslerdorf';
 $hash = '$2y$10$YCFsG6elYca568hBi2pZ0.3LDL5wjgxct1N8w/oLR/jfHsiQwCqTS';

@@ -1,4 +1,5 @@
 <?php
+namespace reflection\method_visibility_001;
 
 class TestClass1
 {

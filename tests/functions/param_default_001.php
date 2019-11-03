@@ -1,4 +1,5 @@
 <?php
+namespace functions\param_default_001;
 
 class C {
     const C = 1;
@@ -13,7 +14,7 @@ function test(int $a, $b = ['*'])
     echo $a , ", " , count($b), PHP_EOL;
 }
 
-$func = "test";
+$func = __NAMESPACE__ . "\\test";
 $args = [10];
 
 $func(...$args);

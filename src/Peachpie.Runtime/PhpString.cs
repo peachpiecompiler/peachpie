@@ -65,13 +65,13 @@ namespace Pchp.Core.Text
 
         public int Ord() => IsByte ? _b : (int)_ch;
 
-        public void Output(Context ctx)
-        {
-            if (IsByte)
-                ctx.OutputStream.WriteByte((byte)_b);
-            else
-                ctx.Output.Write(_ch);
-        }
+        //public void Output(Context ctx)
+        //{
+        //    if (IsByte)
+        //        ctx.OutputStream.WriteByte((byte)_b);  // TODO: WriteAsync, do not allocate byte[1]
+        //    else
+        //        ctx.Output.Write(_ch);
+        //}
 
         public override string ToString() => AsChar().ToString();
 
@@ -768,22 +768,60 @@ namespace Pchp.Core
             {
                 AssertChunkObject(chunk);
 
+                // NOTE: avoid calling non-async IO operation on ASP.NET Core 3.0;
+                // CONSIDER changing to async
+
                 switch (chunk)
                 {
                     case string str: ctx.Output.Write(str); break;
-                    case byte[] barr: ctx.OutputStream.Write(barr); break;
+                    case byte[] barr: ctx.OutputStream.WriteAsync(barr).GetAwaiter().GetResult(); break;
                     case Blob b: b.Output(ctx); break;
                     case char[] carr: ctx.Output.Write(carr); break;
-                    case BlobChar[] barr: OutputChunk(ctx, barr); break;
+                    case BlobChar[] barr: WriteChunkAsync(ctx, barr).GetAwaiter().GetResult(); break;
                     default: throw new ArgumentException(chunk.GetType().ToString());
                 }
             }
 
-            static void OutputChunk(Context ctx, BlobChar[] chars)
+            static async Task WriteChunkAsync(Context ctx, BlobChar[] chars) // TODO: ValueTask
             {
+                Debug.Assert(chars != null);
+
+                var enc = ctx.StringEncoding;
+
+                //Span<char> ch = stackalloc char[1];
+                //Span<byte> bytes = stackalloc byte[enc.GetMaxByteCount(1)];
+
+                var ch = new char[1];
+                var bytes = new byte[(enc == Encoding.UTF8) ? 8 : enc.GetMaxByteCount(1)];
+
+                //int size = 0;
+
+                //for (int i = 0; i < chars.Length; i++)
+                //{
+                //    if (chars[i].IsByte)
+                //    {
+                //        size++;
+                //    }
+                //    else
+                //    {
+                //        ch[0] = chars[i].AsChar();
+                //        size += enc.GetByteCount(ch);
+                //    }
+                //}
+
                 for (int i = 0; i < chars.Length; i++)
                 {
-                    chars[i].Output(ctx);
+                    if (chars[i].IsByte)
+                    {
+                        bytes[0] = chars[i].AsByte();
+                        await ctx.OutputStream.WriteAsync(bytes, 0, 1);
+                    }
+                    else
+                    {
+                        ch[0] = chars[i].AsChar();
+                        var bytescount = enc.GetBytes(ch, 0, 1, bytes, 0);
+                        await ctx.OutputStream.WriteAsync(bytes, 0, bytescount);
+                    }
                 }
             }
 

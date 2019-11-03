@@ -1,4 +1,5 @@
 <?php
+namespace hash\password_needs_rehash_002;
 
 $password = "rasmuslerdorf";
 $memory_cost = 512;

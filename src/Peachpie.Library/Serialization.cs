@@ -1164,6 +1164,26 @@ namespace Pchp.Library
             {
                 return new ObjectReader(ctx, stream, caller).Deserialize();
             }
+
+            /// <summary>
+            /// Tries to deserialize the data.
+            /// </summary>
+            /// <returns>Retrns <c>true</c> iff the data was deserialized properly.</returns>
+            public bool TryDeserialize(Context ctx, byte[] data, out PhpValue value)
+            {
+                try
+                {
+                    value = CommonDeserialize(ctx, new MemoryStream(data), default);
+                }
+                catch
+                {
+                    value = PhpValue.False;
+                    return false;
+                }
+
+                //
+                return true;
+            }
         }
 
         #endregion

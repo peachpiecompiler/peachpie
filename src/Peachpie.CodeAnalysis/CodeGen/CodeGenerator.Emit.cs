@@ -406,7 +406,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(SpecialType.System_String);
                     }
                 }
-                else if (stack.IsReferenceType && this.Routine != null)
+                else if (stack.Is_PhpArray() || stack.IsStringType())
+                {
+                    // already specialied reference types
+                }
+                else if (stack.IsReferenceType && !stack.IsSealed && this.Routine != null)
                 {
                     var tref = this.TypeRefContext.GetTypes(tmask).FirstOrDefault();
                     if (tref.IsObject)
@@ -1698,7 +1702,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     //
 
                     var arg_type = (ArrayTypeSymbol)arguments[arg_index].Value.Emit(this); // {args}
-                    
+
                     // {args} on STACK:
 
                     if (p.IsParams)
@@ -2471,13 +2475,29 @@ namespace Pchp.CodeAnalysis.CodeGen
             // emit targetp default value:
             ConstantValue cvalue;
             BoundExpression boundinitializer;
+            FieldSymbol defaultvaluefield;
 
             if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
                 ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
             }
+            else if ((defaultvaluefield = targetp.DefaultValueField) != null)
+            {
+                Debug.Assert(defaultvaluefield.IsStatic);
+                ptype = defaultvaluefield.EmitLoad(this);
+
+                if (ptype.Is_Func_Context_PhpValue())
+                {
+                    this.EmitLoadContext();
+
+                    // .Invoke( ctx )
+                    ptype = this.Builder.EmitCall(Module, Diagnostics, ILOpCode.Callvirt, ptype.DelegateInvokeMethod());
+                }
+            }
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
+                // DEPRECATED AND NOT USED ANYMORE:
+
                 var cg = this;
 
                 if (targetp.OriginalDefinition is SourceParameterSymbol)
@@ -2507,7 +2527,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (targetp.IsParams)
             {
-                // new T[0]
+                // Template: System.Array.Empty<T>()
                 Emit_EmptyArray(((ArrayTypeSymbol)targetp.Type).ElementType);
                 return;
             }

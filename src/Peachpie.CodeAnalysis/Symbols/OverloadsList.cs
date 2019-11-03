@@ -158,8 +158,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 var expectedparams = m.GetExpectedArguments(typeCtx);
 
-                foreach (var p in expectedparams)
+                for (int i = 0; i < expectedparams.Count; i++)
                 {
+                    var p = expectedparams[i];
+
                     hasoptional |= p.DefaultValue != null;
                     hasparams |= p.IsVariadic;
                     if (!hasoptional && !hasparams) nmandatory++;
@@ -177,7 +179,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 //
-                if ((args.Length >= nmandatory || hasunpacking) && (hasparams || args.Length <= expectedparams.Length))
+                if ((args.Length >= nmandatory || hasunpacking) && (hasparams || args.Length <= expectedparams.Count))
                 {
                     // TODO: this is naive implementation of overload resolution,
                     // make it properly using Conversion Cost

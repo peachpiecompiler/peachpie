@@ -86,13 +86,12 @@ namespace Peachpie.Library.MsSql
         /// <summary>
         /// Gets a query result resource.
         /// </summary>
-        /// <param name="connection">Database connection.</param>
         /// <param name="reader">Data reader to be used for result resource population.</param>
         /// <param name="convertTypes">Whether to convert data types to PHP ones.</param>
         /// <returns>Result resource holding all resulting data of the query.</returns>
-        protected override ResultResource/*!*/GetResult(ConnectionResource/*!*/ connection, IDataReader/*!*/ reader, bool convertTypes)
+        protected override ResultResource/*!*/GetResult(IDataReader/*!*/ reader, bool convertTypes)
         {
-            return new PhpSqlDbResult(connection, reader, convertTypes);
+            return new PhpSqlDbResult(this, reader, convertTypes);
         }
 
         /// <summary>

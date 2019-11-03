@@ -9,6 +9,8 @@ using System.Security.Authentication;
 using Pchp.Core.Utilities;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Pchp.Library
 {
@@ -28,7 +30,9 @@ namespace Pchp.Library
         public const int FTP_TIMEOUT_SEC = 0;
         public const int FTP_USEPASVADDRESS = 2;
         public const int FTP_AUTORESUME = -1;
-
+        public const int FTP_FAILED = 0;
+        public const int FTP_MOREDATA = 2;
+        public const int FTP_FINISHED = 1;
         #endregion
 
         #region FtpResource
@@ -57,6 +61,9 @@ namespace Pchp.Library
                 client.DataConnectionReadTimeout = client.ReadTimeout;
 
                 Client = client;
+                Autoseek = true;
+                TokenSource = new CancellationTokenSource();
+                
             }
 
             public FtpClient Client { get; }
@@ -65,8 +72,45 @@ namespace Pchp.Library
 
             public bool Autoseek { get; set; }
 
+            public Task<bool> FunctionTask { get; set; }
+            
+            public CancellationTokenSource TokenSource { get; private set; }
+
+            public void PrepareTaskFunction(FtpResource resource, int mode)
+            {
+                resource.Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
+
+                if (resource.FunctionTask != null) // Cancel current function and start new
+                {
+                    // CancellationTokenSource cannot be reset and cancelled again
+                    resource.TokenSource.Cancel();
+
+                    try
+                    {
+                        // Wait for task is canceled in other to dispose TokenSource
+                        resource.FunctionTask.Wait();
+                    }
+                    catch(AggregateException ex) 
+                    {
+                        if (!(ex.InnerException is TaskCanceledException))
+                            throw;
+                    }
+
+                    resource.FunctionTask = null;
+                }
+
+                if (TokenSource != null)
+                {
+                    resource.TokenSource.Dispose();
+                    resource.TokenSource = new CancellationTokenSource();
+                }
+            }
+
             protected override void FreeManaged()
             {
+                if (TokenSource != null)
+                    TokenSource.Dispose();
+
                 Client.Dispose();
                 base.FreeManaged();
             }
@@ -218,39 +262,7 @@ namespace Pchp.Library
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public static bool ftp_put(Context context, PhpResource ftp_stream, string remote_file, string local_file, int mode = FTP_IMAGE, int startpos = 0)
         {
-            var resource = ValidateFtpResource(ftp_stream);
-            if (resource == null)
-                return false;
-
-            string localPath = FileSystemUtils.AbsolutePath(context, local_file);
-            if (!FileSystemUtils.IsLocalFile(localPath))
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, local_file);
-                return false;
-            }
-
-            // Two types of data transfer
-            resource.Client.UploadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
-
-            if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
-                PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
-
-            try
-            {
-                return resource.Client.UploadFile(localPath, remote_file, FtpExists.Overwrite);
-            }
-            /* FtpException everytime wraps other exceptions (Message from server). 
-            * https://github.com/robinrodricks/FluentFTP/blob/master/FluentFTP/Client/FtpClient_HighLevelUpload.cs#L595 */
-            catch (FtpException ex)
-            {
-                PhpException.Throw(PhpError.Warning, ex.InnerException.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName);
-            }
-
-            return false;
+            return Put(context, ftp_stream, remote_file, local_file, mode = FTP_IMAGE, false, startpos);
         }
 
         /// <summary>
@@ -580,9 +592,7 @@ namespace Pchp.Library
                 // FtpClient converts given integer to string,
                 // expecting it to result in unix-chmod like number.
 
-                mode = (mode & 7) + (((mode >> 3) & 7) * 10) + (((mode >> 6) & 7) * 100);   // TODO: move to utils, might be needed for chmod()
-
-                resource.Client.Chmod(filename, mode);
+                resource.Client.Chmod(filename, ConvertUnixModeFromInput(mode));
                 return mode;
             }
             catch (FtpCommandException ex)
@@ -676,6 +686,18 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// This function converts string representation of octal value, which is converted to int value,
+        /// to int value with same digits as string representation. This special method is provided
+        /// because of FluentFTP implementation.
+        /// </summary>
+        /// <param name="octalMode"></param>
+        /// <returns>Same value in decimal base</returns>
+        private static int ConvertUnixModeFromInput(int octalMode)
+        {
+            return octalMode = (octalMode & 7) + (((octalMode >> 3) & 7) * 10) + (((octalMode >> 6) & 7) * 100);
+        }
+
+        /// <summary>
         /// executes the FTP LIST command, and returns the result as an array.
         /// </summary>
         /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
@@ -706,7 +728,7 @@ namespace Pchp.Library
                     list = resource.Client.GetListing(directory, FtpListOption.ForceList);
                 }
 
-                return GetArrayOfInput(list);
+                return GetArrayOfInputRaw(list);
             }
             catch (FtpCommandException ex)
             {
@@ -718,18 +740,6 @@ namespace Pchp.Library
             }
 
             return null;
-        }
-
-        private static PhpArray GetArrayOfInput(FtpListItem[] list)
-        {
-            var result = new PhpArray(list.Length);
-
-            foreach (var item in list) // NOTE: compiler makes `for` loop out of it
-            {
-                result.Add(item.Input);
-            }
-
-            return result;
         }
 
         /// <summary>
@@ -823,7 +833,7 @@ namespace Pchp.Library
             if (startpos != 0)
             {
                 // There is no API for this parameter in FluentFTP Library. 
-                throw new NotImplementedException();
+                PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
             }
 
             resource.Client.UploadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
@@ -875,5 +885,421 @@ namespace Pchp.Library
 
             return false;
         }
+
+        /// <summary>
+        /// Append the contents of a file to another file on the FTP server
+        /// </summary>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_append(Context context, PhpResource ftp_stream, string remote_file, string local_file, int mode = FTP_IMAGE)
+        {
+            return Put(context, ftp_stream, remote_file, local_file, mode, true, 0);
+        }
+
+        /// <summary>
+        /// Loads file on server.
+        /// </summary>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        private static bool Put(Context context, PhpResource ftp_stream, string remote_file, string local_file, int mode, bool append, int startpos)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return false;
+
+            string localPath = FileSystemUtils.AbsolutePath(context, local_file);
+            if (!FileSystemUtils.IsLocalFile(localPath))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, local_file);
+                return false;
+            }
+
+            // Two types of data transfer
+            resource.Client.UploadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
+
+            if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
+                PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
+
+            try
+            {
+                return resource.Client.UploadFile(localPath, remote_file, append ? FtpExists.Append : FtpExists.Overwrite);
+            }
+            /* FtpException everytime wraps other exceptions (Message from server). 
+            * https://github.com/robinrodricks/FluentFTP/blob/master/FluentFTP/Client/FtpClient_HighLevelUpload.cs#L595 */
+            catch (FtpException ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.InnerException.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Changes to the parent directory
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_cdup(PhpResource ftp_stream)
+        {
+            return ftp_chdir(ftp_stream, "..");
+        }
+
+        /// <summary>
+        /// Returns a list of files in the given directory
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="directory">The directory to be listed.</param>
+        /// <returns>Returns an array of arrays with file infos from the specified directory on success or FALSE on error.</returns>
+        [return: CastToFalse]
+        public static PhpArray ftp_mlsd(PhpResource ftp_stream, string directory)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return null;
+
+            if (!resource.Client.HasFeature(FtpCapability.MLSD))
+                return null;
+
+            try
+            {
+                FtpListItem[] list = resource.Client.GetListing(directory, FtpListOption.Auto);
+
+                return GetArrayOfInputMLSD(list);
+            }
+            catch (FtpCommandException ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName);
+            }
+
+            return null;
+        }
+
+        private static PhpArray GetArrayOfInputRaw(FtpListItem[] list)
+        {
+            var result = new PhpArray(list.Length);
+
+            foreach (var item in list) // NOTE: compiler makes `for` loop out of it
+            {
+                result.Add(item.Input);
+            }
+
+            return result;
+        }
+
+        private static PhpArray GetArrayOfInputMLSD(FtpListItem[] list)
+        {
+            var result = new PhpArray(list.Length);
+            // For optimalization we will asume that every file has some number of properties (depends on system).
+            int numberOfItems = 7;
+
+            foreach (var item in list)
+            {
+                var itemArr = new PhpArray(numberOfItems);
+
+                // name
+                if (!String.IsNullOrEmpty(item.Name))
+                    itemArr.Add("name", item.Name);
+                // type of file
+                itemArr.Add("type", item.Type.ToString());
+                // modify
+                if (item.Modified != null) {
+                    itemArr.Add("modify", DateTimeUtils.UtcToUnixTimeStamp(item.Modified.ToUniversalTime()));
+                }
+                // chmod
+                if (item.Chmod != 0) {
+                    itemArr.Add("UNIX.mode", ConvertUnixModeFromInput(item.Chmod));
+                }
+                // owner perm
+                if (!String.IsNullOrEmpty(item.RawOwner)) {
+                    itemArr.Add("UNIX.owner", item.RawOwner);
+                }
+                // group perm
+                if (!String.IsNullOrEmpty(item.RawGroup))
+                {
+                    itemArr.Add("UNIX.group", item.RawGroup);
+                }
+                // size
+                if (item.Size != -1)
+                {
+                    itemArr.Add("size", item.Size);
+                }
+
+                result.Add(itemArr);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Alias of ftp_close()
+        /// </summary>
+        /// <param name="ftp_stream"></param>
+        /// <returns></returns>
+        public static bool ftp_quit(PhpResource ftp_stream)
+        {
+            return ftp_close(ftp_stream);
+        }
+
+        /// <summary>
+        /// Sends an arbitrary command to an FTP server
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="command">The command to execute.</param>
+        /// <returns>Returns the server's response as an array of strings. No parsing is performed on the response 
+        /// string, nor does ftp_raw() determine if the command succeeded.</returns>
+        [return: CastToFalse]
+        public static PhpArray ftp_raw(PhpResource ftp_stream, string command)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return null;
+
+            // API of Fluent FTP offers only on message in response. So in the result will be always only one item.
+            int numberOfMessages = 1;
+
+            FtpReply reply = resource.Client.Execute(command);
+            PhpArray result = new PhpArray(numberOfMessages);
+
+            result.Add($"{reply.InfoMessages} {reply.Code} {reply.Message}".Trim());
+
+            return result;
+        }
+
+        /// <summary>
+        /// Sends an ALLO command to the remote FTP server to allocate space for a file to be uploaded.
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="filesize">The number of bytes to allocate.</param>
+        /// <param name="result">A textual representation of the servers response will be returned by reference in 
+        /// result if a variable is provided.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_alloc(PhpResource ftp_stream, int filesize, ref string result)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return false;
+
+            FtpReply reply = resource.Client.Execute($"ALLO {filesize}");
+
+            if (reply.Message != null)
+                result = reply.Message;
+
+            int code;
+            if (int.TryParse(reply.Code, out code))
+            {
+                if (code < 200 || code > 300)
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Retrieves a remote file from the FTP server, and saves it into a local file.
+        /// </summary>
+        /// <param name="ctx">Context of script</param>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="local_file">The local file path (will be overwritten if the file already exists).</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="resumepos">The position in the remote file to start downloading from.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_get(Context ctx, PhpResource ftp_stream, string local_file, string remote_file, int mode = FTP_BINARY, int resumepos = 0)
+        {
+            using (var stream = PhpPath.fopen(ctx, local_file, "w")) {
+                return ftp_fget(ftp_stream, stream, remote_file, mode, resumepos);
+            }
+        }
+
+        #region No-Blocking Functions
+
+        /// <summary>
+        /// Continues retrieving/sending a file non-blocking.
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_continue(PhpResource ftp_stream)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return FTP_FAILED;
+
+            return TasksGetInfo(resource);
+        }
+
+        /// <summary>
+        /// Stores a file on the FTP server (non-blocking)
+        /// </summary>
+        /// <param name="ctx">Context of script.</param>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="local_file">The local file path.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="startpos">The position in the remote file to start uploading to.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_put(Context ctx, PhpResource ftp_stream, string remote_file, string local_file, int mode = FTP_BINARY, int startpos = 0)
+        {
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+            {
+                return FTP_FAILED;
+            }
+
+            if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
+                PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
+
+            resource.PrepareTaskFunction(resource, mode);
+            
+            resource.FunctionTask = resource.Client.UploadFileAsync(local_file, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.TokenSource.Token);
+
+            return TasksGetInfo(resource);
+        }
+
+        /// <summary>
+        /// Stores a file from an open file to the FTP server (non-blocking)
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="handle">An open file pointer on the local file. Reading stops at end of file.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="startpos">The position in the remote file to start uploading to.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_fput(PhpResource ftp_stream , string remote_file , PhpResource handle, int mode = FTP_BINARY, int startpos = 0)
+        {
+            // Check file resource
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return FTP_FAILED;
+            }
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+            {
+                return FTP_FAILED;
+            }
+
+            if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
+                PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
+
+            resource.PrepareTaskFunction(resource, mode);
+
+            resource.FunctionTask = resource.Client.UploadAsync(stream.RawStream, remote_file,FtpExists.Overwrite,false,null, resource.TokenSource.Token);
+            
+            return TasksGetInfo(resource);
+        }
+
+        /// <summary>
+        /// Retrieves a file from the FTP server and writes it to a local file (non-blocking).
+        /// </summary>
+        /// <param name="ctx">Constext of script.</param>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="local_file">The local file path (will be overwritten if the file already exists).</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="resumepos">The position in the remote file to start downloading from.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_get(Context ctx, PhpResource ftp_stream, string local_file, string remote_file, int mode = FTP_BINARY, int resumepos = 0)
+        {
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+            {
+                return FTP_FAILED;
+            }
+
+            if (resumepos != 0) // There is no API for this parameter in FluentFTP Library.
+                PhpException.ArgumentValueNotSupported(nameof(resumepos), resumepos);
+
+            resource.PrepareTaskFunction(resource, mode);
+
+            resource.FunctionTask = resource.Client.DownloadFileAsync(local_file, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.TokenSource.Token);
+
+            return TasksGetInfo(resource);
+        }
+
+        /// <summary>
+        /// Retrieves a file from the FTP server and writes it to a local file (non-blocking).
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="handle">An open file pointer in which we store the data.</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="resumepos">The position in the remote file to start downloading from.</param>
+        /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
+        public static int ftp_nb_fget(PhpResource ftp_stream, PhpResource handle, string remote_file, int mode = FTP_BINARY, int resumepos = 0)
+        {
+            // Check file resource
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return FTP_FAILED;
+            }
+
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+            {
+                return FTP_FAILED;
+            }
+
+            // Ignore autoresume if autoseek is switched off 
+            if (resource.Autoseek && resumepos == FTP_AUTORESUME)
+            {
+                resumepos = 0;
+            }
+
+            if (resource.Autoseek && resumepos != 0)
+            {
+                if (resumepos == FTP_AUTORESUME)
+                {
+                    stream.Seek(0, SeekOrigin.End);
+                    resumepos = stream.Tell();
+                }
+                else
+                {
+                    stream.Seek(resumepos, SeekOrigin.Begin);
+                }
+            }
+
+            resource.PrepareTaskFunction(resource, mode);
+
+            resource.FunctionTask = resource.Client.DownloadAsync(stream.RawStream, remote_file, resumepos, null, resource.TokenSource.Token);
+
+            return TasksGetInfo(resource);
+        }
+
+        private static int TasksGetInfo(FtpResource ftp_stream)
+        {
+            if (ftp_stream.FunctionTask == null)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.Resources.ftp_error_no_nb);
+                return FTP_FAILED;
+            }
+
+            if (ftp_stream.FunctionTask.IsFaulted)
+            {
+                foreach(Exception ex in ftp_stream.FunctionTask.Exception.InnerExceptions)
+                    PhpException.Throw(PhpError.Warning, ex.Message);
+
+                return FTP_FAILED;
+            }
+
+            if (ftp_stream.FunctionTask.IsCompleted)
+            {
+                return ftp_stream.FunctionTask.Result ? FTP_FINISHED : FTP_FAILED;
+            }
+
+            return FTP_MOREDATA;
+        }
+       
+        #endregion
     }
 }

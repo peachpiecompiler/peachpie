@@ -698,25 +698,52 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int fpassthru(Context ctx, PhpResource handle)
         {
-            PhpStream stream = PhpStream.GetValid(handle);
-            if (stream == null) return -1;
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return -1;
+            }
+
+            int rv = 0;
+
             if (stream.IsText)
             {
                 // Use the text output buffers.
-                int rv = 0;
                 while (!stream.Eof)
                 {
                     string str = stream.ReadMaximumString();
                     ctx.Output.Write(str);
                     rv += str.Length;
                 }
-                return rv;
             }
-            else
+            else // (stream.IsBinary)
             {
                 // Write directly to the binary output buffers.
-                return stream_copy_to_stream(stream, InputOutputStreamWrapper.ScriptOutput(ctx));
+                //return stream_copy_to_stream(stream, InputOutputStreamWrapper.ScriptOutput(ctx));
+
+                var writing = Task.CompletedTask;
+
+                while (!stream.Eof)
+                {
+                    var data = stream.ReadMaximumData();
+                    if (data.IsNull) break; // EOF or error.
+
+                    var bytes = data.AsBytes(ctx.StringEncoding);
+                    rv += bytes.Length;
+
+                    writing = writing.IsCompleted
+                        ? ctx.OutputStream.WriteAsync(bytes, 0, bytes.Length)
+                        : writing.ContinueWith((_) => ctx.OutputStream.WriteAsync(bytes));
+                }
+
+                if (!writing.IsCompleted)
+                {
+                    writing.GetAwaiter().GetResult();
+                }
             }
+
+            //
+            return rv;
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
 <?php
+namespace functions\leibnitz;
 
 /**
  * @param int $accuracy

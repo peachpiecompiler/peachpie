@@ -52,12 +52,14 @@ namespace Peachpie.Library.MySql
 
         protected override IDbConnection ActiveConnection => _connection;
 
-        protected override ResultResource GetResult(ConnectionResource connection, IDataReader reader, bool convertTypes)
+        protected override ResultResource GetResult(IDataReader reader, bool convertTypes)
         {
-            return new MySqlResultResource(connection, reader, convertTypes);
+            return new MySqlResultResource(this, reader, convertTypes);
         }
 
-        protected override IDbCommand CreateCommand(string commandText, CommandType commandType)
+        protected override IDbCommand CreateCommand(string commandText, CommandType commandType) => CreateCommandInternal(commandText, commandType);
+
+        internal MySqlCommand CreateCommandInternal(string commandText, CommandType commandType = CommandType.Text)
         {
             return new MySqlCommand()
             {
@@ -65,6 +67,11 @@ namespace Peachpie.Library.MySql
                 CommandText = commandText,
                 CommandType = commandType
             };
+        }
+
+        internal ResultResource ExecuteCommandInternal(IDbCommand command, bool convertTypes, IEnumerable<IDataParameter> parameters, bool skipResults)
+        {
+            return ExecuteCommandProtected(command, convertTypes, parameters, skipResults);
         }
 
         /// <summary>

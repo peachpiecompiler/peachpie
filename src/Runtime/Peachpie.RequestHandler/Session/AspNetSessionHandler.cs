@@ -5,7 +5,7 @@ using System.Web.SessionState;
 using Pchp.Core;
 using Pchp.Library;
 
-namespace Peachpie.RequestHandler
+namespace Peachpie.RequestHandler.Session
 {
     sealed class AspNetSessionHandler : PhpSessionHandler
     {
@@ -15,7 +15,7 @@ namespace Peachpie.RequestHandler
 
         public const string AspNetSessionName = "ASP.NET_SessionId";
 
-        static PhpSerialization.Serializer Serializer => PhpSerialization.PhpSerializer.Instance;
+        static PhpSerialization.PhpSerializer Serializer => PhpSerialization.PhpSerializer.Instance;
 
         private AspNetSessionHandler() { }
 
@@ -71,6 +71,7 @@ namespace Peachpie.RequestHandler
 
         public override PhpArray Load(IHttpPhpContext webctx)
         {
+            var ctx = (Context)webctx;
             var httpContext = GetHttpContext(webctx);
 
             EnsureSessionId(httpContext);
@@ -101,15 +102,52 @@ namespace Peachpie.RequestHandler
             {
                 if (state[PhpNetSessionVars] is byte[] data)
                 {
-                    result = Serializer.Deserialize((Context)webctx, new PhpString(data), default(RuntimeTypeHandle)).ArrayOrNull();
+                    if (Serializer.TryDeserialize(ctx, data, out var value))
+                    {
+                        result = value.ArrayOrNull();
+                    }
                 }
+
+                // TODO: deserialize .NET session variables
             }
 
             return result ?? PhpArray.NewEmpty();
         }
 
+        /// <summary>
+        /// Initiates the session.
+        /// </summary>
+        public override bool StartSession(Context ctx, IHttpPhpContext webctx)
+        {
+            if (base.StartSession(ctx, webctx))
+            {
+                //var httpContext = GetHttpContext(webctx);
+                //var session = httpContext.Session;
+
+                //// override HttpSessionState._container : IHttpSessionState
+                //var oldcontainer = session.GetContainer();
+                //if (oldcontainer is SharedSession)
+                //{
+                //    // unexpected; session already bound
+                //}
+                //else if (oldcontainer != null)
+                //{
+                //    // overwrite IHttpSessionState
+                //    session.SetContainer(new SharedSession(oldcontainer, ctx.Session));
+                //}
+
+                //
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         public override bool Persist(IHttpPhpContext webctx, PhpArray session)
         {
+            var ctx = (Context)webctx;
             var httpContext = GetHttpContext(webctx);
             var state = httpContext.Session;
 
@@ -134,11 +172,27 @@ namespace Peachpie.RequestHandler
             {
                 // if the session is maintained out-of-process, serialize the entire $_SESSION autoglobal
                 // add the serialized $_SESSION to ASP.NET session:
-                state[PhpNetSessionVars] = Serializer.Serialize((Context)webctx, (PhpValue)session, default(RuntimeTypeHandle)).ToBytes((Context)webctx);
+                state[PhpNetSessionVars] = Serializer.Serialize(ctx, session, default(RuntimeTypeHandle)).ToBytes(ctx);
             }
 
             //
             return true;
+        }
+
+        /// <summary>
+        /// Close the session (either abandon or persist).
+        /// </summary>
+        public override void CloseSession(Context ctx, IHttpPhpContext webctx, bool abandon)
+        {
+            base.CloseSession(ctx, webctx, abandon);
+
+            // set the original IHttpSessionState back
+            var session = GetHttpContext(webctx).Session;
+            var container = session.GetContainer();
+            if (container is SharedSession shared && ReferenceEquals(shared.PhpSession, ctx.Session))
+            {
+                session.SetContainer(shared.UnderlayingContainer);
+            }
         }
     }
 }

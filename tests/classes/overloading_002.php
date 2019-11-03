@@ -1,4 +1,5 @@
 <?php
+namespace classes\overloading_002;
 
 class A
 {

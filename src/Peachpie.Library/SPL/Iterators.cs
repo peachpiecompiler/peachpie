@@ -501,7 +501,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Enumerator over the <see cref="iterator"/>.
         /// </summary>
-        protected IPhpEnumerator _enumerator;
+        internal protected IPhpEnumerator _enumerator;
 
         /// <summary>
         /// Wheter the <see cref="_enumerator"/> is in valid state (initialized and not at the end).

@@ -1,4 +1,5 @@
 <?php
+namespace generators\generators_014;
 
 function from() {
     yield 1; // key 0

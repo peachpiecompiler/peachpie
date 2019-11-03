@@ -1,4 +1,5 @@
 <?php
+namespace operators\coalesce;
 
 function test($x) {
 	print_r( $x ?? "null" );
@@ -12,7 +13,7 @@ test(1);
 test(false);
 test("Hello");
 test("0");
-test(new stdClass);
+test(new \stdClass);
 test([]);
 test([1, 2, 3]);
 
@@ -24,7 +25,7 @@ print_r( 1 ?? "null" );
 print_r( false ?? "null" );
 print_r( "Hello" ?? "null" );
 print_r( "0" ?? "null" );
-print_r( new stdClass ?? "null" );
+print_r( new \stdClass ?? "null" );
 print_r( [] ?? "null" );
 
 echo "Done";

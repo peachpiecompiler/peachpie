@@ -107,7 +107,7 @@ namespace Pchp.Core
     /// <summary>
     /// Marks public declarations that won't be visible in the PHP context.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class PhpHiddenAttribute : Attribute
     {
     }
@@ -294,23 +294,20 @@ namespace Pchp.Core
     public sealed class DefaultValueAttribute : Attribute
     {
         /// <summary>
-        /// Denotates the type of the value.
+        /// The type containing the backing field.
+        /// <c>Null</c> indicates the containing type.
         /// </summary>
-        public enum DefaultValueType
+        public Type ExplicitType { get; set; }
+
+        /// <summary>
+        /// Name of the backing field.
+        /// </summary>
+        public string FieldName { get; private set; }
+
+        public DefaultValueAttribute(string fieldName)
         {
-            None = 0,
-            PhpArray = 1,
+            FieldName = fieldName;
         }
-
-        /// <summary>
-        /// The type of the default value.
-        /// </summary>
-        public DefaultValueType Type { get; set; }
-
-        /// <summary>
-        /// Optional serialized data using PHP serialization.
-        /// </summary>
-        public byte[] SerializedValue { get; set; }
     }
 
     /// <summary>

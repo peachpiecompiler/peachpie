@@ -1,4 +1,5 @@
 <?php
+namespace traits\trait_002;
 
 // Example #3 Alternate Precedence Order Example
 

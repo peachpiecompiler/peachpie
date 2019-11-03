@@ -463,15 +463,12 @@ namespace Pchp.Library
                         }
 
                     case OutputHandling.RedirectToScriptOutput:
-                        {
-                            byte[] buffer = new byte[1024];
-                            int count;
-                            while ((count = p.StandardOutput.BaseStream.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                ctx.OutputStream.Write(buffer, 0, count);
-                            }
-                            break;
-                        }
+                        p.StandardOutput.BaseStream
+                            .CopyToAsync(ctx.OutputStream)
+                            .GetAwaiter()
+                            .GetResult();
+
+                        break;
                 }
 
                 p.WaitForExit();

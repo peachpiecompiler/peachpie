@@ -31,7 +31,7 @@ namespace Pchp.Library.Spl
             set => _trace = value;
         }
 
-        protected string message;
+        protected PhpValue message; // laravel makes references to this variable hence it cannot be strictly `string` // https://github.com/peachpiecompiler/peachpie/issues/564 - can be typed as string once we allow making references to any type
         protected long code;
         protected string file;
         protected int line;
@@ -53,7 +53,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Exception message in CLR.
         /// </summary>
-        public override string Message => this.message ?? string.Empty;
+        public override string Message => this.message.IsSet ? this.message.ToString() : string.Empty;
 
         public void __construct(string message = "", long code = 0, Throwable previous = null)
         {
@@ -69,7 +69,7 @@ namespace Pchp.Library.Spl
 
         public virtual int getLine() => this.line;
 
-        public virtual string getMessage() => this.message;
+        public virtual string getMessage() => this.message.ToString();
 
         public virtual Throwable getPrevious() => previous ?? this.InnerException as Throwable;
 

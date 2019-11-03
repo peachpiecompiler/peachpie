@@ -1,4 +1,5 @@
 <?php
+namespace classes\ctor_default_param;
 
 class X {
 	function __construct(array $data = []) {

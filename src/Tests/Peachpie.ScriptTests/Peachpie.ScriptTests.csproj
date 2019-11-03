@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>    
-    <TargetFrameworks>netcoreapp2.0</TargetFrameworks> 
+    <TargetFrameworks>netcoreapp3.0</TargetFrameworks> 
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
       <PrivateAssets>all</PrivateAssets>
@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
+    <ProjectReference Include="..\..\Peachpie.Library.Graphics\Peachpie.Library.Graphics.csproj" />
     <ProjectReference Include="..\..\Peachpie.Library.Scripting\Peachpie.Library.Scripting.csproj" />
     <ProjectReference Include="..\..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\..\Peachpie.Runtime\Peachpie.Runtime.csproj" />

@@ -174,6 +174,73 @@ namespace Peachpie.Library.MySql.MySqli
             => link.ssl_set(key, cert, ca, capath, cipher);
 
         /// <summary>
+        /// Prepare an SQL statement for execution.
+        /// </summary>
+        //[return: CastToFalse]
+        public static mysqli_stmt mysqli_prepare([NotNull]mysqli link, string query = null) => new mysqli_stmt(link, query);
+
+        /// <summary>
+        /// Prepare an SQL statement for execution.
+        /// </summary>
+        public static bool mysqli_stmt_prepare([NotNull]mysqli_stmt stmt, string query) => stmt.prepare(query);
+
+        /// <summary>
+        /// Binds variables to a prepared statement as parameters.
+        /// </summary>
+        public static bool mysqli_stmt_bind_param([NotNull]mysqli_stmt stmt, string types, params PhpAlias[] variables) => stmt.bind_param(types, variables);
+
+        /// <summary>
+        /// Send data in blocks.
+        /// </summary>
+        public static bool mysqli_stmt_send_long_data([NotNull]mysqli_stmt stmt, int param_nr, PhpString data) => stmt.send_long_data(param_nr, data);
+
+        /// <summary>
+        /// Executes a prepared Query.
+        /// </summary>
+        public static bool mysqli_stmt_execute([NotNull]mysqli_stmt stmt) => stmt.execute();
+
+        /// <summary>
+        /// Closes a prepared statement.
+        /// </summary>
+        public static bool mysqli_stmt_close([NotNull]mysqli_stmt stmt) => stmt.close();
+
+        /// <summary>
+        /// Get the ID generated from the previous INSERT operation.
+        /// </summary>
+        public static long mysqli_stmt_insert_id([NotNull]mysqli_stmt stmt) => stmt.insert_id;
+
+        /// <summary>
+        /// Returns the total number of rows changed, deleted, or inserted by the last executed statement .
+        /// </summary>
+        public static int mysqli_stmt_affected_rows([NotNull]mysqli_stmt stmt) => stmt.affected_rows;
+
+        /// <summary>
+        /// Seeks to an arbitrary row in statement result set.
+        /// </summary>
+        public static void mysqli_stmt_data_seek([NotNull]mysqli_stmt stmt, int offset) => stmt.data_seek(offset);
+
+        /// <summary>
+        /// Gets a result set from a prepared statement.
+        /// </summary>
+        [return: CastToFalse]
+        public static mysqli_result mysqli_stmt_get_result([NotNull]mysqli_stmt stmt) => stmt.get_result();
+
+        /// <summary>
+        /// Fetch a result row as an associative array.
+        /// </summary>
+        /// <param name="result">A result set identifier.</param>
+        /// <returns>
+        /// Returns an associative array of strings representing the fetched row in the result set,
+        /// where each key in the array represents the name of one of the result set's columns
+        /// or <c>NULL</c> if there are no more rows in resultset. 
+        /// 
+        /// If two or more columns of the result have the same field names, the last column will take precedence.
+        /// To access the other column(s) of the same name, you either need to access the result with
+        /// numeric indices by using mysqli_fetch_row() or add alias names.
+        /// </returns>
+        public static PhpArray mysqli_fetch_assoc(mysqli_result result) => result.fetch_assoc();
+
+        /// <summary>
         /// Fetch a result row as an associative, a numeric array, or both.
         /// </summary>
         public static PhpArray mysqli_fetch_array(mysqli_result result, int resulttype = Constants.MYSQLI_BOTH) => result.fetch_array(resulttype);

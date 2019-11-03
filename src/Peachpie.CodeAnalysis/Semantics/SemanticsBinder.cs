@@ -1082,10 +1082,23 @@ namespace Pchp.CodeAnalysis.Semantics
                     return new BoundConversionEx(boundOperation, BoundTypeRefFactory.StringTypeRef);
 
                 case AST.Operations.StringCast:
+
+                    // workaround (binary) is parsed as (StringCast)
+                    if (expr.ContainingSourceUnit.GetSourceCode(expr.Span).StartsWith("(binary)"))
+                    {
+                        goto case AST.Operations.BinaryCast;
+                    }
+
                     return new BoundConversionEx(boundOperation, BoundTypeRefFactory.StringTypeRef); // TODO // CONSIDER: should be WritableString and analysis should rewrite it to String if possible
 
                 case AST.Operations.BinaryCast:
-                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.WritableStringRef);
+                    // (PhpString)(byte[])expression
+                    return new BoundConversionEx(
+                        new BoundConversionEx(
+                            boundOperation,
+                            BoundTypeRefFactory.Create(DeclaringCompilation.CreateArrayTypeSymbol(DeclaringCompilation.GetSpecialType(SpecialType.System_Byte)))
+                        ).WithAccess(BoundAccess.Read),
+                        BoundTypeRefFactory.WritableStringRef);
 
                 case AST.Operations.ArrayCast:
                     return new BoundConversionEx(boundOperation, BoundTypeRefFactory.ArrayTypeRef);

@@ -1,4 +1,5 @@
 <?php
+namespace arrays\array_slice;
 
 function test($a, $fn) {
   print_r(array_slice($a, 2, null, true));

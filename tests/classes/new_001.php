@@ -1,4 +1,5 @@
 <?php
+namespace classes\new_001;
 
 class Dog {
 	function __construct($breed) {		

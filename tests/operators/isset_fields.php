@@ -1,4 +1,5 @@
 <?php
+namespace operators\isset_fields;
 
 class X {
     function __get($key) { return ''; }

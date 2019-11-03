@@ -1,6 +1,5 @@
 <?php
-
-namespace TestNamespace;
+namespace reflection\class_interface_001;
 
 interface TestInterface
 {

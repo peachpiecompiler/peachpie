@@ -1,4 +1,5 @@
 <?php
+namespace variables\globals_001;
 
 $a = 123;
 $b = "Helo";

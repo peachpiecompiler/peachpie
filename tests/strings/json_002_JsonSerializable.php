@@ -1,5 +1,6 @@
 <?php
-class ArrayValue implements JsonSerializable {
+namespace strings\json_002_JsonSerializable;
+class ArrayValue implements \JsonSerializable {
 
 	var $array;
 

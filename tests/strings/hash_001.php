@@ -1,4 +1,5 @@
 <?php
+namespace strings\hash_001;
 
 function test_hash($algo, $init, $hmac = true)
 {

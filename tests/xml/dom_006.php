@@ -1,8 +1,9 @@
 <?php
+namespace xml\dom_006;
 
 function test() {
   $html = "<div>data</div>";
-  $doc = new DOMDocument;
+  $doc = new \DOMDocument;
   $doc->loadHTML($html);
   
   $list = $doc->getElementsByTagName('div');

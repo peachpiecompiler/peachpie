@@ -1,4 +1,5 @@
 <?php
+namespace variables\isset_003;
 
 interface TestInterface extends \ArrayAccess {
 }

@@ -1,4 +1,5 @@
 <?php
+namespace functions\callback_001;
 
 class X
 {
@@ -13,8 +14,8 @@ function test()
 {
 	$x = new X;
 	call($x);
-	call("X::bar");
-	call(["X", "bar"]);
+	call(__NAMESPACE__ . "\\X::bar");
+	call([__NAMESPACE__ . "\\X", "bar"]);
 	call([$x, "foo"]);
 }
 

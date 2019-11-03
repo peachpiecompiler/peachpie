@@ -103,7 +103,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 yield return new SynthesizedAttributeData(
                     ctor,
-                    ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(t)),
+                    ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(
+                        t.IsTraitType() ? t.ConstructedFrom.ConstructUnboundGenericType() : t)),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
             }
 

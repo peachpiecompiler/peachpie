@@ -1,4 +1,5 @@
 <?php
+namespace functions\static_call_001;
 
 class A
 {
@@ -15,7 +16,7 @@ function test($a) {
     $a::bar();
 }
 
-test('A');
+test(__NAMESPACE__ . "\\A");
 test(new A);
 
 echo "\nDone.";

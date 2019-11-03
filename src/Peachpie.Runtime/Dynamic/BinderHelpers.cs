@@ -210,6 +210,11 @@ namespace Pchp.Core.Dynamic
             {
                 // we need to set the type restriction
                 restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, value.GetType()));
+
+                if (!value.GetType().IsAssignableFrom(expr.Type))
+                {
+                    expr = Expression.Convert(expr, value.GetType());
+                }
             }
 
             //
@@ -224,6 +229,17 @@ namespace Pchp.Core.Dynamic
                 value is uint ||
                 value is ulong ||
                 value is PhpString);
+        }
+
+        /// <summary>
+        /// Template: PhpException.VariableMisusedAsObject( var, bool ) : void
+        /// </summary>
+        public static Expression VariableMisusedAsObject(Expression var, bool reference)
+        {
+            return Expression.Call(
+                typeof(PhpException), "VariableMisusedAsObject", Array.Empty<Type>(),
+                   ConvertExpression.BindToValue(var),
+                   Expression.Constant(reference));
         }
 
         public static Expression EnsureNotNullPhpArray(Expression variable)
@@ -603,6 +619,31 @@ namespace Pchp.Core.Dynamic
             return null;
         }
 
+        /// <summary>
+        /// Resolves property with respect to staticness and visibility.
+        /// </summary>
+        /// <param name="type">Property receiver.</param>
+        /// <param name="classCtx">Current class context (visibility).</param>
+        /// <param name=@static">Whether to lookup static properties.</param>
+        /// <param name="name">Property name.</param>
+        public static PhpPropertyInfo ResolveDeclaredProperty(PhpTypeInfo type, Type classCtx, bool @static, string name)
+        {
+            for (var t = type; t != null; t = t.BaseType)
+            {
+                foreach (var p in t.DeclaredFields.GetPhpProperties(name))
+                {
+                    if (p.IsStatic == @static && p.IsVisible(classCtx))
+                    {
+                        return p;
+                    }
+                }
+            }
+
+            //
+            return null;
+        }
+
+        // NOTE: will be replaced with "IRuntimeChain"
         public static Expression BindField(PhpTypeInfo type, Type classCtx, Expression target, string field, Expression ctx, AccessMask access, Expression rvalue)
         {
             if (access.Write() != (rvalue != null))
@@ -611,15 +652,10 @@ namespace Pchp.Core.Dynamic
             }
 
             // lookup a declared field
-            for (var t = type; t != null; t = t.BaseType)
+            var p = ResolveDeclaredProperty(type, classCtx, target == null, field);
+            if (p != null)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties(field))
-                {
-                    if (p.IsStatic == (target == null) && p.IsVisible(classCtx))
-                    {
-                        return BindAccess(p.Bind(ctx, target), ctx, access, rvalue);
-                    }
-                }
+                return BindAccess(p.Bind(ctx, target), ctx, access, rvalue);
             }
 
             //
@@ -790,13 +826,8 @@ namespace Pchp.Core.Dynamic
                 {
                     // = target->field
 
-                    /* Template:
-                     * return runtimeflds.TryGetValue(field, out result) ? result : (__get(field) ?? ERR);
-                     */
-                    var __get = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
-                    result = Expression.Condition(trygetfield,
-                        resultvar,
-                        InvokeHandler(ctx, target, field, __get, access));    // TODO: @default = { ThrowError; return null; }
+                    // Template: Operators.GetRuntimeProperty(ctx, PhpTypeInfo, instance, propertyName)
+                    return Expression.Call(Cache.Operators.RuntimePropertyGetValue.Method, ctx, Expression.Constant(type), target, Expression.Constant(field));
                 }
 
                 //
@@ -951,7 +982,9 @@ namespace Pchp.Core.Dynamic
                     else if (p.IsImportCallerClassParameter())
                     {
                         // TODO: pass classctx from the callsite
-                        throw new NotImplementedException();
+                        Debug.WriteLine("TODO: pass classctx from the callsite");
+
+                        boundargs[i] = Expression.Default(p.ParameterType);
                     }
                     else if (p.IsImportCallerStaticClassParameter())
                     {

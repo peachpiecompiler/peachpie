@@ -190,7 +190,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield break;
             }
 
-            MethodSymbol defaultctor; // .ctor to be used by default
+            MethodSymbol defaultctor = null; // .ctor to be used by default
 
             // create .ctor(s)
             if (phpconstruct == null)
@@ -206,21 +206,24 @@ namespace Pchp.CodeAnalysis.Symbols
                 };
                 yield return fieldsinitctor;
 
-                // generate .ctor(s) calling PHP __construct with optional overloads in case there is an optional parameter
-                var ps = phpconstruct.Parameters;
-                for (int i = 0; i < ps.Length; i++)
+                if (!type.IsAbstract)
                 {
-                    if (ps[i].HasUnmappedDefaultValue)
+                    // generate .ctor(s) calling PHP __construct with optional overloads in case there is an optional parameter
+                    var ps = phpconstruct.Parameters;
+                    for (int i = 0; i < ps.Length; i++)
                     {
-                        yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct, i);
+                        if (ps[i].HasUnmappedDefaultValue())
+                        {
+                            yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct, i);
+                        }
                     }
-                }
 
-                yield return defaultctor = new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct);
+                    yield return defaultctor = new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct);
+                }
             }
 
             // parameterless .ctor() with shared context
-            if (defaultctor.DeclaredAccessibility == Accessibility.Public && type.DeclaredAccessibility == Accessibility.Public && !type.IsAbstract)
+            if (defaultctor != null && defaultctor.DeclaredAccessibility == Accessibility.Public && type.DeclaredAccessibility == Accessibility.Public && !type.IsAbstract)
             {
                 // Template:
                 // void .ctor(...) : this(ContextExtensions.CurrentContext, ...) { }

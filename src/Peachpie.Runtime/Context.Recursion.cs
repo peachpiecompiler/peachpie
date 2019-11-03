@@ -35,8 +35,7 @@ namespace Pchp.Core
 
         public struct RecursionCheckToken : IDisposable
         {
-            readonly Stack<RecursionCheckKey> _list;
-            readonly bool _isrecursion;
+            Stack<RecursionCheckKey> Pending { get; }
 
             public RecursionCheckToken(Context ctx, object key, int subkey = 0)
                 : this(ctx, new RecursionCheckKey(key, subkey))
@@ -44,14 +43,14 @@ namespace Pchp.Core
 
             private RecursionCheckToken(Context ctx, RecursionCheckKey key)
             {
-                _isrecursion = (_list = ctx._recursionPrevention).Contains(key);
-                _list.Push(key);
+                IsInRecursion = (Pending = ctx._recursionPrevention).Contains(key);
+                Pending.Push(key);
             }
 
             /// <summary>
             /// Gets value indicating whether the key is in recursion.
             /// </summary>
-            public bool IsInRecursion => _isrecursion;
+            public bool IsInRecursion { get; }
 
             /// <summary>
             /// Exits recursion check.
@@ -59,7 +58,7 @@ namespace Pchp.Core
             /// </summary>
             public void Dispose()
             {
-                _list.Pop();
+                Pending.Pop();
             }
         }
 

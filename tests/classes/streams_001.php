@@ -1,4 +1,5 @@
 <?php
+namespace classes\streams_001;
 
 function test() {
   echo (int)stream_is_local("subdir/unknown_file.txt");

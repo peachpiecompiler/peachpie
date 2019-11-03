@@ -1,4 +1,5 @@
 <?php
+namespace arrays\alias_002;
 
 function set(&$alias, $value) {
   $alias = $value;

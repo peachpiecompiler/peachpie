@@ -426,7 +426,7 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                return new PhpGdImageResource(Image.Load(image, out var format), format);
+                return new PhpGdImageResource(Image.Load<Rgba32>(image, out var format), format);
             }
             catch
             {
@@ -535,7 +535,10 @@ namespace Peachpie.Library.Graphics
             {
                 if (stream != null)
                 {
-                    try { img = Image.Load(configuration, stream, out format); }
+                    try
+                    {
+                        img = Image.Load<Rgba32>(configuration, stream, out format);
+                    }
                     catch { }
                 }
             }
@@ -1009,7 +1012,7 @@ namespace Peachpie.Library.Graphics
                 return false;
             }
 
-            img.tiled = new ImageBrush<Rgba32>(imgTile.Image);
+            img.tiled = new ImageBrush(imgTile.Image);
 
             return false;
         }
@@ -1281,7 +1284,14 @@ namespace Peachpie.Library.Graphics
                 // not specified stream or filename -> save to the output stream
                 if (Operators.IsEmpty(to)) // ~ is default or empty
                 {
-                    saveaction(img.Image, ctx.OutputStream);
+                    using (var ms = new MemoryStream())
+                    {
+                        saveaction(img.Image, ms);
+
+                        // use WriteAsync() always
+                        ms.Position = 0;
+                        ms.CopyToAsync(ctx.OutputStream).GetAwaiter().GetResult();
+                    }
                     return true;
                 }
 
@@ -1307,12 +1317,13 @@ namespace Peachpie.Library.Graphics
 
                 // save image to byte[] and pass it to php stream
 
-                var ms = new MemoryStream();
+                using (var ms = new MemoryStream())
+                {
+                    saveaction(img.Image, ms);
 
-                saveaction(img.Image, ms);
-
-                phpstream.WriteBytes(ms.ToArray());
-                phpstream.Flush();
+                    phpstream.WriteBytes(ms.ToArray());
+                    phpstream.Flush();
+                }
 
                 // stream is closed after the operation
                 phpstream.Dispose();
@@ -1444,7 +1455,7 @@ namespace Peachpie.Library.Graphics
             }
             else
             {
-                var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
+                var brush = new SolidBrush(GetAlphaColor(img, col));
                 img.Image.Mutate(o => o.Fill(brush, ellipse));
             }
 
@@ -1545,7 +1556,7 @@ namespace Peachpie.Library.Graphics
             var font = CreateFontById(fontInd);
             var color = FromRGBA(col);
 
-            img.Image.Mutate<Rgba32>(context => context.DrawText<Rgba32>(text, font, color, new PointF(x, y)));
+            img.Image.Mutate<Rgba32>(context => context.DrawText(text, font, color, new PointF(x, y)));
 
             return true;
         }
@@ -1625,7 +1636,7 @@ namespace Peachpie.Library.Graphics
             if (x < 0 || y < 0) return true;
             if (x > img.Image.Width || y > img.Image.Height) return true;
 
-            img.Image.Mutate(o => o.ApplyProcessor(new FloodFillProcessor<Rgba32>(new Point(x, y), FromRGBA(col), false, Rgba32.Red)));
+            img.Image.Mutate(o => o.ApplyProcessor(new FloodFillProcessor(new Point(x, y), FromRGBA(col), false, Color.Red)));
 
             return true;
         }
@@ -1652,7 +1663,7 @@ namespace Peachpie.Library.Graphics
             // Path Builder object to be used in all the branches
             PathBuilder pathBuilder = new PathBuilder();
             var color = FromRGBA(col);
-            var pen = new Pen<Rgba32>(color, 1);
+            var pen = new Pen(color, 1);
 
             // edge points, used for both pie and chord
             PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
@@ -1681,7 +1692,7 @@ namespace Peachpie.Library.Graphics
                     // Draw the prepared lines or fill the pie
                     if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL))
                     {
-                        context.Draw<Rgba32>(pen, pathBuilder.Build());
+                        context.Draw(pen, pathBuilder.Build());
                     }
                     else
                     {
@@ -1691,12 +1702,12 @@ namespace Peachpie.Library.Graphics
 
                         if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
                         {
-                            context.Draw<Rgba32>(pen, pathBuilder.Build());
+                            context.Draw(pen, pathBuilder.Build());
                         }
                         else
                         {
                             //Last not-excluded option for PIE, a simple filled PIE
-                            context.Fill<Rgba32>(color, pathBuilder.Build());
+                            context.Fill(color, pathBuilder.Build());
                         }
                     }
                 }
@@ -1707,7 +1718,7 @@ namespace Peachpie.Library.Graphics
 
                     if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
                     {
-                        context.Draw<Rgba32>(pen, pathBuilder.Build());
+                        context.Draw(pen, pathBuilder.Build());
                     }
                     else
                     {
@@ -1717,12 +1728,12 @@ namespace Peachpie.Library.Graphics
 
                         if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
                         {
-                            context.Draw<Rgba32>(pen, pathBuilder.Build());
+                            context.Draw(pen, pathBuilder.Build());
                         }
                         else
                         {
                             // Last remaining option is to fill the chord arc
-                            context.Fill<Rgba32>(color, pathBuilder.Build());
+                            context.Fill(color, pathBuilder.Build());
                         }
                     }
                 }
@@ -1906,7 +1917,7 @@ namespace Peachpie.Library.Graphics
 
             if (filled)
             {
-                IBrush<Rgba32> brush;
+                IBrush brush;
 
                 switch (col)
                 {
@@ -1920,7 +1931,7 @@ namespace Peachpie.Library.Graphics
                         brush = img.brushed;
                         break;
                     default:
-                        brush = new SolidBrush<Rgba32>(FromRGBA(col));
+                        brush = new SolidBrush(FromRGBA(col));
                         break;
                 }
 
@@ -1928,7 +1939,7 @@ namespace Peachpie.Library.Graphics
             }
             else
             {
-                img.Image.Mutate(o => o.DrawPolygon(new Pen<Rgba32>(FromRGBA(col), 1.0f), points));
+                img.Image.Mutate(o => o.DrawPolygon(new Pen(FromRGBA(col), 1.0f), points));
             }
 
             return true;

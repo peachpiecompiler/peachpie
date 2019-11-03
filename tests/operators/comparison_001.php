@@ -1,4 +1,5 @@
 <?php
+namespace operators\comparison_001;
 
 class A
 {

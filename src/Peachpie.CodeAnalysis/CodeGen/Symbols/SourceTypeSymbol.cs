@@ -81,10 +81,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitPhpCallable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
+            var iphpcallable = DeclaringCompilation.CoreTypes.IPhpCallable;
+
             var __invoke = TryGetMagicInvoke();
             if (__invoke == null ||
                 IsAlreadyImplemented(__invoke) ||
-                IsAlreadyImplemented(DeclaringCompilation.CoreTypes.IPhpCallable))
+                IsAlreadyImplemented(iphpcallable))
             {
                 // already implemented in a base class
                 return;
@@ -93,9 +95,9 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             // IPhpCallable.Invoke(Context <ctx>, PhpVaue[] arguments)
             //
-            var invoke = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: false)
+            var invoke = new SynthesizedMethodSymbol(this, iphpcallable.FullName + ".Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: true)
             {
-                ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("Invoke").Single(),
+                ExplicitOverride = (MethodSymbol)iphpcallable.Symbol.GetMembers("Invoke").Single(),
                 ForwardedCall = __invoke,
             };
             invoke.SetParameters(
@@ -118,9 +120,9 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             // IPhpCallable.ToPhpValue()
             //
-            var tophpvalue = new SynthesizedMethodSymbol(this, "IPhpCallable.ToPhpValue", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: false)
+            var tophpvalue = new SynthesizedMethodSymbol(this, iphpcallable.FullName + ".ToPhpValue", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: true)
             {
-                ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("ToPhpValue").Single(),
+                ExplicitOverride = (MethodSymbol)iphpcallable.Symbol.GetMembers("ToPhpValue").Single(),
             };
 
             //
@@ -179,10 +181,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitDisposable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
+            var idisposable = DeclaringCompilation.GetSpecialType(SpecialType.System_IDisposable);
+
             var __destruct = TryGetDestruct();
             if (__destruct == null ||
                 IsAlreadyImplemented(__destruct) ||
-                IsAlreadyImplemented(DeclaringCompilation.GetSpecialType(SpecialType.System_IDisposable)))
+                IsAlreadyImplemented(idisposable))
             {
                 // already implemented in a base class
                 return;
@@ -191,7 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             // IDisposable.Dispose()
             //
-            var dispose = new SynthesizedMethodSymbol(this, "IDisposable.Dispose", false, true, DeclaringCompilation.GetSpecialType(SpecialType.System_Void), isfinal: true)
+            var dispose = new SynthesizedMethodSymbol(this, idisposable.GetFullName() + ".Dispose", false, true, DeclaringCompilation.CoreTypes.Void, isfinal: true)
             {
                 ExplicitOverride = (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_IDisposable__Dispose),
                 ForwardedCall = __destruct,
@@ -531,7 +535,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     var ps = m.Parameters;
                     for (int i = 0; i < ps.Length; i++)
                     {
-                        if (ps[i] is IPhpValue p && p.Initializer != null && ps[i].ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
+                        if (ps[i].HasUnmappedDefaultValue())  // => ConstantValue couldn't be resolved for optional parameter
                         {
                             // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
                             GhostMethodBuilder.CreateGhostOverload(m, module, DiagnosticBag.GetInstance(), i);
@@ -599,28 +603,23 @@ namespace Pchp.CodeAnalysis.Symbols
                         // synthesize abstract method implementing unresolved interface member
                         if (info.IsUnresolvedAbstract && info.ImplementsInterface && this.IsAbstract && !this.IsInterface)
                         {
-                            var method = info.Method;
-
-                            Debug.Assert(!method.IsStatic);
-                            Debug.Assert(method.DeclaredAccessibility != Accessibility.Private);
-                            Debug.Assert(method.ContainingType.IsInterface);
-
-                            // Template: abstract function {name}({parameters})
-                            var ghost = new SynthesizedMethodSymbol(this, method.RoutineName,
-                                isstatic: false, isvirtual: true, isabstract: true, isfinal: false,
-                                returnType: method.ReturnType,
-                                accessibility: method.DeclaredAccessibility);
-
-                            ghost.SetParameters(method.Parameters.Select(p => SynthesizedParameterSymbol.Create(ghost, p)).ToArray());
-                            module.SynthesizedManager.AddMethod(this, ghost);
+                            Debug.Fail("Unreachable; The method should be synthesized in 'ResolveOverrides'.");
                         }
                     }
                 }
 
-                // setup synthesized methods explicit override as resolved
-                if (info.Override is SynthesizedMethodSymbol sm && sm.ExplicitOverride == null && sm.ContainingType == this)
+                if (info.Method is SynthesizedMethodSymbol && info.Method.ContainingType == this && info.Method.IsAbstract)
                 {
-                    sm.ExplicitOverride = info.Method;
+                    module.SynthesizedManager.AddMethod(this, info.Method);
+                }
+
+                if (info.Override is SynthesizedMethodSymbol sm && sm.ContainingType == this)
+                {
+                    if (sm.ExplicitOverride == null)
+                    {
+                        // setup synthesized methods explicit override as resolved
+                        sm.ExplicitOverride = info.Method;
+                    }
                 }
             }
 

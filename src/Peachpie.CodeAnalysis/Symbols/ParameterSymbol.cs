@@ -24,9 +24,20 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return PhpOperationExtensions.FromDefaultValueAttribute(this.DefaultValueAttribute);
+                // MAYBE: if (DefaultValueField != null) BoundFieldRef.CreateStaticField(DefaultValueField)
+                var cvalue = ExplicitDefaultConstantValue;
+                return cvalue != null ? new BoundLiteral(cvalue.Value) : null;
             }
         }
+
+        /// <summary>
+        /// In case there is a default value that cannot be represented by <see cref="ConstantValue"/>,
+        /// this gets a static readonly field containing the value.
+        /// </summary>
+        /// <remarks>
+        /// In PHP it is possible to set parameter's default value which cannot be represented using <see cref="ConstantValue"/>.
+        /// In such case, the value is set to this runtime field and read if needed.
+        public virtual FieldSymbol DefaultValueField => null;
 
         public virtual bool IsOptional => false;
 
@@ -104,12 +115,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 return this.GetAttribute("Pchp.Core.DefaultValueAttribute");
             }
         }
-
-        /// <summary>
-        /// Gets value indicating the parameter has default value that is not supported by CLR metadata.
-        /// The default value will be then stored within [<see cref="DefaultValueAttribute"/>] as array of bytes (the original object serialized using PHP serialization).
-        /// </summary>
-        internal bool HasUnmappedDefaultValue => this is SourceParameterSymbol sp ? sp.Initializer != null && sp.ExplicitDefaultConstantValue == null : DefaultValueAttribute != null;
 
         /// <summary>
         /// Returns data decoded from Obsolete attribute or null if there is no Obsolete attribute.

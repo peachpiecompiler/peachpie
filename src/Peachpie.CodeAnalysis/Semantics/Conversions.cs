@@ -346,6 +346,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     // ToPhpValue
                     // ToPhpAlias
 
+                    // ToBytes
+                    if (target.IsSZArray() && ((ArrayTypeSymbol)target).ElementType.SpecialType == SpecialType.System_Byte)
+                    {
+                        return new[] { WellKnownMemberNames.ExplicitConversionName, "ToBytes" };
+                    }
+
                     return new[] { WellKnownMemberNames.ExplicitConversionName };
             }
         }

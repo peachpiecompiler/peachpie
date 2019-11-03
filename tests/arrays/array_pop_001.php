@@ -1,4 +1,5 @@
 <?php
+namespace arrays\array_pop_001;
 
 
 function test($a) {

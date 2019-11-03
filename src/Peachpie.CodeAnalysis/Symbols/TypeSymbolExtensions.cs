@@ -127,6 +127,18 @@ namespace Pchp.CodeAnalysis.Symbols
             return t.MetadataName == "PhpString" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
         }
 
+        /// <summary>
+        /// Determines the type is <c>Func{Context,PhpValue}</c>.
+        /// </summary>
+        public static bool Is_Func_Context_PhpValue(this TypeSymbol t)
+        {
+            return t.IsDelegateType() && t is NamedTypeSymbol nt &&
+                nt.Arity == 2 &&
+                nt.ConstructedFrom.MetadataName == "Func" &&
+                nt.TypeArguments[0].Name == "Context" &&
+                nt.TypeArguments[1].Is_PhpValue();
+        }
+
         public static bool IsOfType(this TypeSymbol t, TypeSymbol oftype)
         {
             if (oftype != null)

@@ -1,4 +1,5 @@
 <?php
+namespace spl\SplTempFileObject_001;
 
 function print_val($v) {
     if (is_string($v)) {
@@ -30,9 +31,9 @@ function testObj($obj) {
 }
 
 function test() {
-    testObj(new SplTempFileObject(-1));
-    testObj(new SplTempFileObject(0));
-    testObj(new SplTempFileObject(5));
+    testObj(new \SplTempFileObject(-1));
+    testObj(new \SplTempFileObject(0));
+    testObj(new \SplTempFileObject(5));
 }
 
 test();

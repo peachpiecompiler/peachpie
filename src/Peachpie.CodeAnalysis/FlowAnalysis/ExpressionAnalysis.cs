@@ -1283,6 +1283,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region TypeRef
+
+        internal override T VisitIndirectTypeRef(BoundIndirectTypeRef tref)
+        {
+            // visit indirect type
+            base.VisitIndirectTypeRef(tref);
+
+            //
+            return VisitTypeRef(tref);
+        }
+
+        internal override T VisitTypeRef(BoundTypeRef tref)
+        {
+            Debug.Assert(!(tref is BoundMultipleTypeRef));
+
+            // resolve type symbol
+            tref.ResolvedType = (TypeSymbol)tref.ResolveTypeSymbol(DeclaringCompilation);
+
+            return default;
+        }
+
+        #endregion
+
         #region Visit Function Call
 
         protected override T VisitRoutineCall(BoundRoutineCall x)
@@ -1299,7 +1322,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        bool BindParams(PhpParam[] expectedparams, ImmutableArray<BoundArgument> givenargs)
+        bool BindParams(IList<PhpParam> expectedparams, ImmutableArray<BoundArgument> givenargs)
         {
             for (int i = 0; i < givenargs.Length; i++)
             {
@@ -1308,7 +1331,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     break;
                 }
 
-                if (i < expectedparams.Length)
+                if (i < expectedparams.Count)
                 {
                     if (expectedparams[i].IsVariadic)
                     {
@@ -1389,62 +1412,68 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        TypeRefMask BindValidRoutineCall(BoundRoutineCall call, MethodSymbol method, ImmutableArray<BoundArgument> args, bool maybeoverload)
+        {
+            // analyze TargetMethod with x.Arguments
+            // require method result type if access != none
+            if (call.Access.IsRead)
+            {
+                if (Worklist.EnqueueRoutine(method, CurrentBlock, call))
+                {
+                    // target will be reanalysed
+                    // note: continuing current block may be waste of time, but it might gather other called targets
+
+                    // The next blocks will be analysed after this routine is re-enqueued due to the dependency
+                    _flags |= AnalysisFlags.IsCanceled;
+                }
+            }
+
+            if (Routine != null)
+            {
+                var rflags = method.InvocationFlags();
+                Routine.Flags |= rflags;
+
+                if ((rflags & RoutineFlags.UsesLocals) != 0
+                    //&& (x is BoundGlobalFunctionCall gf && gf.Name.NameValue.Name.Value == "extract") // "compact" does not change locals // CONSIDER // TODO
+                    )
+                {
+                    // function may change/add local variables
+                    State.SetAllUnknown(true);
+                }
+            }
+
+            // process arguments
+            if (!BindParams(method.GetExpectedArguments(this.TypeCtx), args) && maybeoverload)
+            {
+                call.TargetMethod = null; // nullify the target method -> call dynamically, arguments cannot be bound at compile time
+            }
+
+            //
+            return method.GetResultType(TypeCtx);
+        }
+
         /// <summary>
         /// Bind arguments to target method and resolve resulting <see cref="BoundExpression.TypeRefMask"/>.
         /// Expecting <see cref="BoundRoutineCall.TargetMethod"/> is resolved.
         /// If the target method cannot be bound at compile time, <see cref="BoundRoutineCall.TargetMethod"/> is nulled.
         /// </summary>
-        void BindTargetMethod(BoundRoutineCall x, bool maybeOverload = false)
+        void BindRoutineCall(BoundRoutineCall x, bool maybeOverload = false)
         {
             if (MethodSymbolExtensions.IsValidMethod(x.TargetMethod))
             {
-                // analyze TargetMethod with x.Arguments
-                // require method result type if access != none
-                if (x.Access.IsRead)
-                {
-                    if (Worklist.EnqueueRoutine(x.TargetMethod, CurrentBlock, x))
-                    {
-                        // target will be reanalysed
-                        // note: continuing current block may be waste of time, but it might gather other called targets
-
-                        // The next blocks will be analysed after this routine is re-enqueued due to the dependency
-                        _flags |= AnalysisFlags.IsCanceled;
-                    }
-                }
-
-                //
-                x.TypeRefMask = x.TargetMethod.GetResultType(TypeCtx);
-
-                if (Routine != null)
-                {
-                    var rflags = x.TargetMethod.InvocationFlags();
-                    Routine.Flags |= rflags;
-
-                    if ((rflags & RoutineFlags.UsesLocals) != 0
-                        //&& (x is BoundGlobalFunctionCall gf && gf.Name.NameValue.Name.Value == "extract") // "compact" does not change locals // CONSIDER // TODO
-                        )
-                    {
-                        // function may change/add local variables
-                        State.SetAllUnknown(true);
-                    }
-                }
-
-                // process arguments
-                if (!BindParams(x.TargetMethod.GetExpectedArguments(this.TypeCtx), x.ArgumentsInSourceOrder) && maybeOverload)
-                {
-                    x.TargetMethod = null; // nullify the target method -> call dynamically, arguments cannot be bound at compile time
-                }
+                x.TypeRefMask = BindValidRoutineCall(x, x.TargetMethod, x.ArgumentsInSourceOrder, maybeOverload);
             }
-            else if (x.TargetMethod is MissingMethodSymbol)
+            else if (x.TargetMethod is MissingMethodSymbol || x.TargetMethod == null)
             {
+                // we don't know anything about the target callsite,
                 // locals passed as arguments should be marked as possible refs:
-                x.ArgumentsInSourceOrder.ForEach(a =>
+                foreach (var arg in x.ArgumentsInSourceOrder)
                 {
-                    if (a.Value is BoundVariableRef bvar && bvar.Name.IsDirect && !a.IsUnpacking)
+                    if (arg.Value is BoundVariableRef bvar && bvar.Name.IsDirect && !arg.IsUnpacking)
                     {
                         State.SetLocalRef(State.GetLocalHandle(bvar.Name.NameValue));
                     }
-                });
+                }
             }
             else if (x.TargetMethod is AmbiguousMethodSymbol ambiguity)
             {
@@ -1454,7 +1483,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var expected = m.GetExpectedArguments(this.TypeCtx);
                     var given = x.ArgumentsInSourceOrder;
 
-                    for (int i = 0; i < given.Length && i < expected.Length; i++)
+                    for (int i = 0; i < given.Length && i < expected.Count; i++)
                     {
                         if (expected[i].IsAlias && given[i].Value is BoundVariableRef bvar && bvar.Name.IsDirect)
                         {
@@ -1494,7 +1523,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitExit(BoundExitEx x)
         {
             VisitRoutineCall(x);
-            BindTargetMethod(x);
+
+            // no parameters binding
+            // TODO: handle unpacking
+            Debug.Assert(x.ArgumentsInSourceOrder.Length == 0 || !x.ArgumentsInSourceOrder[0].IsUnpacking);
+
+            x.TypeRefMask = 0;  // returns void
+            x.ResultType = DeclaringCompilation.GetSpecialType(SpecialType.System_Void);
 
             return default;
         }
@@ -1502,9 +1537,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitEcho(BoundEcho x)
         {
             VisitRoutineCall(x);
-            x.TypeRefMask = 0;
-            BindTargetMethod(x);
 
+            x.TypeRefMask = 0;  // returns void
+            x.ResultType = DeclaringCompilation.GetSpecialType(SpecialType.System_Void);
+
+            //
             return default;
         }
 
@@ -1523,7 +1560,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             x.TypeRefMask = mustBePhpString ? TypeCtx.GetWritableStringTypeMask() : TypeCtx.GetStringTypeMask();
-            BindTargetMethod(x);
 
             return default;
         }
@@ -1561,7 +1597,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, false);
             }
 
-            BindTargetMethod(x);
+            BindRoutineCall(x);
 
             // if possible resolve ConstantValue and TypeRefMask:
             AnalysisFacts.HandleSpecialFunctionCall(x, this, branch);
@@ -1594,6 +1630,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     candidates = Construct(candidates, x);
 
                     x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, true);
+
+                    //
+                    if (x.TargetMethod.IsValidMethod() && x.TargetMethod.IsStatic && x.Instance.TypeRefMask.IncludesSubclasses)
+                    {
+                        // static method invoked on an instance object,
+                        // must be postponed to runtime since the type may change
+                        x.TargetMethod = new AmbiguousMethodSymbol(ImmutableArray.Create(x.TargetMethod), false);
+                    }
                 }
                 else
                 {
@@ -1601,7 +1645,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
 
-            BindTargetMethod(x, maybeOverload: true);
+            BindRoutineCall(x, maybeOverload: true);
 
             return default;
         }
@@ -1609,10 +1653,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
             Accept(x.TypeRef);
+            Accept(x.Name);
 
             VisitRoutineCall(x);
-
-            Accept(x.Name);
 
             var type = (TypeSymbol)x.TypeRef.Type;
 
@@ -1636,7 +1679,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TargetMethod = method;
             }
 
-            BindTargetMethod(x);
+            BindRoutineCall(x);
 
             return default;
         }
@@ -1663,32 +1706,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        internal override T VisitIndirectTypeRef(BoundIndirectTypeRef tref)
-        {
-            // visit indirect type
-            base.VisitIndirectTypeRef(tref);
-
-            //
-            return VisitTypeRef(tref);
-        }
-
-        internal override T VisitTypeRef(BoundTypeRef tref)
-        {
-            Debug.Assert(!(tref is BoundMultipleTypeRef));
-
-            // resolve type symbol
-            tref.ResolvedType = (TypeSymbol)tref.ResolveTypeSymbol(DeclaringCompilation);
-
-            return default;
-        }
-
         public override T VisitNew(BoundNewEx x)
         {
-            Accept(x.TypeRef);
+            Accept(x.TypeRef);      // resolve target type
 
             VisitRoutineCall(x);    // analyse arguments
 
-            // resolve target type
+            // resolve .ctor method:
             var type = (NamedTypeSymbol)x.TypeRef.Type;
             if (type.IsValidType())
             {
@@ -1699,6 +1723,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.ResultType = type;
             }
 
+            // bind arguments:
+            BindRoutineCall(x);
+
+            // resulting type is always known,
+            // not null,
+            // not ref:
             x.TypeRefMask = x.TypeRef.GetTypeRefMask(TypeCtx).WithoutSubclasses;
 
             return default;
@@ -1764,22 +1794,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // reset type analysis (include may change local variables)
             State.SetAllUnknown(true);
-
-            //
-            BindTargetMethod(x);
-
-            return default;
-        }
-
-        public override T VisitArgument(BoundArgument x)
-        {
-            if (x.Parameter != null)
-            {
-                // TODO: write arguments access
-                // TODO: conversion by simplifier visitor
-            }
-
-            Accept(x.Value);
 
             return default;
         }
@@ -2141,6 +2155,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     if (Routine is SourceLambdaSymbol)
                     {
                         value = "{closure}";
+                    }
+                    else if (Routine is SourceFunctionSymbol function)
+                    {
+                        value = function.QualifiedName.ToString();
                     }
                     else
                     {

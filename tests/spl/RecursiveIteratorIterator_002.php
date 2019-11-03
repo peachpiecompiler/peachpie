@@ -1,5 +1,6 @@
-<?php 
-class X extends RecursiveIteratorIterator
+<?php
+namespace spl\RecursiveIteratorIterator_002; 
+class X extends \RecursiveIteratorIterator
 {
 	function beginIteration()
 	{
@@ -72,6 +73,6 @@ $arr = array(
             'int' => 971,
             'tel'=>12345487)),
     '' => 'nothing');
-print_r( iterator_to_array(new X(new RecursiveArrayIterator($arr), RecursiveIteratorIterator::LEAVES_ONLY, RecursiveIteratorIterator::CATCH_GET_CHILD)) );
-print_r( iterator_to_array(new X(new RecursiveArrayIterator($arr), RecursiveIteratorIterator::SELF_FIRST, RecursiveIteratorIterator::CATCH_GET_CHILD)) );
-print_r( iterator_to_array(new X(new RecursiveArrayIterator($arr), RecursiveIteratorIterator::CHILD_FIRST, RecursiveIteratorIterator::CATCH_GET_CHILD)) );
+print_r( iterator_to_array(new X(new \RecursiveArrayIterator($arr), \RecursiveIteratorIterator::LEAVES_ONLY, \RecursiveIteratorIterator::CATCH_GET_CHILD)) );
+print_r( iterator_to_array(new X(new \RecursiveArrayIterator($arr), \RecursiveIteratorIterator::SELF_FIRST, \RecursiveIteratorIterator::CATCH_GET_CHILD)) );
+print_r( iterator_to_array(new X(new \RecursiveArrayIterator($arr), \RecursiveIteratorIterator::CHILD_FIRST, \RecursiveIteratorIterator::CATCH_GET_CHILD)) );

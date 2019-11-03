@@ -10,6 +10,7 @@ using System.Web;
 using System.Web.Configuration;
 using Pchp.Core;
 using Pchp.Core.Utilities;
+using Peachpie.RequestHandler.Session;
 
 namespace Peachpie.RequestHandler
 {

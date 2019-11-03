@@ -1,4 +1,5 @@
 <?php
+namespace classes\object_creation;
 
 class Class1
 {
