@@ -339,6 +339,15 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// NOTICE: Notice: Undefined property {0}::${1}.
+        /// </summary>
+        internal static void UndefinedProperty(string className, string propertyName)
+        {
+            // NOTICE: Notice: Undefined property {0}::${1}
+            Throw(PhpError.Notice, ErrResources.undefined_property_accessed, className, propertyName);
+        }
+
+        /// <summary>
         /// Reports an error when a variable should be PHP object but it is not.
         /// </summary>
         /// <param name="reference">Whether a reference modifier (=&amp;) is used.</param>

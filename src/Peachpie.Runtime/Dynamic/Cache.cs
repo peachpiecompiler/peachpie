@@ -33,15 +33,15 @@ namespace Pchp.Core.Dynamic
         {
             /// <summary><see cref="Core.Operators.SetValue(ref PhpValue, PhpValue)"/>.</summary>
             public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", Types.PhpValue.MakeByRefType(), Types.PhpValue);
-            public static MethodInfo IsSet_PhpValue = typeof(Core.Operators).GetMethod("IsSet", Types.PhpValue);
+            public static MethodInfo IsSet_PhpValue = new Func<PhpValue, bool>(Core.Operators.IsSet).Method;
 
-            public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
-            public static MethodInfo ToLongOrThrow_String = typeof(Core.Convert).GetMethod("ToLongOrThrow", typeof(string));
-            public static MethodInfo ToDouble_String = typeof(Core.Convert).GetMethod("StringToDouble", typeof(string));
-            public static MethodInfo ToPhpString_PhpValue_Context = typeof(Core.Convert).GetMethod("ToPhpString", Types.PhpValue, typeof(Context));
-            public static MethodInfo ToPhpNumber_String = typeof(Core.Convert).GetMethod("ToNumber", Types.String[0]);
-            public static MethodInfo ToBoolean_Object = typeof(Core.Convert).GetMethod("ToBoolean", Types.Object[0]);
-            public static MethodInfo ToDateTime_PhpValue = typeof(Core.Convert).GetMethod("ToDateTime", Types.PhpValue);
+            public static MethodInfo ToString_Double_Context = new Func<double, Context, string>(Core.Convert.ToString).Method;
+            public static MethodInfo ToLongOrThrow_String = new Func<string, long>(Core.Convert.ToLongOrThrow).Method;
+            public static MethodInfo ToDouble_String = new Func<string, double>(Core.Convert.StringToDouble).Method;
+            public static MethodInfo ToPhpString_PhpValue_Context = new Func<PhpValue, Context, Core.PhpString>(Core.Convert.ToPhpString).Method;
+            public static MethodInfo ToPhpNumber_String = new Func<string, PhpNumber>(Core.Convert.ToNumber).Method;
+            public static MethodInfo ToBoolean_Object = new Func<object, bool>(Core.Convert.ToBoolean).Method;
+            public static MethodInfo ToDateTime_PhpValue = new Func<PhpValue, DateTime>(Core.Convert.ToDateTime).Method;
 
             public static MethodInfo Object_EnsureArray = typeof(Core.Operators).GetMethod("EnsureArray", Types.Object);
 
@@ -64,7 +64,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_GetValue = Types.PhpValue.GetMethod("GetValue");
             public static MethodInfo PhpValue_DeepCopy = Types.PhpValue.GetMethod("DeepCopy");
 
-            public static MethodInfo PhpNumber_ToString_Context = typeof(PhpNumber).GetMethod("ToString", typeof(Context));
+            public static MethodInfo PhpNumber_ToString_Context = Types.PhpNumber[0].GetMethod("ToString", typeof(Context));
 
             public static MethodInfo PhpArray_ToClass = typeof(PhpArray).GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpArray_SetItemAlias = typeof(PhpArray).GetMethod("SetItemAlias", typeof(Core.IntStringKey), Types.PhpAlias[0]);
@@ -97,10 +97,10 @@ namespace Pchp.Core.Dynamic
 
         public static class PhpString
         {
-            public static ConstructorInfo ctor_String = typeof(Core.PhpString).GetCtor(Types.String);
-            public static ConstructorInfo ctor_ByteArray = typeof(Core.PhpString).GetCtor(typeof(byte[]));
-            public static readonly MethodInfo ToString_Context = typeof(Core.PhpString).GetMethod("ToString", typeof(Context));
-            public static readonly MethodInfo ToBytes_Context = typeof(Core.PhpString).GetMethod("ToBytes", typeof(Context));
+            public static ConstructorInfo ctor_String = Types.PhpString[0].GetCtor(Types.String);
+            public static ConstructorInfo ctor_ByteArray = Types.PhpString[0].GetCtor(typeof(byte[]));
+            public static readonly MethodInfo ToString_Context = Types.PhpString[0].GetMethod("ToString", typeof(Context));
+            public static readonly MethodInfo ToBytes_Context = Types.PhpString[0].GetMethod("ToBytes", typeof(Context));
             public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetProperty("IsDefault");
         }
 
