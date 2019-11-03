@@ -231,6 +231,17 @@ namespace Pchp.Core.Dynamic
                 value is PhpString);
         }
 
+        /// <summary>
+        /// Template: PhpException.VariableMisusedAsObject( var, bool ) : void
+        /// </summary>
+        public static Expression VariableMisusedAsObject(Expression var, bool reference)
+        {
+            return Expression.Call(
+                typeof(PhpException), "VariableMisusedAsObject", Array.Empty<Type>(),
+                   ConvertExpression.BindToValue(var),
+                   Expression.Constant(reference));
+        }
+
         public static Expression EnsureNotNullPhpArray(Expression variable)
         {
             // variable ?? (variable = [])
@@ -632,6 +643,7 @@ namespace Pchp.Core.Dynamic
             return null;
         }
 
+        // NOTE: will be replaced with "IRuntimeChain"
         public static Expression BindField(PhpTypeInfo type, Type classCtx, Expression target, string field, Expression ctx, AccessMask access, Expression rvalue)
         {
             if (access.Write() != (rvalue != null))
@@ -814,13 +826,8 @@ namespace Pchp.Core.Dynamic
                 {
                     // = target->field
 
-                    /* Template:
-                     * return runtimeflds.TryGetValue(field, out result) ? result : (__get(field) ?? ERR);
-                     */
-                    var __get = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
-                    result = Expression.Condition(trygetfield,
-                        resultvar,
-                        InvokeHandler(ctx, target, field, __get, access));    // TODO: @default = { ThrowError; return null; }
+                    // Template: Operators.GetRuntimeProperty(ctx, PhpTypeInfo, instance, propertyName)
+                    return Expression.Call(Cache.Operators.RuntimePropertyGetValue.Method, ctx, Expression.Constant(type), target, Expression.Constant(field));
                 }
 
                 //

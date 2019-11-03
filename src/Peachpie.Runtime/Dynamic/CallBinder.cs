@@ -248,7 +248,7 @@ namespace Pchp.Core.Dynamic
             if (isobject == false)
             {
                 /* Template:
-                 * PhpException.MethodOnNonObject(name_expr); // aka PhpException.Throw(Error, method_called_on_non_object, name_expr)
+                 * PhpException.MethodOnNonObject(name_expr);
                  * return NULL;
                  */
                 var throwcall = Expression.Call(typeof(PhpException), "MethodOnNonObject", Array.Empty<Type>(), ConvertExpression.Bind(name_expr, typeof(string), bound.Context));

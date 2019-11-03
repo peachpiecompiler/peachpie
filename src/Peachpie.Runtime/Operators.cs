@@ -757,6 +757,36 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Resolves the runtime property by looking into runtime properties and eventually invoking the <c>__get</c> magic method.
+        /// </summary>
+        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, PhpTypeInfo/*!*/type, object/*!*/instance, string propertyName)
+        {
+            var runtimeFields = (PhpArray)type.RuntimeFieldsHolder?.GetValue(instance);
+            if (runtimeFields != null && runtimeFields.TryGetValue(propertyName, out var value))
+            {
+                return value;
+            }
+
+            var __get = type.RuntimeMethods[TypeMethods.MagicMethods.__get];
+            if (__get != null)
+            {
+                // NOTE: magic methods must have public visibility, therefore the visibility check is unnecessary
+
+                using (var token = new Context.RecursionCheckToken(ctx, instance, (int)CodeAnalysis.Semantics.AccessMask.Read))
+                {
+                    if (!token.IsInRecursion)
+                    {
+                        return __get.Invoke(ctx, instance, propertyName);
+                    }
+                }
+            }
+
+            //
+            PhpException.UndefinedProperty(type.Name, propertyName);
+            return PhpValue.Void;
+        }
+
         #endregion
 
         #region self, parent

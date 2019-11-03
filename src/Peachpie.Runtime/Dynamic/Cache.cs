@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core.Dynamic
 {
@@ -77,6 +78,8 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpArray_ContainsKey = typeof(PhpArray).GetMethod("ContainsKey", typeof(Core.IntStringKey));
 
             public static MethodInfo RuntimeTypeHandle_Equals_RuntimeTypeHandle = typeof(RuntimeTypeHandle).GetMethod("Equals", typeof(RuntimeTypeHandle));
+
+            public static readonly Func<Context, PhpTypeInfo, object, string, PhpValue> RuntimePropertyGetValue = new Func<Context, PhpTypeInfo, object, string, PhpValue>(Core.Operators.RuntimePropertyGetValue);
         }
 
         public static class Properties
