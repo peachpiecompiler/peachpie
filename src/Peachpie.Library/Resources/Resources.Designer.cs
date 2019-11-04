@@ -646,7 +646,7 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to No asynchronous transfer to continue..
+        ///   Looks up a localized string similar to No asynchronous (non-blocking) transfer to continue..
         /// </summary>
         public static string ftp_error_no_nb {
             get {

@@ -72,23 +72,23 @@ namespace Pchp.Library
 
             public bool Autoseek { get; set; }
 
-            public Task<bool> FunctionTask { get; set; }
+            public Task<bool> PendingOperationTask { get; set; }
             
             public CancellationTokenSource TokenSource { get; private set; }
 
-            public void PrepareTaskFunction(FtpResource resource, int mode)
+            public void PrepareForPendingOperation(int mode)
             {
-                resource.Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
+                Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
 
-                if (resource.FunctionTask != null) // Cancel current function and start new
+                if (PendingOperationTask != null) // Cancel current function and start new
                 {
                     // CancellationTokenSource cannot be reset and cancelled again
-                    resource.TokenSource.Cancel();
+                    TokenSource.Cancel();
 
                     try
                     {
                         // Wait for task is canceled in other to dispose TokenSource
-                        resource.FunctionTask.Wait();
+                        PendingOperationTask.Wait();
                     }
                     catch(AggregateException ex) 
                     {
@@ -96,13 +96,13 @@ namespace Pchp.Library
                             throw;
                     }
 
-                    resource.FunctionTask = null;
+                    PendingOperationTask = null;
                 }
 
                 if (TokenSource != null)
                 {
-                    resource.TokenSource.Dispose();
-                    resource.TokenSource = new CancellationTokenSource();
+                    TokenSource.Dispose();
+                    TokenSource = new CancellationTokenSource();
                 }
             }
 
@@ -769,24 +769,7 @@ namespace Pchp.Library
 
             resource.Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
 
-            // Ignore autoresume if autoseek is switched off 
-            if (resource.Autoseek && resumepos == FTP_AUTORESUME)
-            {
-                resumepos = 0;
-            }
-
-            if (resource.Autoseek && resumepos != 0)
-            {
-                if (resumepos == FTP_AUTORESUME)
-                {
-                    stream.Seek(0, SeekOrigin.End);
-                    resumepos = stream.Tell();
-                }
-                else
-                {
-                    stream.Seek(resumepos, SeekOrigin.Begin);
-                }
-            }
+            resumepos = SetupDownloadResuming(resumepos, stream, resource.Autoseek);
 
             try
             {
@@ -1155,9 +1138,9 @@ namespace Pchp.Library
             if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
                 PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
 
-            resource.PrepareTaskFunction(resource, mode);
+            resource.PrepareForPendingOperation(mode);
             
-            resource.FunctionTask = resource.Client.UploadFileAsync(local_file, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.TokenSource.Token);
+            resource.PendingOperationTask = resource.Client.UploadFileAsync(local_file, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }
@@ -1189,9 +1172,9 @@ namespace Pchp.Library
             if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
                 PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
 
-            resource.PrepareTaskFunction(resource, mode);
+            resource.PrepareForPendingOperation(mode);
 
-            resource.FunctionTask = resource.Client.UploadAsync(stream.RawStream, remote_file,FtpExists.Overwrite,false,null, resource.TokenSource.Token);
+            resource.PendingOperationTask = resource.Client.UploadAsync(stream.RawStream, remote_file,FtpExists.Overwrite,false,null, resource.TokenSource.Token);
             
             return TasksGetInfo(resource);
         }
@@ -1218,9 +1201,9 @@ namespace Pchp.Library
             if (resumepos != 0) // There is no API for this parameter in FluentFTP Library.
                 PhpException.ArgumentValueNotSupported(nameof(resumepos), resumepos);
 
-            resource.PrepareTaskFunction(resource, mode);
+            resource.PrepareForPendingOperation(mode);
 
-            resource.FunctionTask = resource.Client.DownloadFileAsync(local_file, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.TokenSource.Token);
+            resource.PendingOperationTask = resource.Client.DownloadFileAsync(local_file, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }
@@ -1250,13 +1233,24 @@ namespace Pchp.Library
                 return FTP_FAILED;
             }
 
+            resumepos = SetupDownloadResuming(resumepos, stream, resource.Autoseek);
+
+            resource.PrepareForPendingOperation(mode);
+
+            resource.PendingOperationTask = resource.Client.DownloadAsync(stream.RawStream, remote_file, resumepos, null, resource.TokenSource.Token);
+
+            return TasksGetInfo(resource);
+        }
+
+        private static int SetupDownloadResuming(int resumepos, PhpStream stream, bool autoseek)
+        {
             // Ignore autoresume if autoseek is switched off 
-            if (resource.Autoseek && resumepos == FTP_AUTORESUME)
+            if (autoseek && resumepos == FTP_AUTORESUME)
             {
                 resumepos = 0;
             }
 
-            if (resource.Autoseek && resumepos != 0)
+            if (autoseek && resumepos != 0)
             {
                 if (resumepos == FTP_AUTORESUME)
                 {
@@ -1269,32 +1263,28 @@ namespace Pchp.Library
                 }
             }
 
-            resource.PrepareTaskFunction(resource, mode);
-
-            resource.FunctionTask = resource.Client.DownloadAsync(stream.RawStream, remote_file, resumepos, null, resource.TokenSource.Token);
-
-            return TasksGetInfo(resource);
+            return resumepos;
         }
 
         private static int TasksGetInfo(FtpResource ftp_stream)
         {
-            if (ftp_stream.FunctionTask == null)
+            if (ftp_stream.PendingOperationTask == null)
             {
                 PhpException.Throw(PhpError.Warning, Resources.Resources.ftp_error_no_nb);
                 return FTP_FAILED;
             }
 
-            if (ftp_stream.FunctionTask.IsFaulted)
+            if (ftp_stream.PendingOperationTask.IsFaulted)
             {
-                foreach(Exception ex in ftp_stream.FunctionTask.Exception.InnerExceptions)
+                foreach(Exception ex in ftp_stream.PendingOperationTask.Exception.InnerExceptions)
                     PhpException.Throw(PhpError.Warning, ex.Message);
 
                 return FTP_FAILED;
             }
 
-            if (ftp_stream.FunctionTask.IsCompleted)
+            if (ftp_stream.PendingOperationTask.IsCompleted)
             {
-                return ftp_stream.FunctionTask.Result ? FTP_FINISHED : FTP_FAILED;
+                return ftp_stream.PendingOperationTask.Result ? FTP_FINISHED : FTP_FAILED;
             }
 
             return FTP_MOREDATA;
