@@ -90,11 +90,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             //
             routine.GetDiagnostics(diagnostics);
 
+            var visitor = new DiagnosticWalker<VoidStruct>(diagnostics, routine);
+
             //
             if (routine.ControlFlowGraph != null)   // non-abstract method
             {
-                new DiagnosticWalker<VoidStruct>(diagnostics, routine).VisitCFG(routine.ControlFlowGraph);
+                visitor.VisitCFG(routine.ControlFlowGraph);
             }
+
+            //
+            visitor.CheckParams();
         }
 
         private DiagnosticWalker(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
@@ -108,8 +113,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             Debug.Assert(x == _routine.ControlFlowGraph);
 
             base.VisitCFGInternal(x);
-
-            CheckParams();
 
             if (CallsParentCtor == false &&
                 new Name(_routine.Name).IsConstructName &&
@@ -175,6 +178,74 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     //}
                 }
             }
+
+            // check source parameters
+            var srcparams = _routine.SourceParameters;
+            foreach (var p in srcparams)
+            {
+                if (!CheckParameterDefaultValue(p))
+                {
+                    var expectedtype = (p.Syntax.TypeHint is NullableTypeRef nullable ? nullable.TargetType : p.Syntax.TypeHint).ToString(); // do not show "?" in nullable types
+                    var valuetype = TypeCtx.ToString(p.Initializer.TypeRefMask);
+
+                    _diagnostics.Add(_routine, p.Syntax.InitValue, ErrorCode.ERR_DefaultParameterValueTypeMismatch, p.Name, expectedtype, valuetype);
+                }
+            }
+        }
+
+        bool CheckParameterDefaultValue(SourceParameterSymbol p)
+        {
+            var thint = p.Syntax.TypeHint;
+            if (thint != null)
+            {
+                // check type hint and default value
+                var defaultvalue = p.Initializer;
+                if (defaultvalue != null && !defaultvalue.TypeRefMask.IsAnyType && !defaultvalue.TypeRefMask.IsDefault)
+                {
+                    var valuetype = defaultvalue.TypeRefMask;
+
+                    if (TypeCtx.IsNull(valuetype))
+                    {
+                        // allow NULL anytime
+                        return true;
+                    }
+
+                    if (thint is NullableTypeRef nullable)
+                    {
+                        // unwrap nullable type hint
+                        thint = nullable.TargetType;
+                    }
+
+                    if (thint is PrimitiveTypeRef primitive)
+                    {
+                        switch (primitive.PrimitiveTypeName)
+                        {
+                            case PrimitiveTypeRef.PrimitiveType.@bool:
+                                return TypeCtx.IsBoolean(valuetype);
+
+                            case PrimitiveTypeRef.PrimitiveType.array:
+                                return TypeCtx.IsArray(valuetype);
+
+                            case PrimitiveTypeRef.PrimitiveType.@string:
+                                return TypeCtx.IsAString(valuetype);
+
+                            case PrimitiveTypeRef.PrimitiveType.@object:
+                                return false;
+
+                            case PrimitiveTypeRef.PrimitiveType.@float:
+                            case PrimitiveTypeRef.PrimitiveType.@int:
+                                return TypeCtx.IsNumber(valuetype);
+                        }
+                    }
+                    else if (thint is ClassTypeRef classtref)
+                    {
+                        return false; // cannot have default value other than NULL
+                    }
+                }
+            }
+
+            // ok
+            return true;
         }
 
         void CheckLabels(ImmutableArray<ControlFlowGraph.LabelBlockState> labels)

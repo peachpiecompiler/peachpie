@@ -807,6 +807,8 @@ namespace Pchp.Core
 
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 
+        public static PhpValue Create(IPhpArray value) => value is PhpArray arr ? Create(arr) : FromClass(value);
+
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
 
         /// <summary>
