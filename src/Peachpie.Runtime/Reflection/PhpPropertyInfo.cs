@@ -39,14 +39,28 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => _field.Name;
 
-            public override PhpValue GetValue(Context ctx, object instance = null) => PhpValue.FromClr(_field.GetValue(instance));
+            public override PhpValue GetValue(Context _, object instance = null) => PhpValue.FromClr(_field.GetValue(instance));
 
-            public override void SetValue(Context ctx, object instance, PhpValue value)
+            public override PhpAlias EnsureAlias(Context ctx, object instance)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override object EnsureObject(Context ctx, object instance)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override IPhpArray EnsureArray(Context ctx, object instance)
+            {
+                throw new NotImplementedException();
+            }
+            public override void SetValue(Context _, object instance, PhpValue value)
             {
                 _field.SetValue(instance, value.ToClr(_field.FieldType));
             }
 
-            public override Expression Bind(Expression ctx, Expression target)
+            public override Expression Bind(Expression _, Expression target)
             {
                 if (_field.IsLiteral)
                 {
@@ -126,6 +140,20 @@ namespace Pchp.Core.Reflection
                 return PhpValue.FromClr(_field.GetValue(_staticsGetter(ctx))); // __statics.field
             }
 
+            public override PhpAlias EnsureAlias(Context ctx, object instance)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override object EnsureObject(Context ctx, object instance)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override IPhpArray EnsureArray(Context ctx, object instance)
+            {
+                throw new NotImplementedException();
+            }
             public override void SetValue(Context ctx, object instance, PhpValue value)
             {
                 if (IsReadOnly) throw new NotSupportedException();
@@ -191,6 +219,21 @@ namespace Pchp.Core.Reflection
 
             public override PhpValue GetValue(Context ctx, object instance = null) => PhpValue.FromClr(_property.GetValue(instance));
 
+            public override PhpAlias EnsureAlias(Context ctx, object instance)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override object EnsureObject(Context ctx, object instance)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override IPhpArray EnsureArray(Context ctx, object instance)
+            {
+                throw new NotImplementedException();
+            }
+
             public override void SetValue(Context ctx, object instance, PhpValue value)
             {
                 var setter = _property.SetMethod;
@@ -243,20 +286,62 @@ namespace Pchp.Core.Reflection
                 }
                 else
                 {
+                    PhpException.UndefinedProperty(_tinfo.Name, _name.ToString());
                     return PhpValue.Void;
                 }
             }
 
+            public override PhpAlias EnsureAlias(Context ctx, object instance)
+            {
+                var runtime_fields = _tinfo.EnsureRuntimeFields(instance);
+                if (runtime_fields == null)
+                {
+                    throw new NotSupportedException();
+                }
+
+                // (instance)._runtime_fields[_name]
+                return runtime_fields.EnsureItemAlias(_name);
+            }
+
+            public override object EnsureObject(Context ctx, object instance)
+            {
+                var runtime_fields = _tinfo.EnsureRuntimeFields(instance);
+                if (runtime_fields == null)
+                {
+                    throw new NotSupportedException();
+                }
+
+                // (instance)._runtime_fields[_name]
+                return runtime_fields.EnsureItemObject(_name);
+            }
+
+            public override IPhpArray EnsureArray(Context ctx, object instance)
+            {
+                var runtime_fields = _tinfo.EnsureRuntimeFields(instance);
+                if (runtime_fields == null)
+                {
+                    throw new NotSupportedException();
+                }
+
+                // (instance)._runtime_fields[_name]
+                return runtime_fields.EnsureItemArray(_name);
+            }
+
             public override void SetValue(Context ctx, object instance, PhpValue value)
             {
-                var fields = _tinfo.EnsureRuntimeFields(instance);
+                var runtime_fields = _tinfo.EnsureRuntimeFields(instance);
+                if (runtime_fields == null)
+                {
+                    throw new NotSupportedException();
+                }
+
                 if (value.IsAlias)
                 {
-                    fields[_name] = value;
+                    runtime_fields[_name] = value;
                 }
                 else
                 {
-                    fields.SetItemValue(_name, value);
+                    runtime_fields.SetItemValue(_name, value);
                 }
             }
 
@@ -297,12 +382,32 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets the runtime value of the property.
         /// </summary>
-        public abstract PhpValue GetValue(Context ctx, object instance = null);
+        public abstract PhpValue GetValue(Context ctx, object instance);
+
+        /// <summary>
+        /// Ensures the property value to be <see cref="PhpAlias"/>.
+        /// </summary>
+        /// <exception cref="NotSupportedException">In case the type of the property does allow.</exception>
+        public abstract PhpAlias EnsureAlias(Context ctx, object instance);
+
+        /// <summary>
+        /// Ensures the property value to be instance of <see cref="object"/>.
+        /// </summary>
+        /// <exception cref="NotSupportedException">In case the type of the property does allow.</exception>
+        public abstract object EnsureObject(Context ctx, object instance);
+
+        /// <summary>
+        /// Ensures the property value to be an <c>array</c>.
+        /// </summary>
+        /// <exception cref="NotSupportedException">In case the type of the property does allow.</exception>
+        public abstract IPhpArray EnsureArray(Context ctx, object instance);
 
         /// <summary>
         /// Sets new value.
         /// Throws an exception in case of <see cref="IsReadOnly"/>.
         /// </summary>
+        /// <exception cref="Exception">Type mismatch.</exception>
+        /// <exception cref="NotSupportedException">Property is read-only.</exception>
         public abstract void SetValue(Context ctx, object instance, PhpValue value);
 
         /// <summary>
