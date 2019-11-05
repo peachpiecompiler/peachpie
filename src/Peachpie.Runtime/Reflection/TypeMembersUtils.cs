@@ -79,7 +79,7 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 (p) => new IntStringKey(p.PropertyName),
                 FuncExtensions.Identity<IntStringKey>(),
-                (m) => m.IsVisible(caller) && s_notClrInternalFieldsPredicate(m));
+                (m) => m.IsVisible(caller));
         }
 
         /// <summary>
@@ -91,24 +91,12 @@ namespace Pchp.Core.Reflection
         {
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForPrint,
-                s_keyToString,
-                s_notClrInternalFieldsPredicate);
+                s_keyToString);
         }
 
         public static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
 
         public static readonly Func<PhpPropertyInfo, string> s_propertyName = new Func<PhpPropertyInfo, string>(p => p.PropertyName);
-
-        public static readonly Func<PhpPropertyInfo, bool> s_notClrInternalFieldsPredicate = new Func<PhpPropertyInfo, bool>(p =>
-        {
-            // ignore "internal" and "private protected" fields
-            // ignore pointer types
-
-            var access = p.Attributes & FieldAttributes.FieldAccessMask;
-            return
-                access != FieldAttributes.Assembly &&
-                access != FieldAttributes.FamANDAssem;
-        });
 
         static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForPrint = new Func<PhpPropertyInfo, string>(p =>
         {
@@ -137,8 +125,7 @@ namespace Pchp.Core.Reflection
         {
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForDump,
-                s_keyToString,
-                s_notClrInternalFieldsPredicate);
+                s_keyToString);
         }
 
         /// <summary>
@@ -150,8 +137,7 @@ namespace Pchp.Core.Reflection
         {
             return EnumerateInstanceFields(instance,
                 s_propertyName,
-                s_keyToString,
-                s_notClrInternalFieldsPredicate);
+                s_keyToString);
         }
 
         static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForDump = new Func<PhpPropertyInfo, string>(p =>
@@ -236,7 +222,7 @@ namespace Pchp.Core.Reflection
             Debug.Assert(instance != null);
             Debug.Assert(arr != null);
 
-            foreach (var pair in EnumerateInstanceFields(instance, FieldAsArrayKey, s_keyToString, s_notClrInternalFieldsPredicate, false))
+            foreach (var pair in EnumerateInstanceFields(instance, FieldAsArrayKey, s_keyToString))
             {
                 arr[pair.Key] = pair.Value.DeepCopy();
             }

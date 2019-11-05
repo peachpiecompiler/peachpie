@@ -71,15 +71,30 @@ namespace Pchp.Core.Reflection
         //static readonly Func<FieldInfo, bool> s_isInstanceField = f => !f.IsStatic;
 
         static readonly Func<FieldInfo, bool> s_isAllowedField = f =>
-            ReflectionUtils.IsAllowedPhpName(f.Name) &&
-            !ReflectionUtils.IsRuntimeFields(f) &&
-            !ReflectionUtils.IsContextField(f) &&
-            !f.IsPhpHidden() &&
-            !f.FieldType.IsPointer;
+        {
+            var access = f.Attributes & FieldAttributes.FieldAccessMask;
+            return
+                access != FieldAttributes.Assembly &&
+                access != FieldAttributes.FamANDAssem &&
+                ReflectionUtils.IsAllowedPhpName(f.Name) &&
+                !ReflectionUtils.IsRuntimeFields(f) &&
+                !ReflectionUtils.IsContextField(f) &&
+                !f.IsPhpHidden() &&
+                !f.FieldType.IsPointer;
+        };
 
         //static readonly Func<FieldInfo, string> s_fieldName = f => f.Name;
 
-        static readonly Func<PropertyInfo, bool> s_isAllowedProperty = p => ReflectionUtils.IsAllowedPhpName(p.Name) && p.GetIndexParameters().Length == 0 && !p.IsPhpHidden();
+        static readonly Func<PropertyInfo, bool> s_isAllowedProperty = p =>
+        {
+            var access = p.GetMethod.Attributes & MethodAttributes.MemberAccessMask;
+            return
+                access != MethodAttributes.Assembly &&
+                access != MethodAttributes.FamANDAssem &&
+                ReflectionUtils.IsAllowedPhpName(p.Name) &&
+                p.GetIndexParameters().Length == 0 &&
+                !p.IsPhpHidden();
+        };
 
         //static readonly Func<PropertyInfo, string> s_propertyName = p => p.Name;
 

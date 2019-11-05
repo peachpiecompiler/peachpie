@@ -19,8 +19,8 @@ namespace Pchp.Core.Reflection
         {
             return TypeMembersUtils.EnumerateInstanceFields(instance,
                 FormatSerializedPropertyName,
-                (k) => k.ToString(),
-                (m) => !m.IsReadOnly && TypeMembersUtils.s_notClrInternalFieldsPredicate(m));
+                TypeMembersUtils.s_keyToString,
+                (m) => !m.IsReadOnly);
         }
 
         /// <summary>
