@@ -603,7 +603,7 @@ namespace Pchp.Library
 
                 IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(object/*!*/obj)
                 {
-                    return TypeMembersUtils.EnumerateInstanceFields(obj, (f, d) => f.Name, (k) => k.ToString());
+                    return TypeMembersUtils.EnumerateInstanceFields(obj, TypeMembersUtils.s_propertyName, TypeMembersUtils.s_keyToString);
                 }
             }
 

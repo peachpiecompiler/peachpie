@@ -180,6 +180,17 @@ namespace Pchp.Core.Utilities
     }
 
     /// <summary>
+    /// Helper class holding instance of an empty dictionary.
+    /// </summary>
+    public sealed class EmptyDictionary<TKey, TValue>
+    {
+        /// <summary>
+        /// The singleton.
+        /// </summary>
+        public static IReadOnlyDictionary<TKey, TValue> Singleton { get; } = new System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>(new Dictionary<TKey, TValue>(0));
+    }
+
+    /// <summary>
     /// Helper class that implements empty collection and empty enumerator, GC friendly.
     /// </summary>
     public sealed class EmptyCollection<T> : IEnumerable<T>, ICollection<T>

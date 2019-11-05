@@ -45,7 +45,7 @@ namespace Pchp.Core.Dynamic
         public static bool IsQueryValueParameter(this ParameterInfo p)
         {
             return
-                p.ParameterType.IsGenericType && 
+                p.ParameterType.IsGenericType &&
                 p.ParameterType.GetGenericTypeDefinition() == typeof(QueryValue<>);
         }
 
@@ -370,7 +370,7 @@ namespace Pchp.Core.Dynamic
             return target.GetRuntimeFields().FirstOrDefault(ReflectionUtils.IsRuntimeFields);
         }
 
-        static Expression BindAccess(Expression expr, Expression ctx, AccessMask access, Expression rvalue)
+        public static Expression BindAccess(Expression expr, Expression ctx, AccessMask access, Expression rvalue)
         {
             if (access.EnsureObject())
             {
@@ -630,12 +630,10 @@ namespace Pchp.Core.Dynamic
         {
             for (var t = type; t != null; t = t.BaseType)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties(name))
+                var p = t.DeclaredFields.TryGetPhpProperty(name);
+                if (p != null && p.IsStatic == @static && p.IsVisible(classCtx))
                 {
-                    if (p.IsStatic == @static && p.IsVisible(classCtx))
-                    {
-                        return p;
-                    }
+                    return p;
                 }
             }
 
@@ -1032,7 +1030,7 @@ namespace Pchp.Core.Dynamic
             {
                 return Expression.New((ConstructorInfo)method, boundargs);
             }
-            
+
             if (HasToBeCalledNonVirtually(instance, method, isStaticCallSyntax))
             {
                 // Ugly hack here,
