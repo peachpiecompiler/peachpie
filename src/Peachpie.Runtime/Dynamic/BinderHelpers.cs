@@ -624,7 +624,7 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         /// <param name="type">Property receiver.</param>
         /// <param name="classCtx">Current class context (visibility).</param>
-        /// <param name=@static">Whether to lookup static properties.</param>
+        /// <param name="static">Whether to lookup static properties.</param>
         /// <param name="name">Property name.</param>
         public static PhpPropertyInfo ResolveDeclaredProperty(PhpTypeInfo type, Type classCtx, bool @static, string name)
         {
