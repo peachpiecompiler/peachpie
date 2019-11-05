@@ -824,8 +824,18 @@ namespace Pchp.Library
 
         #region json_encode, json_decode, json_last_error
 
-        public static PhpString json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default)
+        /// <summary>
+        /// Returns the JSON representation of a value.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="value">The value being encoded. Can be any type except a <see cref="PhpResource"/>.
+        /// All string data must be UTF-8 encoded.</param>
+        /// <param name="options"></param>
+        /// <param name="depth">Set the maximum depth. Must be greater than zero.</param>
+        public static PhpString json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, int depth = 512)
         {
+            // TODO: depth
+
             return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
         }
 
