@@ -302,7 +302,7 @@ namespace Pchp.Core.Reflection
 
             public override PhpValue GetValue(Context ctx, object instance)
             {
-                var runtime_fields = _tinfo.GetRuntimeFields(instance);
+                var runtime_fields = ContainingType.GetRuntimeFields(instance);
 
                 // (instance)._runtime_fields[_name]
                 if (runtime_fields != null && runtime_fields.TryGetValue(_name, out var value))
@@ -311,14 +311,14 @@ namespace Pchp.Core.Reflection
                 }
                 else
                 {
-                    PhpException.UndefinedProperty(_tinfo.Name, _name.ToString());
+                    PhpException.UndefinedProperty(ContainingType.Name, _name.ToString());
                     return PhpValue.Void;
                 }
             }
 
             public override PhpAlias EnsureAlias(Context ctx, object instance)
             {
-                var runtime_fields = _tinfo.EnsureRuntimeFields(instance);
+                var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
                 if (runtime_fields == null)
                 {
                     throw new NotSupportedException();
@@ -330,7 +330,7 @@ namespace Pchp.Core.Reflection
 
             public override object EnsureObject(Context ctx, object instance)
             {
-                var runtime_fields = _tinfo.EnsureRuntimeFields(instance);
+                var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
                 if (runtime_fields == null)
                 {
                     throw new NotSupportedException();
@@ -342,7 +342,7 @@ namespace Pchp.Core.Reflection
 
             public override IPhpArray EnsureArray(Context ctx, object instance)
             {
-                var runtime_fields = _tinfo.EnsureRuntimeFields(instance);
+                var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
                 if (runtime_fields == null)
                 {
                     throw new NotSupportedException();
@@ -354,7 +354,7 @@ namespace Pchp.Core.Reflection
 
             public override void SetValue(Context ctx, object instance, PhpValue value)
             {
-                var runtime_fields = _tinfo.EnsureRuntimeFields(instance);
+                var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
                 if (runtime_fields == null)
                 {
                     throw new NotSupportedException();
@@ -384,13 +384,11 @@ namespace Pchp.Core.Reflection
         /// Containing type information.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public PhpTypeInfo ContainingType => _tinfo;
-        readonly PhpTypeInfo _tinfo;
+        public PhpTypeInfo ContainingType { get; }
 
         protected PhpPropertyInfo(PhpTypeInfo tinfo)
         {
-            Debug.Assert(tinfo != null);
-            _tinfo = tinfo;
+            ContainingType = tinfo ?? throw new ArgumentNullException(nameof(tinfo));
         }
 
         /// <summary>
@@ -524,12 +522,12 @@ namespace Pchp.Core.Reflection
             // private
             if (IsPrivate)
             {
-                return _tinfo.Type == caller;
+                return ContainingType.Type == caller;
             }
 
             // protected|internal
             // language.oop5.visibility: Members declared protected can be accessed only within the class itself and by inheriting and parent classes
-            return _tinfo.Type.IsAssignableFrom(caller) || caller.IsAssignableFrom(_tinfo.Type);
+            return ContainingType.Type.IsAssignableFrom(caller) || caller.IsAssignableFrom(ContainingType.Type);
         }
 
         /// <summary>
