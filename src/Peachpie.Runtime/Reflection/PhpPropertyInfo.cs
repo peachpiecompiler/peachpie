@@ -83,7 +83,7 @@ namespace Pchp.Core.Reflection
                     expr = BinderHelpers.BindAccess(expr, pctx, AccessMask.Write, pvalue);
 
                     //
-                    var lambda = Expression.Lambda(expr, true, pctx, pinstance, pvalue);
+                    var lambda = Expression.Lambda(Expression.Block(expr, Expression.Empty()), pctx, pinstance, pvalue);
 
                     return (Action<Context, object, PhpValue>)lambda.Compile();
                 });
@@ -227,8 +227,8 @@ namespace Pchp.Core.Reflection
                     // expr: <property> := <value>
                     expr = Expression.Assign(expr, ConvertExpression.Bind(pvalue, expr.Type, pctx));    // TODO: PHP semantic (Operators.SetValue)
 
-                    //
-                    var lambda = Expression.Lambda(expr, true, pctx, pinstance, pvalue);
+                    // {expr}: void
+                    var lambda = Expression.Lambda(Expression.Block(expr, Expression.Empty()), pctx, pinstance, pvalue);
 
                     return (Action<Context, object, PhpValue>)lambda.Compile();
                 });
