@@ -336,7 +336,7 @@ namespace Pchp.Library.Reflection
             {
                 if (p.IsStatic)
                 {
-                    array[p.PropertyName] = p.GetValue(ctx);
+                    array[p.PropertyName] = p.GetValue(ctx, null);
                 }
             }
 
@@ -346,7 +346,7 @@ namespace Pchp.Library.Reflection
         public PhpValue getStaticPropertyValue(Context ctx, string name)
         {
             var prop = _tinfo.GetDeclaredProperty(name) ?? throw new ReflectionException();
-            return prop.GetValue(ctx);
+            return prop.GetValue(ctx, null);
         }
 
         public void setStaticPropertyValue(Context ctx, string name, PhpAlias def_value)

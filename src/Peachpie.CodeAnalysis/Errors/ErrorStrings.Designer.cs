@@ -178,6 +178,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Default value for parameter ${0} with a {1} type can only be {1} or NULL, {2} type given.
+        /// </summary>
+        internal static string ERR_DefaultParameterValueTypeMismatch {
+            get {
+                return ResourceManager.GetString("ERR_DefaultParameterValueTypeMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot emit debug information for a source text without encoding..
         /// </summary>
         internal static string ERR_EncodinglessSyntaxTree {

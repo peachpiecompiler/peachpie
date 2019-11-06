@@ -169,6 +169,8 @@ namespace Peachpie.Library.MySql.MySqli
                 // set object properties using reflection:
                 for (int i = 0; i < names.Length; i++)
                 {
+                    // TODO: Operators.PropertySetValue( obj, names[i], FromClr(oa[i]) );
+
                     var p =
                         TypeMembersUtils.GetDeclaredProperty(phpt, names[i]) ??
                         TypeMembersUtils.GetRuntimeProperty(phpt, names[i], obj);

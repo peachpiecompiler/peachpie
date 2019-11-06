@@ -77,9 +77,9 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<KeyValuePair<IntStringKey, PhpValue>> EnumerateVisibleInstanceFields(object instance, RuntimeTypeHandle caller = default)
         {
             return EnumerateInstanceFields(instance,
-                (f, d) => new IntStringKey(f.Name),
+                (p) => new IntStringKey(p.PropertyName),
                 FuncExtensions.Identity<IntStringKey>(),
-                (m) => s_notClrInternalFieldsPredicate(m) && IsVisible(m, caller));
+                (m) => m.IsVisible(caller));
         }
 
         /// <summary>
@@ -91,52 +91,28 @@ namespace Pchp.Core.Reflection
         {
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForPrint,
-                s_keyToString,
-                s_notClrInternalFieldsPredicate);
+                s_keyToString);
         }
 
-        static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
+        public static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
 
-        public static readonly Func<MemberInfo, bool> s_notClrInternalFieldsPredicate = new Func<MemberInfo, bool>(m =>
+        public static readonly Func<PhpPropertyInfo, string> s_propertyName = new Func<PhpPropertyInfo, string>(p => p.PropertyName);
+
+        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForPrint = new Func<PhpPropertyInfo, string>(p =>
         {
-            // ignore "internal" and "private protected" fields
-            // ignore pointer types
-
-            if (m is FieldInfo f)
+            if (p.IsPublic)
             {
-                var access = f.Attributes & FieldAttributes.FieldAccessMask;
-                return
-                    access != FieldAttributes.Assembly && access != FieldAttributes.FamANDAssem &&
-                    !f.FieldType.IsPointer;
-            }
-            else if (m is PropertyInfo p)
-            {
-                var access = p.GetMethod.Attributes & MethodAttributes.MemberAccessMask;
-                return
-                    access != MethodAttributes.Assembly && access != MethodAttributes.FamANDAssem &&
-                    !p.PropertyType.IsPointer;
-            }
-            else
-            {
-                return false;
-            }
-        });
-
-        static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForPrint = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) =>
-        {
-            if (m.IsPhpPublic())
-            {
-                return m.Name;
+                return p.PropertyName;
             }
 
-            if (m.IsPhpPrivate())
+            if (p.IsPrivate)
             {
-                return string.Concat(m.Name, ":", declarer.Name, ":private");
+                return string.Concat(p.PropertyName, ":", p.ContainingType.Name, ":private");
             }
 
             //if (m.IsPhpProtected())
             {
-                return m.Name + ":protected";
+                return p.PropertyName + ":protected";
             }
         });
 
@@ -149,8 +125,7 @@ namespace Pchp.Core.Reflection
         {
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForDump,
-                s_keyToString,
-                s_notClrInternalFieldsPredicate);
+                s_keyToString);
         }
 
         /// <summary>
@@ -161,25 +136,22 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateInstanceFieldsForExport(object instance)
         {
             return EnumerateInstanceFields(instance,
-                s_formatPropertyNameForExport,
-                s_keyToString,
-                s_notClrInternalFieldsPredicate);
+                s_propertyName,
+                s_keyToString);
         }
 
-        static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForExport = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) => m.Name);
-
-        static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForDump = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) =>
+        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForDump = new Func<PhpPropertyInfo, string>(p =>
         {
-            var name = "\"" + m.Name + "\"";
+            var name = "\"" + p.PropertyName + "\"";
 
-            if (m.IsPhpPublic())
+            if (p.IsPublic)
             {
                 return name;
             }
 
-            if (m.IsPhpPrivate())
+            if (p.IsPrivate)
             {
-                return string.Concat(name, ":\"", declarer.Name, "\":private");
+                return string.Concat(name, ":\"", p.ContainingType.Name, "\":private");
             }
 
             //if (m.IsPhpProtected())
@@ -192,13 +164,13 @@ namespace Pchp.Core.Reflection
         /// Enumerates instance fields of given object.
         /// </summary>
         /// <param name="instance">Object which fields will be enumerated.</param>
-        /// <param name="keyFormatter">Function converting field/property to a <typeparamref name="TKey"/>.</param>
+        /// <param name="keyFormatter">Function converting property to a <typeparamref name="TKey"/>.</param>
         /// <param name="keyFormatter2">Function converting </param>
-        /// <param name="predicate">Optional. Predicate filtering instance fields.</param>
+        /// <param name="predicate">Optional. Predicate filtering fields.</param>
         /// <param name="ignoreRuntimeFields">Whether to ignore listing runtime fields.</param>
         /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
         /// <typeparam name="TKey">Enumerated pairs key. Usually <see cref="IntStringKey"/>.</typeparam>
-        public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<MemberInfo, PhpTypeInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<MemberInfo, bool> predicate = null, bool ignoreRuntimeFields = false)
+        public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<PhpPropertyInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<PhpPropertyInfo, bool> predicate = null, bool ignoreRuntimeFields = false)
         {
             Debug.Assert(instance != null);
 
@@ -209,25 +181,13 @@ namespace Pchp.Core.Reflection
             for (var t = tinfo; t != null; t = t.BaseType)
             {
                 // iterate through instance fields
-                foreach (var f in t.DeclaredFields.InstanceFields)
+                foreach (var p in t.DeclaredFields.InstanceProperties)
                 {
-                    // perform visibility check
-                    if (predicate == null || predicate(f))
-                    {
-                        yield return new KeyValuePair<TKey, PhpValue>(
-                            keyFormatter(f, t),
-                            PhpValue.FromClr(f.GetValue(instance)));
-                    }
-                }
-
-                foreach (var p in t.DeclaredFields.InstanceClrProperties)
-                {
-                    // perform visibility check
                     if (predicate == null || predicate(p))
                     {
                         yield return new KeyValuePair<TKey, PhpValue>(
-                            keyFormatter(p, t),
-                            PhpValue.FromClr(p.GetValue(instance)));
+                            keyFormatter(p),
+                            p.GetValue(null, instance));
                     }
                 }
             }
@@ -262,7 +222,7 @@ namespace Pchp.Core.Reflection
             Debug.Assert(instance != null);
             Debug.Assert(arr != null);
 
-            foreach (var pair in EnumerateInstanceFields(instance, FieldAsArrayKey, s_keyToString, s_notClrInternalFieldsPredicate, false))
+            foreach (var pair in EnumerateInstanceFields(instance, FieldAsArrayKey, s_keyToString))
             {
                 arr[pair.Key] = pair.Value.DeepCopy();
             }
@@ -271,24 +231,23 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets field name to be used as array key when casting object to array.
         /// </summary>
-        static string FieldAsArrayKey(MemberInfo m, PhpTypeInfo declaringType)
+        static string FieldAsArrayKey(PhpPropertyInfo p)
         {
-            Debug.Assert(m != null);
-            Debug.Assert(declaringType != null);
+            Debug.Assert(p != null);
 
-            if (m.IsPhpPublic())
+            if (p.IsPublic)
             {
-                return m.Name;
+                return p.PropertyName;
             }
 
-            if (m.IsPhpPrivate())
+            if (p.IsPrivate)
             {
-                return " " + declaringType.Name + " " + m.Name;
+                return " " + p.ContainingType.Name + " " + p.PropertyName;
             }
 
             //if (m.IsPhpProtected())
             {
-                return " * " + m.Name;
+                return " * " + p.PropertyName;
             }
         }
 
@@ -355,10 +314,8 @@ namespace Pchp.Core.Reflection
             // iterate through type and its base types
             for (var t = tinfo; t != null; t = t.BaseType)
             {
-                // iterate through instance fields
-                count += t.DeclaredFields.InstanceFields.Count();
-
-                // TODO: CLR properties
+                // iterate through instance properties
+                count += t.DeclaredFields.InstanceProperties.Count();
             }
 
             // PhpArray __runtime_fields
@@ -372,51 +329,12 @@ namespace Pchp.Core.Reflection
             return count;
         }
 
-        static bool IsVisible(this MemberInfo m, RuntimeTypeHandle caller)
-        {
-            if (m is FieldInfo f) return IsVisible(f, caller);
-            if (m is PropertyInfo p) return IsVisible(p, caller);
-            if (m is MethodBase b) return IsVisible(b, Type.GetTypeFromHandle(caller));
-
-            return false;
-        }
-
-        static bool IsVisible(this PropertyInfo p, RuntimeTypeHandle caller)
-        {
-            return
-                (p.GetMethod.IsPublic) ||
-                (p.GetMethod.IsPrivate && p.DeclaringType.TypeHandle.Equals(caller)) ||
-                (p.GetMethod.IsFamily && IsVisible(p.DeclaringType, caller));
-        }
-
-        static bool IsVisible(this FieldInfo f, RuntimeTypeHandle caller)
-        {
-            return
-                (f.IsPublic) ||
-                (f.IsPrivate && f.DeclaringType.TypeHandle.Equals(caller)) ||
-                (f.IsFamily && IsVisible(f.DeclaringType, caller));
-        }
-
         public static bool IsVisible(this FieldInfo f, Type caller)
         {
             return
                 (f.IsPublic) ||
                 (f.IsPrivate && f.DeclaringType.Equals(caller)) ||
                 (f.IsFamily && IsVisible(f.DeclaringType, caller));
-        }
-
-        static bool IsVisible(Type memberctx, RuntimeTypeHandle caller)
-        {
-            Debug.Assert(memberctx != null);
-
-            if (caller.Equals(default(RuntimeTypeHandle)))
-            {
-                return false;   // global context
-            }
-            else
-            {
-                return IsVisible(memberctx, Type.GetTypeFromHandle(caller));
-            }
         }
 
         static bool IsVisible(Type memberctx, Type caller)
@@ -470,7 +388,10 @@ namespace Pchp.Core.Reflection
             return true;
         }
 
-        public static bool IsStatic(MethodInfo method) => method.IsStatic;
+        /// <summary>
+        /// Predicate checking the given <see cref="MethodInfo"/> is static.
+        /// </summary>
+        public static Func<MethodInfo, bool> s_isMethodStatic => m => m.IsStatic;
 
         /// <summary>
         /// Checks if <paramref name="t1"/> is a sub class of <paramref name="t2"/> or the other way.
@@ -573,9 +494,10 @@ namespace Pchp.Core.Reflection
         {
             for (var t = tinfo; t != null; t = t.BaseType)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties(name))
+                var p = t.DeclaredFields.TryGetPhpProperty(name);
+                if (p != null && !p.IsConstant)
                 {
-                    if (!p.IsConstant) return p;
+                    return p;
                 }
             }
 
@@ -591,18 +513,20 @@ namespace Pchp.Core.Reflection
         {
             for (var t = tinfo; t != null; t = t.BaseType)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties(name))
+                var p = t.DeclaredFields.TryGetPhpProperty(name);
+                if (p != null && p.IsConstant)
                 {
-                    if (p.IsConstant) return p;
+                    return p;
                 }
             }
 
             // interfaces
             foreach (var itype in tinfo.Type.GetInterfaces())
             {
-                foreach (var p in itype.GetPhpTypeInfo().DeclaredFields.GetPhpProperties(name))
+                var p = itype.GetPhpTypeInfo().DeclaredFields.TryGetPhpProperty(name);
+                if (p != null && p.IsConstant)
                 {
-                    if (p.IsConstant) return p;
+                    return p;
                 }
             }
 
@@ -644,9 +568,12 @@ namespace Pchp.Core.Reflection
         {
             for (var t = tinfo; t != null; t = t.BaseType)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties())
+                foreach (var p in t.DeclaredFields.Properties)
                 {
-                    if (!p.IsConstant) yield return p;
+                    if (!p.IsConstant)
+                    {
+                        yield return p;
+                    }
                 }
             }
         }
@@ -658,18 +585,24 @@ namespace Pchp.Core.Reflection
         {
             for (var t = tinfo; t != null; t = t.BaseType)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties())
+                foreach (var p in t.DeclaredFields.Properties)
                 {
-                    if (p.IsConstant) yield return p;
+                    if (p.IsConstant)
+                    {
+                        yield return p;
+                    }
                 }
             }
 
             // interfaces
             foreach (var itype in tinfo.Type.GetInterfaces())
             {
-                foreach (var p in itype.GetPhpTypeInfo().DeclaredFields.GetPhpProperties())
+                foreach (var p in itype.GetPhpTypeInfo().DeclaredFields.Properties)
                 {
-                    if (p.IsConstant) yield return p;
+                    if (p.IsConstant)
+                    {
+                        yield return p;
+                    }
                 }
             }
         }
