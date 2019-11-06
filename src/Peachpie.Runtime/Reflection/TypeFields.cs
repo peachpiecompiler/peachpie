@@ -49,11 +49,9 @@ namespace Pchp.Core.Reflection
                     staticscontainer = staticscontainer.MakeGenericType(tinfo.GenericTypeArguments).GetTypeInfo();
                 }
 
-                var staticsGetter = CreateStaticsGetter(staticscontainer);
-
                 foreach (var field in staticscontainer.DeclaredFields.Where(s_isAllowedField))
                 {
-                    properties[field.Name] = new PhpPropertyInfo.ContainedClrField(t, staticsGetter, field);
+                    properties[field.Name] = new PhpPropertyInfo.ContainedClrField(t, field);
                 }
             }
 
@@ -68,8 +66,6 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<PhpPropertyInfo, bool> s_isInstanceProperty = p => !p.IsStatic;
 
-        //static readonly Func<FieldInfo, bool> s_isInstanceField = f => !f.IsStatic;
-
         static readonly Func<FieldInfo, bool> s_isAllowedField = f =>
         {
             var access = f.Attributes & FieldAttributes.FieldAccessMask;
@@ -83,8 +79,6 @@ namespace Pchp.Core.Reflection
                 !f.FieldType.IsPointer;
         };
 
-        //static readonly Func<FieldInfo, string> s_fieldName = f => f.Name;
-
         static readonly Func<PropertyInfo, bool> s_isAllowedProperty = p =>
         {
             var access = p.GetMethod.Attributes & MethodAttributes.MemberAccessMask;
@@ -95,18 +89,6 @@ namespace Pchp.Core.Reflection
                 p.GetIndexParameters().Length == 0 &&
                 !p.IsPhpHidden();
         };
-
-        //static readonly Func<PropertyInfo, string> s_propertyName = p => p.Name;
-
-        static Func<Context, object> CreateStaticsGetter(Type _statics)
-        {
-            Debug.Assert(_statics.Name == "_statics");
-            Debug.Assert(_statics.IsNested);
-
-            var getter = BinderHelpers.GetStatic_T_Method(_statics);    // ~ Context.GetStatics<_statics>, in closure
-            // TODO: getter.CreateDelegate
-            return ctx => getter.Invoke(ctx, Array.Empty<object>());
-        }
 
         #endregion
 
