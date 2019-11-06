@@ -461,9 +461,23 @@ namespace Pchp.Core.Reflection
         public virtual bool IsPrivate => (Attributes & FieldAttributes.Private) == FieldAttributes.Private;
 
         /// <summary>
-        /// Gets value indicating the property is protected.
+        /// Gets value indicating the property is protected (not public nor private).
+        /// This might indicate CLR's <c>internal</c>, <c>internal protected</c> or <c>protected</c>.
         /// </summary>
-        public virtual bool IsProtected => !IsPublic && !IsPrivate;
+        public virtual bool IsProtected
+        {
+            get
+            {
+                switch (Attributes & FieldAttributes.FieldAccessMask)
+                {
+                    case FieldAttributes.Public:
+                    case FieldAttributes.Private:
+                        return false;
+                    default:
+                        return true;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets value indicating the descriptor corresponds to a class constant.
