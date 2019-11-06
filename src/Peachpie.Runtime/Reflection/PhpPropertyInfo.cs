@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.Semantics;
+using Pchp.Core.Dynamic;
 
 namespace Pchp.Core.Reflection
 {
@@ -23,19 +23,68 @@ namespace Pchp.Core.Reflection
         {
             readonly FieldInfo _field;
             readonly Lazy<Func<object, PhpValue>> _lazyGetter;
+            readonly Lazy<Action<Context, object, PhpValue>> _lazySetValue;
+            readonly Lazy<Func<object, PhpAlias>> _lazyEnsureAlias;
+            readonly Lazy<Func<object, object>> _lazyEnsureObject;
+            readonly Lazy<Func<object, IPhpArray>> _lazyEnsureArray;
+
+            /// <summary>
+            /// Creates Func&lt;object, T&gt; depending on the access.
+            /// </summary>
+            Delegate CompileAccess(AccessMask access)
+            {
+                var pinstance = Expression.Parameter(typeof(object));
+
+                var expr = Bind(null, Expression.Convert(pinstance, _field.DeclaringType));
+                if (access == AccessMask.Read)
+                {
+                    expr = ConvertExpression.BindToValue(expr);
+                }
+                else
+                {
+                    expr = BinderHelpers.BindAccess(expr, null, access, null);
+                }
+
+                return Expression.Lambda(expr, true, pinstance).Compile();
+            }
 
             public ClrFieldProperty(PhpTypeInfo tinfo, FieldInfo field)
                 : base(tinfo)
             {
                 _field = field ?? throw new ArgumentNullException(nameof(field));
 
-                _lazyGetter = new Lazy<Func<object, PhpValue>>(() =>
-                {
-                    var pinstance = Expression.Parameter(typeof(object));
-                    var expr = Dynamic.ConvertExpression.BindToValue(Bind(null, Expression.Convert(pinstance, _field.DeclaringType)));
-                    var lambda = Expression.Lambda(expr, true, pinstance);
+                //
+                _lazyGetter = new Lazy<Func<object, PhpValue>>(() => (Func<object, PhpValue>)CompileAccess(AccessMask.Read));
+                _lazyEnsureAlias = new Lazy<Func<object, PhpAlias>>(() => (Func<object, PhpAlias>)CompileAccess(AccessMask.ReadRef));
+                _lazyEnsureObject = new Lazy<Func<object, object>>(() => (Func<object, object>)CompileAccess(AccessMask.EnsureObject));
+                _lazyEnsureArray = new Lazy<Func<object, IPhpArray>>(() => (Func<object, IPhpArray>)CompileAccess(AccessMask.EnsureArray));
 
-                    return (Func<object, PhpValue>)lambda.Compile();
+                // SetValue(instance, PhpValue): void
+                _lazySetValue = new Lazy<Action<Context, object, PhpValue>>(() =>
+                {
+                    if (IsReadOnly)
+                    {
+                        // error
+                        return new Action<Context, object, PhpValue>((_, _instance, _value) =>
+                        {
+                            PhpException.ErrorException(Resources.ErrResources.readonly_property_written, ContainingType.Name, PropertyName);
+                        });
+                    }
+
+                    var pctx = Expression.Parameter(typeof(Context));
+                    var pinstance = Expression.Parameter(typeof(object));
+                    var pvalue = Expression.Parameter(typeof(PhpValue));
+
+                    // expr: <instance>.<field>
+                    var expr = Bind(null, Expression.Convert(pinstance, _field.DeclaringType));
+
+                    // expr: <field> := <value>
+                    expr = BinderHelpers.BindAccess(expr, pctx, CodeAnalysis.Semantics.AccessMask.Write, pvalue);
+
+                    //
+                    var lambda = Expression.Lambda(expr, true, pctx, pinstance, pvalue);
+
+                    return (Action<Context, object, PhpValue>)lambda.Compile();
                 });
             }
 
@@ -51,25 +100,13 @@ namespace Pchp.Core.Reflection
 
             public override PhpValue GetValue(Context _, object instance = null) => _lazyGetter.Value(instance);
 
-            public override PhpAlias EnsureAlias(Context _, object instance)
-            {
-                throw new NotImplementedException();
-            }
+            public override PhpAlias EnsureAlias(Context _, object instance) => _lazyEnsureAlias.Value(instance);
 
-            public override object EnsureObject(Context _, object instance)
-            {
-                throw new NotImplementedException();
-            }
+            public override object EnsureObject(Context _, object instance) => _lazyEnsureObject.Value(instance);
 
-            public override IPhpArray EnsureArray(Context _, object instance)
-            {
-                throw new NotImplementedException();
-            }
+            public override IPhpArray EnsureArray(Context _, object instance) => _lazyEnsureArray.Value(instance);
 
-            public override void SetValue(Context _, object instance, PhpValue value)
-            {
-                _field.SetValue(instance, value.ToClr(_field.FieldType));
-            }
+            public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
 
             public override Expression Bind(Expression _, Expression target)
             {
@@ -399,19 +436,19 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Ensures the property value to be <see cref="PhpAlias"/>.
         /// </summary>
-        /// <exception cref="NotSupportedException">In case the type of the property does allow.</exception>
+        /// <exception cref="NotSupportedException">In case the type of the property doesn't allow.</exception>
         public virtual PhpAlias EnsureAlias(Context ctx, object instance) => GetValue(ctx, instance).EnsureAlias();
 
         /// <summary>
         /// Ensures the property value to be instance of <see cref="object"/>.
         /// </summary>
-        /// <exception cref="NotSupportedException">In case the type of the property does allow.</exception>
+        /// <exception cref="NotSupportedException">In case the type of the property doesn't allow.</exception>
         public virtual object EnsureObject(Context ctx, object instance) => GetValue(ctx, instance).EnsureObject();
 
         /// <summary>
         /// Ensures the property value to be an <c>array</c>.
         /// </summary>
-        /// <exception cref="NotSupportedException">In case the type of the property does allow.</exception>
+        /// <exception cref="NotSupportedException">In case the type of the property doesn't allow.</exception>
         public virtual IPhpArray EnsureArray(Context ctx, object instance) => GetValue(ctx, instance).EnsureArray();
 
         /// <summary>
