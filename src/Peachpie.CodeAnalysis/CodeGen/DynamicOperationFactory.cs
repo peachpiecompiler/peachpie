@@ -205,15 +205,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // construct the runtime chain if possible:
                     while (TryConstructRuntimeChainElement(expr, out var element))
                     {
-                        element.Next = runtimeChain ?? new RuntimeChainElement { ValueType = _cg.CoreTypes.RuntimeChain_ChainEnd, };
-                        if (element.ValueType.Arity == 1)
+                        element.Next = runtimeChain ?? new RuntimeChainElement { Type = _cg.CoreTypes.RuntimeChain_ChainEnd, };
+                        if (element.Type.Arity == 1)
                         {
                             // construct Element<TNext> // TNext:typeof(element.Next)
-                            element.ValueType = element.ValueType.Construct(element.Next.ValueType);
+                            element.Type = element.Type.Construct(element.Next.Type);
                         }
                         runtimeChain = element;
-
-                        Debug.Assert(runtimeChain.ValueType.IsValueType);
 
                         //
                         if (element.Parent == null)
@@ -277,38 +275,46 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// </summary>
             sealed class RuntimeChainElement
             {
-                public NamedTypeSymbol ValueType;
+                /// <summary>Chain runtime element.</summary>
+                public NamedTypeSymbol Type;
+
+                /// <summary>Optional properties of the chain element.</summary>
                 public List<KeyValuePair<string, BoundOperation>> Fields;
 
+                /// <summary>Chain's member of.</summary>
                 public BoundExpression Parent;
+
+                /// <summary>Chain's next element.</summary>
                 public RuntimeChainElement Next;
             }
 
             TypeSymbol EmitRuntimeChain(RuntimeChainElement runtimeChain)
             {
                 // create and initialize the chain struct
-                var chaintmp = _cg.GetTemporaryLocal(runtimeChain.ValueType, true);
+                var chaintmp = _cg.GetTemporaryLocal(runtimeChain.Type, true);
                 _cg.Builder.EmitLocalAddress(chaintmp);
                 _cg.Builder.EmitOpCode(ILOpCode.Initobj);
-                _cg.Builder.EmitSymbolToken(_cg.Module, _cg.Diagnostics, runtimeChain.ValueType, null);
+                _cg.Builder.EmitSymbolToken(_cg.Module, _cg.Diagnostics, runtimeChain.Type, null);
 
                 // fill in the fields
                 for (var element = runtimeChain; element != null; element = element.Next)
                 {
+                    Debug.Assert(element.Type.IsValueType);
+
                     if (element.Fields != null)
                     {
                         foreach (var pair in element.Fields)
                         {
-                            // Template: ADDR chain.Next.Next
+                            // Template: ADDR chain.Next[.Next]
                             _cg.Builder.EmitLocalAddress(chaintmp);
                             for (var x = runtimeChain; x != element; x = x.Next)
                             {
-                                var nextfield = new FieldPlace_Raw((FieldSymbol)x.ValueType.GetMembers("Next").Single(), _cg.Module);
+                                var nextfield = new FieldPlace_Raw((FieldSymbol)x.Type.GetMembers("Next").Single(), _cg.Module);
                                 nextfield.EmitLoadAddress(_cg.Builder);
                             }
 
                             // Template: .<Field> = <Value>
-                            var valuefield = new FieldPlace_Raw((FieldSymbol)element.ValueType.GetMembers(pair.Key).Single(), _cg.Module);
+                            var valuefield = new FieldPlace_Raw((FieldSymbol)element.Type.GetMembers(pair.Key).Single(), _cg.Module);
                             valuefield.EmitStorePrepare(_cg.Builder);
                             if (pair.Value is BoundExpression valueexpr) _cg.EmitConvert(valueexpr, valuefield.Type);
                             else if (pair.Value is BoundVariableName nameexpr) _cg.EmitConvert(nameexpr.EmitVariableName(_cg), 0, valuefield.Type);
@@ -322,7 +328,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 _cg.Builder.EmitLocalLoad(chaintmp);
 
                 //
-                return runtimeChain.ValueType;
+                return runtimeChain.Type;
             }
 
             bool TryConstructRuntimeChainElement(BoundExpression expr, out RuntimeChainElement runtimeChainElement)
@@ -336,21 +342,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return false;
                 }
 
-                //
-                //if (expr is BoundFieldRef fieldref &&
-                //    fieldref.IsInstanceField &&
-                //    ((Microsoft.CodeAnalysis.Operations.IFieldReferenceOperation)fieldref).Field == null)
-                //{
-                //    runtimeChainElement = new RuntimeChainElement
-                //    {
-                //        ValueType = _cg.CoreTypes.RuntimeChain_Property_T,
-                //        Fields = new List<KeyValuePair<string, BoundOperation>>(1)
-                //        {
-                //            new KeyValuePair<string, BoundOperation>("Name", fieldref.FieldName)
-                //        },
-                //        Parent = fieldref.Instance,
-                //    };
-                //}
+                // $$->{field}
+                // should be a not resolved field reference (dynamic), otherwise it's unnecessary
+                if (expr is BoundFieldRef fieldref &&
+                    fieldref.IsInstanceField &&
+                    ((Microsoft.CodeAnalysis.Operations.IFieldReferenceOperation)fieldref).Field == null)
+                {
+                    runtimeChainElement = new RuntimeChainElement
+                    {
+                        Type = _cg.CoreTypes.RuntimeChain_Property_T,
+                        Fields = new List<KeyValuePair<string, BoundOperation>>(1)
+                        {
+                            new KeyValuePair<string, BoundOperation>("Name", fieldref.FieldName)
+                        },
+                        Parent = fieldref.Instance,
+                    };
+                }
 
                 // TODO: 1/ ArrayItem, ArrayNewItem,
                 // TODO: 2/ StaticProperty, ClassConstant
