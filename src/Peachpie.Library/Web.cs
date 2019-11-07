@@ -158,7 +158,18 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_url(string url)
         {
-            var match = ParseUrlMethods.ParseUrlRegEx.Match(url ?? string.Empty);
+            url ??= string.Empty;
+
+            if (url.Length == 0)
+            {
+                // empty URL results in following array to be returned:
+                return new PhpArray(1)
+                {
+                    { "path", string.Empty },
+                };
+            }
+
+            var match = ParseUrlMethods.ParseUrlRegEx.Match(url);
 
             if (match == null || !match.Success || match.Groups["port"].Value.Length > 5)   // not matching or port number too long
             {
@@ -222,19 +233,19 @@ namespace Pchp.Library
                 return null;
             }
 
-            PhpArray result = new PhpArray(8);
+            var result = new PhpArray(8);
 
             const char neutralChar = '_';
 
             // store segments into the array (same order as it is in PHP)
-            if (scheme != null) result["scheme"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(scheme, neutralChar);
-            if (host != null) result["host"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(host, neutralChar);
-            if (port != null) result["port"] = (PhpValue)port_int;
-            if (user != null) result["user"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(user, neutralChar);
-            if (pass != null) result["pass"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(pass, neutralChar);
-            if (path != null) result["path"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(path, neutralChar);
-            if (query != null) result["query"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(query, neutralChar);
-            if (fragment != null) result["fragment"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(fragment, neutralChar);
+            if (scheme != null) result["scheme"] = ParseUrlMethods.ReplaceControlCharset(scheme, neutralChar);
+            if (host != null) result["host"] = ParseUrlMethods.ReplaceControlCharset(host, neutralChar);
+            if (port != null) result["port"] = port_int;
+            if (user != null) result["user"] = ParseUrlMethods.ReplaceControlCharset(user, neutralChar);
+            if (pass != null) result["pass"] = ParseUrlMethods.ReplaceControlCharset(pass, neutralChar);
+            if (path != null) result["path"] = ParseUrlMethods.ReplaceControlCharset(path, neutralChar);
+            if (query != null) result["query"] = ParseUrlMethods.ReplaceControlCharset(query, neutralChar);
+            if (fragment != null) result["fragment"] = ParseUrlMethods.ReplaceControlCharset(fragment, neutralChar);
 
             return result;
         }
@@ -248,30 +259,41 @@ namespace Pchp.Library
 		/// or <c>{schema}:{path}?{query}#{fragment}</c>.
 		/// </param>
         /// <param name="component">Specify one of PHP_URL_SCHEME, PHP_URL_HOST, PHP_URL_PORT, PHP_URL_USER, PHP_URL_PASS, PHP_URL_PATH, PHP_URL_QUERY or PHP_URL_FRAGMENT to retrieve just a specific URL component as a string (except when PHP_URL_PORT is given, in which case the return value will be an integer).</param>
-		public static string parse_url(string url, int component)
+        /// <returns>The URL component or <c>NULL</c> if the requested component is not parsed.</returns>
+		public static PhpValue parse_url(string url, int component)
         {
+            var item = PhpValue.Null;
+
             var array = parse_url(url);
             if (array != null)
             {
-                switch (component)
+                if (component < 0)
                 {
-                    case PHP_URL_FRAGMENT: return array["fragment"].AsString();
-                    case PHP_URL_HOST: return array["host"].AsString();
-                    case PHP_URL_PASS: return array["pass"].AsString();
-                    case PHP_URL_PATH: return array["path"].AsString();
-                    case PHP_URL_PORT: return array["port"].AsString(); // might be null
-                    case PHP_URL_QUERY: return array["query"].AsString();
-                    case PHP_URL_SCHEME: return array["scheme"].AsString();
-                    case PHP_URL_USER: return array["user"].AsString();
+                    // negative {component} results in the whole array to be returned
+                    item = array;
+                }
+                else
+                {
+                    switch (component)
+                    {
+                        case PHP_URL_FRAGMENT: item = array["fragment"]; break;
+                        case PHP_URL_HOST: item = array["host"]; break;
+                        case PHP_URL_PASS: item = array["pass"]; break;
+                        case PHP_URL_PATH: item = array["path"]; break;
+                        case PHP_URL_PORT: item = array["port"]; break;
+                        case PHP_URL_QUERY: item = array["query"]; break;
+                        case PHP_URL_SCHEME: item = array["scheme"]; break;
+                        case PHP_URL_USER: item = array["user"]; break;
 
-                    default:
-                        //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_invalid_value", "component", component));                        
-                        throw new ArgumentException(nameof(component));
+                        default:
+                            //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_invalid_value", "component", component));                        
+                            throw new ArgumentException(nameof(component));
+                    }
                 }
             }
 
             //
-            return null;
+            return item;
         }
 
         /// <summary>
