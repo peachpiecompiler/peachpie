@@ -66,5 +66,34 @@ namespace Peachpie.Runtime.Tests
             result = chain1.GetValue(alias, _context, null);
             Assert.AreEqual(result.ToLong(), 123);
         }
+
+        [TestMethod]
+        public void TestArrayItem()
+        {
+            var value = new PhpArray() { 666 };
+
+            // Construct the chain:
+            // (array)[0]
+
+            var chain1 = new Value<ArrayItem<ChainEnd>>();
+            chain1.Next.Key = 0;
+
+            //
+            // READ
+
+            var result = chain1.GetValue(value, _context, null);
+            Assert.AreEqual(result.ToLong(), 666);
+
+            // ENSURE $$[0] = 666
+
+            var alias = (PhpValue)new PhpAlias(PhpValue.Null);
+            var itemref = chain1.GetAlias(ref alias, _context, null);
+            itemref.Value = 666;
+
+            //
+            Assert.IsNotNull(alias.Object);
+            result = chain1.GetValue(alias, _context, null);
+            Assert.AreEqual(result.ToLong(), 666);
+        }
     }
 }

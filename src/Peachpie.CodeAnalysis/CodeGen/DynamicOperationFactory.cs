@@ -205,7 +205,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // construct the runtime chain if possible:
                     while (TryConstructRuntimeChainElement(expr, out var element))
                     {
-                        element.Next = runtimeChain ?? new RuntimeChainElement { Type = _cg.CoreTypes.RuntimeChain_ChainEnd, };
+                        element.Next = runtimeChain ?? new RuntimeChainElement(_cg.CoreTypes.RuntimeChain_ChainEnd);
                         if (element.Type.Arity == 1)
                         {
                             // construct Element<TNext> // TNext:typeof(element.Next)
@@ -276,16 +276,24 @@ namespace Pchp.CodeAnalysis.CodeGen
             sealed class RuntimeChainElement
             {
                 /// <summary>Chain runtime element.</summary>
-                public NamedTypeSymbol Type;
+                public NamedTypeSymbol Type { get; set; }
+
+                /// <summary>Chain's member of.</summary>
+                public BoundExpression Parent { get; }
 
                 /// <summary>Optional properties of the chain element.</summary>
                 public List<KeyValuePair<string, BoundOperation>> Fields;
 
-                /// <summary>Chain's member of.</summary>
-                public BoundExpression Parent;
-
                 /// <summary>Chain's next element.</summary>
                 public RuntimeChainElement Next;
+
+                public RuntimeChainElement(NamedTypeSymbol type, BoundExpression parent = null)
+                {
+                    this.Type = type ?? throw new ArgumentNullException(nameof(type));
+                    this.Parent = parent;
+
+                    Debug.Assert(type.IsValueType);
+                }
             }
 
             TypeSymbol EmitRuntimeChain(RuntimeChainElement runtimeChain)
@@ -342,25 +350,43 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return false;
                 }
 
-                // $$->{field}
+                // 1/ $$->{field}
                 // should be a not resolved field reference (dynamic), otherwise it's unnecessary
                 if (expr is BoundFieldRef fieldref &&
                     fieldref.IsInstanceField &&
                     ((Microsoft.CodeAnalysis.Operations.IFieldReferenceOperation)fieldref).Field == null)
                 {
-                    runtimeChainElement = new RuntimeChainElement
+                    runtimeChainElement = new RuntimeChainElement(_cg.CoreTypes.RuntimeChain_Property_T, fieldref.Instance)
                     {
-                        Type = _cg.CoreTypes.RuntimeChain_Property_T,
                         Fields = new List<KeyValuePair<string, BoundOperation>>(1)
                         {
-                            new KeyValuePair<string, BoundOperation>("Name", fieldref.FieldName)
-                        },
-                        Parent = fieldref.Instance,
+                            new KeyValuePair<string, BoundOperation>("Name", fieldref.FieldName),
+                        }
                     };
                 }
 
-                // TODO: 1/ ArrayItem, ArrayNewItem,
-                // TODO: 2/ StaticProperty, ClassConstant
+                // 2/ $$[Key], $$[]
+                if (expr is BoundArrayItemEx arritem)
+                {
+                    if (arritem.Index != null)
+                    {
+                        runtimeChainElement = new RuntimeChainElement(_cg.CoreTypes.RuntimeChain_ArrayItem_T, arritem.Array)
+                        {
+                            Fields = new List<KeyValuePair<string, BoundOperation>>(1)
+                            {
+                                new KeyValuePair<string, BoundOperation>("Key", arritem.Index),
+                            }
+                        };
+                    }
+                    else
+                    {
+                        runtimeChainElement = new RuntimeChainElement(_cg.CoreTypes.RuntimeChain_ArrayNewItem_T, arritem.Array)
+                        {
+                        };
+                    }
+                }
+
+                // TODO: 3/ StaticProperty, ClassConstant
 
                 //
                 return runtimeChainElement != null;
