@@ -183,54 +183,74 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <summary>Emits arguments to be passed to callsite.</summary>
             public void EmitArgs(ImmutableArray<BoundArgument> args)
             {
-                for (int i = 0; i < args.Length; i++)
+                foreach (var a in args)
                 {
-                    EmitArg(args[i]);
+                    EmitArg(a);
                 }
             }
 
             /// <summary>Emits argument to be passed to callsite.</summary>
-            public void EmitArg(BoundArgument a)
+            void EmitArg(BoundArgument a)
             {
+                var expr = a.Value;
+
                 if (a.IsUnpacking)
                 {
-                    EmitUnpackingParam(_cg.Emit(a.Value));
+                    EmitUnpackingParam(_cg.Emit(expr));
                 }
                 else
                 {
+                    RuntimeChainElement runtimeChain = null;
+
+                    // construct the runtime chain if possible:
+                    while (TryConstructRuntimeChainElement(expr, out var element))
+                    {
+                        element.Next = runtimeChain ?? new RuntimeChainElement { ValueType = _cg.CoreTypes.RuntimeChain_ChainEnd, };
+                        if (element.ValueType.Arity == 1)
+                        {
+                            // construct Element<TNext> // TNext:typeof(element.Next)
+                            element.ValueType = element.ValueType.Construct(element.Next.ValueType);
+                        }
+                        runtimeChain = element;
+
+                        Debug.Assert(runtimeChain.ValueType.IsValueType);
+
+                        //
+                        if (element.Parent == null)
+                        {
+                            break;
+                        }
+
+                        expr = element.Parent;
+                    }
+
+                    // emit the root of the chain:
                     TypeSymbol t = null;
                     bool byref = false;
 
-                    if (a.Value is BoundReferenceExpression varref && !varref.ConstantValue.HasValue)
+                    if (!expr.IsConstant() && expr is BoundReferenceExpression varref)
                     {
-                        // try read the value by ref,
-                        // we might need the value ref in the callsite:
-
-                        var bound = varref.BindPlace(_cg);
-                        if (bound is LocalVariableReference loc && !loc.IsOptimized)
+                        // try to read the value by ref so it can be changed if necessary
+                        var place = varref.Place();
+                        if (place != null)
                         {
-                            t = loc.LoadIndirectLocal(_cg); // IndirectLocal wrapper
-                        }
-                        else
-                        {
-                            var place = varref.Place();
-                            if (place != null && place.HasAddress && place.Type == _cg.CoreTypes.PhpValue)
+                            if (place.HasAddress && place.Type == _cg.CoreTypes.PhpValue)
                             {
                                 place.EmitLoadAddress(_cg.Builder);
-
                                 t = place.Type;
                                 byref = true;
                             }
-                            else
-                            {                                
-                                t = bound.EmitLoadValue(_cg, BoundAccess.Read); // just load by value if address cannot be loaded
-                            }
+                        }
+                        else if (varref.BindPlace(_cg) is LocalVariableReference loc && !loc.IsOptimized)
+                        {
+                            t = loc.LoadIndirectLocal(_cg); // IndirectLocal wrapper
                         }
                     }
 
                     if (t == null)
                     {
-                        t = _cg.Emit(a.Value);
+                        // load by value
+                        t = _cg.Emit(expr);
                     }
 
                     if (t.SpecialType == SpecialType.System_Void)
@@ -240,8 +260,103 @@ namespace Pchp.CodeAnalysis.CodeGen
                         t = _cg.Emit_PhpValue_Null();
                     }
 
+                    //
                     AddArg(t, byref: byref);
+
+                    // emit the chain eventually:
+                    // after the root of the chain, order matters!
+                    if (runtimeChain != null)
+                    {
+                        AddArg(EmitRuntimeChain(runtimeChain), byref: false);
+                    }
                 }
+            }
+
+            /// <summary>
+            /// Helper class describing an element of <c>Core.Dynamic.IRuntimeChain</c>.
+            /// </summary>
+            sealed class RuntimeChainElement
+            {
+                public NamedTypeSymbol ValueType;
+                public List<KeyValuePair<string, BoundOperation>> Fields;
+
+                public BoundExpression Parent;
+                public RuntimeChainElement Next;
+            }
+
+            TypeSymbol EmitRuntimeChain(RuntimeChainElement runtimeChain)
+            {
+                // create and initialize the chain struct
+                var chaintmp = _cg.GetTemporaryLocal(runtimeChain.ValueType, true);
+                _cg.Builder.EmitLocalAddress(chaintmp);
+                _cg.Builder.EmitOpCode(ILOpCode.Initobj);
+                _cg.Builder.EmitSymbolToken(_cg.Module, _cg.Diagnostics, runtimeChain.ValueType, null);
+
+                // fill in the fields
+                for (var element = runtimeChain; element != null; element = element.Next)
+                {
+                    if (element.Fields != null)
+                    {
+                        foreach (var pair in element.Fields)
+                        {
+                            // Template: ADDR chain.Next.Next
+                            _cg.Builder.EmitLocalAddress(chaintmp);
+                            for (var x = runtimeChain; x != element; x = x.Next)
+                            {
+                                var nextfield = new FieldPlace_Raw((FieldSymbol)x.ValueType.GetMembers("Next").Single(), _cg.Module);
+                                nextfield.EmitLoadAddress(_cg.Builder);
+                            }
+
+                            // Template: .<Field> = <Value>
+                            var valuefield = new FieldPlace_Raw((FieldSymbol)element.ValueType.GetMembers(pair.Key).Single(), _cg.Module);
+                            valuefield.EmitStorePrepare(_cg.Builder);
+                            if (pair.Value is BoundExpression valueexpr) _cg.EmitConvert(valueexpr, valuefield.Type);
+                            else if (pair.Value is BoundVariableName nameexpr) _cg.EmitConvert(nameexpr.EmitVariableName(_cg), 0, valuefield.Type);
+                            else throw Peachpie.CodeAnalysis.Utilities.ExceptionUtilities.UnexpectedValue(pair.Value);
+                            valuefield.EmitStore(_cg.Builder);
+                        }
+                    }
+                }
+
+                //
+                _cg.Builder.EmitLocalLoad(chaintmp);
+
+                //
+                return runtimeChain.ValueType;
+            }
+
+            bool TryConstructRuntimeChainElement(BoundExpression expr, out RuntimeChainElement runtimeChainElement)
+            {
+                Debug.Assert(expr != null);
+
+                runtimeChainElement = null;
+
+                if (expr.IsConstant())
+                {
+                    return false;
+                }
+
+                //
+                //if (expr is BoundFieldRef fieldref &&
+                //    fieldref.IsInstanceField &&
+                //    ((Microsoft.CodeAnalysis.Operations.IFieldReferenceOperation)fieldref).Field == null)
+                //{
+                //    runtimeChainElement = new RuntimeChainElement
+                //    {
+                //        ValueType = _cg.CoreTypes.RuntimeChain_Property_T,
+                //        Fields = new List<KeyValuePair<string, BoundOperation>>(1)
+                //        {
+                //            new KeyValuePair<string, BoundOperation>("Name", fieldref.FieldName)
+                //        },
+                //        Parent = fieldref.Instance,
+                //    };
+                //}
+
+                // TODO: 1/ ArrayItem, ArrayNewItem,
+                // TODO: 2/ StaticProperty, ClassConstant
+
+                //
+                return runtimeChainElement != null;
             }
 
             /// <summary>Emits new instance of wrapper with value. Returns wrapper.</summary>
