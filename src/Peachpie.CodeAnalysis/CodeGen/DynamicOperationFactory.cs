@@ -265,7 +265,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // after the root of the chain, order matters!
                     if (runtimeChain != null)
                     {
-                        AddArg(EmitRuntimeChain(runtimeChain), byref: false);
+                        AddArg(runtimeChain.EmitRuntimeChain(_cg), byref: false);
                     }
                 }
             }
@@ -294,49 +294,53 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     Debug.Assert(type.IsValueType);
                 }
-            }
 
-            TypeSymbol EmitRuntimeChain(RuntimeChainElement runtimeChain)
-            {
-                // create and initialize the chain struct
-                var chaintmp = _cg.GetTemporaryLocal(runtimeChain.Type, true);
-                _cg.Builder.EmitLocalAddress(chaintmp);
-                _cg.Builder.EmitOpCode(ILOpCode.Initobj);
-                _cg.Builder.EmitSymbolToken(_cg.Module, _cg.Diagnostics, runtimeChain.Type, null);
-
-                // fill in the fields
-                for (var element = runtimeChain; element != null; element = element.Next)
+                /// <summary>
+                /// Emit runtime chain.
+                /// </summary>
+                /// <returns>Runtime chain value type pushed on top of the stack.</returns>
+                public TypeSymbol EmitRuntimeChain(CodeGenerator cg)
                 {
-                    Debug.Assert(element.Type.IsValueType);
+                    // create and initialize the chain struct
+                    var chaintmp = cg.GetTemporaryLocal(this.Type, true);
+                    cg.Builder.EmitLocalAddress(chaintmp);
+                    cg.Builder.EmitOpCode(ILOpCode.Initobj);
+                    cg.Builder.EmitSymbolToken(cg.Module, cg.Diagnostics, this.Type, null);
 
-                    if (element.Fields != null)
+                    // fill in the fields
+                    for (var element = this; element != null; element = element.Next)
                     {
-                        foreach (var pair in element.Fields)
-                        {
-                            // Template: ADDR chain.Next[.Next]
-                            _cg.Builder.EmitLocalAddress(chaintmp);
-                            for (var x = runtimeChain; x != element; x = x.Next)
-                            {
-                                var nextfield = new FieldPlace_Raw((FieldSymbol)x.Type.GetMembers("Next").Single(), _cg.Module);
-                                nextfield.EmitLoadAddress(_cg.Builder);
-                            }
+                        Debug.Assert(element.Type.IsValueType);
 
-                            // Template: .<Field> = <Value>
-                            var valuefield = new FieldPlace_Raw((FieldSymbol)element.Type.GetMembers(pair.Key).Single(), _cg.Module);
-                            valuefield.EmitStorePrepare(_cg.Builder);
-                            if (pair.Value is BoundExpression valueexpr) _cg.EmitConvert(valueexpr, valuefield.Type);
-                            else if (pair.Value is BoundVariableName nameexpr) _cg.EmitConvert(nameexpr.EmitVariableName(_cg), 0, valuefield.Type);
-                            else throw Peachpie.CodeAnalysis.Utilities.ExceptionUtilities.UnexpectedValue(pair.Value);
-                            valuefield.EmitStore(_cg.Builder);
+                        if (element.Fields != null)
+                        {
+                            foreach (var pair in element.Fields)
+                            {
+                                // Template: ADDR chain.Next[.Next]
+                                cg.Builder.EmitLocalAddress(chaintmp);
+                                for (var x = this; x != element; x = x.Next)
+                                {
+                                    var nextfield = new FieldPlace_Raw((FieldSymbol)x.Type.GetMembers("Next").Single(), cg.Module);
+                                    nextfield.EmitLoadAddress(cg.Builder);
+                                }
+
+                                // Template: .<Field> = <Value>
+                                var valuefield = new FieldPlace_Raw((FieldSymbol)element.Type.GetMembers(pair.Key).Single(), cg.Module);
+                                valuefield.EmitStorePrepare(cg.Builder);
+                                if (pair.Value is BoundExpression valueexpr) cg.EmitConvert(valueexpr, valuefield.Type);
+                                else if (pair.Value is BoundVariableName nameexpr) cg.EmitConvert(nameexpr.EmitVariableName(cg), 0, valuefield.Type);
+                                else throw Peachpie.CodeAnalysis.Utilities.ExceptionUtilities.UnexpectedValue(pair.Value);
+                                valuefield.EmitStore(cg.Builder);
+                            }
                         }
                     }
+
+                    //
+                    cg.Builder.EmitLocalLoad(chaintmp);
+
+                    //
+                    return this.Type;
                 }
-
-                //
-                _cg.Builder.EmitLocalLoad(chaintmp);
-
-                //
-                return runtimeChain.Type;
             }
 
             bool TryConstructRuntimeChainElement(BoundExpression expr, out RuntimeChainElement runtimeChainElement)
