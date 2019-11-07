@@ -119,7 +119,7 @@ namespace Pchp.Core.Dynamic
         public static class IndirectLocal
         {
             public static readonly PropertyInfo Value = Types.IndirectLocal.GetProperty("Value");
-            public static readonly PropertyInfo ValueRef = Types.IndirectLocal.GetProperty("ValueRef");
+            //public static readonly PropertyInfo ValueRef = Types.IndirectLocal.GetProperty("ValueRef", BindingFlags.NonPublic | BindingFlags.Instance);
             public static readonly MethodInfo EnsureAlias = Types.IndirectLocal.GetMethod("EnsureAlias");
         }
 

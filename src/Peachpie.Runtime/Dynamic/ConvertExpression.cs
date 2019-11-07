@@ -449,7 +449,7 @@ namespace Pchp.Core.Dynamic
 
         public static Expression BindToValue(Expression expr)
         {
-            // knmown constants:
+            // known constants:
             if (expr is ConstantExpression ce)
             {
                 if (ce.Value == null)
