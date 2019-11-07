@@ -657,11 +657,11 @@ namespace Pchp.Core.Dynamic
                     if (srcarg > 0 && srcarg < args.Length) // [0] is never IRuntimeChain
                     {
                         // skip RuntimeChain's
-                        for (int i = 1; i <= srcarg; i++)
+                        for (int i = 1; i <= srcarg && i < args.Length; i++)
                         {
                             if (BinderHelpers.IsRuntimeChain(args[i].Type))
                             {
-                                srcarg++;
+                                ++srcarg;
                             }
                         }
                     }
