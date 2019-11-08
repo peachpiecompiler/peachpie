@@ -341,4 +341,8 @@
   <data name="ERR_DefaultParameterValueTypeMismatch" xml:space="preserve">
     <value>Default value for parameter ${0} with a {1} type can only be {1} or NULL, {2} type given</value>
   </data>
+  <data name="ERR_InvalidConstantExpression" xml:space="preserve">
+    <value>Constant expression contains invalid operations</value>
+    <comment>field or parameter initializer contains invalid expression</comment>
+  </data>
 </root>

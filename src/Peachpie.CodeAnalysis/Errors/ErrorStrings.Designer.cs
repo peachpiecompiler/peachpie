@@ -232,6 +232,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Constant expression contains invalid operations.
+        /// </summary>
+        internal static string ERR_InvalidConstantExpression {
+            get {
+                return ResourceManager.GetString("ERR_InvalidConstantExpression", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unable to read debug information of method &apos;{0}&apos; (token 0x{1:X8}) from assembly &apos;{2}&apos;.
         /// </summary>
         internal static string ERR_InvalidDebugInfo {

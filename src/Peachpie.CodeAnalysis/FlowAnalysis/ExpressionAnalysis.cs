@@ -325,6 +325,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Debug.Assert(local.IsValid);
 
+            if (Routine == null)
+            {
+                // invalid use of variable:
+                return;
+            }
+
             var previoustype = State.GetLocalType(local);       // type of the variable in the previous state
 
             // remember the initial state of variable at this point

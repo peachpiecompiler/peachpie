@@ -1002,7 +1002,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         IEnumerable<FieldSymbol> LoadFields()
         {
-            var binder = new SemanticsBinder(DeclaringCompilation, locals: null, routine: null, self: this);
+            var binder = new SemanticsBinder(DeclaringCompilation, ContainingFile.SyntaxTree, locals: null, routine: null, self: this);
 
             // fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())

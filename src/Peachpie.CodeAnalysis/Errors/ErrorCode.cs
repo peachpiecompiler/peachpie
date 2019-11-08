@@ -137,6 +137,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_NoMatchingOverload,
         /// <summary>Default value for parameter ${0} with a {1} type can only be {1} or NULL, {2} given</summary>
         ERR_DefaultParameterValueTypeMismatch,
+        /// <summary>Constant expression contains invalid operations</summary>
+        ERR_InvalidConstantExpression,
 
         //
         // Warnings

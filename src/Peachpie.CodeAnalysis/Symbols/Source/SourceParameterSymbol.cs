@@ -111,7 +111,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _relindex = relindex;
             _ptagOpt = ptagOpt;
             _initializer = (syntax.InitValue != null)
-                ? new SemanticsBinder(DeclaringCompilation, locals: null, routine: routine, self: routine.ContainingType as SourceTypeSymbol)
+                ? new SemanticsBinder(DeclaringCompilation, routine.ContainingFile.SyntaxTree, locals: null, routine: null, self: routine.ContainingType as SourceTypeSymbol)
                     .BindWholeExpression(syntax.InitValue, BoundAccess.Read)
                     .SingleBoundElement()
                 : null;
