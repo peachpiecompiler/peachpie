@@ -492,14 +492,20 @@ namespace Pchp.Core.Dynamic
                         DefaultValueAttribute defaultValueAttr = null;
 
                         // create specialized variable with default value
-                        if (targetparam.HasDefaultValue) // || (defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>()) != null)
+                        if (targetparam.HasDefaultValue || (defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>()) != null)
                         {
-                            var @default = targetparam.DefaultValue;
-                            var defaultValueExpr = Expression.Constant(@default);
-                            var defaultValueStr = @default != null ? @default.ToString() : "NULL";
+                            // just for debugging purposes:
+                            var defaultValueStr = defaultValueAttr != null
+                                ? defaultValueAttr.FieldName
+                                : targetparam.DefaultValue?.ToString() ?? "NULL";
 
+                            // the default value expression
+                            var defaultValueExpr = defaultValueAttr != null
+                                ? BindDefaultValue(targetparam.Member.DeclaringType, defaultValueAttr)
+                                : Expression.Constant(targetparam.DefaultValue);
+                            
                             //
-                            var key2 = new TmpVarKey() { Priority = 1 /*after key*/, ArgIndex = srcarg, Prefix = "arg(" + defaultValueStr + ")" };
+                            var key2 = new TmpVarKey() { Priority = 1 /*after key*/, ArgIndex = srcarg, Prefix = "default(" + defaultValueStr + ")" };
                             TmpVarValue value2;
                             if (!_tmpvars.TryGetValue(key2, out value2))
                             {
@@ -507,21 +513,13 @@ namespace Pchp.Core.Dynamic
 
                                 value2.TrueInitializer = ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);   // reuse the value already obtained from argv
                                 value2.FalseInitializer = ConvertExpression.Bind(defaultValueExpr, value2.TrueInitializer.Type, _ctx); // ~ default(targetparam)
-                                value2.Expression = Expression.Variable(value2.TrueInitializer.Type, "arg_" + srcarg + "_" + defaultValueStr);
+                                value2.Expression = Expression.Variable(value2.TrueInitializer.Type, "default_" + srcarg + "_" + defaultValueStr);
 
                                 //
                                 _tmpvars[key2] = value2;
                             }
 
                             return value2.Expression;   // already converted to targetparam.ParameterType
-                        }
-                        else
-                        {
-                            defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>();
-                            if (defaultValueAttr != null)
-                            {
-                                return ConvertExpression.Bind(BindDefaultValue(targetparam.Member.DeclaringType, defaultValueAttr), targetparam.ParameterType, _ctx);
-                            }
                         }
                     }
 
