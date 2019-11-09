@@ -972,7 +972,7 @@ namespace Pchp.CodeAnalysis.Semantics
                             Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_CannotAssignToThis);
 
                         // $this is only valid in global code and instance methods:
-                        if (Routine != null && Routine.IsStatic && !Routine.IsGlobalScope)
+                        if (Routine != null && Routine.IsStatic && !Routine.IsGlobalScope && !(Routine is SourceLambdaSymbol lambda && lambda.UseThis))
                         {
                             // WARN:
                             Diagnostics.Add(DiagnosticBagExtensions.ParserDiagnostic(ContainingFile, expr.Span, Devsense.PHP.Errors.Warnings.ThisOutOfMethod));

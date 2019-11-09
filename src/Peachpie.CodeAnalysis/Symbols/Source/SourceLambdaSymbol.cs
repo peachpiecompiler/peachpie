@@ -15,12 +15,11 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly NamedTypeSymbol _container;
         readonly LambdaFunctionExpr _syntax;
-        readonly bool _useThis;
 
         /// <summary>
         /// Whether <c>$this</c> is pased to the routine (non static lambda).
         /// </summary>
-        internal bool UseThis => _useThis;
+        internal bool UseThis { get; }
 
         FieldSymbol _lazyRoutineInfoField;    // internal static RoutineInfo !name;
 
@@ -28,7 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             _container = containing;
             _syntax = syntax;
-            _useThis = useThis;
+            UseThis = useThis;
         }
 
         /// <summary>
