@@ -2977,8 +2977,16 @@ namespace Pchp.Library
         {
             if (string.IsNullOrEmpty(salt))
             {
-                // MD5
-                PhpException.ArgumentValueNotSupported(nameof(salt), salt);
+                // Generate salt whit MD5
+                byte[] generatedSalt = new byte[12];
+
+                RandomGenerator.GetBytes(generatedSalt);
+                To64(generatedSalt, generatedSalt.Length);
+
+                generatedSalt[0] = generatedSalt[2] = generatedSalt[11] = (byte)'$';
+                generatedSalt[1] = (byte)'1';
+
+                salt = ConvertByteArrayToString(generatedSalt);
             }
 
             if (salt.Length >= 3)
@@ -3050,6 +3058,22 @@ namespace Pchp.Library
             {
                 hash[s++] = (byte)itoa64[v & 0x3f];
                 v >>= 6;
+            }
+        }
+
+        /// <summary>
+        /// Intern funcion of php to map hash symbols to itoa64 set.
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="s">Position, where mapping starts.</param>
+        /// <param name="n">Length of mapping sequence.</param>
+        static void To64(byte[] hash, int n)
+        {
+            int s = 0;
+            while (--n >= 0)
+            {
+                hash[s] = (byte)itoa64[hash[s] & 0x3f];
+                s++;
             }
         }
 
@@ -3154,7 +3178,7 @@ namespace Pchp.Library
             l = (final[4] << 16) | (final[10] << 8) | final[5];  To64(output, length, l, 4); length += 4;
             l = final[11];   To64(output, length, l, 2); length += 2;
 
-            return ConvertByteArrayToString(output.Take(length - 1).ToArray());
+            return ConvertByteArrayToString(output.Take(length).ToArray());
         }
        
         #endregion
