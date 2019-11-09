@@ -2818,12 +2818,12 @@ namespace Pchp.Library
         /// <summary>
         /// Verifies that a password matches a hash.
         /// </summary>
-        public static bool password_verify(string password, string hash)
+        public static bool password_verify(Context ctx, string password, string hash)
         {
             if (string.IsNullOrEmpty(hash))
                 return false;
             else
-                return hash.StartsWith("$argon2i") ? Argon2.Verify(hash, password) : crypt(password, hash) == hash;
+                return hash.StartsWith("$argon2i") ? Argon2.Verify(hash, password) : crypt(ctx, password, hash) == hash;
         }
 
         readonly static Regex s_expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2i)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -2973,7 +2973,7 @@ namespace Pchp.Library
         /// One-way string hashing.
         /// </summary>
         /// <returns>Returns the hashed string or a string that is shorter than 13 characters and is guaranteed to differ from the salt on failure.</returns>
-        public static string crypt(string str, string salt/* mandatory since 5.6 */)
+        public static string crypt(Context ctxPchp, string str, string salt/* mandatory since 5.6 */)
         {
             if (string.IsNullOrEmpty(salt))
             {
@@ -2990,7 +2990,7 @@ namespace Pchp.Library
                         if (salt[1] == '1') // $1$
                         {
                             // MD5
-                            PhpException.ArgumentValueNotSupported(nameof(salt), "$1$");
+                            return CryptMD5Helper(ctxPchp, str, salt);
                         }
 
                         if (salt[1] == '5') // $5$
@@ -3031,6 +3031,132 @@ namespace Pchp.Library
             return salt.StartsWith("*0") ? "*1" : "*0";
         }
 
+        const int MD5MaxLength = 120;
+        const string MD5Name = "md5";
+        const string MD5Magic = "$1$";
+        const string itoa64 =     /* 0 ... 63 => ascii - 64 */
+        "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+        /// <summary>
+        /// Intern funcion of php to map hash symbols to itoa64 set.
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="s">Position, where mapping starts.</param>
+        /// <param name="v"></param>
+        /// <param name="n">Length of mapping sequence.</param>
+        static void To64(byte[] hash, int s, int v, int n)
+        {
+            while (--n >= 0)
+            {
+                hash[s++] = (byte)itoa64[v & 0x3f];
+                v >>= 6;
+            }
+        }
+
+        private static string ConvertByteArrayToString(byte[] buffer)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (byte value in buffer)
+            {
+                builder.Append((char)value);
+            }
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Part of cypt function in php. 
+        /// </summary>
+        private static string CryptMD5Helper(Context ctxPchp, string password, string salt)
+        {
+            int indexOfSaltBegin =0;
+            int indexOfSaltEnd = 0;
+
+            if (salt.StartsWith(MD5Magic))
+                indexOfSaltBegin  = 3;
+
+            for (indexOfSaltEnd = 0; indexOfSaltEnd < salt.Length && indexOfSaltEnd < 8 && salt[indexOfSaltEnd + indexOfSaltBegin ] != '$'; indexOfSaltEnd++);
+
+            byte[] saltInBytes = Encoding.ASCII.GetBytes(salt.ToCharArray(), indexOfSaltBegin ,indexOfSaltEnd);
+            byte[] passwd = Encoding.ASCII.GetBytes(password);
+            byte[] magic = Encoding.ASCII.GetBytes(MD5Magic);
+
+            var md5 = new HashPhpResource.MD5();
+
+            md5.Init();
+
+            md5.Update(passwd);
+
+            md5.Update(magic);
+
+            md5.Update(saltInBytes);
+
+            var md5_1= new HashPhpResource.MD5();
+
+            md5_1.Init();
+
+            md5_1.Update(passwd);
+           
+            md5_1.Update(saltInBytes);
+            
+            md5_1.Update(passwd);
+
+            byte[] final = md5_1.Final();
+           
+            for (int i = passwd.Length; i > 0; i -= 16)
+                md5.Update( i > 16 ? final : final.Take(i).ToArray());
+
+            for (int i = passwd.Length; i!=0; i >>= 1)
+            {
+                if ((i & 1) != 0)
+                    md5.Update(new byte[1] { 0 });
+                else 
+                    md5.Update(new byte[1] { passwd[0] });
+            }
+
+            byte[] output = new byte[MD5MaxLength];
+            Array.Copy(magic, 0, output, 0, magic.Length);
+            Array.Copy(saltInBytes, 0, output, magic.Length, saltInBytes.Length);
+            output[magic.Length + saltInBytes.Length] = (byte)'$';
+
+            final = md5.Final();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                md5_1 = new HashPhpResource.MD5();
+                md5_1.Init();
+
+                if ((i & 1) != 0)
+                    md5_1.Update(passwd);
+                else
+                    md5_1.Update(final);
+
+                if ((i % 3) != 0)
+                    md5_1.Update(saltInBytes);
+
+                if ((i % 7) != 0)
+                    md5_1.Update(passwd);
+
+                if ((i & 1) != 0)
+                    md5_1.Update(final);
+                else
+                    md5_1.Update(passwd);
+
+                final = md5_1.Final();
+            }
+
+            int length = magic.Length + saltInBytes.Length + 1;
+
+            int l;
+            l = (final[0] << 16) | (final[6] << 8) | final[12];  To64(output, length, l, 4); length += 4;
+            l = (final[1] << 16) | (final[7] << 8) | final[13];  To64(output, length, l, 4); length += 4;
+            l = (final[2] << 16) | (final[8] << 8) | final[14];  To64(output, length, l, 4); length += 4;
+            l = (final[3] << 16) | (final[9] << 8) | final[15];  To64(output, length, l, 4); length += 4;
+            l = (final[4] << 16) | (final[10] << 8) | final[5];  To64(output, length, l, 4); length += 4;
+            l = final[11];   To64(output, length, l, 2); length += 2;
+
+            return ConvertByteArrayToString(output.Take(length - 1).ToArray());
+        }
+       
         #endregion
     }
 }
