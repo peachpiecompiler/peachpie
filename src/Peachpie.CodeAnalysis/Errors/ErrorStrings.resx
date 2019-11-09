@@ -345,4 +345,7 @@
     <value>Constant expression contains invalid operations</value>
     <comment>field or parameter initializer contains invalid expression</comment>
   </data>
+  <data name="ERR_ThisOutOfObjectContext" xml:space="preserve">
+    <value>Using $this when not in object context</value>
+  </data>
 </root>

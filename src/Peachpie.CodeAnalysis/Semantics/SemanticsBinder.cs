@@ -264,7 +264,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (unpacking)
                     {
                         // https://wiki.php.net/rfc/argument_unpacking
-                        Diagnostics.Add(Routine, p, Errors.ErrorCode.ERR_PositionalArgAfterUnpacking);
+                        Diagnostics.Add(GetLocation(p), Errors.ErrorCode.ERR_PositionalArgAfterUnpacking);
                     }
                 }
             }
@@ -283,6 +283,8 @@ namespace Pchp.CodeAnalysis.Semantics
             .Select(BoundArgument.Create)
             .ToImmutableArray();
         }
+
+        protected Location GetLocation(AST.ILangElement expr) => ContainingFile.GetLocation(expr);
 
         #endregion
 
@@ -307,7 +309,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement();
 
             //
-            Diagnostics.Add(Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
+            Diagnostics.Add(GetLocation(stmt), Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
             return new BoundEmptyStatement(stmt.Span.ToTextSpan());
         }
 
@@ -480,7 +482,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ShellEx) return BindShellEx((AST.ShellEx)expr).WithAccess(access);
 
             //
-            Diagnostics.Add(Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
+            Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
             return new BoundLiteral(null);
         }
 
@@ -955,14 +957,29 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (Routine == null)
                 {
                     // cannot use variables in field initializer or parameter initializer
-                    Diagnostics.Add(new SourceLocation(ContainingFile, expr.Span.ToTextSpan()), Errors.ErrorCode.ERR_InvalidConstantExpression);
+                    Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_InvalidConstantExpression);
                 }
-                
+
                 if (varname.IsDirect)
                 {
-                    // $this is read-only
-                    if (access.IsEnsure && varname.NameValue.IsThisVariableName)
-                        access = BoundAccess.Read;
+                    if (varname.NameValue.IsThisVariableName)
+                    {
+                        // $this is read-only
+                        if (access.IsEnsure)
+                            access = BoundAccess.Read;
+
+                        if (access.IsWrite || access.IsUnset)
+                            Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_CannotAssignToThis);
+
+                        // $this is only valid in global code and instance methods:
+                        if (Routine != null && Routine.IsStatic && !Routine.IsGlobalScope)
+                        {
+                            // WARN:
+                            Diagnostics.Add(DiagnosticBagExtensions.ParserDiagnostic(ContainingFile, expr.Span, Devsense.PHP.Errors.Warnings.ThisOutOfMethod));
+                            // ERR: // NOTE: causes a lot of project to not compile // CONSIDER: uncomment
+                            // Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_ThisOutOfObjectContext);
+                        }
+                    }
                 }
                 else
                 {

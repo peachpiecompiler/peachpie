@@ -430,6 +430,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Using $this when not in object context.
+        /// </summary>
+        internal static string ERR_ThisOutOfObjectContext {
+            get {
+                return ResourceManager.GetString("ERR_ThisOutOfObjectContext", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Combined length of user strings used by the program exceeds allowed limit. Try to decrease use of string literals..
         /// </summary>
         internal static string ERR_TooManyUserStrings {

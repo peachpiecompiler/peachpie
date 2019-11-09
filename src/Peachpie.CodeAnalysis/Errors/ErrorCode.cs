@@ -139,6 +139,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_DefaultParameterValueTypeMismatch,
         /// <summary>Constant expression contains invalid operations</summary>
         ERR_InvalidConstantExpression,
+        /// <summary>Using $this when not in object context</summary>
+        ERR_ThisOutOfObjectContext,
 
         //
         // Warnings
