@@ -3010,7 +3010,7 @@ namespace Pchp.Library
                         if (salt[1] == '6') // $6$
                         {
                             // SHA512
-                            PhpException.ArgumentValueNotSupported(nameof(salt), "$6$");
+                            return CryptSHA512Helper(ctxPchp, str, salt);
                         }
                     }
                     if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
@@ -3038,6 +3038,18 @@ namespace Pchp.Library
             // failure
             return salt.StartsWith("*0") ? "*1" : "*0";
         }
+
+        private static string ConvertByteArrayToString(byte[] buffer)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (byte value in buffer)
+            {
+                builder.Append((char)value);
+            }
+            return builder.ToString().Trim('\0');
+        }
+
+        #region md5 hash in crypt function
 
         const int MD5MaxLength = 120;
         const string MD5Name = "md5";
@@ -3077,15 +3089,7 @@ namespace Pchp.Library
             }
         }
 
-        private static string ConvertByteArrayToString(byte[] buffer)
-        {
-            StringBuilder builder = new StringBuilder();
-            foreach (byte value in buffer)
-            {
-                builder.Append((char)value);
-            }
-            return builder.ToString();
-        }
+        
 
         /// <summary>
         /// Part of cypt function in php. 
@@ -3180,7 +3184,223 @@ namespace Pchp.Library
 
             return ConvertByteArrayToString(output.Take(length).ToArray());
         }
-       
+
+        #endregion
+
+        #region sha512 hash in crypt function
+
+        const string sha512RoundsPrefix = "rounds=";
+        const string sha512SaltPrefix = "$6$";
+        const int SALT_LEN_MAX = 16;
+        const int ROUNDS_DEFAULT = 5000;
+        const int ROUNDS_MIN = 1000;
+        const int ROUNDS_MAX = 999999999;
+        // Table with characters for base64 transformation.
+        const string b64t = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+        /// <summary>
+        /// Part of cypt function in php. 
+        /// </summary>
+        private static string CryptSHA512Helper(Context ctxPchp, string password, string salt)
+        {
+            int outputLength = sha512SaltPrefix.Length - 1 + sha512RoundsPrefix.Length + 9 + 1 + salt.Length + 1 + 86 + 1;
+            // Default number of rounds.
+            int rounds = ROUNDS_DEFAULT;
+            bool roundsCustom = false;
+
+            int saltPartsIndex = 0;
+            string[] saltParts = salt.Split('$');
+
+            /* Find beginning of salt string.  The prefix should normally always
+	         be present.  Just in case it is not.  */
+            if (saltParts[1] == sha512SaltPrefix.Trim('$'))
+                saltPartsIndex = 2;
+
+            if (saltParts[saltPartsIndex].StartsWith(sha512RoundsPrefix))
+            {
+                int srounds;
+                if (int.TryParse(saltParts[saltPartsIndex].Split('=')[1], out srounds))
+                {
+                    saltPartsIndex = 3;
+                    rounds = Math.Min(ROUNDS_MAX, Math.Max(srounds, ROUNDS_MIN));
+                    roundsCustom = true;
+                }
+            }
+
+            int endOfSAlt;
+            for (endOfSAlt = 0; endOfSAlt < saltParts[saltPartsIndex].Length && endOfSAlt < SALT_LEN_MAX && saltParts[saltPartsIndex][endOfSAlt] != '$'; endOfSAlt++);
+
+            byte[] saltInBytes = Encoding.ASCII.GetBytes(saltParts[saltPartsIndex].ToCharArray(), 0, endOfSAlt);
+            byte[] passwd = Encoding.ASCII.GetBytes(password);
+            byte[] magic = Encoding.ASCII.GetBytes(MD5Magic);
+            
+            // Prepare for the real work.
+            var ctx = new HashPhpResource.SHA512();
+            ctx.Init();
+            ctx.Update(passwd);
+            ctx.Update(saltInBytes);
+
+            /*Compute alternate SHA512 sum with input KEY, SALT, and KEY.The
+             final result will be added to the first context.  */
+            var altCtx = new HashPhpResource.SHA512();
+            altCtx.Init();
+            altCtx.Update(passwd);
+            altCtx.Update(saltInBytes);
+            altCtx.Update(passwd);
+
+            /*Now get result of this(64 bytes) and add it to the other
+             context.  */
+            byte[] altResult = altCtx.Final();
+
+            int cnt;
+            for (cnt = passwd.Length; cnt > 64; cnt -= 64)
+            {
+                ctx.Update(altResult);
+            }
+            ctx.Update(altResult.Take(cnt).ToArray());
+
+            /* Take the binary representation of the length of the key and for every
+	         1 add the alternate sum, for every 0 the key.  */
+            for (cnt = passwd.Length; cnt > 0; cnt >>= 1)
+            {
+                if ((cnt & 1) != 0)
+                {
+                    ctx.Update(altResult);
+                }
+                else
+                {
+                    ctx.Update(passwd);
+                }
+            }
+            altResult = ctx.Final();
+
+            altCtx = new HashPhpResource.SHA512();
+            altCtx.Init();
+
+            for (cnt = 0; cnt < passwd.Length; ++cnt)
+                altCtx.Update(passwd);
+
+            byte[] tempResult = altCtx.Final();
+
+            // Start computation of P byte sequence.
+            byte[] pbytes = new byte[passwd.Length];
+
+            for (cnt = passwd.Length; cnt >= 64; cnt -= 64)
+            {
+                Array.Copy(tempResult, 0, pbytes, 0, 64);
+            }
+            Array.Copy(tempResult, 0, pbytes, 0, cnt);
+
+            altCtx = new HashPhpResource.SHA512();
+            altCtx.Init();
+
+            for (cnt = 0; cnt < 16 + (int)altResult[0]; ++cnt)
+                altCtx.Update(saltInBytes);
+
+            tempResult = altCtx.Final();
+
+            // Create byte sequence P.
+            byte[] sbytes = new byte[saltInBytes.Length];
+
+            for (cnt = saltInBytes.Length; cnt >= 64; cnt -= 64)
+            {
+                Array.Copy(tempResult, 0, sbytes, 0, 64);
+            }
+            Array.Copy(tempResult, 0, sbytes, 0, cnt);
+
+            for (cnt = 0; cnt < rounds; ++cnt)
+            {
+                // New context. 
+                ctx = new HashPhpResource.SHA512();
+                ctx.Init();
+
+                // Add key or last result.
+                if ((cnt & 1) != 0)
+                    ctx.Update(pbytes);
+                else
+                    ctx.Update(altResult);
+
+                // Add salt for numbers not divisible by 3.
+                if (cnt % 3 != 0)
+                    ctx.Update(sbytes);
+
+                // Add key for numbers not divisible by 7.
+                if (cnt % 7 != 0)
+                    ctx.Update(pbytes);
+
+                // Add key or last result.
+                if ((cnt & 1) != 0)
+                    ctx.Update(altResult);
+                else
+                    ctx.Update(pbytes);
+
+                // Create intermediate result.
+                altResult = ctx.Final();
+            }
+
+            /* Now we can construct the result string.  It consists of three
+	         parts.  */
+
+            byte[] output = new byte[outputLength];
+            // Salt prefix.
+            int indexOfOutput = 0;
+            Array.Copy(Encoding.ASCII.GetBytes(sha512SaltPrefix), 0, output, indexOfOutput, sha512SaltPrefix.Length);
+            indexOfOutput += sha512SaltPrefix.Length;
+            // Rounds prefix
+            if (roundsCustom)
+            {
+                string part = $"{sha512RoundsPrefix}{rounds}$";
+                Array.Copy(Encoding.ASCII.GetBytes(part), 0, output, indexOfOutput, part.Length);
+                indexOfOutput += part.Length;
+            }
+            // Salt prefix
+            Array.Copy(saltInBytes, 0, output, indexOfOutput, saltInBytes.Length);
+            indexOfOutput += saltInBytes.Length;
+
+            output[indexOfOutput] = (byte)'$';
+            indexOfOutput++;
+
+            B64From24bit(altResult[0], altResult[21], altResult[42], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[22], altResult[43], altResult[1], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[44], altResult[2], altResult[23], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[3], altResult[24], altResult[45], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[25], altResult[46], altResult[4], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[47], altResult[5], altResult[26], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[6], altResult[27], altResult[48], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[28], altResult[49], altResult[7], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[50], altResult[8], altResult[29], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[9], altResult[30], altResult[51], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[31], altResult[52], altResult[10], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[53], altResult[11], altResult[32], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[12], altResult[33], altResult[54], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[34], altResult[55], altResult[13], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[56], altResult[14], altResult[35], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[15], altResult[36], altResult[57], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[37], altResult[58], altResult[16], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[59], altResult[17], altResult[38], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[18], altResult[39], altResult[60], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[40], altResult[61], altResult[19], 4, output,ref indexOfOutput);
+            B64From24bit(altResult[62], altResult[20], altResult[41], 4, output, ref indexOfOutput);
+            B64From24bit(0, 0, altResult[63], 2, output, ref indexOfOutput);
+
+            return ConvertByteArrayToString(output);
+        }
+
+        private static void B64From24bit( int B2, int B1, int B0, int N,byte[] output, ref int indexOfOutput)                    
+        {
+            int buflen = output.Length - indexOfOutput;
+            int w = ((B2) << 16) | ((B1) << 8) | (B0);	 
+	        int n = N;							             
+	        while (n-- > 0 && buflen > 0)					     
+	          {
+                  output[indexOfOutput++] = (byte)b64t[w & 0x3f];						         
+	             --buflen;							                 
+	              w >>= 6;							                 
+	          }									                 
+        }
+
+        #endregion
+
         #endregion
     }
 }
