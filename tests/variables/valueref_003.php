@@ -1,4 +1,5 @@
 <?php
+namespace variables\valueref_003;
 
 $a = [0,0,0];
 

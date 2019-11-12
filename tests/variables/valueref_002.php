@@ -1,4 +1,5 @@
 <?php
+namespace variables\valueref_002;
 
 function test() {
   $arr = [1];

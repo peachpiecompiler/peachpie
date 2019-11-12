@@ -1,4 +1,5 @@
 <?php
+namespace constants\pseudoconsts;
 
 if (true) {
 	function foo() { echo __LINE__, __FUNCTION__; }

@@ -528,20 +528,18 @@ namespace Pchp.Library
 
                         // obtain the property desc and decorate the prop name according to its visibility and declaring class
                         var property = tinfo.GetDeclaredProperty(property_name);
-                        if (property != null && !property.IsStatic && property.IsVisible(declarer.Type.AsType()))
+                        if (property != null && !property.IsStatic && property.IsVisible(declarer.Type))
                         {
-                            var prop_declarer = property.ContainingType;
-
                             // if certain conditions are met, serialize the property as null
                             // (this is to precisely mimic the PHP behavior)
                             if ((visibility == (property.Attributes & FieldAttributes.FieldAccessMask) && visibility != FieldAttributes.Public) ||
-                                (visibility == FieldAttributes.Private && declarer != prop_declarer))
+                                (visibility == FieldAttributes.Private && declarer != property.ContainingType))
                             {
                                 yield return new KeyValuePair<string, PhpValue>(name, PhpValue.Null);
                                 continue;
                             }
 
-                            name = Serialization.FormatSerializedPropertyName(property, prop_declarer);
+                            name = Serialization.FormatSerializedPropertyName(property);
                         }
                         else
                         {
@@ -1163,6 +1161,26 @@ namespace Pchp.Library
             protected override PhpValue CommonDeserialize(Context ctx, Stream stream, RuntimeTypeHandle caller)
             {
                 return new ObjectReader(ctx, stream, caller).Deserialize();
+            }
+
+            /// <summary>
+            /// Tries to deserialize the data.
+            /// </summary>
+            /// <returns>Retrns <c>true</c> iff the data was deserialized properly.</returns>
+            public bool TryDeserialize(Context ctx, byte[] data, out PhpValue value)
+            {
+                try
+                {
+                    value = CommonDeserialize(ctx, new MemoryStream(data), default);
+                }
+                catch
+                {
+                    value = PhpValue.False;
+                    return false;
+                }
+
+                //
+                return true;
             }
         }
 

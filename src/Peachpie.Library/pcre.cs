@@ -154,6 +154,11 @@ namespace Pchp.Library
         /// <returns></returns>
         public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit, out long count)
         {
+            return PregReplaceInternal(ctx, pattern, replacement, subject, limit, out count, filter: false);
+        }
+
+        static PhpValue PregReplaceInternal(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit, out long count, bool filter)
+        {
             count = 0;
 
             // PHP's behaviour for undocumented limit range
@@ -161,6 +166,21 @@ namespace Pchp.Library
             {
                 limit = 0;
             }
+
+            // TODO: PHP enumerates subjects first, then patterns and replacements
+            //if (subject.IsPhpArray(out var subject_array))
+            //{
+            //    // returning PhpArray
+            //    var s = subject_array.GetFastEnumerator();
+            //    while (s.MoveNext())
+            //    {
+            //    }
+            //}
+            //else
+            //{
+            //    // returning string|PhpString|NULL
+            //    var s = subject.ToStringOrThrow(ctx);
+            //}
 
             //
             var replacement_array = replacement.AsArray();
@@ -173,7 +193,7 @@ namespace Pchp.Library
                     // string pattern
                     // string replacement
 
-                    return PregReplaceInternal(ctx, pattern.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx), null, subject, (int)limit, ref count);
+                    return PregReplaceInternal(ctx, pattern.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx), null, subject, (int)limit, ref count, filter);
                 }
                 else
                 {
@@ -187,11 +207,13 @@ namespace Pchp.Library
                 // array  pattern
                 // string replacement
 
+                var replacement_string = replacement.ToStringOrThrow(ctx);
+
                 var pattern_enumerator = pattern_array.GetFastEnumerator();
                 while (pattern_enumerator.MoveNext())
                 {
-                    subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx),
-                        null, subject, (int)limit, ref count);
+                    subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement_string,
+                        null, subject, (int)limit, ref count, filter);
                 }
 
                 //
@@ -222,7 +244,7 @@ namespace Pchp.Library
                     }
 
                     subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement_string,
-                        null, subject, (int)limit, ref count);
+                        null, subject, (int)limit, ref count, filter);
                 }
 
                 //
@@ -302,13 +324,29 @@ namespace Pchp.Library
             return subject;
         }
 
-        static PhpValue PregReplaceInternal(Context ctx, string pattern, string replacement, IPhpCallable callback, PhpValue subject, int limit, ref long count)
+        ///// <summary>
+        ///// Perform a regular expression search and replace.
+        ///// </summary>
+        //public static PhpValue preg_filter(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit = -1)
+        //{
+        //    return preg_filter(ctx, pattern, replacement, subject, limit, out _);
+        //}
+
+        ///// <summary>
+        ///// Perform a regular expression search and replace.
+        ///// </summary>
+        //public static PhpValue preg_filter(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit, out long count)
+        //{
+        //    return PregReplaceInternal(ctx, pattern, replacement, subject, limit, out count, filter: true);
+        //}
+
+        static PhpValue PregReplaceInternal(Context ctx, string pattern, string replacement, IPhpCallable callback, PhpValue subject, int limit, ref long count, bool filter = false)
         {
             if (!TryParseRegexp(pattern, out var regex))
             {
                 return PhpValue.Null;
             }
-            
+
             // callback
             PerlRegex.MatchEvaluator evaluator = null;
             if (callback != null)
@@ -327,8 +365,7 @@ namespace Pchp.Library
             // TODO: subject as a binary string would be corrupted after Replace - https://github.com/peachpiecompiler/peachpie/issues/178
 
             //
-            var subject_array = subject.AsArray();
-            if (subject_array != null)
+            if (subject.IsPhpArray(out var subject_array))
             {
                 var arr = new PhpArray(subject_array.Count);
 
@@ -339,16 +376,22 @@ namespace Pchp.Library
                     var oldvalue = input.ToStringOrThrow(ctx);
                     var oldcount = count;
 
-                    var newvalue = evaluator == null
+                    PhpValue newvalue = evaluator == null
                         ? regex.Replace(oldvalue, replacement, limit, ref count)
                         : regex.Replace(oldvalue, evaluator, limit, ref count);
 
-                    // - quick workaround for https://github.com/peachpiecompiler/peachpie/issues/178
-                    // - use the original value if possible (mem perf.)
+                    if (oldcount == count)
+                    {
+                        // no match
+                        if (filter)
+                            continue;
 
-                    arr[enumerator.CurrentKey] = (oldcount == count)
-                        ? (input.IsBinaryString(out var bstring) ? bstring.DeepCopy() : oldvalue)
-                        : newvalue;
+                        // - quick workaround for https://github.com/peachpiecompiler/peachpie/issues/178
+                        // - use the original value if possible (mem perf.)
+                        newvalue = (input.IsBinaryString(out var bstring) ? bstring.DeepCopy() : oldvalue);
+                    }
+
+                    arr[enumerator.CurrentKey] = newvalue;
                 }
 
                 return arr;
@@ -358,16 +401,23 @@ namespace Pchp.Library
                 var oldvalue = subject.ToStringOrThrow(ctx);
                 var oldcount = count;
 
-                var newvalue = evaluator == null
+                PhpValue newvalue = evaluator == null
                         ? regex.Replace(oldvalue, replacement, limit, ref count)
                         : regex.Replace(oldvalue, evaluator, limit, ref count);
 
-                // - quick workaround for https://github.com/peachpiecompiler/peachpie/issues/178
-                // - use the original value if possible (mem perf.)
+                if (oldcount == count)
+                {
+                    // no match
+                    if (filter)
+                        return PhpValue.Null;
 
-                return (oldcount == count)
-                    ? (subject.IsBinaryString(out var bstring) ? bstring.DeepCopy() : oldvalue)
-                    : newvalue;
+                    // - quick workaround for https://github.com/peachpiecompiler/peachpie/issues/178
+                    // - use the original value if possible (mem perf.)
+                    newvalue = (subject.IsBinaryString(out var bstring) ? bstring.DeepCopy() : oldvalue);
+                }
+
+                //
+                return newvalue;
             }
         }
 

@@ -23,13 +23,12 @@ In case an older version of PHP is installed on your system, some PHP7 specific 
 > Note that there are known and intended differences in comparison to regular PHP. The following recommendations should be observed:
 
 1. avoid UTF-8 BOM in test files
-2. use print_r instead of var_dump
+2. use `print_r` instead of `var_dump`
 3. avoid displaying warnings and errors; there are known and intended differences in error handling
+4. put the code into a unique namespace so it will get compiled nicer
 
 ## Skipped tests
+
 Tests whose name starts with either `skip_*` or `skip(*)_*` are skipped. If possible please use the second variant and specify a reason why the test is skipped inside the parentheses.
 - E.g.: `skip(late_static_binding_forwarding_not_supported)_static_004.php`
 > `*` is a wildcard for arbitrary string.
-
-
-

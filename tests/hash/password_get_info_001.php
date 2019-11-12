@@ -1,4 +1,5 @@
 <?php
+namespace hash\password_get_info_001;
 
 $password = "rasmuslerdorf";
 $salt = "Ajnbu298IRHUVa56XvDOzu";

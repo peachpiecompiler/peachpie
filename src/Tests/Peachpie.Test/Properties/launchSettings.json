@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "run \"index.php\"": {
+    "debug \"index.php\"": {
       "commandName": "Project"
     },
     "build \"index.php\"": {

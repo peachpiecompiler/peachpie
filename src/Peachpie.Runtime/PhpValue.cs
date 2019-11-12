@@ -106,7 +106,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating whether the value is set.
         /// </summary>
-        public bool IsSet => !IsDefault && _type.Type != PhpTypeCode.Undefined;
+        public bool IsSet => !IsDefault && !ReferenceEquals(_type, Void._type);
 
         /// <summary>
         /// Gets value indicating the value is <c>FALSE</c> or <c>&amp;FALSE</c>.
@@ -185,7 +185,7 @@ namespace Pchp.Core
         /// Gets the object field of the value as string.
         /// Does not perform a conversion, expects the value is of type (readonly UTF16) string.
         /// </summary>
-        public string String { get { Debug.Assert(_obj.@object is string); return _obj.@string; } }
+        public string String { get { Debug.Assert(_obj.@object is string || _obj.@object == null); return _obj.@string; } }
 
         /// <summary>
         /// Gets underlaying <see cref="PhpString.Blob"/> object.
@@ -806,6 +806,8 @@ namespace Pchp.Core
         internal static PhpValue Create(byte[] bytes) => new PhpValue(new PhpString.Blob(bytes));
 
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
+
+        public static PhpValue Create(IPhpArray value) => value is PhpArray arr ? Create(arr) : FromClass(value);
 
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
 

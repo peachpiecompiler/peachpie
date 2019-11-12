@@ -1,4 +1,5 @@
 <?php
+namespace classes\overloading_001;
 
 class Dog {
 	function Whof(){ echo "whof"; }

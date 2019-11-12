@@ -1,4 +1,5 @@
 <?php
+namespace functions\anonymous_005_this;
 
 class X
 {

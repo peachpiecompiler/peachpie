@@ -1,4 +1,5 @@
 <?php
+namespace classes\overloading_009;
 
 interface A { function foo(); }
 

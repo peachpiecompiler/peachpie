@@ -27,8 +27,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         private int _ordinal;
 
-        public override BoundExpression Initializer => _initializer;
-        private readonly BoundExpression _initializer; // TODO: sanitize this
+        public override BoundExpression Initializer => null;
+
+        public override FieldSymbol DefaultValueField { get; }
 
         public SynthesizedParameterSymbol(
             MethodSymbol container,
@@ -40,8 +41,9 @@ namespace Pchp.CodeAnalysis.Symbols
             ImmutableArray<CustomModifier> customModifiers = default(ImmutableArray<CustomModifier>),
             ushort countOfCustomModifiersPrecedingByRef = 0,
             ConstantValue explicitDefaultConstantValue = null,
-            BoundExpression initializer = null)
+            FieldSymbol defaultValueField = null)
         {
+            Debug.Assert(container != null);
             Debug.Assert((object)type != null);
             Debug.Assert(name != null);
             Debug.Assert(ordinal >= 0);
@@ -55,16 +57,63 @@ namespace Pchp.CodeAnalysis.Symbols
             _customModifiers = customModifiers.NullToEmpty();
             _countOfCustomModifiersPrecedingByRef = countOfCustomModifiersPrecedingByRef;
             _explicitDefaultConstantValue = explicitDefaultConstantValue;
-            _initializer = initializer;
+
+            this.DefaultValueField = defaultValueField;
         }
 
-        public static SynthesizedParameterSymbol Create(MethodSymbol container, ParameterSymbol p)
+        public static SynthesizedParameterSymbol Create(MethodSymbol container, ParameterSymbol p, int? ordinal = default)
         {
-            return new SynthesizedParameterSymbol(container, p.Type, p.Ordinal, p.RefKind,
+            var defaultValueField = ((ParameterSymbol)p.OriginalDefinition).DefaultValueField;
+            if (defaultValueField != null && defaultValueField.ContainingType.IsTraitType())
+            {
+                var selfcontainer = container.ContainingType;
+                var fieldcontainer = defaultValueField.ContainingType; // trait
+
+                NamedTypeSymbol newowner;
+
+                if (selfcontainer.IsTraitType())
+                {
+                    // field in a trait must be unbound,
+                    // metadata cannot refer to type parameter
+                    newowner = fieldcontainer.ConstructedFrom.ConstructUnboundGenericType();
+                }
+                else
+                {
+                    // construct the container, map !TSelf
+                    newowner = fieldcontainer.ConstructedFrom.Construct(selfcontainer);
+                }
+
+                //
+                if (newowner != fieldcontainer)
+                {
+                    defaultValueField = defaultValueField.OriginalDefinition.AsMember(newowner);
+                }
+            }
+
+            return new SynthesizedParameterSymbol(container, p.Type, ordinal.HasValue ? ordinal.Value : p.Ordinal, p.RefKind,
                 name: p.Name,
                 isParams: p.IsParams,
                 explicitDefaultConstantValue: p.ExplicitDefaultConstantValue,
-                initializer: ((IPhpValue)p.OriginalDefinition).Initializer); // TODO: sanitize BoundExpression
+                defaultValueField: defaultValueField);
+        }
+
+        public static ImmutableArray<ParameterSymbol> Create(MethodSymbol container, ImmutableArray<ParameterSymbol> srcparams)
+        {
+            if (srcparams.Length != 0)
+            {
+                var builder = ImmutableArray.CreateBuilder<ParameterSymbol>(srcparams.Length);
+
+                foreach (var p in srcparams)
+                {
+                    builder.Add(Create(container, p));
+                }
+
+                return builder.MoveToImmutable();
+            }
+            else
+            {
+                return ImmutableArray<ParameterSymbol>.Empty;
+            }
         }
 
         internal override TypeSymbol Type
@@ -104,13 +153,21 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
         {
+            // params
             if (IsParams)
             {
-                yield return new SynthesizedAttributeData(
-                    (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ParamArrayAttribute__ctor),
-                    ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                yield return DeclaringCompilation.CreateParamsAttribute();
             }
 
+            // TODO: preserve [NotNull]
+
+            // [DefaultValue]
+            if (DefaultValueField != null)
+            {
+                yield return DeclaringCompilation.CreateDefaultValueAttribute(ContainingType, DefaultValueField);
+            }
+
+            //
             yield break;
         }
 

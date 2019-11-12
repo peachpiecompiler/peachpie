@@ -245,7 +245,7 @@ namespace Pchp.Core
                         else
                         {
                             // calling the method statically
-                            if (routine.Methods.All(TypeMembersUtils.IsStatic))
+                            if (routine.Methods.All(TypeMembersUtils.s_isMethodStatic))
                             {
                                 return routine.PhpCallable;
                             }

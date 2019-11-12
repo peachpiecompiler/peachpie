@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     // build control flow graph
                     var cfg = new ControlFlowGraph(
                         this.Statements,
-                        SemanticsBinder.Create(DeclaringCompilation, LocalsTable, ContainingType as SourceTypeSymbol));
+                        SemanticsBinder.Create(DeclaringCompilation, ContainingFile.SyntaxTree, LocalsTable, ContainingType as SourceTypeSymbol));
                     cfg.Start.FlowState = state;
 
                     //

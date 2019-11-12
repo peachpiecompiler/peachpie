@@ -1,4 +1,5 @@
 <?php
+namespace xml\xslt_001;
 // Test 1: Transform To XML String
 
 function __xml_norm($str)
@@ -11,13 +12,13 @@ function __xml_norm($str)
 }
 
 function test() {
-  $dom = new domDocument;
+  $dom = new \DOMDocument;
   $dom->load("xslt.xml");
 
-  $xsl = new domDocument;
+  $xsl = new \DOMDocument;
   $xsl->load("xslt.xsl");
 
-  $proc = new xsltprocessor;
+  $proc = new \XSLTProcessor;
   $proc->importStylesheet($xsl);
 
   print __xml_norm($proc->transformToXml($dom));

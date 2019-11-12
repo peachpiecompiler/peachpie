@@ -100,7 +100,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public bool IsRef
         {
-            get { return (_mask & (ulong)MaskFlags.IsRef) != 0; }
+            get
+            {
+                return (_mask & (ulong)MaskFlags.IsRef) != 0;
+            }
             set
             {
                 if (value) SetIsRef();
@@ -354,7 +357,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return new TypeRefMask(a.Mask | b);
         }
 
-        public static TypeRefMask Or (TypeRefMask a, TypeRefMask b)
+        public static TypeRefMask Or(TypeRefMask a, TypeRefMask b)
         {
             return a | b;
         }

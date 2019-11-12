@@ -1,4 +1,5 @@
 <?php
+namespace classes\overloading_006_;
 
 class D
 {

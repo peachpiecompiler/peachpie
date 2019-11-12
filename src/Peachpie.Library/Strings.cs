@@ -2670,7 +2670,7 @@ namespace Pchp.Library
                 return false;
             }
         }
-        
+
         #endregion
 
         /// <summary>
@@ -3691,12 +3691,13 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The input string.</param>
         /// <returns><paramref name="str"/> with the first character converted to uppercase.</returns>
+        [return: NotNull]
         public static string ucfirst(string str)
         {
             if (string.IsNullOrEmpty(str))
                 return string.Empty;
 
-            return Char.ToUpper(str[0]) + str.Substring(1);
+            return char.ToUpper(str[0]) + str.Substring(1);
         }
 
         /// <summary>
@@ -3705,6 +3706,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The input string.</param>
         /// <returns>Returns the resulting string.</returns>
+        [return: NotNull]
         public static string lcfirst(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -3718,12 +3720,23 @@ namespace Pchp.Library
         /// Makes the first character of each word in a string uppercase.
         /// </summary>
         /// <param name="str">The input string.</param>
-        /// <returns><paramref name="str"/> with the first character of each word in a string converted to 
-        /// uppercase.</returns>
-        public static string ucwords(string str)
+        /// <returns><paramref name="str"/> with the first character of each word in a string converted to uppercase.</returns>
+        [return: NotNull]
+        public static string ucwords(string str) => ucwords(str, " \t\r\n\f\v");
+
+        /// <summary>
+        /// Makes the first character of each word in a string uppercase.
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <param name="delimiters">The word separator characters.</param>
+        /// <returns><paramref name="str"/> with the first character of each word in a string converted to uppercase.</returns>
+        [return: NotNull]
+        public static string ucwords(string str, string delimiters)
         {
             if (string.IsNullOrEmpty(str))
+            {
                 return string.Empty;
+            }
 
             int length = str.Length;
             var result = new StringBuilder(str);
@@ -3731,14 +3744,14 @@ namespace Pchp.Library
             bool state = true;
             for (int i = 0; i < length; i++)
             {
-                if (char.IsWhiteSpace(result[i])) state = true;
-                else
+                if (delimiters.IndexOf(result[i]) >= 0)
                 {
-                    if (state)
-                    {
-                        result[i] = char.ToUpper(result[i]);
-                        state = false;
-                    }
+                    state = true;
+                }
+                else if (state)
+                {
+                    result[i] = char.ToUpper(result[i]);
+                    state = false;
                 }
             }
 
@@ -5575,6 +5588,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The lowercased string or empty string if <paramref name="str"/> is null.</returns>
+        [return: NotNull]
         public static string strtolower(string str) => str != null ? str.ToLowerInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToLower(Locale.GetCulture(Locale.Category.CType));
@@ -5586,6 +5600,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The uppercased string or empty string if <paramref name="str"/> is null.</returns>
+        [return: NotNull]
         public static string strtoupper(string str) => str != null ? str.ToUpperInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));

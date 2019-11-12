@@ -37,6 +37,69 @@ namespace Pchp.CodeAnalysis.Symbols
         public override BoundExpression Initializer => _initializer;
         readonly BoundExpression _initializer;
 
+        public override FieldSymbol DefaultValueField
+        {
+            get
+            {
+                if (_lazyDefaultValueField == null && Initializer != null && ExplicitDefaultConstantValue == null)
+                {
+                    TypeSymbol fldtype; // type of the field
+                    
+                    if (Initializer is BoundArrayEx arr)
+                    {
+                        // special case: empty array
+                        if (arr.Items.Length == 0)
+                        {
+                            // PhpArray.Empty
+                            return DeclaringCompilation.CoreMethods.PhpArray.Empty;
+                        }
+
+                        //   
+                        fldtype = DeclaringCompilation.CoreTypes.PhpArray;
+                    }
+                    else if (Initializer is BoundPseudoClassConst)
+                    {
+                        fldtype = DeclaringCompilation.GetSpecialType(SpecialType.System_String);
+                    }
+                    else
+                    {
+                        fldtype = DeclaringCompilation.CoreTypes.PhpValue;
+                    }
+
+                    if (Initializer.RequiresContext)
+                    {
+                        // Func<Context, PhpValue>
+                        fldtype = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Func_T2).Construct(
+                            DeclaringCompilation.CoreTypes.Context,
+                            DeclaringCompilation.CoreTypes.PhpValue);
+                    }
+
+                    // determine the field container:
+                    NamedTypeSymbol fieldcontainer = ContainingType; // by default in the containing class/trait/file
+                    string fieldname = $"<{ContainingSymbol.Name}.{Name}>_DefaultValue";
+
+                    //if (fieldcontainer.IsInterface)
+                    //{
+                    //    fieldcontainer = _routine.ContainingFile;
+                    //    fieldname = ContainingType.Name + "." + fieldname;
+                    //}
+
+                    // public static readonly T ..;
+                    var field = new SynthesizedFieldSymbol(
+                        fieldcontainer,
+                        fldtype,
+                        fieldname,
+                        accessibility: Accessibility.Public,
+                        isStatic: true, isReadOnly: true);
+
+                    //
+                    Interlocked.CompareExchange(ref _lazyDefaultValueField, field, null);
+                }
+                return _lazyDefaultValueField;
+            }
+        }
+        FieldSymbol _lazyDefaultValueField;
+
         public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int relindex, PHPDocBlock.ParamTag ptagOpt)
         {
             Contract.ThrowIfNull(routine);
@@ -48,7 +111,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _relindex = relindex;
             _ptagOpt = ptagOpt;
             _initializer = (syntax.InitValue != null)
-                ? new SemanticsBinder(DeclaringCompilation, locals: null, routine: routine, self: routine.ContainingType as SourceTypeSymbol)
+                ? new SemanticsBinder(DeclaringCompilation, routine.ContainingFile.SyntaxTree, locals: null, routine: null, self: routine.ContainingType as SourceTypeSymbol)
                     .BindWholeExpression(syntax.InitValue, BoundAccess.Read)
                     .SingleBoundElement()
                 : null;
@@ -199,7 +262,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsParams => _syntax.IsVariadic;
 
         public override int Ordinal => _relindex + _routine.ImplicitParameters.Length;
-        
+
         /// <summary>
         /// Zero-based index of the source parameter.
         /// </summary>
@@ -226,46 +289,19 @@ namespace Pchp.CodeAnalysis.Symbols
             // [param]   
             if (IsParams)
             {
-                yield return new SynthesizedAttributeData(
-                    (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ParamArrayAttribute__ctor),
-                    ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                yield return DeclaringCompilation.CreateParamsAttribute();
             }
 
             // [NotNull]
             if (IsNotNull && Type.IsReferenceType)
             {
-                yield return new SynthesizedAttributeData(
-                    DeclaringCompilation.CoreMethods.Ctors.NotNullAttribute,
-                    ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                yield return DeclaringCompilation.CreateNotNullAttribute();
             }
 
             // [DefaultValue]
-            if (this.Initializer is BoundArrayEx arr)
+            if (DefaultValueField != null)
             {
-                var typeParameter = new KeyValuePair<string, TypedConstant>("Type", new TypedConstant(DeclaringCompilation.CoreTypes.DefaultValueType.Symbol, TypedConstantKind.Enum, 1/*PhpArray*/));
-                var namedparameters = ImmutableArray.Create(typeParameter);
-
-                if (arr.Items.Length != 0)
-                {
-                    try
-                    {
-                        var byteSymbol = DeclaringCompilation.GetSpecialType(SpecialType.System_Byte);
-                        var serializedValue = Encoding.UTF8.GetBytes(arr.PhpSerializeOrThrow());
-                        var p = new KeyValuePair<string, TypedConstant>(
-                            "SerializedValue",
-                            new TypedConstant(DeclaringCompilation.CreateArrayTypeSymbol(byteSymbol), serializedValue.Select(DeclaringCompilation.CreateTypedConstant).AsImmutable()));
-
-                        namedparameters = namedparameters.Add(p);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new InvalidOperationException($"Cannot construct serialized parameter default value. Routine '{Routine.Name}' in {Routine.ContainingFile.RelativeFilePath}, {ex.Message}.", ex);
-                    }
-                }
-
-                yield return new SynthesizedAttributeData(
-                    DeclaringCompilation.CoreMethods.Ctors.DefaultValueAttribute,
-                    ImmutableArray<TypedConstant>.Empty, namedparameters);
+                yield return DeclaringCompilation.CreateDefaultValueAttribute(ContainingType, DefaultValueField);
             }
 
             //

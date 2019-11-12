@@ -1,4 +1,5 @@
 <?php
+namespace operators\assign_003;
 
 function test1($i1, $i2, $a1, $a2, $s1, $s2) {
   $i1 = $i1 + 1;

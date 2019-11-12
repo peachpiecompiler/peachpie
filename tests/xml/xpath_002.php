@@ -1,4 +1,5 @@
 <?php
+namespace xml\xpath_002;
 
 $xml = <<<HERE
 <?xml version="1.0" encoding="ISO-8859-1" ?>
@@ -21,9 +22,9 @@ function dump($elems) {
   echo "--- ";
 }
 
-$dom = new DOMDocument();
+$dom = new \DOMDocument();
 $dom->loadXML($xml);
-$xpath = new DOMXPath($dom);
+$xpath = new \DOMXPath($dom);
 
 $bars = $xpath->query('//bar');
 dump($bars);

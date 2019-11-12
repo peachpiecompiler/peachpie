@@ -1,4 +1,5 @@
 <?php
+namespace traits\instanceof_001;
 
 trait T {
   public function bar() {

@@ -1,4 +1,5 @@
 <?php
+namespace operators\instanceof_001;
 
 class Dog {
 	

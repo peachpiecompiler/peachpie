@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text;
 using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Utilities;
 
 namespace Peachpie.Library.MySql.MySqli
 {
@@ -74,11 +75,15 @@ namespace Peachpie.Library.MySql.MySqli
         stdClass fetch_field_internal(int field)
         {
             if (!_result.CheckFieldIndex(field))
-            {
                 return null;
-            }
 
-            Debug.Assert(_result.GetRowCustomData() != null);
+            //DataRow info = result.GetSchemaRowInfo(fieldIndex);
+            //if (info == null) return null;
+
+            var col = _result.GetColumnSchema(field);
+
+            //PhpMyDbResult.FieldCustomData data = ((PhpMyDbResult.FieldCustomData[])result.GetRowCustomData())[fieldIndex];
+            //ColumnFlags flags = data.Flags;//result.GetFieldFlags(fieldIndex);
 
             //name The name of the column
             //orgname Original column name if an alias was specified
@@ -94,32 +99,26 @@ namespace Peachpie.Library.MySql.MySqli
             //type    The data type used for this field
             //decimals    The number of decimals used(for integer fields)
 
-            //PhpMyDbResult.FieldCustomData data = ((PhpMyDbResult.FieldCustomData[])result.GetRowCustomData())[fieldIndex];
-            //ColumnFlags flags = data.Flags;//result.GetFieldFlags(fieldIndex);
-
             // create an array of runtime fields with specified capacity:
-            var objFields = new PhpArray(13);
-
-            // add fields into the hastable directly:
-            // no duplicity check, since array is already valid
-            objFields.Add("name", _result.GetFieldName(field));
-            //objFields.Add("table", (/*info["BaseTableName"] as string*/data.RealTableName) ?? string.Empty);
-            objFields.Add("def", "");
-            //objFields.Add("max_length", /*result.GetFieldLength(fieldIndex)*/data.ColumnSize);
-
-            //objFields.Add("not_null", ((flags & ColumnFlags.NOT_NULL) != 0) /*(!(bool)info["AllowDBNull"])*/ ? 1 : 0);
-            //objFields.Add("primary_key", ((flags & ColumnFlags.PRIMARY_KEY) != 0) /*((bool)info["IsKey"])*/ ? 1 : 0);
-            //objFields.Add("multiple_key", ((flags & ColumnFlags.MULTIPLE_KEY) != 0) /*((bool)info["IsMultipleKey"])*/ ? 1 : 0);
-            //objFields.Add("unique_key", ((flags & ColumnFlags.UNIQUE_KEY) != 0) /*((bool)info["IsUnique"])*/ ? 1 : 0);
-            //objFields.Add("numeric", result.IsNumericType(php_type) ? 1 : 0);
-            //objFields.Add("blob", ((flags & ColumnFlags.BLOB) != 0) /*((bool)info["IsBlob"])*/ ? 1 : 0);
-
-            objFields.Add("type", _result.GetPhpFieldType(field));
-            //objFields.Add("unsigned", ((flags & ColumnFlags.UNSIGNED) != 0) /*((bool)info["IsUnsigned"])*/ ? 1 : 0);
-            //objFields.Add("zerofill", ((flags & ColumnFlags.ZERO_FILL) != 0) /*((bool)info["ZeroFill"])*/ ? 1 : 0);
+            var objFields = new PhpArray(16)
+            {
+                { "name", col.ColumnName },
+                { "orgname", col.BaseColumnName },
+                { "table", col.BaseTableName ?? string.Empty },
+                //{ "orgtable", col.BaseTableName ?? string.Empty },
+                { "def", "" }, // undocumented
+                { "db", col.BaseSchemaName },
+                { "catalog", col.BaseCatalogName },
+                //{ "max_length", /*result.GetFieldLength(fieldIndex)*/data.ColumnSize },
+                { "length", col.ColumnSize.GetValueOrDefault() },
+                //{ "charsetnr", ??? },
+                //{ "flags", (int)flags },
+                { "type", (int)col.ProviderType },
+                //{ "decimals", ??? },
+            };
 
             // create new stdClass with runtime fields initialized above:
-            return objFields.ToObject();
+            return objFields.AsStdClass();
         }
 
         /// <summary>
@@ -155,7 +154,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public object fetch_object(string class_name = null, PhpArray class_params = null)
         {
-            if (string.IsNullOrEmpty(class_name) || string.Equals(class_name, "stdClass", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(class_name) || nameof(stdClass).Equals(class_name, StringComparison.OrdinalIgnoreCase))
             {
                 return _result.FetchStdClass();
             }
@@ -170,6 +169,8 @@ namespace Peachpie.Library.MySql.MySqli
                 // set object properties using reflection:
                 for (int i = 0; i < names.Length; i++)
                 {
+                    // TODO: Operators.PropertySetValue( obj, names[i], FromClr(oa[i]) );
+
                     var p =
                         TypeMembersUtils.GetDeclaredProperty(phpt, names[i]) ??
                         TypeMembersUtils.GetRuntimeProperty(phpt, names[i], obj);

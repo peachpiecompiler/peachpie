@@ -1,6 +1,7 @@
 <?php
+namespace xml\dom_004;
 
-class books extends domDocument {
+class books extends \DOMDocument {
   function addBook($title, $author) {
     $titleElement = $this->createElement("title");
     $titleElement->appendChild($this->createTextNode($title));

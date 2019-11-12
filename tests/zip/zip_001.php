@@ -1,4 +1,5 @@
 <?php
+namespace zip\zip_001;
 
 function enumerate($file) {
   $zip = zip_open($file);

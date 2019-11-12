@@ -1,4 +1,5 @@
 <?php
+namespace zip\ziparchive_002;
 
 function print_ret($ret) {
   if (is_bool($ret)) {
@@ -18,7 +19,7 @@ function test($filename) {
     unlink($filename);
   }
 
-  $zip = new ZipArchive();
+  $zip = new \ZipArchive();
   print_props($zip);
 
   // Error - not existing file
@@ -26,7 +27,7 @@ function test($filename) {
   print_props($zip);
 
   // Creating a new file
-  print_ret($zip->open($filename, ZipArchive::CREATE));
+  print_ret($zip->open($filename, \ZipArchive::CREATE));
   print_props($zip);
 
   print_ret($zip->addEmptyDir("foo"));
@@ -40,8 +41,8 @@ function test($filename) {
   print_props($zip);
 
   // Overwriting an existing archive with exclusive mode
-  $zip2 = new ZipArchive();
-  print_ret($zip2->open($filename, ZipArchive::EXCL));
+  $zip2 = new \ZipArchive();
+  print_ret($zip2->open($filename, \ZipArchive::EXCL));
   print_props($zip2);
 
   // Clean up the created archive

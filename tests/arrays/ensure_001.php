@@ -1,4 +1,5 @@
 <?php
+namespace arrays\ensure_001;
 
 function testarr(){
 	$patternses = [];	

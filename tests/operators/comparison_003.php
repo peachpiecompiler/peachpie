@@ -1,4 +1,5 @@
 <?php
+namespace operators\comparison_003;
 
 function bar(int $a) {
   echo $a;

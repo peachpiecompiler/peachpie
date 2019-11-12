@@ -646,6 +646,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No asynchronous (non-blocking) transfer to continue..
+        /// </summary>
+        public static string ftp_error_no_nb {
+            get {
+                return ResourceManager.GetString("ftp_error_no_nb", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Function not allowed in web server context.
         /// </summary>
         public static string function_disallowed_in_web_context {
@@ -714,6 +723,15 @@ namespace Pchp.Library.Resources {
         public static string illegal_hex_digit {
             get {
                 return ResourceManager.GetString("illegal_hex_digit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Login or password incorrect!.
+        /// </summary>
+        public static string incorrect_pass_or_login {
+            get {
+                return ResourceManager.GetString("incorrect_pass_or_login", resourceCulture);
             }
         }
         
@@ -885,6 +903,15 @@ namespace Pchp.Library.Resources {
         public static string invalid_process_resource {
             get {
                 return ResourceManager.GetString("invalid_process_resource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid resource type {0}.
+        /// </summary>
+        public static string invalid_resource {
+            get {
+                return ResourceManager.GetString("invalid_resource", resourceCulture);
             }
         }
         

@@ -18,7 +18,7 @@ namespace Peachpie.Library.MySql.MySqli
     public class mysqli
     {
         [PhpHidden]
-        MySqlConnectionResource/*!*/_connection;
+        internal MySqlConnectionResource/*!*/Connection { get; private set; }
 
         [PhpHidden]
         List<(int option, PhpValue value)> _lazyoptions;
@@ -50,7 +50,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Gets the number of affected rows in a previous MySQL operation.
         /// </summary>
-        public int affected_rows => _connection.LastAffectedRows;
+        public int affected_rows => Connection.LastAffectedRows;
 
         /// <summary>
         /// The connection error number or <c>0</c>.
@@ -65,13 +65,13 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Returns the error code for the most recent function call.
         /// </summary>
-        public int errno => _connection.GetLastErrorNumber();
+        public int errno => Connection.GetLastErrorNumber();
         //array $error_list;
 
         /// <summary>
         /// Returns a string description of the last error.
         /// </summary>
-        public string error => _connection.GetLastErrorMessage();
+        public string error => Connection.GetLastErrorMessage();
 
         //int $field_count;
 
@@ -88,14 +88,14 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Returns a string representing the type of connection used.
         /// </summary>
-        public string host_info => string.Concat(_connection.Server, " via TCP/IP"); // TODO: how to get the protocol?
+        public string host_info => string.Concat(Connection.Server, " via TCP/IP"); // TODO: how to get the protocol?
 
         //string $protocol_version;
 
         /// <summary>
         /// Returns the version of the MySQL server.
         /// </summary>
-        public string server_info => _connection.ServerVersion;
+        public string server_info => Connection.ServerVersion;
 
         /// <summary>
         /// Returns the version of the MySQL server as an integer.
@@ -103,21 +103,21 @@ namespace Peachpie.Library.MySql.MySqli
         /// <remarks>
         /// The form of this version number is main_version * 10000 + minor_version * 100 + sub_version (i.e. version 4.1.0 is 40100).
         /// </remarks>
-        public int server_version => Version.TryParse(_connection.ServerVersion, out Version v) ? VersionAsInteger(v) : 0;
+        public int server_version => Version.TryParse(Connection.ServerVersion, out Version v) ? VersionAsInteger(v) : 0;
 
         //string $info;
 
         /// <summary>
         /// Returns the auto generated id used in the latest query.
         /// </summary>
-        public long insert_id => _connection.LastInsertedId;
+        public long insert_id => Connection.LastInsertedId;
 
         //string $sqlstate;
 
         /// <summary>
         /// Returns the thread ID for the current connection.
         /// </summary>
-        public int thread_id => _connection.ServerThread;
+        public int thread_id => Connection.ServerThread;
         //int $warning_count;
 
         /* Methods */
@@ -138,14 +138,14 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public string character_set_name()
         {
-            object value = _connection.QueryGlobalVariable("character_set_client");
+            object value = Connection.QueryGlobalVariable("character_set_client");
             return (value != null) ? value.ToString() : MySql.DefaultClientCharset;
         }
 
         /// <summary>
         /// Closes a previously opened database connection.
         /// </summary>
-        public bool close() { _connection.Dispose(); return true; }
+        public bool close() { Connection.Dispose(); return true; }
 
         //bool commit([ int $flags[, string $name]] )
 
@@ -232,10 +232,14 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Pings a server connection, or tries to reconnect if the connection has gone down.
         /// </summary>
-        public bool ping() => _connection.Ping();
+        public bool ping() => Connection.Ping();
 
         //public static int poll(array &$read , array &$error , array &$reject , int $sec[, int $usec] )
-        //mysqli_stmt prepare(string $query )
+
+        /// <summary>
+        /// Prepare an SQL statement for execution.
+        /// </summary>
+        public mysqli_stmt prepare(string query) => new mysqli_stmt(this, query);
 
         /// <summary>
         /// Performs a query on the database.
@@ -250,15 +254,15 @@ namespace Peachpie.Library.MySql.MySqli
 
             if (query.ContainsBinaryData)
             {
-                var encoding = _connection.Context.StringEncoding;
+                var encoding = Connection.Context.StringEncoding;
 
                 // be aware of binary data
-                result = (MySqlResultResource)MySql.QueryBinary(encoding, query.ToBytes(encoding), _connection);
+                result = (MySqlResultResource)MySql.QueryBinary(encoding, query.ToBytes(encoding), Connection);
             }
             else
             {
                 // standard unicode behaviour
-                result = (MySqlResultResource)_connection.ExecuteQuery(query.ToString(Encoding.UTF8/*not used*/), true);
+                result = (MySqlResultResource)Connection.ExecuteQuery(query.ToString(Encoding.UTF8/*not used*/), true);
             }
 
 
@@ -320,30 +324,30 @@ namespace Peachpie.Library.MySql.MySqli
                         case Constants.MYSQLI_OPT_CONNECT_TIMEOUT: connection_string.ConnectionTimeout = (uint)pair.value.ToLong(); break;
                         case Constants.MYSQLI_SERVER_PUBLIC_KEY: connection_string.ServerRsaPublicKeyFile = pair.value.ToStringOrThrow(ctx); break;
                         case Constants.MYSQLI_OPT_SSL_VERIFY_SERVER_CERT: if (pair.value) { connection_string.SslMode = MySqlSslMode.VerifyCA; } break;
-                        case Constants.MYSQLI_CACertificateFile: connection_string.CACertificateFile = Path.Combine(ctx.WorkingDirectory, pair.value.String); break;
+                        case Constants.MYSQLI_CACertificateFile: connection_string.SslCa = Path.Combine(ctx.WorkingDirectory, pair.value.String); break;
                         case Constants.MYSQLI_CertificateFile: connection_string.CertificateFile = Path.Combine(ctx.WorkingDirectory, pair.value.String); break;
                         default: Debug.WriteLine($"MySqli option {pair.option} not handled!"); break;
                     }
                 }
             }
 
-            _connection = MySqlConnectionManager.GetInstance(ctx)
+            Connection = MySqlConnectionManager.GetInstance(ctx)
                 .CreateConnection(connection_string.ToString(), false, -1, out bool success);
 
             if (success)
             {
-                _connection.Server = host;
+                Connection.Server = host;
 
                 if (!string.IsNullOrEmpty(dbname))
                 {
-                    _connection.SelectDb(dbname);
+                    Connection.SelectDb(dbname);
                 }
             }
             else
             {
                 MySqliContextData.GetContextData(ctx).LastConnectionError
                     = connect_error
-                    = _connection.GetLastErrorMessage();
+                    = Connection.GetLastErrorMessage();
             }
 
             //
@@ -358,7 +362,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Escapes special characters in a string for use in an SQL statement, taking into account the current charset of the connection.
         /// </summary>
-        public PhpString real_escape_string(PhpString escapestr) => MySql.mysql_escape_string(_connection.Context, escapestr);
+        public PhpString real_escape_string(PhpString escapestr) => MySql.mysql_escape_string(Connection.Context, escapestr);
 
         //bool real_query(string $query )
         //public mysqli_result reap_async_query(void )
@@ -369,7 +373,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Selects the default database for database queries.
         /// </summary>
-        public bool select_db(string dbname) => _connection.SelectDb(dbname);
+        public bool select_db(string dbname) => Connection.SelectDb(dbname);
 
         //bool send_query(string $query )
 
@@ -386,14 +390,14 @@ namespace Peachpie.Library.MySql.MySqli
             }
 
             // set the charset:
-            var result = _connection.ExecuteCommand("SET NAMES " + charset, CommandType.Text, false, null, true);
+            var result = Connection.ExecuteCommand("SET NAMES " + charset, CommandType.Text, false, null, true);
             if (result != null)
             {
                 result.Dispose();
             }
 
             // success if there were no errors:
-            return _connection.LastException == null;
+            return Connection.LastException == null;
         }
 
         //bool set_local_infile_handler(mysqli $link , callable $read_func )

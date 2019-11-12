@@ -1,4 +1,5 @@
 <?php
+namespace functions\anonymous_004;
 // A basic shopping cart which contains a list of added products
 // and the quantity of each product. Includes a method which
 // calculates the total price of the items in the cart using a

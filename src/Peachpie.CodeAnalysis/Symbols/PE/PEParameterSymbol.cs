@@ -654,6 +654,27 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override FieldSymbol DefaultValueField
+        {
+            get
+            {
+                var attr = DefaultValueAttribute;
+                if (attr != null)
+                {
+                    // [DefaultValueAttribute( FieldName ) { ExplicitType }]
+                    var fldname = (string)attr.ConstructorArguments[0].Value;
+                    var container = attr.NamedArguments.SingleOrDefault(pair => pair.Key == "ExplicitType").Value.Value as ITypeSymbol
+                        ?? ContainingType;
+
+                    var field = container.GetMembers(fldname).OfType<FieldSymbol>().Single();
+                    Debug.Assert(field.IsStatic);
+                    return field;
+                }
+
+                return null;
+            }
+        }
+
         public override ImmutableArray<Location> Locations
         {
             get

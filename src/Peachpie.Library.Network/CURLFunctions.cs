@@ -231,13 +231,13 @@ namespace Peachpie.Library.Network
             return result;
         }
 
-        static CURLResponse ProcessHttpResponseTask(Context ctx, CURLResource ch, Task<WebResponse> responseTask)
+        static async Task<CURLResponse> ProcessHttpResponseTask(Context ctx, CURLResource ch, Task<WebResponse> responseTask)
         {
             try
             {
                 using (var response = (HttpWebResponse)responseTask.Result)
                 {
-                    return new CURLResponse(ProcessResponse(ctx, ch, response), response, ch);
+                    return new CURLResponse(await ProcessResponse(ctx, ch, response), response, ch);
                 }
             }
             catch (AggregateException agEx)
@@ -254,7 +254,7 @@ namespace Peachpie.Library.Network
                     {
                         case WebExceptionStatus.ProtocolError:
                             // actually ok, 301, 500, etc .. process the response:
-                            return new CURLResponse(ProcessResponse(ctx, ch, (HttpWebResponse)webEx.Response), (HttpWebResponse)webEx.Response, ch);
+                            return new CURLResponse(await ProcessResponse(ctx, ch, (HttpWebResponse)webEx.Response), (HttpWebResponse)webEx.Response, ch);
 
                         case WebExceptionStatus.Timeout:
                             return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, webEx);
@@ -463,7 +463,7 @@ namespace Peachpie.Library.Network
             }
         }
 
-        static PhpValue ProcessResponse(Context ctx, CURLResource ch, HttpWebResponse response)
+        static async Task<PhpValue> ProcessResponse(Context ctx, CURLResource ch, HttpWebResponse response)
         {
             // in case we are returning the response value
             var returnstream = ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN
@@ -490,7 +490,7 @@ namespace Peachpie.Library.Network
                         // in original implementation we should pass them as they are read from socket:
 
                         ch.ProcessingHeaders.User.Invoke(ctx, new[] {
-                            PhpValue.FromClr(ch),
+                            PhpValue.FromClass(ch),
                             PhpValue.Create(statusHeaders)
                         });
 
@@ -519,8 +519,8 @@ namespace Peachpie.Library.Network
                     default:
                         if (outputHeadersStream != null)
                         {
-                            outputHeadersStream.Write(Encoding.ASCII.GetBytes(statusHeaders));
-                            outputHeadersStream.Write(response.Headers.ToByteArray());
+                            await outputHeadersStream.WriteAsync(Encoding.ASCII.GetBytes(statusHeaders));
+                            await outputHeadersStream.WriteAsync(response.Headers.ToByteArray());
                         }
                         else
                         {
@@ -542,9 +542,9 @@ namespace Peachpie.Library.Network
             // read into output stream:
             switch (ch.ProcessingResponse.Method)
             {
-                case ProcessMethodEnum.STDOUT: stream.CopyTo(ctx.OutputStream); break;
+                case ProcessMethodEnum.STDOUT: await stream.CopyToAsync(ctx.OutputStream); break;
                 case ProcessMethodEnum.RETURN: stream.CopyTo(returnstream); break;
-                case ProcessMethodEnum.FILE: stream.CopyTo(ch.ProcessingResponse.Stream.RawStream); break;
+                case ProcessMethodEnum.FILE: await stream.CopyToAsync(ch.ProcessingResponse.Stream.RawStream); break;
                 case ProcessMethodEnum.USER:
                     if (response.ContentLength != 0)
                     {
@@ -615,7 +615,7 @@ namespace Peachpie.Library.Network
         {
             if (ch.ResponseTask != null)
             {
-                ch.Result = ProcessHttpResponseTask(ctx, ch, ch.ResponseTask);
+                ch.Result = ProcessHttpResponseTask(ctx, ch, ch.ResponseTask).GetAwaiter().GetResult();
                 ch.ResponseTask = null;
             }
 

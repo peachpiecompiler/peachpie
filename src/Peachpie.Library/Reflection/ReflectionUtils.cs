@@ -48,30 +48,53 @@ namespace Pchp.Library.Reflection
         /// TODO: move to Peachpie.Runtime
         /// Creates PhpValue from this attribute.
         /// </summary>
-        public static PhpValue ResolveDefaultValueAttribute(this DefaultValueAttribute attr)
+        public static PhpValue ResolveDefaultValueAttribute(this DefaultValueAttribute attr, Context ctx, Type containingType)
         {
-            if (attr.SerializedValue != null && attr.SerializedValue.Length != 0)
+            if (attr == null)
             {
-                using (var stream = new MemoryStream(attr.SerializedValue))
+                return default;
+            }
+
+            // special case, empty array:
+            if (attr.FieldName == "Empty" && attr.ExplicitType == typeof(PhpArray))
+            {
+                // NOTE: make sure the value will be copied when accessed!
+                return PhpArray.Empty;
+            }
+
+            // resolve declaring type (bind trait definitions)
+            var fieldcontainer = attr.ExplicitType ?? containingType;
+
+            if (Core.Reflection.ReflectionUtils.IsTraitType(fieldcontainer) && !fieldcontainer.IsConstructedGenericType)
+            {
+                // construct something! T<object>
+                // NOTE: "self::class" will refer to "System.Object"
+                fieldcontainer = fieldcontainer.MakeGenericType(typeof(object));
+            }
+
+            //
+            var field = fieldcontainer.GetField(attr.FieldName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.GetField);
+            if (field != null)
+            {
+                Debug.Assert(field.IsStatic);
+                var value = field.GetValue(null);
+                if (value is Func<Context, PhpValue> func)
                 {
-                    var reader = new PhpSerialization.PhpSerializer.ObjectReader(null, Encoding.UTF8, stream, default);
-                    return reader.Deserialize();
+                    return func(ctx);
+                }
+                else
+                {
+                    return PhpValue.FromClr(value);
                 }
             }
             else
             {
-                switch (attr.Type)
-                {
-                    case DefaultValueAttribute.DefaultValueType.PhpArray:
-                        return PhpArray.NewEmpty();
-                    default:
-                        Debug.Fail("Unexpected data.");
-                        return default;
-                }
+                Debug.Fail($"Backing field {attr.FieldName} for parameter default value not found.");
+                return default;
             }
         }
 
-        public static List<ReflectionParameter> ResolveReflectionParameters(ReflectionFunctionAbstract function, MethodInfo[] overloads)
+        public static List<ReflectionParameter> ResolveReflectionParameters(Context ctx, ReflectionFunctionAbstract function, MethodInfo[] overloads)
         {
             var parameters = new List<ReflectionParameter>();
 
@@ -97,7 +120,7 @@ namespace Pchp.Library.Reflection
                     }
                     else if ((defaultValueAttr = p.GetCustomAttribute<DefaultValueAttribute>()) != null)
                     {
-                        defaultValue = ResolveDefaultValueAttribute(defaultValueAttr);
+                        defaultValue = defaultValueAttr.ResolveDefaultValueAttribute(ctx, overloads[mi].DeclaringType);
                     }
                     else
                     {

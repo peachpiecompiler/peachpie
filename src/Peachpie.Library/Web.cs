@@ -29,6 +29,15 @@ namespace Pchp.Library
         public const int CONNECTION_ABORTED = 1;
         public const int CONNECTION_TIMEOUT = 2;
 
+        public const int PHP_QUERY_RFC1738 = (int)PhpQueryRfc.RFC1738;
+        public const int PHP_QUERY_RFC3986 = (int)PhpQueryRfc.RFC3986;
+
+        enum PhpQueryRfc
+        {
+            RFC1738 = 1,
+            RFC3986 = 2,
+        }
+
         #endregion
 
         #region base64_decode, base64_encode
@@ -149,7 +158,18 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_url(string url)
         {
-            var match = ParseUrlMethods.ParseUrlRegEx.Match(url ?? string.Empty);
+            url ??= string.Empty;
+
+            if (url.Length == 0)
+            {
+                // empty URL results in following array to be returned:
+                return new PhpArray(1)
+                {
+                    { "path", string.Empty },
+                };
+            }
+
+            var match = ParseUrlMethods.ParseUrlRegEx.Match(url);
 
             if (match == null || !match.Success || match.Groups["port"].Value.Length > 5)   // not matching or port number too long
             {
@@ -213,19 +233,19 @@ namespace Pchp.Library
                 return null;
             }
 
-            PhpArray result = new PhpArray(8);
+            var result = new PhpArray(8);
 
             const char neutralChar = '_';
 
             // store segments into the array (same order as it is in PHP)
-            if (scheme != null) result["scheme"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(scheme, neutralChar);
-            if (host != null) result["host"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(host, neutralChar);
-            if (port != null) result["port"] = (PhpValue)port_int;
-            if (user != null) result["user"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(user, neutralChar);
-            if (pass != null) result["pass"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(pass, neutralChar);
-            if (path != null) result["path"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(path, neutralChar);
-            if (query != null) result["query"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(query, neutralChar);
-            if (fragment != null) result["fragment"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(fragment, neutralChar);
+            if (scheme != null) result["scheme"] = ParseUrlMethods.ReplaceControlCharset(scheme, neutralChar);
+            if (host != null) result["host"] = ParseUrlMethods.ReplaceControlCharset(host, neutralChar);
+            if (port != null) result["port"] = port_int;
+            if (user != null) result["user"] = ParseUrlMethods.ReplaceControlCharset(user, neutralChar);
+            if (pass != null) result["pass"] = ParseUrlMethods.ReplaceControlCharset(pass, neutralChar);
+            if (path != null) result["path"] = ParseUrlMethods.ReplaceControlCharset(path, neutralChar);
+            if (query != null) result["query"] = ParseUrlMethods.ReplaceControlCharset(query, neutralChar);
+            if (fragment != null) result["fragment"] = ParseUrlMethods.ReplaceControlCharset(fragment, neutralChar);
 
             return result;
         }
@@ -239,30 +259,41 @@ namespace Pchp.Library
 		/// or <c>{schema}:{path}?{query}#{fragment}</c>.
 		/// </param>
         /// <param name="component">Specify one of PHP_URL_SCHEME, PHP_URL_HOST, PHP_URL_PORT, PHP_URL_USER, PHP_URL_PASS, PHP_URL_PATH, PHP_URL_QUERY or PHP_URL_FRAGMENT to retrieve just a specific URL component as a string (except when PHP_URL_PORT is given, in which case the return value will be an integer).</param>
-		public static string parse_url(string url, int component)
+        /// <returns>The URL component or <c>NULL</c> if the requested component is not parsed.</returns>
+		public static PhpValue parse_url(string url, int component)
         {
+            var item = PhpValue.Null;
+
             var array = parse_url(url);
             if (array != null)
             {
-                switch (component)
+                if (component < 0)
                 {
-                    case PHP_URL_FRAGMENT: return array["fragment"].AsString();
-                    case PHP_URL_HOST: return array["host"].AsString();
-                    case PHP_URL_PASS: return array["pass"].AsString();
-                    case PHP_URL_PATH: return array["path"].AsString();
-                    case PHP_URL_PORT: return array["port"].AsString(); // might be null
-                    case PHP_URL_QUERY: return array["query"].AsString();
-                    case PHP_URL_SCHEME: return array["scheme"].AsString();
-                    case PHP_URL_USER: return array["user"].AsString();
+                    // negative {component} results in the whole array to be returned
+                    item = array;
+                }
+                else
+                {
+                    switch (component)
+                    {
+                        case PHP_URL_FRAGMENT: item = array["fragment"]; break;
+                        case PHP_URL_HOST: item = array["host"]; break;
+                        case PHP_URL_PASS: item = array["pass"]; break;
+                        case PHP_URL_PATH: item = array["path"]; break;
+                        case PHP_URL_PORT: item = array["port"]; break;
+                        case PHP_URL_QUERY: item = array["query"]; break;
+                        case PHP_URL_SCHEME: item = array["scheme"]; break;
+                        case PHP_URL_USER: item = array["user"]; break;
 
-                    default:
-                        //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_invalid_value", "component", component));                        
-                        throw new ArgumentException(nameof(component));
+                        default:
+                            //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_invalid_value", "component", component));                        
+                            throw new ArgumentException(nameof(component));
+                    }
                 }
             }
 
             //
-            return null;
+            return item;
         }
 
         /// <summary>
@@ -591,6 +622,28 @@ namespace Pchp.Library
 
         #region http_build_query, get_browser
 
+        static string UrlEncode(string value, PhpQueryRfc type)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            switch (type)
+            {
+                case PhpQueryRfc.RFC3986:
+                    // NOTE: this is not correct,
+                    // behavior depends on IRI configuration
+                    // see https://docs.microsoft.com/en-us/dotnet/api/system.uri.escapeuristring#remarks
+                    return Uri.EscapeUriString(value);
+
+                case PhpQueryRfc.RFC1738:
+                default:
+                    // ' ' encoded as '+'
+                    return WebUtility.UrlEncode(value);
+            }
+        }
+
         /// <summary>
         /// Generates a URL-encoded query string from the associative (or indexed) array provided. 
         /// </summary>
@@ -611,17 +664,17 @@ namespace Pchp.Library
         /// </param>
         /// <param name="encType"></param>
         /// <returns>Returns a URL-encoded string </returns>
-        public static string http_build_query(Context ctx, PhpValue formData, string numericPrefix = null, string argSeparator = null, int encType = 0)
-            => http_build_query(ctx, formData, numericPrefix, argSeparator ?? "&", encType, null);
-
-        private static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator, int encType = 0, string indexerPrefix = null)
+        public static string http_build_query(Context ctx, PhpValue formData, string numericPrefix = null, string argSeparator = null, int encType = PHP_QUERY_RFC1738)
         {
-            var str_builder = new StringBuilder(64);  // statistically the length of the result
-            var result = new System.IO.StringWriter(str_builder);
+            return http_build_query(ctx, formData, numericPrefix, argSeparator ?? "&", (PhpQueryRfc)encType, null);
+        }
 
-            bool isNotFirst = false;
+        static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator, PhpQueryRfc encType, string indexerPrefix)
+        {
+            var result = new StringBuilder(64);
+            var first = true;
 
-            var enumerator = formData.GetForeachEnumerator(false, default(RuntimeTypeHandle));
+            var enumerator = formData.GetForeachEnumerator(false, default);
             while (enumerator.MoveNext())
             {
                 var key = enumerator.CurrentKey;
@@ -630,8 +683,8 @@ namespace Pchp.Library
                 // the query parameter name (key name)
                 // the parameter name is URL encoded
                 string keyName = key.IsLong(out var l)
-                    ? WebUtility.UrlEncode(numericPrefix) + l.ToString()
-                    : WebUtility.UrlEncode(key.ToStringOrThrow(ctx));
+                    ? UrlEncode(numericPrefix, encType) + l.ToString()
+                    : UrlEncode(key.ToStringOrThrow(ctx), encType);
 
                 if (indexerPrefix != null)
                 {
@@ -644,40 +697,36 @@ namespace Pchp.Library
                 {
                     // value is an array, emit query recursively, use current keyName as an array variable name
 
-                    string queryStr = http_build_query(ctx, valueArray, null, argSeparator, encType, keyName);  // emit the query recursively
-
-                    if (queryStr != null && queryStr.Length > 0)
+                    var queryStr = http_build_query(ctx, valueArray, null, argSeparator, encType, keyName);  // emit the query recursively
+                    if (string.IsNullOrEmpty(queryStr) == false)
                     {
-                        if (isNotFirst)
-                            result.Write(argSeparator);
+                        if (!first)
+                        {
+                            result.Append(argSeparator);
+                        }
 
-                        result.Write(queryStr);
+                        result.Append(queryStr);
                     }
                 }
                 else
                 {
                     // simple value, emit query in a form of (key=value), URL encoded !
 
-                    if (isNotFirst)
-                        result.Write(argSeparator);
+                    if (!first)
+                    {
+                        result.Append(argSeparator);
+                    }
 
-                    if (!value.IsEmpty)
-                    {
-                        result.Write(keyName + "=" + WebUtility.UrlEncode(value.ToStringOrThrow(ctx)));    // == "keyName=keyValue"
-                    }
-                    else
-                    {
-                        result.Write(keyName + "=");    // == "keyName="
-                    }
+                    result.Append(keyName);
+                    result.Append("=");
+                    result.Append(UrlEncode(value.ToStringOrThrow(ctx), encType));    // == "keyName=keyValue"
                 }
 
                 // separator will be used in next loop
-                isNotFirst = true;
+                first = false;
             }
 
-            result.Flush();
-
-            return str_builder.ToString();
+            return result.ToString();
         }
 
         /// <summary>
@@ -823,7 +872,7 @@ namespace Pchp.Library
                 return string.Empty;
             }
 
-            return UpperCaseEncodedChars(WebUtility.UrlEncode(str)).Replace("+", "%20");   // ' ' => '+' => '%20'
+            return UpperCaseEncodedChars(UrlEncode(str, PhpQueryRfc.RFC3986)); // ' ' => '%20'
         }
 
         /// <summary>
@@ -851,7 +900,7 @@ namespace Pchp.Library
                 return string.Empty;
             }
 
-            return UpperCaseEncodedChars(System.Web.HttpUtility.UrlEncode(str, ctx.StringEncoding));
+            return UpperCaseEncodedChars(System.Web.HttpUtility.UrlEncode(str, ctx.StringEncoding));    // ' ' => '+'
         }
 
         static string UpperCaseEncodedChars(string encoded)

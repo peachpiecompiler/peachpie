@@ -1,4 +1,5 @@
 <?php
+namespace generators\generators_002;
 class A {
 
     public $a = 5;

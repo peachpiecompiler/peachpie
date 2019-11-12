@@ -1,4 +1,5 @@
 <?php
+namespace functions\anonymous_007;
 
 class A {
   private function foo() {

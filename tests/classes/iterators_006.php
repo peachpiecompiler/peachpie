@@ -1,6 +1,7 @@
 <?php
+namespace classes\iterators_006;
 
-class ai implements Iterator {
+class ai implements \Iterator {
 
 	private $array;
 
@@ -33,7 +34,7 @@ class ai implements Iterator {
 	}
 }
 
-class a implements IteratorAggregate {
+class a implements \IteratorAggregate {
 
 	public function getIterator() {
 		return new ai();

@@ -336,6 +336,16 @@
     <value>Resource identifier '{0}' has already been used in this assembly</value>
   </data>
   <data name="INF_DestructDiscouraged" xml:space="preserve">
-    <value>Use of '__destruct' is discouraged. Garbage collection is non-deterministic unlike in PHP.</value>
+    <value>Use of '__destruct' is discouraged. Garbage collection behavior is a subject to change.</value>
+  </data>
+  <data name="ERR_DefaultParameterValueTypeMismatch" xml:space="preserve">
+    <value>Default value for parameter ${0} with a {1} type can only be {1} or NULL, {2} type given</value>
+  </data>
+  <data name="ERR_InvalidConstantExpression" xml:space="preserve">
+    <value>Constant expression contains invalid operations</value>
+    <comment>field or parameter initializer contains invalid expression</comment>
+  </data>
+  <data name="ERR_ThisOutOfObjectContext" xml:space="preserve">
+    <value>Using $this when not in object context</value>
   </data>
 </root>

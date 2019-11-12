@@ -4,7 +4,7 @@ using Pchp.Core;
 
 namespace Peachpie.Test
 {
-    class Program
+    public class Program
     {
         const string ScriptPath = "index.php";
 
@@ -24,6 +24,7 @@ namespace Peachpie.Test
                     EmitDebugInformation = true,
                     IsSubmission = false,
                     AdditionalReferences = new string[] {
+                        typeof(Program).Assembly.Location,
                         typeof(Library.Graphics.PhpImage).Assembly.Location,
                         typeof(Library.MySql.MySql).Assembly.Location,
                         typeof(Library.Network.CURLFunctions).Assembly.Location,

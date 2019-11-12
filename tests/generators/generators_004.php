@@ -1,4 +1,5 @@
 <?php
+namespace generators\generators_004;
 function gnr() {
     $value = 5;
 

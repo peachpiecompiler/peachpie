@@ -1,4 +1,5 @@
 <?php
+namespace pcre\preg_match_004;
 
 echo preg_match("~^\S~", "\nA") ? 1 : 0;
 echo preg_match("~^\s~", "\nA") ? 1 : 0;

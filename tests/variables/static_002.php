@@ -1,4 +1,5 @@
 <?php
+namespace variables\static_002;
 
 function foo() {
 	static $b = true;

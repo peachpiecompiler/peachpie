@@ -1,4 +1,5 @@
 <?php
+namespace arrays\array_diff_intersect;
 
 $array1 = array("a" => "green", "red", "red", "blue", "blue", "blue"); 
 $array2 = array("b" => "green", "yellow", "q" => "red", "red", "blue", "blue"); 

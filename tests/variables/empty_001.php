@@ -1,7 +1,8 @@
 <?php
+namespace variables\empty_001;
 
-$a = new stdclass;
-$a->p = new stdclass;
+$a = new \stdClass;
+$a->p = new \stdClass;
 $a->p->p = 123;
 
 echo empty($a) ? 1 : 0;

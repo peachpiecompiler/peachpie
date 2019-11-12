@@ -689,7 +689,7 @@ namespace Pchp.Core
             throw new NotImplementedException();
         }
 
-        public static PhpValue PropertyGetValue(RuntimeTypeHandle caller, object instance, PhpValue prop)
+        public static PhpValue PropertyGetValue(RuntimeTypeHandle caller, object instance, PhpValue propertyName)
         {
             var tinfo = instance.GetPhpTypeInfo();
 
@@ -755,6 +755,47 @@ namespace Pchp.Core
             {
                 throw new ArgumentException();
             }
+        }
+
+        /// <summary>
+        /// Resolves the runtime property by looking into runtime properties and eventually invoking the <c>__get</c> magic method.
+        /// </summary>
+        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, object/*!*/instance, string propertyName)
+        {
+            return RuntimePropertyGetValue(ctx, instance.GetPhpTypeInfo(), instance, propertyName);
+        }
+
+        /// <summary>
+        /// Resolves the runtime property by looking into runtime properties and eventually invoking the <c>__get</c> magic method.
+        /// </summary>
+        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, PhpTypeInfo/*!*/type, object/*!*/instance, string propertyName)
+        {
+            var runtimeFields = type.GetRuntimeFields(instance);
+            if (runtimeFields != null && runtimeFields.TryGetValue(propertyName, out var value))
+            {
+                return value;
+            }
+
+            var __get = type.RuntimeMethods[TypeMethods.MagicMethods.__get];
+            if (__get != null)
+            {
+                // NOTE: magic methods must have public visibility, therefore the visibility check is unnecessary
+
+                // int subkey1 = access.Write() ? 1 : access.Unset() ? 2 : access.Isset() ? 3 : 4;
+                int subkey = propertyName.GetHashCode() ^ (1 << 4/*subkey1*/);
+
+                using (var token = new Context.RecursionCheckToken(ctx, instance, subkey))
+                {
+                    if (!token.IsInRecursion)
+                    {
+                        return __get.Invoke(ctx, instance, propertyName);
+                    }
+                }
+            }
+
+            //
+            PhpException.UndefinedProperty(type.Name, propertyName);
+            return PhpValue.Void;
         }
 
         #endregion
@@ -1667,6 +1708,5 @@ namespace Pchp.Core
         public static string NormalizePath(string value) => Utilities.CurrentPlatform.NormalizeSlashes(value);
 
         #endregion
-
     }
 }

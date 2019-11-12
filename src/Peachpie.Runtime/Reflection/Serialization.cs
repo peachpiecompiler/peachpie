@@ -18,9 +18,9 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateSerializableProperties(object/*!*/ instance, PhpTypeInfo tinfo)
         {
             return TypeMembersUtils.EnumerateInstanceFields(instance,
-                (m, d) => FormatSerializedPropertyName(m is FieldInfo f ? (PhpPropertyInfo)new PhpPropertyInfo.ClrFieldProperty(tinfo, f) : new PhpPropertyInfo.ClrProperty(tinfo, (PropertyInfo)m), d),
-                (k) => k.ToString(),
-                (m) => (m is PropertyInfo p ? p.SetMethod != null : true) && TypeMembersUtils.s_notInternalFieldsPredicate(m));
+                FormatSerializedPropertyName,
+                TypeMembersUtils.s_keyToString,
+                (m) => !m.IsReadOnly);
         }
 
         /// <summary>
@@ -39,18 +39,10 @@ namespace Pchp.Core.Reflection
             Debug.Assert(source.GetType() == tinfo.Type.AsType());
 
             // copy CLR fields, skipping runtime fields
-            foreach (var prop in TypeMembersUtils.EnumerateInstanceFields(source, (m, d) => m, null, null, true))
+            foreach (var prop in TypeMembersUtils.EnumerateInstanceFields(source, Utilities.FuncExtensions.Identity<PhpPropertyInfo>(), null, null, ignoreRuntimeFields: true))
             {
                 var value = prop.Value.DeepCopy();
-
-                if (prop.Key is FieldInfo f)
-                {
-                    f.SetValue(target, value.ToClr(f.FieldType));
-                }
-                else if (prop.Key is PropertyInfo p)
-                {
-                    p.SetValue(target, value.ToClr(p.PropertyType));
-                }
+                prop.Key.SetValue(null, target, value);
             }
 
             // fast copy of runtime fields
@@ -109,12 +101,11 @@ namespace Pchp.Core.Reflection
 		/// Formats a property name for serialization according to its visibility and declaing type.
 		/// </summary>
 		/// <param name="property">The property info.</param>
-        /// <param name="declaringtype">Declaring type of the property.</param>
 		/// <returns>The property name formatted according to the <paramref name="property"/> as used by PHP serialization.
 		/// </returns>
-		public static string/*!*/ FormatSerializedPropertyName(PhpPropertyInfo/*!*/ property, PhpTypeInfo declaringtype)
+		public static string/*!*/ FormatSerializedPropertyName(PhpPropertyInfo/*!*/ property)
         {
-            if (property.IsPrivate) return "\0" + declaringtype.Name + "\0" + property.PropertyName;
+            if (property.IsPrivate) return "\0" + property.ContainingType.Name + "\0" + property.PropertyName;
             if (property.IsProtected) return "\0*\0" + property.PropertyName;
             return property.PropertyName;
         }

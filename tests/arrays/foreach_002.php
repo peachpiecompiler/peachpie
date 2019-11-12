@@ -1,4 +1,5 @@
 <?php
+namespace arrays\foreach_002;
 
 function test_aliases($arr) {
 	

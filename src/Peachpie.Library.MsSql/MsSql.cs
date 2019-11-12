@@ -19,6 +19,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Resources;
 
 namespace Peachpie.Library.MsSql
@@ -609,8 +610,11 @@ namespace Peachpie.Library.MsSql
         /// <returns>The PHP object.</returns>
         public static stdClass mssql_fetch_field(PhpResource resultHandle, int fieldIndex = -1)
         {
-            PhpSqlDbResult result = PhpSqlDbResult.ValidResult(resultHandle);
-            if (result == null) return null;
+            var result = PhpSqlDbResult.ValidResult(resultHandle);
+            if (result == null)
+            {
+                return null;
+            }
 
             if (fieldIndex < 0)
             {
@@ -620,17 +624,19 @@ namespace Peachpie.Library.MsSql
             //DataRow info = result.GetSchemaRowInfo(fieldIndex);
             //if (info == null) return null;
             //string s;
-
+            
             string php_type = result.GetPhpFieldType(fieldIndex);
 
-            var arr = new PhpArray(5);
-            arr.Add("name", result.GetFieldName(fieldIndex));
-            //arr.Add("column_source", (s = info["BaseColumnName"] as string) != null ? s : ""); // TODO: column_source
-            arr.Add("max_length", result.GetFieldLength(fieldIndex));
-            arr.Add("numeric", result.IsNumericType(php_type) ? 1 : 0);
-            arr.Add("type", php_type);
+            var arr = new PhpArray(5)
+            {
+                { "name", result.GetFieldName(fieldIndex) },
+                // { ("column_source", (s = info["BaseColumnName"] as string) != null ? s : "" }, // TODO: column_source
+                { "max_length", result.GetFieldLength(fieldIndex) },
+                { "numeric", result.IsNumericType(php_type) ? 1 : 0 },
+                { "type", php_type },
+            };
 
-            return arr.ToObject();
+            return arr.AsStdClass();
         }
 
         /// <summary>

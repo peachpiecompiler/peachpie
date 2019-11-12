@@ -38,7 +38,10 @@ namespace Pchp.Core.Dynamic
                 var isobject = bound.TargetType != null;
                 if (isobject == false)
                 {
-                    throw new NotSupportedException();  // TODO: VariableMisusedAsObject
+                    // VariableMisusedAsObject
+                    return new DynamicMetaObject(
+                        BinderHelpers.VariableMisusedAsObject(target.Expression, false),
+                        bound.Restrictions);
                 }
 
                 // instance := (T)instance

@@ -1,4 +1,5 @@
 <?php
+namespace operators\instanceof_002;
 class A {
   public function test($x) {
     if ($x instanceof $this) {

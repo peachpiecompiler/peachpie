@@ -1,4 +1,5 @@
 <?php
+namespace classes\visibility_001;
 
 // https://github.com/peachpiecompiler/peachpie/issues/225
 

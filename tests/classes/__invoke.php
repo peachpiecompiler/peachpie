@@ -1,4 +1,5 @@
 <?php
+namespace classes\__invoke;
 
 class X {
 	function __invoke($a, $b)

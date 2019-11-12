@@ -140,11 +140,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison, PhpException,
-            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, DefaultValueType, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute,
+            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
+            RuntimeChain_ChainEnd, RuntimeChain_Value_T, RuntimeChain_Property_T, RuntimeChain_ArrayItem_T, RuntimeChain_ArrayNewItem_T,
             PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable, QueryValue_T, QueryValue_DummyFieldsOnlyCtor,
@@ -199,7 +200,6 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
             NotNullAttribute = Create("NotNullAttribute");
             DefaultValueAttribute = Create("DefaultValueAttribute");
-            DefaultValueType = Create("DefaultValueAttribute+DefaultValueType");
             PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
@@ -218,6 +218,12 @@ namespace Pchp.CodeAnalysis.Symbols
             Dynamic_TargetTypeParam = Create("Dynamic.TargetTypeParam");
             Dynamic_CallerTypeParam = Create("Dynamic.CallerTypeParam");
             Dynamic_UnpackingParam_T = Create("Dynamic.UnpackingParam`1");
+
+            RuntimeChain_ChainEnd = Create("Dynamic.RuntimeChain.ChainEnd");
+            RuntimeChain_Value_T = Create("Dynamic.RuntimeChain.Value`1");
+            RuntimeChain_Property_T = Create("Dynamic.RuntimeChain.Property`1");
+            RuntimeChain_ArrayItem_T = Create("Dynamic.RuntimeChain.ArrayItem`1");
+            RuntimeChain_ArrayNewItem_T = Create("Dynamic.RuntimeChain.ArrayNewItem`1");
 
             PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");
@@ -289,9 +295,10 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (t.Symbol == null)
                 {
+                    var fullname = t.FullName;
+
                     // nested types: todo: in Lookup
                     string nested = null;
-                    string fullname = t.FullName;
                     int plus = fullname.IndexOf('+');
                     if (plus > 0)
                     {
@@ -301,11 +308,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     var mdname = MetadataTypeName.FromFullName(fullname, false);
                     var symbol = coreass.LookupTopLevelMetadataType(ref mdname, true);
-                    if (symbol != null && !symbol.IsErrorType())
+                    if (symbol.IsValidType())
                     {
                         if (nested != null)
                         {
-                            symbol = symbol.GetTypeMembers(nested).Single();
+                            symbol = symbol
+                                .GetTypeMembers(nested)
+                                .SingleOrDefault();
+
+                            if (symbol == null)
+                            {
+                                continue;
+                            }
                         }
 
                         _typetable[symbol] = t;

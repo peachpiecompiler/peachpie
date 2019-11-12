@@ -1,4 +1,5 @@
 <?php
+namespace variables\indirect_002;
 
 function f() {
 	$a = array(1=>"hello", "two"=>"world");

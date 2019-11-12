@@ -83,8 +83,23 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(t != null);
             Debug.Assert(t != typeof(PhpAlias));
-            
+
             return !t.IsValueType && !typeof(PhpArray).IsAssignableFrom(t) && t != typeof(string) && t != typeof(IPhpCallable);
+        }
+
+        /// <summary>
+        /// Determines if the given type represents a compiled PHP's trait.
+        /// </summary>
+        /// <param name="t">Type, cannot be <c>null</c>.</param>
+        public static bool IsTraitType(Type t)
+        {
+            // [PhpTraitAttribute]
+            // public sealed class T { ... }
+
+            return
+                t.IsSealed &&
+                t.IsGenericTypeDefinition &&
+                t.GetCustomAttribute<PhpTraitAttribute>(false) != null;
         }
 
         /// <summary>
@@ -126,6 +141,7 @@ namespace Pchp.Core.Reflection
         {
             typeof(object),
             typeof(IPhpCallable),
+            typeof(IDisposable),
             typeof(PhpResource),
             typeof(System.Exception),
             typeof(System.Dynamic.IDynamicMetaObjectProvider),
@@ -161,6 +177,33 @@ namespace Pchp.Core.Reflection
             return attrs != null && attrs.Length != 0
                 ? (ScriptAttribute)attrs[0]
                 : null;
+        }
+
+        public static bool IsPhpPublic(this MemberInfo m)
+        {
+            if (m is FieldInfo f) return f.IsPublic;
+            if (m is PropertyInfo p) return IsPhpPublic(p.GetMethod);
+            if (m is MethodBase method) return method.IsPublic;
+
+            return false;
+        }
+
+        public static bool IsPhpProtected(this MemberInfo m)
+        {
+            if (m is FieldInfo f) return f.IsAssembly || f.IsFamily || f.IsFamilyAndAssembly || f.IsFamilyOrAssembly;
+            if (m is MethodBase method) return method.IsAssembly || method.IsFamily || method.IsFamilyAndAssembly || method.IsFamilyOrAssembly;
+            if (m is PropertyInfo p) return IsPhpProtected(p.GetMethod);
+
+            return false;
+        }
+
+        public static bool IsPhpPrivate(this MemberInfo m)
+        {
+            if (m is FieldInfo f) return f.IsPrivate;
+            if (m is MethodBase method) return method.IsPrivate;
+            if (m is PropertyInfo p) return IsPhpProtected(p.GetMethod);
+
+            return true;
         }
     }
 }

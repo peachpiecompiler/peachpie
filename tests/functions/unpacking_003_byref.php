@@ -1,4 +1,5 @@
 <?php
+namespace functions\unpacking_003_byref;
 
 function test($val1, $val2, &...$refs) {
     foreach ($refs as &$ref) ++$ref;

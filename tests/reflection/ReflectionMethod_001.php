@@ -1,4 +1,5 @@
 <?php
+namespace reflection\ReflectionMethod_001;
 
 interface I {
 	function f();
@@ -17,22 +18,22 @@ class C extends B implements I {
 }
 
 class D extends C {
-	
+
 }
 
 function test() {
-	$m = new ReflectionMethod("D", "f");
+	$m = new \ReflectionMethod(__NAMESPACE__ . "\\D", "f");
 
 	echo $m->class, PHP_EOL;					// C
 	echo $m->getPrototype()->class, PHP_EOL;	// I
 
-	$m = new ReflectionMethod("B", "f");
+	$m = new \ReflectionMethod(__NAMESPACE__ . "\\B", "f");
 	echo $m->getPrototype()->class, PHP_EOL;	// A
-	
+
 	try {
 		echo $m->getPrototype()->getPrototype()->class, PHP_EOL;	// ReflectionException
 	}
-	catch (Throwable $e) {
+	catch (\Throwable $e) {
 		echo "no prototype", PHP_EOL;
 	}
 }

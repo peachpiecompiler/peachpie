@@ -1,4 +1,5 @@
 <?php
+namespace classes\conditional_002;
 
 $a = true;
 

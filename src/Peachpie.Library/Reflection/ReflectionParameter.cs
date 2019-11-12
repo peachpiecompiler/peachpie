@@ -60,7 +60,7 @@ namespace Pchp.Library.Reflection
         /// <summary>Updates the parameter information with an overloaded parameter information.</summary>
         internal void AddOverload(Type type, bool allowsNull, bool isVariadic, string name, PhpValue defaultValue = default(PhpValue))
         {
-            if (hasTypeInternal(type) && !hasTypeInternal(_type))
+            if (!hasTypeInternal(_type) && hasTypeInternal(type))
             {
                 _type = type;
             }
@@ -68,9 +68,15 @@ namespace Pchp.Library.Reflection
             _allowsNull |= allowsNull;
             _isVariadic |= isVariadic;
 
-            if (_defaultValue.IsDefault && !defaultValue.IsDefault)
+            if (!_defaultValue.IsSet && !defaultValue.IsDefault)
             {
                 _defaultValue = defaultValue;
+            }
+
+            if (!Core.Reflection.ReflectionUtils.IsAllowedPhpName(_name))
+            {
+                _name = name;
+                _isVariadic = isVariadic;
             }
         }
 
@@ -129,7 +135,7 @@ namespace Pchp.Library.Reflection
                     : new ReflectionMethod(declaringclass, routine);
 
                 // resolve parameter:
-                var parameters = ReflectionUtils.ResolveReflectionParameters(func, routine.Methods);
+                var parameters = ReflectionUtils.ResolveReflectionParameters(ctx, func, routine.Methods);
                 var pstr = parameter.AsString();
                 if (pstr != null)
                 {
@@ -168,7 +174,7 @@ namespace Pchp.Library.Reflection
 
         public ReflectionFunctionAbstract getDeclaringFunction() => _function;
 
-        public PhpValue getDefaultValue() => _defaultValue.IsDefault ? throw new ReflectionException() : _defaultValue;
+        public PhpValue getDefaultValue() => _defaultValue.IsDefault ? throw new ReflectionException() : _defaultValue.DeepCopy();
 
         public string getDefaultValueConstantName() => null; // we don't know
 

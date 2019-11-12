@@ -12,14 +12,20 @@ namespace Peachpie.Library.PDO
     /// <summary>
     /// PDO driver base class
     /// </summary>
-    /// <seealso cref="IPDODriver" />
     [PhpHidden]
-    public abstract class PDODriver : IPDODriver
+    public abstract class PDODriver
     {
-        /// <inheritDoc />
+        /// <summary>
+        /// Gets the driver name (used in DSN)
+        /// </summary>
         public string Name { get; }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Gets the client version.
+        /// </summary>
+        /// <value>
+        /// The client version.
+        /// </value>
         public virtual string ClientVersion
         {
             get
@@ -57,7 +63,14 @@ namespace Peachpie.Library.PDO
         /// <returns></returns>
         protected abstract string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options);
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Opens a new database connection.
+        /// </summary>
+        /// <param name="dsn">The DSN.</param>
+        /// <param name="user">The user.</param>
+        /// <param name="password">The password.</param>
+        /// <param name="options">The options.</param>
+        /// <returns></returns>
         public virtual DbConnection OpenConnection(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
             var connection = this.DbFactory.CreateConnection();
@@ -66,25 +79,46 @@ namespace Peachpie.Library.PDO
             return connection;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Gets the methods added to the PDO instance when this driver is used.
+        /// Returns <c>null</c> if the method is not defined.
+        /// </summary>
         public virtual ExtensionMethodDelegate TryGetExtensionMethod(string name) => null;
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Gets the last insert identifier.
+        /// </summary>
+        /// <param name="pdo">Reference to corresponding <see cref="PDO"/> instance.</param>
+        /// <param name="name">The name.</param>
+        /// <returns></returns>
         public abstract string GetLastInsertId(PDO pdo, string name);
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Tries to set a driver specific attribute value.
+        /// </summary>
+        /// <param name="attributes">The current attributes collection.</param>
+        /// <param name="attribute">The attribute to set.</param>
+        /// <param name="value">The value.</param>
+        /// <returns>true if value is valid, or false if value can't be set.</returns>
         public virtual bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, PDO.PDO_ATTR attribute, PhpValue value)
         {
             return false;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Quotes a string for use in a query.
+        /// </summary>
+        /// <param name="str">The string.</param>
+        /// <param name="param">The parameter.</param>
+        /// <returns></returns>
         public virtual string Quote(string str, PDO.PARAM param)
         {
             throw new NotImplementedException();
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Processes DB exception and returns corresponding error info.
+        /// </summary>
         public virtual void HandleException(Exception ex, out string SQLSTATE, out string code, out string message)
         {
             SQLSTATE = string.Empty;
@@ -92,20 +126,24 @@ namespace Peachpie.Library.PDO
             message = ex.Message;
         }
 
-        /// <inheritDoc />
-        public virtual PhpValue GetAttribute(PDO pdo, int attribute)
+        /// <summary>
+        /// Gets the driver specific attribute value
+        /// </summary>
+        /// <param name="pdo">The pdo.</param>
+        /// <param name="attribute">The attribute.</param>
+        /// <returns></returns>
+        public virtual PhpValue GetAttribute(PDO pdo, PDO.PDO_ATTR attribute)
         {
             return PhpValue.Null;
         }
 
-        /// <inheritDoc />
-        public virtual PDOStatement PrepareStatement(Context ctx, PDO pdo, string statement, PhpArray driver_options)
-        {
-            PDOStatement stmt = new PDOStatement(ctx, pdo, statement, driver_options);
-            return stmt;
-        }
-
-        /// <inheritDoc />
+        /// <summary>
+        /// Opens a DataReader.
+        /// </summary>
+        /// <param name="pdo">The pdo.</param>
+        /// <param name="cmd">The command.</param>
+        /// <param name="cursor">The cursor configuration.</param>
+        /// <returns></returns>
         public virtual DbDataReader OpenReader(PDO pdo, DbCommand cmd, PDO.PDO_CURSOR cursor)
         {
             return cmd.ExecuteReader();

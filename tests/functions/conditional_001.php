@@ -1,4 +1,5 @@
 <?php
+namespace functions\conditional_001;
 
 if (true) {
 	function foo($a) {

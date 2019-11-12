@@ -1,6 +1,7 @@
 <?php
+namespace classes\interfaces_003;
 
-class A implements Iterator {
+class A implements \Iterator {
   function rewind() { echo "A"; }
   function next() { }
   function valid() { }
@@ -12,7 +13,7 @@ class B extends A {
   function rewind() { echo "B"; }
 }
 
-function test(Iterator $i) {
+function test(\Iterator $i) {
   $i->rewind();
 }
 

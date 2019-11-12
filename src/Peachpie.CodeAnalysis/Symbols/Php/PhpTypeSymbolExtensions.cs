@@ -36,12 +36,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static IEnumerable<IPhpPropertySymbol> EnumerateProperties(this INamedTypeSymbol t)
         {
-            var result = t.GetMembers().OfType<IPhpPropertySymbol>();
+            var result = t.GetMembers()
+                .OfType<IPhpPropertySymbol>()
+                .Where(p => p.Name.IndexOf('<') < 0);   // only valid declared properties // TODO: helper method
 
             var __statics = TryGetStaticsHolder(t);
             if (__statics != null)
             {
-                result = result.Concat(EnumerateProperties(__statics));
+                result = result.Concat(__statics.GetMembers().OfType<IPhpPropertySymbol>());
             }
 
             var btype = t.BaseType;

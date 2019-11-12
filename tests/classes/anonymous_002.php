@@ -1,4 +1,5 @@
 <?php
+namespace classes\anonymous_002;
 
 class C {
     private function foo() { echo "foo"; }

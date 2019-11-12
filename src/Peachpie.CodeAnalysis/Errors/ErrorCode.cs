@@ -135,6 +135,13 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_CannotEmbedWithoutPdb,
         /// <summary>No overload for method {0} can be called.</summary>
         ERR_NoMatchingOverload,
+        /// <summary>Default value for parameter ${0} with a {1} type can only be {1} or NULL, {2} given</summary>
+        ERR_DefaultParameterValueTypeMismatch,
+        /// <summary>Constant expression contains invalid operations</summary>
+        ERR_InvalidConstantExpression,
+        /// <summary>Using $this when not in object context</summary>
+        ERR_ThisOutOfObjectContext,
+
         //
         // Warnings
         //

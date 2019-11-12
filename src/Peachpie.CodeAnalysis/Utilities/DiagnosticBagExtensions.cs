@@ -15,6 +15,8 @@ namespace Pchp.CodeAnalysis
 {
     internal static class DiagnosticBagExtensions
     {
+        public static Location GetLocation(this SyntaxTree tree, ILangElement expr) => tree.GetLocation(expr.Span.ToTextSpan());
+
         public static void Add(
             this DiagnosticBag diagnostics,
             SourceRoutineSymbol routine,

@@ -1,4 +1,5 @@
 <?php
+namespace functions\late_static_002;
 
 class X {
     static function f() {

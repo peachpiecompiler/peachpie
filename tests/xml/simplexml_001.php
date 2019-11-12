@@ -1,4 +1,5 @@
 <?php
+namespace xml\simplexml_001;
 
 function test() {
   $sxe = simplexml_load_string(<<<EOF

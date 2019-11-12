@@ -1,4 +1,5 @@
 <?php
+namespace strings\zlib_001;
 
 $original = str_repeat("hallo php", 48);
 $packed = gzencode($original);

@@ -1,4 +1,5 @@
 <?php
+namespace arrays\pos;
 
 function f($x)
 {

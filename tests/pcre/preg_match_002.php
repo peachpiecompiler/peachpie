@@ -1,4 +1,5 @@
 <?php
+namespace pcre\preg_match_002;
 
 function f() {
 	// The "i" after the pattern delimiter indicates a case-insensitive search

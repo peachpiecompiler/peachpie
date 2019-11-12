@@ -49,6 +49,13 @@ namespace Pchp.Core.Dynamic
                     ifFalse: Bind(Expression.Field(null, Cache.Properties.PhpValue_Null), target, ctx));
             }
 
+            // from (object)null
+            if (arg is ConstantExpression c && ReferenceEquals(c.Value, null) && !target.IsValueType)
+            {
+                // (T)null
+                return Expression.Constant(null, target);
+            }
+
             // from IndirectLocal
             if (arg.Type == Cache.Types.IndirectLocal)
             {
@@ -442,7 +449,7 @@ namespace Pchp.Core.Dynamic
 
         public static Expression BindToValue(Expression expr)
         {
-            // knmown constants:
+            // known constants:
             if (expr is ConstantExpression ce)
             {
                 if (ce.Value == null)

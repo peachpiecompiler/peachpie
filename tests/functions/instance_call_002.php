@@ -1,4 +1,5 @@
 <?php
+namespace functions\instance_call_002;
 
 interface IA {
   public function foo();

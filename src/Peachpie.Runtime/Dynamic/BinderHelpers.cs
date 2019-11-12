@@ -45,7 +45,7 @@ namespace Pchp.Core.Dynamic
         public static bool IsQueryValueParameter(this ParameterInfo p)
         {
             return
-                p.ParameterType.IsGenericType && 
+                p.ParameterType.IsGenericType &&
                 p.ParameterType.GetGenericTypeDefinition() == typeof(QueryValue<>);
         }
 
@@ -92,6 +92,58 @@ namespace Pchp.Core.Dynamic
                 T = null;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Checks the given type refers to <see cref="IRuntimeChain"/> value.
+        /// </summary>
+        public static bool IsRuntimeChain(Type t)
+        {
+            // a value type implementing `IRuntimeChain`,
+            // in a namespace `Dynamic.RuntimeChain`
+            if (t.IsValueType && t.Namespace == typeof(RuntimeChain.ChainEnd).Namespace)
+            {
+                Debug.Assert(t.GetInterfaces().Contains(typeof(IRuntimeChain)));
+
+                return true;
+            }
+
+            //
+            return false;
+        }
+
+        /// <summary>
+        /// Checks the given type refers to <see cref="IRuntimeChain"/> value.
+        /// </summary>
+        public static bool IsRuntimeChain(Type t, out MethodInfo getValue, out MethodInfo getAlias)
+        {
+            if (IsRuntimeChain(t))
+            {
+                getValue = t.GetMethod("GetValue");
+                getAlias = t.GetMethod("GetAlias");
+                return true;
+            }
+
+            //
+            getValue = getAlias = default;
+            return false;
+        }
+
+        public static bool TryAppendRuntimeChain(ref Expression expr, Expression possibleChainExpr, Expression ctx, Type classContext, bool asalias)
+        {
+            if (possibleChainExpr != null && IsRuntimeChain(possibleChainExpr.Type, out var getValue, out var getAlias))
+            {
+                var method = asalias ? getAlias : getValue;
+                var valueExpr = ConvertExpression.BindToValue(expr);
+
+                // Template: chain.GetValue( expr, ctx, classContext )
+                // Template: chain.GetAlias( ref expr, ctx, classContext )
+                expr = Expression.Call(possibleChainExpr, method, valueExpr, ctx, Expression.Constant(classContext, typeof(Type)));
+                
+                return true;
+            }
+
+            return false;
         }
 
         public static bool HasLateStaticParameter(MethodInfo m)
@@ -210,6 +262,11 @@ namespace Pchp.Core.Dynamic
             {
                 // we need to set the type restriction
                 restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, value.GetType()));
+
+                if (!value.GetType().IsAssignableFrom(expr.Type))
+                {
+                    expr = Expression.Convert(expr, value.GetType());
+                }
             }
 
             //
@@ -226,6 +283,17 @@ namespace Pchp.Core.Dynamic
                 value is PhpString);
         }
 
+        /// <summary>
+        /// Template: PhpException.VariableMisusedAsObject( var, bool ) : void
+        /// </summary>
+        public static Expression VariableMisusedAsObject(Expression var, bool reference)
+        {
+            return Expression.Call(
+                typeof(PhpException), "VariableMisusedAsObject", Array.Empty<Type>(),
+                   ConvertExpression.BindToValue(var),
+                   Expression.Constant(reference));
+        }
+
         public static Expression EnsureNotNullPhpArray(Expression variable)
         {
             // variable ?? (variable = [])
@@ -234,7 +302,7 @@ namespace Pchp.Core.Dynamic
                 Expression.Assign(variable, Expression.New(typeof(PhpArray))));
         }
 
-        public static Expression NewPhpArray(Expression[] values)
+        public static Expression NewPhpArray(Expression[] values, Expression ctx, Type classContext = null)
         {
             Expression arr;
 
@@ -248,12 +316,23 @@ namespace Pchp.Core.Dynamic
                 // TODO: values.Length == 1 && values[0] is PhpArray => return values[0], AddRestriction
 
                 // unpacking
-                arr = UnpackArgumentsToArray(null, values);
+                arr = UnpackArgumentsToArray(null, values, ctx, classContext);
             }
             else
             {
-                // 1:1
-                arr = Expression.NewArrayInit(typeof(PhpValue), values.Select(x => ConvertExpression.BindToValue(x)));
+                var items = new List<Expression>(values.Length);
+                for (int i = 0; i < values.Length; i++)
+                {
+                    var expr = values[i];
+                    if (i + 1 < values.Length && TryAppendRuntimeChain(ref expr, values[i + 1], ctx, classContext, false))
+                    {
+                        i++;
+                    }
+
+                    items.Add(ConvertExpression.BindToValue(expr));
+                }
+
+                arr = Expression.NewArrayInit(typeof(PhpValue), items);
             }
 
             // PhpArray.New( values[] )
@@ -269,7 +348,7 @@ namespace Pchp.Core.Dynamic
             return tinfo.IsGenericType && tinfo.GetGenericTypeDefinition() == typeof(UnpackingParam<>);
         }
 
-        public static Expression UnpackArgumentsToArray(MethodBase[] methods, Expression[] arguments)
+        public static Expression UnpackArgumentsToArray(MethodBase[] methods, Expression[] arguments, Expression ctx, Type classContext)
         {
             //if (arguments.Length == 1 && IsArgumentUnpacking(arguments[0]))
             //{
@@ -303,9 +382,10 @@ namespace Pchp.Core.Dynamic
             exprs.Add(Expression.Assign(list_var, Expression.New(list_var.Type.GetConstructor(Cache.Types.Int), Expression.Constant(arguments.Length))));
 
             // arguments.foreach(  Unpack(list, arg_i)  );
-            foreach (var arg in arguments)
+            for (int i = 0; i < arguments.Length; i++)
             {
-                if (IsArgumentUnpacking(arg))
+                var expr = arguments[i];
+                if (IsArgumentUnpacking(expr))
                 {
                     Expression unpackexpr;
 
@@ -313,7 +393,12 @@ namespace Pchp.Core.Dynamic
 
                     // Unpack(List<PhpValue> stack, PhpValue|PhpArray|Traversable argument, ulong byrefs)
 
-                    var arg_value = Expression.Field(arg, "Value"); // UnpackingParam<>.Value
+                    expr = Expression.Field(expr, "Value"); // UnpackingParam<>.Value
+
+                    if (i + 1 < arguments.Length && TryAppendRuntimeChain(ref expr, arguments[i + 1], ctx, classContext, false))
+                    {
+                        i++;
+                    }
 
                     //if (typeof(PhpArray).IsAssignableFrom(arg_value.Type)) // TODO
                     //{
@@ -327,7 +412,7 @@ namespace Pchp.Core.Dynamic
                     {
                         unpackexpr = Expression.Call(
                             typeof(Operators), "Unpack", Cache.Types.Empty,
-                            list_var, ConvertExpression.BindToValue(arg_value), byrefs_expr);
+                            list_var, ConvertExpression.BindToValue(expr), byrefs_expr);
                     }
 
                     exprs.Add(unpackexpr);
@@ -335,7 +420,12 @@ namespace Pchp.Core.Dynamic
                 else
                 {
                     // list.Add((PhpValue)arg)
-                    exprs.Add(Expression.Call(list_var, "Add", Cache.Types.Empty, ConvertExpression.BindToValue(arg)));
+                    if (i + 1 < arguments.Length && TryAppendRuntimeChain(ref expr, arguments[i + 1], ctx, classContext, false))
+                    {
+                        i++;
+                    }
+
+                    exprs.Add(Expression.Call(list_var, "Add", Cache.Types.Empty, ConvertExpression.BindToValue(expr)));
                 }
             }
 
@@ -354,7 +444,7 @@ namespace Pchp.Core.Dynamic
             return target.GetRuntimeFields().FirstOrDefault(ReflectionUtils.IsRuntimeFields);
         }
 
-        static Expression BindAccess(Expression expr, Expression ctx, AccessMask access, Expression rvalue)
+        public static Expression BindAccess(Expression expr, Expression ctx, AccessMask access, Expression rvalue)
         {
             if (access.EnsureObject())
             {
@@ -603,6 +693,29 @@ namespace Pchp.Core.Dynamic
             return null;
         }
 
+        /// <summary>
+        /// Resolves property with respect to staticness and visibility.
+        /// </summary>
+        /// <param name="type">Property receiver.</param>
+        /// <param name="classCtx">Current class context (visibility).</param>
+        /// <param name="static">Whether to lookup static properties.</param>
+        /// <param name="name">Property name.</param>
+        public static PhpPropertyInfo ResolveDeclaredProperty(PhpTypeInfo type, Type classCtx, bool @static, string name)
+        {
+            for (var t = type; t != null; t = t.BaseType)
+            {
+                var p = t.DeclaredFields.TryGetPhpProperty(name);
+                if (p != null && p.IsStatic == @static && p.IsVisible(classCtx))
+                {
+                    return p;
+                }
+            }
+
+            //
+            return null;
+        }
+
+        // NOTE: will be replaced with "IRuntimeChain"
         public static Expression BindField(PhpTypeInfo type, Type classCtx, Expression target, string field, Expression ctx, AccessMask access, Expression rvalue)
         {
             if (access.Write() != (rvalue != null))
@@ -611,15 +724,10 @@ namespace Pchp.Core.Dynamic
             }
 
             // lookup a declared field
-            for (var t = type; t != null; t = t.BaseType)
+            var p = ResolveDeclaredProperty(type, classCtx, target == null, field);
+            if (p != null)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties(field))
-                {
-                    if (p.IsStatic == (target == null) && p.IsVisible(classCtx))
-                    {
-                        return BindAccess(p.Bind(ctx, target), ctx, access, rvalue);
-                    }
-                }
+                return BindAccess(p.Bind(ctx, target), ctx, access, rvalue);
             }
 
             //
@@ -790,13 +898,8 @@ namespace Pchp.Core.Dynamic
                 {
                     // = target->field
 
-                    /* Template:
-                     * return runtimeflds.TryGetValue(field, out result) ? result : (__get(field) ?? ERR);
-                     */
-                    var __get = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
-                    result = Expression.Condition(trygetfield,
-                        resultvar,
-                        InvokeHandler(ctx, target, field, __get, access));    // TODO: @default = { ThrowError; return null; }
+                    // Template: Operators.GetRuntimeProperty(ctx, PhpTypeInfo, instance, propertyName)
+                    return Expression.Call(Cache.Operators.RuntimePropertyGetValue.Method, ctx, Expression.Constant(type), target, Expression.Constant(field));
                 }
 
                 //
@@ -951,7 +1054,9 @@ namespace Pchp.Core.Dynamic
                     else if (p.IsImportCallerClassParameter())
                     {
                         // TODO: pass classctx from the callsite
-                        throw new NotImplementedException();
+                        Debug.WriteLine("TODO: pass classctx from the callsite");
+
+                        boundargs[i] = Expression.Default(p.ParameterType);
                     }
                     else if (p.IsImportCallerStaticClassParameter())
                     {
@@ -999,7 +1104,7 @@ namespace Pchp.Core.Dynamic
             {
                 return Expression.New((ConstructorInfo)method, boundargs);
             }
-            
+
             if (HasToBeCalledNonVirtually(instance, method, isStaticCallSyntax))
             {
                 // Ugly hack here,

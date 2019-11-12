@@ -1,4 +1,5 @@
 <?php
+namespace variables\arguments;
 
   function A() 
   {

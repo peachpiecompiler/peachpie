@@ -1,4 +1,5 @@
 <?php
+namespace classes\conditional_001;
 
 if (true) {
 	class X {

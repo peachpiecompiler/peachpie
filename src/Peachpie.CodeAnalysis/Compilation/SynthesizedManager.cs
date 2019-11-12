@@ -40,7 +40,14 @@ namespace Pchp.CodeAnalysis.Emit
             var members = EnsureList(type);
             lock (members)
             {
-                members.Add(member);
+                if (members.IndexOf(member) < 0)
+                {
+                    members.Add(member);
+                }
+                else
+                {
+                    Debug.Fail("Member added twice!");
+                }
             }
         }
 
@@ -126,7 +133,7 @@ namespace Pchp.CodeAnalysis.Emit
         }
 
         /// <summary>
-        /// Adds a synthedized method to the class.
+        /// Adds a synthesized method to the class.
         /// </summary>
         public void AddMethod(TypeSymbol container, MethodSymbol method)
         {
@@ -137,13 +144,21 @@ namespace Pchp.CodeAnalysis.Emit
         }
 
         /// <summary>
-        /// Adds a synthedized property to the class.
+        /// Adds a synthesized property to the class.
         /// </summary>
         public void AddProperty(TypeSymbol container, PropertySymbol property)
         {
             Contract.ThrowIfNull(property);
 
             AddMember(container, property);
+        }
+
+        /// <summary>
+        /// Adds a synthesized symbol to the class.
+        /// </summary>
+        public void AddField(TypeSymbol container, FieldSymbol field)
+        {
+            AddMember(container, field);
         }
 
         /// <summary>

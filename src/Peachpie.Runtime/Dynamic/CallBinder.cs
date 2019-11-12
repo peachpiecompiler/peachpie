@@ -98,7 +98,7 @@ namespace Pchp.Core.Dynamic
                      */
 
                     invocation = Expression.Block(new[] { args_var },
-                            Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments)),
+                            Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments, bound.Context, bound.ClassContext)),
                             OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, bound.IsStaticSyntax, lateStaticType: bound.TargetType)
                         );
                 }
@@ -248,7 +248,7 @@ namespace Pchp.Core.Dynamic
             if (isobject == false)
             {
                 /* Template:
-                 * PhpException.MethodOnNonObject(name_expr); // aka PhpException.Throw(Error, method_called_on_non_object, name_expr)
+                 * PhpException.MethodOnNonObject(name_expr);
                  * return NULL;
                  */
                 var throwcall = Expression.Call(typeof(PhpException), "MethodOnNonObject", Array.Empty<Type>(), ConvertExpression.Bind(name_expr, typeof(string), bound.Context));
@@ -273,7 +273,7 @@ namespace Pchp.Core.Dynamic
                     call_args = new Expression[]
                     {
                         name_expr,
-                        BinderHelpers.NewPhpArray(bound.Arguments),
+                        BinderHelpers.NewPhpArray(bound.Arguments, bound.Context, bound.ClassContext),
                     };
                 }
 
@@ -378,11 +378,14 @@ namespace Pchp.Core.Dynamic
                     call_args = new Expression[]
                     {
                         name_expr,
-                        BinderHelpers.NewPhpArray(bound.Arguments),
+                        BinderHelpers.NewPhpArray(bound.Arguments, bound.Context, bound.ClassContext),
                     };
                 }
 
-                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args, true, lateStaticType: bound.TargetType);
+                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args,
+                    isStaticCallSyntax: true,
+                    lateStaticType: bound.TargetType,
+                    classContext: bound.ClassContext);
             }
 
             //

@@ -1,4 +1,5 @@
 <?php
+namespace functions\__call;
 
 class X
 {

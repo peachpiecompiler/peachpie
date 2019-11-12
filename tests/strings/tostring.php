@@ -1,4 +1,5 @@
 <?php
+namespace strings\tostring;
 
 interface MyInterface {
     public function __toString();

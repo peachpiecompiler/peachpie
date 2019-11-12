@@ -1,4 +1,5 @@
 <?php
+namespace hash\password_hash_001;
 /**Test password_hash blowfish algorithm */
 $password = '';
 $salt = "Ajnbu298IRHUVa56XvDOzu";

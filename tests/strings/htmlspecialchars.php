@@ -1,4 +1,5 @@
 <?php
+namespace strings\htmlspecialchars;
 
 function f($str) {
 	echo htmlspecialchars($str, ENT_QUOTES, "UTF-8", true), "\n";

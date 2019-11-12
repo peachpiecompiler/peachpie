@@ -1,6 +1,7 @@
 <?php
+namespace classes\iterators_008;
 
-class MyArrayIterator extends RecursiveArrayIterator
+class MyArrayIterator extends \RecursiveArrayIterator
 {
     public function __construct($it, $flags = 0, $magic_no = -1) {
       parent::__construct($it, $flags);
@@ -12,7 +13,7 @@ class MyArrayIterator extends RecursiveArrayIterator
     }
 }
 
-class MyFilterIterator extends RecursiveFilterIterator
+class MyFilterIterator extends \RecursiveFilterIterator
 {
     public function accept() {
       $cur = $this->current();

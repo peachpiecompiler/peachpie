@@ -852,7 +852,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpFieldsOnlyCtorAttribute = ct.PhpFieldsOnlyCtorAttribute.Ctor();
                 PhpHiddenAttribute = ct.PhpHiddenAttribute.Ctor();
                 NotNullAttribute = ct.NotNullAttribute.Ctor();
-                DefaultValueAttribute = ct.DefaultValueAttribute.Ctor();
+                DefaultValueAttribute_string = ct.DefaultValueAttribute.Ctor(ct.String);
 
                 ScriptDiedException = ct.ScriptDiedException.Ctor();
                 ScriptDiedException_Long = ct.ScriptDiedException.Ctor(ct.Long);
@@ -867,7 +867,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpString_Blob, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
                 Blob,
                 IntStringKey_int, IntStringKey_string,
-                ScriptAttribute_string, PhpTraitAttribute, PharAttribute_string, PhpTypeAttribute_string_string, PhpFieldsOnlyCtorAttribute, PhpHiddenAttribute, NotNullAttribute, DefaultValueAttribute,
+                ScriptAttribute_string, PhpTraitAttribute, PharAttribute_string, PhpTypeAttribute_string_string, PhpFieldsOnlyCtorAttribute, PhpHiddenAttribute, NotNullAttribute,
+                DefaultValueAttribute_string,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue,
                 IndirectLocal_PhpArray_IntStringKey;
         }

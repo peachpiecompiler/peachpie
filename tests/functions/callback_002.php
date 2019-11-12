@@ -1,4 +1,5 @@
 <?php
+namespace functions\callback_002;
 
 class A {
     function foo($x) {
@@ -14,6 +15,6 @@ class B {
 
 $x = new A();
 
-call_user_func_array([&$x, "foo"], [$x = new B]);
+\call_user_func_array([&$x, "foo"], [$x = new B]);
 
 echo " Done.";

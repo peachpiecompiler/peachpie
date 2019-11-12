@@ -1,4 +1,5 @@
 <?php
+namespace datetime\clone_003;
 
 class TestClass extends \DateTime
 {

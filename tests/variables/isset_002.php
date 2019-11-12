@@ -1,6 +1,7 @@
 <?php
+namespace variables\isset_002;
 
-class LoggedArrayAccess implements ArrayAccess
+class LoggedArrayAccess implements \ArrayAccess
 {
     private $arr;
 
@@ -33,6 +34,6 @@ function test($a, $offset) {
 }
 
 test(new LoggedArrayAccess(), "foo");
-test(new \SplObjectStorage(), new stdClass());
+test(new \SplObjectStorage(), new \stdClass());
 
 echo "Done.";

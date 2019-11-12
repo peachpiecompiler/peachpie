@@ -1,4 +1,5 @@
 <?php
+namespace constructs\switch_001;
 
 /** @param int $a */
 function test($a)

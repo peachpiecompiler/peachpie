@@ -42,6 +42,7 @@
     <PackageProjectUrl>https://github.com/peachpiecompiler/peachpie</PackageProjectUrl>
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../.nugs</PackageOutputPath>
     <PackageIconUrl>https://github.com/peachpiecompiler/peachpie/raw/master/docs/logos/round-orange-196x196.png</PackageIconUrl>
+    <NoWarn>$(NoWarn),NU5048</NoWarn>
   </PropertyGroup>
 
   <!-- common targets -->

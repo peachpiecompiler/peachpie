@@ -1,4 +1,5 @@
 <?php
+namespace xml\xslt_003;
 // Test 3: Using Parameters
 
 function __xml_norm($str)
@@ -11,13 +12,13 @@ function __xml_norm($str)
 }
 
 function test() {
-  $dom = new domDocument;
+  $dom = new \DOMDocument;
   $dom->load("xslt.xml");
 
-  $xsl = new domDocument;
+  $xsl = new \DOMDocument;
   $xsl->load("xslt.xsl");
 
-  $proc = new xsltprocessor;
+  $proc = new \XSLTProcessor;
   $proc->importStylesheet($xsl);
   $proc->setParameter( "", "foo","hello world");
 

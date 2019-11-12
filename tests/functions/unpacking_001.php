@@ -1,4 +1,5 @@
 <?php
+namespace functions\unpacking_001;
 
 function test(...$args) { print_r($args); }
 
@@ -6,7 +7,7 @@ function foo1()
 {
 	test(1, 2, 3);                         // [1, 2, 3]
 	test(...[1, 2, 3]);                    // [1, 2, 3]
-	test(...new ArrayIterator([1, 2, 3])); // [1, 2, 3]
+	test(...new \ArrayIterator([1, 2, 3])); // [1, 2, 3]
 }
 
 function foo2()

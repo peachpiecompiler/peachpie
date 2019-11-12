@@ -1,4 +1,5 @@
 <?php
+namespace reflection\class_parent_001;
 
 class foo {}
 class bar extends foo {}

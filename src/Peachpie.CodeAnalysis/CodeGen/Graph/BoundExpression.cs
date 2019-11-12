@@ -3026,12 +3026,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 //
                 cg.Builder.EmitOpCode(ILOpCode.Dup);        // <Blob>
                 cg.Emit_PhpStringBlob_Append(expr);// .Append( ... )
-
-                //
-                if (cg.IsDebug)
-                {
-                    cg.Builder.EmitOpCode(ILOpCode.Nop);
-                }
             }
 
             // new PhpString( <Blob> )

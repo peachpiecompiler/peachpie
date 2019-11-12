@@ -178,6 +178,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Default value for parameter ${0} with a {1} type can only be {1} or NULL, {2} type given.
+        /// </summary>
+        internal static string ERR_DefaultParameterValueTypeMismatch {
+            get {
+                return ResourceManager.GetString("ERR_DefaultParameterValueTypeMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot emit debug information for a source text without encoding..
         /// </summary>
         internal static string ERR_EncodinglessSyntaxTree {
@@ -219,6 +228,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_FinalAbstractClassDeclared {
             get {
                 return ResourceManager.GetString("ERR_FinalAbstractClassDeclared", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Constant expression contains invalid operations.
+        /// </summary>
+        internal static string ERR_InvalidConstantExpression {
+            get {
+                return ResourceManager.GetString("ERR_InvalidConstantExpression", resourceCulture);
             }
         }
         
@@ -412,6 +430,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Using $this when not in object context.
+        /// </summary>
+        internal static string ERR_ThisOutOfObjectContext {
+            get {
+                return ResourceManager.GetString("ERR_ThisOutOfObjectContext", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Combined length of user strings used by the program exceeds allowed limit. Try to decrease use of string literals..
         /// </summary>
         internal static string ERR_TooManyUserStrings {
@@ -475,7 +502,7 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use of &apos;__destruct&apos; is discouraged. Garbage collection is non-deterministic unlike in PHP..
+        ///   Looks up a localized string similar to Use of &apos;__destruct&apos; is discouraged. Garbage collection behavior is a subject to change..
         /// </summary>
         internal static string INF_DestructDiscouraged {
             get {

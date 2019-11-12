@@ -1,4 +1,5 @@
 <?php
+namespace operators\binary_002;
 
 function a(){
 

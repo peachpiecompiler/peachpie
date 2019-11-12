@@ -1,4 +1,5 @@
 <?php
+namespace pcre\reset_match_start_002;
 
 function test() {
   preg_match_all('/a?/', "foo", $matches);

@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading.Tasks;
 
 namespace Pchp.Library
@@ -657,8 +659,7 @@ namespace Pchp.Library
         /// <returns><c>true</c> on success, <c>false</c> on failure.</returns>
         public static bool chmod(Context ctx, string path, int mode)
         {
-            StreamWrapper wrapper;
-            if (!PhpPath.ResolvePath(ctx, ref path, false, out wrapper))
+            if (!PhpPath.ResolvePath(ctx, ref path, false, out var wrapper))
             {
                 return false;
             }
@@ -702,16 +703,44 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Unix-specific function. Not supported.
+        /// Attempts to change the owner of the <paramref name="filename"/> to <paramref name="user"/>.
         /// </summary>
-        /// <param name="path">Path to the file to change owner.</param>
-        /// <param name="user">A <see cref="string"/> or <see cref="int"/>
-        /// identifier of the target group.</param>
-        /// <returns>Always <c>false</c>.</returns>
-        public static bool chown(string path, object user)
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="filename">Path to the file to change owner.</param>
+        /// <param name="user">A <see cref="string"/> or <see cref="int"/> identifier of the target group.</param>
+        /// <returns>Whether the function succeeded.</returns>
+        public static bool chown(Context ctx, string filename, PhpValue user)
         {
-            throw new NotSupportedException();
-            //return false;
+            if (PhpPath.ResolvePath(ctx, ref filename, false, out var wrapper))
+            {
+                var fs = new FileSecurity(filename, AccessControlSections.Owner);   // throws if file does not exist or no permissions
+                IdentityReference identity;
+                if (user.IsString(out var uname))
+                {
+                    var sepidx = uname.IndexOf('/');
+                    var domain_user = sepidx >= 0
+                        ? (uname.Remove(sepidx), uname.Substring(sepidx + 1))
+                        : (null, uname);
+
+                    identity = new NTAccount(domain_user.Item1, domain_user.Item2);
+                }
+                //else if (user.IsLong(out var uid))
+                //{
+
+                //}
+                else
+                {
+                    PhpException.InvalidArgumentType(nameof(user), PhpVariable.TypeNameString);
+                    return false;
+                }
+
+                //var identity = user.IsString(out var uname) ? new NTAccount(uname) : user.IsLong(out var uid) ? new IdentityReference(...) : null;
+                fs.SetOwner(identity);  // throws if no permission or error
+                return true;
+            }
+
+            //
+            return false;
         }
 
         /// <summary>

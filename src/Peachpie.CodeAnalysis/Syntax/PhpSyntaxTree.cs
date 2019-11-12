@@ -250,7 +250,7 @@ namespace Pchp.CodeAnalysis
 
         public override Location GetLocation(TextSpan span)
         {
-            throw new NotImplementedException();
+            return new SourceLocation(this, span);
         }
 
         public override FileLinePositionSpan GetMappedLineSpan(TextSpan span, CancellationToken cancellationToken = default)
