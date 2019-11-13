@@ -121,6 +121,20 @@ namespace Pchp.Library.DateTime
         }
 
         /// <summary>
+        /// Returns new <see cref="DateTimeImmutable"/> object formatted according to the specified format.
+        /// </summary>
+        /// <param name="ctx"><see cref="ScriptContext"/> reference.</param>
+        /// <param name="format">The format that the passed in string should be in.</param>
+        /// <param name="time">String representing the time.</param>
+        /// <param name="timezone">A DateTimeZone object representing the desired time zone.</param>
+        /// <returns></returns>
+        [return: CastToFalse]
+        public static DateTimeImmutable date_create_immutable_from_format(Context/*!*/ctx, string format, string time, DateTimeZone timezone = null)
+        {
+            return DateTimeImmutable.createFromFormat(ctx, format, time, timezone);
+        }
+
+        /// <summary>
         /// Alias of DateTime::getOffset().
         /// </summary>
         [return: CastToFalse]

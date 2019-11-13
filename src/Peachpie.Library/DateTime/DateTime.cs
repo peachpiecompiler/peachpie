@@ -607,6 +607,7 @@ namespace Pchp.Library.DateTime
         #endregion
 
         public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Add(interval.AsTimeSpan()), TimeZone);
+
         [return: CastToFalse]
         public static DateTimeImmutable createFromFormat(Context ctx, string format, string time, DateTimeZone timezone = null)
         {
@@ -640,6 +641,7 @@ namespace Pchp.Library.DateTime
 
         [return: NotNull]
         public static PhpArray/*!*/getLastErrors(Context ctx) => DateTime.getLastErrors(ctx);
+
         public static DateTimeImmutable __set_state(PhpArray array) => throw new NotImplementedException();
         public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();
         public virtual DateTimeImmutable setISODate(int year, int week, int day = 1) => throw new NotImplementedException();
