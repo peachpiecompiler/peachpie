@@ -160,6 +160,14 @@ namespace Pchp.Library.DateTime
                 if (h == -1) h = start.Hour;
                 if (i == -1) i = start.Minute;
                 if (s == -1) s = start.Second;
+
+                if (f < 0) f = start.Millisecond * 0.001;
+                else if (f > 0)
+                {
+                    var relative_sec = Math.Truncate(f);
+                    f -= relative_sec;
+                    relative.s += (int)relative_sec;
+                }
             }
 
             if (y == -1) y = start.Year;
@@ -292,7 +300,7 @@ namespace Pchp.Library.DateTime
         internal static int DaysInMonthFixed(int year, int month)
         {
             // NOTE: DateTime only works for years in [1..9999]
-            
+
             if (year <= 0) year = 1;    // this is correct, since leap years only exist **after** the year 0 (there is no year 0)
 
             return System.DateTime.DaysInMonth(year, month);
