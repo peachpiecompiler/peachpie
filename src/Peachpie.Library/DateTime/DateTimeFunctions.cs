@@ -11,6 +11,7 @@ using System.IO;
 
 namespace Pchp.Library.DateTime
 {
+    [PhpExtension("date")]
     public static class DateTimeFunctions
     {
         /// <summary>
