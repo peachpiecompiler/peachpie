@@ -185,10 +185,10 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public static DateInterval date_diff(DateTimeInterface datetime1, DateTimeInterface datetime2, bool absolute = false)
         {
-            var interval = new DateInterval(TimeFromInterface(datetime1) - TimeFromInterface(datetime2));
+            var interval = new DateInterval(TimeFromInterface(datetime2) - TimeFromInterface(datetime1));
 
             // doc: If the DateInterval object was created by DateTime::diff(), then this is the total number of days between the start and end dates. 
-            interval.days = (PhpValue)interval.d;
+            interval.days = interval.d;
 
             if (absolute)
             {

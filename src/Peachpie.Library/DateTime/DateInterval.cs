@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Pchp.Core;
@@ -12,6 +13,7 @@ namespace Pchp.Library.DateTime
     /// A date interval stores either a fixed amount of time(in years, months, days, hours etc) or a relative time string in the format that DateTime's constructor supports.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
+    [DebuggerDisplay(nameof(DateInterval), Type = PhpVariable.TypeNameObject)]
     public class DateInterval
     {
         public int y;
@@ -23,6 +25,8 @@ namespace Pchp.Library.DateTime
         public double f;
         public int invert;
         public PhpValue days = PhpValue.False;
+
+        //private TimeSpan _span;
 
         internal TimeSpan AsTimeSpan()
         {
@@ -44,7 +48,7 @@ namespace Pchp.Library.DateTime
             FromTimeSpan(ts);
         }
 
-        internal void FromTimeSpan(TimeSpan ts)
+        void FromTimeSpan(TimeSpan ts)
         {
             f = ts.Milliseconds * 0.001;
             s = ts.Seconds;
@@ -65,12 +69,14 @@ namespace Pchp.Library.DateTime
         public void __construct(string interval_spec)
         {
             //var ts = System.Xml.XmlConvert.ToTimeSpan(interval_spec);
-            if (!DateInfo.TryParseIso8601Duration(interval_spec, out TimeSpan ts))
+            if (DateInfo.TryParseIso8601Duration(interval_spec, out var ts))
+            {
+                FromTimeSpan(ts);
+            }
+            else
             {
                 throw new ArgumentException(nameof(interval_spec));
             }
-
-            FromTimeSpan(ts);
         }
 
         public static DateInterval createFromDateString(string time)

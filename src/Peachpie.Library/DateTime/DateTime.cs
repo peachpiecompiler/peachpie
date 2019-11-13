@@ -42,6 +42,7 @@ namespace Pchp.Library.DateTime
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [DebuggerDisplay(nameof(DateTime), Type = PhpVariable.TypeNameObject)]
     public class DateTime : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
         #region Constants
@@ -502,6 +503,7 @@ namespace Pchp.Library.DateTime
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [DebuggerDisplay(nameof(DateTimeImmutable), Type = PhpVariable.TypeNameObject)]
     public class DateTimeImmutable : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
         readonly protected Context _ctx;
