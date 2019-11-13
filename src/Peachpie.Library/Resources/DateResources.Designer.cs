@@ -70,6 +70,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Empty string.
+        /// </summary>
+        internal static string empty_string {
+            get {
+                return ResourceManager.GetString("empty_string", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Escaped character expected.
         /// </summary>
         internal static string esc_char_expected {

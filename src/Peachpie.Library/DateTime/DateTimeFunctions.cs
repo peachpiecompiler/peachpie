@@ -1554,16 +1554,18 @@ namespace Pchp.Library.DateTime
         /// Returns associative array with detailed info about given date.
         /// </summary>
         /// <returns>Returns array with information about the parsed date on success.</returns>
-        //[return: CastToFalse]
+        [return: NotNull]
         public static PhpArray date_parse(Context ctx, string time)
         {
-            if (time == null) return null;
-            time = time.Trim();
-            if (time.Length == 0) return null;
-
-            //
             var errors = PhpArray.NewEmpty();
 
+            if (string.IsNullOrEmpty(time))
+            {
+                time = string.Empty;
+                errors.Add(Resources.DateResources.empty_string);
+            }
+
+            //
             var scanner = new Scanner(new StringReader(time.ToLowerInvariant()));
             while (true)
             {
