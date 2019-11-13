@@ -1538,7 +1538,7 @@ namespace Pchp.Library.DateTime
                 return -1;  // FALSE
             }
 
-            var result = DateInfo.Parse(ctx, time.Trim(), startUtc, out var error);
+            var result = DateInfo.Parse(ctx, time.Trim(), startUtc, timeZone: null, out var error);
             if (error == null)
             {
                 return DateTimeUtils.UtcToUnixTimeStamp(result);
