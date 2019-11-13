@@ -115,23 +115,24 @@ namespace Pchp.Library.DateTime
 
         #region Parse
 
-        public static long Parse(Context ctx, string/*!*/ str, System.DateTime utcStart, out string error)
+        public static System.DateTime Parse(Context ctx, string/*!*/ str, System.DateTime utcStart, out string error)
         {
             Debug.Assert(str != null);
 
             var scanner = new Scanner(new StringReader(str.ToLowerInvariant()));
             while (true)
             {
-                Tokens token = scanner.GetNextToken();
+                var token = scanner.GetNextToken();
                 if (token == Tokens.ERROR || scanner.Errors > 0)
                 {
                     error = string.Format(LibResources.parse_error, scanner.Position, str.Substring(scanner.Position));
-                    return 0;
+                    return System.DateTime.MinValue;
                 }
 
                 if (token == Tokens.EOF)
                 {
-                    return scanner.Time.GetUnixTimeStamp(ctx, utcStart, out error);
+                    error = null;
+                    return scanner.Time.GetDateTime(ctx, utcStart);
                 }
             }
         }
@@ -152,6 +153,7 @@ namespace Pchp.Library.DateTime
                 h = 0;
                 i = 0;
                 s = 0;
+                f = 0;
             }
             else
             {
@@ -168,7 +170,7 @@ namespace Pchp.Library.DateTime
 
             CheckOverflows(y, m, ref d, ref h, out var days_overflow);
 
-            var result = new System.DateTime(y, m, d, h, i, s, DateTimeKind.Unspecified);
+            var result = new System.DateTime(y, m, d, h, i, s, (int)(f * 1000), DateTimeKind.Unspecified);
 
             result = result.AddDays(relative.d + days_overflow);
             result = result.AddMonths(relative.m);
@@ -218,13 +220,13 @@ namespace Pchp.Library.DateTime
             return result;
         }
 
-        private long GetUnixTimeStamp(Context ctx, System.DateTime utcStart, out string error)
-        {
-            var result = GetDateTime(ctx, utcStart);
+        //private long GetUnixTimeStamp(Context ctx, System.DateTime utcStart, out string error)
+        //{
+        //    var result = GetDateTime(ctx, utcStart);
 
-            error = null;
-            return DateTimeUtils.UtcToUnixTimeStamp(result);
-        }
+        //    error = null;
+        //    return DateTimeUtils.UtcToUnixTimeStamp(result);
+        //}
 
         #endregion
 
@@ -1105,14 +1107,15 @@ namespace Pchp.Library.DateTime
         /// Parses interval string according to ISO8601 Duration.
         /// C# implementation: <see cref="System.Xml.XmlConvert.ToTimeSpan"/>; but it does not recognize <c>'W'</c> speification.
         /// </summary>
-        internal static bool TryParseIso8601Duration(string s, out TimeSpan result)
+        internal static bool TryParseIso8601Duration(string s, out DateInfo result, out bool negative)
         {
             int length;
             int value, pos, numDigits;
 
             int years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0;
             uint nanoseconds = 0;
-            bool negative = false;
+
+            negative = false;
 
             s = s.Trim();
             length = s.Length;
@@ -1126,10 +1129,6 @@ namespace Pchp.Library.DateTime
             {
                 pos++;
                 negative = true;
-            }
-            else
-            {
-                nanoseconds = 0;
             }
 
             if (pos >= length) goto InvalidFormat;
@@ -1266,63 +1265,25 @@ namespace Pchp.Library.DateTime
             //// At least one part must be defined
             //if (parts == Parts.HasNone) goto InvalidFormat;
 
-            result = ToTimeSpan(years, months, days, hours, minutes, seconds, nanoseconds, negative);
+            result = new DateInfo
+            {
+                y = years,
+                m = months,
+                d = days,
+                h = hours,
+                i = minutes,
+                s = seconds,
+                f = nanoseconds / 1000000000.0,
+            };
+
             return true;
 
         InvalidFormat:
         Error:
 
-            result = default(TimeSpan);
+            result = default;
+            negative = default;
             return false;
-        }
-
-        static TimeSpan ToTimeSpan(int years, int months, int days, int hours, int minutes, int seconds, uint nanoseconds, bool negative)
-        {
-            TimeSpan result;
-            ulong ticks = 0;
-
-            // Throw error if result cannot fit into a long
-            checked
-            {
-                // Discard year and month parts if constructing TimeSpan for DayTimeDuration
-                ticks += ((ulong)years + (ulong)months / 12) * 365;
-                ticks += ((ulong)months % 12) * 30;
-
-                // Discard day and time parts if constructing TimeSpan for YearMonthDuration
-                ticks += (ulong)days;
-
-                ticks *= 24;
-                ticks += (ulong)hours;
-
-                ticks *= 60;
-                ticks += (ulong)minutes;
-
-                ticks *= 60;
-                ticks += (ulong)seconds;
-
-                // Tick count interval is in 100 nanosecond intervals (7 digits)
-                ticks *= (ulong)TimeSpan.TicksPerSecond;
-                ticks += (ulong)nanoseconds / 100;
-
-                if (negative)
-                {
-                    // Handle special case of Int64.MaxValue + 1 before negation, since it would otherwise overflow
-                    if (ticks == (ulong)long.MaxValue + 1)
-                    {
-                        result = new TimeSpan(long.MinValue);
-                    }
-                    else
-                    {
-                        result = new TimeSpan(-((long)ticks));
-                    }
-                }
-                else
-                {
-                    result = new TimeSpan((long)ticks);
-                }
-            }
-
-            return result;
         }
 
         #endregion

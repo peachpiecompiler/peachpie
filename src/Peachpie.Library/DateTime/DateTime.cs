@@ -173,13 +173,15 @@ namespace Pchp.Library.DateTime
             }
 
             var result = DateInfo.Parse(ctx, timestr, time, out var error);
-            if (error != null)
+            if (error == null)
+            {
+                return result;
+            }
+            else
             {
                 ctx.SetProperty<DateTimeErrors>(new DateTimeErrors { Errors = new[] { error } });
                 throw new Spl.Exception(error);
             }
-
-            return DateTimeUtils.UnixTimeStampToUtc(result);
         }
 
         internal DateTimeImmutable AsDateTimeImmutable() => new DateTimeImmutable(_ctx, this.Time, this.TimeZone);
@@ -245,8 +247,7 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public virtual DateTime add(DateInterval interval)
         {
-            Time = Time.Add(interval.AsTimeSpan());
-
+            Time = interval.Apply(Time, negate: false);
             return this;
         }
 
@@ -257,7 +258,7 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public virtual DateTime sub(DateInterval interval)
         {
-            Time = Time.Subtract(interval.AsTimeSpan());
+            Time = interval.Apply(Time, negate: true);
             return this;
         }
 
@@ -608,7 +609,9 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Add(interval.AsTimeSpan()), TimeZone);
+        public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, interval.Apply(Time, negate: false), TimeZone);
+
+        public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(_ctx, interval.Apply(Time, negate: true), TimeZone);
 
         [return: CastToFalse]
         public static DateTimeImmutable createFromFormat(Context ctx, string format, string time, DateTimeZone timezone = null)
@@ -670,8 +673,6 @@ namespace Pchp.Library.DateTime
                 return new DateTimeImmutable(_ctx, time, timezone._timezone);
             }
         }
-        public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Subtract(interval.AsTimeSpan()), TimeZone);
-
         /// <summary>
         /// Returns the difference between two DateTime objects
         /// </summary>

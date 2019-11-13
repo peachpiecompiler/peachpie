@@ -171,7 +171,7 @@ namespace Pchp.Library.DateTime
         //[return:CastToFalse]
         public static DateTime date_sub(DateTime @object, DateInterval interval) => @object.sub(interval);
 
-        static System_DateTime TimeFromInterface(this DateTimeInterface dti)
+        static System_DateTime TimeFromInterface(DateTimeInterface dti)
         {
             if (dti is Library.DateTime.DateTime dt) return dt.Time;
             if (dti is DateTimeImmutable dtimmutable) return dtimmutable.Time;
@@ -185,10 +185,7 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public static DateInterval date_diff(DateTimeInterface datetime1, DateTimeInterface datetime2, bool absolute = false)
         {
-            var interval = new DateInterval(TimeFromInterface(datetime2) - TimeFromInterface(datetime1));
-
-            // doc: If the DateInterval object was created by DateTime::diff(), then this is the total number of days between the start and end dates. 
-            interval.days = interval.d;
+            var interval = new DateInterval(TimeFromInterface(datetime1), TimeFromInterface(datetime2));
 
             if (absolute)
             {
@@ -1542,14 +1539,15 @@ namespace Pchp.Library.DateTime
             }
 
             var result = DateInfo.Parse(ctx, time.Trim(), startUtc, out var error);
-            if (error != null)
+            if (error == null)
+            {
+                return DateTimeUtils.UtcToUnixTimeStamp(result);
+            }
+            else
             {
                 PhpException.Throw(PhpError.Warning, error);
                 return -1;  // FALSE
             }
-
-            //
-            return result;
         }
 
         /// <summary>
