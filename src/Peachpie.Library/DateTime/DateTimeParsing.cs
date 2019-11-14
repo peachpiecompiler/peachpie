@@ -115,7 +115,7 @@ namespace Pchp.Library.DateTime
 
         #region Parse
 
-        public static System.DateTime Parse(Context ctx, string/*!*/ str, System.DateTime utcStart, out string error)
+        public static System.DateTime Parse(Context ctx, string/*!*/ str, System.DateTime utcStart, TimeZoneInfo timeZone, out string error)
         {
             Debug.Assert(str != null);
 
@@ -132,7 +132,7 @@ namespace Pchp.Library.DateTime
                 if (token == Tokens.EOF)
                 {
                     error = null;
-                    return scanner.Time.GetDateTime(ctx, utcStart);
+                    return scanner.Time.GetDateTime(ctx, utcStart, timeZone);
                 }
             }
         }
@@ -141,9 +141,9 @@ namespace Pchp.Library.DateTime
 
         #region GetUnixTimeStamp
 
-        public System.DateTime GetDateTime(Context ctx, System.DateTime utcStart)
+        public System.DateTime GetDateTime(Context ctx, System.DateTime utcStart, TimeZoneInfo timeZone = null)
         {
-            var zone = PhpTimeZone.GetCurrentTimeZone(ctx);
+            var zone = timeZone ?? PhpTimeZone.GetCurrentTimeZone(ctx);
             var start = TimeZoneInfo.ConvertTime(utcStart, TimeZoneInfo.Utc, zone);// zone.ToLocalTime(utcStart);
 
             // following operates on local time defined by the parsed info or by the current time zone //

@@ -149,7 +149,7 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentException();
             }
 
-            this.Time = StrToTime(_ctx, time, System_DateTime.UtcNow);
+            this.Time = StrToTime(_ctx, time, System_DateTime.UtcNow, TimeZone);
 
             //this.date.Value = this.Time.ToString("yyyy-mm-dd HH:mm:ss");
             //this.timezone_type.Value = 3;
@@ -165,14 +165,14 @@ namespace Pchp.Library.DateTime
         /// In case error or warning occur, <see cref="DateTimeErrors"/> is set accordingly.
         /// </summary>
         [PhpHidden]
-        internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time)
+        internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time, TimeZoneInfo timeZone = null)
         {
             if (string.IsNullOrWhiteSpace(timestr) || (timestr = timestr.Trim()).EqualsOrdinalIgnoreCase("now"))
             {
                 return System_DateTime.UtcNow;
             }
 
-            var result = DateInfo.Parse(ctx, timestr, time, out var error);
+            var result = DateInfo.Parse(ctx, timestr, time, timeZone, out var error);
             if (error == null)
             {
                 return result;

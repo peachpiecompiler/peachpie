@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Pchp.Library.DateTime
@@ -19,6 +20,8 @@ namespace Pchp.Library.DateTime
 
         /// <summary>The timezone name if it differs from <see cref="TimeZoneInfo.Id"/>.</summary>
         private protected string _name;
+
+        private static readonly Regex TimeZoneOffsetRegex = new Regex(@"^[+-](\d{2}):{0,1}(\d{2})$", RegexOptions.Compiled);
 
         #region Constants
 
@@ -60,10 +63,24 @@ namespace Pchp.Library.DateTime
 
                 if (_timezone == null)
                 {
-                    // TODO: an offset value (+0200)
+                    var m = TimeZoneOffsetRegex.Match(timezone_name);
+                    if(m.Success)
+                    {
+                        var hourOffset = int.Parse(m.Groups[1].Value);
+                        var minuteOffset = int.Parse(m.Groups[2].Value);
+                        if(timezone_name[0] == '-')
+                        {
+                            hourOffset = -hourOffset;
+                            minuteOffset = -minuteOffset;
+                        }
 
-                    //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_timezone", timezone_name));
-                    throw new Spl.InvalidArgumentException();
+                        _timezone = TimeZoneInfo.CreateCustomTimeZone("UTC" + timezone_name, new TimeSpan(hourOffset, minuteOffset, 0), null, null);
+                    }
+                    else
+                    {
+                        //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_timezone", timezone_name));
+                        throw new Spl.InvalidArgumentException();
+                    }
                 }
             }
             else
