@@ -283,7 +283,7 @@ namespace Pchp.Core.Dynamic
                 source == typeof(uint) ||
                 source == typeof(long)) return Expression.Convert(expr, typeof(double));
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToDouble", Cache.Types.Empty));
-            if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToDouble", Cache.Types.Empty));
+            if (source == typeof(PhpArray)) return Expression.Call(Cache.Operators.ToDouble_PhpArray, expr);
             if (source == typeof(string)) return Expression.Call(Cache.Operators.ToDouble_String, expr);
             if (source == typeof(PhpString)) return Expression.Call(expr, typeof(PhpString).GetMethod("ToDouble", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0.0, typeof(double));
@@ -304,7 +304,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(uint)) return Expression.NotEqual(expr, Expression.Constant((uint)0, typeof(uint)));    // <uint> != 0
             if (source == typeof(long)) return Expression.NotEqual(expr, Expression.Constant(0L, Cache.Types.Long[0]));    // <long> != 0
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToBoolean", Cache.Types.Empty));
-            if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToBoolean", Cache.Types.Empty));
+            if (source == typeof(PhpArray)) return Expression.Call(Cache.Operators.ToBoolean_PhpArray, expr);
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToBoolean", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, false, typeof(bool));
             if (source == typeof(bool)) return expr;

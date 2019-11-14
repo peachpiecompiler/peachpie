@@ -76,6 +76,8 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpArray_Remove = typeof(PhpHashtable).GetMethod("Remove", typeof(Core.IntStringKey)); // PhpHashtable.Remove(IntStringKey) returns bool
             public static MethodInfo PhpArray_TryGetValue = typeof(PhpArray).GetMethod("TryGetValue", typeof(Core.IntStringKey), Types.PhpValue.MakeByRefType());
             public static MethodInfo PhpArray_ContainsKey = typeof(PhpArray).GetMethod("ContainsKey", typeof(Core.IntStringKey));
+            public static MethodInfo ToBoolean_PhpArray = typeof(PhpArray).GetOpExplicit(typeof(bool));
+            public static MethodInfo ToDouble_PhpArray = typeof(PhpArray).GetOpExplicit(typeof(double));
 
             public static MethodInfo RuntimeTypeHandle_Equals_RuntimeTypeHandle = typeof(RuntimeTypeHandle).GetMethod("Equals", typeof(RuntimeTypeHandle));
 
@@ -155,6 +157,23 @@ namespace Pchp.Core.Dynamic
 
             Debug.Assert(result != null);
             return result;
+        }
+
+        /// <summary>
+        /// Gets method info in given type.
+        /// </summary>
+        public static MethodInfo GetOpExplicit(this Type type, Type resultType)
+        {
+            var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (methods[i].Name == "op_Explicit" && methods[i].ReturnType == resultType && methods[i].GetParameters()[0].ParameterType == type)
+                {
+                    return methods[i];
+                }
+            }
+
+            throw new InvalidOperationException();
         }
 
         static bool ParamsMatch(ParameterInfo[] ps, Type[] ptypes)
