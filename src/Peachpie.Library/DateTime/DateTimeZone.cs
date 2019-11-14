@@ -21,7 +21,7 @@ namespace Pchp.Library.DateTime
         /// <summary>The timezone name if it differs from <see cref="TimeZoneInfo.Id"/>.</summary>
         private protected string _name;
 
-        private static readonly Regex TimeZoneOffsetRegex = new Regex(@"^([+-])(\d{2}):{0,1}(\d{2})$", RegexOptions.Compiled);
+        private static readonly Regex TimeZoneOffsetRegex = new Regex(@"^[+-](\d{2}):{0,1}(\d{2})$", RegexOptions.Compiled);
 
         #region Constants
 
@@ -66,9 +66,9 @@ namespace Pchp.Library.DateTime
                     var m = TimeZoneOffsetRegex.Match(timezone_name);
                     if(m.Success)
                     {
-                        var hourOffset = int.Parse(m.Groups[2].Value);
-                        var minuteOffset = int.Parse(m.Groups[3].Value);
-                        if(m.Groups[1].Value == "-")
+                        var hourOffset = int.Parse(m.Groups[1].Value);
+                        var minuteOffset = int.Parse(m.Groups[2].Value);
+                        if(timezone_name[0] == '-')
                         {
                             hourOffset = -hourOffset;
                             minuteOffset = -minuteOffset;
