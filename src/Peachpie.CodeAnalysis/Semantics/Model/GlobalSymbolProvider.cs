@@ -261,7 +261,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 _next.ResolveType(name, resolved);
         }
 
-        NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
+        public NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
         {
             foreach (AssemblySymbol ass in _compilation.ProbingAssemblies)
             {

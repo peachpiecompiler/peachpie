@@ -82,7 +82,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var result = GetTypeMembers(name);
             if (arity >= 0)
             {
-                result= result.WhereAsArray(type => type.Arity == arity);
+                result = result.WhereAsArray(type => type.Arity == arity);
             }
 
             return result;
@@ -123,7 +123,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 var children = ArrayBuilder<NamedTypeSymbol>.GetInstance();
                 var skipCheckForPiaType = !moduleSymbol.Module.ContainsNoPiaLocalTypes();
-               
+
                 foreach (var g in typeGroups)
                 {
                     foreach (var t in g)
