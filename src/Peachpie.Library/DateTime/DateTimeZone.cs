@@ -21,8 +21,6 @@ namespace Pchp.Library.DateTime
         /// <summary>The timezone name if it differs from <see cref="TimeZoneInfo.Id"/>.</summary>
         private protected string _name;
 
-        private static readonly Regex TimeZoneOffsetRegex = new Regex(@"^[+-](\d{2}):{0,1}(\d{2})$", RegexOptions.Compiled);
-
         #region Constants
 
         /* Constants */
@@ -48,6 +46,12 @@ namespace Pchp.Library.DateTime
             _timezone = resolvedTimeZone ?? throw new ArgumentNullException();
         }
 
+        [PhpFieldsOnlyCtor]
+        protected DateTimeZone(Context ctx)
+        {
+            // empty, __construct to be called by implementor
+        }
+
         public DateTimeZone(Context ctx, string timezone_name)
         {
             __construct(ctx, timezone_name);
@@ -56,36 +60,22 @@ namespace Pchp.Library.DateTime
         // public __construct ( string $timezone )
         public void __construct(Context ctx, string timezone_name)
         {
-            if (timezone_name != null)
+            if (timezone_name == null)
             {
-                _timezone = PhpTimeZone.GetTimeZone(timezone_name);
-                _name = timezone_name;
-
-                if (_timezone == null)
-                {
-                    var m = TimeZoneOffsetRegex.Match(timezone_name);
-                    if(m.Success)
-                    {
-                        var hourOffset = int.Parse(m.Groups[1].Value);
-                        var minuteOffset = int.Parse(m.Groups[2].Value);
-                        if(timezone_name[0] == '-')
-                        {
-                            hourOffset = -hourOffset;
-                            minuteOffset = -minuteOffset;
-                        }
-
-                        _timezone = TimeZoneInfo.CreateCustomTimeZone("UTC" + timezone_name, new TimeSpan(hourOffset, minuteOffset, 0), null, null);
-                    }
-                    else
-                    {
-                        //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_timezone", timezone_name));
-                        throw new Spl.InvalidArgumentException();
-                    }
-                }
+                _timezone = PhpTimeZone.GetCurrentTimeZone(ctx);
             }
             else
             {
-                _timezone = PhpTimeZone.GetCurrentTimeZone(ctx);
+                var tz = PhpTimeZone.GetTimeZone(timezone_name);
+                if (tz == null)
+                {
+                    PhpException.Throw(PhpError.Notice, Resources.LibResources.unknown_timezone, timezone_name);
+                    throw new Spl.InvalidArgumentException();
+                }
+
+                //
+                _timezone = tz;
+                _name = timezone_name;
             }
         }
 

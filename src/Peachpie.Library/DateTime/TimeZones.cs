@@ -23,6 +23,7 @@ using System.Diagnostics;
 using Pchp.Core;
 using System.Xml;
 using Pchp.Core.Utilities;
+using System.Text.RegularExpressions;
 
 namespace Pchp.Library.DateTime
 {
@@ -83,21 +84,14 @@ namespace Pchp.Library.DateTime
             }
         }
 
-        /// <summary>
-        /// Initializes list of time zones.
-        /// </summary>
-        static PhpTimeZone()
-        {
-            // initialize tz database (from system time zone database)
-            timezones = InitializeTimeZones();
-        }
-
         #region timezones
 
         /// <summary>
         /// PHP time zone database.
         /// </summary>
-        private readonly static TimeZoneInfoItem[]/*!!*/timezones;
+        private readonly static Lazy<TimeZoneInfoItem[]>/*!!*/s_lazyTimeZones = new Lazy<TimeZoneInfoItem[]>(
+            InitializeTimeZones,
+            System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
 
         private static TimeZoneInfoItem[]/*!!*/InitializeTimeZones()
         {
@@ -265,6 +259,13 @@ namespace Pchp.Library.DateTime
             }
         }
 
+        /// <summary>
+        /// Matching timezone UTC offset
+        /// </summary>
+        private static readonly Lazy<Regex> s_lazyTimeZoneOffsetRegex = new Lazy<Regex>(
+            () => new Regex(@"^[+-](\d{2}):{0,1}(\d{2})$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+            System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+
         #endregion
 
         /// <summary>
@@ -427,7 +428,7 @@ namespace Pchp.Library.DateTime
                 return null;
 
             // simple binary search (not the Array.BinarySearch)
-            var timezones = PhpTimeZone.timezones;
+            var timezones = PhpTimeZone.s_lazyTimeZones.Value;
             int a = 0, b = timezones.Length - 1;
             while (a <= b)
             {
@@ -442,18 +443,39 @@ namespace Pchp.Library.DateTime
                     b = x - 1;
             }
 
+            // try custom UTC offset
+            var m = s_lazyTimeZoneOffsetRegex.Value.Match(phpName);
+            if (m.Success)
+            {
+                var utcoffset = new TimeSpan(
+                    int.Parse(m.Groups[1].Value),
+                    int.Parse(m.Groups[2].Value),
+                    0);
+
+                // normalize the timezone name // [+-]D2:D2
+                var tzname = $"{phpName[0]}{utcoffset.Hours.ToString("D2")}:{utcoffset.Minutes.ToString("D2")}";
+
+                if (phpName[0] == '-')
+                {
+                    utcoffset = utcoffset.Negate();
+                }
+
+                //
+                return TimeZoneInfo.CreateCustomTimeZone("UTC" + tzname, utcoffset, null, null);
+            }
+
             return null;
         }
 
         /// <summary>
-        /// Tries to match given <paramref name="systemTimeZone"/> to our fixed <see cref="timezones"/>.
+        /// Tries to match given <paramref name="systemTimeZone"/> to our fixed <see cref="s_timezones"/>.
         /// </summary>
         static TimeZoneInfo SystemToPhpTimeZone(TimeZoneInfo systemTimeZone)
         {
             if (systemTimeZone == null)
                 return null;
 
-            var tzns = timezones;
+            var tzns = s_lazyTimeZones.Value;
             for (int i = 0; i < tzns.Length; i++)
             {
                 var tz = tzns[i].Info;
@@ -545,7 +567,7 @@ namespace Pchp.Library.DateTime
                 throw new NotImplementedException();
             }
 
-            var timezones = PhpTimeZone.timezones;
+            var timezones = PhpTimeZone.s_lazyTimeZones.Value;
 
             // copy names to PHP array:
             var array = new PhpArray(timezones.Length);
@@ -589,7 +611,7 @@ namespace Pchp.Library.DateTime
         /// </summary>
         public static PhpArray timezone_abbreviations_list()
         {
-            var timezones = PhpTimeZone.timezones;
+            var timezones = PhpTimeZone.s_lazyTimeZones.Value;
             var result = new PhpArray();
 
             //
