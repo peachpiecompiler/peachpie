@@ -174,12 +174,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 // Handle assignment to a variable
                 VariableHandle trgHandle;
-                if (assign.Target is BoundVariableRef trgVarRef && trgVarRef.Name.IsDirect
+                if (assign.Target is BoundVariableRef trgVarRef
+                    && trgVarRef.Name.IsDirect && !trgVarRef.Name.NameValue.IsAutoGlobal
                     && !_flowContext.IsReference(trgHandle = _flowContext.GetVarIndex(trgVarRef.Name.NameValue)))
                 {
                     VariableHandle srcHandle;
                     if (MatchExprSkipCopy(assign.Value, out BoundVariableRef srcVarRef, out bool isCopied)
-                        && srcVarRef.Name.IsDirect
+                        && srcVarRef.Name.IsDirect && !srcVarRef.Name.NameValue.IsAutoGlobal
                         && !_flowContext.IsReference(srcHandle = _flowContext.GetVarIndex(srcVarRef.Name.NameValue)))
                     {
                         if (isCopied)
@@ -234,7 +235,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     {
                         MarkAllKnownAssignments();
                     }
-                    else
+                    else if (!x.Name.NameValue.IsAutoGlobal)
                     {
                         var varindex = _flowContext.GetVarIndex(x.Name.NameValue);
                         if (!_flowContext.IsReference(varindex))
