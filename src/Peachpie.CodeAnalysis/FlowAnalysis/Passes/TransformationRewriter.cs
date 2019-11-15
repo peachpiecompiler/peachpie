@@ -18,7 +18,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
     {
         private readonly DelayedTransformations _delayedTransformations;
         private readonly SourceRoutineSymbol _routine;
-        private readonly VariableInfos _varInfos;
         private readonly HashSet<BoundCopyValue> _unnecessaryCopies;    // Possibly null if all are necessary
 
         protected PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
@@ -214,20 +213,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             _delayedTransformations = delayedTransformations;
             _routine = routine ?? throw ExceptionUtilities.ArgumentNull(nameof(routine));
 
-            // Gather variable information not present in the previous analysis
-            _varInfos = VariableInfoWalker.Analyze(_routine);
-
             // Gather information about value copy operations which can be removed
             _unnecessaryCopies = CopyAnalysisContext.TryGetUnnecessaryCopies(_routine);
         }
 
         private void TryTransformParameters()
         {
+            var needPassValueParams = ParameterAnalysisContext.GetNeedPassValueParams(_routine);
+
             foreach (var parameter in _routine.LocalsTable.Variables.OfType<ParameterReference>())
             {
                 var varindex = _routine.ControlFlowGraph.FlowContext.GetVarIndex(parameter.BoundName.NameValue);
                 var paramType = parameter.Parameter.Type;
-                if (!_varInfos.NeedPassValueParams.Get(varindex) && !parameter.SkipPass)
+                if (!needPassValueParams.Get(varindex) && !parameter.SkipPass)
                 {
                     // It is unnecessary to copy a parameter whose value is only passed to another routines and cannot change
                     parameter.SkipPass = true;
