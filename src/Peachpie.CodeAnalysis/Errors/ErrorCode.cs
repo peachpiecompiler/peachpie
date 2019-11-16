@@ -26,6 +26,8 @@ namespace Pchp.CodeAnalysis.Errors
         //
         FTL_InvalidInputFileName = 3000,
 
+        FTL_BadCodepage = 3016,
+
         //
         // Errors
         //

@@ -484,6 +484,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Code page &apos;{0}&apos; is invalid or not installed.
+        /// </summary>
+        internal static string FTL_BadCodepage {
+            get {
+                return ResourceManager.GetString("FTL_BadCodepage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to File name &apos;{0}&apos; is empty, contains invalid characters, has a drive specification without an absolute path, or is too long.
         /// </summary>
         internal static string FTL_InvalidInputFileName {

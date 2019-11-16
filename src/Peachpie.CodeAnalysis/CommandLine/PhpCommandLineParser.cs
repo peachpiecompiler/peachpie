@@ -50,6 +50,28 @@ namespace Pchp.CodeAnalysis.CommandLine
             return TryParseOption(arg, out name, out value);
         }
 
+        /// <summary>
+        /// Extends support for encoding names in additon to codepages.
+        /// </summary>
+        static new Encoding TryParseEncodingName(string arg)
+        {
+            try
+            {
+                var encoding = Encoding.GetEncoding(arg);
+                if (encoding != null)
+                {
+                    return encoding;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+
+            // default behavior:
+            return CommandLineParser.TryParseEncodingName(arg);
+        }
+
         IEnumerable<CommandLineSourceFile> ExpandFileArgument(string path, string baseDirectory, List<Diagnostic> diagnostics)
         {
             if (string.IsNullOrEmpty(path))
@@ -149,6 +171,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string runtimeMetadataVersion = null; // will be read from cor library if not specified in cmd
             string compilationName = null;
             string versionString = null;
+            Encoding codepage = null;
             bool embedAllSourceFiles = false;
             bool optimize = false;
             bool concurrentBuild = true;
@@ -195,6 +218,24 @@ namespace Pchp.CodeAnalysis.CommandLine
                     case "d":
                     case "define":
                         ParseDefine(value, defines);
+                        continue;
+
+                    case "codepage":
+                        value = RemoveQuotesAndSlashes(value);
+                        if (value == null)
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
+                            continue;
+                        }
+
+                        var encoding = TryParseEncodingName(value);
+                        if (encoding == null)
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.FTL_BadCodepage, Location.None, value));
+                            continue;
+                        }
+
+                        codepage = encoding;
                         continue;
 
                     case "r":
@@ -739,7 +780,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 //ErrorLogPath = errorLogPath,
                 //AppConfigPath = appConfigPath,
                 SourceFiles = sourceFiles.AsImmutable(),
-                Encoding = Encoding.UTF8,
+                Encoding = codepage, // Encoding.UTF8,
                 ChecksumAlgorithm = SourceHashAlgorithm.Sha1, // checksumAlgorithm,
                 MetadataReferences = metadataReferences.AsImmutable(),
                 AnalyzerReferences = analyzers.AsImmutable(),
