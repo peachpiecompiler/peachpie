@@ -595,6 +595,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 CheckMissusedPrimitiveType(x.ContainingType);
             }
 
+            if (x.Access.IsWrite && ((Microsoft.CodeAnalysis.Operations.IMemberReferenceOperation)x).Member is PropertySymbol prop && prop.SetMethod == null)
+            {
+                // read-only property written
+                _diagnostics.Add(_routine, GetMemberNameSpanForDiagnostic(x.PhpSyntax),
+                    ErrorCode.ERR_ReadOnlyPropertyWritten,
+                    prop.ContainingType.PhpQualifiedName().ToString(),  // TOOD: _statics
+                    prop.Name);
+            }
+
+            //
             return base.VisitFieldRef(x);
         }
 
@@ -815,7 +825,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             if (isMemberName)
             {
-                var qname = target.ContainingType.PhpQualifiedName();
+                var qname = target.ContainingType.PhpQualifiedName();   // TOOD: _statics
                 name = qname.ToString(new Name(name), false);
             }
 

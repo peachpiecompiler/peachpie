@@ -143,6 +143,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_InvalidConstantExpression,
         /// <summary>Using $this when not in object context</summary>
         ERR_ThisOutOfObjectContext,
+        /// <summary>Cannot set read-only property {0}::${1}</summary>
+        ERR_ReadOnlyPropertyWritten,
 
         //
         // Warnings

@@ -403,6 +403,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot set read-only property {0}::${1}.
+        /// </summary>
+        internal static string ERR_ReadOnlyPropertyWritten {
+            get {
+                return ResourceManager.GetString("ERR_ReadOnlyPropertyWritten", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Resource identifier &apos;{0}&apos; has already been used in this assembly.
         /// </summary>
         internal static string ERR_ResourceNotUnique {
