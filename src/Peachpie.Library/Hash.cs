@@ -2644,14 +2644,12 @@ namespace Pchp.Library
                 Password = passwordBytes,
                 Salt = salt
             };
-            var argon = new Argon2(config);
 
-            string hashString;
+            using (var argon = new Argon2(config))
             using (var hash = argon.Hash())
             {
-                hashString = config.EncodeString(hash.Buffer);
+                return config.EncodeString(hash.Buffer);
             }
-            return hashString;
         }
 
         #endregion
