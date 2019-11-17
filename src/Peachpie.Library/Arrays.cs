@@ -2571,9 +2571,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null; // NULL
             }
 
             // no need to make a deep copy since keys are immutable objects (strings, ints):
@@ -2602,9 +2601,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null; // NULL
             }
 
             var result = new PhpArray();
