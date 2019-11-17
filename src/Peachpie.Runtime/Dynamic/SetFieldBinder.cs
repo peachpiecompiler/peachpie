@@ -50,14 +50,13 @@ namespace Pchp.Core.Dynamic
 
             //
             var setter = BinderHelpers.BindField(bound.TargetType, bound.ClassContext, bound.TargetInstance, bound.Name, bound.Context, _access, bound.Arguments.FirstOrDefault());
-            if (setter != null)
+            if (setter == null)
             {
-                //
-                return new DynamicMetaObject(setter, bound.Restrictions);
+                // unexpected
+                throw new InvalidOperationException();
             }
 
-            // field not found
-            throw new NotImplementedException();
+            return new DynamicMetaObject(setter, bound.Restrictions);
         }
     }
 }
