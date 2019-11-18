@@ -1508,14 +1508,16 @@ namespace Pchp.Core
         {
             Debug.Assert(name != null, nameof(name));
 
-            if (ctx.TryGetConstant(name, out var value, ref idx) == false)
+            if (ctx.TryGetConstant(name, out var value, ref idx))
+            {
+                return value;
+            }
+            else
             {
                 // Warning: undefined constant
                 PhpException.Throw(PhpError.Notice, Resources.ErrResources.undefined_constant, name);
-                value = (PhpValue)name;
+                return name;
             }
-
-            return value;
         }
 
         /// <summary>
@@ -1526,16 +1528,17 @@ namespace Pchp.Core
             Debug.Assert(name != null, nameof(name));
             Debug.Assert(fallbackName != null, nameof(fallbackName));
 
-            PhpValue value;
-            if (ctx.TryGetConstant(name, out value, ref idx) == false &&
-                ctx.TryGetConstant(fallbackName, out value) == false)
+            if (ctx.TryGetConstant(name, out var value, ref idx) ||
+                ctx.TryGetConstant(fallbackName, out value))
+            {
+                return value;
+            }
+            else
             {
                 // Warning: undefined constant
                 PhpException.Throw(PhpError.Notice, Resources.ErrResources.undefined_constant, fallbackName);
-                value = (PhpValue)fallbackName;
+                return fallbackName;
             }
-
-            return value;
         }
 
         /// <summary>

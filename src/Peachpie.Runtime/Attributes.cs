@@ -53,9 +53,26 @@ namespace Pchp.Core
     public class PhpExtensionAttribute : Attribute
     {
         /// <summary>
-        /// Extensions name.
+        /// Extensions name list.
+        /// Cannot be <c>null</c>.
         /// </summary>
-        public string[] Extensions { get; private set; }
+        public string[] Extensions
+            => _extensions is string name ? new[] { name }
+            : _extensions is string[] names ? names
+            : Array.Empty<string>();
+
+        /// <summary>
+        /// Gets the first specified extension name or <c>null</c>.
+        /// </summary>
+        public string FirstExtensionOrDefault
+            => _extensions is string name ? name
+            : _extensions is string[] names && names.Length != 0 ? names[0]
+            : null;
+
+        /// <summary>
+        /// <see cref="string"/>, <see cref="string"/>[] or <c>null</c>.
+        /// </summary>
+        readonly object _extensions;
 
         /// <summary>
         /// Optional.
@@ -67,9 +84,19 @@ namespace Pchp.Core
         /// </remarks>
         public Type Registrator { get; set; }
 
+        public PhpExtensionAttribute()
+        {
+            _extensions = null;
+        }
+
+        public PhpExtensionAttribute(string extension)
+        {
+            _extensions = extension;
+        }
+
         public PhpExtensionAttribute(params string[] extensions)
         {
-            this.Extensions = extensions;
+            _extensions = extensions;
         }
 
         public override string ToString()
