@@ -91,7 +91,7 @@ namespace Pchp.Core.Reflection
 
             public override FieldAttributes Attributes => _field.Attributes;
 
-            public override bool IsReadOnly => _field.IsInitOnly || IsConstant;
+            public override bool IsReadOnly => _field.IsInitOnly || _field.IsLiteral;
 
             public override bool IsConstant => _field.IsLiteral;
 
