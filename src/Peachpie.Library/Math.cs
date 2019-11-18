@@ -13,7 +13,8 @@ namespace Pchp.Library
 	/// Implements PHP mathematical functions and constants.
 	/// </summary>
 	/// <threadsafety static="true"/>
-	public static class PhpMath
+	[PhpExtension("standard")]
+    public static class PhpMath
     {
         #region Per-request Random Number Generators
 

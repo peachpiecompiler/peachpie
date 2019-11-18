@@ -11,7 +11,7 @@ namespace Pchp.Library
 	/// PHP output control functions implementation. 
 	/// </summary>
 	/// <threadsafety static="true"/>
-    //[ImplementsExtension(LibraryDescriptor.ExtCore)]
+    [PhpExtension("Core")]
     public static class Output
     {
         public const int PHP_OUTPUT_HANDLER_START = (int)BufferedOutput.ChunkPosition.First;

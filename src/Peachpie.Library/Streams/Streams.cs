@@ -240,6 +240,7 @@ namespace Pchp.Library.Streams
     /// <summary>
 	/// Gives access to the stream filter chains.
 	/// </summary>
+    [PhpExtension("standard")]
 	public static class PhpFilters
     {
         #region Enums & Constants
@@ -458,6 +459,7 @@ namespace Pchp.Library.Streams
 	/// Class containing implementations of PHP functions accessing the <see cref="StreamWrapper"/>s.
 	/// </summary>
 	/// <threadsafety static="true"/>
+    [PhpExtension("Core")]
 	public static class PhpWrappers
     {
         #region stream_wrapper_register, stream_register_wrapper, stream_get_wrappers
@@ -548,6 +550,7 @@ namespace Pchp.Library.Streams
         #endregion
     }
 
+    [PhpExtension("standard")]
     public static class PhpStreams
     {
         #region Enums & Constants

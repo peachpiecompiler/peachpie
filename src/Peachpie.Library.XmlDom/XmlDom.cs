@@ -54,6 +54,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Implements constants and functions.
     /// </summary>
+    [PhpExtension("dom")]
     public static class XmlDom
     {
         #region Constants

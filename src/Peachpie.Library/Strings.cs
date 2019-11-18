@@ -11,6 +11,7 @@ using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
+    [PhpExtension("standard")]
     public static class Strings
     {
         #region Character map

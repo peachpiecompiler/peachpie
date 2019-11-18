@@ -12,6 +12,7 @@ using Pchp.Core.QueryValue;
 
 namespace Pchp.Library
 {
+    [PhpExtension("standard")]
     public static class Web
     {
         #region Constants

@@ -96,6 +96,7 @@ namespace Pchp.Library
 
     #endregion
 
+    [PhpExtension("standard")]
     public static class Variables
     {
         #region Constants

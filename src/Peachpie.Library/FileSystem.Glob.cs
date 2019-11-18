@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
+    [PhpExtension("standard")]
     public static partial class PhpPath
     {
         #region GlobOptions, FnMatchOptions
