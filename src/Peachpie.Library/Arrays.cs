@@ -1494,10 +1494,8 @@ namespace Pchp.Library
             {
                 var arg = args[i];
 
-                if (arg.IsArray)
+                if (arg.IsPhpArray(out var array))
                 {
-                    var array = arg.Array;
-
                     // checks whether the currently processed array has the same length as the first one:
                     if (array.Count != row_count)
                     {
@@ -1519,10 +1517,8 @@ namespace Pchp.Library
 
                     col_count++;
                 }
-                else if (arg.TypeCode == PhpTypeCode.Long)
+                else if (arg.IsLong(out var num))
                 {
-                    var num = (int)arg.ToLong();
-
                     switch (num)
                     {
                         case (int)ComparisonMethod.Regular:
@@ -1566,9 +1562,8 @@ namespace Pchp.Library
                 }
                 else
                 {
-                    //PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array_or_sort_flag", i));
-                    //return 0;
-                    throw new ArgumentException();
+                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array_or_sort_flag, i.ToString());
+                    return 0;
                 }
             }
 
@@ -2641,17 +2636,16 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             // references are not dereferenced:
-            PhpArray result = new PhpArray(array.Count);
+            var result = new PhpArray(array.Count);
             var enumerator = array.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
-                result.Add(enumerator.CurrentValue);
+                result.Add(enumerator.CurrentValue.DeepCopy());
             }
 
             // result is inplace deeply copied on return to PHP code:
