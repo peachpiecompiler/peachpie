@@ -332,7 +332,7 @@ namespace Peachpie.Library.MySql.MySqli
             }
 
             Connection = MySqlConnectionManager.GetInstance(ctx)
-                .CreateConnection(connection_string.ToString(), false, -1, out bool success);
+                .CreateConnection(connection_string.ToString(), true, -1, out bool success);
 
             if (success)
             {
