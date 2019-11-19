@@ -2625,10 +2625,9 @@ namespace Pchp.Library
 
         #region Argon2
 
-        private static RandomNumberGenerator RandomGenerator => LazyRandomGenerator.Value;
+        static RandomNumberGenerator RandomGenerator => s_lazyRandomGenerator.Value;
 
-        private static readonly ThreadLocal<RandomNumberGenerator> LazyRandomGenerator =
-            new ThreadLocal<RandomNumberGenerator>(() => RandomNumberGenerator.Create());
+        static readonly ThreadLocal<RandomNumberGenerator> s_lazyRandomGenerator = new ThreadLocal<RandomNumberGenerator>(() => RandomNumberGenerator.Create());
 
         private static string HashArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
         {

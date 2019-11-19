@@ -255,20 +255,38 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static AttributeData GetPhpScriptAttribute(this TypeSymbol symbol) => GetAttribute(symbol, CoreTypes.PhpScriptAttributeFullName);
 
-        public static string[] PhpExtensionAttributeValues(this AttributeData phpextensionattribute)
+        /// <summary>
+        /// Gets the list of extension names specified in given <c>PhpExtensionAttribute</c>.
+        /// </summary>
+        /// <returns>Enumeration of extensin names. Never returns <c>null</c>.</returns>
+        public static IEnumerable<string>/*!!*/PhpExtensionAttributeValues(this AttributeData phpextensionattribute)
         {
-            if (phpextensionattribute != null && phpextensionattribute.CommonConstructorArguments.Length >= 1)
+            if (phpextensionattribute != null)
             {
-                if (phpextensionattribute.CommonConstructorArguments[0].Kind == TypedConstantKind.Array)
+                var args = phpextensionattribute.CommonConstructorArguments;
+                if (args.Length == 1)
                 {
-                    var extensions = phpextensionattribute.CommonConstructorArguments[0].Values;    // string[] extensions
-                    return extensions.Select(x => (string)x.Value).ToArray();
+                    switch (args[0].Kind)
+                    {
+                        // [PhpExtensionAttribute(params string[] values)]
+                        case TypedConstantKind.Array:
+                            return args[0]
+                                .Values   // string[] extensions
+                                .Select(x => (string)x.Value);
+
+                        // [PhpExtensionAttribute(string extensionName)]
+                        case TypedConstantKind.Primitive:
+                            if (args[0].Value is string extensionName)
+                            {
+                                return new[] { extensionName };
+                            }
+                            break;
+                    }
                 }
-                else
-                    return new string[] { (string)phpextensionattribute.CommonConstructorArguments[0].Value };
             }
 
-            return null;
+            //
+            return Array.Empty<string>();
         }
     }
 }
