@@ -259,8 +259,13 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (phpextensionattribute != null && phpextensionattribute.CommonConstructorArguments.Length >= 1)
             {
-                var extensions = phpextensionattribute.CommonConstructorArguments[0].Values;    // string[] extensions
-                return extensions.Select(x => (string)x.Value).ToArray();
+                if (phpextensionattribute.CommonConstructorArguments[0].Kind == TypedConstantKind.Array)
+                {
+                    var extensions = phpextensionattribute.CommonConstructorArguments[0].Values;    // string[] extensions
+                    return extensions.Select(x => (string)x.Value).ToArray();
+                }
+                else
+                    return new string[] { (string)phpextensionattribute.CommonConstructorArguments[0].Value };
             }
 
             return null;
