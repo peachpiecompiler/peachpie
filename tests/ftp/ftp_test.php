@@ -31,7 +31,7 @@ if (!Test3($server, $user_name, $user_pass)){
 
 echo "Test3 passed\n";
 
-//Test4($server, $user_name, $user_pass);
+Test4($server, $user_name, $user_pass);
 
 Test5($server, $user_name, $user_pass);
 
@@ -52,9 +52,9 @@ function Init() {
         echo "Enviroment variables were found\n";
     }
 
-    // Log in to server 
+    // Log in to server
     if(!$conn_id = Login($server,$user_name,$user_pass)){
-        return false; 
+        return false;
     }
 
     ftp_close($conn_id);
@@ -73,7 +73,7 @@ function Login($server,$user_name,$user_pass) {
         echo "You are connect to server\n";
     }
 
-    if ( !ftp_login($conn_id, $user_name, $user_pass)) { 
+    if ( !ftp_login($conn_id, $user_name, $user_pass)) {
         echo "Can not login in to server\n";
         return false;
     }
@@ -81,11 +81,17 @@ function Login($server,$user_name,$user_pass) {
         echo "You are logged in to server\n";
     }
 
+    if (ftp_pasv($conn_id, true)) {
+      echo "Passive mode set\n";
+    } else {
+      echo "Cannot set passive mode\n";
+    }
+
     return $conn_id;
 }
 
 function Test1($server, $user_name, $user_pass) {
-    //Testing ftp_connect, ftp_login, ftp_close, ftp_pwd, ftp_get_option, ftp_size, ftp_rawlist, ftp_nlist, ftp_delete
+    //Testing ftp_connect, ftp_login, ftp_close, ftp_pwd, ftp_get_option, ftp_size, ftp_delete
     // Variables
     $ftp_fakeServer = '	0.0.0.0';
     $wrong_user_name = 'someNamewhichprobablydoesntexistonserverforthistest';
@@ -106,7 +112,7 @@ function Test1($server, $user_name, $user_pass) {
         echo "Testing file $testingFileServer was not uploaded\n";
         return false;
     }
-    
+
     echo "Testing file $testingFileServer was uploaded\n";
 
     //ftp_get_option
@@ -125,25 +131,17 @@ function Test1($server, $user_name, $user_pass) {
     // ftp_delete
     ftp_delete($conn_right,$testingFileServer);
 
-    // ftp_rawlist
-    print_r(ftp_rawlist($conn_right,$pwd,true));
-    echo "\n";
-
-    // ftp_nlist
-    print_r(ftp_nlist($conn_right,$pwd));
-    echo "\n";
-
     // Close the connection
     if (!ftp_close($conn_right)){
         echo "ftp_close method failed";
-        return false; 
+        return false;
     }
 
     return true;
 }
 
 function Test2($server, $user_name, $user_pass) {
-    // Testing ftp_rename, ftp_mdtm, ftp_chmod, ftp_mkdir, ftp_rmdir, ftp_chdir 
+    // Testing ftp_rename, ftp_mdtm, ftp_chmod, ftp_mkdir, ftp_rmdir, ftp_chdir
     // Variables
     $directory = 'MyDirectory';
     $innerDirectory = 'InnerDirectory';
@@ -196,7 +194,7 @@ function Test2($server, $user_name, $user_pass) {
     echo "Created directory: " . ftp_mkdir($conn_id, $innerDirectory) . "\n";
     if (@ftp_chmod($conn_id, 0777, $innerDirectory) !== false) {
         echo "$innerDirectory chmoded successfully to 0777\n";
-    } 
+    }
     else {
         echo "could not chmod $innerDirectory\n";   }
 
@@ -240,7 +238,7 @@ function Test3($server, $user_name, $user_pass){
     // Variables
     $testingFileClient = 'TestingFileClient.txt';
     $testingFileServer = 'TestingFileServer.txt';
-    $testingFileClientCopy = 'TestingFileClientCopy.txt'; 
+    $testingFileClientCopy = 'TestingFileClientCopy.txt';
 
     // Login...
     if (!$conn_id = Login($server,$user_name,$user_pass)){
@@ -249,13 +247,13 @@ function Test3($server, $user_name, $user_pass){
 
 
     // Prepare server
-    if (ftp_size($conn_id, $testingFileClient) != -1) { 
+    if (ftp_size($conn_id, $testingFileClient) != -1) {
         if (!ftp_delete($conn_id, $testingFileClient, $testingFileClient)) {
             return false;
         }
     }
 
-    if (ftp_size($conn_id, $testingFileServer) != -1) { 
+    if (ftp_size($conn_id, $testingFileServer) != -1) {
         if (!ftp_delete($conn_id, $testingFileServer, $testingFileServer)) {
             return false;
         }
@@ -268,6 +266,10 @@ function Test3($server, $user_name, $user_pass){
         return false;
     }
 
+    if (ftp_pasv($conn_id, false)){
+        echo "pasv off\n";
+    }
+
     if (ftp_pasv($conn_id, true)){
         echo "pasv on\n";
     }
@@ -277,10 +279,6 @@ function Test3($server, $user_name, $user_pass){
         echo "File $testingFileClient was sent to server\n";
     } else {
         echo "File $testingFileClient was not sent to server\n";
-    }
-
-    if (ftp_pasv($conn_id, false)){
-    echo "pasv off\n";
     }
 
     // ftp_fget
@@ -340,7 +338,7 @@ function Test3($server, $user_name, $user_pass){
         echo "success\n";
     }
 
-    if (ftp_size($conn_id, $testingFileServer) != -1) { 
+    if (ftp_size($conn_id, $testingFileServer) != -1) {
         if (!ftp_delete($conn_id, $testingFileServer)) {
             echo "File $testingFileServer was not deleted in server\n";
             return false;
@@ -380,10 +378,13 @@ function files_are_equal($a, $b) {
 function Test4($server, $user_name, $user_pass){
     // Testing ftp_ssl_connect
     // logging...
-    $conn_id = ftp_ssl_connect($server); 
+    $conn_id = ftp_ssl_connect($server);
 
     if (ftp_login($conn_id, $user_name, $user_pass)){
-        echo ftp_pwd($conn_id);
+        echo "SSL-FTP connection successful\n";
+        echo "Working directory: ". ftp_pwd($conn_id) ."\n";
+    } else {
+        echo "Error in establishing  SSL-FTP connection\n";
     }
 
     ftp_close($conn_id);
@@ -391,7 +392,7 @@ function Test4($server, $user_name, $user_pass){
 
 function Test5($server, $user_name, $user_pass){
     $directory = 'MyDirectory';
-    
+
     // Login...
     if (!$conn_id = Login($server,$user_name,$user_pass)){
         return false;
@@ -408,6 +409,14 @@ function Test5($server, $user_name, $user_pass){
             return false;
         }
     }
+
+    // ftp_rawlist
+    print_r(ftp_rawlist($conn_id, '/', true));
+    echo "\n";
+
+    // ftp_nlist
+    print_r(ftp_nlist($conn_id, '/'));
+    echo "\n";
 
     if (ftp_mkdir($conn_id, $directory)){
         echo "Created directory: " .  $directory . "\n";
@@ -430,7 +439,7 @@ function Test5($server, $user_name, $user_pass){
 
     // ftp_raw
     print_r(ftp_raw($conn_id,"PWD"));
-    
+
     echo ftp_alloc($conn_id,1,$answer);
     echo $answer;
 
@@ -459,7 +468,7 @@ function Test6($server, $user_name, $user_pass){
     // Initate the upload
     $ret = ftp_nb_put($conn_id, $fileName, $fileName, FTP_BINARY);
     while ($ret == FTP_MOREDATA) {
-    
+
     // Do whatever you want
     if (!$writeOnlyOnce)
     {
@@ -481,28 +490,7 @@ function Test6($server, $user_name, $user_pass){
     // Initate the upload
     $ret = ftp_nb_get($conn_id, $fileName, $fileName, FTP_BINARY);
     while ($ret == FTP_MOREDATA) {
-    
-    // Do whatever you want
-    if (!$writeOnlyOnce)
-    {
-        echo "Async function in the background..\n";
-        $writeOnlyOnce = true;
-    }
 
-    // Continue downloading...
-    $ret = ftp_nb_continue($conn_id);
-    }
-
-    if ($ret != FTP_FINISHED) {
-    echo "There was an error downloading the file...";
-    exit(1);
-    }
-
-    //Async interuption
-    $ret = ftp_nb_put($conn_id, $fileName1, $fileName, FTP_BINARY);
-    $ret = ftp_nb_get($conn_id, $fileName, $fileName, FTP_BINARY);
-    while ($ret == FTP_MOREDATA) {
-    
     // Do whatever you want
     if (!$writeOnlyOnce)
     {

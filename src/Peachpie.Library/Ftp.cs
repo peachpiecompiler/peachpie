@@ -68,7 +68,7 @@ namespace Pchp.Library
 
             public FtpClient Client { get; }
 
-            public bool UsePASVAddress { get; set; }
+            public bool UsePASVAddress { get; set; } = true;
 
             public bool Autoseek { get; set; }
 
@@ -80,7 +80,9 @@ namespace Pchp.Library
             {
                 Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
 
-                if (PendingOperationTask != null) // Cancel current function and start new
+                // Cancel current function and start new
+                if (PendingOperationTask != null
+                    && !PendingOperationTask.IsCompleted && !PendingOperationTask.IsCanceled && !PendingOperationTask.IsFaulted)
                 {
                     // CancellationTokenSource cannot be reset and cancelled again
                     TokenSource.Cancel();
@@ -90,10 +92,11 @@ namespace Pchp.Library
                         // Wait for task is canceled in other to dispose TokenSource
                         PendingOperationTask.Wait();
                     }
-                    catch(AggregateException ex) 
+                    catch (TaskCanceledException)
                     {
-                        if (!(ex.InnerException is TaskCanceledException))
-                            throw;
+                    }
+                    catch(AggregateException ex) when (ex.InnerException is TaskCanceledException)
+                    {
                     }
 
                     PendingOperationTask = null;
@@ -140,6 +143,7 @@ namespace Pchp.Library
 
             client.Port = port;
             client.Credentials = null; // Disable anonymous login
+            client.DataConnectionType = FtpDataConnectionType.AutoActive;   // PHP uses active connection by default
 
             var resource = new FtpResource(client, timeout * 1000);
 
@@ -351,10 +355,8 @@ namespace Pchp.Library
             if (resource == null)
                 return null;
 
-            string workingDirectory = resource.Client.GetWorkingDirectory();
-
             if (FtpCommand(directory, resource.Client.CreateDirectory))
-                return $"{workingDirectory.TrimEndSeparator()}/{directory}";
+                return directory;
             else
                 return null;
         }
@@ -444,7 +446,7 @@ namespace Pchp.Library
                 /* Ignore the IP address returned by the FTP server in response to the PASV command 
                  * and instead use the IP address that was supplied in the ftp_connect() */
                 case FTP_USEPASVADDRESS:
-                    return resource.Client.DataConnectionType != FtpDataConnectionType.PASVEX;
+                    return resource.UsePASVAddress;
                 default:
                     PhpException.Throw(PhpError.Warning, Resources.Resources.arg_invalid_value, option.ToString(), nameof(option));
                     return PhpValue.False;
@@ -564,7 +566,7 @@ namespace Pchp.Library
                 return false;
 
             resource.Client.DataConnectionType = pasv
-                ? (resource.UsePASVAddress ? FtpDataConnectionType.AutoPassive : FtpDataConnectionType.PASVEX)
+                ? (resource.UsePASVAddress ? FtpDataConnectionType.PASV : FtpDataConnectionType.PASVEX)
                 : FtpDataConnectionType.AutoActive;
 
             return true;
@@ -753,16 +755,16 @@ namespace Pchp.Library
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public static bool ftp_fget(PhpResource ftp_stream, PhpResource handle, string remotefile, int mode = FTP_IMAGE, int resumepos = 0)
         {
-            // Check file resource
-            var stream = PhpStream.GetValid(handle);
-            if (stream == null)
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
             {
                 return false;
             }
 
-            // Check ftp_stream resource
-            var resource = ValidateFtpResource(ftp_stream);
-            if (resource == null)
+            // Check file resource
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
             {
                 return false;
             }
@@ -773,7 +775,9 @@ namespace Pchp.Library
 
             try
             {
-                return resource.Client.Download(stream.RawStream, remotefile, resumepos);
+                // Use the async version to prevent calling Write on the output stream, as it might be not allowed
+                // (e.g. in Kestrel)
+                return resource.Client.DownloadAsync(stream.RawStream, remotefile, resumepos).Result;
             }
             catch (FtpException ex)
             {
@@ -1138,9 +1142,11 @@ namespace Pchp.Library
             if (startpos != 0) // There is no API for this parameter in FluentFTP Library.
                 PhpException.ArgumentValueNotSupported(nameof(startpos), startpos);
 
+            string localPath = FileSystemUtils.AbsolutePath(ctx, local_file);
+
             resource.PrepareForPendingOperation(mode);
-            
-            resource.PendingOperationTask = resource.Client.UploadFileAsync(local_file, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.TokenSource.Token);
+
+            resource.PendingOperationTask = resource.Client.UploadFileAsync(localPath, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }
@@ -1201,9 +1207,11 @@ namespace Pchp.Library
             if (resumepos != 0) // There is no API for this parameter in FluentFTP Library.
                 PhpException.ArgumentValueNotSupported(nameof(resumepos), resumepos);
 
+            string localPath = FileSystemUtils.AbsolutePath(ctx, local_file);
+
             resource.PrepareForPendingOperation(mode);
 
-            resource.PendingOperationTask = resource.Client.DownloadFileAsync(local_file, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.TokenSource.Token);
+            resource.PendingOperationTask = resource.Client.DownloadFileAsync(localPath, remote_file, FtpLocalExists.Overwrite, FtpVerify.None, null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }
@@ -1219,16 +1227,16 @@ namespace Pchp.Library
         /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
         public static int ftp_nb_fget(PhpResource ftp_stream, PhpResource handle, string remote_file, int mode = FTP_BINARY, int resumepos = 0)
         {
-            // Check file resource
-            var stream = PhpStream.GetValid(handle);
-            if (stream == null)
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
             {
                 return FTP_FAILED;
             }
 
-            // Check ftp_stream resource
-            var resource = ValidateFtpResource(ftp_stream);
-            if (resource == null)
+            // Check file resource
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
             {
                 return FTP_FAILED;
             }
