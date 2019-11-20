@@ -109,7 +109,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             _writer.Dispose();
         }
 
-        void WriteSummary(string summary)
+        static void WriteSummary(TextWriter output, string summary)
         {
             if (string.IsNullOrWhiteSpace(summary)) return;
 
@@ -117,13 +117,13 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
             if (summary.Length == 0) return;
 
-            _writer.WriteLine("<summary>");
-            _writer.Write(XmlEncode(summary));
-            _writer.WriteLine();
-            _writer.WriteLine("</summary>");
+            output.WriteLine("<summary>");
+            output.Write(XmlEncode(summary));
+            output.WriteLine();
+            output.WriteLine("</summary>");
         }
 
-        void WriteParam(string pname, string pdesc, string type = null)
+        static void WriteParam(TextWriter output, string pname, string pdesc, string type = null)
         {
             if (string.IsNullOrWhiteSpace(pdesc) && string.IsNullOrEmpty(type))
             {
@@ -132,26 +132,26 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
             //
 
-            _writer.Write("<param name=\"");
-            _writer.Write(XmlEncode(pname));
-            _writer.Write('\"');
+            output.Write("<param name=\"");
+            output.Write(XmlEncode(pname));
+            output.Write('\"');
 
             if (!string.IsNullOrEmpty(type))
             {
                 // THIS IS A CUSTOM XML NOTATION, NOT SUPPORTED BY MS IDE
 
                 // type="int|string|bool" 
-                _writer.Write(" type=\"");
-                _writer.Write(XmlEncode(type));
-                _writer.Write('\"');
+                output.Write(" type=\"");
+                output.Write(XmlEncode(type));
+                output.Write('\"');
             }
 
-            _writer.Write('>');
-            _writer.Write(XmlEncode(pdesc));
-            _writer.WriteLine("</param>");
+            output.Write('>');
+            output.Write(XmlEncode(pdesc));
+            output.WriteLine("</param>");
         }
 
-        void WriteException(string[] types, string pdesc)
+        static void WriteException(TextWriter output, string[] types, string pdesc)
         {
             if (string.IsNullOrWhiteSpace(pdesc) || types == null)
             {
@@ -163,36 +163,30 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             {
                 var t = types[i];
 
-                _writer.Write("<exception cref=\"");
-                _writer.Write(XmlEncode(QualifiedName.Parse(t, true).ClrName()));   // TODO: CommentIdResolver.GetId(..)    // TODO: translate correctly using current naming context
-                _writer.Write('\"');
-                _writer.Write('>');
-                _writer.Write(XmlEncode(pdesc));
-                _writer.WriteLine("</exception>");
+                output.Write("<exception cref=\"");
+                output.Write(XmlEncode(QualifiedName.Parse(t, true).ClrName()));   // TODO: CommentIdResolver.GetId(..)    // TODO: translate correctly using current naming context
+                output.Write('\"');
+                output.Write('>');
+                output.Write(XmlEncode(pdesc));
+                output.WriteLine("</exception>");
             }
         }
 
-        void WriteRoutine(string id, SourceRoutineSymbol routine)
+        public static void WriteRoutine(TextWriter output, SourceRoutineSymbol routine)
         {
-            if (!AddToWritten(id, routine))
-            {
-                // already written
-                return;
-            }
+            Contract.ThrowIfNull(output);
+            Contract.ThrowIfNull(routine);
 
             var phpdoc = routine.PHPDocBlock;
             if (phpdoc == null)
             {
-                // no documentation
                 return;
             }
-
-            _writer.WriteLine($"<member name=\"{id}\">");
 
             //var ps = routine.Parameters;
 
             // PHPDoc
-            WriteSummary(phpdoc.Summary);
+            WriteSummary(output, phpdoc.Summary);
 
             var elements = phpdoc.Elements;
             for (int i = 0; i < elements.Length; i++)
@@ -202,19 +196,19 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 {
                     if (p.VariableName != null)
                     {
-                        WriteParam(p.VariableName.TrimStart('$'), p.Description, p.TypeNames);
+                        WriteParam(output, p.VariableName.TrimStart('$'), p.Description, p.TypeNames);
                     }
                 }
                 else if (elements[i] is PHPDocBlock.ReturnTag rtag)
                 {
                     if (!string.IsNullOrWhiteSpace(rtag.Description))
                     {
-                        _writer.WriteLine("<returns>{0}</returns>", XmlEncode(rtag.Description));
+                        output.WriteLine("<returns>{0}</returns>", XmlEncode(rtag.Description));
                     }
                 }
                 else if (elements[i] is PHPDocBlock.ExceptionTag ex)
                 {
-                    WriteException(ex.TypeNamesArray, ex.Description);
+                    WriteException(output, ex.TypeNamesArray, ex.Description);
                 }
             }
 
@@ -235,6 +229,26 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             //        break;  // implicit parameters are always at begining
             //    }
             //}
+        }
+
+        void WriteRoutine(string id, SourceRoutineSymbol routine)
+        {
+            if (!AddToWritten(id, routine))
+            {
+                // already written
+                return;
+            }
+
+            var phpdoc = routine.PHPDocBlock;
+            if (phpdoc == null)
+            {
+                // no documentation
+                return;
+            }
+
+            _writer.WriteLine($"<member name=\"{id}\">");
+
+            WriteRoutine(_writer, routine);
 
             _writer.WriteLine("</member>");
         }
@@ -252,7 +266,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             var phpdoc = type.Syntax?.PHPDoc;
             if (phpdoc != null)
             {
-                WriteSummary(phpdoc.Summary);
+                WriteSummary(_writer, phpdoc.Summary);
             }
             _writer.WriteLine("</member>");
 
@@ -284,7 +298,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                     if (!string.IsNullOrWhiteSpace(summary))
                     {
                         _writer.WriteLine($"<member name=\"{CommentIdResolver.GetId(field)}\">");
-                        WriteSummary(summary);
+                        WriteSummary(_writer, summary);
                         _writer.WriteLine(value);
                         _writer.WriteLine("</member>");
                     }
@@ -309,7 +323,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                         {
                             // annotate special .ctor that initializes only fields
                             _writer.WriteLine($"<member name=\"{ctor_id}\">");
-                            WriteSummary(Peachpie.CodeAnalysis.PhpResources.XmlDoc_FieldsOnlyCtor);
+                            WriteSummary(_writer, Peachpie.CodeAnalysis.PhpResources.XmlDoc_FieldsOnlyCtor);
                             _writer.WriteLine("</member>");
                         }
                         else
