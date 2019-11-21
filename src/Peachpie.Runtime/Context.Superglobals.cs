@@ -278,12 +278,7 @@ namespace Pchp.Core
             get { return _superglobals.globals; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();  // TODO: ErrCode
-                }
-
-                _superglobals.globals = value;
+                _superglobals.globals = value ?? throw new ArgumentNullException();
             }
         }
 

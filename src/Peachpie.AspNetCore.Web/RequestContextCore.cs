@@ -456,7 +456,7 @@ namespace Peachpie.AspNetCore.Web
             }
             array[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
             array[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
-            array[CommonPhpArrayKeys.HTTPS] = PhpValue.Create(string.Equals(request.Scheme, "https", StringComparison.OrdinalIgnoreCase));
+            array[CommonPhpArrayKeys.HTTPS] = string.Equals(request.Scheme, "https", StringComparison.OrdinalIgnoreCase);
 
             //
             return array;
