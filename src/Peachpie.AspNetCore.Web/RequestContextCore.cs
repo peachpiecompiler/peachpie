@@ -330,6 +330,14 @@ namespace Peachpie.AspNetCore.Web
             httpcontext.Items[HttpContextItemKey] = this;
             httpcontext.Response.RegisterForDispose(this);
 
+            // enable synchronous IO until we make everything async
+            // https://github.com/aspnet/Announcements/issues/342
+            var bodyControl = httpcontext.Features.Get<IHttpBodyControlFeature>();
+            if (bodyControl != null)
+            {
+                bodyControl.AllowSynchronousIO = true;
+            }
+
             //
             this.RootPath = rootPath;
 
