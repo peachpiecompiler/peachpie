@@ -3416,9 +3416,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Boolean:
                     _il.EmitBoolConstant(false);
                     break;
-                case SpecialType.System_String:
-                    _il.EmitStringConstant(string.Empty);
-                    break;
                 case SpecialType.System_Char:
                     _il.EmitCharConstant('\0');
                     break;
