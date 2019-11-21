@@ -1,6 +1,6 @@
 <?php
 
-function test($x, $y) {
+function test1($x, $y) {
   $x1 = $x/*{skipCopy:1}*/;
   $y1 = $y/*{skipCopy:0}*/;
 
@@ -23,4 +23,9 @@ function test2($x, $y) {
 
     echo $y;
   }
+}
+
+function test3($x) {
+  $a = $b = $x/*{skipCopy:1}*/;
+  echo $x;
 }

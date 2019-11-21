@@ -172,16 +172,48 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             public override VoidStruct VisitAssign(BoundAssignEx assign)
             {
-                // Handle assignment to a variable
-                VariableHandle trgHandle;
-                if (assign.Target is BoundVariableRef trgVarRef
-                    && trgVarRef.Name.IsDirect && !trgVarRef.Name.NameValue.IsAutoGlobal
-                    && !_flowContext.IsReference(trgHandle = _flowContext.GetVarIndex(trgVarRef.Name.NameValue)))
+                ProcessAssignment(assign);
+                return default;
+            }
+
+            private VariableHandle ProcessAssignment(BoundAssignEx assign)
+            {
+                bool CheckVariable(BoundVariableRef varRef, out VariableHandle handle)
                 {
-                    VariableHandle srcHandle;
-                    if (MatchExprSkipCopy(assign.Value, out BoundVariableRef srcVarRef, out bool isCopied)
-                        && srcVarRef.Name.IsDirect && !srcVarRef.Name.NameValue.IsAutoGlobal
-                        && !_flowContext.IsReference(srcHandle = _flowContext.GetVarIndex(srcVarRef.Name.NameValue)))
+                    if (varRef.Name.IsDirect && !varRef.Name.NameValue.IsAutoGlobal
+                        && !_flowContext.IsReference(handle = _flowContext.GetVarIndex(varRef.Name.NameValue)))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        handle = default;
+                        return false;
+                    }
+                }
+
+                bool MatchSourceVarOrNestedAssignment(BoundExpression expr, out VariableHandle handle, out bool isCopied)
+                {
+                    if (MatchExprSkipCopy(expr, out BoundVariableRef varRef, out isCopied) && CheckVariable(varRef, out handle))
+                    {
+                        return true;
+                    }
+                    else if (MatchExprSkipCopy(expr, out BoundAssignEx nestedAssign, out isCopied))
+                    {
+                        handle = ProcessAssignment(nestedAssign);
+                        return handle.IsValid;
+                    }
+                    else
+                    {
+                        handle = default;
+                        return false;
+                    }
+                }
+
+                // Handle assignment to a variable
+                if (assign.Target is BoundVariableRef trgVarRef && CheckVariable(trgVarRef, out var trgHandle))
+                {
+                    if (MatchSourceVarOrNestedAssignment(assign.Value, out var srcHandle, out bool isCopied))
                     {
                         if (isCopied)
                         {
@@ -198,7 +230,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                         // Visiting trgVar would destroy the effort (due to the assignment it's considered as MightChange),
                         // visiting srcVar is unnecessary
-                        return default;
+                        return trgHandle;
                     }
                     else
                     {
@@ -209,11 +241,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         _state = _state.WithValue(trgHandle, 0);
 
                         // Prevent from visiting trgVar due to its MightChange property
-                        return default;
+                        return trgHandle;
                     }
                 }
 
-                return base.VisitAssign(assign);
+                base.VisitAssign(assign);
+                return default;
             }
 
             public override VoidStruct VisitVariableRef(BoundVariableRef x)
