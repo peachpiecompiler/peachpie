@@ -600,6 +600,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitFunctionDeclaration(x);
         }
 
+        public override object VisitIsEmpty(BoundIsEmptyEx x)
+        {
+            if (x.Operand is BoundVariableRef varRef && varRef.Name.IsDirect && !varRef.Name.NameValue.IsAutoGlobal)
+            {
+                var flowContext = _routine.ControlFlowGraph.FlowContext;
+
+                var varType = flowContext.GetVarType(varRef.Name.NameValue);
+                if (!varType.IsRef && (varType.IsVoid || flowContext.TypeRefContext.WithoutNull(varType).IsVoid)
+                    && !_routine.IsGlobalScope && (_routine.Flags & RoutineFlags.RequiresLocalsArray) == 0)
+                {
+                    // empty($x) where $x is undefined or null -> TRUE
+                    TransformationCount++;
+                    return new BoundLiteral(true.AsObject()).WithAccess(x.Access);
+                }
+            }
+
+            return base.VisitIsEmpty(x);
+        }
+
         //public override object VisitArray(BoundArrayEx x)
         //{
         //    if (x.Access.TargetType == DeclaringCompilation.CoreTypes.IPhpCallable &&
