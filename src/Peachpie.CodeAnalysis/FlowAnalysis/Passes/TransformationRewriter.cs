@@ -292,10 +292,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override object VisitBinaryExpression(BoundBinaryEx x)
         {
-            // AND, OR:
             if (x.Operation == Ast.Operations.And ||
                 x.Operation == Ast.Operations.Or)
             {
+                // AND, OR:
                 if (x.Left.ConstantValue.TryConvertToBool(out var bleft))
                 {
                     if (x.Operation == Ast.Operations.And)
@@ -327,6 +327,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         // Left || FALSE => Left
                         return x.Left;
                     }
+                }
+            }
+            else if (x.Operation == Ast.Operations.Mul)
+            {
+                if ((x.Left.ConstantValue.TryConvertToLong(out long leftCons) && leftCons == -1)
+                    || (x.Right.ConstantValue.TryConvertToLong(out long rightCons) && rightCons == -1))
+                {
+                    // X * -1, -1 * X -> -X
+                    TransformationCount++;
+                    return new BoundUnaryEx(leftCons == -1 ? x.Right : x.Left, Ast.Operations.Minus).WithAccess(x.Access);
                 }
             }
 
