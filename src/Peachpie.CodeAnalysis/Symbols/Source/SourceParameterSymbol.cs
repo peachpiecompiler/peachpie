@@ -48,8 +48,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (Initializer is BoundArrayEx arr)
                     {
                         // special case: empty array
-                        if (arr.Items.Length == 0)
+                        if (arr.Items.Length == 0 && !_syntax.PassedByRef)
                         {
+                            // OPTIMIZATION: reference the singleton field directly, the called routine is responsible to perform copy if necessary
                             // PhpArray.Empty
                             return DeclaringCompilation.CoreMethods.PhpArray.Empty;
                         }
