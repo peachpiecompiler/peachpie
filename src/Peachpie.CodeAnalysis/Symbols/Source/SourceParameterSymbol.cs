@@ -70,7 +70,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     // The construction of the default value may require a Context, cannot be created as a static singletong
                     // Additionally; default values of REF parameter must be created every time from scratch! https://github.com/peachpiecompiler/peachpie/issues/591
-                    if (Initializer.RequiresContext || _syntax.PassedByRef)
+                    if (Initializer.RequiresContext ||
+                        (_syntax.PassedByRef && fldtype.IsReferenceType && fldtype.SpecialType != SpecialType.System_String))  // we can cache the default value even for Refs if it is an immutable value
                     {
                         // Func<Context, PhpValue>
                         fldtype = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Func_T2).Construct(
