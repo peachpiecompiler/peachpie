@@ -107,9 +107,9 @@ namespace Peachpie.Library.MySql
         static MySqlConnectionResource ValidConnection(Context ctx, PhpResource link)
         {
             var resource = link ?? LastConnection(ctx);
-            if (resource is MySqlConnectionResource)
+            if (resource is MySqlConnectionResource mysqllink)
             {
-                return (MySqlConnectionResource)resource;
+                return mysqllink;
             }
             else
             {

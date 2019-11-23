@@ -189,8 +189,8 @@ namespace Pchp.Library
 
                 public static PhpString Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
                 {
-                    ObjectWriter writer;
-                    variable.Accept(writer = new ObjectWriter(ctx, encodeOptions, caller));
+                    var writer = new ObjectWriter(ctx, encodeOptions, caller);
+                    variable.Accept(writer);
                     return new PhpString(writer._result);
                 }
 
@@ -207,7 +207,6 @@ namespace Pchp.Library
                             }
                         }
                     }
-
 
                     if (count < 2)
                     {
@@ -591,7 +590,7 @@ namespace Pchp.Library
                     Write(Tokens.ObjectCloseString);
                 }
 
-                IEnumerable<KeyValuePair<string, PhpValue>> JsonArrayProperties(PhpArray array)
+                static IEnumerable<KeyValuePair<string, PhpValue>> JsonArrayProperties(PhpArray array)
                 {
                     var enumerator = array.GetFastEnumerator();
                     while (enumerator.MoveNext())
@@ -601,7 +600,7 @@ namespace Pchp.Library
                     }
                 }
 
-                IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(object/*!*/obj)
+                static IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(object/*!*/obj)
                 {
                     return TypeMembersUtils.EnumerateInstanceFields(obj, TypeMembersUtils.s_propertyName, TypeMembersUtils.s_keyToString);
                 }
