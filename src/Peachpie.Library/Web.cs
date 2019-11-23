@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Net;
 using Pchp.Core.QueryValue;
+using System.Threading;
 
 namespace Pchp.Library
 {
@@ -384,10 +385,59 @@ namespace Pchp.Library
 
         #region header, header_remove
 
+        ///// <summary>
+        ///// Regular expression matching "HTTP/1.0 (StatusCode)".
+        ///// </summary>
+        //readonly static Lazy<Regex> s_header_regex_statuscode = new Lazy<Regex>(
+        //    () => new Regex("[ ]*HTTP/[^ ]* ([0-9]{1,3}).*", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+        //    LazyThreadSafetyMode.None);
+
         /// <summary>
-        /// Regullar expression matching "HTTP/1.0 (StatusCode)".
+        /// Checks the given string for `<code>[ ]*HTTP/[^ ]* ([0-9]{1,3}).*</code>`.
         /// </summary>
-        readonly static Regex _header_regex_statuscode = new Regex("[ ]*HTTP/[^ ]* ([0-9]{1,3}).*", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        /// <param name="header">Input string.</param>
+        /// <param name="code">If matches, gets the HTTP status code</param>
+        /// <returns></returns>
+        static bool TryMatchHttpStatusHeader(ReadOnlySpan<char> header, out int code)
+        {
+            code = default;
+
+            //var m = s_header_regex_statuscode.Value.Match(header);
+            //if (m.Success)
+            //{
+            //    code = int.Parse(m.Groups[1].Value);
+            //    return true;
+            //}
+
+            // HTTP/* 123.*
+            const string prefix = "HTTP/";
+            if (header.StartsWith(prefix.AsSpan(), StringComparison.OrdinalIgnoreCase))
+            {
+                header = header.Slice(prefix.Length);
+                var statusAt = header.IndexOf(' ');
+                if (statusAt >= 0)
+                {
+                    header = header.Slice(statusAt + 1);
+                    // naive int.TryParse(span, count);
+                    for (int i = 0; i < header.Length && i < 3; i++)
+                    {
+                        var c = header[i];
+                        var n = c - '0';
+                        if (n >= 0 && n <= 9)   // digit
+                        {
+                            code = (code * 10) + n;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            //
+            return code != 0;
+        }
 
         /// <summary>
 		/// Adds a specified header to the current response.
@@ -416,16 +466,18 @@ namespace Pchp.Library
             var webctx = ctx.HttpPhpContext;
             if (webctx == null || string.IsNullOrEmpty(str) || webctx.HeadersSent)
             {
+                PhpException.Throw(PhpError.Notice, Resources.Resources.headers_has_been_sent);
                 return;
             }
 
-            // response code is not forced => checks for initial HTTP/ and the status code in "str":  
+            // response code is not forced => checks for initial HTTP/ and the status code in "str":
+            var header = str.AsSpan().Trim();
+
             if (http_response_code <= 0)
             {
-                var m = _header_regex_statuscode.Match(str);
-                if (m.Success)
+                if (TryMatchHttpStatusHeader(header, out var status))
                 {
-                    webctx.StatusCode = int.Parse(m.Groups[1].Value);
+                    webctx.StatusCode = status;
                     return;
                 }
             }
@@ -438,19 +490,15 @@ namespace Pchp.Library
             // adds a header if it has a correct form (i.e. "name: value"):
             // store header in collection associated with current context - headers can be
             // replaced and are flushed automatically (in BeforeHeadersSent event :-)) on IIS Classic Mode.
-            int i = str.IndexOf(':');
+
+            int i = header.IndexOf(':');
             if (i > 0)
             {
-                string name = str.Substring(0, i).Trim();
-                if (!string.IsNullOrEmpty(name))
+                var name = header.Slice(0, i).TrimEnd();
+                if (name.Length != 0)
                 {
-                    webctx.SetHeader(name, str.Substring(i + 1).Trim());
-
-                    // specific cases:
-                    if (name.EqualsOrdinalIgnoreCase("location"))
-                    {
-                        webctx.StatusCode = (int)HttpStatusCode.Redirect; // 302
-                    }
+                    var value = header.Slice(i + 1).TrimStart().ToString();
+                    webctx.SetHeader(name.ToString(), value, append: !replace);
                 }
             }
         }

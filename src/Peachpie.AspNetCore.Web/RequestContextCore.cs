@@ -32,7 +32,7 @@ namespace Peachpie.AspNetCore.Web
             get { return _httpctx.Response.HasStarted; }
         }
 
-        void IHttpPhpContext.SetHeader(string name, string value)
+        void IHttpPhpContext.SetHeader(string name, string value, bool append)
         {
             if (name.EqualsOrdinalIgnoreCase("content-length"))
             {
@@ -40,16 +40,23 @@ namespace Peachpie.AspNetCore.Web
                 return;
             }
 
+            // specific cases:
+            if (name.EqualsOrdinalIgnoreCase("location"))
+            {
+                _httpctx.Response.StatusCode = (int)System.Net.HttpStatusCode.Redirect; // 302
+            }
+
             //
             var stringValue = new StringValues(value);
 
-            // headers that can have multiple values:
-            if (name.EqualsOrdinalIgnoreCase("set-cookie"))
+            if (append) // || name.EqualsOrdinalIgnoreCase("set-cookie")
             {
+                // headers that can have multiple values:
                 _httpctx.Response.Headers.Append(name, stringValue);
             }
             else
             {
+                // replace semantic
                 _httpctx.Response.Headers[name] = stringValue;
             }
         }
