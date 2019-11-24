@@ -2981,7 +2981,7 @@ namespace Pchp.Library
                 byte[] generatedSalt = new byte[12];
 
                 RandomGenerator.GetBytes(generatedSalt);
-                To64(generatedSalt, generatedSalt.Length);
+                MD5MapASCII(generatedSalt, generatedSalt.Length);
 
                 generatedSalt[0] = generatedSalt[2] = generatedSalt[11] = (byte)'$';
                 generatedSalt[1] = (byte)'1';
@@ -2998,7 +2998,7 @@ namespace Pchp.Library
                         if (salt[1] == '1') // $1$
                         {
                             // MD5
-                            return CryptMD5Helper(ctxPchp, str, salt);
+                            return CryptMD5(ctxPchp, str, salt);
                         }
 
                         if (salt[1] == '5') // $5$
@@ -3010,7 +3010,7 @@ namespace Pchp.Library
                         if (salt[1] == '6') // $6$
                         {
                             // SHA512
-                            return CryptSHA512Helper(ctxPchp, str, salt);
+                            return CryptSHA512(ctxPchp, str, salt);
                         }
                     }
                     if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
@@ -3051,20 +3051,20 @@ namespace Pchp.Library
 
         #region md5 hash in crypt function
 
-        const int MD5MaxLength = 120;
-        const string MD5Name = "md5";
-        const string MD5Magic = "$1$";
-        const string itoa64 =     /* 0 ... 63 => ascii - 64 */
+        private const int MD5MaxLength = 120;
+        private const string MD5Name = "md5";
+        private const string MD5Magic = "$1$";
+        private const string itoa64 =     /* 0 ... 63 => ascii - 64 */
         "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
         /// <summary>
-        /// Intern funcion of php to map hash symbols to itoa64 set.
+        /// Internal funcion of php to map hash symbols to itoa64 set.
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="s">Position, where mapping starts.</param>
         /// <param name="v"></param>
         /// <param name="n">Length of mapping sequence.</param>
-        static void To64(byte[] hash, int s, int v, int n)
+        private static void MD5MapASCII(byte[] hash, int s, int v, int n)
         {
             while (--n >= 0)
             {
@@ -3074,12 +3074,12 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Intern funcion of php to map hash symbols to itoa64 set.
+        /// Internal funcion of php to map hash symbols to itoa64 set.
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="s">Position, where mapping starts.</param>
         /// <param name="n">Length of mapping sequence.</param>
-        static void To64(byte[] hash, int n)
+        private static void MD5MapASCII(byte[] hash, int n)
         {
             int s = 0;
             while (--n >= 0)
@@ -3089,12 +3089,10 @@ namespace Pchp.Library
             }
         }
 
-        
-
         /// <summary>
         /// Part of cypt function in php. 
         /// </summary>
-        private static string CryptMD5Helper(Context ctxPchp, string password, string salt)
+        private static string CryptMD5(Context ctx, string password, string salt)
         {
             int indexOfSaltBegin =0;
             int indexOfSaltEnd = 0;
@@ -3104,7 +3102,7 @@ namespace Pchp.Library
 
             for (indexOfSaltEnd = 0; indexOfSaltEnd < salt.Length && indexOfSaltEnd < 8 && salt[indexOfSaltEnd + indexOfSaltBegin ] != '$'; indexOfSaltEnd++);
 
-            byte[] saltInBytes = Encoding.ASCII.GetBytes(salt.ToCharArray(), indexOfSaltBegin ,indexOfSaltEnd);
+            byte[] saltInBytes = Encoding.ASCII.GetBytes(salt.ToCharArray(), indexOfSaltBegin, indexOfSaltEnd);
             byte[] passwd = Encoding.ASCII.GetBytes(password);
             byte[] magic = Encoding.ASCII.GetBytes(MD5Magic);
 
@@ -3118,27 +3116,35 @@ namespace Pchp.Library
 
             md5.Update(saltInBytes);
 
-            var md5_1= new HashPhpResource.MD5();
+            var md5Alt= new HashPhpResource.MD5();
 
-            md5_1.Init();
+            md5Alt.Init();
 
-            md5_1.Update(passwd);
+            md5Alt.Update(passwd);
            
-            md5_1.Update(saltInBytes);
+            md5Alt.Update(saltInBytes);
             
-            md5_1.Update(passwd);
+            md5Alt.Update(passwd);
 
-            byte[] final = md5_1.Final();
+            byte[] final = md5Alt.Final();
            
             for (int i = passwd.Length; i > 0; i -= 16)
                 md5.Update( i > 16 ? final : final.Take(i).ToArray());
 
+            byte[] fieldhelper = new byte[1];
+
             for (int i = passwd.Length; i!=0; i >>= 1)
             {
                 if ((i & 1) != 0)
-                    md5.Update(new byte[1] { 0 });
-                else 
-                    md5.Update(new byte[1] { passwd[0] });
+                {
+                    fieldhelper[0] = 0;
+                    md5.Update(fieldhelper);
+                }
+                else
+                {
+                    fieldhelper[0] = passwd[0];
+                    md5.Update(fieldhelper);
+                }
             }
 
             byte[] output = new byte[MD5MaxLength];
@@ -3150,62 +3156,61 @@ namespace Pchp.Library
 
             for (int i = 0; i < 1000; i++)
             {
-                md5_1 = new HashPhpResource.MD5();
-                md5_1.Init();
+                md5Alt = new HashPhpResource.MD5();
+                md5Alt.Init();
 
                 if ((i & 1) != 0)
-                    md5_1.Update(passwd);
+                    md5Alt.Update(passwd);
                 else
-                    md5_1.Update(final);
+                    md5Alt.Update(final);
 
                 if ((i % 3) != 0)
-                    md5_1.Update(saltInBytes);
+                    md5Alt.Update(saltInBytes);
 
                 if ((i % 7) != 0)
-                    md5_1.Update(passwd);
+                    md5Alt.Update(passwd);
 
                 if ((i & 1) != 0)
-                    md5_1.Update(final);
+                    md5Alt.Update(final);
                 else
-                    md5_1.Update(passwd);
+                    md5Alt.Update(passwd);
 
-                final = md5_1.Final();
+                final = md5Alt.Final();
             }
 
             int length = magic.Length + saltInBytes.Length + 1;
 
             int l;
-            l = (final[0] << 16) | (final[6] << 8) | final[12];  To64(output, length, l, 4); length += 4;
-            l = (final[1] << 16) | (final[7] << 8) | final[13];  To64(output, length, l, 4); length += 4;
-            l = (final[2] << 16) | (final[8] << 8) | final[14];  To64(output, length, l, 4); length += 4;
-            l = (final[3] << 16) | (final[9] << 8) | final[15];  To64(output, length, l, 4); length += 4;
-            l = (final[4] << 16) | (final[10] << 8) | final[5];  To64(output, length, l, 4); length += 4;
-            l = final[11];   To64(output, length, l, 2); length += 2;
+            l = (final[0] << 16) | (final[6] << 8) | final[12];  MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[1] << 16) | (final[7] << 8) | final[13];  MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[2] << 16) | (final[8] << 8) | final[14];  MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[3] << 16) | (final[9] << 8) | final[15];  MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[4] << 16) | (final[10] << 8) | final[5];  MD5MapASCII(output, length, l, 4); length += 4;
+            l = final[11];   MD5MapASCII(output, length, l, 2); length += 2;
 
             return ConvertByteArrayToString(output.Take(length).ToArray());
         }
-
         #endregion
 
         #region sha512 hash in crypt function
 
-        const string sha512RoundsPrefix = "rounds=";
-        const string sha512SaltPrefix = "$6$";
-        const int SALT_LEN_MAX = 16;
-        const int ROUNDS_DEFAULT = 5000;
-        const int ROUNDS_MIN = 1000;
-        const int ROUNDS_MAX = 999999999;
+        private const string prefixRoundsSHA512 = "rounds=";
+        private const string prefixSaltSHA512 = "$6$";
+        private const int saltMaxLength = 16;
+        private const int roundsDefault = 5000;
+        private const int roundsMin = 1000;
+        private const int roundsMax = 999999999;
         // Table with characters for base64 transformation.
-        const string b64t = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        private const string b64t = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
         /// <summary>
         /// Part of cypt function in php. 
         /// </summary>
-        private static string CryptSHA512Helper(Context ctxPchp, string password, string salt)
+        private static string CryptSHA512(Context ctx, string password, string salt)
         {
-            int outputLength = sha512SaltPrefix.Length - 1 + sha512RoundsPrefix.Length + 9 + 1 + salt.Length + 1 + 86 + 1;
+            int outputLength = prefixSaltSHA512.Length - 1 + prefixRoundsSHA512.Length + 9 + 1 + salt.Length + 1 + 86 + 1;
             // Default number of rounds.
-            int rounds = ROUNDS_DEFAULT;
+            int rounds = roundsDefault;
             bool roundsCustom = false;
 
             int saltPartsIndex = 0;
@@ -3213,51 +3218,51 @@ namespace Pchp.Library
 
             /* Find beginning of salt string.  The prefix should normally always
 	         be present.  Just in case it is not.  */
-            if (saltParts[1] == sha512SaltPrefix.Trim('$'))
+            if (saltParts[1] == prefixSaltSHA512.Trim('$'))
                 saltPartsIndex = 2;
 
-            if (saltParts[saltPartsIndex].StartsWith(sha512RoundsPrefix))
+            if (saltParts[saltPartsIndex].StartsWith(prefixRoundsSHA512))
             {
                 int srounds;
                 if (int.TryParse(saltParts[saltPartsIndex].Split('=')[1], out srounds))
                 {
                     saltPartsIndex = 3;
-                    rounds = Math.Min(ROUNDS_MAX, Math.Max(srounds, ROUNDS_MIN));
+                    rounds = Math.Min(roundsMax, Math.Max(srounds, roundsMin));
                     roundsCustom = true;
                 }
             }
 
             int endOfSAlt;
-            for (endOfSAlt = 0; endOfSAlt < saltParts[saltPartsIndex].Length && endOfSAlt < SALT_LEN_MAX && saltParts[saltPartsIndex][endOfSAlt] != '$'; endOfSAlt++);
+            for (endOfSAlt = 0; endOfSAlt < saltParts[saltPartsIndex].Length && endOfSAlt < saltMaxLength && saltParts[saltPartsIndex][endOfSAlt] != '$'; endOfSAlt++);
 
             byte[] saltInBytes = Encoding.ASCII.GetBytes(saltParts[saltPartsIndex].ToCharArray(), 0, endOfSAlt);
             byte[] passwd = Encoding.ASCII.GetBytes(password);
             byte[] magic = Encoding.ASCII.GetBytes(MD5Magic);
             
             // Prepare for the real work.
-            var ctx = new HashPhpResource.SHA512();
-            ctx.Init();
-            ctx.Update(passwd);
-            ctx.Update(saltInBytes);
+            var sha512 = new HashPhpResource.SHA512();
+            sha512.Init();
+            sha512.Update(passwd);
+            sha512.Update(saltInBytes);
 
             /*Compute alternate SHA512 sum with input KEY, SALT, and KEY.The
              final result will be added to the first context.  */
-            var altCtx = new HashPhpResource.SHA512();
-            altCtx.Init();
-            altCtx.Update(passwd);
-            altCtx.Update(saltInBytes);
-            altCtx.Update(passwd);
+            var sha512Alt = new HashPhpResource.SHA512();
+            sha512Alt.Init();
+            sha512Alt.Update(passwd);
+            sha512Alt.Update(saltInBytes);
+            sha512Alt.Update(passwd);
 
             /*Now get result of this(64 bytes) and add it to the other
              context.  */
-            byte[] altResult = altCtx.Final();
+            byte[] altResult = sha512Alt.Final();
 
             int cnt;
             for (cnt = passwd.Length; cnt > 64; cnt -= 64)
             {
-                ctx.Update(altResult);
+                sha512.Update(altResult);
             }
-            ctx.Update(altResult.Take(cnt).ToArray());
+            sha512.Update(altResult.Take(cnt).ToArray());
 
             /* Take the binary representation of the length of the key and for every
 	         1 add the alternate sum, for every 0 the key.  */
@@ -3265,22 +3270,22 @@ namespace Pchp.Library
             {
                 if ((cnt & 1) != 0)
                 {
-                    ctx.Update(altResult);
+                    sha512.Update(altResult);
                 }
                 else
                 {
-                    ctx.Update(passwd);
+                    sha512.Update(passwd);
                 }
             }
-            altResult = ctx.Final();
+            altResult = sha512.Final();
 
-            altCtx = new HashPhpResource.SHA512();
-            altCtx.Init();
+            sha512Alt = new HashPhpResource.SHA512();
+            sha512Alt.Init();
 
             for (cnt = 0; cnt < passwd.Length; ++cnt)
-                altCtx.Update(passwd);
+                sha512Alt.Update(passwd);
 
-            byte[] tempResult = altCtx.Final();
+            byte[] tempResult = sha512Alt.Final();
 
             // Start computation of P byte sequence.
             byte[] pbytes = new byte[passwd.Length];
@@ -3291,13 +3296,13 @@ namespace Pchp.Library
             }
             Array.Copy(tempResult, 0, pbytes, 0, cnt);
 
-            altCtx = new HashPhpResource.SHA512();
-            altCtx.Init();
+            sha512Alt = new HashPhpResource.SHA512();
+            sha512Alt.Init();
 
             for (cnt = 0; cnt < 16 + (int)altResult[0]; ++cnt)
-                altCtx.Update(saltInBytes);
+                sha512Alt.Update(saltInBytes);
 
-            tempResult = altCtx.Final();
+            tempResult = sha512Alt.Final();
 
             // Create byte sequence P.
             byte[] sbytes = new byte[saltInBytes.Length];
@@ -3311,31 +3316,31 @@ namespace Pchp.Library
             for (cnt = 0; cnt < rounds; ++cnt)
             {
                 // New context. 
-                ctx = new HashPhpResource.SHA512();
-                ctx.Init();
+                sha512 = new HashPhpResource.SHA512();
+                sha512.Init();
 
                 // Add key or last result.
                 if ((cnt & 1) != 0)
-                    ctx.Update(pbytes);
+                    sha512.Update(pbytes);
                 else
-                    ctx.Update(altResult);
+                    sha512.Update(altResult);
 
                 // Add salt for numbers not divisible by 3.
                 if (cnt % 3 != 0)
-                    ctx.Update(sbytes);
+                    sha512.Update(sbytes);
 
                 // Add key for numbers not divisible by 7.
                 if (cnt % 7 != 0)
-                    ctx.Update(pbytes);
+                    sha512.Update(pbytes);
 
                 // Add key or last result.
                 if ((cnt & 1) != 0)
-                    ctx.Update(altResult);
+                    sha512.Update(altResult);
                 else
-                    ctx.Update(pbytes);
+                    sha512.Update(pbytes);
 
                 // Create intermediate result.
-                altResult = ctx.Final();
+                altResult = sha512.Final();
             }
 
             /* Now we can construct the result string.  It consists of three
@@ -3344,12 +3349,12 @@ namespace Pchp.Library
             byte[] output = new byte[outputLength];
             // Salt prefix.
             int indexOfOutput = 0;
-            Array.Copy(Encoding.ASCII.GetBytes(sha512SaltPrefix), 0, output, indexOfOutput, sha512SaltPrefix.Length);
-            indexOfOutput += sha512SaltPrefix.Length;
+            Array.Copy(Encoding.ASCII.GetBytes(prefixSaltSHA512), 0, output, indexOfOutput, prefixSaltSHA512.Length);
+            indexOfOutput += prefixSaltSHA512.Length;
             // Rounds prefix
             if (roundsCustom)
             {
-                string part = $"{sha512RoundsPrefix}{rounds}$";
+                string part = $"{prefixRoundsSHA512}{rounds}$";
                 Array.Copy(Encoding.ASCII.GetBytes(part), 0, output, indexOfOutput, part.Length);
                 indexOfOutput += part.Length;
             }
@@ -3386,7 +3391,7 @@ namespace Pchp.Library
             return ConvertByteArrayToString(output);
         }
 
-        private static void B64From24bit( int B2, int B1, int B0, int N,byte[] output, ref int indexOfOutput)                    
+        private static void B64From24bit(int B2, int B1, int B0, int N, byte[] output, ref int indexOfOutput)
         {
             int buflen = output.Length - indexOfOutput;
             int w = ((B2) << 16) | ((B1) << 8) | (B0);	 
@@ -3398,7 +3403,6 @@ namespace Pchp.Library
 	              w >>= 6;							                 
 	          }									                 
         }
-
         #endregion
 
         #endregion
