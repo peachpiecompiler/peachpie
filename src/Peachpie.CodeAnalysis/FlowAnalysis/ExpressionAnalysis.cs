@@ -530,15 +530,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             TypeRefMask resulttype;
             TypeRefMask sourcetype = x.Target.TypeRefMask;  // type of target before operation
 
+            VariableHandle lazyVarHandle = default;
+            bool lessThanLongMax = false;               // whether the variable's value is less than the max long value
+
             if (IsDoubleOnly(x.Target))
             {
                 // double++ => double
                 resulttype = TypeCtx.GetDoubleTypeMask();
             }
-            else if (State.IsLessThanLongMax(TryGetVariableHandle(x.Target)))    // we'd like to keep long if we are sure we don't overflow to double
+            else if (State.IsLessThanLongMax(lazyVarHandle = TryGetVariableHandle(x.Target)))    // we'd like to keep long if we are sure we don't overflow to double
             {
                 // long++ [< long.MaxValue] => long
                 resulttype = TypeCtx.GetLongTypeMask();
+                lessThanLongMax = true;
             }
             else
             {
@@ -551,6 +555,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             x.Target.Access = x.Target.Access.WithRead();   // put read access back to the target
             x.TypeRefMask = x.IsPostfix ? sourcetype : resulttype;
+
+            // We expect that an incrementation doesn't change the property of being less than the max long value,
+            // it needs to be restored due to the write access of the target variable
+            if (lessThanLongMax)
+            {
+                Debug.Assert(lazyVarHandle.IsValid);
+                State.SetLessThanLongMax(lazyVarHandle, true);
+            }
 
             return default;
         }
