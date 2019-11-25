@@ -390,6 +390,9 @@ namespace Pchp.CodeAnalysis
             public static QualifiedName ini_get = new QualifiedName(new Name("ini_get"));
 
             public static QualifiedName extension_loaded = new QualifiedName(new Name("extension_loaded"));
+
+            /// <summary><c>define</c> function name.</summary>
+            public static QualifiedName define = new QualifiedName(new Name("define"));
         }
     }
 }

@@ -619,6 +619,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitIsEmpty(x);
         }
 
+        public override object VisitExpressionStatement(BoundExpressionStatement x)
+        {
+            // Transform the original expression first
+            x = (BoundExpressionStatement)base.VisitExpressionStatement(x);
+
+            // Transform functions which can be turned only to statements (i.e. not to expressions)
+            if (_routine.IsGlobalScope && x.Expression is BoundGlobalFunctionCall call && call.Name.IsDirect)
+            {
+                var args = call.ArgumentsInSourceOrder;
+                if (call.Name.NameValue == NameUtils.SpecialNames.define && args.Length == 2
+                    && args[0].Value.ConstantValue.TryConvertToString(out string constName)
+                    && args[1].Value.ConstantValue.HasValue)
+                {
+                    // define("CONST", "value") -> const \CONST = value
+                    TransformationCount++;
+                    return new BoundGlobalConstDeclStatement(NameUtils.MakeQualifiedName(constName, true), args[1].Value);
+                }
+            }
+
+            return x;
+        }
+
         //public override object VisitArray(BoundArrayEx x)
         //{
         //    if (x.Access.TargetType == DeclaringCompilation.CoreTypes.IPhpCallable &&
