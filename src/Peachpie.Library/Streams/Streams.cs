@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 /* TODO:
@@ -241,7 +242,7 @@ namespace Pchp.Library.Streams
 	/// Gives access to the stream filter chains.
 	/// </summary>
     [PhpExtension("standard")]
-	public static class PhpFilters
+    public static class PhpFilters
     {
         #region Enums & Constants
 
@@ -460,7 +461,7 @@ namespace Pchp.Library.Streams
 	/// </summary>
 	/// <threadsafety static="true"/>
     [PhpExtension("Core")]
-	public static class PhpWrappers
+    public static class PhpWrappers
     {
         #region stream_wrapper_register, stream_register_wrapper, stream_get_wrappers
 
@@ -952,57 +953,80 @@ namespace Pchp.Library.Streams
 
         #region stream_select
 
-        /// <summary>Runs the equivalent of the select() system call on the given arrays of streams with a timeout specified by tv_sec and tv_usec </summary>   
+        /// <summary>Runs the equivalent of the select() system call on the given arrays of streams with a timeout specified by <paramref name="tv_sec"/> and <paramref name="tv_usec"/>.
+        /// </summary>   
 		public static int stream_select(ref PhpArray read, ref PhpArray write, ref PhpArray except, int tv_sec, int tv_usec = 0)
         {
-            //if ((read == null || read.Count == 0) && (write == null || write.Count == 0))
-            //    return except == null ? 0 : except.Count;
+            if ((read == null || read.Count == 0) &&
+                (write == null || write.Count == 0))
+            {
+                // nothing to select:
+                return except == null ? 0 : except.Count;
+            }
 
-            //var readResult = new PhpArray();
-            //var writeResult = new PhpArray();
-            //var i = 0;
-            //var timer = Stopwatch.StartNew();
-            //var waitTime = tv_sec * 1000 + tv_usec;
-            //while (true)
-            //{
-            //    if (read != null)
-            //    {
-            //        readResult.Clear();
-            //        foreach (var item in read)
-            //        {
-            //            var stream = item.Value as PhpStream;
-            //            if (stream == null)
-            //                continue;
-            //            if (stream.CanReadWithoutLock())
-            //                readResult.Add(item.Key, item.Value);
-            //        }
-            //    }
-            //    if (write != null)
-            //    {
-            //        writeResult.Clear();
-            //        foreach (var item in write)
-            //        {
-            //            var stream = item.Value as PhpStream;
-            //            if (stream == null)
-            //                continue;
-            //            if (stream.CanWriteWithoutLock())
-            //                writeResult.Add(item.Key, item.Value);
-            //        }
-            //    }
-            //    if (readResult.Count > 0 || writeResult.Count > 0 || except.Count > 0)
-            //        break;
-            //    i++;
-            //    if (timer.ElapsedMilliseconds > waitTime)
-            //        break;
-            //    if (i < 10)
-            //        Thread.Yield();
-            //    else
-            //        Thread.Sleep(Math.Min(i, waitTime));
-            //}
-            //read = readResult;
-            //write = writeResult;
-            //return read.Count + write.Count + (except == null ? 0 : except.Count);
-            throw new NotImplementedException();
+            //
+            var startTime = System.DateTime.UtcNow;
+            var waitTime = Math.Max(tv_sec * 1000 + tv_usec / 1000, 1); // [1..)
+
+            //
+            var readResult = new PhpArray();
+            var writeResult = new PhpArray();
+            int count;
+
+            for (int i = 0; ; i++)
+            {
+                //
+                if (read != null)
+                {
+                    readResult.Clear();
+
+                    foreach (var item in read)
+                    {
+                        if (item.Value.Object is PhpStream stream && stream.CanReadWithoutLock)
+                        {
+                            readResult.Add(item);
+                        }
+                    }
+                }
+
+                if (write != null)
+                {
+                    writeResult.Clear();
+
+                    foreach (var item in write)
+                    {
+                        if (item.Value.Object is PhpStream stream && stream.CanWriteWithoutLock)
+                        {
+                            writeResult.Add(item);
+                        }
+                    }
+                }
+
+                // check we found available streams:
+                count = readResult.Count + writeResult.Count + (except != null ? except.Count : 0);
+
+                if (count == 0 && (System.DateTime.UtcNow - startTime).TotalMilliseconds < waitTime)
+                {
+                    // avoids polling CPU without a break:
+
+                    if (i < 8)
+                        // just spin
+                        Thread.Yield();
+                    else
+                        // sleep the thread for [2..100] ms
+                        Thread.Sleep(Math.Min(Math.Min((i + 1) * 2, 100), waitTime));
+                }
+                else
+                {
+                    // found streams or timeout:
+                    break;
+                }
+            }
+
+            // update ref parameters and return:
+            read = readResult;
+            write = writeResult;
+            return count;
         }
 
         #endregion
