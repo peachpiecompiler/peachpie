@@ -79,13 +79,111 @@ namespace Pchp.Library
 
             #endregion
 
+            #region Nested struct: MiniSet // helper data structure
+
+            /// <summary>
+            /// Helper data structure maintaining "Stack" of objects.
+            /// Optimized for 0 to 1 items, or ~10 objects.
+            /// Does not allocate for less than 2 objects.
+            /// </summary>
+            struct MiniSet
+            {
+                /// <summary>
+                /// Internal data, either object reference or reference to <see cref="object"/>[] representing the set.
+                /// </summary>
+                object _value;
+
+                /// <summary>
+                /// Stack size if <see cref="_value"/> referes to <see cref="object"/>[].
+                /// </summary>
+                int _top;
+
+                /// <summary>
+                /// Counts object refereces in the set;
+                /// </summary>
+                public int Count(object obj)
+                {
+                    if (ReferenceEquals(_value, obj))
+                    {
+                        return 1;
+                    }
+                    else if (_value is object[] array)
+                    {
+                        Debug.Assert(_top <= array.Length);
+                        
+                        int count = 0;
+                        for (int i = 0; i < _top; i++)
+                        {
+                            if (ReferenceEquals(array[i], obj))
+                            {
+                                count++;
+                            }
+                        }
+                        return count;
+                    }
+
+                    //
+                    return 0;
+                }
+
+                public void Push(object obj)
+                {
+                    if (ReferenceEquals(_value, null))
+                    {
+                        _value = obj;
+                    }
+                    else if (_value is object[] array)
+                    {
+                        Debug.Assert(_top <= array.Length);
+                        if (_top == array.Length)
+                        {
+                            Array.Resize(ref array, array.Length * 2);
+                            _value = array;
+                        }
+
+                        array[_top++] = obj;
+                    }
+                    else
+                    {
+                        // upgrade _value to object[4]
+                        _value = new object[] { _value, obj, null, null, };
+                        _top = 2;
+                    }
+                }
+
+                /// <summary>
+                /// Removes one occurence of the given object reference from the set.
+                /// </summary>
+                public bool Pop(object obj)
+                {
+                    if (ReferenceEquals(_value, obj))
+                    {
+                        _value = null;
+                        return true;
+                    }
+                    else if (
+                        _top > 0 &&
+                        _value is object[] array &&
+                        ReferenceEquals(array[_top - 1], obj))
+                    {
+                        _top--;
+                        return true;
+                    }
+
+                    // ERR
+                    return false;
+                }
+            }
+
+            #endregion
+
             #region ObjectWriter
 
             sealed class ObjectWriter : PhpVariableVisitor // TODO: :FormatterVisitor
             {
-                Encoding Encoding => _ctx.StringEncoding;
+                //Encoding Encoding => _ctx.StringEncoding;
 
-                readonly Stack<object> _recursionStack = new Stack<object>();
+                MiniSet _recursion;
 
                 /// <summary>
                 /// Result data.
@@ -93,7 +191,7 @@ namespace Pchp.Library
                 readonly PhpString.Blob _result = new PhpString.Blob();
 
                 readonly Context _ctx;
-                readonly RuntimeTypeHandle _caller;
+                //readonly RuntimeTypeHandle _caller;
                 readonly JsonEncodeOptions _encodeOptions;
                 readonly IPrettyPrinter _pretty;
 
@@ -183,7 +281,7 @@ namespace Pchp.Library
                     Debug.Assert(ctx != null);
                     _ctx = ctx;
                     _encodeOptions = encodeOptions;
-                    _caller = caller;
+                    //_caller = caller;
                     _pretty = HasPrettyPrint ? (IPrettyPrinter)new PrettyPrintOn(_result) : new PrettyPrintOff();
                 }
 
@@ -196,21 +294,9 @@ namespace Pchp.Library
 
                 bool PushObject(object obj)
                 {
-                    int count = 0;
-                    if (_recursionStack.Count != 0)
+                    if (_recursion.Count(obj) < 2)
                     {
-                        foreach (var x in _recursionStack)
-                        {
-                            if (x == obj)
-                            {
-                                count++;
-                            }
-                        }
-                    }
-
-                    if (count < 2)
-                    {
-                        _recursionStack.Push(obj);
+                        _recursion.Push(obj);
                         return true;
                     }
                     else
@@ -222,9 +308,7 @@ namespace Pchp.Library
 
                 void PopObject(object obj)
                 {
-                    Debug.Assert(_recursionStack.Count != 0);
-                    var x = _recursionStack.Pop();
-                    Debug.Assert(x == obj);
+                    _recursion.Pop(obj);
                 }
 
                 void Write(string str) => _result.Append(str);
@@ -251,6 +335,7 @@ namespace Pchp.Library
 
                 public override void Accept(PhpString obj)
                 {
+                    // TODO: escape single-byte characters properly
                     WriteString(obj.ToString(_ctx));
                 }
 
@@ -265,10 +350,10 @@ namespace Pchp.Library
                 /// <remarks>Determines if the array can be encoded as JSON array.</remarks>
                 static bool IsSequentialArray(PhpArray/*!*/array)
                 {
+                    // TODO: check if the array IsPacked first (=> is sequential)
+
                     if (array.Count != 0)
                     {
-                        // TODO: once we implement packed arrays, just check if the array is packed without holes and return
-
                         int next = 0;
                         var enumerator = array.GetFastEnumerator();
                         while (enumerator.MoveNext())
@@ -291,7 +376,8 @@ namespace Pchp.Library
                         if (HasForceObject || !IsSequentialArray(array))
                         {
                             // array are encoded as objects or there are keyed values that has to be encoded as object
-                            WriteObject(JsonArrayProperties(array));
+                            //WriteObject(JsonArrayProperties(array));
+                            WriteArrayAsObject(array);
                         }
                         else
                         {
@@ -349,25 +435,20 @@ namespace Pchp.Library
                 {
                     return
                         (c <= 0x7f || HasUnescapedUnicode) &&   // ASCII
-                        (!char.IsControl(c)) && // not control
-                        (!(c >= 9 && c <= 13)); // not BS, HT, LF, Vertical Tab, Form Feed, CR
+                        !(c >= 9 && c <= 13) && // not BS, HT, LF, Vertical Tab, Form Feed, CR
+                        !char.IsControl(c); // not control
                 }
 
                 /// <summary>
                 /// Determines if given character should be encoded.
                 /// </summary>
-                private bool CharShouldBeEncoded(char c)
+                bool CharShouldBeEncoded(char c)
                 {
                     switch (c)
                     {
-                        case '\n':
-                        case '\r':
-                        case '\t':
                         case '/':
-                        case Tokens.Escape:
-                        case '\b':
-                        case '\f':
                         case Tokens.Quote:
+                        case Tokens.Escape:
                             return true;
 
                         case '\'':
@@ -383,7 +464,7 @@ namespace Pchp.Library
                             return HasHexAmp;
 
                         default:
-                            return !CharIsPrintable(c);
+                            return c <= 0x1f || (c > 0x7f && HasUnescapedUnicode);
                     }
                 }
 
@@ -396,7 +477,10 @@ namespace Pchp.Library
 
                     for (int i = 0; i < str.Length; i++)
                     {
-                        if (CharShouldBeEncoded(str[i])) return true;
+                        if (CharShouldBeEncoded(str[i]))
+                        {
+                            return true;
+                        }
                     }
 
                     return false;
@@ -550,6 +634,46 @@ namespace Pchp.Library
                     Write(Tokens.ArrayCloseString);
                 }
 
+                void WriteArrayAsObject(PhpArray array)
+                {
+                    // [
+                    Write(Tokens.ObjectOpenString);
+
+                    //
+                    if (array.Count != 0)
+                    {
+                        _pretty.Indent();
+
+                        bool bFirst = true;
+
+                        var enumerator = array.GetFastEnumerator();
+                        while (enumerator.MoveNext())
+                        {
+                            // ,
+                            if (bFirst) bFirst = false;
+                            else Write(Tokens.ItemsSeparatorString);
+
+                            _pretty.NewLine();
+
+                            // "key": value
+                            WriteString(enumerator.CurrentKey.ToString());
+                            Write(Tokens.PropertyKeyValueSeparatorString);
+                            _pretty.Space();
+                            Accept(enumerator.CurrentValue);
+                        }
+
+                        _pretty.Unindent();
+
+                        if (!bFirst)
+                        {
+                            _pretty.NewLine();
+                        }
+                    }
+
+                    // ]
+                    Write(Tokens.ObjectCloseString);
+                }
+
                 void WriteObject(IEnumerable<KeyValuePair<string, PhpValue>> properties)
                 {
                     // {
@@ -576,7 +700,7 @@ namespace Pchp.Library
                         WriteString(pair.Key);
                         Write(Tokens.PropertyKeyValueSeparatorString);
                         _pretty.Space();
-                        pair.Value.Accept(this);
+                        Accept(pair.Value);
                     }
 
                     _pretty.Unindent();
