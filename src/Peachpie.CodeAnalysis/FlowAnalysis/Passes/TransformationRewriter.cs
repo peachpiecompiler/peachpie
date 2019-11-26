@@ -565,7 +565,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var dc = fnName.IndexOf(Name.ClassMemberSeparator, StringComparison.Ordinal);
                 if (dc < 0)
                 {
-                    symbol = (MethodSymbol)DeclaringCompilation.ResolveFunction(QualifiedName.Parse(fnName, true), _routine);
+                    var fnQName = NameUtils.MakeQualifiedName(fnName, true);
+                    symbol = (MethodSymbol)DeclaringCompilation.ResolveFunction(fnQName, _routine);
                 }
                 else
                 {
@@ -641,18 +642,64 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return x;
         }
 
-        //public override object VisitArray(BoundArrayEx x)
-        //{
-        //    if (x.Access.TargetType == DeclaringCompilation.CoreTypes.IPhpCallable &&
-        //        x.Items.Length == 2 &&
-        //        x.Items[0].Value.ConstantValue.TryConvertToString(out var tname) &&   // TODO: or $this
-        //        x.Items[1].Value.ConstantValue.TryConvertToString(out var mname))
-        //    {
-        //          -> BoundCallableConvert
-        //    }
+        public override object VisitArray(BoundArrayEx x)
+        {
+            bool TryGetMethod(ITypeSymbol typeSymbol, string methodName, out MethodSymbol methodSymbol)
+            {
+                if (typeSymbol != null && typeSymbol.TypeKind != TypeKind.Error &&
+                    typeSymbol.GetMembers(methodName).SingleOrDefault() is MethodSymbol mSymbol && mSymbol.IsValidMethod() &&
+                    mSymbol.IsAccessible(_routine.ContainingType ?? _routine.ContainingFile))
+                {
+                    methodSymbol = mSymbol;
+                    return true;
+                }
+                else
+                {
+                    methodSymbol = null;
+                    return false;
+                }
+            }
 
-        //    return base.VisitArray(x);
-        //}
+            BoundCallableConvert Transform(BoundArrayEx origArray, IMethodSymbol targetCallable, BoundExpression receiver = null)
+            {
+                // read the literal as array, do not rewrite it to BoundCallableConvert again
+                origArray.Access = origArray.Access.WithRead(DeclaringCompilation.CoreTypes.PhpArray);
+
+                TransformationCount++;
+                return new BoundCallableConvert(origArray, DeclaringCompilation)
+                {
+                    TargetCallable = targetCallable,
+                    Receiver = receiver
+                }.WithContext(origArray);
+            }
+
+            // implicit conversion: ["typeName" / $this, "methodName"] -> callable
+            if (x.Access.TargetType == DeclaringCompilation.CoreTypes.IPhpCallable &&
+                x.Items.Length == 2 && x.Items[1].Value.ConstantValue.TryConvertToString(out var methodName))
+            {
+                var item0 = x.Items[0].Value;
+                if (item0.ConstantValue.TryConvertToString(out var typeName))
+                {
+                    var typeQName = NameUtils.MakeQualifiedName(typeName, true);
+                    var typeSymbol = DeclaringCompilation.GlobalSemantics.ResolveType(typeQName);
+                    if (TryGetMethod(typeSymbol, methodName, out var methodSymbol) && methodSymbol.IsStatic)
+                    {
+                        // ["typeName", "methodName"]
+                        return Transform(x, methodSymbol);
+                    }
+                }
+                // TODO: Enable when supported in emit
+                //else if (MatchExprSkipCopy(item0, out BoundVariableRef varRef, out _) &&
+                //         varRef.Variable is ThisVariableReference thisVar &&
+                //         TryGetMethod(thisVar.Type, methodName, out var methodSymbol))
+                //{
+                //    // [$this, "methodName"]
+                //    return Transform(x, methodSymbol, varRef);
+                //}
+            }
+
+            return base.VisitArray(x);
+        }
 
         /// <summary>
         /// If <paramref name="expr"/> is of type <typeparamref name="T"/> or it is a <see cref="BoundCopyValue" /> enclosing an
