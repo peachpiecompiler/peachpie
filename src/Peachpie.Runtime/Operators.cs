@@ -542,6 +542,36 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Shortcut for calling <c>ord($s[$i])</c> on a <see cref="string"/>
+        /// without any extra allocation.
+        /// </summary>
+        public static long GetItemOrdValue(string value, int index)
+        {
+            if (value != null && index >= 0 && index < value.Length)
+            {
+                return value[index];
+            }
+
+            PhpException.InvalidArgument(nameof(index));
+            return 0;
+        }
+
+        /// <summary>
+        /// Shortcut for calling <c>ord($s[$i])</c> on a <see cref="PhpString"/>
+        /// without any extra allocation.
+        /// </summary>
+        public static long GetItemOrdValue(PhpString value, int index)
+        {
+            if (!value.IsDefault && index >= 0 && index < value.Length)
+            {
+                return value[index];
+            }
+
+            PhpException.InvalidArgument(nameof(index));
+            return 0;
+        }
+
         public static object EnsureItemObject(this IPhpArray array, PhpValue index)
         {
             if (Convert.TryToIntStringKey(index, out IntStringKey key))

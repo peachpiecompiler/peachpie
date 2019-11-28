@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -202,6 +203,34 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                             ConstantValue = hasextension.AsOptional()
                         }.WithContext(x);
                     }
+                    return null;
+                } },
+                { NameUtils.SpecialNames.ord, x =>
+                {
+                    var typeCtx = _routine.TypeRefContext;
+
+                    // ord($s[$i]) -> (int)s[i]     (elimination of the unnecessary allocation of a 1-char string)
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value is BoundArrayItemEx itemAccess &&
+                        itemAccess.Array.TypeRefMask.IsSingleType && typeCtx.IsAString(itemAccess.Array.TypeRefMask) &&
+                        itemAccess.Index != null && itemAccess.Index.TypeRefMask.IsSingleType && typeCtx.IsLong(itemAccess.Index.TypeRefMask))
+                    {
+                        // TODO: This way seems hacky, rewrite it to be more natural (maybe create a custom BoundExpression?)
+                        var operatorsMethods = DeclaringCompilation.CoreMethods.Operators;
+                        var getItemOrdVal =
+                            typeCtx.IsReadonlyString(itemAccess.Array.TypeRefMask)
+                                ? operatorsMethods.GetItemOrdValue_String_Int32
+                                : operatorsMethods.GetItemOrdValue_PhpString_Int32;
+
+                        return new BoundStaticFunctionCall(
+                            new Semantics.TypeRef.BoundTypeRefFromSymbol(DeclaringCompilation.CoreTypes.Operators.Symbol),
+                            new BoundRoutineName(NameUtils.MakeQualifiedName(getItemOrdVal.MemberName, true)),
+                            new []{ BoundArgument.Create(itemAccess.Array), BoundArgument.Create(itemAccess.Index) }.ToImmutableArray())
+                        {
+                            TargetMethod = getItemOrdVal.Symbol
+                        }.WithContext(x);
+                    }
+
                     return null;
                 } },
             };

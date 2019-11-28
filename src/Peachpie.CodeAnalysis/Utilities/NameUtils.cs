@@ -393,6 +393,9 @@ namespace Pchp.CodeAnalysis
 
             /// <summary><c>define</c> function name.</summary>
             public static QualifiedName define = new QualifiedName(new Name("define"));
+
+            /// <summary><c>ord</c> function name.</summary>
+            public static QualifiedName ord = new QualifiedName(new Name("ord"));
         }
     }
 }

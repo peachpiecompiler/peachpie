@@ -273,6 +273,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetItemValue_String_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.String, ct.PhpValue, ct.Boolean);
                 GetItemValue_String_Int = ct.Operators.Method("GetItemValue", ct.String, ct.Int32);
                 GetItemValue_PhpValue_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.PhpValue, ct.PhpValue, ct.Boolean);
+                GetItemOrdValue_String_Int32 = ct.Operators.Method("GetItemOrdValue", ct.String, ct.Int32);
+                GetItemOrdValue_PhpString_Int32 = ct.Operators.Method("GetItemOrdValue", ct.PhpString, ct.Int32);
                 EnsureItemAlias_PhpValue_PhpValue_Bool = ct.Operators.Method("EnsureItemAlias", ct.PhpValue, ct.PhpValue, ct.Boolean);
                 EnsureItemAlias_IPhpArray_PhpValue_Bool = ct.Operators.Method("EnsureItemAlias", ct.IPhpArray, ct.PhpValue, ct.Boolean);
                 EnsureItemArray_IPhpArray_PhpValue = ct.Operators.Method("EnsureItemArray", ct.IPhpArray, ct.PhpValue);
@@ -403,6 +405,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetValue_PhpValueRef_PhpValue,
                 EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef, EnsureArray_ArrayAccess, EnsureArray_Object, EnsureWritableString_PhpArrayRef,
                 GetItemValue_String_IntStringKey, GetItemValueOrNull_String_IntStringKey, GetItemValue_String_PhpValue_Bool, GetItemValue_String_Int, GetItemValue_PhpValue_PhpValue_Bool,
+                GetItemOrdValue_String_Int32, GetItemOrdValue_PhpString_Int32,
                 EnsureItemAlias_IPhpArray_PhpValue_Bool, EnsureItemAlias_PhpValue_PhpValue_Bool,
                 EnsureItemArray_IPhpArray_PhpValue,
                 EnsureItemObject_IPhpArray_PhpValue,
