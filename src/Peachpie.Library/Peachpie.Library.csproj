@@ -30,8 +30,9 @@
     <PackageReference Include="Peachpie.Library.RegularExpressions" Version="1.1.0" />
     <PackageReference Include="System.IO.FileSystem.AccessControl" Version="4.6.0" />
     <PackageReference Include="System.IO.FileSystem.DriveInfo" Version="4.3.1" />
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="3.0.0" />
   </ItemGroup>
- 
+
   <ItemGroup>
     <Compile Update="Resources\DateResources.Designer.cs">
       <DesignTime>True</DesignTime>

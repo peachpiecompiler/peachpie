@@ -1,4 +1,5 @@
-﻿using Pchp.Core;
+﻿using Microsoft.Extensions.ObjectPool;
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -520,5 +521,24 @@ namespace Pchp.Library
         //
         //		  return null;
         //		}		
+    }
+
+    /// <summary>
+    /// <see cref="StringBuilder"/> extensions and pooling.
+    /// </summary>
+    public struct StringBuilderUtilities
+    {
+        /// <summary>
+        /// Gets object pool singleton.
+        /// Uses <see cref="StringBuilderPooledObjectPolicy"/> policy (automatically clears the string builder upon return).
+        /// </summary>
+        public static ObjectPool<StringBuilder> Pool => s_lazyObjectPool.Value;
+
+        static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(() =>
+        {
+            var provider = new DefaultObjectPoolProvider();
+            var policy = new StringBuilderPooledObjectPolicy();
+            return provider.Create(policy);
+        }, System.Threading.LazyThreadSafetyMode.None);
     }
 }
