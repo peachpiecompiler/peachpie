@@ -375,14 +375,16 @@ namespace Pchp.Library.DateTime
         {
             Debug.Assert(zone != null);
 
-            if (format == null)
+            if (string.IsNullOrEmpty(format))
+            {
                 return string.Empty;
+            }
 
             var local = TimeZoneInfo.ConvertTime(utc, zone);
 
             // here we are creating output string
-            StringBuilder result = new StringBuilder();
             bool escape = false;
+            var result = StringBuilderUtilities.Pool.Get();
 
             foreach (char ch in format)
             {
@@ -619,7 +621,7 @@ namespace Pchp.Library.DateTime
             if (escape)
                 result.Append('\\');
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -745,12 +747,12 @@ namespace Pchp.Library.DateTime
         private static string FormatTime(Context ctx, string format, System.DateTime utc, TimeZoneInfo/*!*/ zone)
         {
             // Possibly bug in framework? "h" and "hh" just after midnight shows 12, not 0
-            if (format == null) return "";
+            if (string.IsNullOrEmpty(format)) return string.Empty;
 
             var local = TimeZoneInfo.ConvertTime(utc, zone);// zone.ToLocalTime(utc);
             var info = Locale.GetCulture(ctx, Locale.Category.Time).DateTimeFormat;
 
-            StringBuilder result = new StringBuilder();
+            var result = StringBuilderUtilities.Pool.Get();
 
             bool specialChar = false;
 
@@ -962,7 +964,7 @@ namespace Pchp.Library.DateTime
             if (specialChar)
                 result.Append('%');
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         #endregion

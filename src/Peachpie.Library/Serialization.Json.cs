@@ -284,10 +284,7 @@ namespace Pchp.Library
 
                     variable.Accept(new ObjectWriter(ctx, str, encodeOptions, caller));
 
-                    var result = str.ToString();
-                    StringBuilderUtilities.Pool.Return(str);    // note: str is cleared
-
-                    return result;
+                    return StringBuilderUtilities.GetStringAndReturn(str); // note: str is cleared
                 }
 
                 bool PushObject(object obj)

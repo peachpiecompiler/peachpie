@@ -540,5 +540,18 @@ namespace Pchp.Library
             var policy = new StringBuilderPooledObjectPolicy();
             return provider.Create(policy);
         }, System.Threading.LazyThreadSafetyMode.None);
+
+        /// <summary>
+        /// Gets the <paramref name="sb"/> value as string and return the instance to the <see cref="Pool"/>.
+        /// </summary>
+        /// <param name="sb">String builder instance.</param>
+        /// <returns><paramref name="sb"/> string.</returns>
+        internal static string GetStringAndReturn(StringBuilder sb)
+        {
+            Debug.Assert(sb != null);
+            var value = sb.ToString();
+            Pool.Return(sb);
+            return value;
+        }
     }
 }

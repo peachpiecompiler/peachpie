@@ -452,7 +452,7 @@ namespace Pchp.Library
             uint invert_inequality = (complement) ? 0xffffffffU : 0U;
             uint flg;
             char c = first;
-            StringBuilder result = new StringBuilder();
+            var result = StringBuilderUtilities.Pool.Get();
 
             if (f == l)
             {
@@ -494,7 +494,8 @@ namespace Pchp.Library
                 }
             }
 
-            return result.ToString();
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
     }
 }
