@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
 using static Pchp.Library.JsonSerialization;
+using Microsoft.Extensions.ObjectPool;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -40,17 +42,11 @@ namespace Pchp.Library
             {
                 internal const char ObjectOpen = '{';
                 internal const char ObjectClose = '}';
-                internal const string ObjectOpenString = "{";
-                internal const string ObjectCloseString = "}";
 
                 internal const char ItemsSeparator = ',';
-                internal const string ItemsSeparatorString = ",";
-
                 internal const char PropertyKeyValueSeparator = ':';
-                internal const string PropertyKeyValueSeparatorString = ":";
 
                 internal const char Quote = '"';
-                internal const string QuoteString = "\""; // "
                 internal const string DoubleQuoteString = "\"\""; // ""
                 internal const char Escape = '\\';
 
@@ -66,15 +62,13 @@ namespace Pchp.Library
 
                 internal const char ArrayOpen = '[';
                 internal const char ArrayClose = ']';
-                internal const string ArrayOpenString = "[";
-                internal const string ArrayCloseString = "]";
-
+                
                 internal const string NullLiteral = "null";
                 internal const string TrueLiteral = "true";
                 internal const string FalseLiteral = "false";
 
-                internal const string PrettySpaceString = " "; // whitespace for pretty printing
-                internal const string PrettyNewLine = "\n"; // whitespace for pretty printing
+                internal static char PrettySpace => ' '; // whitespace for pretty printing
+                internal static char PrettyNewLine => '\n'; // whitespace for pretty printing
             }
 
             #endregion
@@ -83,7 +77,6 @@ namespace Pchp.Library
 
             /// <summary>
             /// Helper data structure maintaining "Stack" of objects.
-            /// Optimized for 0 to 1 items, or ~10 objects.
             /// Does not allocate for less than 2 objects.
             /// </summary>
             struct MiniSet
@@ -110,7 +103,7 @@ namespace Pchp.Library
                     else if (_value is object[] array)
                     {
                         Debug.Assert(_top <= array.Length);
-                        
+
                         int count = 0;
                         for (int i = 0; i < _top; i++)
                         {
@@ -188,12 +181,14 @@ namespace Pchp.Library
                 /// <summary>
                 /// Result data.
                 /// </summary>
-                readonly PhpString.Blob _result = new PhpString.Blob();
+                readonly StringBuilder _result;
 
                 readonly Context _ctx;
                 //readonly RuntimeTypeHandle _caller;
                 readonly JsonEncodeOptions _encodeOptions;
                 readonly IPrettyPrinter _pretty;
+
+                const int LastAsciiCharacter = 0x7F;
 
                 #region IPrettyPrinter
 
@@ -214,6 +209,10 @@ namespace Pchp.Library
 
                 sealed class PrettyPrintOff : IPrettyPrinter
                 {
+                    public static PrettyPrintOff Instance { get; } = new PrettyPrintOff();
+
+                    private PrettyPrintOff() { }
+
                     public void Indent() { }
                     public void NewLine() { }
                     public void Space() { }
@@ -223,10 +222,9 @@ namespace Pchp.Library
                 sealed class PrettyPrintOn : IPrettyPrinter
                 {
                     int _indent = 0;
-                    string _indentStr = null;
-                    readonly PhpString.Blob _output;
+                    readonly StringBuilder _output;
 
-                    public PrettyPrintOn(PhpString.Blob output)
+                    public PrettyPrintOn(StringBuilder output)
                     {
                         _output = output ?? throw new ArgumentNullException();
                     }
@@ -234,28 +232,22 @@ namespace Pchp.Library
                     public void Indent()
                     {
                         _indent++;
-                        _indentStr = null;
                     }
 
                     public void NewLine()
                     {
-                        if (_indentStr == null)
-                        {
-                            _indentStr = Tokens.PrettyNewLine + new string(' ', _indent * 4);
-                        }
-
-                        _output.Add(_indentStr);
+                        _output.Append(Tokens.PrettyNewLine);
+                        _output.Append(' ', _indent * 4);
                     }
 
                     public void Space()
                     {
-                        _output.Add(Tokens.PrettySpaceString);
+                        _output.Append(Tokens.PrettySpace);
                     }
 
                     public void Unindent()
                     {
                         _indent--;
-                        _indentStr = null;
                         Debug.Assert(_indent >= 0);
                     }
                 }
@@ -276,20 +268,26 @@ namespace Pchp.Library
 
                 #endregion
 
-                private ObjectWriter(Context ctx, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                private ObjectWriter(Context ctx, StringBuilder result, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
                 {
                     Debug.Assert(ctx != null);
                     _ctx = ctx;
                     _encodeOptions = encodeOptions;
+                    _result = result ?? throw new ArgumentNullException(nameof(result));
                     //_caller = caller;
-                    _pretty = HasPrettyPrint ? (IPrettyPrinter)new PrettyPrintOn(_result) : new PrettyPrintOff();
+                    _pretty = HasPrettyPrint ? (IPrettyPrinter)new PrettyPrintOn(_result) : PrettyPrintOff.Instance;
                 }
 
-                public static PhpString Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                public static string Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
                 {
-                    var writer = new ObjectWriter(ctx, encodeOptions, caller);
-                    variable.Accept(writer);
-                    return new PhpString(writer._result);
+                    var str = StringBuilderUtilities.Pool.Get();
+
+                    variable.Accept(new ObjectWriter(ctx, str, encodeOptions, caller));
+
+                    var result = str.ToString();
+                    StringBuilderUtilities.Pool.Return(str);    // note: str is cleared
+
+                    return result;
                 }
 
                 bool PushObject(object obj)
@@ -311,7 +309,8 @@ namespace Pchp.Library
                     _recursion.Pop(obj);
                 }
 
-                void Write(string str) => _result.Append(str);
+                void WriteRaw(string str) => _result.Append(str);
+                void WriteRaw(char c) => _result.Append(c);
 
                 public override void AcceptNull()
                 {
@@ -325,7 +324,7 @@ namespace Pchp.Library
 
                 public override void Accept(long obj)
                 {
-                    Write(obj.ToString());
+                    WriteRaw(obj.ToString());
                 }
 
                 public override void Accept(string obj)
@@ -341,7 +340,7 @@ namespace Pchp.Library
 
                 public override void Accept(double obj)
                 {
-                    Write(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    WriteRaw(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 }
 
                 /// <summary>
@@ -350,9 +349,9 @@ namespace Pchp.Library
                 /// <remarks>Determines if the array can be encoded as JSON array.</remarks>
                 static bool IsSequentialArray(PhpArray/*!*/array)
                 {
-                    // TODO: check if the array IsPacked first (=> is sequential)
+                    // "Packed" array is sequential array with ordered set of integer key without "holes"
 
-                    if (array.Count != 0)
+                    if (array.Count != 0 && !array.IsPacked())
                     {
                         int next = 0;
                         var enumerator = array.GetFastEnumerator();
@@ -434,7 +433,7 @@ namespace Pchp.Library
                 private bool CharIsPrintable(char c)
                 {
                     return
-                        (c <= 0x7f || HasUnescapedUnicode) &&   // ASCII
+                        (c <= LastAsciiCharacter || HasUnescapedUnicode) &&   // ASCII
                         !(c >= 9 && c <= 13) && // not BS, HT, LF, Vertical Tab, Form Feed, CR
                         !char.IsControl(c); // not control
                 }
@@ -455,8 +454,6 @@ namespace Pchp.Library
                             return HasHexApos;
 
                         case '<':
-                            return HasHexTag;
-
                         case '>':
                             return HasHexTag;
 
@@ -464,7 +461,9 @@ namespace Pchp.Library
                             return HasHexAmp;
 
                         default:
-                            return c <= 0x1f || (c > 0x7f && HasUnescapedUnicode);
+                            return
+                                (c <= 0x1f) ||
+                                (c > 0x7f && HasUnescapedUnicode);
                     }
                 }
 
@@ -490,42 +489,68 @@ namespace Pchp.Library
                 /// Convert 16b character into json encoded character.
                 /// </summary>
                 /// <param name="value">The full string to be encoded.</param>
-                /// <param name="i">The index of character to be encoded. Can be increased if more characters are processed.</param>
-                /// <returns>The encoded part of string, from value[i] to value[i after method call]</returns>
-                private string EncodeStringIncremental(string value, ref int i)
+                private void EncodeStringIncremental(string value)
                 {
-                    char c = value[i];
-
-                    switch (c)
+                    for (int i = 0; i < value.Length; i++)
                     {
-                        case '\n': return (Tokens.EscapedNewLine);
-                        case '\r': return (Tokens.EscapedCR);
-                        case '\t': return (Tokens.EscapedTab);
-                        case '/':
-                            if (HasUnescapedSlashes) { goto default; }
-                            return (Tokens.EscapedSolidus);
-                        case Tokens.Escape: return (Tokens.EscapedReverseSolidus);
-                        case '\b': return (Tokens.EscapedBackspace);
-                        case '\f': return (Tokens.EscapedFormFeed);
-                        case Tokens.Quote: return (HasHexQuot ? (Tokens.EscapedUnicodeChar + "0022") : Tokens.EscapedQuote);
-                        case '\'': return (HasHexApos ? (Tokens.EscapedUnicodeChar + "0027") : "'");
-                        case '<': return (HasHexTag ? (Tokens.EscapedUnicodeChar + "003C") : "<");
-                        case '>': return (HasHexTag ? (Tokens.EscapedUnicodeChar + "003E") : ">");
-                        case '&': return (HasHexAmp ? (Tokens.EscapedUnicodeChar + "0026") : "&");
-                        default:
-                            {
-                                if (CharIsPrintable(c))
-                                {
-                                    int start = i++;
-                                    while (i < value.Length && !CharShouldBeEncoded(value[i])) ++i;
+                        char c = value[i];
 
-                                    return value.Substring(start, (i--) - start);   // accumulate characters, mostly it is entire string value (faster)
-                                }
-                                else
+                        switch (c)
+                        {
+                            case '\n':
+                                _result.Append(Tokens.EscapedNewLine);
+                                break;
+                            case '\r':
+                                _result.Append(Tokens.EscapedCR);
+                                break;
+                            case '\t':
+                                _result.Append(Tokens.EscapedTab);
+                                break;
+                            case '/':
+                                if (HasUnescapedSlashes) { goto default; }
+                                _result.Append(Tokens.EscapedSolidus);
+                                break;
+                            case Tokens.Escape:
+                                _result.Append(Tokens.EscapedReverseSolidus);
+                                break;
+                            case '\b':
+                                _result.Append(Tokens.EscapedBackspace);
+                                break;
+                            case '\f':
+                                _result.Append(Tokens.EscapedFormFeed);
+                                break;
+                            case Tokens.Quote:
+                                _result.Append(HasHexQuot ? (Tokens.EscapedUnicodeChar + "0022") : Tokens.EscapedQuote);
+                                break;
+                            case '\'':
+                                _result.Append(HasHexApos ? (Tokens.EscapedUnicodeChar + "0027") : "'");
+                                break;
+                            case '<':
+                                _result.Append(HasHexTag ? (Tokens.EscapedUnicodeChar + "003C") : "<");
+                                break;
+                            case '>':
+                                _result.Append(HasHexTag ? (Tokens.EscapedUnicodeChar + "003E") : ">");
+                                break;
+                            case '&':
+                                _result.Append(HasHexAmp ? (Tokens.EscapedUnicodeChar + "0026") : "&");
+                                break;
+                            default:
                                 {
-                                    return (Tokens.EscapedUnicodeChar + ((int)c).ToString("X4"));
+                                    if (CharIsPrintable(c))
+                                    {
+                                        int start = i++;
+                                        while (i < value.Length && !CharShouldBeEncoded(value[i]))
+                                            ++i;
+
+                                        _result.Append(value, start, (i--) - start);   // accumulate characters, mostly it is entire string value (faster)
+                                    }
+                                    else
+                                    {
+                                        _result.Append(Tokens.EscapedUnicodeChar + ((int)c).ToString("X4"));
+                                    }
+                                    break;
                                 }
-                            }
+                        }
                     }
                 }
 
@@ -543,12 +568,12 @@ namespace Pchp.Library
 
                 void WriteNull()
                 {
-                    _result.Append(Tokens.NullLiteral);
+                    WriteRaw(Tokens.NullLiteral);
                 }
 
                 void WriteBoolean(bool value)
                 {
-                    _result.Append(value ? Tokens.TrueLiteral : Tokens.FalseLiteral);
+                    WriteRaw(value ? Tokens.TrueLiteral : Tokens.FalseLiteral);
                 }
 
                 /// <summary>
@@ -564,8 +589,8 @@ namespace Pchp.Library
                         var result = Core.Convert.StringToNumber(value, out l, out d);
                         if ((result & Core.Convert.NumberInfo.IsNumber) != 0)
                         {
-                            if ((result & Core.Convert.NumberInfo.LongInteger) != 0) _result.Append(l.ToString());
-                            if ((result & Core.Convert.NumberInfo.Double) != 0) _result.Append(d.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                            if ((result & Core.Convert.NumberInfo.LongInteger) != 0) WriteRaw(l.ToString());
+                            if ((result & Core.Convert.NumberInfo.Double) != 0) WriteRaw(d.ToString(System.Globalization.CultureInfo.InvariantCulture));
                             return;
                         }
                     }
@@ -573,36 +598,29 @@ namespace Pchp.Library
                     if (value.Length == 0)
                     {
                         // empty string
-                        _result.Append(Tokens.DoubleQuoteString);   // ""
+                        WriteRaw(Tokens.DoubleQuoteString);   // ""
                     }
                     else if (!StringShouldBeEncoded(value)) // most common case
                     {
                         // string can be appended as it is
-                        _result.Append(Tokens.QuoteString);
-                        _result.Append(value);
-                        _result.Append(Tokens.QuoteString);
+                        WriteRaw(Tokens.Quote);
+                        WriteRaw(value);
+                        WriteRaw(Tokens.Quote);
                     }
                     else
                     {
-                        var strVal = new StringBuilder(value.Length + 4);
+                        _result.Append(Tokens.Quote);
 
-                        strVal.Append(Tokens.Quote);
+                        EncodeStringIncremental(value);
 
-                        for (int i = 0; i < value.Length; ++i)
-                        {
-                            strVal.Append(EncodeStringIncremental(value, ref i));
-                        }
-
-                        strVal.Append(Tokens.Quote);
-
-                        _result.Append(strVal.ToString());
+                        _result.Append(Tokens.Quote);
                     }
                 }
 
                 void WriteArray(PhpArray array)
                 {
                     // [
-                    Write(Tokens.ArrayOpenString);
+                    WriteRaw(Tokens.ArrayOpen);
 
                     //
                     if (array.Count != 0)
@@ -616,7 +634,7 @@ namespace Pchp.Library
                         {
                             // ,
                             if (bFirst) bFirst = false;
-                            else Write(Tokens.ItemsSeparatorString);
+                            else WriteRaw(Tokens.ItemsSeparator);
 
                             _pretty.NewLine();
 
@@ -631,13 +649,13 @@ namespace Pchp.Library
                     }
 
                     // ]
-                    Write(Tokens.ArrayCloseString);
+                    WriteRaw(Tokens.ArrayClose);
                 }
 
                 void WriteArrayAsObject(PhpArray array)
                 {
                     // [
-                    Write(Tokens.ObjectOpenString);
+                    WriteRaw(Tokens.ObjectOpen);
 
                     //
                     if (array.Count != 0)
@@ -651,13 +669,13 @@ namespace Pchp.Library
                         {
                             // ,
                             if (bFirst) bFirst = false;
-                            else Write(Tokens.ItemsSeparatorString);
+                            else WriteRaw(Tokens.ItemsSeparator);
 
                             _pretty.NewLine();
 
                             // "key": value
                             WriteString(enumerator.CurrentKey.ToString());
-                            Write(Tokens.PropertyKeyValueSeparatorString);
+                            WriteRaw(Tokens.PropertyKeyValueSeparator);
                             _pretty.Space();
                             Accept(enumerator.CurrentValue);
                         }
@@ -671,13 +689,13 @@ namespace Pchp.Library
                     }
 
                     // ]
-                    Write(Tokens.ObjectCloseString);
+                    WriteRaw(Tokens.ObjectClose);
                 }
 
                 void WriteObject(IEnumerable<KeyValuePair<string, PhpValue>> properties)
                 {
                     // {
-                    Write(Tokens.ObjectOpenString);
+                    WriteRaw(Tokens.ObjectOpen);
 
                     _pretty.Indent();
 
@@ -691,14 +709,14 @@ namespace Pchp.Library
                         }
                         else
                         {
-                            Write(Tokens.ItemsSeparatorString);
+                            WriteRaw(Tokens.ItemsSeparator);
                         }
 
                         _pretty.NewLine();
 
                         // "key": value
                         WriteString(pair.Key);
-                        Write(Tokens.PropertyKeyValueSeparatorString);
+                        WriteRaw(Tokens.PropertyKeyValueSeparator);
                         _pretty.Space();
                         Accept(pair.Value);
                     }
@@ -711,7 +729,7 @@ namespace Pchp.Library
                     }
 
                     // }
-                    Write(Tokens.ObjectCloseString);
+                    WriteRaw(Tokens.ObjectClose);
                 }
 
                 static IEnumerable<KeyValuePair<string, PhpValue>> JsonArrayProperties(PhpArray array)
