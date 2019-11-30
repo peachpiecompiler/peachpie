@@ -18,7 +18,7 @@ namespace Pchp.Library
     /// PHP hash functions support.
     /// </summary>
     [PhpExtension("hash")]
-    public static class PhpHash
+    public static partial class PhpHash
     {
         #region options
 
@@ -3032,7 +3032,9 @@ namespace Pchp.Library
             else
             {
                 // DES
-                throw new NotImplementedException();
+                CryptExtendedData data = new CryptExtendedData();
+                DES.Init();
+                return DES.Crypt(str, salt, data);
             }
 
             // failure
@@ -3094,13 +3096,13 @@ namespace Pchp.Library
         /// </summary>
         private static string CryptMD5(Context ctx, string password, string salt)
         {
-            int indexOfSaltBegin =0;
+            int indexOfSaltBegin = 0;
             int indexOfSaltEnd = 0;
 
             if (salt.StartsWith(MD5Magic))
-                indexOfSaltBegin  = 3;
+                indexOfSaltBegin = 3;
 
-            for (indexOfSaltEnd = 0; indexOfSaltEnd < salt.Length && indexOfSaltEnd < 8 && salt[indexOfSaltEnd + indexOfSaltBegin ] != '$'; indexOfSaltEnd++);
+            for (indexOfSaltEnd = 0; indexOfSaltEnd < salt.Length && indexOfSaltEnd < 8 && salt[indexOfSaltEnd + indexOfSaltBegin] != '$'; indexOfSaltEnd++) ;
 
             byte[] saltInBytes = Encoding.ASCII.GetBytes(salt.ToCharArray(), indexOfSaltBegin, indexOfSaltEnd);
             byte[] passwd = Encoding.ASCII.GetBytes(password);
@@ -3116,24 +3118,24 @@ namespace Pchp.Library
 
             md5.Update(saltInBytes);
 
-            var md5Alt= new HashPhpResource.MD5();
+            var md5Alt = new HashPhpResource.MD5();
 
             md5Alt.Init();
 
             md5Alt.Update(passwd);
-           
+
             md5Alt.Update(saltInBytes);
-            
+
             md5Alt.Update(passwd);
 
             byte[] final = md5Alt.Final();
-           
+
             for (int i = passwd.Length; i > 0; i -= 16)
-                md5.Update( i > 16 ? final : final.Take(i).ToArray());
+                md5.Update(i > 16 ? final : final.Take(i).ToArray());
 
             byte[] fieldhelper = new byte[1];
 
-            for (int i = passwd.Length; i!=0; i >>= 1)
+            for (int i = passwd.Length; i != 0; i >>= 1)
             {
                 if ((i & 1) != 0)
                 {
@@ -3181,12 +3183,12 @@ namespace Pchp.Library
             int length = magic.Length + saltInBytes.Length + 1;
 
             int l;
-            l = (final[0] << 16) | (final[6] << 8) | final[12];  MD5MapASCII(output, length, l, 4); length += 4;
-            l = (final[1] << 16) | (final[7] << 8) | final[13];  MD5MapASCII(output, length, l, 4); length += 4;
-            l = (final[2] << 16) | (final[8] << 8) | final[14];  MD5MapASCII(output, length, l, 4); length += 4;
-            l = (final[3] << 16) | (final[9] << 8) | final[15];  MD5MapASCII(output, length, l, 4); length += 4;
-            l = (final[4] << 16) | (final[10] << 8) | final[5];  MD5MapASCII(output, length, l, 4); length += 4;
-            l = final[11];   MD5MapASCII(output, length, l, 2); length += 2;
+            l = (final[0] << 16) | (final[6] << 8) | final[12]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[1] << 16) | (final[7] << 8) | final[13]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[2] << 16) | (final[8] << 8) | final[14]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[3] << 16) | (final[9] << 8) | final[15]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[4] << 16) | (final[10] << 8) | final[5]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = final[11]; MD5MapASCII(output, length, l, 2); length += 2;
 
             return ConvertByteArrayToString(output.Take(length).ToArray());
         }
@@ -3394,12 +3396,12 @@ namespace Pchp.Library
 
             output[indexOfOutput] = (byte)'$';
             indexOfOutput++;
-            
+
             // Convert to base 64 
             if (sha256)
             {
                 B64From24bit(altResult[0], altResult[10], altResult[20], 4, output, ref indexOfOutput);
-               
+
                 for (int i = 21; i != 0; i = (i + 21) % 30)
                     B64From24bit(altResult[i], altResult[(i + 10) % 30], altResult[(i + 20) % 30], 4, output, ref indexOfOutput);
 
@@ -3437,14 +3439,14 @@ namespace Pchp.Library
         private static void B64From24bit(int B2, int B1, int B0, int N, byte[] output, ref int indexOfOutput)
         {
             int buflen = output.Length - indexOfOutput;
-            int w = ((B2) << 16) | ((B1) << 8) | (B0);	 
-	        int n = N;							             
-	        while (n-- > 0 && buflen > 0)					     
-	          {
-                  output[indexOfOutput++] = (byte)b64t[w & 0x3f];						         
-	             --buflen;							                 
-	              w >>= 6;							                 
-	          }									                 
+            int w = ((B2) << 16) | ((B1) << 8) | (B0);
+            int n = N;
+            while (n-- > 0 && buflen > 0)
+            {
+                output[indexOfOutput++] = (byte)b64t[w & 0x3f];
+                --buflen;
+                w >>= 6;
+            }
         }
         #endregion
 
