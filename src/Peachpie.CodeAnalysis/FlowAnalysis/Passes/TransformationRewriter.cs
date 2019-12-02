@@ -710,11 +710,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 if (item0.ConstantValue.TryConvertToString(out var typeName))
                 {
                     var typeQName = NameUtils.MakeQualifiedName(typeName, true);
-                    var typeSymbol = DeclaringCompilation.GlobalSemantics.ResolveType(typeQName);
-                    if (TryGetMethod(typeSymbol, methodName, out var methodSymbol) && methodSymbol.IsStatic)
+                    if (typeQName.IsReservedClassName)
                     {
-                        // ["typeName", "methodName"]
-                        return Transform(x, methodSymbol);
+                        // TODO: ["self", "methodName"]
+                    }
+                    else
+                    {
+                        var typeSymbol = DeclaringCompilation.GlobalSemantics.ResolveType(typeQName);
+                        if (TryGetMethod(typeSymbol, methodName, out var methodSymbol) && methodSymbol.IsStatic)
+                        {
+                            // ["typeName", "methodName"]
+                            return Transform(x, methodSymbol);
+                        }
                     }
                 }
                 // TODO: Enable when supported in emit
