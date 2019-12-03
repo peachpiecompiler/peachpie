@@ -557,8 +557,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string ini_get(Context ctx, string option)
         {
-            bool error;
-            var result = StandardPhpOptions.TryGetSet(ctx, ctx.Configuration, option, PhpValue.Void, StandardPhpOptions.IniAction.Get, out error);
+            var result = StandardPhpOptions.TryGetSet(ctx, ctx.Configuration, option, PhpValue.Void, StandardPhpOptions.IniAction.Get, out var error);
             if (error)
             {
                 return null;
@@ -579,8 +578,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string ini_set(Context ctx, string option, PhpValue value)
         {
-            bool error;
-            var old = StandardPhpOptions.TryGetSet(ctx, ctx.Configuration, option, value, StandardPhpOptions.IniAction.Set, out error);
+            var old = StandardPhpOptions.TryGetSet(ctx, ctx.Configuration, option, value, StandardPhpOptions.IniAction.Set, out var error);
             if (error)
             {
                 return null;
