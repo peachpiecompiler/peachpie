@@ -417,6 +417,72 @@ namespace Pchp.Core
             public void SetItemValue(PhpValue index, PhpValue value) => SetItemValue(index.ToIntStringKey(), value);
         }
 
+        /// <summary>
+        /// Helper class representing array access for classes with CLR "get_Item" / "set_Item" indexer method.
+        /// </summary>
+        sealed class GetSetItemAsPhpArray : IPhpArray
+        {
+            readonly object/*!*/_instance;
+
+            public GetSetItemAsPhpArray(object/*!*/instance)
+            {
+                _instance = instance ?? throw new ArgumentNullException(nameof(instance));
+            }
+
+            public int Count => throw new NotSupportedException();
+
+            public void AddValue(PhpValue value) => throw new NotSupportedException();
+
+            public PhpAlias EnsureItemAlias(IntStringKey key) => GetItemValue(key).EnsureAlias();
+
+            public IPhpArray EnsureItemArray(IntStringKey key) => GetItemValue(key).EnsureArray();
+
+            public object EnsureItemObject(IntStringKey key) => GetItemValue(key).EnsureObject();
+
+            public PhpValue GetItemValue(IntStringKey key) => GetItemValue((PhpValue)key);
+
+            public PhpValue GetItemValue(PhpValue index)
+            {
+                var getter = _instance.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item];
+                if (getter != null)
+                {
+                    // TODO: Context is null, should no be used but ...
+                    return getter.Invoke(null, _instance, index);
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+
+            public void RemoveKey(IntStringKey key) => RemoveKey((PhpValue)key);
+
+            public void RemoveKey(PhpValue index) => throw new NotSupportedException();
+
+            public void SetItemAlias(IntStringKey key, PhpAlias alias) => SetItemAlias((PhpValue)key, alias);
+
+            public void SetItemAlias(PhpValue index, PhpAlias alias)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void SetItemValue(IntStringKey key, PhpValue value) => SetItemValue((PhpValue)key, value);
+
+            public void SetItemValue(PhpValue index, PhpValue value)
+            {
+                var setter = _instance.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.set_item];
+                if (setter != null)
+                {
+                    // TODO: Context is null, should no be used but ...
+                    setter.Invoke(null, _instance, index, value);
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+        }
+
         public static IPhpArray EnsureArray(ArrayAccess obj)
         {
             Debug.Assert(obj != null);
@@ -435,6 +501,12 @@ namespace Pchp.Core
             if (obj is IList) return new ListAsPhpArray((IList)obj);
 
             // TODO: IDictionary
+
+            // get_Item
+            if (obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item] != null)
+            {
+                return new GetSetItemAsPhpArray(obj);
+            }
 
             // Fatal error: Uncaught Error: Cannot use object of type {0} as array
             PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, obj.GetPhpTypeInfo().Name);
