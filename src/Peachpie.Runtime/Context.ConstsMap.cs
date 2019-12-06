@@ -299,10 +299,11 @@ namespace Pchp.Core
                         value = data.Value;
                         return true;
                     }
+
+                    value = default;
                 }
 
                 // undefined
-                value = default;
                 return false;
             }
 
