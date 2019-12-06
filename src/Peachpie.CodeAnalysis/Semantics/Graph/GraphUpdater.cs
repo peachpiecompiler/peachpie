@@ -492,6 +492,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 (BoundExpression)Accept(x.Index));
         }
 
+        public override object VisitArrayItemOrd(BoundArrayItemOrdEx x)
+        {
+            return x.Update(
+                (BoundExpression)Accept(x.Array),
+                (BoundExpression)Accept(x.Index));
+        }
+
         public override object VisitInstanceOf(BoundInstanceOfEx x)
         {
             return x.Update(

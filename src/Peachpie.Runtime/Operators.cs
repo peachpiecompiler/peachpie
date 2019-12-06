@@ -546,11 +546,12 @@ namespace Pchp.Core
         /// Shortcut for calling <c>ord($s[$i])</c> on a <see cref="string"/>
         /// without any extra allocation.
         /// </summary>
-        public static long GetItemOrdValue(string value, int index)
+        public static long GetItemOrdValue(string value, long index)
         {
-            if (value != null && index >= 0 && index < value.Length)
+            int i = (int)index;
+            if (value != null && i >= 0 && i < value.Length)
             {
-                return value[index];
+                return value[i];
             }
 
             PhpException.InvalidArgument(nameof(index));
@@ -561,11 +562,12 @@ namespace Pchp.Core
         /// Shortcut for calling <c>ord($s[$i])</c> on a <see cref="PhpString"/>
         /// without any extra allocation.
         /// </summary>
-        public static long GetItemOrdValue(PhpString value, int index)
+        public static long GetItemOrdValue(PhpString value, long index)
         {
-            if (!value.IsDefault && index >= 0 && index < value.Length)
+            int i = (int)index;
+            if (!value.IsDefault && i >= 0 && i < value.Length)
             {
-                return value[index];
+                return value[i];
             }
 
             PhpException.InvalidArgument(nameof(index));

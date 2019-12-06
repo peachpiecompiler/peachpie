@@ -23,6 +23,11 @@ function test_any_any($s, $i) {
   return ord($s[$i]);
 }
 
+function test_latestring_int($s, int $i) {
+  $s = (string)$s;
+  return ord($s[$i]);
+}
+
 echo test_string_int("foo", 1) ."\n";
 echo test_string_int("foo", 666) ."\n";
 echo test_string_any("foo", 1) ."\n";
@@ -33,3 +38,6 @@ echo test_phpstring_any("foo", 1) ."\n";
 echo test_phpstring_any("foo", 666) ."\n";
 echo test_any_any("foo", 1) ."\n";
 echo test_any_any("foo", 666) ."\n";
+echo test_latestring_int("foo", 1) ."\n";
+echo test_latestring_int("foo", 666) ."\n";
+echo test_latestring_int([], 1) ."\n";

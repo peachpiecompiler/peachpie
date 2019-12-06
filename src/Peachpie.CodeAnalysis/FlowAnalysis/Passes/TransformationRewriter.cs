@@ -215,20 +215,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         itemAccess.Array.TypeRefMask.IsSingleType && typeCtx.IsAString(itemAccess.Array.TypeRefMask) &&
                         itemAccess.Index != null && itemAccess.Index.TypeRefMask.IsSingleType && typeCtx.IsLong(itemAccess.Index.TypeRefMask))
                     {
-                        // TODO: This way seems hacky, rewrite it to be more natural (maybe create a custom BoundExpression?)
-                        var operatorsMethods = DeclaringCompilation.CoreMethods.Operators;
-                        var getItemOrdVal =
-                            typeCtx.IsReadonlyString(itemAccess.Array.TypeRefMask)
-                                ? operatorsMethods.GetItemOrdValue_String_Int32
-                                : operatorsMethods.GetItemOrdValue_PhpString_Int32;
-
-                        return new BoundStaticFunctionCall(
-                            new Semantics.TypeRef.BoundTypeRefFromSymbol(DeclaringCompilation.CoreTypes.Operators.Symbol),
-                            new BoundRoutineName(NameUtils.MakeQualifiedName(getItemOrdVal.MemberName, true)),
-                            new []{ BoundArgument.Create(itemAccess.Array), BoundArgument.Create(itemAccess.Index) }.ToImmutableArray())
-                        {
-                            TargetMethod = getItemOrdVal.Symbol
-                        }.WithContext(x);
+                        return new BoundArrayItemOrdEx(DeclaringCompilation, itemAccess.Array, itemAccess.Index).WithContext(x);
                     }
 
                     return null;

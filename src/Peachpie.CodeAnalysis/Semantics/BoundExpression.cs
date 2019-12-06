@@ -2036,6 +2036,40 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitArrayItem(this);
     }
 
+    #region BoundArrayItemOrdEx
+
+    public partial class BoundArrayItemOrdEx : BoundArrayItemEx
+    {
+        public BoundArrayItemOrdEx(PhpCompilation compilation, BoundExpression array, BoundExpression index) :
+            base(compilation, array, index)
+        { }
+
+        public new BoundArrayItemOrdEx Update(BoundExpression array, BoundExpression index)
+        {
+            if (array == Array && index == Index)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundArrayItemOrdEx(DeclaringCompilation, array, index).WithContext(this);
+            }
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitArrayElementReference(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitArrayElementReference(this, argument);
+
+        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
+        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
+        /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitArrayItemOrd(this);
+    }
+
+    #endregion
+
     #endregion
 
     #region BoundInstanceOfEx

@@ -4658,6 +4658,28 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
     }
 
+    partial class BoundArrayItemOrdEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            Debug.Assert(!Access.MightChange);
+            Debug.Assert(Index != null);
+
+            var strType = cg.EmitSpecialize(Array);
+            var indexType = cg.EmitSpecialize(Index);
+
+            Debug.Assert(strType.IsStringType() || strType.Is_PhpString());
+            Debug.Assert(indexType.IsIntegralType());
+
+            cg.EmitConvertIntToLong(indexType);
+
+            var ops = DeclaringCompilation.CoreMethods.Operators;
+            var operation = strType.IsStringType() ? ops.GetItemOrdValue_String_Long : ops.GetItemOrdValue_PhpString_Long;
+
+            return cg.EmitCall(ILOpCode.Call, operation.Symbol);
+        }
+    }
+
     partial class BoundInstanceOfEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

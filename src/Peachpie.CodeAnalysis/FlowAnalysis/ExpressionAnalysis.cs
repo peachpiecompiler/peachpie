@@ -1970,7 +1970,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        #region Visit ArrayEx, ArrayItemEx
+        #region Visit ArrayEx, ArrayItemEx, ArrayItemOrdEx
 
         public override T VisitArray(BoundArrayEx x)
         {
@@ -2010,6 +2010,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else x.TypeRefMask = TypeRefMask.AnyType.WithRefFlag; // result might be a reference
 
             return default;
+        }
+
+        public override T VisitArrayItemOrd(BoundArrayItemOrdEx x)
+        {
+            Accept(x.Array);
+            Accept(x.Index);
+
+            // ord($s[$i]) cannot be used as an l-value
+            Debug.Assert(!x.Access.MightChange);
+
+            x.TypeRefMask = TypeCtx.GetLongTypeMask();
+
+            return base.VisitArrayItemOrd(x);
         }
 
         #endregion

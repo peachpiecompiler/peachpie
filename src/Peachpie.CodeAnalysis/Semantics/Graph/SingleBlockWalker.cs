@@ -376,6 +376,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
+        public override T VisitArrayItemOrd(BoundArrayItemOrdEx x)
+        {
+            Accept(x.Array);
+            Accept(x.Index);
+
+            return default;
+        }
+
         public override T VisitInstanceOf(BoundInstanceOfEx x)
         {
             Accept(x.Operand);

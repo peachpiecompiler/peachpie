@@ -84,6 +84,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual TResult VisitArrayItem(BoundArrayItemEx x) => DefaultVisitOperation(x);
 
+        public virtual TResult VisitArrayItemOrd(BoundArrayItemOrdEx x) => DefaultVisitOperation(x);
+
         public virtual TResult VisitInstanceOf(BoundInstanceOfEx x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitGlobalConstUse(BoundGlobalConst x) => DefaultVisitOperation(x);
