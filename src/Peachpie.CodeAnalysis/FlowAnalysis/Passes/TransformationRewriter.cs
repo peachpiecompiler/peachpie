@@ -212,7 +212,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // ord($s[$i]) -> (int)s[i]     (elimination of the unnecessary allocation of a 1-char string)
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
                         x.ArgumentsInSourceOrder[0].Value is BoundArrayItemEx itemAccess &&
-                        itemAccess.Array.TypeRefMask.IsSingleType && typeCtx.IsAString(itemAccess.Array.TypeRefMask) &&
                         itemAccess.Index != null && itemAccess.Index.TypeRefMask.IsSingleType && typeCtx.IsLong(itemAccess.Index.TypeRefMask))
                     {
                         return new BoundArrayItemOrdEx(DeclaringCompilation, itemAccess.Array, itemAccess.Index).WithContext(x);

@@ -4665,18 +4665,40 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(!Access.MightChange);
             Debug.Assert(Index != null);
 
-            var strType = cg.EmitSpecialize(Array);
+            // Either specialize the call for the string types or fall back to PhpValue
+            TypeSymbol arrType;
+            MethodSymbol operation;
+
+            var arrTypeMask = Array.TypeRefMask;
+            if (arrTypeMask.IsSingleType && !arrTypeMask.IsRef && cg.TypeRefContext.IsAString(arrTypeMask))
+            {
+                arrType = cg.EmitSpecialize(Array);
+            }
+            else
+            {
+                arrType = cg.EmitConvertToPhpValue(Array);
+            }
+
+            if (arrType == cg.CoreTypes.String)
+            {
+                operation = cg.CoreMethods.Operators.GetItemOrdValue_String_Long;
+            }
+            else if (arrType == cg.CoreTypes.PhpString)
+            {
+                operation = cg.CoreMethods.Operators.GetItemOrdValue_PhpString_Long;
+            }
+            else
+            {
+                Debug.Assert(arrType == cg.CoreTypes.PhpValue);
+                operation = cg.CoreMethods.Operators.GetItemOrdValue_PhpValue_Long.Symbol;
+            }
+
+            // The index must be integral
             var indexType = cg.EmitSpecialize(Index);
-
-            Debug.Assert(strType.IsStringType() || strType.Is_PhpString());
             Debug.Assert(indexType.IsIntegralType());
-
             cg.EmitConvertIntToLong(indexType);
 
-            var ops = DeclaringCompilation.CoreMethods.Operators;
-            var operation = strType.IsStringType() ? ops.GetItemOrdValue_String_Long : ops.GetItemOrdValue_PhpString_Long;
-
-            return cg.EmitCall(ILOpCode.Call, operation.Symbol);
+            return cg.EmitCall(ILOpCode.Call, operation);
         }
     }
 

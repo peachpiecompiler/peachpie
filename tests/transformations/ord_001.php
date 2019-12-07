@@ -1,6 +1,10 @@
 <?php
 namespace transformations\ord_001;
 
+class A {
+  public function __toString() { return "A"; }
+}
+
 function test_string_int(string $s, int $i) {
   return ord($s[$i]);
 }
@@ -28,6 +32,10 @@ function test_latestring_int($s, int $i) {
   return ord($s[$i]);
 }
 
+function test_any_int($s, int $i) {
+  return ord($s[$i]);
+}
+
 echo test_string_int("foo", 1) ."\n";
 echo test_string_int("foo", 666) ."\n";
 echo test_string_any("foo", 1) ."\n";
@@ -41,3 +49,9 @@ echo test_any_any("foo", 666) ."\n";
 echo test_latestring_int("foo", 1) ."\n";
 echo test_latestring_int("foo", 666) ."\n";
 echo test_latestring_int([], 1) ."\n";
+echo test_any_int("foo", 1) ."\n";
+echo test_any_int("foo", 666) ."\n";
+echo test_any_int([], 1) ."\n";
+echo test_any_int(['foo', 'bar', 'baz'], 1) ."\n";
+echo test_any_int([new A], 0);
+echo test_any_int([42], 1);

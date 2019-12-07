@@ -543,6 +543,34 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Shortcut for calling <c>ord($s[$i])</c> on a <see cref="PhpValue"/>
+        /// without any extra allocation.
+        /// </summary>
+        public static long GetItemOrdValue(PhpValue value, long index)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String:
+                    return GetItemOrdValue(value.String, index);
+                case PhpTypeCode.MutableString:
+                    return GetItemOrdValue(value.MutableString, index);
+                default:
+                    var item = value.GetArrayItem(index);
+                    var itemType = item.TypeCode;
+                    if (itemType == PhpTypeCode.MutableString)
+                    {
+                        var phpStr = item.MutableString;
+                        return phpStr.IsEmpty ? 0 : phpStr[0];
+                    }
+                    else
+                    {
+                        var str = item.ToString();
+                        return string.IsNullOrEmpty(str) ? 0 : str[0];
+                    }
+            }
+        }
+
+        /// <summary>
         /// Shortcut for calling <c>ord($s[$i])</c> on a <see cref="string"/>
         /// without any extra allocation.
         /// </summary>
