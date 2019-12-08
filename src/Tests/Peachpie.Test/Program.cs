@@ -6,7 +6,7 @@ namespace Peachpie.Test
 {
     public class Program
     {
-        const string ScriptPath = @"crypt_002.php";
+        const string ScriptPath = "index.php";
 
         static void Main(string[] args)
         {
