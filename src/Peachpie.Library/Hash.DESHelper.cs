@@ -6,8 +6,10 @@ namespace Pchp.Library
 {
     public static partial class PhpHash 
     {
+        // This code was copied and modified from The PHP Interpreter (https://github.com/php/php-src/blob/master/ext/standard/crypt_freesec.c)
         static class DES
         {
+            
             #region Variables    
             private const char passwordEFMT1 = '_';
 
@@ -123,9 +125,13 @@ namespace Pchp.Library
 
             private static uint[,] psbox = new uint[4, 256];
 
-            #endregion
+            private static bool initialized = false;
 
-            public static void Init()
+            private static readonly Object obj = new Object();
+
+        #endregion
+
+        private static void Init()
             {
                 byte bits28Index = 4;
                 byte bits24Index = 8;
@@ -251,16 +257,7 @@ namespace Pchp.Library
                     }
             }
 
-            private static void InitLocal(CryptExtendedData data)
-            {
-                data.oldRawKey0 = data.oldRawKey1 = 0;
-                data.saltbits = 0;
-                data.oldSalt = 0;
-
-                data.initialized = true;
-            }
-
-            private static int SetKey(byte[] password, CryptExtendedData data)
+            private static int SetKey(byte[] password, ref CryptExtendedData data)
             {
                 uint rawKey0, rawKey1;
 
@@ -353,7 +350,7 @@ namespace Pchp.Library
                 return (retval);
             }
 
-            private static void SetupSalt(uint salt, CryptExtendedData data)
+            private static void SetupSalt(uint salt, ref CryptExtendedData data)
             {
                 if (salt == data.oldSalt)
                     return;
@@ -373,7 +370,7 @@ namespace Pchp.Library
                 data.saltbits = saltbits;
             }
 
-            private static int DoDes(uint l_in, uint r_in, ref uint l_out, ref uint r_out, int count, CryptExtendedData data)
+            private static int DoDes(uint l_in, uint r_in, ref uint l_out, ref uint r_out, int count, ref CryptExtendedData data)
             {
                 // l_in, r_in, l_out, and r_out are in pseudo - "big-endian" format.
                 uint[] kl1, kr1;
@@ -483,12 +480,12 @@ namespace Pchp.Library
                 return 0;
             }
 
-            private static int Cipher(byte[] inBuffer, byte[] outBuffer, uint salt, int count, CryptExtendedData data)
+            private static int Cipher(byte[] inBuffer, byte[] outBuffer, uint salt, int count, ref CryptExtendedData data)
             {
                 uint leftOut = 0;
                 uint rightOut = 0;
 
-                SetupSalt(salt, data);
+                SetupSalt(salt, ref data);
 
                 uint rawLeft = (uint)(byte)inBuffer[3] |
                     ((uint)(byte)inBuffer[2] << 8) |
@@ -500,7 +497,7 @@ namespace Pchp.Library
                     ((uint)(byte)inBuffer[5] << 16) |
                     ((uint)(byte)inBuffer[4] << 24);
 
-                int result = DoDes(rawLeft, rawRight, ref leftOut, ref rightOut, count, data);
+                int result = DoDes(rawLeft, rawRight, ref leftOut, ref rightOut, count, ref data);
 
                 outBuffer[0] = (byte)(leftOut >> 24);
                 outBuffer[1] = (byte)(leftOut >> 16);
@@ -519,13 +516,19 @@ namespace Pchp.Library
                 return ch == 0 || ch == '\n' || ch == ':';
             }
 
-            public static string Crypt(string password, string setting, CryptExtendedData data)
+            public static string Crypt(string password, string setting)
             {
-                if (data == null)
-                    return null;
 
-                if (!data.initialized)
-                    InitLocal(data);
+                lock (obj)
+                { 
+                    if (!initialized)
+                    {
+                        Init();
+                        initialized = true;             
+                    }
+                }
+                CryptExtendedData data = new CryptExtendedData();
+                data.Init();
 
                 int keyIndex = 0;
                 byte[] keyBuffer = new byte[8];
@@ -537,7 +540,7 @@ namespace Pchp.Library
                         keyIndex++;
                 }
 
-                if (SetKey(keyBuffer, data) != 0)
+                if (SetKey(keyBuffer, ref data) != 0)
                     return null;
 
                 uint salt = 0;
@@ -571,14 +574,14 @@ namespace Pchp.Library
                     {
 
                         // Encrypt the key with itself.
-                        if (Cipher(keyBuffer, keyBuffer, 0, 1, data) != 0)
+                        if (Cipher(keyBuffer, keyBuffer, 0, 1, ref data) != 0)
                             return null;
 
                         // And XOR with the next 8 characters of the key.
                         for (int i = 0; i < 8 && password.Length > keyIndex; i++)
                             keyBuffer[i] ^= (byte)(password[keyIndex++] << 1);
 
-                        if (SetKey(keyBuffer, data) != 0)
+                        if (SetKey(keyBuffer, ref data) != 0)
                             return null;
                     }
 
@@ -605,12 +608,12 @@ namespace Pchp.Library
                     outputIndex = 2;
                 }
 
-                SetupSalt(salt, data);
+                SetupSalt(salt, ref data);
 
                 // Do it.
                 uint l, r0 = 0, r1 = 0;
 
-                if (DoDes(0, 0, ref r0, ref r1, (int)count, data) != 0)
+                if (DoDes(0, 0, ref r0, ref r1, (int)count, ref data) != 0)
                     return null;
 
                 // Now encode the result...
@@ -637,17 +640,30 @@ namespace Pchp.Library
             }
         }
 
-        class CryptExtendedData
+        struct CryptExtendedData
         {
             public bool initialized;
             public uint saltbits;
             public uint oldSalt;
-            public uint[] encryptKeysL = new uint[16];
-            public uint[] encryptKeysR = new uint[16];
-            public uint[] decryptKeysL = new uint[16];
-            public uint[] decryptKeysR = new uint[16];
+            public uint[] encryptKeysL;
+            public uint[] encryptKeysR;
+            public uint[] decryptKeysL;
+            public uint[] decryptKeysR;
             public uint oldRawKey0, oldRawKey1;
-            public byte[] output = new byte[21];
+            public byte[] output;
+
+            public  void Init()
+            {
+                oldRawKey0 = oldRawKey1 = 0;
+                saltbits = 0;
+                oldSalt = 0;
+                encryptKeysL = new uint[16];
+                encryptKeysR = new uint[16];
+                decryptKeysL = new uint[16];
+                decryptKeysR = new uint[16];
+                output = new byte[21];
+                initialized = true;
+            }
         }
     }
 }
