@@ -145,20 +145,14 @@ namespace Pchp.Library.Reflection
 
         public ReflectionExtension getExtension()
         {
-            var exts = _tinfo.Extensions;
-            return exts.Length != 0
-                ? new ReflectionExtension(exts[0])
+            var extensionName = _tinfo.ExtensionName;
+            return extensionName != null
+                ? new ReflectionExtension(extensionName)
                 : null; // NULL
         }
 
         [return: CastToFalse]
-        public string getExtensionName()
-        {
-            var exts = _tinfo.Extensions;
-            return exts.Length != 0
-                ? exts[0]
-                : null; // FALSE
-        }
+        public string getExtensionName() => _tinfo.ExtensionName; // null means FALSE
 
         /// <summary>Gets the filename of the file in which the class has been defined</summary>
         /// <param name="ctx">Current runtime context</param>

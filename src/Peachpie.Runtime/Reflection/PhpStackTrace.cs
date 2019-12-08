@@ -275,7 +275,7 @@ namespace Pchp.Core.Reflection
 
     internal sealed class PhpStackFrame
     {
-        const string GlobalCodeName = "{main}";
+        public const string GlobalCodeName = "{main}";
         const string UnknownFile = "<unknown>";
 
         readonly StackFrame _clrframe;

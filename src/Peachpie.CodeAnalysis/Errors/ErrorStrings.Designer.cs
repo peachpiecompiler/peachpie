@@ -232,6 +232,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Constant expression contains invalid operations.
+        /// </summary>
+        internal static string ERR_InvalidConstantExpression {
+            get {
+                return ResourceManager.GetString("ERR_InvalidConstantExpression", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unable to read debug information of method &apos;{0}&apos; (token 0x{1:X8}) from assembly &apos;{2}&apos;.
         /// </summary>
         internal static string ERR_InvalidDebugInfo {
@@ -394,6 +403,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot set read-only property {0}::${1}.
+        /// </summary>
+        internal static string ERR_ReadOnlyPropertyWritten {
+            get {
+                return ResourceManager.GetString("ERR_ReadOnlyPropertyWritten", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Resource identifier &apos;{0}&apos; has already been used in this assembly.
         /// </summary>
         internal static string ERR_ResourceNotUnique {
@@ -417,6 +435,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_SwitchNeedsValue {
             get {
                 return ResourceManager.GetString("ERR_SwitchNeedsValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Using $this when not in object context.
+        /// </summary>
+        internal static string ERR_ThisOutOfObjectContext {
+            get {
+                return ResourceManager.GetString("ERR_ThisOutOfObjectContext", resourceCulture);
             }
         }
         
@@ -462,6 +489,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_VoidFunctionCannotReturnValue {
             get {
                 return ResourceManager.GetString("ERR_VoidFunctionCannotReturnValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Code page &apos;{0}&apos; is invalid or not installed.
+        /// </summary>
+        internal static string FTL_BadCodepage {
+            get {
+                return ResourceManager.GetString("FTL_BadCodepage", resourceCulture);
             }
         }
         

@@ -32,7 +32,7 @@ namespace Peachpie.AspNetCore.Web
             get { return _httpctx.Response.HasStarted; }
         }
 
-        void IHttpPhpContext.SetHeader(string name, string value)
+        void IHttpPhpContext.SetHeader(string name, string value, bool append)
         {
             if (name.EqualsOrdinalIgnoreCase("content-length"))
             {
@@ -40,16 +40,23 @@ namespace Peachpie.AspNetCore.Web
                 return;
             }
 
+            // specific cases:
+            if (name.EqualsOrdinalIgnoreCase("location"))
+            {
+                _httpctx.Response.StatusCode = (int)System.Net.HttpStatusCode.Redirect; // 302
+            }
+
             //
             var stringValue = new StringValues(value);
 
-            // headers that can have multiple values:
-            if (name.EqualsOrdinalIgnoreCase("set-cookie"))
+            if (append) // || name.EqualsOrdinalIgnoreCase("set-cookie")
             {
+                // headers that can have multiple values:
                 _httpctx.Response.Headers.Append(name, stringValue);
             }
             else
             {
+                // replace semantic
                 _httpctx.Response.Headers[name] = stringValue;
             }
         }
@@ -330,6 +337,14 @@ namespace Peachpie.AspNetCore.Web
             httpcontext.Items[HttpContextItemKey] = this;
             httpcontext.Response.RegisterForDispose(this);
 
+            // enable synchronous IO until we make everything async
+            // https://github.com/aspnet/Announcements/issues/342
+            var bodyControl = httpcontext.Features.Get<IHttpBodyControlFeature>();
+            if (bodyControl != null)
+            {
+                bodyControl.AllowSynchronousIO = true;
+            }
+
             //
             this.RootPath = rootPath;
 
@@ -448,7 +463,7 @@ namespace Peachpie.AspNetCore.Web
             }
             array[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
             array[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
-            array[CommonPhpArrayKeys.HTTPS] = PhpValue.Create(string.Equals(request.Scheme, "https", StringComparison.OrdinalIgnoreCase));
+            array[CommonPhpArrayKeys.HTTPS] = string.Equals(request.Scheme, "https", StringComparison.OrdinalIgnoreCase);
 
             //
             return array;

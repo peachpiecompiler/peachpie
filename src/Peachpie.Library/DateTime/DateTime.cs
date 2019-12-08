@@ -42,6 +42,7 @@ namespace Pchp.Library.DateTime
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [DebuggerDisplay(nameof(DateTime), Type = PhpVariable.TypeNameObject)]
     public class DateTime : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
         #region Constants
@@ -148,7 +149,7 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentException();
             }
 
-            this.Time = StrToTime(_ctx, time, System_DateTime.UtcNow);
+            this.Time = StrToTime(_ctx, time, System_DateTime.UtcNow, TimeZone);
 
             //this.date.Value = this.Time.ToString("yyyy-mm-dd HH:mm:ss");
             //this.timezone_type.Value = 3;
@@ -164,21 +165,23 @@ namespace Pchp.Library.DateTime
         /// In case error or warning occur, <see cref="DateTimeErrors"/> is set accordingly.
         /// </summary>
         [PhpHidden]
-        internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time)
+        internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time, TimeZoneInfo timeZone = null)
         {
             if (string.IsNullOrWhiteSpace(timestr) || (timestr = timestr.Trim()).EqualsOrdinalIgnoreCase("now"))
             {
                 return System_DateTime.UtcNow;
             }
 
-            var result = DateInfo.Parse(ctx, timestr, time, out var error);
-            if (error != null)
+            var result = DateInfo.Parse(ctx, timestr, time, timeZone, out var error);
+            if (error == null)
+            {
+                return result;
+            }
+            else
             {
                 ctx.SetProperty<DateTimeErrors>(new DateTimeErrors { Errors = new[] { error } });
                 throw new Spl.Exception(error);
             }
-
-            return DateTimeUtils.UnixTimeStampToUtc(result);
         }
 
         internal DateTimeImmutable AsDateTimeImmutable() => new DateTimeImmutable(_ctx, this.Time, this.TimeZone);
@@ -244,8 +247,7 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public virtual DateTime add(DateInterval interval)
         {
-            Time = Time.Add(interval.AsTimeSpan());
-
+            Time = interval.Apply(Time, negate: false);
             return this;
         }
 
@@ -256,7 +258,7 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public virtual DateTime sub(DateInterval interval)
         {
-            Time = Time.Subtract(interval.AsTimeSpan());
+            Time = interval.Apply(Time, negate: true);
             return this;
         }
 
@@ -502,6 +504,7 @@ namespace Pchp.Library.DateTime
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [DebuggerDisplay(nameof(DateTimeImmutable), Type = PhpVariable.TypeNameObject)]
     public class DateTimeImmutable : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
         readonly protected Context _ctx;
@@ -606,7 +609,10 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Add(interval.AsTimeSpan()), TimeZone);
+        public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, interval.Apply(Time, negate: false), TimeZone);
+
+        public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(_ctx, interval.Apply(Time, negate: true), TimeZone);
+
         [return: CastToFalse]
         public static DateTimeImmutable createFromFormat(Context ctx, string format, string time, DateTimeZone timezone = null)
         {
@@ -640,6 +646,7 @@ namespace Pchp.Library.DateTime
 
         [return: NotNull]
         public static PhpArray/*!*/getLastErrors(Context ctx) => DateTime.getLastErrors(ctx);
+
         public static DateTimeImmutable __set_state(PhpArray array) => throw new NotImplementedException();
         public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();
         public virtual DateTimeImmutable setISODate(int year, int week, int day = 1) => throw new NotImplementedException();
@@ -666,8 +673,6 @@ namespace Pchp.Library.DateTime
                 return new DateTimeImmutable(_ctx, time, timezone._timezone);
             }
         }
-        public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Subtract(interval.AsTimeSpan()), TimeZone);
-
         /// <summary>
         /// Returns the difference between two DateTime objects
         /// </summary>

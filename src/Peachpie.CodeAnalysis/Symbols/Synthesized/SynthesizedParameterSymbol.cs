@@ -61,7 +61,7 @@ namespace Pchp.CodeAnalysis.Symbols
             this.DefaultValueField = defaultValueField;
         }
 
-        public static SynthesizedParameterSymbol Create(MethodSymbol container, ParameterSymbol p)
+        public static SynthesizedParameterSymbol Create(MethodSymbol container, ParameterSymbol p, int? ordinal = default)
         {
             var defaultValueField = ((ParameterSymbol)p.OriginalDefinition).DefaultValueField;
             if (defaultValueField != null && defaultValueField.ContainingType.IsTraitType())
@@ -90,7 +90,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-            return new SynthesizedParameterSymbol(container, p.Type, p.Ordinal, p.RefKind,
+            return new SynthesizedParameterSymbol(container, p.Type, ordinal.HasValue ? ordinal.Value : p.Ordinal, p.RefKind,
                 name: p.Name,
                 isParams: p.IsParams,
                 explicitDefaultConstantValue: p.ExplicitDefaultConstantValue,

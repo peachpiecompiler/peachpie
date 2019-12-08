@@ -107,7 +107,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static bool IsQueryValueParameter(IParameterSymbol p, out MethodSymbol containerCtor, out QueryValueTypes valueEnum)
         {
-            if (p != null && p.Type is NamedTypeSymbol named && named.Arity == 1 && named.MetadataName == "QueryValue") // TODO: && namespace == Pchp.Core.
+            if (p != null && p.Type is NamedTypeSymbol named && named.Arity == 1 && named.MetadataName == "QueryValue`1") // TODO: && namespace == Pchp.Core.
             {
                 var container = (NamedTypeSymbol)named.TypeArguments[0];
                 containerCtor = container.LookupMember<MethodSymbol>(WellKnownMemberNames.ImplicitConversionName) ?? container.InstanceConstructors.SingleOrDefault();

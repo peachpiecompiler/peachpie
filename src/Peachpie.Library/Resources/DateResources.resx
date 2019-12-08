@@ -120,6 +120,9 @@
   <data name="day_notfound" xml:space="preserve">
     <value>A textual day could not be found</value>
   </data>
+  <data name="empty_string" xml:space="preserve">
+    <value>Empty string</value>
+  </data>
   <data name="esc_char_expected" xml:space="preserve">
     <value>Escaped character expected</value>
   </data>

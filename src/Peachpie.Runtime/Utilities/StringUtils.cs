@@ -10,6 +10,8 @@ namespace Pchp.Core.Utilities
     {
         public static bool EqualsOrdinalIgnoreCase(this string str1, string str2) => string.Equals(str1, str2, StringComparison.OrdinalIgnoreCase);
 
+        public static bool EqualsOrdinalIgnoreCase(this ReadOnlySpan<char> str1, ReadOnlySpan<char> str2) => str1.Equals(str2, StringComparison.OrdinalIgnoreCase);
+
         /// <summary>
         /// Converts a string of bytes into hexadecimal representation.
         /// </summary>

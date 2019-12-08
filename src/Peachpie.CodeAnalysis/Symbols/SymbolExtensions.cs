@@ -190,11 +190,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return p.ExplicitDefaultConstantValue != null || p.DefaultValueField != null || p.Initializer != null;
         }
 
-        /// <summary>
-        /// Gets value indicating the parameter has default value that is not supported by CLR metadata.
-        /// Such value will be stored in its <see cref="ParameterSymbol.DefaultValueField"/> static field.
-        /// </summary>
-        public static bool HasUnmappedDefaultValue(this ParameterSymbol p) => p.DefaultValueField != null;
+        ///// <summary>
+        ///// Gets value indicating the parameter has default value that is not supported by CLR metadata.
+        ///// Such value will be stored in its <see cref="ParameterSymbol.DefaultValueField"/> static field.
+        ///// </summary>
+        //public static bool HasUnmappedDefaultValue(this ParameterSymbol p) => p.DefaultValueField != null;
 
         /// <summary>
         /// Gets [PhpType] attribute and its parameters.
@@ -255,15 +255,38 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static AttributeData GetPhpScriptAttribute(this TypeSymbol symbol) => GetAttribute(symbol, CoreTypes.PhpScriptAttributeFullName);
 
-        public static string[] PhpExtensionAttributeValues(this AttributeData phpextensionattribute)
+        /// <summary>
+        /// Gets the list of extension names specified in given <c>PhpExtensionAttribute</c>.
+        /// </summary>
+        /// <returns>Enumeration of extensin names. Never returns <c>null</c>.</returns>
+        public static IEnumerable<string>/*!!*/PhpExtensionAttributeValues(this AttributeData phpextensionattribute)
         {
-            if (phpextensionattribute != null && phpextensionattribute.CommonConstructorArguments.Length >= 1)
+            if (phpextensionattribute != null)
             {
-                var extensions = phpextensionattribute.CommonConstructorArguments[0].Values;    // string[] extensions
-                return extensions.Select(x => (string)x.Value).ToArray();
+                var args = phpextensionattribute.CommonConstructorArguments;
+                if (args.Length == 1)
+                {
+                    switch (args[0].Kind)
+                    {
+                        // [PhpExtensionAttribute(params string[] values)]
+                        case TypedConstantKind.Array:
+                            return args[0]
+                                .Values   // string[] extensions
+                                .Select(x => (string)x.Value);
+
+                        // [PhpExtensionAttribute(string extensionName)]
+                        case TypedConstantKind.Primitive:
+                            if (args[0].Value is string extensionName)
+                            {
+                                return new[] { extensionName };
+                            }
+                            break;
+                    }
+                }
             }
 
-            return null;
+            //
+            return Array.Empty<string>();
         }
     }
 }

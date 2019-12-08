@@ -77,6 +77,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override MethodSymbol CreateSourceMethod(MethodDecl m) => new SourceTraitMethodSymbol(this, m);
 
+        //public override string MetadataName => MetadataHelpers.ComposeAritySuffixedMetadataName(base.MetadataName, Arity);
+
         public override int Arity => TypeParameters.Length;
         public override ImmutableArray<TypeParameterSymbol> TypeParameters => _typeParameters;
         public override ImmutableArray<TypeSymbol> TypeArguments => StaticCast<TypeSymbol>.From(_typeParameters);

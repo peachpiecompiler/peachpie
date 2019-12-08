@@ -246,28 +246,20 @@ namespace Pchp.Core
 
             public TOptions Get<TOptions>() where TOptions : class, IPhpConfiguration
             {
-                IPhpConfiguration value;
-                return _defaultConfigs.TryGetValue(typeof(TOptions), out value) ? (TOptions)value : null;
+                return s_defaultConfigs.TryGetValue(typeof(TOptions), out var value) ? (TOptions)value : null;
             }
 
-            IEnumerator<IPhpConfiguration> IEnumerable<IPhpConfiguration>.GetEnumerator() => _defaultConfigs.Values.GetEnumerator();
+            IEnumerator<IPhpConfiguration> IEnumerable<IPhpConfiguration>.GetEnumerator() => s_defaultConfigs.Values.GetEnumerator();
 
             IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<IPhpConfiguration>)this).GetEnumerator();
         }
 
         protected class PhpConfigurationService : IPhpConfigurationService
         {
-            readonly Dictionary<Type, IPhpConfiguration> _configs;
-            readonly PhpCoreConfiguration _core;
+            Dictionary<Type, IPhpConfiguration> _configs;
 
-            public PhpConfigurationService()
-            {
-                // clone parent configuration
-                _configs = new Dictionary<Type, IPhpConfiguration>(_defaultConfigs.Count);
-                _configs[typeof(PhpCoreConfiguration)] = _core = new PhpCoreConfiguration();    // core options used always
-            }
-
-            public PhpCoreConfiguration Core => _core;
+            public PhpCoreConfiguration Core => _core ?? (_core = Get<PhpCoreConfiguration>());
+            PhpCoreConfiguration _core;
 
             public IPhpConfigurationService Parent => DefaultPhpConfigurationService.Instance;
 
@@ -275,14 +267,15 @@ namespace Pchp.Core
             {
                 var key = typeof(TOptions);
 
-                IPhpConfiguration value;
-                if (!_configs.TryGetValue(key, out value))
+                if (_configs == null)
                 {
-                    if (_defaultConfigs.TryGetValue(key, out value))
-                    {
-                        // lazy clone default configuration
-                        _configs[key] = value = value.Copy();
-                    }
+                    _configs = new Dictionary<Type, IPhpConfiguration>(s_defaultConfigs.Count);
+                }
+
+                if (!_configs.TryGetValue(key, out var value))
+                {
+                    // lazy clone default configuration
+                    _configs[key] = value = Parent.Get<TOptions>()?.Copy();
                 }
 
                 //
@@ -293,7 +286,7 @@ namespace Pchp.Core
             {
                 // collect _configs & _defaultConfigs distinctly
                 var seen = new HashSet<Type>();
-                foreach (var pair in _configs.Concat(_defaultConfigs))
+                foreach (var pair in _configs.Concat(s_defaultConfigs))
                 {
                     if (seen.Add(pair.Key))
                     {
@@ -312,8 +305,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets a service providing access to current runtime configuration.
         /// </summary>
-        public virtual IPhpConfigurationService Configuration => _configuration;
-        readonly IPhpConfigurationService _configuration = new PhpConfigurationService();
+        public virtual IPhpConfigurationService Configuration { get; } = new PhpConfigurationService();
 
         /// <summary>
         /// Registers a configuration to be accessed through <see cref="IPhpConfigurationService.Get{TOptions}"/> with default values.
@@ -323,13 +315,13 @@ namespace Pchp.Core
         /// This instance is intended to be cloned for new <see cref="Context"/> instances.</param>
         public static void RegisterConfiguration<TOptions>(TOptions defaults) where TOptions : class, IPhpConfiguration
         {
-            _defaultConfigs[typeof(TOptions)] = defaults ?? throw new ArgumentNullException(nameof(defaults));
+            s_defaultConfigs[typeof(TOptions)] = defaults ?? throw new ArgumentNullException(nameof(defaults));
         }
 
         /// <summary>
         /// Set of registered configurations and their default values.
         /// </summary>
-        static readonly Dictionary<Type, IPhpConfiguration> _defaultConfigs = new Dictionary<Type, IPhpConfiguration>()
+        static readonly Dictionary<Type, IPhpConfiguration> s_defaultConfigs = new Dictionary<Type, IPhpConfiguration>()
         {
             {typeof(PhpCoreConfiguration), new PhpCoreConfiguration()},
         };

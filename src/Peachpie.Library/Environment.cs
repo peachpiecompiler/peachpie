@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core;
 using Pchp.Core.Utilities;
 
 namespace Pchp.Library
@@ -11,6 +12,7 @@ namespace Pchp.Library
     /// <summary>
     /// Environment constants and functions.
     /// </summary>
+    [PhpExtension("Core")]
     public static class Environment
     {
         public const int PHP_MAJOR_VERSION = 7;

@@ -1,18 +1,18 @@
 <?php
 
 function parse_url_check1($file) {
-  $res = parse_url($file, PHP_URL_SCHEME);
-  if (null !== /*|null|string|*/$res) {
+  /*|array|boolean|*/$res = parse_url($file);
+  if (null !== $res) {
     return true;
   }
-  return false;
+  return false;/*!PHP5011!*/
 }
 
 function parse_url_check2($file) {
-  if (null !== /*|null|string|*/parse_url($file, PHP_URL_SCHEME)) {
+  if (null !== /*|array|boolean|*/parse_url($file)) {
     return true;
   }
-  return false;
+  return false; // condition above is not being evaluated yet, so this won't be marked as unreachable
 }
 
 function not_null_attr_check() {

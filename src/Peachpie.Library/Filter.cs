@@ -813,8 +813,7 @@ namespace Pchp.Library
         /// <summary>
         /// Remove all characters not valid by given <paramref name="predicate"/>.
         /// </summary>
-        private static string FilterSanitizeString(string str, Predicate<char>/*!*/
-                                predicate)
+        private static string FilterSanitizeString(string str, Predicate<char>/*!*/predicate)
         {
             Debug.Assert(predicate != null);
 

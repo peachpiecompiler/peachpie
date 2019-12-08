@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     // build control flow graph
                     var cfg = new ControlFlowGraph(
                         this.Statements,
-                        SemanticsBinder.Create(DeclaringCompilation, LocalsTable, ContainingType as SourceTypeSymbol));
+                        SemanticsBinder.Create(DeclaringCompilation, ContainingFile.SyntaxTree, LocalsTable, ContainingType as SourceTypeSymbol));
                     cfg.Start.FlowState = state;
 
                     //
@@ -454,8 +454,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
-            // TODO: XmlDocumentationCommentCompiler
-            return this.PHPDocBlock?.Summary ?? string.Empty;
+            if (PHPDocBlock != null)
+            {
+                using (var output = new System.IO.StringWriter())
+                {
+                    DocumentationComments.DocumentationCommentCompiler.WriteRoutine(output, this);
+                    return output.ToString();
+                }
+            }
+            //
+            return string.Empty;
         }
     }
 }

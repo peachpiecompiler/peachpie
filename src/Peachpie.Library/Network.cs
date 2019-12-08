@@ -11,6 +11,7 @@ namespace Pchp.Library
     /// <summary>
 	/// Socket functions.
 	/// </summary>
+    [PhpExtension("standard")]
     public static class Network
     {
         #region Constants

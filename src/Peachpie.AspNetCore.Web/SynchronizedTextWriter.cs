@@ -51,7 +51,7 @@ namespace Peachpie.AspNetCore.Web
             Debug.Assert(buffer != null);
             Debug.Assert(count <= buffer.Length);
 
-            HttpResponse.Body.WriteAsync(new ReadOnlyMemory<byte>(buffer)); // NOTE: buffer is copied by the underlaying pipe
+            HttpResponse.Body.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, count)); // NOTE: buffer is copied by the underlaying pipe
         }
 
         public override void Write(string value)
@@ -70,9 +70,9 @@ namespace Peachpie.AspNetCore.Web
             //
 
             //
-            var encodedLength = Encoding.GetByteCount(chars);
+            var encodedLength = Encoding.GetByteCount(chars, index, count);
             var bytes = ArrayPool<byte>.Shared.Rent(encodedLength);
-            var nbytes = Encoding.GetBytes(chars, bytes); // == encodedLength
+            var nbytes = Encoding.GetBytes(chars, index, count, bytes, 0); // == encodedLength
 
             Write(bytes, nbytes);
 

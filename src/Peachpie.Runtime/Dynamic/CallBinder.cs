@@ -98,7 +98,7 @@ namespace Pchp.Core.Dynamic
                      */
 
                     invocation = Expression.Block(new[] { args_var },
-                            Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments)),
+                            Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments, bound.Context, bound.ClassContext)),
                             OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, bound.IsStaticSyntax, lateStaticType: bound.TargetType)
                         );
                 }
@@ -273,7 +273,7 @@ namespace Pchp.Core.Dynamic
                     call_args = new Expression[]
                     {
                         name_expr,
-                        BinderHelpers.NewPhpArray(bound.Arguments),
+                        BinderHelpers.NewPhpArray(bound.Arguments, bound.Context, bound.ClassContext),
                     };
                 }
 
@@ -378,11 +378,14 @@ namespace Pchp.Core.Dynamic
                     call_args = new Expression[]
                     {
                         name_expr,
-                        BinderHelpers.NewPhpArray(bound.Arguments),
+                        BinderHelpers.NewPhpArray(bound.Arguments, bound.Context, bound.ClassContext),
                     };
                 }
 
-                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args, true, lateStaticType: bound.TargetType);
+                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args,
+                    isStaticCallSyntax: true,
+                    lateStaticType: bound.TargetType,
+                    classContext: bound.ClassContext);
             }
 
             //

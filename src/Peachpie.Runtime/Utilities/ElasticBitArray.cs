@@ -11,7 +11,7 @@ namespace Pchp.Core.Utilities
     /// Implementation of elastic bit array.
     /// The internal array is resized automatically within the set value operation.
     /// </summary>
-    internal sealed class ElasticBitArray
+    struct ElasticBitArray
     {
         int[] _bits;
 
@@ -38,13 +38,11 @@ namespace Pchp.Core.Utilities
             get
             {
                 var num = index / IntSize;
+                var bits = _bits;
 
-                if (index >= 0 && num < _bits.Length)
-                {
-                    return (_bits[num] & (1 << (index % IntSize))) != 0;
-                }
-
-                return false;
+                return
+                    (index >= 0 && num < bits.Length) &&
+                    (bits[num] & (1 << (index % IntSize))) != 0;
             }
             set
             {
@@ -55,7 +53,7 @@ namespace Pchp.Core.Utilities
             }
         }
 
-        internal void SetTrue(int index)
+        public void SetTrue(int index)
         {
             if (index < 0)
             {
@@ -71,7 +69,7 @@ namespace Pchp.Core.Utilities
             _bits[num] |= 1 << index % IntSize;
         }
 
-        internal void SetFalse(int index)
+        public void SetFalse(int index)
         {
             var num = index / IntSize;
             if (index >= 0 && num < _bits.Length)

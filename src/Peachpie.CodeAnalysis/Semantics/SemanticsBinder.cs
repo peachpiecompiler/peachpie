@@ -92,8 +92,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Optional. Self type context.
         /// </summary>
-        public SourceTypeSymbol Self => _self;
-        readonly SourceTypeSymbol _self;
+        public SourceTypeSymbol Self { get; }
+
+        /// <summary>
+        /// Containing file symbol.
+        /// </summary>
+        public SyntaxTree ContainingFile { get; }
 
         /// <summary>
         /// Gets corresponding routine.
@@ -111,7 +115,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Bag with semantic diagnostics.
         /// </summary>
         public DiagnosticBag Diagnostics => DeclaringCompilation.DeclarationDiagnostics;
-        
+
         /// <summary>
         /// Compilation.
         /// </summary>
@@ -130,10 +134,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Creates <see cref="SemanticsBinder"/> for given routine (passed with <paramref name="locals"/>).
         /// </summary>
+        /// <param name="file">Containing file.</param>
         /// <param name="locals">Table of local variables within routine.</param>
         /// <param name="self">Current self context.</param>
         /// <param name="compilation">Declaring compilation.</param>
-        public static SemanticsBinder Create(PhpCompilation compilation, LocalsTable locals, SourceTypeSymbol self = null)
+        public static SemanticsBinder Create(PhpCompilation compilation, SyntaxTree file, LocalsTable locals, SourceTypeSymbol self = null)
         {
             Debug.Assert(locals != null);
 
@@ -148,16 +153,17 @@ namespace Pchp.CodeAnalysis.Semantics
             //
             return (isGeneratorMethod)
                 ? new GeneratorSemanticsBinder(compilation, yields, locals, routine, self)
-                : new SemanticsBinder(compilation, locals, routine, self);
+                : new SemanticsBinder(compilation, file, locals, routine, self);
         }
 
-        public SemanticsBinder(PhpCompilation compilation, LocalsTable locals = null, SourceRoutineSymbol routine = null, SourceTypeSymbol self = null)
+        public SemanticsBinder(PhpCompilation compilation, SyntaxTree file, LocalsTable locals = null, SourceRoutineSymbol routine = null, SourceTypeSymbol self = null)
         {
             DeclaringCompilation = compilation;
 
+            ContainingFile = file;
             _locals = locals;
             _routine = routine;
-            _self = self;
+            Self = self;
         }
 
         /// <summary>
@@ -258,7 +264,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (unpacking)
                     {
                         // https://wiki.php.net/rfc/argument_unpacking
-                        Diagnostics.Add(this.Routine, p, Errors.ErrorCode.ERR_PositionalArgAfterUnpacking);
+                        Diagnostics.Add(GetLocation(p), Errors.ErrorCode.ERR_PositionalArgAfterUnpacking);
                     }
                 }
             }
@@ -277,6 +283,8 @@ namespace Pchp.CodeAnalysis.Semantics
             .Select(BoundArgument.Create)
             .ToImmutableArray();
         }
+
+        protected Location GetLocation(AST.ILangElement expr) => ContainingFile.GetLocation(expr);
 
         #endregion
 
@@ -301,7 +309,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement();
 
             //
-            Diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
+            Diagnostics.Add(GetLocation(stmt), Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
             return new BoundEmptyStatement(stmt.Span.ToTextSpan());
         }
 
@@ -391,33 +399,29 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundStatement BindJumpStmt(AST.JumpStmt stmt)
         {
-            if (stmt.Type == AST.JumpStmt.Types.Return)
+            Debug.Assert(Routine != null);
+
+            if (stmt.Type != AST.JumpStmt.Types.Return)
             {
-                Debug.Assert(_locals != null);
-
-                BoundExpression expr;
-
-                if (stmt.Expression != null)
-                {
-                    var isByRef = _locals.Routine.SyntaxSignature.AliasReturn;
-                    expr = BindExpression(stmt.Expression, isByRef ? BoundAccess.ReadRef : BoundAccess.Read);
-
-                    if (!isByRef)
-                    {
-                        // copy returned value
-                        expr = BindCopyValue(expr);
-                    }
-                }
-                else
-                {
-                    expr = null;
-                }
-
-                //
-                return new BoundReturnStatement(expr);
+                throw ExceptionUtilities.Unreachable;
             }
 
-            throw ExceptionUtilities.Unreachable;
+            BoundExpression expr = null;
+
+            if (stmt.Expression != null)
+            {
+                var isByRef = Routine.SyntaxSignature.AliasReturn;
+                expr = BindExpression(stmt.Expression, isByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+
+                if (!isByRef)
+                {
+                    // copy returned value
+                    expr = BindCopyValue(expr);
+                }
+            }
+
+            //
+            return new BoundReturnStatement(expr);
         }
 
         protected BoundExpression BindCopyValue(BoundExpression expr)
@@ -478,7 +482,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ShellEx) return BindShellEx((AST.ShellEx)expr).WithAccess(access);
 
             //
-            Diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
+            Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
             return new BoundLiteral(null);
         }
 
@@ -950,16 +954,37 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (expr.IsMemberOf == null)
             {
+                if (Routine == null)
+                {
+                    // cannot use variables in field initializer or parameter initializer
+                    Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_InvalidConstantExpression);
+                }
+
                 if (varname.IsDirect)
                 {
-                    if (access.IsEnsure && varname.NameValue.IsThisVariableName)
+                    if (varname.NameValue.IsThisVariableName)
                     {
-                        access = BoundAccess.Read;
+                        // $this is read-only
+                        if (access.IsEnsure)
+                            access = BoundAccess.Read;
+
+                        if (access.IsWrite || access.IsUnset)
+                            Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_CannotAssignToThis);
+
+                        // $this is only valid in global code and instance methods:
+                        if (Routine != null && Routine.IsStatic && !Routine.IsGlobalScope && !(Routine is SourceLambdaSymbol lambda && lambda.UseThis))
+                        {
+                            // WARN:
+                            Diagnostics.Add(DiagnosticBagExtensions.ParserDiagnostic(ContainingFile, expr.Span, Devsense.PHP.Errors.Warnings.ThisOutOfMethod));
+                            // ERR: // NOTE: causes a lot of project to not compile // CONSIDER: uncomment
+                            // Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_ThisOutOfObjectContext);
+                        }
                     }
                 }
                 else
                 {
-                    Routine.Flags |= RoutineFlags.HasIndirectVar;
+                    if (Routine != null)
+                        Routine.Flags |= RoutineFlags.HasIndirectVar;
                 }
 
                 return new BoundVariableRef(varname).WithAccess(access);
@@ -1306,7 +1331,7 @@ namespace Pchp.CodeAnalysis.Semantics
         #region Construction
 
         public GeneratorSemanticsBinder(PhpCompilation compilation, ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals, SourceRoutineSymbol routine, SourceTypeSymbol self)
-            : base(compilation, locals, routine, self)
+            : base(compilation, routine.ContainingFile.SyntaxTree, locals, routine, self)
         {
             Debug.Assert(Routine != null);
 

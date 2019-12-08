@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
+    [PhpExtension("Core")]
     public static class Errors
     {
         #region Constants

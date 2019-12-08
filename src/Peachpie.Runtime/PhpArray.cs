@@ -332,6 +332,12 @@ namespace Pchp.Core
         public static explicit operator int(PhpArray array) => array.Count;
 
         /// <summary>
+        /// Explicit cast of array to <see cref="double"/>.
+        /// Gets number of items in the array.
+        /// </summary>
+        public static explicit operator double(PhpArray array) => (double)array.Count;
+
+        /// <summary>
         /// Explicit cast of array to <see cref="string"/>.
         /// Always returns <c>"Array"</c> string literal.
         /// </summary>

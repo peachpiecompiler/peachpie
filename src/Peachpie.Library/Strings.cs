@@ -11,6 +11,7 @@ using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
+    [PhpExtension("standard")]
     public static class Strings
     {
         #region Character map
@@ -1491,7 +1492,7 @@ namespace Pchp.Library
             {
                 if (result == null)
                 {
-                    result = new StringBuilder(subject.Length);
+                    result = StringBuilderUtilities.Pool.Get();
                 }
 
                 result.Append(subject, from, index - from);
@@ -1507,7 +1508,7 @@ namespace Pchp.Library
             else
             {
                 result.Append(subject, from, subject.Length - from);
-                return result.ToString();
+                return StringBuilderUtilities.GetStringAndReturn(result);
             }
         }
 
@@ -3782,7 +3783,7 @@ namespace Pchp.Library
             Debug.Assert(format != null && arguments != null);
 
             Encoding encoding = ctx.StringEncoding;
-            StringBuilder result = new StringBuilder();
+            var result = StringBuilderUtilities.Pool.Get();
             int state = 0, width = 0, precision = -1, seqIndex = 0, swapIndex = -1;
             bool leftAlign = false;
             bool plusSign = false;
@@ -4015,7 +4016,7 @@ namespace Pchp.Library
                 }
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -5588,6 +5589,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The lowercased string or empty string if <paramref name="str"/> is null.</returns>
+        [return: NotNull]
         public static string strtolower(string str) => str != null ? str.ToLowerInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToLower(Locale.GetCulture(Locale.Category.CType));
@@ -5599,6 +5601,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The uppercased string or empty string if <paramref name="str"/> is null.</returns>
+        [return: NotNull]
         public static string strtoupper(string str) => str != null ? str.ToUpperInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));

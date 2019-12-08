@@ -114,7 +114,10 @@ namespace Pchp.Core
                 case PhpTypeCode.Undefined: return (lx == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     if (y.Object == null) goto case PhpTypeCode.Null;
-                    break;
+
+                    // Notice: Object of class {0} could not be converted to int
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetTypeName(y), PhpVariable.TypeNameInt));
+                    return Compare(lx, 1L); // object is treated as '1'
             }
 
             throw new NotImplementedException($"compare(Long, {y.TypeCode})");
@@ -135,7 +138,9 @@ namespace Pchp.Core
                 case PhpTypeCode.Undefined: return (dx == 0.0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     if (y.Object == null) goto case PhpTypeCode.Null;
-                    break;
+                    // Notice: Object of class {0} could not be converted to int
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetTypeName(y), PhpVariable.TypeNameDouble));
+                    return Compare(dx, 1.0); // object is treated as '1'
             }
 
             throw new NotImplementedException($"compare(Double, {y.TypeCode})");

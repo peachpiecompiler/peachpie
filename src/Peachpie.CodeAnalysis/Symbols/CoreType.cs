@@ -145,6 +145,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
+            RuntimeChain_ChainEnd, RuntimeChain_Value_T, RuntimeChain_Property_T, RuntimeChain_ArrayItem_T, RuntimeChain_ArrayNewItem_T,
             PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable, QueryValue_T, QueryValue_DummyFieldsOnlyCtor,
@@ -218,6 +219,12 @@ namespace Pchp.CodeAnalysis.Symbols
             Dynamic_CallerTypeParam = Create("Dynamic.CallerTypeParam");
             Dynamic_UnpackingParam_T = Create("Dynamic.UnpackingParam`1");
 
+            RuntimeChain_ChainEnd = Create("Dynamic.RuntimeChain.ChainEnd");
+            RuntimeChain_Value_T = Create("Dynamic.RuntimeChain.Value`1");
+            RuntimeChain_Property_T = Create("Dynamic.RuntimeChain.Property`1");
+            RuntimeChain_ArrayItem_T = Create("Dynamic.RuntimeChain.ArrayItem`1");
+            RuntimeChain_ArrayNewItem_T = Create("Dynamic.RuntimeChain.ArrayNewItem`1");
+
             PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");
             CommonPhpArrayKeys = Create("CommonPhpArrayKeys");
@@ -289,7 +296,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (t.Symbol == null)
                 {
                     var fullname = t.FullName;
-                    
+
                     // nested types: todo: in Lookup
                     string nested = null;
                     int plus = fullname.IndexOf('+');

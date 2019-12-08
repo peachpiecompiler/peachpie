@@ -53,6 +53,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_EnsureAlias = Types.PhpValue.GetMethod("EnsureAlias", Types.Empty);
             public static MethodInfo EnsureAlias_PhpValueRef = typeof(Core.Operators).GetMethod("EnsureAlias", Types.PhpValue.MakeByRefType());
             public static MethodInfo PhpValue_GetArrayAccess = Types.PhpValue.GetMethod("GetArrayAccess", Types.Empty);
+            public static MethodInfo PhpValue_ToLongOrThrow = Types.PhpValue.GetMethod("ToLongOrThrow", Types.Empty);
             public static MethodInfo PhpValue_ToClass = Types.PhpValue.GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpValue_ToArray = Types.PhpValue.GetMethod("ToArray", Types.Empty);
             /// <summary>Get the underlaying PhpArray, or <c>null</c>. Throws in case of a scalar or object.</summary>
@@ -65,8 +66,9 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_DeepCopy = Types.PhpValue.GetMethod("DeepCopy");
 
             public static MethodInfo PhpNumber_ToString_Context = Types.PhpNumber[0].GetMethod("ToString", typeof(Context));
+            public static MethodInfo PhpNumber_ToClass = Types.PhpNumber[0].GetMethod("ToObject", Types.Empty);
 
-            public static MethodInfo PhpArray_ToClass = typeof(PhpArray).GetMethod("ToClass", Types.Empty);
+            public static MethodInfo PhpArray_ToClass = typeof(PhpArray).GetMethod("ToObject", Types.Empty);
             public static MethodInfo PhpArray_SetItemAlias = typeof(PhpArray).GetMethod("SetItemAlias", typeof(Core.IntStringKey), Types.PhpAlias[0]);
             public static MethodInfo PhpArray_SetItemValue = typeof(PhpArray).GetMethod("SetItemValue", typeof(Core.IntStringKey), Types.PhpValue);
             public static MethodInfo PhpArray_EnsureItemObject = typeof(PhpArray).GetMethod("EnsureItemObject", typeof(Core.IntStringKey));
@@ -76,6 +78,18 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpArray_Remove = typeof(PhpHashtable).GetMethod("Remove", typeof(Core.IntStringKey)); // PhpHashtable.Remove(IntStringKey) returns bool
             public static MethodInfo PhpArray_TryGetValue = typeof(PhpArray).GetMethod("TryGetValue", typeof(Core.IntStringKey), Types.PhpValue.MakeByRefType());
             public static MethodInfo PhpArray_ContainsKey = typeof(PhpArray).GetMethod("ContainsKey", typeof(Core.IntStringKey));
+            
+            public static MethodInfo ToBoolean_PhpArray = typeof(PhpArray).GetOpExplicit(typeof(bool));
+            public static MethodInfo ToBoolean_PhpValue = typeof(PhpValue).GetOpImplicit(typeof(bool));
+            public static MethodInfo ToBoolean_PhpNumber = typeof(PhpNumber).GetOpImplicit(typeof(bool));
+            public static MethodInfo ToBoolean_String = typeof(Convert).GetMethod("ToBoolean", Types.String);
+
+            public static MethodInfo ToDouble_PhpArray = typeof(PhpArray).GetOpExplicit(typeof(double));
+            public static MethodInfo ToDouble_PhpNumber = typeof(PhpNumber).GetOpImplicit(typeof(double));
+            public static MethodInfo ToDouble_PhpValue = typeof(PhpValue).GetOpExplicit(typeof(double));
+
+            public static MethodInfo ToLong_PhpNumber = typeof(PhpNumber).GetOpImplicit(typeof(long));
+            public static MethodInfo ToLong_Boolean = typeof(System.Convert).GetMethod("ToInt64", Types.Bool);
 
             public static MethodInfo RuntimeTypeHandle_Equals_RuntimeTypeHandle = typeof(RuntimeTypeHandle).GetMethod("Equals", typeof(RuntimeTypeHandle));
 
@@ -102,6 +116,9 @@ namespace Pchp.Core.Dynamic
             public static readonly MethodInfo ToString_Context = Types.PhpString[0].GetMethod("ToString", typeof(Context));
             public static readonly MethodInfo ToBytes_Context = Types.PhpString[0].GetMethod("ToBytes", typeof(Context));
             public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetProperty("IsDefault");
+            public static MethodInfo ToBoolean = Types.PhpString[0].GetMethod("ToBoolean");
+            public static MethodInfo ToDouble = Types.PhpString[0].GetMethod("ToDouble");
+            public static MethodInfo ToLongOrThrow = Types.PhpString[0].GetMethod("ToLongOrThrow");
         }
 
         public static class IntStringKey
@@ -119,7 +136,7 @@ namespace Pchp.Core.Dynamic
         public static class IndirectLocal
         {
             public static readonly PropertyInfo Value = Types.IndirectLocal.GetProperty("Value");
-            public static readonly PropertyInfo ValueRef = Types.IndirectLocal.GetProperty("ValueRef");
+            //public static readonly PropertyInfo ValueRef = Types.IndirectLocal.GetProperty("ValueRef", BindingFlags.NonPublic | BindingFlags.Instance);
             public static readonly MethodInfo EnsureAlias = Types.IndirectLocal.GetMethod("EnsureAlias");
         }
 
@@ -155,6 +172,26 @@ namespace Pchp.Core.Dynamic
 
             Debug.Assert(result != null);
             return result;
+        }
+
+        static MethodInfo GetOpImplicit(this Type type, Type resultType) =>
+            GetOpMethod(type, "op_Implicit", resultType);
+
+        static MethodInfo GetOpExplicit(this Type type, Type resultType) =>
+            GetOpMethod(type, "op_Explicit", resultType);
+        
+        static MethodInfo GetOpMethod(Type type, string opname, Type resultType)
+        {
+            var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (methods[i].Name == opname && methods[i].ReturnType == resultType && methods[i].GetParameters()[0].ParameterType == type)
+                {
+                    return methods[i];
+                }
+            }
+
+            throw new InvalidOperationException();
         }
 
         static bool ParamsMatch(ParameterInfo[] ps, Type[] ptypes)

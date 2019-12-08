@@ -11,6 +11,7 @@ using System.IO;
 
 namespace Pchp.Library.DateTime
 {
+    [PhpExtension("date")]
     public static class DateTimeFunctions
     {
         /// <summary>
@@ -121,6 +122,20 @@ namespace Pchp.Library.DateTime
         }
 
         /// <summary>
+        /// Returns new <see cref="DateTimeImmutable"/> object formatted according to the specified format.
+        /// </summary>
+        /// <param name="ctx"><see cref="ScriptContext"/> reference.</param>
+        /// <param name="format">The format that the passed in string should be in.</param>
+        /// <param name="time">String representing the time.</param>
+        /// <param name="timezone">A DateTimeZone object representing the desired time zone.</param>
+        /// <returns></returns>
+        [return: CastToFalse]
+        public static DateTimeImmutable date_create_immutable_from_format(Context/*!*/ctx, string format, string time, DateTimeZone timezone = null)
+        {
+            return DateTimeImmutable.createFromFormat(ctx, format, time, timezone);
+        }
+
+        /// <summary>
         /// Alias of DateTime::getOffset().
         /// </summary>
         [return: CastToFalse]
@@ -156,7 +171,7 @@ namespace Pchp.Library.DateTime
         //[return:CastToFalse]
         public static DateTime date_sub(DateTime @object, DateInterval interval) => @object.sub(interval);
 
-        static System_DateTime TimeFromInterface(this DateTimeInterface dti)
+        static System_DateTime TimeFromInterface(DateTimeInterface dti)
         {
             if (dti is Library.DateTime.DateTime dt) return dt.Time;
             if (dti is DateTimeImmutable dtimmutable) return dtimmutable.Time;
@@ -170,10 +185,7 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public static DateInterval date_diff(DateTimeInterface datetime1, DateTimeInterface datetime2, bool absolute = false)
         {
-            var interval = new DateInterval(TimeFromInterface(datetime1) - TimeFromInterface(datetime2));
-
-            // doc: If the DateInterval object was created by DateTime::diff(), then this is the total number of days between the start and end dates. 
-            interval.days = (PhpValue)interval.d;
+            var interval = new DateInterval(TimeFromInterface(datetime1), TimeFromInterface(datetime2));
 
             if (absolute)
             {
@@ -363,14 +375,16 @@ namespace Pchp.Library.DateTime
         {
             Debug.Assert(zone != null);
 
-            if (format == null)
+            if (string.IsNullOrEmpty(format))
+            {
                 return string.Empty;
+            }
 
             var local = TimeZoneInfo.ConvertTime(utc, zone);
 
             // here we are creating output string
-            StringBuilder result = new StringBuilder();
             bool escape = false;
+            var result = StringBuilderUtilities.Pool.Get();
 
             foreach (char ch in format)
             {
@@ -607,7 +621,7 @@ namespace Pchp.Library.DateTime
             if (escape)
                 result.Append('\\');
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -733,12 +747,12 @@ namespace Pchp.Library.DateTime
         private static string FormatTime(Context ctx, string format, System.DateTime utc, TimeZoneInfo/*!*/ zone)
         {
             // Possibly bug in framework? "h" and "hh" just after midnight shows 12, not 0
-            if (format == null) return "";
+            if (string.IsNullOrEmpty(format)) return string.Empty;
 
             var local = TimeZoneInfo.ConvertTime(utc, zone);// zone.ToLocalTime(utc);
             var info = Locale.GetCulture(ctx, Locale.Category.Time).DateTimeFormat;
 
-            StringBuilder result = new StringBuilder();
+            var result = StringBuilderUtilities.Pool.Get();
 
             bool specialChar = false;
 
@@ -950,7 +964,7 @@ namespace Pchp.Library.DateTime
             if (specialChar)
                 result.Append('%');
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         #endregion
@@ -1526,31 +1540,34 @@ namespace Pchp.Library.DateTime
                 return -1;  // FALSE
             }
 
-            var result = DateInfo.Parse(ctx, time.Trim(), startUtc, out var error);
-            if (error != null)
+            var result = DateInfo.Parse(ctx, time.Trim(), startUtc, timeZone: null, out var error);
+            if (error == null)
+            {
+                return DateTimeUtils.UtcToUnixTimeStamp(result);
+            }
+            else
             {
                 PhpException.Throw(PhpError.Warning, error);
                 return -1;  // FALSE
             }
-
-            //
-            return result;
         }
 
         /// <summary>
         /// Returns associative array with detailed info about given date.
         /// </summary>
         /// <returns>Returns array with information about the parsed date on success.</returns>
-        //[return: CastToFalse]
+        [return: NotNull]
         public static PhpArray date_parse(Context ctx, string time)
         {
-            if (time == null) return null;
-            time = time.Trim();
-            if (time.Length == 0) return null;
-
-            //
             var errors = PhpArray.NewEmpty();
 
+            if (string.IsNullOrEmpty(time))
+            {
+                time = string.Empty;
+                errors.Add(Resources.DateResources.empty_string);
+            }
+
+            //
             var scanner = new Scanner(new StringReader(time.ToLowerInvariant()));
             while (true)
             {

@@ -92,17 +92,18 @@ namespace Peachpie.AspNetCore.Web
             var script = RequestContextCore.ResolveScript(context.Request);
             if (script.IsValid)
             {
-                return Task.Run(() =>
+                using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
                 {
-                    using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
-                    {
-                        OnContextCreated(phpctx);
-                        phpctx.ProcessScript(script);
-                    }
-                });
-            }
+                    OnContextCreated(phpctx);
+                    phpctx.ProcessScript(script);
+                }
 
-            return _next(context);
+                return Task.CompletedTask;
+            }
+            else
+            {
+                return _next(context);
+            }
         }
     }
 }

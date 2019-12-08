@@ -103,7 +103,7 @@ namespace Pchp.CodeAnalysis.Symbols
             for (int i = 0; i <= srcparams.Length; i++) // how many to be copied from {srcparams}
             {
                 var isfake = /*srcparams[i - 1].IsFake*/ implicitVarArgs != null && i > 0 && srcparams[i - 1].Ordinal >= implicitVarArgs.Ordinal; // parameter was replaced with [params]
-                var hasdefault = i < srcparams.Length && srcparams[i].HasUnmappedDefaultValue();  // ConstantValue couldn't be resolved for optional parameter
+                var hasdefault = false; // i < srcparams.Length && srcparams[i].HasUnmappedDefaultValue();  // ConstantValue couldn't be resolved for optional parameter
 
                 if (isfake || hasdefault)
                 {

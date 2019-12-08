@@ -138,8 +138,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (SpecialParameterSymbol.IsContextParameter(p)) continue;
                 if (SpecialParameterSymbol.IsQueryValueParameter(p, out var _, out var t) && t == SpecialParameterSymbol.QueryValueTypes.DummyFieldsOnlyCtor) continue;
 
-                yield return new SynthesizedParameterSymbol(this, p.Type, index++, p.RefKind, p.Name, p.IsParams,
-                    explicitDefaultConstantValue: p.ExplicitDefaultConstantValue);
+                yield return SynthesizedParameterSymbol.Create(this, p, index++);
             }
         }
 
@@ -208,15 +207,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (!type.IsAbstract)
                 {
-                    // generate .ctor(s) calling PHP __construct with optional overloads in case there is an optional parameter
-                    var ps = phpconstruct.Parameters;
-                    for (int i = 0; i < ps.Length; i++)
-                    {
-                        if (ps[i].HasUnmappedDefaultValue())
-                        {
-                            yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct, i);
-                        }
-                    }
+                    //// generate .ctor(s) calling PHP __construct with optional overloads in case there is an optional parameter
+                    //var ps = phpconstruct.Parameters;
+                    //for (int i = 0; i < ps.Length; i++)
+                    //{
+                    //    if (ps[i].HasUnmappedDefaultValue())
+                    //    {
+                    //        yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct, i);
+                    //    }
+                    //}
 
                     yield return defaultctor = new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct);
                 }

@@ -27,10 +27,12 @@ namespace Pchp.Core
 
         protected Context()
         {
-            // Context tables
+            // tables
             _functions = new RoutinesTable(FunctionRedeclared);
             _types = new TypesTable(TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
+            _constants = new ConstsMap();
+            _scripts = new ScriptsMap();
 
             //
             this.DefineConstant("PHP_SAPI", (PhpValue)this.ServerApi, ignorecase: false);
@@ -146,6 +148,9 @@ namespace Pchp.Core
                         continue;
                     }
 
+                    //
+                    var extensionName = t.ContainerType.GetCustomAttribute<PhpExtensionAttribute>(false)?.FirstExtensionOrDefault;
+
                     // reflect constants defined in the container
                     foreach (var m in t.ContainerType.GetMembers(BindingFlags.Static | BindingFlags.Public))
                     {
@@ -155,16 +160,19 @@ namespace Pchp.Core
 
                             if (fi.IsInitOnly || fi.IsLiteral)
                             {
-                                ConstsMap.DefineAppConstant(fi.Name, PhpValue.FromClr(fi.GetValue(null)));
+                                // constant
+                                ConstsMap.DefineAppConstant(fi.Name, PhpValue.FromClr(fi.GetValue(null)), false, extensionName);
                             }
                             else
                             {
-                                ConstsMap.DefineAppConstant(fi.Name, new Func<PhpValue>(() => PhpValue.FromClr(fi.GetValue(null))));
+                                // static field
+                                ConstsMap.DefineAppConstant(fi.Name, new Func<PhpValue>(() => PhpValue.FromClr(fi.GetValue(null))), false, extensionName);
                             }
                         }
                         else if (m is PropertyInfo pi && !pi.IsPhpHidden())
                         {
-                            ConstsMap.DefineAppConstant(pi.Name, new Func<PhpValue>(() => PhpValue.FromClr(pi.GetValue(null))));
+                            // property
+                            ConstsMap.DefineAppConstant(pi.Name, new Func<PhpValue>(() => PhpValue.FromClr(pi.GetValue(null))), false, extensionName);
                         }
                     }
                 }
@@ -237,9 +245,9 @@ namespace Pchp.Core
         /// <summary>
         /// Map of global constants.
         /// </summary>
-        readonly ConstsMap _constants = new ConstsMap();
+        readonly ConstsMap _constants;
 
-        readonly ScriptsMap _scripts = new ScriptsMap();
+        readonly ScriptsMap _scripts;
 
         /// <summary>
         /// Load PHP scripts and referenced symbols from PHP assembly.
@@ -248,7 +256,7 @@ namespace Pchp.Core
         /// <exception cref="ArgumentNullException">In case given assembly is a <c>null</c> reference.</exception>
         public static void AddScriptReference(Assembly assembly)
         {
-            DllLoaderImpl.AddScriptReference(assembly);            
+            DllLoaderImpl.AddScriptReference(assembly);
         }
 
         /// <summary>

@@ -341,4 +341,17 @@
   <data name="ERR_DefaultParameterValueTypeMismatch" xml:space="preserve">
     <value>Default value for parameter ${0} with a {1} type can only be {1} or NULL, {2} type given</value>
   </data>
+  <data name="ERR_InvalidConstantExpression" xml:space="preserve">
+    <value>Constant expression contains invalid operations</value>
+    <comment>field or parameter initializer contains invalid expression</comment>
+  </data>
+  <data name="ERR_ThisOutOfObjectContext" xml:space="preserve">
+    <value>Using $this when not in object context</value>
+  </data>
+  <data name="FTL_BadCodepage" xml:space="preserve">
+    <value>Code page '{0}' is invalid or not installed</value>
+  </data>
+  <data name="ERR_ReadOnlyPropertyWritten" xml:space="preserve">
+    <value>Cannot set read-only property {0}::${1}</value>
+  </data>
 </root>

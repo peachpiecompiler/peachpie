@@ -1002,7 +1002,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         IEnumerable<FieldSymbol> LoadFields()
         {
-            var binder = new SemanticsBinder(DeclaringCompilation, locals: null, routine: null, self: this);
+            var binder = new SemanticsBinder(DeclaringCompilation, ContainingFile.SyntaxTree, locals: null, routine: null, self: this);
 
             // fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
@@ -1193,7 +1193,21 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override Accessibility DeclaredAccessibility => _syntax.MemberAttributes.GetAccessibility();
+        public override Accessibility DeclaredAccessibility
+        {
+            get
+            {
+                if (FullName == NameUtils.SpecialNames.System)
+                {
+                    // class "System" would be in conflict with everything in .NET,
+                    // let's workaround it by making it internal
+                    return Accessibility.Internal;
+                }
+
+                // all classes in PHP are public:
+                return Accessibility.Public;
+            }
+        }
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
@@ -1203,7 +1217,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override bool IsInterface => (_syntax.MemberAttributes & PhpMemberAttributes.Interface) != 0;
+        internal override bool IsInterface => _syntax.MemberAttributes.IsInterface();
 
         public virtual bool IsTrait => false;
 

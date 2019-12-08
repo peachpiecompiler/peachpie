@@ -1266,6 +1266,11 @@ namespace Pchp.Core
         public static implicit operator long(PhpNumber value) => value.ToLong();
 
         /// <summary>
+        /// Converts given number to <see cref="bool"/>.
+        /// </summary>
+        public static implicit operator bool(PhpNumber value) => value.ToBoolean();
+
+        /// <summary>
         /// Converts given number to <see cref="double"/>.
         /// </summary>
         public static implicit operator double(PhpNumber value) => value.ToDouble();

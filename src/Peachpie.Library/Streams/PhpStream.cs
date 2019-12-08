@@ -1358,7 +1358,7 @@ namespace Pchp.Library.Streams
         public string ReadStringContents(int maxLength)
         {
             if (!CanRead) return null;
-            StringBuilder result = new StringBuilder();
+            var result = StringBuilderUtilities.Pool.Get();
 
             if (maxLength >= 0)
             {
@@ -1380,7 +1380,7 @@ namespace Pchp.Library.Streams
                 }
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         public byte[] ReadBinaryContents(int maxLength)

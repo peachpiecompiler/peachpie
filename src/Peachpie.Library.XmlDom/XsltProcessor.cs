@@ -21,6 +21,7 @@ namespace Peachpie.Library.XmlDom
         Always = -1
     }
 
+    [PhpExtension("dom")]
     public static class XsltConstants
     {
         public const int XSL_CLONE_AUTO = (int)CloneType.Auto;
