@@ -3032,9 +3032,7 @@ namespace Pchp.Library
             else
             {
                 // DES
-                CryptExtendedData data = new CryptExtendedData();
-                DES.Init();
-                return DES.Crypt(str, salt, data);
+                return DES.Crypt(str, salt);
             }
 
             // failure
@@ -3052,7 +3050,7 @@ namespace Pchp.Library
         }
 
         #region md5 hash in crypt function
-
+        // This code in region was copied and modified from The PHP Interpreter (https://github.com/php/php-src/blob/master/ext/standard/md5.c) 
         private const int MD5MaxLength = 120;
         private const string MD5Name = "md5";
         private const string MD5Magic = "$1$";
@@ -3195,7 +3193,7 @@ namespace Pchp.Library
         #endregion
 
         #region sha512/256 hash in crypt function
-
+        // This code in region was copied and modified from The PHP Interpreter (https://github.com/php/php-src/blob/master/ext/standard/crypt_sha256.c and crypt_sha512.c) 
         private const string prefixRoundsSHA = "rounds=";
         private const string prefixSaltSHA512 = "$6$";
         private const string prefixSaltSHA256 = "$5$";
