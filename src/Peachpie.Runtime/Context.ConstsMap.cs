@@ -96,27 +96,27 @@ namespace Pchp.Core
             /// <summary>
             /// Maps of constant name to its ID.
             /// </summary>
-            readonly static Dictionary<ConstName, int> _map = new Dictionary<ConstName, int>(1024, new ConstName.ConstNameComparer());
+            readonly static Dictionary<ConstName, int> s_map = new Dictionary<ConstName, int>(1024, new ConstName.ConstNameComparer());
 
             /// <summary>
             /// Lock mechanism for accessing statics.
             /// </summary>
-            readonly static ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+            readonly static ReaderWriterLockSlim s_rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
             /// <summary>
             /// Maps constant ID to its actual value, accross all contexts (application wide).
             /// </summary>
-            static ConstData[] _valuesApp = new ConstData[1200];   // there is ~1162 builtin constants
+            static ConstData[] s_valuesApp = new ConstData[1200];   // there is ~1162 builtin constants
 
             /// <summary>
             /// Actual count of defined constant names.
             /// </summary>
-            static int _countApp, _countCtx;
+            static int s_countApp, s_countCtx;
 
             /// <summary>
             /// Maps constant ID to its actual value in current context.
             /// </summary>
-            PhpValue[] _valuesCtx = new PhpValue[_countCtx];
+            PhpValue[] _valuesCtx = new PhpValue[s_countCtx];
 
             static void EnsureArray<T>(ref T[] arr, int size)
             {
@@ -141,30 +141,30 @@ namespace Pchp.Core
                 var cname = new ConstName(name, ignoreCase);
                 int idx;
 
-                _rwLock.EnterUpgradeableReadLock();
+                s_rwLock.EnterUpgradeableReadLock();
                 try
                 {
-                    if (!_map.TryGetValue(cname, out idx))
+                    if (!s_map.TryGetValue(cname, out idx))
                     {
-                        _rwLock.EnterWriteLock();
+                        s_rwLock.EnterWriteLock();
                         try
                         {
                             // new constant ID, non zero
                             idx = appConstant
-                                ? -(++_countApp)    // app constants are negative
-                                : (++_countCtx);    //
+                                ? -(++s_countApp)    // app constants are negative
+                                : (++s_countCtx);    //
 
-                            _map.Add(cname, idx);
+                            s_map.Add(cname, idx);
                         }
                         finally
                         {
-                            _rwLock.ExitWriteLock();
+                            s_rwLock.ExitWriteLock();
                         }
                     }
                 }
                 finally
                 {
-                    _rwLock.ExitUpgradeableReadLock();
+                    s_rwLock.ExitUpgradeableReadLock();
                 }
 
                 //
@@ -183,10 +183,10 @@ namespace Pchp.Core
                     throw ConstantRedeclaredException(name);   // runtime constant with this name was already defined
                 }
 
-                EnsureArray(ref _valuesApp, idx);
+                EnsureArray(ref s_valuesApp, idx);
 
                 // fill in the app contant slot
-                ref var slot = ref _valuesApp[idx - 1];
+                ref var slot = ref s_valuesApp[idx - 1];
 
                 if (SetValue(ref slot.Data, value))
                 {
@@ -262,14 +262,14 @@ namespace Pchp.Core
             {
                 if (idx == 0)
                 {
-                    _rwLock.EnterReadLock();
+                    s_rwLock.EnterReadLock();
                     try
                     {
-                        _map.TryGetValue(new ConstName(name), out idx);
+                        s_map.TryGetValue(new ConstName(name), out idx);
                     }
                     finally
                     {
-                        _rwLock.ExitReadLock();
+                        s_rwLock.ExitReadLock();
                     }
                 }
 
@@ -294,7 +294,7 @@ namespace Pchp.Core
                 else // if (idx < 0)
                 {
                     // app constant
-                    if (ArrayUtils.TryGetItem(_valuesApp, -idx - 1, out var data) && data.Data.IsSet)
+                    if (ArrayUtils.TryGetItem(s_valuesApp, -idx - 1, out var data) && data.Data.IsSet)
                     {
                         value = data.Value;
                         return true;
@@ -317,16 +317,16 @@ namespace Pchp.Core
             /// </summary>
             public IEnumerator<ConstantInfo> GetEnumerator()
             {
-                var listApp = new ConstantInfo[_countApp];
-                var listCtx = new ConstantInfo[_countCtx];
+                var listApp = new ConstantInfo[s_countApp];
+                var listCtx = new ConstantInfo[s_countCtx];
 
                 //
-                _rwLock.EnterReadLock();
+                s_rwLock.EnterReadLock();
                 try
                 {
                     // initilize values
 
-                    var valuesApp = _valuesApp;
+                    var valuesApp = s_valuesApp;
                     for (int i = 0; i < valuesApp.Length; i++)
                     {
                         ref var data = ref valuesApp[i];
@@ -352,7 +352,7 @@ namespace Pchp.Core
                     }
 
                     // assign name from the map
-                    foreach (var pair in _map)
+                    foreach (var pair in s_map)
                     {
                         if (pair.Value < 0)
                         {
@@ -368,7 +368,7 @@ namespace Pchp.Core
                 }
                 finally
                 {
-                    _rwLock.ExitReadLock();
+                    s_rwLock.ExitReadLock();
                 }
 
                 //
