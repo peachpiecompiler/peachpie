@@ -312,7 +312,7 @@ namespace Peachpie.RequestHandler
         /// <summary>
         /// Informational string exposing technology powering the web request and version.
         /// </summary>
-        public static readonly string XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+        public static readonly string s_XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
 
         public override IHttpPhpContext HttpPhpContext => this;
 
@@ -342,7 +342,7 @@ namespace Peachpie.RequestHandler
 
         void SetupHeaders()
         {
-            _httpctx.Response.Headers["X-Powered-By"] = XPoweredBy;
+            _httpctx.Response.Headers["X-Powered-By"] = s_XPoweredBy;
         }
 
         static void AddVariables(PhpArray result, NameValueCollection collection)
