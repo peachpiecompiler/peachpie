@@ -164,12 +164,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // analyse initializer
                 Accept(v.InitialValue);
 
-                State.SetLessThanLongMax(local, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
+                if (v.InitialValue.ConstantValue.IsInteger(out long val))
+                {
+                    if (val < long.MaxValue)
+                        State.SetLessThanLongMax(local, true);
+
+                    if (val > long.MinValue)
+                        State.SetGreaterThanLongMin(local, true);
+                }
+                else
+                {
+                    State.SetLessThanLongMax(local, false);
+                    State.SetGreaterThanLongMin(local, false);
+                }
+
                 State.SetLocalType(local, ((IPhpExpression)v.InitialValue).TypeRefMask | oldtype);
             }
             else
             {
                 State.SetLessThanLongMax(local, false);
+                State.SetGreaterThanLongMin(local, false);
                 State.SetLocalType(local, TypeCtx.GetNullTypeMask() | oldtype);
                 // TODO: explicitly State.SetLocalUninitialized() ?
             }
@@ -455,6 +469,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //
                 State.SetLocalType(local, vartype);
                 State.SetLessThanLongMax(local, false);
+                State.SetGreaterThanLongMin(local, false);
                 x.TypeRefMask = vartype;
             }
 
@@ -463,6 +478,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TypeRefMask = TypeCtx.GetNullTypeMask();
                 State.SetLocalType(local, x.TypeRefMask);
                 State.SetLessThanLongMax(local, false);
+                State.SetGreaterThanLongMin(local, false);
                 State.SetVarUninitialized(local);
             }
         }
@@ -532,22 +548,34 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             VariableHandle lazyVarHandle = default;
             bool lessThanLongMax = false;               // whether the variable's value is less than the max long value
+            bool greaterThanLongMin = false;            // or greater than the min long value
 
             if (IsDoubleOnly(x.Target))
             {
                 // double++ => double
                 resulttype = TypeCtx.GetDoubleTypeMask();
             }
-            else if (x.IsIncrement && State.IsLessThanLongMax(lazyVarHandle = TryGetVariableHandle(x.Target)))    // we'd like to keep long if we are sure we don't overflow to double
-            {
-                // long++ [< long.MaxValue] => long
-                resulttype = TypeCtx.GetLongTypeMask();
-                lessThanLongMax = true;
-            }
             else
             {
-                // long|double|anything++/-- => number
-                resulttype = TypeCtx.GetNumberTypeMask();
+                // we'd like to keep long if we are sure we don't overflow to double
+                lazyVarHandle = TryGetVariableHandle(x.Target);
+                if (lazyVarHandle.IsValid && x.IsIncrement && State.IsLessThanLongMax(lazyVarHandle))
+                {
+                    // long++ [< long.MaxValue] => long
+                    resulttype = TypeCtx.GetLongTypeMask();
+                    lessThanLongMax = true;
+                }
+                else if (lazyVarHandle.IsValid && !x.IsIncrement && State.IsGreaterThanLongMin(lazyVarHandle))
+                {
+                    // long-- [> long.MinValue] => long
+                    resulttype = TypeCtx.GetLongTypeMask();
+                    greaterThanLongMin = true;
+                }
+                else
+                {
+                    // long|double|anything++/-- => number
+                    resulttype = TypeCtx.GetNumberTypeMask();
+                }
             }
 
             Visit(x.Target, BoundAccess.Write.WithWrite(resulttype));
@@ -562,6 +590,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 Debug.Assert(lazyVarHandle.IsValid);
                 State.SetLessThanLongMax(lazyVarHandle, true);
+            }
+
+            // The same for the min long value
+            if (greaterThanLongMin)
+            {
+                Debug.Assert(lazyVarHandle.IsValid);
+                State.SetGreaterThanLongMin(lazyVarHandle, true);
             }
 
             return default;
@@ -777,6 +812,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return type;
         }
 
+        /// <summary>
+        /// Gets resulting type of <c>-</c> operation.
+        /// </summary>
+        TypeRefMask GetMinusOperationType(BoundExpression left, BoundExpression right)
+        {
+            if (State.IsGreaterThanLongMin(TryGetVariableHandle(left)) && IsLongConstant(right, 1)) // LONG -1, where LONG > long.MinValue
+                return TypeCtx.GetLongTypeMask();
+            else if (IsDoubleOnly(left.TypeRefMask) || IsDoubleOnly(right.TypeRefMask)) // some operand is double and nothing else
+                return TypeCtx.GetDoubleTypeMask(); // double if we are sure about operands
+            else
+                return TypeCtx.GetNumberTypeMask();
+        }
+
         protected override void Visit(BoundBinaryEx x, ConditionBranch branch)
         {
             x.TypeRefMask = ResolveBinaryEx(x, branch);
@@ -802,6 +850,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return GetPlusOperationType(x.Left, x.Right);
 
                 case Operations.Sub:
+                    return GetMinusOperationType(x.Left, x.Right);
+
                 case Operations.Div:
                 case Operations.Mul:
                 case Operations.Pow:
@@ -887,10 +937,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // comparison with long value
                     if (branch == ConditionBranch.ToTrue && IsLongOnly(x.Right))
                     {
-                        if (x.Operation == Operations.LessThan)
+                        if (x.Operation == Operations.LessThan ||
+                            (x.Operation == Operations.LessThanOrEqual && x.Right.ConstantValue.IsInteger(out long rightVal) && rightVal < long.MaxValue))
                         {
-                            // $x < LONG
+                            // $x < Long.Max
                             State.SetLessThanLongMax(TryGetVariableHandle(x.Left), true);
+                        }
+                        else if (x.Operation == Operations.GreaterThan ||
+                            (x.Operation == Operations.GreaterThanOrEqual && x.Right.ConstantValue.IsInteger(out long rightVal2) && rightVal2 > long.MinValue))
+                        {
+                            // $x > Long.Min
+                            State.SetGreaterThanLongMin(TryGetVariableHandle(x.Left), true);
                         }
                     }
 
