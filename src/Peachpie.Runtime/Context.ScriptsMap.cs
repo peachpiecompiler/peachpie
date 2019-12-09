@@ -232,7 +232,7 @@ namespace Pchp.Core
 
             static string NormalizeSlashes(string path) => CurrentPlatform.NormalizeSlashes(path);
 
-            public void SetIncluded<TScript>() => _included.SetTrue(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
+            public void SetIncluded<TScript>() => ElasticBitArray.SetTrue(ref _included, EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 
             public bool IsIncluded<TScript>() => IsIncluded(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 

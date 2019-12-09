@@ -62,7 +62,7 @@ namespace Pchp.Library
 
                 internal const char ArrayOpen = '[';
                 internal const char ArrayClose = ']';
-                
+
                 internal const string NullLiteral = "null";
                 internal const string TrueLiteral = "true";
                 internal const string FalseLiteral = "false";
@@ -84,28 +84,28 @@ namespace Pchp.Library
                 /// <summary>
                 /// Internal data, either object reference or reference to <see cref="object"/>[] representing the set.
                 /// </summary>
-                object _value;
+                object value;
 
                 /// <summary>
-                /// Stack size if <see cref="_value"/> referes to <see cref="object"/>[].
+                /// Stack size if <see cref="value"/> referes to <see cref="object"/>[].
                 /// </summary>
-                int _top;
+                int top;
 
                 /// <summary>
                 /// Counts object refereces in the set;
                 /// </summary>
                 public int Count(object obj)
                 {
-                    if (ReferenceEquals(_value, obj))
+                    if (ReferenceEquals(value, obj))
                     {
                         return 1;
                     }
-                    else if (_value is object[] array)
+                    else if (value is object[] array)
                     {
-                        Debug.Assert(_top <= array.Length);
+                        Debug.Assert(top <= array.Length);
 
                         int count = 0;
-                        for (int i = 0; i < _top; i++)
+                        for (int i = 0; i < top; i++)
                         {
                             if (ReferenceEquals(array[i], obj))
                             {
@@ -119,47 +119,47 @@ namespace Pchp.Library
                     return 0;
                 }
 
-                public void Push(object obj)
+                public static void Push(ref MiniSet set, object obj)
                 {
-                    if (ReferenceEquals(_value, null))
+                    if (ReferenceEquals(set.value, null))
                     {
-                        _value = obj;
+                        set.value = obj;
                     }
-                    else if (_value is object[] array)
+                    else if (set.value is object[] array)
                     {
-                        Debug.Assert(_top <= array.Length);
-                        if (_top == array.Length)
+                        Debug.Assert(set.top <= array.Length);
+                        if (set.top == array.Length)
                         {
                             Array.Resize(ref array, array.Length * 2);
-                            _value = array;
+                            set.value = array;
                         }
 
-                        array[_top++] = obj;
+                        array[set.top++] = obj;
                     }
                     else
                     {
                         // upgrade _value to object[4]
-                        _value = new object[] { _value, obj, null, null, };
-                        _top = 2;
+                        set.value = new object[] { set.value, obj, null, null, };
+                        set.top = 2;
                     }
                 }
 
                 /// <summary>
                 /// Removes one occurence of the given object reference from the set.
                 /// </summary>
-                public bool Pop(object obj)
+                public static bool Pop(ref MiniSet set, object obj)
                 {
-                    if (ReferenceEquals(_value, obj))
+                    if (ReferenceEquals(set.value, obj))
                     {
-                        _value = null;
+                        set.value = null;
                         return true;
                     }
                     else if (
-                        _top > 0 &&
-                        _value is object[] array &&
-                        ReferenceEquals(array[_top - 1], obj))
+                        set.top > 0 &&
+                        set.value is object[] array &&
+                        ReferenceEquals(array[set.top - 1], obj))
                     {
-                        _top--;
+                        set.top--;
                         return true;
                     }
 
@@ -291,7 +291,7 @@ namespace Pchp.Library
                 {
                     if (_recursion.Count(obj) < 2)
                     {
-                        _recursion.Push(obj);
+                        MiniSet.Push(ref _recursion, obj);
                         return true;
                     }
                     else
@@ -303,7 +303,7 @@ namespace Pchp.Library
 
                 void PopObject(object obj)
                 {
-                    _recursion.Pop(obj);
+                    MiniSet.Pop(ref _recursion, obj);
                 }
 
                 void WriteRaw(string str) => _result.Append(str);

@@ -44,16 +44,9 @@ namespace Pchp.Core.Utilities
                     (index >= 0 && num < bits.Length) &&
                     (bits[num] & (1 << (index % IntSize))) != 0;
             }
-            set
-            {
-                if (value)
-                    SetTrue(index);
-                else
-                    SetFalse(index);
-            }
         }
 
-        public void SetTrue(int index)
+        public static void SetTrue(ref ElasticBitArray array, int index)
         {
             if (index < 0)
             {
@@ -61,20 +54,20 @@ namespace Pchp.Core.Utilities
             }
 
             var num = index / IntSize;
-            if (num >= _bits.Length)
+            if (num >= array._bits.Length)
             {
-                Array.Resize(ref _bits, (num + 1) * 2);
+                Array.Resize(ref array._bits, (num + 1) * 2);
             }
 
-            _bits[num] |= 1 << index % IntSize;
+            array._bits[num] |= 1 << index % IntSize;
         }
 
-        public void SetFalse(int index)
+        public static void SetFalse(ref ElasticBitArray array, int index)
         {
             var num = index / IntSize;
-            if (index >= 0 && num < _bits.Length)
+            if (index >= 0 && num < array._bits.Length)
             {
-                _bits[num] &= ~(1 << index % IntSize);
+                array._bits[num] &= ~(1 << index % IntSize);
             }
 
             // otherwise no value means false

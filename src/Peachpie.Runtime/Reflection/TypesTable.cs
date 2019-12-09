@@ -10,45 +10,38 @@ using System.Threading;
 namespace Pchp.Core.Reflection
 {
     [DebuggerNonUserCode]
-    internal class TypesTable
+    sealed class TypesTable
     {
         #region AppContext
 
         /// <summary>
-        /// Map of function names to their slot index.
-        /// Negative number is an application-wide function,
-        /// Positive number is context-wide function.
+        /// Map of type names to their slot index.
+        /// Negative number is an app type,
+        /// Positive number is a context function.
         /// Zero is not used.
         /// </summary>
-        static readonly Dictionary<string, int> _nameToIndex = new Dictionary<string, int>(512, StringComparer.OrdinalIgnoreCase);
-        static readonly List<PhpTypeInfo> _appTypes = new List<PhpTypeInfo>(256);
-        static readonly TypesTable.TypesCount _contextTypesCounter = new TypesTable.TypesCount();
-        static readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
+        static readonly Dictionary<string, int> s_nameToIndex = new Dictionary<string, int>(512, StringComparer.OrdinalIgnoreCase);
+        static readonly List<PhpTypeInfo> s_appTypes = new List<PhpTypeInfo>(256);
+        static readonly TypesTable.TypesCount s_contextTypesCounter = new TypesTable.TypesCount();
+        static readonly ReaderWriterLockSlim s_rwLock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Adds referenced symbol into the map.
         /// In case of redeclaration, an exception is thrown.
         /// </summary>
-        public static void DeclareAppType<T>()
-        {
-            DeclareAppType(TypeInfoHolder<T>.TypeInfo);
-        }
-
         public static void DeclareAppType(PhpTypeInfo info)
         {
             if (info.Index == 0)
             {
-                var name = info.Name;
-                int index;
-                if (_nameToIndex.TryGetValue(name, out index))
+                if (s_nameToIndex.TryGetValue(info.Name, out var index))
                 {
-                    throw new ArgumentException($"Type '{name}' already declared!");  // redeclaration
+                    RedeclarationError(info);
                 }
                 else
                 {
-                    index = -_appTypes.Count - 1;
-                    _appTypes.Add(info);
-                    _nameToIndex[name] = index;
+                    index = -s_appTypes.Count - 1;
+                    s_appTypes.Add(info);
+                    s_nameToIndex[info.Name] = index;
                 }
 
                 info.Index = index;
@@ -62,10 +55,10 @@ namespace Pchp.Core.Reflection
             int _count;
 
             /// <summary>
-            /// Returns new indexes indexed from <c>0</c>.
+            /// Returns new indexes indexed from <c>1</c>.
             /// </summary>
             /// <returns></returns>
-            public int GetNewIndex() => Interlocked.Increment(ref _count) - 1;
+            public int GetNewIndex() => Interlocked.Increment(ref _count);
 
             /// <summary>
             /// Gets count of returned indexes.
@@ -75,39 +68,44 @@ namespace Pchp.Core.Reflection
 
         PhpTypeInfo[] _contextTypes;
 
-        readonly Action<PhpTypeInfo> _redeclarationCallback;
-
-        internal TypesTable(Action<PhpTypeInfo> redeclarationCallback)
+        public TypesTable()
         {
-            _contextTypes = new PhpTypeInfo[_contextTypesCounter.Count];
-            _redeclarationCallback = redeclarationCallback;
+            _contextTypes = new PhpTypeInfo[s_contextTypesCounter.Count];
+        }
+
+        /// <summary>
+        /// Invoked when a type is redeclared.
+        /// </summary>
+        /// <param name="type">The type being declared, but another with the same name is already declared in context.</param>
+        static void RedeclarationError(PhpTypeInfo type)
+        {
+            // TODO: ErrCode & throw, Log
+            throw new InvalidOperationException($"Type {type.Name} redeclared!");
         }
 
         int EnsureTypeIndex(PhpTypeInfo info)
         {
             if (info.Index == 0)
             {
-                _rwLock.EnterWriteLock();
+                s_rwLock.EnterWriteLock();
                 try
                 {
                     // double checked lock
                     if (info.Index == 0)
                     {
-                        int index;
-                        var name = info.Name;
-                        if (_nameToIndex.TryGetValue(name, out index))
+                        if (s_nameToIndex.TryGetValue(info.Name, out var index))
                         {
                             if (index < 0)  // redeclaring over an app context type
                             {
-                                _redeclarationCallback(info);
+                                RedeclarationError(info);
                             }
 
                             info.Index = index;
                         }
                         else
                         {
-                            index = _contextTypesCounter.GetNewIndex() + 1;
-                            _nameToIndex[name] = index;
+                            index = s_contextTypesCounter.GetNewIndex();
+                            s_nameToIndex[info.Name] = index;
                         }
 
                         info.Index = index;
@@ -115,18 +113,13 @@ namespace Pchp.Core.Reflection
                 }
                 finally
                 {
-                    _rwLock.ExitWriteLock();
+                    s_rwLock.ExitWriteLock();
                 }
             }
 
             Debug.Assert(info.Index != 0);
 
             return info.Index;
-        }
-
-        public void DeclareType<T>()
-        {
-            DeclareType(TypeInfoHolder<T>.TypeInfo);
         }
 
         public void DeclareType(PhpTypeInfo info)
@@ -145,18 +138,17 @@ namespace Pchp.Core.Reflection
 
         public void DeclareTypeAlias(PhpTypeInfo info, string name)
         {
-            int index;
-            if (_nameToIndex.TryGetValue(name, out index))
+            if (s_nameToIndex.TryGetValue(name, out var index))
             {
                 if (index < 0)  // redeclaring over an app context type
                 {
-                    _redeclarationCallback(info);
+                    RedeclarationError(info);
                 }
             }
             else
             {
-                index = _contextTypesCounter.GetNewIndex() + 1;
-                _nameToIndex[name] = index;
+                index = s_contextTypesCounter.GetNewIndex();
+                s_nameToIndex[name] = index;
             }
 
             //
@@ -178,7 +170,7 @@ namespace Pchp.Core.Reflection
             {
                 if (!ReferenceEquals(slot, type))
                 {
-                    _redeclarationCallback(type);
+                    RedeclarationError(type);
                 }
             }
         }
@@ -200,14 +192,14 @@ namespace Pchp.Core.Reflection
             //
 
             int index;
-            _rwLock.EnterReadLock();
+            s_rwLock.EnterReadLock();
             try
             {
-                _nameToIndex.TryGetValue(name, out index);
+                s_nameToIndex.TryGetValue(name, out index);
             }
             finally
             {
-                _rwLock.ExitReadLock();
+                s_rwLock.ExitReadLock();
             }
 
             if (index > 0)
@@ -220,7 +212,7 @@ namespace Pchp.Core.Reflection
             }
             else if (index < 0)
             {
-                return _appTypes[-index - 1];
+                return s_appTypes[-index - 1];
             }
 
             return null;
@@ -229,7 +221,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets enumeration of types visible in current context.
         /// </summary>
-        public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => _appTypes.Concat(_contextTypes.WhereNotNull());
+        public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => s_appTypes.Concat(_contextTypes.WhereNotNull());
 
         /// <summary>
         /// Checkd the given user type is declared in the current state.

@@ -28,8 +28,8 @@ namespace Pchp.Core
         protected Context()
         {
             // tables
-            _functions = new RoutinesTable(FunctionRedeclared);
-            _types = new TypesTable(TypeRedeclared);
+            _functions = new RoutinesTable();
+            _types = new TypesTable();
             _statics = new object[StaticIndexes.StaticsCount];
             _constants = new ConstsMap();
             _scripts = new ScriptsMap();
@@ -301,7 +301,7 @@ namespace Pchp.Core
         /// Declare a runtime user type.
         /// </summary>
         /// <typeparam name="T">Type to be declared in current context.</typeparam>
-        public void DeclareType<T>() => _types.DeclareType<T>();
+        public void DeclareType<T>() => _types.DeclareType(TypeInfoHolder<T>.TypeInfo);
 
         /// <summary>
         /// Declare a runtime user type unser an aliased name.
@@ -404,20 +404,6 @@ namespace Pchp.Core
         /// <param name="phptype">PHP type runtime information. Must not be <c>null</c>.</param>
         /// <returns>True if the type has been declared on the current <see cref="Context"/>.</returns>
         internal bool IsUserTypeDeclared(PhpTypeInfo phptype) => _types.IsDeclared(phptype);
-
-        void FunctionRedeclared(RoutineInfo routine)
-        {
-            // TODO: ErrCode & throw
-            throw new InvalidOperationException($"Function {routine.Name} redeclared!");
-        }
-
-        void TypeRedeclared(PhpTypeInfo type)
-        {
-            Debug.Assert(type != null);
-
-            // TODO: ErrCode & throw
-            throw new InvalidOperationException($"Type {type.Name} redeclared!");
-        }
 
         #endregion
 
