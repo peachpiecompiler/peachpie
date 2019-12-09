@@ -119,7 +119,7 @@ namespace Pchp.Core
             /// <summary>
             /// Application wide $_ENV array.
             /// </summary>
-            public static PhpArray StaticEnv => static_env ?? (static_env = InitEnv());
+            static PhpArray StaticEnv => s_env ?? (s_env = InitEnv());
 
             static PhpArray InitEnv()
             {
@@ -134,7 +134,9 @@ namespace Pchp.Core
                 return array;
             }
 
-            static PhpArray static_env;
+            public static PhpArray CreateEnvArray() => StaticEnv.DeepCopy();
+
+            static PhpArray s_env;
         }
 
         Superglobals _superglobals;
@@ -149,7 +151,7 @@ namespace Pchp.Core
             var var_order = this.Configuration.Core.VariablesOrder; // TODO
             var egpcs = this.Configuration.Core.RegisteringOrder;
 
-            superglobals.env = Superglobals.StaticEnv.DeepCopy();
+            superglobals.env = Superglobals.CreateEnvArray();
             superglobals.get = InitGetVariable();
             superglobals.post = InitPostVariable();
             superglobals.cookie = InitCookieVariable();
