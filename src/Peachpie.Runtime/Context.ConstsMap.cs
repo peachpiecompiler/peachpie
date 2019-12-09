@@ -65,7 +65,20 @@ namespace Pchp.Core
             /// <summary>
             /// Resolves the constant value.
             /// </summary>
-            public PhpValue Value => Data.Object is Func<PhpValue> func ? func() : Data;
+            public PhpValue GetValue(Context ctx)
+            {
+                if (Data.Object is Delegate)
+                {
+                    return
+                        Data.Object is Func<PhpValue> func ? func() :
+                        Data.Object is Func<Context, PhpValue> func2 ? func2(ctx) :
+                        throw null;
+                }
+                else
+                {
+                    return Data;
+                }
+            }
 
             /// <summary>
             /// Optional extension name that the constant belongs to.
@@ -118,6 +131,16 @@ namespace Pchp.Core
             /// </summary>
             PhpValue[] _valuesCtx = new PhpValue[s_countCtx];
 
+            /// <summary>
+            /// Runtime context.
+            /// </summary>
+            readonly Context _ctx;
+
+            public ConstsMap(Context ctx)
+            {
+                _ctx = ctx;
+            }
+
             static void EnsureArray<T>(ref T[] arr, int size)
             {
                 if (arr.Length < size)
@@ -126,9 +149,9 @@ namespace Pchp.Core
                 }
             }
 
-            static Exception ConstantRedeclaredException(string name)
+            static void RedeclarationError(string name)
             {
-                return new InvalidOperationException(string.Format(Resources.ErrResources.constant_redeclared, name));
+                throw new InvalidOperationException(string.Format(Resources.ErrResources.constant_redeclared, name));
             }
 
             /// <summary>
@@ -173,14 +196,14 @@ namespace Pchp.Core
 
             public static void DefineAppConstant(string name, PhpValue value, bool ignoreCase, string extensionName)
             {
-                Debug.Assert(value.IsScalar || value.Object is Func<PhpValue>);
+                Debug.Assert(value.IsScalar || value.Object is Func<PhpValue> || value.Object is Func<Context, PhpValue>);
 
                 var idx = -RegisterConstantId(name, ignoreCase, true);
                 Debug.Assert(idx != 0);
 
                 if (idx < 0)
                 {
-                    throw ConstantRedeclaredException(name);   // runtime constant with this name was already defined
+                    RedeclarationError(name);   // runtime constant with this name was already defined
                 }
 
                 EnsureArray(ref s_valuesApp, idx);
@@ -191,10 +214,6 @@ namespace Pchp.Core
                 if (SetValue(ref slot.Data, value))
                 {
                     slot.ExtensionName = extensionName;
-                }
-                else
-                {
-                    Debug.Fail(string.Format(Resources.ErrResources.constant_redeclared, name));
                 }
             }
 
@@ -216,7 +235,7 @@ namespace Pchp.Core
 
                 if (idx < 0) // app constant cannot be redeclared
                 {
-                    throw ConstantRedeclaredException(name);
+                    RedeclarationError(name);
                 }
 
                 EnsureArray(ref _valuesCtx, idx);
@@ -296,7 +315,7 @@ namespace Pchp.Core
                     // app constant
                     if (ArrayUtils.TryGetItem(s_valuesApp, -idx - 1, out var data) && data.Data.IsSet)
                     {
-                        value = data.Value;
+                        value = data.GetValue(_ctx);
                         return true;
                     }
 
@@ -333,7 +352,7 @@ namespace Pchp.Core
                         if (!data.Data.IsDefault)
                         {
                             ref var item = ref listApp[i];
-                            item.Value = data.Value;
+                            item.Value = data.GetValue(_ctx);
                             item.ExtensionName = data.ExtensionName;
                             //item.IsUser = false;
                         }

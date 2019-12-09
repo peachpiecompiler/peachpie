@@ -31,11 +31,8 @@ namespace Pchp.Core
             _functions = new RoutinesTable();
             _types = new TypesTable();
             _statics = new object[StaticIndexes.StaticsCount];
-            _constants = new ConstsMap();
+            _constants = new ConstsMap(this);
             _scripts = new ScriptsMap();
-
-            //
-            this.DefineConstant("PHP_SAPI", (PhpValue)this.ServerApi, ignorecase: false);
         }
 
         /// <summary>
@@ -176,6 +173,8 @@ namespace Pchp.Core
                         }
                     }
                 }
+
+                ConstsMap.DefineAppConstant("PHP_SAPI", new Func<Context, PhpValue>(ctx => ctx.ServerApi), false, "Core");
 
                 // scripts
                 foreach (var t in assembly.GetTypes())
