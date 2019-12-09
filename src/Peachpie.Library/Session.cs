@@ -585,8 +585,7 @@ namespace Pchp.Library
             }
 
             ctx.Session = session_array;
-            ctx.Globals[PhpSessionHandler.SESSION_Variable] = PhpValue.Create(session_array);
-
+            
             //
             return true;
         }
