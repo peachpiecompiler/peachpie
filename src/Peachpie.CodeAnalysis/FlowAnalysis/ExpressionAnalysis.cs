@@ -538,7 +538,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // double++ => double
                 resulttype = TypeCtx.GetDoubleTypeMask();
             }
-            else if (State.IsLessThanLongMax(lazyVarHandle = TryGetVariableHandle(x.Target)))    // we'd like to keep long if we are sure we don't overflow to double
+            else if (x.IsIncrement && State.IsLessThanLongMax(lazyVarHandle = TryGetVariableHandle(x.Target)))    // we'd like to keep long if we are sure we don't overflow to double
             {
                 // long++ [< long.MaxValue] => long
                 resulttype = TypeCtx.GetLongTypeMask();
@@ -546,7 +546,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                // long|double|anything++ => number
+                // long|double|anything++/-- => number
                 resulttype = TypeCtx.GetNumberTypeMask();
             }
 
