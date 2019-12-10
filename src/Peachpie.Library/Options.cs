@@ -546,6 +546,24 @@ namespace Pchp.Library
         public const int INI_SYSTEM = (int)StandardPhpOptions.IniAccessability.System; // 4
         public const int INI_ALL = (int)StandardPhpOptions.IniAccessability.All; // 7
 
+        /// <summary>
+        /// Options for <see cref="assert_options"/>.
+        /// </summary>
+        public enum AssertWhat
+        {
+            active = 1,
+            callback = 2,
+            bail = 3,
+            warning = 4,
+            quiet_eval = 5,
+        }
+
+        public const int ASSERT_ACTIVE = (int)AssertWhat.active;
+        public const int ASSERT_CALLBACK = (int)AssertWhat.callback;
+        public const int ASSERT_BAIL = (int)AssertWhat.bail;
+        public const int ASSERT_WARNING = (int)AssertWhat.warning;
+        public const int ASSERT_QUIET_EVAL = (int)AssertWhat.quiet_eval;
+
         #region ini_get, ini_set, ini_restore, get_cfg_var, ini_alter, ini_get_all
 
         /// <summary>
@@ -606,7 +624,7 @@ namespace Pchp.Library
             else
             {
                 // TODO: Err, see TryGetSet() errors
-                throw new ArgumentException("option_not_supported");
+                throw new ArgumentException(string.Format(Resources.LibResources.option_not_supported, option));
             }
         }
 
@@ -709,5 +727,44 @@ namespace Pchp.Library
         /// <returns>Always FALSE on .NET.</returns>
         // [return: CastToFalse]
         public static bool/*|string*/ php_ini_scanned_files() => false;
+
+        /// <summary>
+        /// Set/get the various assert flags.
+        /// </summary>
+        /// <remarks>This is a wrapper over <see cref="ini_get"/>, <see cref="ini_set"/> and <see cref="ini_restore"/>, passing <c>assert./what/</c> option.</remarks>
+        public static PhpValue assert_options(Context ctx, AssertWhat what, PhpValue value = default)
+        {
+            switch (what)
+            {
+                case AssertWhat.active:
+                case AssertWhat.callback:
+                case AssertWhat.bail:
+                case AssertWhat.warning:
+                case AssertWhat.quiet_eval:
+
+                    var option_name = $"assert.{what.ToString()}";
+
+                    if (value.IsDefault)
+                    {
+                        // ini_get()
+                        return ini_get(ctx, option_name);
+                    }
+                    else if (value.IsString(out var str) && str == string.Empty)
+                    {
+                        // ini_restore()
+                        ini_restore(ctx, option_name);
+                        return PhpValue.False;
+                    }
+                    else
+                    {
+                        // ini_set()
+                        return ini_set(ctx, option_name, value);
+                    }
+
+                default:
+                    PhpException.InvalidArgument(nameof(what));
+                    return PhpValue.False;
+            }
+        }
     }
 }
