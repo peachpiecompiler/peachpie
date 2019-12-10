@@ -31,7 +31,7 @@ namespace Pchp.Core
             _functions = new RoutinesTable();
             _types = new TypesTable();
             _statics = new object[StaticIndexes.StaticsCount];
-            _constants = new ConstsMap(this);
+            _constants = ConstsMap.Create(this);
             _scripts = ScriptsMap.Create();
         }
 
@@ -244,7 +244,7 @@ namespace Pchp.Core
         /// <summary>
         /// Map of global constants.
         /// </summary>
-        readonly ConstsMap _constants;
+        ConstsMap _constants;
 
         /// <summary>
         /// Set of scripts that have been included in current context.

@@ -104,7 +104,7 @@ namespace Pchp.Core
 
         #endregion
 
-        class ConstsMap : IEnumerable<ConstantInfo>
+        struct ConstsMap : IEnumerable<ConstantInfo>
         {
             /// <summary>
             /// Maps of constant name to its ID.
@@ -129,16 +129,22 @@ namespace Pchp.Core
             /// <summary>
             /// Maps constant ID to its actual value in current context.
             /// </summary>
-            PhpValue[] _valuesCtx = new PhpValue[s_countCtx];
+            PhpValue[]/*!*/_valuesCtx;
 
             /// <summary>
             /// Runtime context.
             /// </summary>
             readonly Context _ctx;
 
-            public ConstsMap(Context ctx)
+            /// <summary>
+            /// Initializes <see cref="ConstsMap"/>.
+            /// </summary>
+            public static ConstsMap Create(Context ctx) => new ConstsMap(ctx);
+
+            ConstsMap(Context ctx)
             {
                 _ctx = ctx;
+                _valuesCtx = new PhpValue[s_countCtx];
             }
 
             static void EnsureArray<T>(ref T[] arr, int size)
@@ -217,13 +223,7 @@ namespace Pchp.Core
                 }
             }
 
-            public bool DefineConstant(string name, PhpValue value, bool ignoreCase = false)
-            {
-                int idx = 0;
-                return DefineConstant(name, value, ref idx, ignoreCase);
-            }
-
-            public bool DefineConstant(string name, PhpValue value, ref int idx, bool ignoreCase = false)
+            public static bool DefineConstant(ref ConstsMap self, string name, PhpValue value, ref int idx, bool ignoreCase = false)
             {
                 Debug.Assert(value.IsScalar || value.IsArray);
 
@@ -238,8 +238,9 @@ namespace Pchp.Core
                     RedeclarationError(name);
                 }
 
-                EnsureArray(ref _valuesCtx, idx);
-                return SetValue(ref _valuesCtx[idx - 1], value);
+                ref var values = ref self._valuesCtx;
+                EnsureArray(ref values, idx);
+                return SetValue(ref values[idx - 1], value);
             }
 
             /// <summary>

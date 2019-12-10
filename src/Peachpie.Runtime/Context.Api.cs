@@ -239,12 +239,16 @@ namespace Pchp.Core
         /// <summary>
         /// Defines a user constant.
         /// </summary>
-        public bool DefineConstant(string name, PhpValue value, bool ignorecase = false) => _constants.DefineConstant(name, value, ignorecase);
+        public bool DefineConstant(string name, PhpValue value, bool ignorecase = false)
+        {
+            int idx = 0;
+            return DefineConstant(name, value, ref idx, ignorecase);
+        }
 
         /// <summary>
         /// Defines a user constant.
         /// </summary>
-        internal bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false) => _constants.DefineConstant(name, value, ref idx, ignorecase);
+        internal bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false) => ConstsMap.DefineConstant(ref _constants, name, value, ref idx, ignorecase);
 
         /// <summary>
         /// Determines whether a constant with given name is defined.
