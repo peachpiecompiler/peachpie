@@ -243,7 +243,7 @@ namespace Peachpie.AspNetCore.Web
                 }
                 else
                 {
-                    using (_requestTimer = new Timer(RequestTimeout, null, this.Configuration.Core.ExecutionTimeout, Timeout.Infinite))
+                    using (_requestTimer = new Timer(RequestTimeout, null, DefaultPhpConfigurationService.Instance.Core.ExecutionTimeout, Timeout.Infinite))
                     {
                         script.Evaluate(this, this.Globals, null);
                     }

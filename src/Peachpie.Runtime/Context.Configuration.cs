@@ -236,7 +236,7 @@ namespace Pchp.Core
     {
         #region DefaultPhpConfigurationService, PhpConfigurationService
 
-        class DefaultPhpConfigurationService : IPhpConfigurationService
+        protected class DefaultPhpConfigurationService : IPhpConfigurationService
         {
             public static readonly DefaultPhpConfigurationService Instance = new DefaultPhpConfigurationService();
 
