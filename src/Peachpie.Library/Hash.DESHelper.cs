@@ -127,7 +127,7 @@ namespace Pchp.Library
 
             private static bool initialized = false;
 
-            private static readonly Object obj = new Object();
+            private static readonly object init_lock = new object();
 
         #endregion
 
@@ -519,7 +519,7 @@ namespace Pchp.Library
             public static string Crypt(string password, string setting)
             {
 
-                lock (obj)
+                lock (init_lock)
                 { 
                     if (!initialized)
                     {
