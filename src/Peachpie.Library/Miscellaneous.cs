@@ -338,7 +338,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region getmypid, getlastmod, get_current_user, getmyuid
+        #region getmypid, getlastmod, get_current_user, getmyuid, posix_getpid
 
         /// <summary>
         /// Returns the PID of the current process. 
@@ -349,6 +349,13 @@ namespace Pchp.Library
             return System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 
+        /// <summary>
+        /// Return the process identifier of the current process.
+        /// </summary>
+        public static int posix_getpid()
+        {
+            return System.Diagnostics.Process.GetCurrentProcess().Id;
+        }
 
         /// <summary>
         /// Gets time of last page modification. 
