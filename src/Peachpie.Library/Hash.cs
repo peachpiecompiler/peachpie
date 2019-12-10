@@ -2823,7 +2823,7 @@ namespace Pchp.Library
             if (string.IsNullOrEmpty(hash))
                 return false;
             else
-                return hash.StartsWith("$argon2i") ? Argon2.Verify(hash, password) : crypt(ctx, password, hash) == hash;
+                return hash.StartsWith("$argon2i") ? Argon2.Verify(hash, password) : crypt(password, hash) == hash;
         }
 
         readonly static Regex s_expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2i)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -2973,7 +2973,7 @@ namespace Pchp.Library
         /// One-way string hashing.
         /// </summary>
         /// <returns>Returns the hashed string or a string that is shorter than 13 characters and is guaranteed to differ from the salt on failure.</returns>
-        public static string crypt(Context ctxPchp, string str, string salt/* mandatory since 5.6 */)
+        public static string crypt(string str, string salt/* mandatory since 5.6 */)
         {
             if (string.IsNullOrEmpty(salt))
             {
@@ -2986,7 +2986,7 @@ namespace Pchp.Library
                 generatedSalt[0] = generatedSalt[2] = generatedSalt[11] = (byte)'$';
                 generatedSalt[1] = (byte)'1';
 
-                salt = ConvertByteArrayToString(generatedSalt);
+                salt = Encoding.ASCII.GetString(generatedSalt);
             }
 
             if (salt.Length >= 3)
@@ -2998,19 +2998,19 @@ namespace Pchp.Library
                         if (salt[1] == '1') // $1$
                         {
                             // MD5
-                            return CryptMD5(ctxPchp, str, salt);
+                            return CryptMD5(str, salt);
                         }
 
                         if (salt[1] == '5') // $5$
                         {
                             // SHA256
-                            return CryptSHA(ctxPchp, str, salt, true);
+                            return CryptSHA(str, salt, true);
                         }
 
                         if (salt[1] == '6') // $6$
                         {
                             // SHA512
-                            return CryptSHA(ctxPchp, str, salt, false);
+                            return CryptSHA(str, salt, false);
                         }
                     }
                     if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
@@ -3037,16 +3037,6 @@ namespace Pchp.Library
 
             // failure
             return salt.StartsWith("*0") ? "*1" : "*0";
-        }
-
-        private static string ConvertByteArrayToString(byte[] buffer)
-        {
-            StringBuilder builder = new StringBuilder();
-            foreach (byte value in buffer)
-            {
-                builder.Append((char)value);
-            }
-            return builder.ToString().Trim('\0');
         }
 
         #region md5 hash in crypt function
@@ -3092,7 +3082,7 @@ namespace Pchp.Library
         /// <summary>
         /// Part of cypt function in php. 
         /// </summary>
-        private static string CryptMD5(Context ctx, string password, string salt)
+        private static string CryptMD5(string password, string salt)
         {
             int indexOfSaltBegin = 0;
             int indexOfSaltEnd = 0;
@@ -3188,7 +3178,7 @@ namespace Pchp.Library
             l = (final[4] << 16) | (final[10] << 8) | final[5]; MD5MapASCII(output, length, l, 4); length += 4;
             l = final[11]; MD5MapASCII(output, length, l, 2); length += 2;
 
-            return ConvertByteArrayToString(output.Take(length).ToArray());
+            return Encoding.ASCII.GetString(output.Take(length).ToArray()).Trim('\0'); ;
         }
         #endregion
 
@@ -3207,7 +3197,7 @@ namespace Pchp.Library
         /// <summary>
         /// Part of cypt function in php. if sha 512 is false, sha 256 is used.
         /// </summary>
-        private static string CryptSHA(Context ctx, string password, string salt, bool sha256)
+        private static string CryptSHA(string password, string salt, bool sha256)
         {
             int outputLength = 0;
             if (sha256)
@@ -3431,7 +3421,7 @@ namespace Pchp.Library
                 B64From24bit(0, 0, altResult[63], 2, output, ref indexOfOutput);
             }
 
-            return ConvertByteArrayToString(output);
+            return Encoding.ASCII.GetString(output).Trim('\0'); ;
         }
 
         private static void B64From24bit(int B2, int B1, int B0, int N, byte[] output, ref int indexOfOutput)

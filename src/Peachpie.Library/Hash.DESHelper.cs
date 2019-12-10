@@ -636,7 +636,7 @@ namespace Pchp.Library
                 data.output[outputIndex++] = (byte)ascii64[(int)l & 0x3f];
                 data.output[outputIndex] = 0;
 
-                return ConvertByteArrayToString(data.output);
+                return Encoding.ASCII.GetString(data.output).Trim('\0');
             }
         }
 
