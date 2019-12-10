@@ -732,6 +732,7 @@ namespace Pchp.Library
         /// Set/get the various assert flags.
         /// </summary>
         /// <remarks>This is a wrapper over <see cref="ini_get"/>, <see cref="ini_set"/> and <see cref="ini_restore"/>, passing <c>assert./what/</c> option.</remarks>
+        [Obsolete("As of PHP 7.0.0, the use of assert_options() is discouraged.")]
         public static PhpValue assert_options(Context ctx, AssertWhat what, PhpValue value = default)
         {
             switch (what)
