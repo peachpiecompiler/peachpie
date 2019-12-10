@@ -293,6 +293,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                 }
 
+                // (isset($a[$x]) ? $a[$x] : fallback) or (isset($a['const']) ? $a['const'] : fallback)
+                if (x.Condition is BoundOffsetExists issetArrItem &&
+                    x.IfTrue is BoundArrayItemEx trueArrItem &&
+                    issetArrItem.Receiver is BoundVariableRef issetArrayVar &&
+                    trueArrItem.Array is BoundVariableRef trueArrayVar &&
+                    issetArrayVar.Variable == trueArrayVar.Variable &&
+                    ((issetArrItem.Index is BoundVariableRef issetIndexVar &&
+                        trueArrItem.Index is BoundVariableRef trueIndexVar &&
+                        issetIndexVar.Variable == trueIndexVar.Variable)
+                    || (issetArrItem.Index.ConstantValue.HasValue &&
+                        issetArrItem.Index.ConstantValue.EqualsOptional(trueArrItem.Index.ConstantValue))))
+                {
+                    ++TransformationCount;
+                    return new BoundTryGetItem(issetArrayVar, issetArrItem.Index, x.IfFalse).WithAccess(x);
+                }
+
                 // handled in BoundConditionalEx.Emit:
                 //// !COND ? A : B => COND ? B : A
                 //if (x.Condition is BoundUnaryEx unary && unary.Operation == Ast.Operations.LogicNegation)

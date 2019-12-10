@@ -645,6 +645,39 @@ namespace Pchp.Core
         /// </summary>
         public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet = false) => value.GetArrayItem(index, quiet);
 
+        public static bool TryGetItemValue(this PhpArray value, string index, ref PhpValue item) =>
+            value != null &&
+            value.TryGetValue(index, out item) &&
+            IsSet(item);
+
+        public static bool TryGetItemValue(this PhpArray value, PhpValue index, ref PhpValue item) =>
+            value != null &&
+            index.TryToIntStringKey(out var key) &&
+            value.TryGetValue(key, out item) &&
+            IsSet(item);
+
+        public static bool TryGetItemValue(this PhpValue value, PhpValue index, ref PhpValue item)
+        {
+            if (value.Object is PhpArray array)
+            {
+                // Specialized call for array
+                return TryGetItemValue(array, index, ref item);
+            }
+            else
+            {
+                // Otherwise use the original semantics of isset($x[$y]) ? $x[$y] : ...;
+                if (offsetExists(value, index))
+                {
+                    item = GetItemValue(value, index);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
         /// <summary>
         /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>

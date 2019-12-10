@@ -5017,6 +5017,85 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundTryGetItem
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            Debug.Assert(!Access.IsEnsure);
+
+            // Either specialize the call for PhpArray (possibly with string index) or fall back to PhpValue
+
+            TypeSymbol arrType, indexType;
+            MethodSymbol operation;
+
+            var arrTypeMask = Array.TypeRefMask;
+            if (arrTypeMask.IsSingleType && !arrTypeMask.IsRef && cg.TypeRefContext.IsArray(arrTypeMask))
+            {
+                arrType = cg.EmitSpecialize(Array);
+            }
+            else
+            {
+                arrType = cg.EmitConvertToPhpValue(Array);
+            }
+
+            var indexTypeMask = Index.TypeRefMask;
+            if (arrType == cg.CoreTypes.PhpArray &&
+                indexTypeMask.IsSingleType && !indexTypeMask.IsRef && cg.TypeRefContext.IsReadonlyString(indexTypeMask))
+            {
+                indexType = cg.EmitSpecialize(Index);
+            }
+            else
+            {
+                indexType = cg.EmitConvertToPhpValue(Index);
+            }
+
+            if (arrType == cg.CoreTypes.PhpArray)
+            {
+                if (indexType == cg.CoreTypes.String)
+                {
+                    operation = cg.CoreMethods.Operators.TryGetItemValue_PhpArray_string_PhpValueRef;
+                }
+                else
+                {
+                    Debug.Assert(indexType == cg.CoreTypes.PhpValue);
+                    operation = cg.CoreMethods.Operators.TryGetItemValue_PhpArray_PhpValue_PhpValueRef;
+                }
+            }
+            else
+            {
+                Debug.Assert(arrType == cg.CoreTypes.PhpValue);
+                Debug.Assert(indexType == cg.CoreTypes.PhpValue);
+                operation = cg.CoreMethods.Operators.TryGetItemValue_PhpValue_PhpValue_PhpValueRef;
+            }
+
+            // TryGetItemValue(Array, Index, out PhpValue temp) ? temp : Fallback
+
+            object trueLbl = new object();
+            object endLbl = new object();
+
+            // call
+            var temp = cg.GetTemporaryLocal(cg.CoreTypes.PhpValue);
+            cg.Builder.EmitLocalAddress(temp);
+            cg.EmitCall(ILOpCode.Call, operation);
+            cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
+
+            // fallback:
+            cg.EmitConvertToPhpValue(Fallback);
+            cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
+
+            // trueLbl:
+            cg.Builder.MarkLabel(trueLbl);
+            cg.Builder.EmitLocalLoad(temp);
+
+            // endLbl:
+            cg.Builder.MarkLabel(endLbl);
+
+            cg.ReturnTemporaryLocal(temp);
+
+            return cg.CoreTypes.PhpValue;
+        }
+    }
+
     partial class BoundYieldEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

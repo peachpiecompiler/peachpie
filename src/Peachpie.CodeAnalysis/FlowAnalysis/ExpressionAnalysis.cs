@@ -1356,6 +1356,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
+        public override T VisitTryGetItem(BoundTryGetItem x)
+        {
+            // array, index, fallback
+            base.VisitTryGetItem(x);
+
+            // TODO: resulting type if possible (see VisitArrayItem)
+
+            // The result of array[index] might be a reference
+            x.TypeRefMask = TypeRefMask.AnyType.WithRefFlag;
+
+            return default;
+        }
+
         #endregion
 
         #region TypeRef

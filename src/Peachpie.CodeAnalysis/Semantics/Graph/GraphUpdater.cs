@@ -545,6 +545,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x.Update((BoundExpression)Accept(x.Receiver), (BoundExpression)Accept(x.Index));
         }
 
+        public override object VisitTryGetItem(BoundTryGetItem x)
+        {
+            return x.Update(
+                (BoundExpression)Accept(x.Array),
+                (BoundExpression)Accept(x.Index),
+                (BoundExpression)Accept(x.Fallback));
+        }
+
         public override object VisitLambda(BoundLambda x)
         {
             return x.Update(VisitImmutableArray(x.UseVars));

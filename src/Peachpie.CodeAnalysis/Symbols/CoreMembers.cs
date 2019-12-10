@@ -273,6 +273,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetItemValue_String_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.String, ct.PhpValue, ct.Boolean);
                 GetItemValue_String_Int = ct.Operators.Method("GetItemValue", ct.String, ct.Int32);
                 GetItemValue_PhpValue_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.PhpValue, ct.PhpValue, ct.Boolean);
+                TryGetItemValue_PhpArray_string_PhpValueRef = ct.Operators.Method("TryGetItemValue", ct.PhpArray, ct.String, ct.PhpValue);
+                TryGetItemValue_PhpArray_PhpValue_PhpValueRef = ct.Operators.Method("TryGetItemValue", ct.PhpArray, ct.PhpValue, ct.PhpValue);
+                TryGetItemValue_PhpValue_PhpValue_PhpValueRef = ct.Operators.Method("TryGetItemValue", ct.PhpValue, ct.PhpValue, ct.PhpValue);
                 GetItemOrdValue_PhpValue_Long = ct.Operators.Method("GetItemOrdValue", ct.PhpValue, ct.Long);
                 GetItemOrdValue_String_Long = ct.Operators.Method("GetItemOrdValue", ct.String, ct.Long);
                 GetItemOrdValue_PhpString_Long = ct.Operators.Method("GetItemOrdValue", ct.PhpString, ct.Long);
@@ -406,6 +409,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetValue_PhpValueRef_PhpValue,
                 EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef, EnsureArray_ArrayAccess, EnsureArray_Object, EnsureWritableString_PhpArrayRef,
                 GetItemValue_String_IntStringKey, GetItemValueOrNull_String_IntStringKey, GetItemValue_String_PhpValue_Bool, GetItemValue_String_Int, GetItemValue_PhpValue_PhpValue_Bool,
+                TryGetItemValue_PhpArray_string_PhpValueRef, TryGetItemValue_PhpArray_PhpValue_PhpValueRef, TryGetItemValue_PhpValue_PhpValue_PhpValueRef,
                 GetItemOrdValue_PhpValue_Long, GetItemOrdValue_String_Long, GetItemOrdValue_PhpString_Long,
                 EnsureItemAlias_IPhpArray_PhpValue_Bool, EnsureItemAlias_PhpValue_PhpValue_Bool,
                 EnsureItemArray_IPhpArray_PhpValue,

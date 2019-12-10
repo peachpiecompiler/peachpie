@@ -102,6 +102,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual TResult VisitOffsetExists(BoundOffsetExists x) => DefaultVisitOperation(x);
 
+        public virtual TResult VisitTryGetItem(BoundTryGetItem x) => DefaultVisitOperation(x);
+
         public virtual TResult VisitLambda(BoundLambda x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitEval(BoundEvalEx x) => DefaultVisitOperation(x);

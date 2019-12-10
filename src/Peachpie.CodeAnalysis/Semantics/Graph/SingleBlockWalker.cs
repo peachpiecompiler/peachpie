@@ -438,6 +438,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
+        public override T VisitTryGetItem(BoundTryGetItem x)
+        {
+            Accept(x.Array);
+            Accept(x.Index);
+            Accept(x.Fallback);
+
+            return default;
+        }
+
         public override T VisitLambda(BoundLambda x)
         {
             return default;
