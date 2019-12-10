@@ -21,14 +21,12 @@ namespace Peachpie.AspNetCore.Web
         public override Encoding Encoding { get; }
 
         /// <summary>Temporary buffer for encoded single-character.</summary>
-        readonly byte[] _encodedCharBuffer;
+        byte[] _encodedCharBuffer;
 
         public SynchronizedTextWriter(HttpResponse response, Encoding encoding)
         {
             HttpResponse = response ?? throw new ArgumentNullException(nameof(response));
             Encoding = encoding ?? throw new ArgumentNullException(nameof(encoding));
-
-            _encodedCharBuffer = new byte[GetEncodingMaxByteSize(encoding)];
         }
 
         const int UTF8MaxByteLength = 6;
@@ -83,6 +81,8 @@ namespace Peachpie.AspNetCore.Web
         {
             Span<char> chars = stackalloc char[1] { value };
             // Span<byte> bytes = stackalloc byte[GetEncodingMaxByteSize(Encoding)];
+
+            _encodedCharBuffer ??= new byte[GetEncodingMaxByteSize(Encoding)];
 
             // encode the char on stack
             var nbytes = Encoding.GetBytes(chars, _encodedCharBuffer);

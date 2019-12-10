@@ -148,8 +148,8 @@ namespace Pchp.Core
 
         void InitSuperglobals(ref Superglobals superglobals)
         {
-            var var_order = this.Configuration.Core.VariablesOrder; // TODO
-            var egpcs = this.Configuration.Core.RegisteringOrder;
+            //var var_order = DefaultPhpConfigurationService.Instance.Core.VariablesOrder; // TODO
+            var egpcs = DefaultPhpConfigurationService.Instance.Core?.RegisteringOrder;
 
             superglobals.env = Superglobals.CreateEnvArray();
             superglobals.get = InitGetVariable();
@@ -223,9 +223,9 @@ namespace Pchp.Core
         /// <summary>Initialize $_REQUEST global variable.</summary>
         protected PhpArray InitRequestVariable(PhpArray get, PhpArray post, PhpArray cookie, string gpcOrder)
         {
-            Debug.Assert(get != null && post != null && cookie != null && gpcOrder != null);
+            Debug.Assert(get != null && post != null && cookie != null);
 
-            if (IsWebApplication)
+            if (IsWebApplication && gpcOrder != null)
             {
                 var requestArray = new PhpArray(get.Count + post.Count + cookie.Count);
 
