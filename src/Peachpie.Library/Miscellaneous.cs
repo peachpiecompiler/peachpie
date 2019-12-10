@@ -344,17 +344,31 @@ namespace Pchp.Library
         /// Returns the PID of the current process. 
         /// </summary>
         /// <returns>The PID.</returns>
+        /// <remarks>
+        /// The current thread ID instead of process ID - 
+        /// oftenly used to get a unique ID of the current "request" 
+        /// but PID is always the same in .NET. 
+        /// In this way we get different values for different requests and also we don't expose system process ID
+        /// </remarks>
         public static int getmypid()
         {
-            return System.Diagnostics.Process.GetCurrentProcess().Id;
+            return System.Threading.Thread.CurrentThread.ManagedThreadId;
+            //return System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 
         /// <summary>
         /// Return the process identifier of the current process.
         /// </summary>
+        /// <remarks>
+        /// The current thread ID instead of process ID - 
+        /// oftenly used to get a unique ID of the current "request" 
+        /// but PID is always the same in .NET. 
+        /// In this way we get different values for different requests and also we don't expose system process ID
+        /// </remarks>
         public static int posix_getpid()
         {
-            return System.Diagnostics.Process.GetCurrentProcess().Id;
+            return System.Threading.Thread.CurrentThread.ManagedThreadId;
+            //return System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 
         /// <summary>
