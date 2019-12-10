@@ -32,7 +32,7 @@ namespace Pchp.Core
             _types = new TypesTable();
             _statics = new object[StaticIndexes.StaticsCount];
             _constants = new ConstsMap(this);
-            _scripts = new ScriptsMap();
+            _scripts = ScriptsMap.Create();
         }
 
         /// <summary>
@@ -246,7 +246,10 @@ namespace Pchp.Core
         /// </summary>
         readonly ConstsMap _constants;
 
-        readonly ScriptsMap _scripts;
+        /// <summary>
+        /// Set of scripts that have been included in current context.
+        /// </summary>
+        ScriptsMap _scripts;
 
         /// <summary>
         /// Load PHP scripts and referenced symbols from PHP assembly.
@@ -419,7 +422,7 @@ namespace Pchp.Core
         /// Called by scripts Main method at its begining.
         /// </summary>
         /// <typeparam name="TScript">Script type containing the Main method/</typeparam>
-        public void OnInclude<TScript>() => _scripts.SetIncluded<TScript>();
+        public void OnInclude<TScript>() => ScriptsMap.SetIncluded<TScript>(ref _scripts);
 
         /// <summary>
         /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method within the global scope.

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,6 +38,8 @@ namespace Pchp.Core.Utilities
         {
             get
             {
+                Debug.Assert(_bits != null);
+
                 var num = index / IntSize;
                 var bits = _bits;
 
@@ -48,6 +51,8 @@ namespace Pchp.Core.Utilities
 
         public static void SetTrue(ref ElasticBitArray array, int index)
         {
+            Debug.Assert(array._bits != null);
+
             if (index < 0)
             {
                 throw new ArgumentException();
@@ -64,6 +69,8 @@ namespace Pchp.Core.Utilities
 
         public static void SetFalse(ref ElasticBitArray array, int index)
         {
+            Debug.Assert(array._bits != null);
+
             var num = index / IntSize;
             if (index >= 0 && num < array._bits.Length)
             {
