@@ -24,7 +24,7 @@ namespace Pchp.Library
         public const string PHP_EXTRA_VERSION = "-peachpie";
         public static string PHP_OS => CurrentPlatform.IsWindows ? "WINNT" : CurrentPlatform.IsLinux ? "Linux" : CurrentPlatform.IsOsx ? "Darwin" : "Unix";
 
-        public static readonly string PEACHPIE_VERSION = typeof(Core.Context).Assembly.GetName().Version.ToString();
+        public static readonly string PEACHPIE_VERSION = ContextExtensions.GetRuntimeInformationalVersion();
 
         /// <summary>
         /// The operating system family PHP was built for.
