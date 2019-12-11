@@ -9,6 +9,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
+    [PhpExtension("Core")]
     public static class Miscellaneous
     {
         // [return: CastToFalse] // once $extension will be supported
