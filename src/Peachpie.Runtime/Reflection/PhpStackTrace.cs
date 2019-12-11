@@ -132,7 +132,7 @@ namespace Pchp.Core.Reflection
         static bool IsPhpStackFrame(StackFrame frame)
         {
             var method = frame.GetMethod();
-            if (method == null)
+            if (method == null || method.DeclaringType == null)
             {
                 return false;
             }
