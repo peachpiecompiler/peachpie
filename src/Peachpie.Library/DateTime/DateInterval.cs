@@ -12,7 +12,7 @@ namespace Pchp.Library.DateTime
     /// Represents a date interval.
     /// A date interval stores either a fixed amount of time(in years, months, days, hours etc) or a relative time string in the format that DateTime's constructor supports.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
     [DebuggerDisplay(nameof(DateInterval), Type = PhpVariable.TypeNameObject)]
     public class DateInterval
     {

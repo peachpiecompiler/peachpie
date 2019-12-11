@@ -4,7 +4,7 @@ using Pchp.Core;
 
 public delegate void GeneratorStateMachineDelegate(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, Generator gen);
 
-[PhpType(PhpTypeAttribute.InheritName)]
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
 public class Generator : Iterator
 {
     #region BoundVariables

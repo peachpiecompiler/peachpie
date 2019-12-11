@@ -10,6 +10,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
+    [PhpExtension("standard")]
     public static class Shell
     {
         #region getenv, putenv

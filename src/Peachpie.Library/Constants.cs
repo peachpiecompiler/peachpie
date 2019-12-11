@@ -14,6 +14,7 @@ namespace Pchp.Library
 	/// Implements PHP function over constants.
 	/// </summary>
 	/// <threadsafety static="true"/>
+    [PhpExtension("standard", "Core")]
     public static class Constants
     {
         /// <summary>

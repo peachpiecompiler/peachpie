@@ -10,7 +10,7 @@ namespace Peachpie.Library
     /// <summary>
     /// Contains various information about errors thrown by libxml.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("libxml")]
     public sealed class LibXMLError
     {
         public readonly int level, code, line, column;

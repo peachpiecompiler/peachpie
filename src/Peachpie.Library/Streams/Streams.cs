@@ -33,6 +33,7 @@ namespace Pchp.Library.Streams
     /// <summary>
     /// Class containing implementations of PHP functions accessing the <see cref="StreamContext"/>s.
     /// </summary>
+    [PhpExtension("standard")]
     public static class PhpContexts
     {
         #region stream_context_create

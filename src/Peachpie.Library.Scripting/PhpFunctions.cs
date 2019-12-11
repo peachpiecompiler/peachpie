@@ -9,6 +9,7 @@ using Pchp.Core.Reflection;
 
 namespace Peachpie.Library.Scripting
 {
+    [PhpExtension("Core")]
     public static class PhpFunctions
     {
         const string _createFunctionTemplate = "function {0} ({1}) {{ {2} }}";

@@ -30,6 +30,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
 	/// Provides timezone information for PHP functions.
 	/// </summary>
+    [PhpExtension("date")]
     public static class PhpTimeZone
     {
         private const string EnvVariableName = "TZ";
