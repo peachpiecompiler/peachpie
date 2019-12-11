@@ -509,6 +509,17 @@ namespace Pchp.Library
             return 0;
         }
 
+        /// <summary>
+        /// Delay for a number of seconds and nanoseconds.
+        /// </summary>
+        //[return: CastToFalse]
+        public static bool time_nanosleep(long seconds, long nanoseconds)
+        {
+            if (seconds < 0 || nanoseconds < 0) throw new ArgumentOutOfRangeException();
+            System.Threading.Thread.Sleep((int)(seconds * 1000L + nanoseconds / 1000000L));
+            return true;
+        }
+
         #endregion
     }
 }
