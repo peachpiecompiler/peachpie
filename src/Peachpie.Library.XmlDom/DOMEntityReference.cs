@@ -9,7 +9,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// DOM entity reference.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public partial class DOMEntityReference : DOMNode
     {
         #region Fields and Properties

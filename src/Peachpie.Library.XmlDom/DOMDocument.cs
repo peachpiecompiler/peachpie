@@ -14,7 +14,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Represents an entire HTML or XML document; serves as the root of the document tree.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public class DOMDocument : DOMNode
     {
         #region Fields and Properties

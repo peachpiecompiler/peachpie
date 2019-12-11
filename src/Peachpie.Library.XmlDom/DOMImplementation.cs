@@ -9,7 +9,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Provides a number of methods for performing operations that are independent of any particular instance of the document object model.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public class DOMImplementation
     {
         #region Fields and Properties

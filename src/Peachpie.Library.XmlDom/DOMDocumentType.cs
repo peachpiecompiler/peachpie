@@ -10,7 +10,7 @@ namespace Peachpie.Library.XmlDom
     /// Each <see cref="DOMDocument"/> has a doctype attribute whose value is either NULL
     /// or a <see cref="DOMDocumentType"/> object.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public class DOMDocumentType : DOMNode
     {
         #region Fields and Properties

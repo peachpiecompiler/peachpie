@@ -9,7 +9,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// DOM notation.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public partial class DOMNotation : DOMNode
     {
         #region Fields and Properties

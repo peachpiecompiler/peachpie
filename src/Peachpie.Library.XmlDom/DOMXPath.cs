@@ -10,7 +10,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Supports XPath 1.0.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public class DOMXPath
     {
         #region Fields and Properties
