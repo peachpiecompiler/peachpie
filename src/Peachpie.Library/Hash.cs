@@ -2818,12 +2818,9 @@ namespace Pchp.Library
         /// <summary>
         /// Verifies that a password matches a hash.
         /// </summary>
-        public static bool password_verify(Context ctx, string password, string hash)
+        public static bool password_verify(string password, string hash)
         {
-            if (string.IsNullOrEmpty(hash))
-                return false;
-            else
-                return hash.StartsWith("$argon2i") ? Argon2.Verify(hash, password) : crypt(password, hash) == hash;
+            return !string.IsNullOrEmpty(hash) && (hash.StartsWith("$argon2i", StringComparison.Ordinal) ? Argon2.Verify(hash, password) : crypt(password, hash) == hash);
         }
 
         readonly static Regex s_expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2i)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -2852,11 +2849,11 @@ namespace Pchp.Library
                 case PasswordType.BCrypt:
                     string[] hashParts = hash.Split('$');
 
-                    if (hashParts.Length >= 3 && hashParts[1][0] == '2' && hashParts[1].Length >= 2) // $2 $ Right algorithm
+                    if (hashParts.Length >= 3 && hashParts[1].Length >= 2 && hashParts[1][0] == '2') // $2 $ Right algorithm
                     {
                         if (opt != null && opt.TryGetValue("cost", out var costValue)) // Check options
                         {
-                            result = !(hashParts[2] == costValue.ToInt().ToString());
+                            result = !(hashParts[2] == costValue.ToLong().ToString());
                         }
                     }
                     else
