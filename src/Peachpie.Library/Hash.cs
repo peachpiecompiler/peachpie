@@ -3064,7 +3064,6 @@ namespace Pchp.Library
         /// Internal funcion of php to map hash symbols to itoa64 set.
         /// </summary>
         /// <param name="hash"></param>
-        /// <param name="s">Position, where mapping starts.</param>
         /// <param name="n">Length of mapping sequence.</param>
         private static void MD5MapASCII(byte[] hash, int n)
         {
