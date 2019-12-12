@@ -77,6 +77,8 @@ namespace Pchp.Library.Spl
 
         public virtual string getTraceAsString() => _stacktrace.GetStackTraceString(); // TODO: _trace
 
+        public void __wakeup() => throw new NotImplementedException();
+
         public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, getMessage()); // TODO: _trace
 
         public sealed override string ToString() => __toString();
