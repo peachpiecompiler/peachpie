@@ -233,6 +233,22 @@ namespace Pchp.Library
             return result.Count != 0 ? result : null;
         }
 
+        ///// <summary>
+        ///// Returns an array of all currently active resources, optionally filtered by resource type.
+        ///// </summary>
+        ///// <param name="ctx">Runtime context.</param>
+        ///// <param name="type">
+        ///// If defined, this will cause get_resources() to only return resources of the given type. A list of resource types is available.
+        ///// If the string <code>Unknown</code> is provided as the type, then only resources that are of an unknown type will be returned.
+        ///// If omitted, all resources will be returned.
+        ///// </param>
+        ///// <returns>Returns an array of currently active resources, indexed by resource number.</returns>
+        //[return: NotNull]
+        //public static PhpArray get_resources(Context ctx, string type = null)
+        //{
+        //    throw new NotSupportedException();
+        //}
+
         #region gethostname, php_uname, memory_get_usage, php_sapi_name
 
         /// <summary>
@@ -526,7 +542,7 @@ namespace Pchp.Library
         /// <param name="timestamp">The timestamp when the script should wake.</param>
         /// <returns>Returns <c>TRUE</c> on success or <c>FALSE</c> on failure.</returns>
         /// <exception cref="PhpException">If the specified timestamp is in the past, this function will generate a <c>E_WARNING</c>.</exception>
-        public static bool time_sleep_until(double timestamp )
+        public static bool time_sleep_until(double timestamp)
         {
             var now = (System.DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds;    // see microtime(TRUE)
             var sleep_ms = (timestamp - now) * 1000.0;
