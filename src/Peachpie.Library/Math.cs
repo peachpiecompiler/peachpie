@@ -835,7 +835,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region  ceil, floor, round, abs, fmod, max, min
+        #region  ceil, floor, round, abs, fmod, max, min, intdiv
 
         /// <summary>
         /// Returns the next highest integer value by rounding up <paramref name="x"/> if necessary.
@@ -1249,6 +1249,13 @@ namespace Pchp.Library
             //
             return ex;
         }
+
+        /// <summary>
+        /// Returns the integer quotient of the <paramref name="dividend"/> of dividend by <paramref name="divisor"/>.
+        /// </summary>
+        /// <param name="dividend">Number to be divided.</param>
+        /// <param name="divisor">Number which divides the <paramref name="dividend"/>.</param>
+        public static long intdiv(long dividend, long divisor) => dividend / divisor;
 
         #endregion
     }
