@@ -83,6 +83,8 @@ namespace Pchp.Library.Reflection
         public bool isProtected() => _pinfo.IsProtected;
 
         public bool isPublic() => _pinfo.IsPublic;
+
+        public static string export(PhpValue @class, string name, bool @return = false) { throw new NotImplementedException(); }
     }
 
 }
