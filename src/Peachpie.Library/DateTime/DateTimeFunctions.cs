@@ -1462,7 +1462,7 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region microtime
+        #region microtime, hrtime
 
         /// <summary>
         /// Returns the string "msec sec" where sec is the current time measured in the number of seconds
@@ -1481,14 +1481,14 @@ namespace Pchp.Library.DateTime
             TimeSpan mSec = fromUnixEpoch.Subtract(new TimeSpan(seconds * 10000000)); // convert seconds to 100 ns
             double remaining = ((double)mSec.Ticks) / 10000000; // convert from 100ns to seconds
 
-            return remaining.ToString("G", System.Globalization.NumberFormatInfo.InvariantInfo) + " " + seconds.ToString();
+            return remaining.ToString("G", NumberFormatInfo.InvariantInfo) + " " + seconds.ToString();
         }
 
         /// <summary>
         /// Returns the fractional time in seconds from the start of the UNIX epoch.
         /// </summary>
         /// <param name="returnDouble"><c>true</c> to return the double, <c>false</c> to return string.</param>
-        /// <returns><see cref="String"/> containing number of miliseconds, space and number of seconds
+        /// <returns><see cref="string"/> containing number of miliseconds, space and number of seconds
         /// if <paramref name="returnDouble"/> is <c>false</c> and <see cref="double"/>
         /// containing the fractional count of seconds otherwise.</returns>
         public static PhpValue microtime(bool returnDouble)
@@ -1497,6 +1497,39 @@ namespace Pchp.Library.DateTime
                 return PhpValue.Create((System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds);
             else
                 return PhpValue.Create(microtime());
+        }
+
+        /// <summary>
+        /// Get the system's high resolution time.
+        /// </summary>
+        /// <param name="get_as_number">
+        /// Whether the high resolution time should be returned as array or number.
+        /// Default is to return the value as array.
+        /// </param>
+        /// <returns>
+        /// Returns nanoseconds of internal system counter.
+        /// If <paramref name="get_as_number"/> is <c>false</c>, the return value is split to array <code>[seconds, nanoseconds]</code>.
+        /// </returns>
+        /// <remarks>Internally the function uses <see cref="Stopwatch"/> which depends on the current platform implementation.</remarks>
+        public static PhpValue hrtime(bool get_as_number = false)
+        {
+            var ticks = Stopwatch.GetTimestamp();
+
+            const long ns = 1_000_000_000;
+
+            // convert ticks to nanoseconds
+            var seconds = ticks / Stopwatch.Frequency;
+            var nanoseconds = (ticks - (seconds * Stopwatch.Frequency)) * ns / Stopwatch.Frequency;
+
+            if (get_as_number)
+            {
+                return seconds * ns + nanoseconds;
+            }
+            else
+            {
+                // [seconds, nanoseconds]
+                return new PhpArray(2) { seconds, nanoseconds };
+            }
         }
 
         #endregion
