@@ -520,6 +520,31 @@ namespace Pchp.Library
             return true;
         }
 
+        /// <summary>
+        /// Makes the script sleep until the specified <paramref name="timestamp"/>.
+        /// </summary>
+        /// <param name="timestamp">The timestamp when the script should wake.</param>
+        /// <returns>Returns <c>TRUE</c> on success or <c>FALSE</c> on failure.</returns>
+        /// <exception cref="PhpException">If the specified timestamp is in the past, this function will generate a <c>E_WARNING</c>.</exception>
+        public static bool time_sleep_until(double timestamp )
+        {
+            var now = (System.DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds;    // see microtime(TRUE)
+            var sleep_ms = (timestamp - now) * 1000.0;
+
+            if (sleep_ms > 0.0)
+            {
+                System.Threading.Thread.Sleep((int)sleep_ms);
+                return true;
+            }
+            else
+            {
+                // note: php throws warning even if time is current time
+
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.time_sleep_until_in_past);
+                return false;
+            }
+        }
+
         #endregion
     }
 }
