@@ -101,7 +101,7 @@ namespace Peachpie.Library.XmlDom
     /// DOM operations raise exceptions under particular circumstances, i.e., when an operation
     /// is impossible to perform for logical reasons.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
 	public sealed partial class DOMException : Pchp.Library.Spl.Exception
     {
 		#region Properties

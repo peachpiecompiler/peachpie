@@ -139,7 +139,7 @@ namespace Pchp.Core.Dynamic
                 // Template: chain.GetValue( expr, ctx, classContext )
                 // Template: chain.GetAlias( ref expr, ctx, classContext )
                 expr = Expression.Call(possibleChainExpr, method, valueExpr, ctx, Expression.Constant(classContext, typeof(Type)));
-                
+
                 return true;
             }
 
@@ -700,19 +700,52 @@ namespace Pchp.Core.Dynamic
         /// <param name="classCtx">Current class context (visibility).</param>
         /// <param name="static">Whether to lookup static properties.</param>
         /// <param name="name">Property name.</param>
-        public static PhpPropertyInfo ResolveDeclaredProperty(PhpTypeInfo type, Type classCtx, bool @static, string name)
+        /// <param name="property">Set to the resolved property. Can be set even the methods returns <c>false</c> which means the property is there but inaccessible.</param>
+        public static bool TryResolveDeclaredProperty(PhpTypeInfo type, Type classCtx, bool @static, string name, out PhpPropertyInfo property)
         {
+            property = null;
+
             for (var t = type; t != null; t = t.BaseType)
             {
                 var p = t.DeclaredFields.TryGetPhpProperty(name);
-                if (p != null && p.IsStatic == @static && p.IsVisible(classCtx))
+                if (p != null && p.IsStatic == @static)
                 {
-                    return p;
+                    property = p;
+
+                    if (p.IsVisible(classCtx))
+                    {
+                        return true;
+                    }
                 }
             }
 
             //
-            return null;
+            return false;
+        }
+
+        static Expression/*!*/BindInvalidPropertyAccess(string className, string propName, Type classCtx, PhpPropertyInfo candidate)
+        {
+            // This is an exception since we are accessing a CLR object for sure.
+            // A PHP object would have runtime fields.
+
+            var exceptionClass = candidate != null
+                ? typeof(FieldAccessException)
+                : typeof(MissingFieldException);
+
+            var classCtxName = classCtx != null
+                ? classCtx.GetPhpTypeInfo().Name    // PHP class name
+                : PhpStackFrame.GlobalCodeName;
+
+            var message = candidate == null
+                ? string.Format(Resources.ErrResources.undefined_property_accessed, className, propName)
+                : (candidate.IsReadOnly && candidate.IsVisible(classCtx))
+                    ? string.Format(Resources.ErrResources.readonly_property_written, className, propName)
+                    : candidate.IsPrivate
+                        ? string.Format(Resources.ErrResources.private_property_accessed, className, propName, classCtxName)
+                        : string.Format(Resources.ErrResources.protected_property_accessed, className, propName, classCtxName);
+
+            // Template: throw new exception( message)
+            return Expression.Throw(Expression.New(exceptionClass.GetConstructor(Cache.Types.String), Expression.Constant(message)));
         }
 
         // NOTE: will be replaced with "IRuntimeChain"
@@ -724,10 +757,14 @@ namespace Pchp.Core.Dynamic
             }
 
             // lookup a declared field
-            var p = ResolveDeclaredProperty(type, classCtx, target == null, field);
-            if (p != null)
+            if (TryResolveDeclaredProperty(type, classCtx, target == null, field, out var prop))
             {
-                return BindAccess(p.Bind(ctx, target), ctx, access, rvalue);
+                if (access.Write() && prop.IsReadOnly)
+                {
+                    return BindInvalidPropertyAccess(type.Name, field, classCtx, prop);
+                }
+
+                return BindAccess(prop.Bind(ctx, target), ctx, access, rvalue);
             }
 
             //
@@ -916,7 +953,7 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            return null;
+            return BindInvalidPropertyAccess(type.Name, field, classCtx, prop);
         }
 
         public static Expression BindClassConstant(PhpTypeInfo type, Type classCtx, string constName, Expression ctx)

@@ -149,11 +149,14 @@ namespace Pchp.Core.Dynamic.RuntimeChain
                 // CONSIDER: value = Operators.PropertyGetValue( .. )
 
                 var t = receiver.GetPhpTypeInfo();
-                var p = BinderHelpers.ResolveDeclaredProperty(t, classContext, @static: false, name: Name);
-
-                value = p != null
-                    ? p.GetValue(ctx, receiver)
-                    : Operators.RuntimePropertyGetValue(ctx, t, receiver, propertyName: Name);
+                if (BinderHelpers.TryResolveDeclaredProperty(t, classContext, false, Name, out var p))
+                {
+                    value = p.GetValue(ctx, receiver);
+                }
+                else
+                {
+                    value = Operators.RuntimePropertyGetValue(ctx, t, receiver, propertyName: Name);
+                }
 
                 return Next.GetValue(value, ctx, classContext);
             }
@@ -171,21 +174,20 @@ namespace Pchp.Core.Dynamic.RuntimeChain
 
             PhpValue tmp;
 
-            var p = BinderHelpers.ResolveDeclaredProperty(t, classContext, @static: false, Name);
-            if (p != null)
+            if (BinderHelpers.TryResolveDeclaredProperty(t, classContext, false, Name, out var prop))
             {
                 switch (Next.Operation)
                 {
                     case RuntimeChainOperation.Property:
-                        tmp = PhpValue.FromClass(p.EnsureObject(ctx, receiver));
+                        tmp = PhpValue.FromClass(prop.EnsureObject(ctx, receiver));
                         break;
 
                     case RuntimeChainOperation.ArrayItem:
-                        tmp = PhpValue.Create(p.EnsureArray(ctx, receiver));
+                        tmp = PhpValue.Create(prop.EnsureArray(ctx, receiver));
                         break;
 
                     case RuntimeChainOperation.End:
-                        return p.EnsureAlias(ctx, receiver);
+                        return prop.EnsureAlias(ctx, receiver);
 
                     default:
                         throw new InvalidOperationException();

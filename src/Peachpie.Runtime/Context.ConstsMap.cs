@@ -13,8 +13,11 @@ namespace Pchp.Core
 {
     partial class Context
     {
-        #region ConstName
+        #region ConstName, ConstData
 
+        /// <summary>
+        /// Constant name.
+        /// </summary>
         [DebuggerDisplay("{Name,nq}")]
         struct ConstName : IEquatable<ConstName>
         {
@@ -28,63 +31,123 @@ namespace Pchp.Core
             /// <summary>
             /// Constant name.
             /// </summary>
-            public readonly string Name;
+            public string Name { get; }
 
             /// <summary>
-            /// Whether the casing is ignored.
-            /// <c>false</c> by default.
+            /// Comparer used to compare the name.
             /// </summary>
-            public readonly bool CaseInsensitive;
+            public StringComparer StringComparer { get; }
 
-            public ConstName(string name, bool caseInsensitive = false)
+            public ConstName(string name, bool ignoreCase = false)
             {
-                this.Name = name;
-                this.CaseInsensitive = caseInsensitive;
+                this.Name = name ?? throw new ArgumentNullException(nameof(name));
+                this.StringComparer = ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
             }
 
-            public bool Equals(ConstName other)
-            {
-                return Name.Equals(other.Name,
-                    (this.CaseInsensitive | other.CaseInsensitive)
-                        ? StringComparison.OrdinalIgnoreCase
-                        : StringComparison.Ordinal);
-            }
+            public bool Equals(ConstName other) => StringComparer.Equals(Name, other.Name);
 
             public override bool Equals(object obj) => obj is ConstName && Equals((ConstName)obj);
 
-            public override int GetHashCode() => Name.GetHashCode();
+            public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Name); // always ignore case when getting hash
+        }
+
+        /// <summary>
+        /// Information about app constants.
+        /// </summary>
+        [DebuggerDisplay("Value={Value}, Extension={ExtensionName}")]
+        struct ConstData
+        {
+            /// <summary>
+            /// The constant value or value getter Func&lt;PhpValue&gt;.
+            /// </summary>
+            public PhpValue Data;
+
+            /// <summary>
+            /// Resolves the constant value.
+            /// </summary>
+            public PhpValue GetValue(Context ctx)
+            {
+                if (Data.Object is Delegate)
+                {
+                    return
+                        Data.Object is Func<PhpValue> func ? func() :
+                        Data.Object is Func<Context, PhpValue> func2 ? func2(ctx) :
+                        throw null;
+                }
+                else
+                {
+                    return Data;
+                }
+            }
+
+            /// <summary>
+            /// Optional extension name that the constant belongs to.
+            /// </summary>
+            public string ExtensionName;
         }
 
         #endregion
 
-        class ConstsMap : IEnumerable<KeyValuePair<string, PhpValue>>
+        #region ConstantInfo // CONSIDER: move to Reflection
+
+        /// <summary>
+        /// Information about a global constant.
+        /// </summary>
+        [DebuggerDisplay("{Name,nq}, Value={Value}")]
+        public struct ConstantInfo
+        {
+            public string Name { get; set; }
+            public string ExtensionName { get; set; }
+            public PhpValue Value { get; set; }
+            public bool IsUser { get; set; }
+        }
+
+        #endregion
+
+        struct ConstsMap : IEnumerable<ConstantInfo>
         {
             /// <summary>
             /// Maps of constant name to its ID.
             /// </summary>
-            readonly static Dictionary<ConstName, int> _map = new Dictionary<ConstName, int>(1024, new ConstName.ConstNameComparer());
+            readonly static Dictionary<ConstName, int> s_map = new Dictionary<ConstName, int>(1024, new ConstName.ConstNameComparer());
 
             /// <summary>
             /// Lock mechanism for accessing statics.
             /// </summary>
-            readonly static ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+            readonly static ReaderWriterLockSlim s_rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
             /// <summary>
             /// Maps constant ID to its actual value, accross all contexts (application wide).
             /// </summary>
-            static PhpValue[] _valuesApp = new PhpValue[512];
+            static ConstData[] s_valuesApp = new ConstData[1200];   // there is ~1162 builtin constants
 
             /// <summary>
             /// Actual count of defined constant names.
             /// </summary>
-            static int _countApp, _countCtx;
+            static int s_countApp, s_countCtx;
 
             /// <summary>
             /// Maps constant ID to its actual value in current context.
             /// </summary>
-            PhpValue[] _valuesCtx = new PhpValue[_countCtx];
+            PhpValue[]/*!*/_valuesCtx;
 
-            static void EnsureArray(ref PhpValue[] arr, int size)
+            /// <summary>
+            /// Runtime context.
+            /// </summary>
+            readonly Context _ctx;
+
+            /// <summary>
+            /// Initializes <see cref="ConstsMap"/>.
+            /// </summary>
+            public static ConstsMap Create(Context ctx) => new ConstsMap(ctx);
+
+            ConstsMap(Context ctx)
+            {
+                _ctx = ctx;
+                _valuesCtx = new PhpValue[s_countCtx];
+            }
+
+            static void EnsureArray<T>(ref T[] arr, int size)
             {
                 if (arr.Length < size)
                 {
@@ -92,82 +155,92 @@ namespace Pchp.Core
                 }
             }
 
+            static void RedeclarationError(string name)
+            {
+                throw new InvalidOperationException(string.Format(Resources.ErrResources.constant_redeclared, name));
+            }
+
             /// <summary>
             /// Ensures unique constant ID for given constant name.
             /// Gets positive ID for runtime constant, negative ID for application constant.
             /// IDs are indexed from <c>1</c>. Zero is invalid ID.
             /// </summary>
-            static int RegisterConstantId(string name, bool ignorecase = false, bool appConstant = false)
+            static int RegisterConstantId(string name, bool ignoreCase = false, bool appConstant = false)
             {
-                var cname = new ConstName(name, ignorecase);
+                var cname = new ConstName(name, ignoreCase);
                 int idx;
 
-                _rwLock.EnterUpgradeableReadLock();
+                s_rwLock.EnterUpgradeableReadLock();
                 try
                 {
-                    if (!_map.TryGetValue(cname, out idx))
+                    if (!s_map.TryGetValue(cname, out idx))
                     {
-                        _rwLock.EnterWriteLock();
+                        s_rwLock.EnterWriteLock();
                         try
                         {
                             // new constant ID, non zero
                             idx = appConstant
-                                ? -(++_countApp)    // app constants are negative
-                                : (++_countCtx);    //
+                                ? -(++s_countApp)    // app constants are negative
+                                : (++s_countCtx);    //
 
-                            _map.Add(cname, idx);
+                            s_map.Add(cname, idx);
                         }
                         finally
                         {
-                            _rwLock.ExitWriteLock();
+                            s_rwLock.ExitWriteLock();
                         }
                     }
                 }
                 finally
                 {
-                    _rwLock.ExitUpgradeableReadLock();
+                    s_rwLock.ExitUpgradeableReadLock();
                 }
 
                 //
                 return idx;
             }
 
-            public static void DefineAppConstant(string name, PhpValue value, bool ignorecase = false)
+            public static void DefineAppConstant(string name, PhpValue value, bool ignoreCase, string extensionName)
             {
-                Debug.Assert(value.IsScalar || value.Object is Func<PhpValue>);
+                Debug.Assert(value.IsScalar || value.Object is Func<PhpValue> || value.Object is Func<Context, PhpValue>);
 
-                var idx = -RegisterConstantId(name, ignorecase, true);
+                var idx = -RegisterConstantId(name, ignoreCase, true);
                 Debug.Assert(idx != 0);
 
                 if (idx < 0)
-                    throw new ArgumentException("runtime_constant_redefinition");   // runtime constant with this name was already defined
+                {
+                    RedeclarationError(name);   // runtime constant with this name was already defined
+                }
 
-                // TODO: check redefinition
-                EnsureArray(ref _valuesApp, idx);
-                DefineConstant(ref _valuesApp[idx - 1], value);
+                EnsureArray(ref s_valuesApp, idx);
+
+                // fill in the app contant slot
+                ref var slot = ref s_valuesApp[idx - 1];
+
+                if (SetValue(ref slot.Data, value))
+                {
+                    slot.ExtensionName = extensionName;
+                }
             }
 
-            public bool DefineConstant(string name, PhpValue value, bool ignorecase = false)
-            {
-                int idx = 0;
-                return DefineConstant(name, value, ref idx, ignorecase);
-            }
-
-            public bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false)
+            public static bool DefineConstant(ref ConstsMap self, string name, PhpValue value, ref int idx, bool ignoreCase = false)
             {
                 Debug.Assert(value.IsScalar || value.IsArray);
 
                 if (idx == 0)
                 {
-                    idx = RegisterConstantId(name, ignorecase, false);
+                    idx = RegisterConstantId(name, ignoreCase, false);
                     Debug.Assert(idx != 0);
                 }
 
-                if (idx < 0)
-                    throw new ArgumentException("app_constant_redefinition");   // app-wide constant with this name was already defined
+                if (idx < 0) // app constant cannot be redeclared
+                {
+                    RedeclarationError(name);
+                }
 
-                EnsureArray(ref _valuesCtx, idx);
-                return DefineConstant(ref _valuesCtx[idx - 1], value);
+                ref var values = ref self._valuesCtx;
+                EnsureArray(ref values, idx);
+                return SetValue(ref values[idx - 1], value);
             }
 
             /// <summary>
@@ -176,13 +249,26 @@ namespace Pchp.Core
             /// <param name="slot">Constant slot to be set.</param>
             /// <param name="value">Value to be set.</param>
             /// <returns>True if slot was set, otherwise false.</returns>
-            static bool DefineConstant(ref PhpValue slot, PhpValue value)
+            static bool SetValue(ref PhpValue slot, PhpValue value)
             {
                 if (slot.IsSet)
+                {
                     return false;
+                }
+                else
+                {
+                    slot = value;
+                    return true;
+                }
+            }
 
-                slot = value;
-                return true;
+            /// <summary>
+            /// Gets constant value by its name.
+            /// </summary>
+            public bool TryGetConstant(string name, out PhpValue value)
+            {
+                int idx = 0;
+                return TryGetConstant(name, ref idx, out value);
             }
 
             /// <summary>
@@ -190,93 +276,125 @@ namespace Pchp.Core
             /// </summary>
             /// <param name="name">Variable name used if <paramref name="idx"/> is not provided.</param>
             /// <param name="idx">Variable containing cached constant index.</param>
-            /// <returns>Constant value.</returns>
-            public PhpValue GetConstant(string name, ref int idx)
+            /// <param name="value">The resulting value.</param>
+            /// <returns>Whether the constant is defined.</returns>
+            public bool TryGetConstant(string name, ref int idx, out PhpValue value)
             {
                 if (idx == 0)
                 {
-                    _rwLock.EnterReadLock();
+                    s_rwLock.EnterReadLock();
                     try
                     {
-                        _map.TryGetValue(new ConstName(name), out idx);
+                        s_map.TryGetValue(new ConstName(name), out idx);
                     }
                     finally
                     {
-                        _rwLock.ExitReadLock();
+                        s_rwLock.ExitReadLock();
                     }
                 }
 
-                return GetConstant(idx);
-            }
-
-            /// <summary>
-            /// Gets constant value by its name.
-            /// </summary>
-            public PhpValue GetConstant(string name)
-            {
-                int idx;
-
-                _rwLock.EnterReadLock();
-                try
-                {
-                    _map.TryGetValue(new ConstName(name), out idx);
-                }
-                finally
-                {
-                    _rwLock.ExitReadLock();
-                }
-
-                return GetConstant(idx);
+                //
+                return TryGetConstant(idx, out value);
             }
 
             /// <summary>
             /// Gets constant value by constant index.
-            /// Negative numbers denotates app constants, positive numbers conrrespond to constants defined in runtime.
+            /// Negative numbers denotates app constants, positive numbers conrrespond to constants defined within <see cref="Context"/> (user constants).
             /// </summary>
-            PhpValue GetConstant(int idx) => idx > 0 ? GetConstant(idx - 1, _valuesCtx) : GetAppConstant(GetConstant(-idx - 1, _valuesApp));
+            bool TryGetConstant(int idx, out PhpValue value)
+            {
+                if (idx > 0)
+                {
+                    // user constant
+                    if (ArrayUtils.TryGetItem(_valuesCtx, idx - 1, out value) && value.IsSet)
+                    {
+                        return true;
+                    }
+                }
+                else // if (idx < 0)
+                {
+                    // app constant
+                    if (ArrayUtils.TryGetItem(s_valuesApp, -idx - 1, out var data) && data.Data.IsSet)
+                    {
+                        value = data.GetValue(_ctx);
+                        return true;
+                    }
 
-            /// <summary>
-            /// Safely returns constant from its index within array of constants.
-            /// </summary>
-            static PhpValue GetConstant(int idx, PhpValue[] values) => (idx >= 0 && idx < values.Length) ? values[idx] : PhpValue.Void;
+                    value = default;
+                }
 
-            /// <summary>
-            /// App constant can be either a value or a function getting a value.
-            /// </summary>
-            static PhpValue GetAppConstant(PhpValue slot) => slot.Object is Func<PhpValue> func ? func() : slot;
+                // undefined
+                return false;
+            }
 
             /// <summary>
             /// Gets value indicating whether given constant is defined.
             /// </summary>
-            public bool IsDefined(string name) => GetConstant(name).IsSet;
+            public bool IsDefined(string name) => TryGetConstant(name, out _);
 
             /// <summary>
-            /// Enumerates all defined constants available in the context (including app-wide constants).
+            /// Enumerates all defined constants available in the context (including app constants).
             /// </summary>
-            public IEnumerator<KeyValuePair<string, PhpValue>> GetEnumerator()
+            public IEnumerator<ConstantInfo> GetEnumerator()
             {
-                var list = new List<KeyValuePair<string, PhpValue>>(_map.Count);
+                var listApp = new ConstantInfo[s_countApp];
+                var listCtx = new ConstantInfo[s_countCtx];
 
                 //
-                _rwLock.EnterReadLock();
+                s_rwLock.EnterReadLock();
                 try
                 {
-                    foreach (var pair in _map)
+                    // initilize values
+
+                    var valuesApp = s_valuesApp;
+                    for (int i = 0; i < valuesApp.Length; i++)
                     {
-                        var value = GetConstant(pair.Value);
-                        if (value.IsSet)
+                        ref var data = ref valuesApp[i];
+                        if (!data.Data.IsDefault)
                         {
-                            list.Add(new KeyValuePair<string, PhpValue>(pair.Key.Name, value));
+                            ref var item = ref listApp[i];
+                            item.Value = data.GetValue(_ctx);
+                            item.ExtensionName = data.ExtensionName;
+                            //item.IsUser = false;
+                        }
+                    }
+
+                    var valuesCtx = _valuesCtx;
+                    for (int i = 0; i < valuesCtx.Length; i++)
+                    {
+                        var value = valuesCtx[i];
+                        if (!value.IsDefault)
+                        {
+                            ref var item = ref listCtx[i];
+                            item.Value = value;
+                            item.IsUser = true;
+                        }
+                    }
+
+                    // assign name from the map
+                    foreach (var pair in s_map)
+                    {
+                        if (pair.Value < 0)
+                        {
+                            // app constant
+                            listApp[-pair.Value - 1].Name = pair.Key.Name;
+                        }
+                        else
+                        {
+                            // user constant
+                            listCtx[pair.Value - 1].Name = pair.Key.Name;
                         }
                     }
                 }
                 finally
                 {
-                    _rwLock.ExitReadLock();
+                    s_rwLock.ExitReadLock();
                 }
 
                 //
-                return list.GetEnumerator();
+                return listApp.Concat(listCtx)
+                    .Where(info => !info.Value.IsDefault)
+                    .GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

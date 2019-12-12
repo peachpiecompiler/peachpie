@@ -684,4 +684,7 @@
   <data name="ftp_error_no_nb" xml:space="preserve">
     <value>No asynchronous (non-blocking) transfer to continue.</value>
   </data>
+  <data name="time_sleep_until_in_past" xml:space="preserve">
+    <value>Sleep until to time is less than current time</value>
+  </data>
 </root>

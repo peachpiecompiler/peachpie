@@ -21,6 +21,7 @@ namespace Peachpie.Library.XmlDom
         Always = -1
     }
 
+    [PhpExtension("dom")]
     public static class XsltConstants
     {
         public const int XSL_CLONE_AUTO = (int)CloneType.Auto;
@@ -31,7 +32,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Implements the XSLT processor.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("xsl")]
     public class XSLTProcessor
     {
         #region Delegates

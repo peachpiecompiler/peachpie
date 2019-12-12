@@ -1,4 +1,5 @@
-﻿using Pchp.Core;
+﻿using Microsoft.Extensions.ObjectPool;
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -253,7 +254,12 @@ namespace Pchp.Library
         /// <summary>
         /// Determines whether two strings are equal while ignoring casing.
         /// </summary>
-        public static bool EqualsOrdinalIgnoreCase(this string str1, string str2) => string.Equals(str1, str2, StringComparison.OrdinalIgnoreCase);
+        public static bool EqualsOrdinalIgnoreCase(this string str1, string str2) => Core.Utilities.StringUtils.EqualsOrdinalIgnoreCase(str1, str2);
+
+        /// <summary>
+        /// Determines whether two strings are equal while ignoring casing.
+        /// </summary>
+        public static bool EqualsOrdinalIgnoreCase(this ReadOnlySpan<char> str1, ReadOnlySpan<char> str2) => Core.Utilities.StringUtils.EqualsOrdinalIgnoreCase(str1, str2);
 
         /// <summary>
         /// Decodes given json encoded string.
@@ -515,5 +521,37 @@ namespace Pchp.Library
         //
         //		  return null;
         //		}		
+    }
+
+    /// <summary>
+    /// <see cref="StringBuilder"/> extensions and pooling.
+    /// </summary>
+    public struct StringBuilderUtilities
+    {
+        /// <summary>
+        /// Gets object pool singleton.
+        /// Uses <see cref="StringBuilderPooledObjectPolicy"/> policy (automatically clears the string builder upon return).
+        /// </summary>
+        public static ObjectPool<StringBuilder> Pool => s_lazyObjectPool.Value;
+
+        static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(() =>
+        {
+            var provider = new DefaultObjectPoolProvider();
+            var policy = new StringBuilderPooledObjectPolicy();
+            return provider.Create(policy);
+        }, System.Threading.LazyThreadSafetyMode.None);
+
+        /// <summary>
+        /// Gets the <paramref name="sb"/> value as string and return the instance to the <see cref="Pool"/>.
+        /// </summary>
+        /// <param name="sb">String builder instance.</param>
+        /// <returns><paramref name="sb"/> string.</returns>
+        internal static string GetStringAndReturn(StringBuilder sb)
+        {
+            Debug.Assert(sb != null);
+            var value = sb.ToString();
+            Pool.Return(sb);
+            return value;
+        }
     }
 }

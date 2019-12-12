@@ -454,8 +454,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
-            // TODO: XmlDocumentationCommentCompiler
-            return this.PHPDocBlock?.Summary ?? string.Empty;
+            if (PHPDocBlock != null)
+            {
+                using (var output = new System.IO.StringWriter())
+                {
+                    DocumentationComments.DocumentationCommentCompiler.WriteRoutine(output, this);
+                    return output.ToString();
+                }
+            }
+            //
+            return string.Empty;
         }
     }
 }

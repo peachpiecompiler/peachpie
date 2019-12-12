@@ -11,7 +11,7 @@ using System.ComponentModel;
 /// Core class created by <c>unserialize</c> if an undefined class should be created.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Advanced)]
-[PhpType(PhpTypeAttribute.InheritName)]
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension("standard")]
 public sealed class __PHP_Incomplete_Class
 {
     /// <summary>

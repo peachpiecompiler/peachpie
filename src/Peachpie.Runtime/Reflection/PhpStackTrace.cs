@@ -132,7 +132,7 @@ namespace Pchp.Core.Reflection
         static bool IsPhpStackFrame(StackFrame frame)
         {
             var method = frame.GetMethod();
-            if (method == null)
+            if (method == null || method.DeclaringType == null)
             {
                 return false;
             }
@@ -275,7 +275,7 @@ namespace Pchp.Core.Reflection
 
     internal sealed class PhpStackFrame
     {
-        const string GlobalCodeName = "{main}";
+        public const string GlobalCodeName = "{main}";
         const string UnknownFile = "<unknown>";
 
         readonly StackFrame _clrframe;

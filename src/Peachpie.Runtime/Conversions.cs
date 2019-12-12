@@ -132,6 +132,11 @@ namespace Pchp.Core
         /// </summary>
         public static byte[] ToBytes(string value, Context ctx) => ctx.StringEncoding.GetBytes(value);
 
+        /// <summary>
+        /// Converts mutable string to byte[].
+        /// </summary>
+        public static byte[] ToBytes(PhpValue value, Context ctx) => value.ToBytes(ctx);
+
         #endregion
 
         #region ToChar

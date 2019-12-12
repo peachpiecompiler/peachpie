@@ -338,22 +338,23 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
     [DebuggerDisplay("BoundClassTypeRef ({_qname})")]
     sealed class BoundClassTypeRef : BoundTypeRef
     {
-        public QualifiedName ClassName => _qname;
-        readonly QualifiedName _qname;
+        public QualifiedName ClassName { get; }
 
         readonly SourceRoutineSymbol _routine;
         readonly SourceTypeSymbol _self;
+        readonly int _arity;
 
-        public BoundClassTypeRef(QualifiedName qname, SourceRoutineSymbol routine, SourceTypeSymbol self)
+        public BoundClassTypeRef(QualifiedName qname, SourceRoutineSymbol routine, SourceTypeSymbol self, int arity = -1)
         {
             if (qname.IsReservedClassName)
             {
                 throw new ArgumentException();
             }
 
-            _qname = qname;
+            ClassName = qname;
             _routine = routine;
             _self = self;
+            _arity = arity;
         }
 
         public override bool IsObject => true;
@@ -369,7 +370,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             {
                 // CALL <ctx>.GetDeclaredType(<typename>, autoload: true)
                 cg.EmitLoadContext();
-                cg.Builder.EmitStringConstant(_qname.ToString());
+                cg.Builder.EmitStringConstant(ClassName.ToString());
                 cg.Builder.EmitBoolConstant(true);
 
                 return cg.EmitCall(ILOpCode.Call, throwOnError
@@ -389,13 +390,16 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
             if (_self != null)
             {
-                if (_self.FullName == _qname) type = _self;
-                else if (_self.BaseType is IPhpTypeSymbol phpt && phpt.FullName == _qname) type = _self.BaseType;
+                if (_self.FullName == ClassName) type = _self;
+                else if (_self.BaseType != null && _self.BaseType.PhpQualifiedName() == ClassName) type = _self.BaseType;
             }
 
             if (type == null)
             {
-                type = (TypeSymbol)compilation.GlobalSemantics.ResolveType(_qname);
+                type = (_arity <= 0)
+                 ? (TypeSymbol)compilation.GlobalSemantics.ResolveType(ClassName)
+                 // generic types only exist in external references, use this method to resolve the symbol including arity (needs metadataname instead of QualifiedName)
+                 : compilation.GlobalSemantics.GetTypeFromNonExtensionAssemblies(MetadataHelpers.ComposeAritySuffixedMetadataName(ClassName.ClrName(), _arity));
             }
 
             var containingFile = _routine?.ContainingFile ?? _self?.ContainingFile;
@@ -440,18 +444,18 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             return (ResolvedType = type);
         }
 
-        public override string ToString() => _qname.ToString();
+        public override string ToString() => ClassName.ToString();
 
         public override TypeRefMask GetTypeRefMask(TypeRefContext ctx) => ctx.GetTypeMask(this, true);
 
-        public override bool Equals(IBoundTypeRef other) => base.Equals(other) || (other is BoundClassTypeRef ct && ct._qname == this._qname && ct.TypeArguments.IsDefaultOrEmpty);
+        public override bool Equals(IBoundTypeRef other) => base.Equals(other) || (other is BoundClassTypeRef ct && ct.ClassName == this.ClassName && ct.TypeArguments.IsDefaultOrEmpty);
     }
 
     #endregion
 
     #region BoundGenericClassTypeRef
 
-    [DebuggerDisplay("BoundGenericClassTypeRef ({_qname}`{_typeArguments.Length})")]
+    [DebuggerDisplay("BoundGenericClassTypeRef ({_targetType,nq}`{_typeArguments.Length})")]
     sealed class BoundGenericClassTypeRef : BoundTypeRef
     {
         readonly IBoundTypeRef _targetType;

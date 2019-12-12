@@ -16,7 +16,7 @@ namespace Pchp.Core
         /// <summary>Gets value indicating HTTP headers were already sent.</summary>
         bool HeadersSent { get; }
 
-        void SetHeader(string name, string value);
+        void SetHeader(string name, string value, bool append = false);
 
         void RemoveHeader(string name);
 

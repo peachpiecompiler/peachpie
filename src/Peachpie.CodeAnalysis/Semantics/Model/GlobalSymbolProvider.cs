@@ -261,7 +261,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 _next.ResolveType(name, resolved);
         }
 
-        NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
+        public NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
         {
             foreach (AssemblySymbol ass in _compilation.ProbingAssemblies)
             {
@@ -352,9 +352,14 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         {
             get
             {
-                return GetExtensionLibraries(_compilation).Cast<Symbol>().Concat(ExtensionContainers).Concat(ExportedTypes.Values)   // assemblies & containers & types
-                    .SelectMany(x => x.GetPhpExtensionAttribute()?.PhpExtensionAttributeValues() ?? Array.Empty<string>())
-                    .Distinct(StringComparer.OrdinalIgnoreCase);
+                var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var t in GetExtensionLibraries(_compilation).Cast<Symbol>().Concat(ExtensionContainers).Concat(ExportedTypes.Values))   // assemblies & containers & types
+                {
+                    result.UnionWith(SymbolExtensions.PhpExtensionAttributeValues(t.GetPhpExtensionAttribute()));
+                }
+
+                return result;
             }
         }
 

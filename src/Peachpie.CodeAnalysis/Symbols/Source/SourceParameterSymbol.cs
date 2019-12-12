@@ -48,8 +48,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (Initializer is BoundArrayEx arr)
                     {
                         // special case: empty array
-                        if (arr.Items.Length == 0)
+                        if (arr.Items.Length == 0 && !_syntax.PassedByRef)
                         {
+                            // OPTIMIZATION: reference the singleton field directly, the called routine is responsible to perform copy if necessary
+                            // parameter MUST NOT be `PassedByRef` https://github.com/peachpiecompiler/peachpie/issues/591
                             // PhpArray.Empty
                             return DeclaringCompilation.CoreMethods.PhpArray.Empty;
                         }
@@ -66,7 +68,10 @@ namespace Pchp.CodeAnalysis.Symbols
                         fldtype = DeclaringCompilation.CoreTypes.PhpValue;
                     }
 
-                    if (Initializer.RequiresContext)
+                    // The construction of the default value may require a Context, cannot be created as a static singletong
+                    // Additionally; default values of REF parameter must be created every time from scratch! https://github.com/peachpiecompiler/peachpie/issues/591
+                    if (Initializer.RequiresContext ||
+                        (_syntax.PassedByRef && fldtype.IsReferenceType && fldtype.SpecialType != SpecialType.System_String))  // we can cache the default value even for Refs if it is an immutable value
                     {
                         // Func<Context, PhpValue>
                         fldtype = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Func_T2).Construct(

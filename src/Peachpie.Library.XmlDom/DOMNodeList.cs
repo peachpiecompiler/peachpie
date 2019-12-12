@@ -10,7 +10,7 @@ using Pchp.Core.Resources;
 
 namespace Peachpie.Library.XmlDom
 {
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public class DOMNodeList : Traversable, Iterator, ArrayAccess
     {
         #region Fields and Properties

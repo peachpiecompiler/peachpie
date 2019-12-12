@@ -70,6 +70,7 @@ namespace Pchp.Library.Reflection
         /// Runtime property information.
         /// Cannot be <c>null</c>.
         /// </summary>
+        [PhpHidden]
         PhpPropertyInfo _pinfo;
 
         #endregion
@@ -104,15 +105,9 @@ namespace Pchp.Library.Reflection
         //void __clone() { throw new NotImplementedException(); }
         public void __construct(Context ctx, PhpValue @class, string name)
         {
-            var classname = @class.ToStringOrNull();
-            if (classname != null)
-            {
-                var tinfo = ctx.GetDeclaredTypeOrThrow(classname, true);
-                if (tinfo != null)
-                {
-                    _pinfo = tinfo.GetDeclaredProperty(name);
-                }
-            }
+            var tinfo = ReflectionUtils.ResolvePhpTypeInfo(ctx, @class);
+            
+            _pinfo = tinfo.GetDeclaredProperty(name);
 
             if (_pinfo == null)
             {

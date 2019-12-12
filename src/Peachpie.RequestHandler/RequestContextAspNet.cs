@@ -112,7 +112,7 @@ namespace Peachpie.RequestHandler
             }
         }
 
-        void IHttpPhpContext.SetHeader(string name, string value)
+        void IHttpPhpContext.SetHeader(string name, string value, bool append)
         {
             if (name.EqualsOrdinalIgnoreCase("content-length"))
             {
@@ -120,8 +120,10 @@ namespace Peachpie.RequestHandler
                 return;
             }
 
-            //
-            _httpctx.Response.Headers.Add(name, value);
+            if (name.EqualsOrdinalIgnoreCase("location"))
+            {
+                _httpctx.Response.StatusCode = (int)HttpStatusCode.Redirect; // 302
+            }
 
             // specific headers
             //if (name.EqualsOrdinalIgnoreCase("location"))
@@ -138,18 +140,30 @@ namespace Peachpie.RequestHandler
             //    if (_contentEncoding != null) _contentEncoding.SetEncoding(response);// on IntegratedPipeline, set immediately to Headers
             //    else response.ContentEncoding = RequestContext.CurrentContext.DefaultResponseEncoding;
             //}
-            else if (name.EqualsOrdinalIgnoreCase("expires"))
+            //else if (name.EqualsOrdinalIgnoreCase("expires"))
+            //{
+            //    SetExpires(response, value);
+            //}
+            //else if (name.EqualsOrdinalIgnoreCase("cache-control"))
+            //{
+            //    CacheLimiter(response, value, null);// ignore invalid cache limiter?
+            //}
+            //else if (name.EqualsOrdinalIgnoreCase("set-cookie"))
+            //{
+            //    if (value != null)
+            //        response.AddHeader(header, value);
+            //}
+            else
             {
-                //SetExpires(response, value);
-            }
-            else if (name.EqualsOrdinalIgnoreCase("cache-control"))
-            {
-                //CacheLimiter(response, value, null);// ignore invalid cache limiter?
-            }
-            else if (name.EqualsOrdinalIgnoreCase("set-cookie"))
-            {
-                //if (value != null)
-                //    response.AddHeader(header, value);
+                // default:
+                if (append)
+                {
+                    _httpctx.Response.Headers.Add(name, value);
+                }
+                else
+                {
+                    _httpctx.Response.Headers[name] = value;
+                }
             }
         }
 
@@ -298,7 +312,7 @@ namespace Peachpie.RequestHandler
         /// <summary>
         /// Informational string exposing technology powering the web request and version.
         /// </summary>
-        public static readonly string XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+        public static readonly string s_XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
 
         public override IHttpPhpContext HttpPhpContext => this;
 
@@ -328,7 +342,7 @@ namespace Peachpie.RequestHandler
 
         void SetupHeaders()
         {
-            _httpctx.Response.Headers["X-Powered-By"] = XPoweredBy;
+            _httpctx.Response.Headers["X-Powered-By"] = s_XPoweredBy;
         }
 
         static void AddVariables(PhpArray result, NameValueCollection collection)

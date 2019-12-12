@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
 
-[PhpType(PhpTypeAttribute.InheritName)]
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
 public sealed class Closure : IPhpCallable
 {
     /// <summary>Actual anonymous function.</summary>

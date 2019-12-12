@@ -13,7 +13,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
-    [PhpExtension]
+    [PhpExtension("standard")]
     public static class Mail
     {
         public static bool mail(Context ctx, string to, string subject, string message, string additional_headers = null, string additional_parameters = null)
@@ -836,39 +836,39 @@ namespace Pchp.Library
         #endregion
     }
 
-    ////[PhpExtension("IMAP")] // uncomment when the extension is ready
-    //public static class Imap
-    //{
-    //    /// <summary>
-    //    /// Parses an address string.
-    //    /// </summary>
-    //    [return: NotNull]
-    //    public static PhpArray imap_rfc822_parse_adrlist(string addresses, string default_host = null)
-    //    {
-    //        if (string.IsNullOrEmpty(addresses))
-    //        {
-    //            return PhpArray.NewEmpty();
-    //        }
+    //[PhpExtension("IMAP")] // uncomment when the extension is ready
+    public static class Imap
+    {
+        /// <summary>
+        /// Parses an address string.
+        /// </summary>
+        [return: NotNull]
+        public static PhpArray imap_rfc822_parse_adrlist(string addresses, string default_host = null)
+        {
+            if (string.IsNullOrEmpty(addresses))
+            {
+                return PhpArray.NewEmpty();
+            }
 
-    //        var collection = new MailAddressCollection();
-    //        collection.Add(addresses);
+            var collection = new MailAddressCollection();
+            collection.Add(addresses);
 
-    //        var arr = new PhpArray(collection.Count);
-    //        foreach (var addr in collection)
-    //        {
-    //            var item = new PhpArray(3)
-    //            {
-    //                { "mailbox", addr.User },
-    //                { "host", addr.Host ?? default_host },
-    //            };
-                
-    //            if (addr.DisplayName != null) item["personal"] = addr.DisplayName;
+            var arr = new PhpArray(collection.Count);
+            foreach (var addr in collection)
+            {
+                var item = new PhpArray(3)
+                {
+                    { "mailbox", addr.User },
+                    { "host", addr.Host ?? default_host },
+                };
 
-    //            arr.Add(item.ToObject());
-    //        }
+                if (addr.DisplayName != null) item["personal"] = addr.DisplayName;
 
-    //        //
-    //        return arr;
-    //    }
-    //}
+                arr.Add(item.AsStdClass());
+            }
+
+            //
+            return arr;
+        }
+    }
 }

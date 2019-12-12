@@ -9,6 +9,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
+    [PhpExtension("Core")]
     public static class Miscellaneous
     {
         // [return: CastToFalse] // once $extension will be supported
@@ -232,6 +233,22 @@ namespace Pchp.Library
             return result.Count != 0 ? result : null;
         }
 
+        ///// <summary>
+        ///// Returns an array of all currently active resources, optionally filtered by resource type.
+        ///// </summary>
+        ///// <param name="ctx">Runtime context.</param>
+        ///// <param name="type">
+        ///// If defined, this will cause get_resources() to only return resources of the given type. A list of resource types is available.
+        ///// If the string <code>Unknown</code> is provided as the type, then only resources that are of an unknown type will be returned.
+        ///// If omitted, all resources will be returned.
+        ///// </param>
+        ///// <returns>Returns an array of currently active resources, indexed by resource number.</returns>
+        //[return: NotNull]
+        //public static PhpArray get_resources(Context ctx, string type = null)
+        //{
+        //    throw new NotSupportedException();
+        //}
+
         #region gethostname, php_uname, memory_get_usage, php_sapi_name
 
         /// <summary>
@@ -338,17 +355,38 @@ namespace Pchp.Library
 
         #endregion
 
-        #region getmypid, getlastmod, get_current_user, getmyuid
+        #region getmypid, getlastmod, get_current_user, getmyuid, posix_getpid
 
         /// <summary>
         /// Returns the PID of the current process. 
         /// </summary>
         /// <returns>The PID.</returns>
+        /// <remarks>
+        /// The current thread ID instead of process ID - 
+        /// oftenly used to get a unique ID of the current "request" 
+        /// but PID is always the same in .NET. 
+        /// In this way we get different values for different requests and also we don't expose system process ID
+        /// </remarks>
         public static int getmypid()
         {
-            return System.Diagnostics.Process.GetCurrentProcess().Id;
+            return System.Threading.Thread.CurrentThread.ManagedThreadId;
+            //return System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 
+        /// <summary>
+        /// Return the process identifier of the current process.
+        /// </summary>
+        /// <remarks>
+        /// The current thread ID instead of process ID - 
+        /// oftenly used to get a unique ID of the current "request" 
+        /// but PID is always the same in .NET. 
+        /// In this way we get different values for different requests and also we don't expose system process ID
+        /// </remarks>
+        public static int posix_getpid()
+        {
+            return System.Threading.Thread.CurrentThread.ManagedThreadId;
+            //return System.Diagnostics.Process.GetCurrentProcess().Id;
+        }
 
         /// <summary>
         /// Gets time of last page modification. 
@@ -485,6 +523,42 @@ namespace Pchp.Library
             if (seconds < 0) throw new ArgumentOutOfRangeException();
             System.Threading.Thread.Sleep((int)(seconds * 1000L));
             return 0;
+        }
+
+        /// <summary>
+        /// Delay for a number of seconds and nanoseconds.
+        /// </summary>
+        //[return: CastToFalse]
+        public static bool time_nanosleep(long seconds, long nanoseconds)
+        {
+            if (seconds < 0 || nanoseconds < 0) throw new ArgumentOutOfRangeException();
+            System.Threading.Thread.Sleep((int)(seconds * 1000L + nanoseconds / 1000000L));
+            return true;
+        }
+
+        /// <summary>
+        /// Makes the script sleep until the specified <paramref name="timestamp"/>.
+        /// </summary>
+        /// <param name="timestamp">The timestamp when the script should wake.</param>
+        /// <returns>Returns <c>TRUE</c> on success or <c>FALSE</c> on failure.</returns>
+        /// <exception cref="PhpException">If the specified timestamp is in the past, this function will generate a <c>E_WARNING</c>.</exception>
+        public static bool time_sleep_until(double timestamp)
+        {
+            var now = (System.DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds;    // see microtime(TRUE)
+            var sleep_ms = (timestamp - now) * 1000.0;
+
+            if (sleep_ms > 0.0)
+            {
+                System.Threading.Thread.Sleep((int)sleep_ms);
+                return true;
+            }
+            else
+            {
+                // note: php throws warning even if time is current time
+
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.time_sleep_until_in_past);
+                return false;
+            }
         }
 
         #endregion

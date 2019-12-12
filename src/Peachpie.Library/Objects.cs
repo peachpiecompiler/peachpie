@@ -11,6 +11,7 @@ using System.Diagnostics;
 
 namespace Pchp.Library
 {
+    [PhpExtension("Core")]
     public static class Objects
     {
         /// <summary>

@@ -103,7 +103,7 @@ namespace Pchp.Library
     /// Default file-system based session handler implementation.
     /// Implements <see cref="SessionHandlerInterface"/> to be used in combination with <see cref="Session.session_set_save_handler(SessionHandlerInterface, bool)"/> function.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("session")]
     public class SessionHandler : SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
     {
         protected readonly Context _ctx;
@@ -585,8 +585,7 @@ namespace Pchp.Library
             }
 
             ctx.Session = session_array;
-            ctx.Globals[PhpSessionHandler.SESSION_Variable] = PhpValue.Create(session_array);
-
+            
             //
             return true;
         }

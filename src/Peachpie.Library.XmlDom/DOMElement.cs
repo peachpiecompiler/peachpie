@@ -7,7 +7,7 @@ using Pchp.Core;
 
 namespace Peachpie.Library.XmlDom
 {
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public class DOMElement : DOMNode
     {
         #region Fields and Properties

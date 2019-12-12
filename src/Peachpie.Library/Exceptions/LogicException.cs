@@ -9,7 +9,7 @@ namespace Pchp.Library.Spl
     /// Exception that represents error in the program logic.
     /// This kind of exception should lead directly to a fix in your code.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class LogicException : Spl.Exception
     {
         [PhpFieldsOnlyCtor]

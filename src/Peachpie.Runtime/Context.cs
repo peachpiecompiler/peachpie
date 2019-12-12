@@ -27,13 +27,12 @@ namespace Pchp.Core
 
         protected Context()
         {
-            // Context tables
-            _functions = new RoutinesTable(FunctionRedeclared);
-            _types = new TypesTable(TypeRedeclared);
+            // tables
+            _functions = new RoutinesTable();
+            _types = new TypesTable();
             _statics = new object[StaticIndexes.StaticsCount];
-
-            //
-            this.DefineConstant("PHP_SAPI", (PhpValue)this.ServerApi, ignorecase: false);
+            _constants = ConstsMap.Create(this);
+            _scripts = ScriptsMap.Create();
         }
 
         /// <summary>
@@ -146,6 +145,9 @@ namespace Pchp.Core
                         continue;
                     }
 
+                    //
+                    var extensionName = t.ContainerType.GetCustomAttribute<PhpExtensionAttribute>(false)?.FirstExtensionOrDefault;
+
                     // reflect constants defined in the container
                     foreach (var m in t.ContainerType.GetMembers(BindingFlags.Static | BindingFlags.Public))
                     {
@@ -155,19 +157,24 @@ namespace Pchp.Core
 
                             if (fi.IsInitOnly || fi.IsLiteral)
                             {
-                                ConstsMap.DefineAppConstant(fi.Name, PhpValue.FromClr(fi.GetValue(null)));
+                                // constant
+                                ConstsMap.DefineAppConstant(fi.Name, PhpValue.FromClr(fi.GetValue(null)), false, extensionName);
                             }
                             else
                             {
-                                ConstsMap.DefineAppConstant(fi.Name, new Func<PhpValue>(() => PhpValue.FromClr(fi.GetValue(null))));
+                                // static field
+                                ConstsMap.DefineAppConstant(fi.Name, new Func<PhpValue>(() => PhpValue.FromClr(fi.GetValue(null))), false, extensionName);
                             }
                         }
                         else if (m is PropertyInfo pi && !pi.IsPhpHidden())
                         {
-                            ConstsMap.DefineAppConstant(pi.Name, new Func<PhpValue>(() => PhpValue.FromClr(pi.GetValue(null))));
+                            // property
+                            ConstsMap.DefineAppConstant(pi.Name, new Func<PhpValue>(() => PhpValue.FromClr(pi.GetValue(null))), false, extensionName);
                         }
                     }
                 }
+
+                ConstsMap.DefineAppConstant("PHP_SAPI", new Func<Context, PhpValue>(ctx => ctx.ServerApi), false, "Core");
 
                 // scripts
                 foreach (var t in assembly.GetTypes())
@@ -237,9 +244,12 @@ namespace Pchp.Core
         /// <summary>
         /// Map of global constants.
         /// </summary>
-        readonly ConstsMap _constants = new ConstsMap();
+        ConstsMap _constants;
 
-        readonly ScriptsMap _scripts = new ScriptsMap();
+        /// <summary>
+        /// Set of scripts that have been included in current context.
+        /// </summary>
+        ScriptsMap _scripts;
 
         /// <summary>
         /// Load PHP scripts and referenced symbols from PHP assembly.
@@ -248,7 +258,7 @@ namespace Pchp.Core
         /// <exception cref="ArgumentNullException">In case given assembly is a <c>null</c> reference.</exception>
         public static void AddScriptReference(Assembly assembly)
         {
-            DllLoaderImpl.AddScriptReference(assembly);            
+            DllLoaderImpl.AddScriptReference(assembly);
         }
 
         /// <summary>
@@ -293,7 +303,7 @@ namespace Pchp.Core
         /// Declare a runtime user type.
         /// </summary>
         /// <typeparam name="T">Type to be declared in current context.</typeparam>
-        public void DeclareType<T>() => _types.DeclareType<T>();
+        public void DeclareType<T>() => _types.DeclareType(TypeInfoHolder<T>.TypeInfo);
 
         /// <summary>
         /// Declare a runtime user type unser an aliased name.
@@ -397,20 +407,6 @@ namespace Pchp.Core
         /// <returns>True if the type has been declared on the current <see cref="Context"/>.</returns>
         internal bool IsUserTypeDeclared(PhpTypeInfo phptype) => _types.IsDeclared(phptype);
 
-        void FunctionRedeclared(RoutineInfo routine)
-        {
-            // TODO: ErrCode & throw
-            throw new InvalidOperationException($"Function {routine.Name} redeclared!");
-        }
-
-        void TypeRedeclared(PhpTypeInfo type)
-        {
-            Debug.Assert(type != null);
-
-            // TODO: ErrCode & throw
-            throw new InvalidOperationException($"Type {type.Name} redeclared!");
-        }
-
         #endregion
 
         #region Inclusions
@@ -426,7 +422,7 @@ namespace Pchp.Core
         /// Called by scripts Main method at its begining.
         /// </summary>
         /// <typeparam name="TScript">Script type containing the Main method/</typeparam>
-        public void OnInclude<TScript>() => _scripts.SetIncluded<TScript>();
+        public void OnInclude<TScript>() => ScriptsMap.SetIncluded<TScript>(ref _scripts);
 
         /// <summary>
         /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method within the global scope.

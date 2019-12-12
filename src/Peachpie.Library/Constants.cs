@@ -3,6 +3,7 @@ using Pchp.Core.QueryValue;
 using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace Pchp.Library
 	/// Implements PHP function over constants.
 	/// </summary>
 	/// <threadsafety static="true"/>
+    [PhpExtension("standard", "Core")]
     public static class Constants
     {
         /// <summary>
@@ -132,15 +134,26 @@ namespace Pchp.Library
         {
             var result = new PhpArray();
 
-            if (categorize)
+            foreach (var c in ctx.GetConstants())
             {
-                throw new NotImplementedException();
-            }
-            else
-            {
-                foreach (var c in ctx.GetConstants())
+                if (categorize)
                 {
-                    result.Add(c.Key, c.Value);
+                    var extensionName = c.IsUser ? "user" : c.ExtensionName;
+                    if (extensionName != null)
+                    {
+                        result
+                            .EnsureItemArray((IntStringKey)extensionName)
+                            .SetItemValue((IntStringKey)c.Name, c.Value);
+                    }
+                    else
+                    {
+                        // constant is uncategorized
+                        Debug.WriteLine($"constant {c.Name} is uncategoried");
+                    }
+                }
+                else
+                {
+                    result.Add(c.Name, c.Value);
                 }
             }
 

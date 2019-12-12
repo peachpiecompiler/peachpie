@@ -27,12 +27,16 @@ namespace Pchp.Core.Reflection
         {
             undefined = 0,
 
+            // magic PHP methods
             __get, __set,
             __call, __callstatic,
             __isset, __unset,
             __invoke, __tostring,
             __clone, __set_state, __debuginfo,
             __sleep, __wakeup,
+
+            // magic CLR methods
+            get_item, set_item,
         }
 
         #region Fields
@@ -57,6 +61,8 @@ namespace Pchp.Core.Reflection
             IEnumerable<MethodInfo> methods = type.Type
                 .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
 
+            int index = 0;
+
             // skip members of {System.Object} if we are in a PHP type
             if (type.Type.AsType() != typeof(object))
             {
@@ -69,29 +75,37 @@ namespace Pchp.Core.Reflection
             // collect available methods (including methods on base classes)
             foreach (var m in methods.ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
             {
-                if (!ReflectionUtils.IsAllowedPhpName(m.Key))   // .ctor, .phpnew, implicit interface implementation
+                if (!ReflectionUtils.IsAllowedPhpName(m.Key))   // .ctor, implicit interface implementation
                 {
                     continue;
                 }
 
-                var overrides = m.ToList();
+                var overrides = m.ToArray();
 
                 // ignore methods in base classes that has been "overriden" in current class
                 // in PHP we do override even if signature does not match (e.g. __construct)
-                SelectVisibleOverrides(overrides);
+                SelectVisibleOverrides(ref overrides);
 
-                //
-                if (_methods == null)
+                var info = PhpMethodInfo.Create(++index, m.Key, overrides, type);
+                var magic = MagicMethods.undefined;
+
+                if (IsSpecialName(overrides))
                 {
-                    _methods = new Dictionary<string, PhpMethodInfo>(StringComparer.OrdinalIgnoreCase);
+                    // 'specialname' methods,
+                    // get_Item, set_Item
+                    Enum.TryParse<MagicMethods>(m.Key.ToLowerInvariant(), out magic);
+                }
+                else
+                {
+                    if (_methods == null)
+                        _methods = new Dictionary<string, PhpMethodInfo>(StringComparer.OrdinalIgnoreCase);
+
+                    _methods[info.Name] = info;
+
+                    // resolve magic methods
+                    magic = MagicMethodByName(info.Name);
                 }
 
-                var info = PhpMethodInfo.Create(_methods.Count + 1, m.Key, overrides.ToArray(), type);
-
-                _methods[info.Name] = info;
-
-                // resolve special methods
-                var magic = MagicMethodByName(info.Name);
                 if (magic != MagicMethods.undefined)
                 {
                     if (_magicMethods == null)
@@ -118,15 +132,27 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<MethodInfo, bool> s_notObjectMember = m => m.DeclaringType != typeof(object);
 
-        static readonly Func<MethodInfo, bool> s_phpvisible = m => !m.IsSpecialName && !ReflectionUtils.IsPhpHidden(m);
+        static readonly Func<MethodInfo, bool> s_phpvisible = m => !ReflectionUtils.IsPhpHidden(m);
 
-        static void SelectVisibleOverrides(List<MethodInfo> overrides)
+        static bool IsSpecialName(MethodInfo[] methods)
         {
-            if (overrides.Count > 1)
+            for (int i = 0; i < methods.Length; i++)
             {
+                if (methods[i].IsSpecialName) return true;
+            }
+
+            return false;
+        }
+
+        static void SelectVisibleOverrides(ref MethodInfo[] overrides)
+        {
+            if (overrides.Length > 1)
+            {
+                int count = overrides.Length;   // number of items after removing hidden overrides
+
                 Type topPhpType = null;
 
-                for (int i = 0; i < overrides.Count; i++)
+                for (int i = 0; i < count; i++)
                 {
                     var t = overrides[i].DeclaringType;
                     if (t.GetPhpTypeInfo().IsPhpType)
@@ -140,14 +166,28 @@ namespace Pchp.Core.Reflection
 
                 if (topPhpType != null) // deal with PHP-like overriding
                 {
-                    for (int i = overrides.Count - 1; i >= 0; i--)
+                    int i = 0;
+                    while (i < count)
                     {
                         var declaringType = overrides[i].DeclaringType;
                         if (declaringType != topPhpType && declaringType.GetPhpTypeInfo().IsPhpType)
                         {
-                            overrides.RemoveAt(i);
+                            // overrides.RemoveAt(i);
+                            overrides[i] = overrides[--count];  // move [last item] to [i]
+                        }
+                        else
+                        {
+                            i++;
                         }
                     }
+                }
+
+                //
+                if (count != overrides.Length)
+                {
+                    overrides = overrides
+                        .AsSpan(0, count)
+                        .ToArray();
                 }
             }
         }

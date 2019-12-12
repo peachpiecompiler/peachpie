@@ -11,6 +11,7 @@ namespace Pchp.Library
     /// <summary>
 	/// Socket functions.
 	/// </summary>
+    [PhpExtension("standard")]
     public static class Network
     {
         #region Constants
@@ -167,6 +168,7 @@ namespace Pchp.Library
     }
 
     /// <summary>Functions working with DNS.</summary>
+    [PhpExtension("standard")]
 	public static class PhpDns
     {
         //#region NS: dns_check_record, checkdnsrr

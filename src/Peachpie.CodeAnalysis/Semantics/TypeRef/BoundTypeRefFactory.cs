@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>Create type reference refering to a variable containing <c>PhpTypeInfo</c> value.</summary>
         public static BoundTypeRef CreateFromPlace(IPlace place) => new BoundTypeRefFromPlace(place);
 
-        public BoundTypeRef CreateFromTypeRef(Ast.TypeRef tref, SemanticsBinder binder = null, SourceTypeSymbol self = null, bool objectTypeInfoSemantic = false)
+        public BoundTypeRef CreateFromTypeRef(Ast.TypeRef tref, SemanticsBinder binder = null, SourceTypeSymbol self = null, bool objectTypeInfoSemantic = false, int arity = -1)
         {
             if (tref is Ast.PrimitiveTypeRef pt)
             {
@@ -126,7 +126,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     return CreateFromTypeRef(reserved, binder, self, objectTypeInfoSemantic);
                 }
 
-                return new BoundClassTypeRef(named.ClassName, binder?.Routine, self ?? binder?.Self);
+                return new BoundClassTypeRef(named.ClassName, binder?.Routine, self ?? binder?.Self, arity);
             }
             else if (tref is Ast.ReservedTypeRef reserved) return new BoundReservedTypeRef(reserved.Type, self);
             else if (tref is Ast.AnonymousTypeRef at) return new BoundTypeRefFromSymbol(at.TypeDeclaration.GetProperty<SourceTypeSymbol>());
@@ -152,7 +152,7 @@ namespace Pchp.CodeAnalysis.Semantics
             else if (tref is Ast.GenericTypeRef gt)
             {
                 return new BoundGenericClassTypeRef(
-                    CreateFromTypeRef(gt.TargetType, binder, self, objectTypeInfoSemantic),
+                    CreateFromTypeRef(gt.TargetType, binder, self, objectTypeInfoSemantic, arity: gt.GenericParams.Count),
                     Create(gt.GenericParams, binder, self));
             }
             else if (tref is Ast.IndirectTypeRef it)

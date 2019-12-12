@@ -94,14 +94,9 @@ namespace Pchp.Library.Reflection
         public string getExtensionName()
         {
             var containingType = _routine.Methods[0].DeclaringType;
-            var extensions = containingType.GetCustomAttribute<PhpExtensionAttribute>(false)?.Extensions;
+            var extensionName = containingType.GetCustomAttribute<PhpExtensionAttribute>(false)?.FirstExtensionOrDefault;
 
-            if (extensions != null && extensions.Length != 0)
-            {
-                return extensions[0];
-            }
-
-            return null;
+            return extensionName;
         }
         public virtual string getFileName(Context ctx) { throw new NotImplementedException(); }
         public string getName() => name;

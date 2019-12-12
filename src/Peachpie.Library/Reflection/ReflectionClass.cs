@@ -94,6 +94,7 @@ namespace Pchp.Library.Reflection
             //
             return PhpValue.False;
         }
+
         public PhpArray getConstants(Context ctx)
         {
             var result = new PhpArray();
@@ -102,6 +103,27 @@ namespace Pchp.Library.Reflection
                 result.Add(p.PropertyName, p.GetValue(ctx, null));
             }
             return result;
+        }
+
+        /// <summary>
+        /// Gets class constants.
+        /// </summary>
+        [return: NotNull]
+        public PhpArray getReflectionConstants()
+        {
+            var result = new PhpArray();
+            foreach (var p in _tinfo.GetDeclaredConstants())
+            {
+                result.Add(new ReflectionClassConstant(p));
+            }
+            return result;
+        }
+
+        [return: CastToFalse]
+        public ReflectionClassConstant getReflectionConstant(string name)
+        {
+            var p = _tinfo.GetDeclaredConstant(name);
+            return p != null ? new ReflectionClassConstant(p) : null;
         }
 
         /// <summary>
@@ -145,20 +167,14 @@ namespace Pchp.Library.Reflection
 
         public ReflectionExtension getExtension()
         {
-            var exts = _tinfo.Extensions;
-            return exts.Length != 0
-                ? new ReflectionExtension(exts[0])
+            var extensionName = _tinfo.ExtensionName;
+            return extensionName != null
+                ? new ReflectionExtension(extensionName)
                 : null; // NULL
         }
 
         [return: CastToFalse]
-        public string getExtensionName()
-        {
-            var exts = _tinfo.Extensions;
-            return exts.Length != 0
-                ? exts[0]
-                : null; // FALSE
-        }
+        public string getExtensionName() => _tinfo.ExtensionName; // null means FALSE
 
         /// <summary>Gets the filename of the file in which the class has been defined</summary>
         /// <param name="ctx">Current runtime context</param>

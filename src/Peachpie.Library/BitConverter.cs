@@ -38,6 +38,7 @@ namespace Pchp.Library
 	///   <term>@</term><description>0x00-fill to absolute position</description>
 	/// </list>
 	/// </remarks>
+    [PhpExtension("standard")]
     public static class PhpBitConverter
     {
         /// <summary>
@@ -603,7 +604,7 @@ namespace Pchp.Library
                                 int p = pos;
                                 int nibble_shift = (specifier == 'h') ? 0 : 4;
 
-                                var sb = new StringBuilder(size);
+                                var sb = StringBuilderUtilities.Pool.Get();
                                 for (int k = 0; k < size; k++)
                                 {
                                     const string hex_digits = "0123456789ABCDEF";
@@ -618,7 +619,7 @@ namespace Pchp.Library
                                     p++;
                                 }
 
-                                item = (PhpValue)sb.ToString();
+                                item = StringBuilderUtilities.GetStringAndReturn(sb);
                                 break;
                             }
 

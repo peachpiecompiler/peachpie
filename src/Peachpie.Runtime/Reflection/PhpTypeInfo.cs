@@ -48,9 +48,9 @@ namespace Pchp.Core.Reflection
         public bool IsPhpType => GetPhpTypeAttribute() != null;
 
         /// <summary>
-        /// Gets list of PHP extensions associated with the current type.
+        /// Gets the associated PHP extension name.
         /// </summary>
-        public string[] Extensions => _type.GetCustomAttribute<PhpExtensionAttribute>(false)?.Extensions ?? Array.Empty<string>();
+        public string ExtensionName => _type.GetCustomAttribute<PhpExtensionAttribute>(false)?.FirstExtensionOrDefault;
 
         /// <summary>
         /// Gets the full type name in PHP syntax, cannot be <c>null</c> or empty.

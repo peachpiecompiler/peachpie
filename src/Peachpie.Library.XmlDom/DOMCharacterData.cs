@@ -9,7 +9,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Represents nodes with character data. No nodes directly correspond to this class, but other nodes do inherit from it.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public partial class DOMCharacterData : DOMNode
     {
         #region Fields and Properties
@@ -137,7 +137,7 @@ namespace Peachpie.Library.XmlDom
     /// Inherits from <see cref="DOMCharacterData"/> and represents the textual content of a
     /// <see cref="DOMElement"/> or <see cref="DOMAttr"/>. 
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public partial class DOMText : DOMCharacterData
     {
         #region Fields and Properties
@@ -311,7 +311,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Inherits from <see cref="DOMText"/> for textural representation of CData constructs. 
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public partial class DOMCdataSection : DOMText
     {
         #region Fields and Properties
@@ -384,7 +384,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Represents comment nodes, characters delimited by <!-- and -->.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public partial class DOMComment : DOMCharacterData
     {
         #region Fields and Properties

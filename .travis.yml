@@ -20,6 +20,7 @@ install:
   - dotnet build ./src/PDO/Peachpie.Library.PDO/ /p:TargetFrameworks=netcoreapp2.1
   - dotnet build ./src/PDO/Peachpie.Library.PDO.MySQL/ /p:TargetFrameworks=netcoreapp2.1
   - dotnet build ./src/PDO/Peachpie.Library.PDO.SqlSrv/ /p:TargetFrameworks=netcoreapp2.1
+  - dotnet build ./src/PDO/Peachpie.Library.PDO.Sqlite/ /p:TargetFrameworks=netcoreapp2.1
   - dotnet build ./src/Peachpie.App/ /p:TargetFrameworks=netcoreapp2.1
   - dotnet build ./src/Peachpie.CodeAnalysis/ /p:TargetFrameworks=netcoreapp2.1
   - dotnet build ./src/Peachpie.AspNetCore.Web/ /p:TargetFrameworks=netcoreapp2.1

@@ -751,16 +751,13 @@ namespace Pchp.Core
             public void Output(Context ctx)
             {
                 var chunks = _chunks;
-                if (chunks != null)
+                if (chunks is object[] objs)
                 {
-                    if (chunks.GetType() == typeof(object[]))
-                    {
-                        OutputChunks(ctx, (object[])chunks, _chunksCount);
-                    }
-                    else
-                    {
-                        OutputChunk(ctx, chunks);
-                    }
+                    OutputChunks(ctx, objs, _chunksCount);
+                }
+                else if (chunks != null)
+                {
+                    OutputChunk(ctx, chunks);
                 }
             }
 

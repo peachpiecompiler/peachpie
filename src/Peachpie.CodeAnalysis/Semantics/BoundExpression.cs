@@ -1457,6 +1457,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundAssignEx Update(BoundReferenceExpression target, BoundExpression value)
         {
+            Debug.Assert(!(this is BoundCompoundAssignEx));
+
             if (target == Target && value == Value)
             {
                 return this;

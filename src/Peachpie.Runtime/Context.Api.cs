@@ -234,21 +234,21 @@ namespace Pchp.Core
         /// <summary>
         /// Tries to get a global constant from current context.
         /// </summary>
-        internal bool TryGetConstant(string name, out PhpValue value, ref int idx)
+        internal bool TryGetConstant(string name, out PhpValue value, ref int idx) => _constants.TryGetConstant(name, ref idx, out value);
+
+        /// <summary>
+        /// Defines a user constant.
+        /// </summary>
+        public bool DefineConstant(string name, PhpValue value, bool ignorecase = false)
         {
-            value = _constants.GetConstant(name, ref idx);
-            return value.IsSet;
+            int idx = 0;
+            return DefineConstant(name, value, ref idx, ignorecase);
         }
 
         /// <summary>
-        /// Defines a runtime constant.
+        /// Defines a user constant.
         /// </summary>
-        public bool DefineConstant(string name, PhpValue value, bool ignorecase = false) => _constants.DefineConstant(name, value, ignorecase);
-
-        /// <summary>
-        /// Defines a runtime constant.
-        /// </summary>
-        internal bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false) => _constants.DefineConstant(name, value, ref idx, ignorecase);
+        internal bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false) => ConstsMap.DefineConstant(ref _constants, name, value, ref idx, ignorecase);
 
         /// <summary>
         /// Determines whether a constant with given name is defined.
@@ -258,7 +258,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets enumeration of all available constants and their values.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, PhpValue>> GetConstants() => _constants;
+        public IEnumerable<ConstantInfo> GetConstants() => _constants;
 
         #endregion
     }

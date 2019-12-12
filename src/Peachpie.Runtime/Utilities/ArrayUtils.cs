@@ -177,6 +177,23 @@ namespace Pchp.Core.Utilities
         /// Searches for the specified object and returns the index of its first occurrence in a one-dimensional array.
         /// </summary>
         public static int IndexOf<T>(this T[] arr, T value) => Array.IndexOf(arr, value);
+
+        /// <summary>
+        /// Safely returns item from array.
+        /// </summary>
+        public static bool TryGetItem<T>(T[] array, int idx, out T value)
+        {
+            if (idx >= 0 && idx < array.Length)
+            {
+                value = array[idx];
+                return true;
+            }
+            else
+            {
+                value = default;
+                return false;
+            }
+        }
     }
 
     /// <summary>

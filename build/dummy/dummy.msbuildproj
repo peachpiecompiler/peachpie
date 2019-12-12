@@ -12,6 +12,7 @@
 	<PackageReference Include="Peachpie.Library.PDO" Version="$(PackageVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(PackageVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.PDO.SqlSrv" Version="$(PackageVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.Sqlite" Version="$(PackageVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.Graphics" Version="$(PackageVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.Network" Version="$(PackageVersion)" PrivateAssets="Build" />
   </ItemGroup>

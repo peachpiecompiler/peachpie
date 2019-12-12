@@ -446,7 +446,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             return x.Update(
                 (BoundReferenceExpression)Accept(x.Target),
-                (BoundExpression)Accept(x.Value));
+                (BoundExpression)Accept(x.Value),
+                x.Operation);
         }
 
         public override object VisitVariableName(BoundVariableName x)

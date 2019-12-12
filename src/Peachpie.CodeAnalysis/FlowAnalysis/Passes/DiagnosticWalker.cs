@@ -595,6 +595,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 CheckMissusedPrimitiveType(x.ContainingType);
             }
 
+            if (x.Access.IsWrite && ((Microsoft.CodeAnalysis.Operations.IMemberReferenceOperation)x).Member is PropertySymbol prop && prop.SetMethod == null)
+            {
+                // read-only property written
+                _diagnostics.Add(_routine, GetMemberNameSpanForDiagnostic(x.PhpSyntax),
+                    ErrorCode.ERR_ReadOnlyPropertyWritten,
+                    prop.ContainingType.PhpQualifiedName().ToString(),  // TOOD: _statics
+                    prop.Name);
+            }
+
+            //
             return base.VisitFieldRef(x);
         }
 
@@ -815,32 +825,44 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             if (isMemberName)
             {
-                var qname = target.ContainingType.PhpQualifiedName();
+                var qname = target.ContainingType.PhpQualifiedName();   // TOOD: _statics
                 name = qname.ToString(new Name(name), false);
             }
 
             return name;
         }
 
-        void CheckObsoleteSymbol(LangElement node, Symbol target, bool isMemberCall)
+        static TextSpan GetMemberNameSpanForDiagnostic(LangElement node)
+        {
+            if (node is FunctionCall fnc)
+            {
+                return fnc.NameSpan.ToTextSpan();
+            }
+            else
+            {
+                return node.Span.ToTextSpan();
+            }
+        }
+
+        void CheckObsoleteSymbol(LangElement syntax, Symbol target, bool isMemberCall)
         {
             var obsolete = target?.ObsoleteAttributeData;
             if (obsolete != null)
             {
-                _diagnostics.Add(_routine, node, ErrorCode.WRN_SymbolDeprecated, target.Kind.ToString(), GetMemberNameForDiagnostic(target, isMemberCall), obsolete.Message);
+                _diagnostics.Add(_routine, GetMemberNameSpanForDiagnostic(syntax), ErrorCode.WRN_SymbolDeprecated, target.Kind.ToString(), GetMemberNameForDiagnostic(target, isMemberCall), obsolete.Message);
             }
         }
 
         private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
         {
-            if (x.Name.IsDirect && x.TargetMethod.IsErrorMethodOrNull())
+            if (x.Name.IsDirect &&
+                x.TargetMethod is ErrorMethodSymbol errmethod && errmethod.ErrorKind == ErrorMethodKind.Missing)
             {
-                var errmethod = (ErrorMethodSymbol)x.TargetMethod;
-                if (errmethod != null && errmethod.ErrorKind == ErrorMethodKind.Missing)
-                {
-                    var span = x.PhpSyntax is FunctionCall fnc ? fnc.NameSpan : x.PhpSyntax.Span;
-                    _diagnostics.Add(_routine, span.ToTextSpan(), ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
-                }
+                var originalName = (x.PhpSyntax is DirectFcnCall fnc)
+                    ? fnc.FullName.OriginalName
+                    : x.Name.NameValue;
+
+                _diagnostics.Add(_routine, GetMemberNameSpanForDiagnostic(x.PhpSyntax), ErrorCode.WRN_UndefinedFunctionCall, originalName.ToString());
             }
         }
 

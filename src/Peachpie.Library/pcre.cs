@@ -586,7 +586,7 @@ namespace Pchp.Library
                 {
                     if (result == null)
                     {
-                        result = new StringBuilder(str.Length + 4);
+                        result = StringBuilderUtilities.Pool.Get();
                     }
 
                     result.Append(str, lastEscape, i - lastEscape);
@@ -598,7 +598,7 @@ namespace Pchp.Library
             if (result != null)
             {
                 result.Append(str, lastEscape, str.Length - lastEscape);
-                return result.ToString();
+                return StringBuilderUtilities.GetStringAndReturn(result);
             }
             else
             {

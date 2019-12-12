@@ -727,7 +727,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                string unsuffixedName = this.MetadataName;
+                // We're using SourceTypeSymbol.MetadataName as Name (because changing the Name would cause too much refactoring for now);
+                // In PHP we can have more classes with the same name in the same namespace,
+                // so the compiler (SourceTypeSymbol) generates different MetadataName for it.
+                string unsuffixedName = this is SourceTypeSymbol srct ? srct.MetadataName : this.Name;
 
                 // CLR generally allows names with dots, however some APIs like IMetaDataImport
                 // can only return full type names combined with namespaces. 

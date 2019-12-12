@@ -12,7 +12,7 @@ namespace Peachpie.Library.XmlDom
     /// This extension represents a writer that provides a non-cached, forward-only means of generating
     /// streams or files containing XML data.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("xmlwriter")]
     public class XmlWriter
     {
         #region Constants

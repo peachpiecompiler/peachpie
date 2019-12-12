@@ -134,7 +134,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return t.IsDelegateType() && t is NamedTypeSymbol nt &&
                 nt.Arity == 2 &&
-                nt.ConstructedFrom.MetadataName == "Func" &&
+                nt.ConstructedFrom.MetadataName == "Func`2" &&
                 nt.TypeArguments[0].Name == "Context" &&
                 nt.TypeArguments[1].Is_PhpValue();
         }

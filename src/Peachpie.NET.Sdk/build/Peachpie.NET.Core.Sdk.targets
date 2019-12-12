@@ -241,6 +241,7 @@
                KeyFile="$(_KeyFile)"
                PublicSign="$(_PublicSign)"
                SourceLink="$(SourceLink)"
+               CodePage="$(CodePage)"
                PhpRelativePath="$(PhpRelativePath)"
                DefineConstants="@(DefineConstants)"
                ReferencePath="@(ReferencePath)"

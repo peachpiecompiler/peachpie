@@ -1641,12 +1641,22 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
-        #region imagefilledarc
+        #endregion
+
+        #region imagearc, imagefilledarc
 
         /// <summary>
-        /// Draw a filled partial ellipse
+        /// Draws an arc of circle centered at the given coordinates.
         /// </summary>
-        public static bool imagefilledarc(PhpResource im, int cx, int cy, int w, int h, int s, int e, int col, int style)
+        public static bool imagearc(PhpResource image, long cx, long cy, long width, long height, int start, int end, long color)
+        {
+            return imagefilledarc(image, cx, cy, width, height, start, end, color, FilledArcStyles.PIE | FilledArcStyles.NOFILL);
+        }
+
+        /// <summary>
+        /// Draw a filled partial ellipse.
+        /// </summary>
+        public static bool imagefilledarc(PhpResource im, long cx, long cy, long w, long h, int s, long e, long col, FilledArcStyles style)
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -1657,7 +1667,7 @@ namespace Peachpie.Library.Graphics
             if (cx < 0 || cy < 0) return true;
             if (cx > image.Width || cy > image.Height) return true;
 
-            int range = 0;
+            long range = 0;
             AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
 
             // Path Builder object to be used in all the branches
@@ -1672,9 +1682,9 @@ namespace Peachpie.Library.Graphics
             image.Mutate<Rgba32>(context =>
             {
                 // All PIE variants - IMG_ARC_PIE = 0
-                if (style % 2 == 0)
+                if ((style & FilledArcStyles.CHORD) == 0)
                 {
-                    // Negative range menas that starting point is grreater than the ending one. Then we will create a correct arc by using the rest to 360 from range from the starting point
+                    // Negative range meens that starting point is greater than the ending one. Then we will create a correct arc by using the rest to 360 from range from the starting point
                     while (range < 0)
                         range += 360;
 
@@ -1690,7 +1700,7 @@ namespace Peachpie.Library.Graphics
                     pathBuilder.AddLine(lastPoint, endingPoint);
 
                     // Draw the prepared lines or fill the pie
-                    if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL))
+                    if (style == (FilledArcStyles.PIE | FilledArcStyles.NOFILL))
                     {
                         context.Draw(pen, pathBuilder.Build());
                     }
@@ -1700,7 +1710,7 @@ namespace Peachpie.Library.Graphics
                         pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
                         pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
 
-                        if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+                        if (style == (FilledArcStyles.PIE | FilledArcStyles.NOFILL | FilledArcStyles.EDGED))
                         {
                             context.Draw(pen, pathBuilder.Build());
                         }
@@ -1716,7 +1726,7 @@ namespace Peachpie.Library.Graphics
                 {
                     pathBuilder.AddLine(startingPoint, endingPoint);
 
-                    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
+                    if (style == (FilledArcStyles.CHORD | FilledArcStyles.NOFILL))
                     {
                         context.Draw(pen, pathBuilder.Build());
                     }
@@ -1726,7 +1736,7 @@ namespace Peachpie.Library.Graphics
                         pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
                         pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
 
-                        if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+                        if (style == (FilledArcStyles.CHORD | FilledArcStyles.NOFILL | FilledArcStyles.EDGED))
                         {
                             context.Draw(pen, pathBuilder.Build());
                         }
@@ -1743,8 +1753,6 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #endregion
-
         /// <summary>
         /// Adjust angles and size for same behavior as in PHP
         /// </summary>
@@ -1753,7 +1761,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="s"></param>
         /// <param name="e"></param>
         /// <param name="range"></param>
-        private static void AdjustAnglesAndSize(ref int w, ref int h, ref int s, ref int e, ref int range)
+        private static void AdjustAnglesAndSize(ref long w, ref long h, ref int s, ref long e, ref long range)
         {
             if (w < 0) w = 0;
             if (h < 0) h = 0;
@@ -1946,7 +1954,8 @@ namespace Peachpie.Library.Graphics
         }
 
         #endregion
+
+        #endregion
     }
 
-    #endregion
 }

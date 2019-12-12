@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace Pchp.Core.Utilities
     /// Implementation of elastic bit array.
     /// The internal array is resized automatically within the set value operation.
     /// </summary>
-    internal sealed class ElasticBitArray
+    struct ElasticBitArray
     {
         int[] _bits;
 
@@ -37,46 +38,43 @@ namespace Pchp.Core.Utilities
         {
             get
             {
+                Debug.Assert(_bits != null);
+
                 var num = index / IntSize;
+                var bits = _bits;
 
-                if (index >= 0 && num < _bits.Length)
-                {
-                    return (_bits[num] & (1 << (index % IntSize))) != 0;
-                }
-
-                return false;
-            }
-            set
-            {
-                if (value)
-                    SetTrue(index);
-                else
-                    SetFalse(index);
+                return
+                    (index >= 0 && num < bits.Length) &&
+                    (bits[num] & (1 << (index % IntSize))) != 0;
             }
         }
 
-        internal void SetTrue(int index)
+        public static void SetTrue(ref ElasticBitArray array, int index)
         {
+            Debug.Assert(array._bits != null);
+
             if (index < 0)
             {
                 throw new ArgumentException();
             }
 
             var num = index / IntSize;
-            if (num >= _bits.Length)
+            if (num >= array._bits.Length)
             {
-                Array.Resize(ref _bits, (num + 1) * 2);
+                Array.Resize(ref array._bits, (num + 1) * 2);
             }
 
-            _bits[num] |= 1 << index % IntSize;
+            array._bits[num] |= 1 << index % IntSize;
         }
 
-        internal void SetFalse(int index)
+        public static void SetFalse(ref ElasticBitArray array, int index)
         {
+            Debug.Assert(array._bits != null);
+
             var num = index / IntSize;
-            if (index >= 0 && num < _bits.Length)
+            if (index >= 0 && num < array._bits.Length)
             {
-                _bits[num] &= ~(1 << index % IntSize);
+                array._bits[num] &= ~(1 << index % IntSize);
             }
 
             // otherwise no value means false

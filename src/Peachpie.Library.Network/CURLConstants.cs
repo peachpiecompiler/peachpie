@@ -804,9 +804,11 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Sets cURL option.
         /// </summary>
-        static bool SetOption<TOption, TValue>(CURLResource resource, TValue value) where TOption : CurlOption<HttpWebRequest, TValue>, new()
+        static bool SetOption<TOption, TValue>(CURLResource resource, TValue value)
+            where TOption : CurlOption<HttpWebRequest, TValue>, new()
+            where TValue : class
         {
-            if (value != default)
+            if (value != null)
             {
                 resource.SetOption<TOption>(new TOption() { OptionValue = value });
                 return true;

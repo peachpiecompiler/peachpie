@@ -31,6 +31,14 @@ namespace Pchp.CodeAnalysis.Symbols
             get;
         }
 
+        public override string MetadataName
+        {
+            get
+            {
+                return MangleName ? MetadataHelpers.ComposeAritySuffixedMetadataName(Name, Arity) : Name;
+            }
+        }
+
         public override SymbolKind Kind => SymbolKind.NamedType;
 
         public ISymbol AssociatedSymbol => null;
@@ -190,7 +198,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return false;
             }
         }
-        
+
         /// <summary>
         /// Type layout information (ClassLayout metadata and layout kind flags).
         /// </summary>
