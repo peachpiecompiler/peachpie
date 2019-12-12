@@ -7,7 +7,7 @@ using Pchp.Core.Reflection;
 
 namespace Pchp.Library.Reflection
 {
-    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionClassConstant : Reflector
     {
         public string name => _pinfo.PropertyName;

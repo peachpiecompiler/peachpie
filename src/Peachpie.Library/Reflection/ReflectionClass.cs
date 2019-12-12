@@ -94,6 +94,7 @@ namespace Pchp.Library.Reflection
             //
             return PhpValue.False;
         }
+
         public PhpArray getConstants(Context ctx)
         {
             var result = new PhpArray();
@@ -102,6 +103,27 @@ namespace Pchp.Library.Reflection
                 result.Add(p.PropertyName, p.GetValue(ctx, null));
             }
             return result;
+        }
+
+        /// <summary>
+        /// Gets class constants.
+        /// </summary>
+        [return: NotNull]
+        public PhpArray getReflectionConstants()
+        {
+            var result = new PhpArray();
+            foreach (var p in _tinfo.GetDeclaredConstants())
+            {
+                result.Add(new ReflectionClassConstant(p));
+            }
+            return result;
+        }
+
+        [return: CastToFalse]
+        public ReflectionClassConstant getReflectionConstant(string name)
+        {
+            var p = _tinfo.GetDeclaredConstant(name);
+            return p != null ? new ReflectionClassConstant(p) : null;
         }
 
         /// <summary>
