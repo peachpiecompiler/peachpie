@@ -1056,8 +1056,7 @@ namespace Pchp.CodeAnalysis
                     // type members - properties, constants
                     .Concat<Symbol>(table.GetDeclaredTypes().SelectMany(t => t.GetMembers().Where(m => m is SourceRoutineSymbol || m is SourceFieldSymbol)));
 
-                var stream = new MemoryStream();
-                var writer = new System.Resources.ResourceWriter(stream);
+                var resources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var symbol in symbols)
                 {
@@ -1068,8 +1067,16 @@ namespace Pchp.CodeAnalysis
                             ? type.GetFullName()
                             : symbol.ContainingType.GetFullName() + "." + symbol.MetadataName;
 
-                        writer.AddResource(id, metadata);
+                        resources[id] = metadata;
                     }
+                }
+
+                var stream = new MemoryStream();
+                var writer = new System.Resources.ResourceWriter(stream);
+
+                foreach (var pair in resources)
+                {
+                    writer.AddResource(pair.Key, pair.Value);
                 }
 
                 //
