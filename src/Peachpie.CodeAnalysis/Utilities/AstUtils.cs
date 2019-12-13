@@ -304,6 +304,12 @@ namespace Pchp.CodeAnalysis
             return tref is NullableTypeRef; // && tref != null
         }
 
+        /// <summary>
+        /// Gets value indicating the type refers to <c>callable</c>.
+        /// </summary>
+        public static bool IsCallable(this TypeRef tref) =>
+            tref is PrimitiveTypeRef primitiveType && primitiveType.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable;
+
         public static Microsoft.CodeAnalysis.Text.TextSpan GetDeclareClauseSpan(this DeclareStmt declStmt)
         {
             if (declStmt.Statement is EmptyStmt)

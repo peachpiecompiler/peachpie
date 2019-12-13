@@ -15,9 +15,27 @@ class A {
   }
 }
 
+function check_callable(callable $callable) {}
+
+function check_callable_ref(callable &$callable) {}
+
 function test($callable) {
   try {
   	$callable();
+  }
+  catch (\Throwable $e) {
+    echo get_class($e) ."\n";
+  }
+
+  try {
+  	check_callable($callable);
+  }
+  catch (\Throwable $e) {
+    echo get_class($e) ."\n";
+  }
+
+  try {
+  	check_callable_ref($callable);
   }
   catch (\Throwable $e) {
     echo get_class($e) ."\n";
