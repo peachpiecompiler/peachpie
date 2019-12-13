@@ -9,11 +9,12 @@ class A
   public function baz() { echo "baz "; }
 
   public function test(array $arr) {
-    array_map("foo", $arr);
-    array_map(["A", "bar"], $arr);
+    array_map(__NAMESPACE__ ."\\foo", $arr);
+    array_map([__NAMESPACE__ ."\\A", "bar"], $arr);
     array_map([$this, "baz"], $arr);
 
-    array_map("foo ", $arr);
+    // TODO: Re-enable when warning mode for invalid callbacks works
+    //array_map(__NAMESPACE__ ."\\foo ", $arr);
   }
 }
 
