@@ -839,7 +839,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         static void EmitTypeCheck(CodeGenerator cg, IPlace valueplace, SourceParameterSymbol srcparam)
         {
-            // TODO: check callable, iterable, type if not resolved in ct
+            // TODO: check iterable, type if not resolved in ct
 
             // check NotNull
             if (srcparam.IsNotNull)
@@ -864,6 +864,19 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.Builder.EmitIntConstant(srcparam.ParameterIndex + 1);
                     cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ThrowIfArgumentNull_object_int));
                 }
+            }
+
+            // check callable
+            if (srcparam.Syntax.TypeHint.IsCallable())
+            {
+                cg.EmitSequencePoint(srcparam.Syntax);
+
+                // Template: PhpException.ThrowIfArgumentNotCallable(<ctx>, current RuntimeTypeHandle, value, arg)
+                cg.EmitLoadContext();
+                cg.EmitCallerTypeHandle();
+                cg.EmitConvertToPhpValue(valueplace.EmitLoad(cg.Builder), default);     // To handle conversion from PhpAlias when the parameter is by ref
+                cg.Builder.EmitIntConstant(srcparam.ParameterIndex + 1);
+                cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ThrowIfArgumentNotCallable_Context_RuntimeTypeHandle_PhpValue_int));
             }
         }
 
