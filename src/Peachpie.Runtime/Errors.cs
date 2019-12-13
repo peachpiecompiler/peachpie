@@ -240,6 +240,15 @@ namespace Pchp.Core
             }
         }
 
+        public static void ThrowIfArgumentNotCallable(Context ctx, RuntimeTypeHandle callerCtx, PhpValue value, int arg)
+        {
+            var callable = value.AsCallable(callerCtx);
+            if (callable == null || (callable is PhpCallback phpcallback && !phpcallback.IsValidBound(ctx)))
+            {
+                throw TypeErrorException(string.Format(ErrResources.argument_not_callable, arg, PhpVariable.GetTypeName(value)));
+            }
+        }
+
         /// <summary>
         /// The value of an argument is not invalid but unsupported.
         /// </summary>
