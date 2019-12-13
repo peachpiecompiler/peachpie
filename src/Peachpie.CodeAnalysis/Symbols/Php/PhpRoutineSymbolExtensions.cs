@@ -7,7 +7,9 @@ using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -340,16 +342,44 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var phpdoctext = phpdoc.ContainingSourceUnit.GetSourceCode(phpdoc.Span);
 
-                var stream = new System.IO.StringWriter();
-                using (var writer = new JsonWriter(stream))
+                // cleanup the phpdoctext
+                // trim lines:
+                var result = new StringBuilder(phpdoctext.Length);
+
+                using (var reader = new StringReader(phpdoctext))
                 {
-                    writer.WriteObjectStart();
-                    writer.Write("doc", phpdoctext);
-                    // TODO: location, return type, ...
-                    writer.WriteObjectEnd();
+                    for (; ; )
+                    {
+                        var line = reader.ReadLine();
+                        if (line != null)
+                        {
+                            if (result.Length != 0)
+                                result.Append("\n ");
+                            
+                            result.Append(line.Trim());
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
                 }
 
-                return stream.ToString();
+                ////
+                //var stream = new System.IO.StringWriter();
+                //using (var writer = new JsonWriter(stream))
+                //{
+                //    writer.WriteObjectStart();
+                //    writer.Write("doc", phpdoctext);
+                //    // TODO: location, return type, ...
+                //    writer.WriteObjectEnd();
+                //}
+
+                //return stream.ToString();
+
+                // create "smaller" json // CONSIDER: use some library that allows to skip whitespaces, newtonsoft or netcore 3.0
+                result.Replace("\\", "\\\\").Replace("\n", "\\n").Replace("\r", "").Replace("\"", "\\\"");  // naively escape
+                return $"{{\"doc\":\"{(result.ToString())}\"}}";
             }
 
             // no metadata
