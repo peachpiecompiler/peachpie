@@ -111,6 +111,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal abstract SourceFileSymbol ContainingFile { get; }
 
+        public override ImmutableArray<Location> Locations =>
+            ImmutableArray.Create(
+                Location.Create(
+                    ContainingFile.SyntaxTree,
+                    Syntax is ILangElement element ? element.Span.ToTextSpan() : default
+            ));
+
         public override bool IsUnreachable => (Flags & RoutineFlags.IsUnreachable) != 0;
 
         protected ImmutableArray<ParameterSymbol> _implicitParameters;
@@ -395,9 +402,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 // ...
             }
 
-            // [NotNullAttribute]
-            // ...
-
             //
             return base.GetAttributes().AddRange(attrs);
         }
@@ -419,27 +423,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return null;
             }
-        }
-
-        internal override string GetSymbolMetadataResource()
-        {
-            //var phpdoc = this.PHPDocBlock;
-            //if (phpdoc != null)
-            //{
-            //    var stream = new System.IO.StringWriter();
-            //    using (var writer = new Roslyn.Utilities.JsonWriter(stream))
-            //    {
-            //        writer.WriteObjectStart();
-            //        writer.Write("doc", ContainingFile.SyntaxTree.GetText().ToString(phpdoc.Span.ToTextSpan()));
-            //        // type:
-            //        // ...
-            //        writer.WriteObjectEnd();
-            //    }
-
-            //    return stream.ToString();
-            //}
-
-            return null;
         }
 
         /// <summary>

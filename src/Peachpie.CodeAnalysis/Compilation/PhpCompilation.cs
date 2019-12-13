@@ -1047,17 +1047,24 @@ namespace Pchp.CodeAnalysis
         {
             return new ResourceDescription(".source.metadata.resources", () =>
             {
-                var stream = new MemoryStream();
-
                 var table = this.SourceSymbolCollection;
+                var symbols =
+                    // global functions
+                    table.GetFunctions().OfType<SourceRoutineSymbol>()
+                    // classes, interfaces, traits
+                    .Concat<Symbol>(table.GetDeclaredTypes())
+                    // type members - properties, constants
+                    .Concat<Symbol>(table.GetDeclaredTypes().SelectMany(t => t.GetMembers().Where(m => m is SourceRoutineSymbol || m is SourceFieldSymbol)));
 
+                var stream = new MemoryStream();
                 var writer = new System.Resources.ResourceWriter(stream);
-                foreach (var r in table.AllRoutines)
+                
+                foreach (var symbol in symbols)
                 {
-                    var metadata = r.GetSymbolMetadataResource();
+                    var metadata = symbol.GetSymbolMetadataResource();
                     if (!string.IsNullOrEmpty(metadata))
                     {
-                        var id = r.ContainingType.GetFullName() + "." + r.MetadataName;
+                        var id = (symbol as SourceTypeSymbol ?? symbol.ContainingType).GetFullName() + "." + symbol.MetadataName;
                         writer.AddResource(id, metadata);
                     }
                 }
@@ -1093,7 +1100,10 @@ namespace Pchp.CodeAnalysis
                 manifestResources = manifestResources.Concat(SynthesizedResources);
             }
 
-            manifestResources = manifestResources.Concat(new[] { SourceMetadataResource() });
+            if (Options.EmbedSourceMetadata)
+            {
+                manifestResources = manifestResources.Concat(new[] { SourceMetadataResource() });
+            }
 
             PEModuleBuilder moduleBeingBuilt;
             if (_options.OutputKind.IsNetModule())

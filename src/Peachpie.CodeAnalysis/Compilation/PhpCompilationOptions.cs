@@ -70,6 +70,13 @@ namespace Pchp.CodeAnalysis
         public PhpDocTypes PhpDocTypes { get; private set; }
 
         /// <summary>
+        /// Whether to generate an embedded resource containing additional information about the source symbols.
+        /// Used by runtime for reflection.
+        /// Default is <c>true</c>.
+        /// </summary>
+        public bool EmbedSourceMetadata { get; private set; }
+
+        /// <summary>
         /// Source language options.
         /// </summary>
         public PhpParseOptions ParseOptions { get; private set; }
@@ -127,6 +134,7 @@ namespace Pchp.CodeAnalysis
             StrongNameProvider strongNameProvider = null,
             bool publicSign = false,
             PhpDocTypes phpdocTypes = PhpDocTypes.None,
+            bool embedSourceMetadata = true,
             ImmutableArray<Diagnostic> diagnostics = default(ImmutableArray<Diagnostic>),
             PhpParseOptions parseOptions = null,
             bool referencesSupersedeLowerVersions = false)
@@ -147,6 +155,7 @@ namespace Pchp.CodeAnalysis
                    metadataImportOptions: MetadataImportOptions.Public,
                    publicSign: publicSign,
                    phpdocTypes: phpdocTypes,
+                   embedSourceMetadata: embedSourceMetadata,
                    diagnostics: diagnostics,
                    parseOptions: parseOptions,
                    referencesSupersedeLowerVersions: referencesSupersedeLowerVersions)
@@ -186,6 +195,7 @@ namespace Pchp.CodeAnalysis
             MetadataImportOptions metadataImportOptions,
             bool publicSign,
             PhpDocTypes phpdocTypes,
+            bool embedSourceMetadata,
             ImmutableArray<Diagnostic> diagnostics,
             PhpParseOptions parseOptions,
             bool referencesSupersedeLowerVersions)
@@ -200,6 +210,7 @@ namespace Pchp.CodeAnalysis
             this.SdkDirectory = sdkDirectory;
             this.SubDirectory = subDirectory;
             this.PhpDocTypes = phpdocTypes;
+            this.EmbedSourceMetadata = embedSourceMetadata;
             this.ParseOptions = parseOptions;
             this.Diagnostics = diagnostics;
             this.VersionString = versionString;
@@ -237,6 +248,7 @@ namespace Pchp.CodeAnalysis
             reportSuppressedDiagnostics: other.ReportSuppressedDiagnostics,
             publicSign: other.PublicSign,
             phpdocTypes: other.PhpDocTypes,
+            embedSourceMetadata: other.EmbedSourceMetadata,
             diagnostics: other.Diagnostics,
             parseOptions: other.ParseOptions,
             referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions)

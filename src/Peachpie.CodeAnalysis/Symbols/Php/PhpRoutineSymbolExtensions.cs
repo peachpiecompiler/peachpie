@@ -311,5 +311,49 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return funcs.Concat(main).Concat(methods).Concat(lambdas);
         }
+
+        /// <summary>
+        /// Gets PHPDoc assoviated with given source symbol.
+        /// </summary>
+        internal static PHPDocBlock TryGetPHPDocBlock(this Symbol symbol)
+        {
+            switch (symbol?.OriginalDefinition)
+            {
+                case SourceRoutineSymbol routine: return routine.PHPDocBlock;
+                case SourceFieldSymbol field: return field.PHPDocBlock;
+                case SourceTypeSymbol type: return type.Syntax.PHPDoc;
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// The resource contains an additional textual metadata to be used by the runtime if needed (JSON format).
+        /// The resource is indexed by the symbol full metadata name.
+        /// Can be <c>null</c>.
+        /// </summary>
+        internal static string GetSymbolMetadataResource(this Symbol symbol)
+        {
+            // CONSIDER: not for private/internal symbols ?
+
+            var phpdoc = TryGetPHPDocBlock(symbol);
+            if (phpdoc != null)
+            {
+                var phpdoctext = phpdoc.ContainingSourceUnit.GetSourceCode(phpdoc.Span);
+
+                var stream = new System.IO.StringWriter();
+                using (var writer = new JsonWriter(stream))
+                {
+                    writer.WriteObjectStart();
+                    writer.Write("doc", phpdoctext);
+                    // TODO: location, return type, ...
+                    writer.WriteObjectEnd();
+                }
+
+                return stream.ToString();
+            }
+
+            // no metadata
+            return null;
+        }
     }
 }
