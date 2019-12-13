@@ -56,20 +56,7 @@ namespace Pchp.Library.Reflection
         public virtual ReflectionClass getClosureScopeClass() { throw new NotImplementedException(); }
         public virtual object getClosureThis() { throw new NotImplementedException(); }
         [return: CastToFalse]
-        public string getDocComment()
-        {
-            var metadata = Peachpie.Runtime.Reflection.MetadataResourceManager.GetMetadata(_routine.Methods[0]);
-            if (metadata != null)
-            {
-                var decoded = (stdClass)StringUtils.JsonDecode(metadata).Object;
-                if (decoded.GetRuntimeFields().TryGetValue("doc", out var doc))
-                {
-                    return doc.AsString();
-                }
-            }
-
-            return null;
-        }
+        public string getDocComment() => ReflectionUtils.getDocComment(_routine.Methods[0]);
 
         [return: CastToFalse]
         public long getStartLine()

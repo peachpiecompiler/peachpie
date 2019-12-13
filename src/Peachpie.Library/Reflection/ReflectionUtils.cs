@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
 using Pchp.Core.Resources;
+using Peachpie.Runtime.Reflection;
 
 namespace Pchp.Library.Reflection
 {
@@ -157,6 +158,30 @@ namespace Pchp.Library.Reflection
 
             //
             return parameters;
+        }
+
+        public static string getDocComment(Assembly assembly, string symbolId)
+        {
+            var metadata = MetadataResourceManager.GetMetadata(assembly, symbolId);
+            return getDocComment(metadata);
+        }
+
+        public static string getDocComment(MethodInfo method) => getDocComment(method.DeclaringType.Assembly, method.DeclaringType.FullName + "." + method.Name);
+
+        public static string getDocComment(TypeInfo type) => getDocComment(type.Assembly, type.FullName);
+
+        static string getDocComment(string metadata)
+        {
+            if (metadata != null)
+            {
+                var decoded = (stdClass)StringUtils.JsonDecode(metadata).Object;
+                if (decoded.GetRuntimeFields().TryGetValue("doc", out var doc))
+                {
+                    return doc.AsString();
+                }
+            }
+
+            return null;
         }
     }
 }

@@ -163,7 +163,7 @@ namespace Pchp.Library.Reflection
         }
 
         [return: CastToFalse]
-        public string getDocComment() => null;
+        public string getDocComment() => ReflectionUtils.getDocComment(_tinfo.Type);
 
         public ReflectionExtension getExtension()
         {

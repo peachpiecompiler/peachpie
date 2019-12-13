@@ -85,7 +85,7 @@ namespace Pchp.Library.Reflection
         #endregion
 
         #region Construction
-        
+
         internal ReflectionProperty(PhpPropertyInfo pinfo)
         {
             Debug.Assert(pinfo != null);
@@ -106,7 +106,7 @@ namespace Pchp.Library.Reflection
         public void __construct(Context ctx, PhpValue @class, string name)
         {
             var tinfo = ReflectionUtils.ResolvePhpTypeInfo(ctx, @class);
-            
+
             _pinfo = tinfo.GetDeclaredProperty(name);
 
             if (_pinfo == null)
@@ -116,8 +116,10 @@ namespace Pchp.Library.Reflection
         }
         public static string export(PhpValue @class, string name, bool @return = false) { throw new NotImplementedException(); }
         public virtual ReflectionClass getDeclaringClass() => new ReflectionClass(_pinfo.ContainingType);
+
         [return: CastToFalse]
-        public string getDocComment() => null;
+        public string getDocComment() => ReflectionUtils.getDocComment(_pinfo.ContainingType.Type.Assembly, _pinfo.ContainingType.Type.FullName + "." + _pinfo.PropertyName);
+
         public virtual long getModifiers()
         {
             long flags = 0;

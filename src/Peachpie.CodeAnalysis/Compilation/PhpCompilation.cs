@@ -1058,13 +1058,16 @@ namespace Pchp.CodeAnalysis
 
                 var stream = new MemoryStream();
                 var writer = new System.Resources.ResourceWriter(stream);
-                
+
                 foreach (var symbol in symbols)
                 {
                     var metadata = symbol.GetSymbolMetadataResource();
                     if (!string.IsNullOrEmpty(metadata))
                     {
-                        var id = (symbol as SourceTypeSymbol ?? symbol.ContainingType).GetFullName() + "." + symbol.MetadataName;
+                        var id = symbol is SourceTypeSymbol type
+                            ? type.GetFullName()
+                            : symbol.ContainingType.GetFullName() + "." + symbol.MetadataName;
+
                         writer.AddResource(id, metadata);
                     }
                 }
