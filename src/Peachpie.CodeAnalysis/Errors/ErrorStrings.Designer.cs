@@ -169,6 +169,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Error reading resource &apos;{0}&apos; -- &apos;{1}&apos;.
+        /// </summary>
+        internal static string ERR_CantReadResource {
+            get {
+                return ResourceManager.GetString("ERR_CantReadResource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Circular base class dependency involving &apos;{0}&apos; and &apos;{1}&apos;.
         /// </summary>
         internal static string ERR_CircularBase {

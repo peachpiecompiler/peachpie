@@ -354,4 +354,7 @@
   <data name="ERR_ReadOnlyPropertyWritten" xml:space="preserve">
     <value>Cannot set read-only property {0}::${1}</value>
   </data>
+  <data name="ERR_CantReadResource" xml:space="preserve">
+    <value>Error reading resource '{0}' -- '{1}'</value>
+  </data>
 </root>
