@@ -15,7 +15,7 @@ class X
     {
         echo __METHOD__, "\n";
         print_r($name);
-		print_r($args);        
+		print_r($args);
         return $name;
     }
 
@@ -67,11 +67,11 @@ class Z extends Y
 
 // calling static methods resolved in compile time
 echo X::nonexistingfoo(1,2,3);
-echo call_user_func_array ( array("X","nonexisting2"), array(10,20,30) );
+echo call_user_func_array ( array(__NAMESPACE__ ."\\X","nonexisting2"), array(10,20,30) );
 
 echo Y::nonexistingfoo(1,2,3);
 echo Y::nonexistingfoo2(4);
-echo call_user_func_array ( array("Y","nonexisting3"), array("a",'b','c') );
+echo call_user_func_array ( array(__NAMESPACE__ ."\\Y","nonexisting3"), array("a",'b','c') );
 
 echo Z::nonexistingstatic();
 
