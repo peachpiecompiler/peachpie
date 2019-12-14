@@ -96,6 +96,12 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary></summary>
         public ITaskItem[] Resources { get; set; }
 
+        /// <summary>
+        /// Used for debugging purposes.
+        /// If enabled a debugger is attached to the current process upon the task execution.
+        /// </summary>
+        public bool DebuggerAttach { get; set; } = false;
+
         /// <summary></summary>
         public override bool Execute()
         {
@@ -206,6 +212,12 @@ namespace Peachpie.NET.Sdk.Tools
             if (IsCanceled())
             {
                 return false;
+            }
+
+            // Debugger.Launch
+            if (DebuggerAttach)
+            {
+                Debugger.Launch();
             }
 
             // compile

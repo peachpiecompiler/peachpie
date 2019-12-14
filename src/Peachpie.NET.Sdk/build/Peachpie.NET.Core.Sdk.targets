@@ -247,6 +247,7 @@
                ReferencePath="@(ReferencePath)"
                Compile="@(Compile)"
                Resources="@(EmbeddedResource)"
+               DebuggerAttach="$(DebuggerAttach)"
                />
 
     <Copy SourceFiles="$(TempOutputDir)$(DocumentationFile)" DestinationFolder="$(OutputPath)" Condition=" '$(GenerateDocumentation)'=='true' " />
