@@ -154,8 +154,7 @@ namespace Peachpie.NET.Sdk.Tools
             AddNoEmpty(args, "sourcelink", SourceLink);
             AddNoEmpty(args, "codepage", CodePage);
             AddNoEmpty(args, "subdir", PhpRelativePath);
-            AddNoEmpty(args, "logger", "Peachpie.Compiler.Diagnostics.Observer,Peachpie.Compiler.Diagnostics");
-
+            
 			if (DefineConstants != null)
 			{
 				foreach (var d in DefineConstants)

@@ -72,7 +72,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             IEnumerable<PhpSyntaxTree> sourceTrees;
             var resources = Enumerable.Empty<ResourceDescription>();
 
-            using (Arguments.CompilationOptions.Observers.StartMetric("parse"))
+            using (Arguments.CompilationOptions.EventSources.StartMetric("parse"))
             {
                 // PARSE
 

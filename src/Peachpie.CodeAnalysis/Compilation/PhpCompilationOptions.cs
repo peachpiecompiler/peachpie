@@ -94,7 +94,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// List of observer instances.
         /// </summary>
-        public ImmutableArray<IObserver<object>> Observers { get; internal set; }
+        public ImmutableArray<IObserver<object>> EventSources { get; internal set; }
 
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
@@ -253,7 +253,7 @@ namespace Pchp.CodeAnalysis
             parseOptions: other.ParseOptions,
             referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions)
         {
-            Observers = other.Observers;
+            EventSources = other.EventSources;
         }
 
         public override string Language => Constants.PhpLanguageName;

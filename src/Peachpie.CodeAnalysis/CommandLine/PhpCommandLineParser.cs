@@ -195,8 +195,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             List<string> keyFileSearchPaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
-            var loggers = new List<string>();
-
+            
             foreach (string arg in flattenedArgs)
             {
                 Debug.Assert(optionsEnded || !arg.StartsWith("@", StringComparison.Ordinal));
@@ -602,13 +601,6 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         continue;
 
-                    case "logger":
-                        if (value != null)
-                        {
-                            loggers.Add(value);
-                        }
-                        continue;
-
                     case "subdir":
                         if (!string.IsNullOrEmpty(value))
                         {
@@ -657,11 +649,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                 }
             }
 
-            // Observers
-            var observers = loggers.Select(name => CreateObserver(name, moduleName)).WhereNotNull();
+            // event source // TODO: change to EventSource
+            var evetsources = new[] { CreateObserver("Peachpie.Compiler.Diagnostics.Observer,Peachpie.Compiler.Diagnostics", moduleName) }.WhereNotNull();
 
 #if TRACE
-            observers = observers.Concat(new Utilities.CompilationTrackerExtension.TraceObserver());
+            evetsources = evetsources.Concat(new Utilities.CompilationTrackerExtension.TraceObserver());
 #endif
 
             // Dev11 searches for the key file in the current directory and assembly output directory.
@@ -739,7 +731,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 publicSign: publicSign
             )
             {
-                Observers = observers.AsImmutableOrEmpty(),
+                EventSources = evetsources.AsImmutableOrEmpty(),
             };
 
             if (debugPlus)

@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis
         MethodSymbol _lazyMainMethod;
         readonly PhpCompilationOptions _options;
 
-        internal ImmutableArray<IObserver<object>> Observers => _options.Observers;
+        internal ImmutableArray<IObserver<object>> EventSources => _options.EventSources;
 
         Task<IEnumerable<Diagnostic>> _lazyAnalysisTask;
 
