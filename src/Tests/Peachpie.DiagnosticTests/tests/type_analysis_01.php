@@ -75,3 +75,9 @@ function baz(int /*|integer|*/$x) {
 /*|integer|*/$i = 5;
 // global variables may be changed from outside, so the type is always mixed
 echo /*|mixed|*/$i;
+
+function callable_check(
+    callable /*|array|Closure|object|string|*/$c,
+    ?callable /*|array|Closure|null|object|string|*/$cn,
+    callable &/*|mixed|*/$cr)
+{}

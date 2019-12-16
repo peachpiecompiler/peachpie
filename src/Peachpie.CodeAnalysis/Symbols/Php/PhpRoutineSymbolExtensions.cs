@@ -135,7 +135,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 t = ((PropertySymbol)symbol).Type;
             }
-            else if (symbol is ParameterSymbol ps)
+            else if (symbol is SourceParameterSymbol ps)
             {
                 t = ps.Type;
 
@@ -143,6 +143,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     Debug.Assert(t.IsSZArray());
                     return ctx.GetArrayTypeMask(TypeRefFactory.CreateMask(ctx, ((ArrayTypeSymbol)t).ElementType));
+                }
+                else if (ps.Syntax.TypeHint.IsCallable(out bool isNullable) && !ps.Syntax.IsOut && !ps.Syntax.PassedByRef)
+                {
+                    var callableMask = ctx.GetCallableTypeMask();
+                    if (isNullable)
+                        callableMask |= ctx.GetNullTypeMask();
+
+                    return callableMask;
                 }
             }
             else
@@ -355,7 +363,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         {
                             if (result.Length != 0)
                                 result.Append("\n ");
-                            
+
                             result.Append(line.Trim());
                         }
                         else
