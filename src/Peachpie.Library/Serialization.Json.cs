@@ -172,7 +172,7 @@ namespace Pchp.Library
 
             #region ObjectWriter
 
-            sealed class ObjectWriter : PhpVariableVisitor // TODO: :FormatterVisitor
+            internal sealed class ObjectWriter : PhpVariableVisitor
             {
                 //Encoding Encoding => _ctx.StringEncoding;
 
@@ -970,11 +970,12 @@ namespace Pchp.Library
         /// All string data must be UTF-8 encoded.</param>
         /// <param name="options"></param>
         /// <param name="depth">Set the maximum depth. Must be greater than zero.</param>
-        public static PhpString json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, int depth = 512)
+        public static string json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, int depth = 512)
         {
             // TODO: depth
 
-            return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
+            //return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
+            return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default);
         }
 
         /// <summary>
