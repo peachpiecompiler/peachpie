@@ -240,8 +240,11 @@ namespace Pchp.Core
             }
         }
 
-        public static void ThrowIfArgumentNotCallable(Context ctx, RuntimeTypeHandle callerCtx, PhpValue value, int arg)
+        public static void ThrowIfArgumentNotCallable(Context ctx, RuntimeTypeHandle callerCtx, PhpValue value, bool nullAllowed, int arg)
         {
+            if (nullAllowed && value.IsNull)
+                return;
+
             var callable = value.AsCallable(callerCtx);
             if (callable == null || (callable is PhpCallback phpcallback && !phpcallback.IsValidBound(ctx)))
             {

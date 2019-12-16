@@ -305,10 +305,23 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
-        /// Gets value indicating the type refers to <c>callable</c>.
+        /// Gets value indicating the type refers to <c>callable</c> or <c>?callable</c>.
         /// </summary>
-        public static bool IsCallable(this TypeRef tref) =>
-            tref is PrimitiveTypeRef primitiveType && primitiveType.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable;
+        public static bool IsCallable(this TypeRef tref, out bool isNullable)
+        {
+            if (tref is NullableTypeRef nullable)
+            {
+                isNullable = true;
+                tref = nullable.TargetType;
+            }
+            else
+            {
+                isNullable = false;
+            }
+
+            return tref is PrimitiveTypeRef primitiveType &&
+                primitiveType.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable;
+        }
 
         public static Microsoft.CodeAnalysis.Text.TextSpan GetDeclareClauseSpan(this DeclareStmt declStmt)
         {

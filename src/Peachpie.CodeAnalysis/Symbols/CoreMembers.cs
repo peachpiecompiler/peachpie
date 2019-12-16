@@ -315,7 +315,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 NormalizePath_string = ct.Operators.Method("NormalizePath", ct.String);
                 ThrowIfArgumentNull_object_int = ct.PhpException.Method("ThrowIfArgumentNull", ct.Object, ct.Int32);
-                ThrowIfArgumentNotCallable_Context_RuntimeTypeHandle_PhpValue_int = ct.PhpException.Method("ThrowIfArgumentNotCallable", ct.Context, ct.RuntimeTypeHandle, ct.PhpValue, ct.Int32);
+                ThrowIfArgumentNotCallable_Context_RuntimeTypeHandle_PhpValue_Bool_int = ct.PhpException.Method("ThrowIfArgumentNotCallable", ct.Context, ct.RuntimeTypeHandle, ct.PhpValue, ct.Boolean, ct.Int32);
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Boolean, ct.RuntimeTypeHandle);
                 GetForeachEnumerator_Iterator = ct.Operators.Method("GetForeachEnumerator", ct.Iterator);
@@ -418,7 +418,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 NormalizePath_string,
                 ThrowIfArgumentNull_object_int,
-                ThrowIfArgumentNotCallable_Context_RuntimeTypeHandle_PhpValue_int,
+                ThrowIfArgumentNotCallable_Context_RuntimeTypeHandle_PhpValue_Bool_int,
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
                 GetForeachEnumerator_Iterator,
