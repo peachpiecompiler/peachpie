@@ -1267,8 +1267,6 @@ namespace Pchp.Core.Dynamic
             return d;
         }
 
-        public static PhpCallable BindToPhpCallable(MethodBase target) => BindToPhpCallable(new[] { target });
-
         public static PhpCallable BindToPhpCallable(MethodBase[] targets)
         {
             Debug.Assert(targets.All(t => t.IsStatic), "Only static methods can be bound to PhpCallable delegate.");
@@ -1304,8 +1302,7 @@ namespace Pchp.Core.Dynamic
 
         public static TObjectCreator BindToCreator(Type type, ConstructorInfo[] ctors)
         {
-            Debug.Assert(ctors.All(ctor => ctor is ConstructorInfo));
-            Debug.Assert(ctors.All(ctor => ctor.DeclaringType == type));
+            Debug.Assert(ctors.All(ctor => ctor?.DeclaringType == type));
 
             // (Context ctx, PhpValue[] arguments)
             var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };

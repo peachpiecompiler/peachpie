@@ -767,7 +767,7 @@ namespace Pchp.Library
                 }
                 else
                 {
-                    var errorcode = JsonSerialization.JSON_ERROR_SYNTAX;
+                    var errorcode = JSON_ERROR_SYNTAX;
 
                     if ((options.Options & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
                     {
