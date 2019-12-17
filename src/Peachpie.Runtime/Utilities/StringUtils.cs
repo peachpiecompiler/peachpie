@@ -75,5 +75,19 @@ namespace Pchp.Core.Utilities
         {
             return System.Globalization.CultureInfo.InvariantCulture.CompareInfo.IndexOf(source, value, startIndex, count, System.Globalization.CompareOptions.Ordinal);
         }
+
+        /// <summary>
+        /// Specialized <c>concat</c> method.
+        /// </summary>
+        public static string Concat(ReadOnlySpan<char> str1, char str2, ReadOnlySpan<char> str3)
+        {
+            Span<char> chars = stackalloc char[str1.Length + 1 + str3.Length]; // ~512 bytes
+
+            str1.CopyTo(chars);
+            chars[str1.Length] = str2;
+            str3.CopyTo(chars.Slice(str1.Length + 1));
+            
+            return chars.ToString();
+        }
     }
 }

@@ -57,7 +57,7 @@ namespace Pchp.Core
                 _mainScriptFile = value;
 
                 // cwd = entering script directory
-                this.WorkingDirectory = string.Concat(RootPath, CurrentPlatform.DirectorySeparator.ToString(), PathUtils.DirectoryName(value.Path));
+                this.WorkingDirectory = StringUtils.Concat(RootPath.AsSpan(), CurrentPlatform.DirectorySeparator, PathUtils.TrimFileName(value.Path));
             }
         }
         ScriptInfo _mainScriptFile;
@@ -78,9 +78,7 @@ namespace Pchp.Core
             }
             set
             {
-                _rootPath = CurrentPlatform
-                    .NormalizeSlashes(value ?? throw new ArgumentNullException())
-                    .TrimEndSeparator();
+                _rootPath = CurrentPlatform.NormalizeSlashes((value ?? throw new ArgumentNullException()).TrimEndSeparator());
             }
         }
         string _rootPath = string.Empty;
