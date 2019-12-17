@@ -676,11 +676,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override object VisitArray(BoundArrayEx x)
         {
-            bool TryGetMethod(ITypeSymbol typeSymbol, string methodName, out MethodSymbol methodSymbol)
+            bool TryGetMethod(TypeSymbol typeSymbol, string methodName, out MethodSymbol methodSymbol)
             {
                 if (typeSymbol != null && typeSymbol.TypeKind != TypeKind.Error &&
-                    typeSymbol.GetMembers(methodName).SingleOrDefault() is MethodSymbol mSymbol && mSymbol.IsValidMethod() &&
-                    mSymbol.IsAccessible(_routine.ContainingType ?? _routine.ContainingFile))
+                    typeSymbol.LookupMethods(methodName).SingleOrDefault() is MethodSymbol mSymbol && mSymbol.IsValidMethod() &&
+                    mSymbol.IsAccessible(_routine.ContainingType))
                 {
                     methodSymbol = mSymbol;
                     return true;
@@ -719,7 +719,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     else
                     {
-                        var typeSymbol = DeclaringCompilation.GlobalSemantics.ResolveType(typeQName);
+                        var typeSymbol = DeclaringCompilation.GlobalSemantics.ResolveType(typeQName) as TypeSymbol;
                         if (TryGetMethod(typeSymbol, methodName, out var methodSymbol) && methodSymbol.IsStatic)
                         {
                             // ["typeName", "methodName"]
