@@ -407,7 +407,7 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
-        /// Determines if the stack frame coresponds to the core assembly.
+        /// Determines if the stack frame corresponds to the core assembly.
         /// </summary>
         public bool IsCoreAssembly
         {
