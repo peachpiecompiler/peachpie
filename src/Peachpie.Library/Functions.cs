@@ -97,7 +97,8 @@ namespace Pchp.Library
             var args = argsData.Value.Arguments;
             if (args == null || index >= args.Length)
             {
-                PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_passed_to_function", index));
+                // Argument #{0} not passed to the function/method
+                PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.argument_not_passed_to_function, index.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 return PhpValue.False;
             }
 
