@@ -35,7 +35,9 @@ namespace Pchp.Core
 
             private RecursionCheckToken(Context ctx, RecursionCheckKey key)
             {
-                IsInRecursion = (Pending = ctx._recursionPrevention).Contains(key);
+                Pending = (ctx._lazyRecursionPrevention ??= new Stack<RecursionCheckKey>());
+
+                IsInRecursion = Pending.Contains(key);
                 Pending.Push(key);
             }
 
@@ -58,6 +60,6 @@ namespace Pchp.Core
         /// Set of scopes we are entered into.
         /// Recursion prevention.
         /// </summary>
-        readonly Stack<RecursionCheckKey> _recursionPrevention = new Stack<RecursionCheckKey>();
+        Stack<RecursionCheckKey> _lazyRecursionPrevention;
     }
 }
