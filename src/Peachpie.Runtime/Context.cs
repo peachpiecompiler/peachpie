@@ -30,7 +30,7 @@ namespace Pchp.Core
             // tables
             _functions = new RoutinesTable();
             _types = new TypesTable();
-            _statics = new object[StaticIndexes.StaticsCount];
+            _statics = Array.Empty<object>();
             _constants = ConstsMap.Create(this);
             _scripts = ScriptsMap.Create();
         }
@@ -191,10 +191,7 @@ namespace Pchp.Core
                 }
 
                 //
-                if (_targetPhpLanguageAttribute == null)
-                {
-                    _targetPhpLanguageAttribute = assembly.GetCustomAttribute<TargetPhpLanguageAttribute>();
-                }
+                s_targetPhpLanguageAttribute ??= assembly.GetCustomAttribute<TargetPhpLanguageAttribute>();
             }
         }
 

@@ -101,8 +101,8 @@ namespace Pchp.Core
         /// Gets target PHP language specification.
         /// By default, this is reflected from the compiled PHP script.
         /// </summary>
-        public virtual TargetPhpLanguageAttribute TargetPhpLanguage { get => _targetPhpLanguageAttribute; }
-        static TargetPhpLanguageAttribute _targetPhpLanguageAttribute;
+        public virtual TargetPhpLanguageAttribute TargetPhpLanguage { get => s_targetPhpLanguageAttribute; }
+        static TargetPhpLanguageAttribute s_targetPhpLanguageAttribute;
 
         /// <summary>
         /// Gets value indicating whether not defined classes should be automatically included when used for the first time.
