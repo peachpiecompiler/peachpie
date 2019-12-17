@@ -94,9 +94,7 @@ namespace Pchp.Library
             {
                 // the property name might encode its visibility and "classification" -> use these
                 // information for suitable property desc lookups
-                FieldAttributes visibility;
-                string type_name;
-                string property_name = Serialization.ParseSerializedPropertyName(name, out type_name, out visibility);
+                var property_name = Serialization.ParseSerializedPropertyName(name, out var type_name, out var visibility);
 
                 var declarer = (type_name == null)
                     ? tinfo
@@ -670,16 +668,6 @@ namespace Pchp.Library
                 #endregion
 
                 #region Utils
-
-                /// <summary>
-                /// Quickly check if the look ahead byte is digit. Assumes the value is in range 0x00 - 0xff.
-                /// </summary>
-                /// <param name="ch">The byte value.</param>
-                /// <returns>True if value is in range '0'-'9'.</returns>
-                static bool IsDigit(char ch)
-                {
-                    return Digit(ch) != -1;
-                }
 
                 /// <summary>
                 /// Quickly determine the numeric value of given <paramref name="ch"/> byte.

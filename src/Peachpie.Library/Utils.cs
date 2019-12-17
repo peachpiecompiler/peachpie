@@ -194,7 +194,7 @@ namespace Pchp.Library
         /// In case if binary string, the conversion routine respects given <paramref name="charSet"/>.
         /// </summary>
         /// <param name="str">String to be converted to unicode string.</param>
-        /// <param name="charSet">Character set used to encode binary string to <see cref="System.String"/>.</param>
+        /// <param name="charSet">Character set used to encode binary string to <see cref="string"/>.</param>
         /// <returns>String representation of <paramref name="str"/>.</returns>
         internal static string ToString(this PhpString str, string charSet)
         {
@@ -205,11 +205,13 @@ namespace Pchp.Library
 
             Encoding encoding;
 
-            if (str.ContainsBinaryData)
+            if (str.ContainsBinaryData && !string.IsNullOrEmpty(charSet))
             {
-                encoding = Encoding.GetEncoding(charSet);
-
-                if (encoding == null)
+                try
+                {
+                    encoding = Encoding.GetEncoding(charSet);
+                }
+                catch (ArgumentException)
                 {
                     //throw new ArgumentException(string.Format(Strings.arg_invalid_value, "charSet", charSet), "charSet");
                     throw new ArgumentException("", nameof(charSet));   // TODO: Err
@@ -222,7 +224,7 @@ namespace Pchp.Library
             }
 
             //
-            return str.ToString(Encoding.UTF8);
+            return str.ToString(encoding);
         }
 
         /// <summary>

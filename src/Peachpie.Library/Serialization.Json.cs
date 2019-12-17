@@ -139,7 +139,7 @@ namespace Pchp.Library
                     else
                     {
                         // upgrade _value to object[4]
-                        set.value = new object[] { set.value, obj, null, null, };
+                        set.value = new [] { set.value, obj, null, null, };
                         set.top = 2;
                     }
                 }
@@ -221,7 +221,7 @@ namespace Pchp.Library
 
                 sealed class PrettyPrintOn : IPrettyPrinter
                 {
-                    int _indent = 0;
+                    int _indent;
                     readonly StringBuilder _output;
 
                     public PrettyPrintOn(StringBuilder output)
@@ -729,15 +729,15 @@ namespace Pchp.Library
                     WriteRaw(Tokens.ObjectClose);
                 }
 
-                static IEnumerable<KeyValuePair<string, PhpValue>> JsonArrayProperties(PhpArray array)
-                {
-                    var enumerator = array.GetFastEnumerator();
-                    while (enumerator.MoveNext())
-                    {
-                        var current = enumerator.Current;
-                        yield return new KeyValuePair<string, PhpValue>(current.Key.ToString(), current.Value);
-                    }
-                }
+                // static IEnumerable<KeyValuePair<string, PhpValue>> JsonArrayProperties(PhpArray array)
+                // {
+                //     var enumerator = array.GetFastEnumerator();
+                //     while (enumerator.MoveNext())
+                //     {
+                //         var current = enumerator.Current;
+                //         yield return new KeyValuePair<string, PhpValue>(current.Key.ToString(), current.Value);
+                //     }
+                // }
 
                 static IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(object/*!*/obj)
                 {
@@ -875,6 +875,7 @@ namespace Pchp.Library
         /// Options given to json_encode function.
         /// </summary>
         [PhpHidden]
+        [Flags]
         public enum JsonEncodeOptions
         {
             /// <summary>
@@ -944,6 +945,7 @@ namespace Pchp.Library
         /// Options given to json_decode function.
         /// </summary>
         [PhpHidden]
+        [Flags]
         public enum JsonDecodeOptions
         {
             Default = 0,

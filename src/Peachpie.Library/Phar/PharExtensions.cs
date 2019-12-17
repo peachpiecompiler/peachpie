@@ -71,7 +71,7 @@ namespace Pchp.Library.Phar
         /// Read-only dictionary of cached phars.
         /// Indexed by PharFile.
         /// </summary>
-        static Dictionary<string, CachedPhar> _cachedPhars = null; // TODO: ImmutableDictionary
+        static Dictionary<string, CachedPhar> s_cachedPhars; // TODO: ImmutableDictionary
 
         /// <summary>
         /// Resolves the phar's file name of given script representing phar stub.
@@ -125,7 +125,7 @@ namespace Pchp.Library.Phar
             var pharFile = GetPharFile(stubScriptType);
             if (pharFile != null)
             {
-                var cachedPhars = _cachedPhars;
+                var cachedPhars = s_cachedPhars;
                 if (cachedPhars == null || !cachedPhars.TryGetValue(pharFile, out cached))
                 {
                     cached = new CachedPhar(stubScriptType);
@@ -135,7 +135,7 @@ namespace Pchp.Library.Phar
                         : new Dictionary<string, CachedPhar>(CurrentPlatform.PathComparer);
 
                     newdict[pharFile] = cached;
-                    _cachedPhars = newdict;
+                    s_cachedPhars = newdict;
                 }
             }
 
@@ -179,7 +179,7 @@ namespace Pchp.Library.Phar
         /// </summary>
         public static Stream GetResourceStream(string pharFile, string entryName)
         {
-            if (_cachedPhars != null && _cachedPhars.TryGetValue(pharFile, out var phar) && phar.Resources != null)
+            if (s_cachedPhars != null && s_cachedPhars.TryGetValue(pharFile, out var phar) && phar.Resources != null)
             {
                 // TODO: the resource should be embedded as Stream
                 var content = phar.Resources.GetString(entryName.Replace('\\', '/'));

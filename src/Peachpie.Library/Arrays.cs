@@ -507,7 +507,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Implementation of <see cref="array_splice(PhpArray,int,int,object)"/> and <see cref="array_splice(PhpArray,int,int,object)"/>.
+        /// Implementation of <see cref="array_splice"/>.
         /// </summary>
         /// <remarks>Whether to make a deep-copy of items in the replacement.</remarks>
         internal static PhpArray SpliceInternal(PhpArray array, int offset, int length, PhpValue replacement)

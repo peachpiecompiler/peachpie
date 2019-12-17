@@ -246,7 +246,7 @@ namespace Pchp.Library
         {
             /// <summary>Visited values count.</summary>
             public int Count => _count;
-            int _count = 0;
+            int _count;
 
             // recursion prevention
             readonly HashSet<object> _visited = new HashSet<object>();
@@ -549,7 +549,7 @@ namespace Pchp.Library
 
                 case PhpTypeCode.String:
                 case PhpTypeCode.MutableString:
-                    return (variable.ToNumber(out var tmp) & Core.Convert.NumberInfo.IsNumber) != 0;
+                    return (variable.ToNumber(out _) & Core.Convert.NumberInfo.IsNumber) != 0;
 
                 default:
                     return false;
@@ -946,11 +946,6 @@ namespace Pchp.Library
             public PrintFormatter(Context ctx, string newline)
                 : base(ctx, newline)
             {
-            }
-
-            public override PhpString Serialize(PhpValue value)
-            {
-                return base.Serialize(value);
             }
 
             public override void Accept(bool obj) => _output.Append(obj ? "1" : string.Empty);
