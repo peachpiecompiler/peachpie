@@ -844,7 +844,7 @@ namespace Pchp.Core
                                 break;
                             }
 
-                            doubleValue = unchecked((double)longValue);
+                            doubleValue = longValue;
 
                             // unexpected character:
                             goto Done;
@@ -948,7 +948,7 @@ namespace Pchp.Core
                             {
                                 if (l == -1)
                                 {
-                                    if (longValue < Int64.MaxValue / 16 || (longValue == Int64.MaxValue / 16 && num <= Int64.MaxValue % 16))
+                                    if (longValue < long.MaxValue / 16 || (longValue == long.MaxValue / 16 && num <= long.MaxValue % 16))
                                     {
                                         longValue = longValue * 16 + num;
                                         break;
@@ -956,22 +956,22 @@ namespace Pchp.Core
                                     else
                                     {
                                         // last hexa long integer position:
-                                        doubleValue = unchecked((double)longValue);
+                                        doubleValue = longValue;
                                         if (sign)
                                         {
-                                            doubleValue = unchecked(-doubleValue);
-                                            longValue = Int64.MinValue;
+                                            doubleValue = -doubleValue;
+                                            longValue = long.MinValue;
                                         }
                                         else
                                         {
-                                            longValue = Int64.MaxValue;
+                                            longValue = long.MaxValue;
                                         }
                                         // fallback to double behaviour below...
                                     }
                                 }
 
                                 l = p;  // last position is advanced even the long is too long?
-                                doubleValue = unchecked(doubleValue * 16.0 + (double)num);
+                                doubleValue = doubleValue * 16.0 + num;
 
                                 break;
                             }
@@ -1004,7 +1004,7 @@ namespace Pchp.Core
                 if (sign)
                     longValue = unchecked(-longValue);
 
-                doubleValue = unchecked((double)longValue);
+                doubleValue = longValue;
             }
 
             //
@@ -1139,7 +1139,7 @@ namespace Pchp.Core
             // note: {length} can be {Int.MaxValue} which would result in an overflow operation when added with {position}
             int limit = length < str.Length ? Math.Min(str.Length, position + length) : str.Length;
 
-            IsNumber(str, limit, position, out var l, out position, out _, out var dval);
+            IsNumber(str, limit, position, out _, out position, out _, out var dval);
 
             return dval;
         }

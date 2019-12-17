@@ -56,7 +56,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates a new instance of <see cref="PhpArray"/> with specified capacities for integer and string keys respectively.
         /// </summary>
-        public PhpArray() : base() { }
+        public PhpArray() { }
 
         /// <summary>
         /// Creates a new instance of <see cref="PhpArray"/> with specified capacities for integer and string keys respectively.
@@ -335,7 +335,7 @@ namespace Pchp.Core
         /// Explicit cast of array to <see cref="double"/>.
         /// Gets number of items in the array.
         /// </summary>
-        public static explicit operator double(PhpArray array) => (double)array.Count;
+        public static explicit operator double(PhpArray array) => array.Count;
 
         /// <summary>
         /// Explicit cast of array to <see cref="string"/>.
@@ -637,7 +637,7 @@ namespace Pchp.Core
 
         private bool EnsureIntrinsicEnumerator() => OrderedDictionary.FastEnumerator.EnsureValid(table, ref _intrinsicEnumerator);
 
-        bool IPhpEnumerator.MoveLast() => OrderedDictionary.FastEnumerator.MoveLast(table, ref _intrinsicEnumerator);
+        bool IPhpEnumerator.MoveLast() => OrderedDictionary.FastEnumerator.MoveLast(table, out _intrinsicEnumerator);
 
         bool IPhpEnumerator.MoveFirst()
         {

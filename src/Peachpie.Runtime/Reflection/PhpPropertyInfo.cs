@@ -66,10 +66,10 @@ namespace Pchp.Core.Reflection
                     if (IsReadOnly)
                     {
                         // error
-                        return new Action<Context, object, PhpValue>((_, _instance, _value) =>
+                        return(_, _instance, _value) =>
                         {
                             PhpException.ErrorException(Resources.ErrResources.readonly_property_written, ContainingType.Name, PropertyName);
-                        });
+                        };
                     }
 
                     var pctx = Expression.Parameter(typeof(Context));
@@ -99,7 +99,7 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => _field.Name;
 
-            public override PhpValue GetValue(Context _, object instance = null) => _lazyGetter.Value(instance);
+            public override PhpValue GetValue(Context _, object instance) => _lazyGetter.Value(instance);
 
             public override PhpAlias EnsureAlias(Context _, object instance) => _lazyEnsureAlias.Value(instance);
 
@@ -211,10 +211,10 @@ namespace Pchp.Core.Reflection
                     if (IsReadOnly)
                     {
                         // error
-                        return new Action<Context, object, PhpValue>((_, _instance, _value) =>
+                        return (_, _instance, _value) =>
                         {
                             PhpException.ErrorException(Resources.ErrResources.readonly_property_written, ContainingType.Name, PropertyName);
-                        });
+                        };
                     }
 
                     var pctx = Expression.Parameter(typeof(Context));
@@ -264,7 +264,7 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => _property.Name;
 
-            public override PhpValue GetValue(Context ctx, object instance = null) => _lazyGetter.Value(instance);
+            public override PhpValue GetValue(Context ctx, object instance) => _lazyGetter.Value(instance);
 
             public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
 

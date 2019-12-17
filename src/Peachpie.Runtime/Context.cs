@@ -538,7 +538,7 @@ namespace Pchp.Core
 
         #region Shutdown
 
-        List<Action<Context>> _lazyShutdownCallbacks = null;
+        List<Action<Context>> _lazyShutdownCallbacks;
 
         /// <summary>
         /// Enqueues a callback to be invoked at the end of request.
@@ -621,7 +621,7 @@ namespace Pchp.Core
 
         #region Resources // objects that need dispose
 
-        HashSet<IDisposable> _lazyDisposables = null;
+        HashSet<IDisposable> _lazyDisposables;
 
         public virtual void RegisterDisposable(IDisposable obj)
         {
@@ -674,7 +674,10 @@ namespace Pchp.Core
                 foreach (var path in _temporaryFiles)
                 {
                     try { File.Delete(path); }
-                    catch { }
+                    catch
+                    {
+                        // ignored
+                    }
                 }
 
                 _temporaryFiles = null;

@@ -114,11 +114,11 @@ namespace Pchp.Core.Utilities
         public static void Fill(byte[] array, byte value, int offset, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (offset < 0 || offset + count > array.Length)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(count));
             if (array.Length == 0)
                 return;
 
@@ -210,7 +210,7 @@ namespace Pchp.Core.Utilities
     /// <summary>
     /// Helper class that implements empty collection and empty enumerator, GC friendly.
     /// </summary>
-    public sealed class EmptyCollection<T> : IEnumerable<T>, ICollection<T>
+    public sealed class EmptyCollection<T> : ICollection<T>
     {
         public static readonly EmptyCollection<T> Instance = new EmptyCollection<T>();
 

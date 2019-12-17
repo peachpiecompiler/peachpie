@@ -101,7 +101,7 @@ namespace Pchp.Core
 
                     if (script.IsValid && !_scripts.IsIncluded(script.Index))   // include_once:
                     {
-                        script.Evaluate(this, this.Globals, null, default);
+                        script.Evaluate(this, this.Globals, null);
 
                         return GetDeclaredType(fullName, autoload: false); // TODO: can we return types[0] directly in some cases?
                     }

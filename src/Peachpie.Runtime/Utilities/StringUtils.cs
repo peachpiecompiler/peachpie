@@ -41,14 +41,14 @@ namespace Pchp.Core.Utilities
             // appends characters to the result for each byte:
             for (int i = 0; i < length - 1; i++)
             {
-                c = (int)bytes[i];
+                c = bytes[i];
                 chars[0] = hex_digs[(c & 0xf0) >> 4];
                 chars[1] = hex_digs[(c & 0x0f)];
                 result.Append(chars);
             }
 
             // the last byte:
-            c = (int)bytes[length - 1];
+            c = bytes[length - 1];
             result.Append(hex_digs[(c & 0xf0) >> 4]);
             result.Append(hex_digs[(c & 0x0f)]);
 
@@ -61,7 +61,7 @@ namespace Pchp.Core.Utilities
         public static char LastChar(this string str) => string.IsNullOrEmpty(str) ? '\0' : str[str.Length - 1];
 
         /// <summary>
-        /// Most efficient way of searching for index of a substring ordinally.
+        /// Most efficient way of searching for index of a substring ordinarily.
         /// </summary>
         /// <param name="source">The string to search. </param>
         /// <param name="value">The string to locate within <paramref name="source" />. </param>

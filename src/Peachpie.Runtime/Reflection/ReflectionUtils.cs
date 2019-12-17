@@ -137,7 +137,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Types that we do not expose in reflection.
         /// </summary>
-        readonly static HashSet<Type> s_hiddenTypes = new HashSet<Type>()
+        static readonly HashSet<Type> s_hiddenTypes = new HashSet<Type>()
         {
             typeof(object),
             typeof(IPhpCallable),

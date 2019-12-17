@@ -57,13 +57,13 @@ namespace Pchp.Core
 
             // initialize server variables in order:
 
-            server[CommonPhpArrayKeys.PHP_SELF] = (PhpValue)mainscript;
-            server[CommonPhpArrayKeys.SCRIPT_NAME] = (PhpValue)mainscript;
-            server[CommonPhpArrayKeys.SCRIPT_FILENAME] = (PhpValue)mainscript;
-            server[CommonPhpArrayKeys.PATH_TRANSLATED] = (PhpValue)mainscript;
-            server[CommonPhpArrayKeys.DOCUMENT_ROOT] = (PhpValue)string.Empty;
-            server[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
-            server[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
+            server[CommonPhpArrayKeys.PHP_SELF] = mainscript;
+            server[CommonPhpArrayKeys.SCRIPT_NAME] = mainscript;
+            server[CommonPhpArrayKeys.SCRIPT_FILENAME] = mainscript;
+            server[CommonPhpArrayKeys.PATH_TRANSLATED] = mainscript;
+            server[CommonPhpArrayKeys.DOCUMENT_ROOT] = string.Empty;
+            server[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
+            server[CommonPhpArrayKeys.REQUEST_TIME] = DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
         }
 
         /// <summary>Initializes global $argv and $argc variables and corresponding $_SERVER entries.</summary>
@@ -75,8 +75,8 @@ namespace Pchp.Core
             // adds all arguments to the array (the 0-th argument is not '-' as in PHP but the program file):
             var argv = new PhpArray(args);
 
-            this.Globals["argv"] = (this.Server["argv"] = (PhpValue)argv).DeepCopy();
-            this.Globals["argc"] = this.Server["argc"] = (PhpValue)args.Length;
+            this.Globals["argv"] = (this.Server["argv"] = argv).DeepCopy();
+            this.Globals["argc"] = this.Server["argc"] = args.Length;
         }
 
         /// <summary>

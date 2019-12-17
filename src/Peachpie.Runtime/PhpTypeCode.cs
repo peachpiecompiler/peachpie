@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace Pchp.Core
 {
     /// <summary>
-    /// Pchp type hierarchy type codes.
+    /// PeachPie type hierarchy type codes.
     /// </summary>
-    public enum PhpTypeCode : int
+    public enum PhpTypeCode
     {
         /// <summary>
         /// An invalid value, <c>void</c>.

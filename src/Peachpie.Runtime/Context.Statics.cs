@@ -23,7 +23,7 @@ namespace Pchp.Core
     {
         static class StaticIndexes
         {
-            public static int StaticsCount = 0;
+            public static int StaticsCount;
 
             public static int StaticsIndex<T>() => Statics<T>.Index;
 

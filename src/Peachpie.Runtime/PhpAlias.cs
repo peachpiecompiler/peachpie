@@ -119,23 +119,23 @@ namespace Pchp.Core
 
         public static implicit operator PhpValue(PhpAlias alias) => PhpValue.Create(alias);
 
-        public static implicit operator bool(PhpAlias value) => (bool)value.Value;
+        public static implicit operator bool(PhpAlias value) => value.Value;
 
-        public static implicit operator IntStringKey(PhpAlias value) => (IntStringKey)value.Value;
+        public static implicit operator IntStringKey(PhpAlias value) => value.Value;
 
         /// <summary>
         /// Casts the value to object instance.
         /// Non-object values are wrapped to <see cref="stdClass"/>.
         /// </summary>
-        public object ToObject() => this.ToClass();
+        public object ToObject() => ToClass();
 
-        public object AsObject() => this.Value.AsObject();
+        public object AsObject() => Value.AsObject();
 
         public long ToLongOrThrow() => Value.ToLongOrThrow();
 
         public PhpNumber ToNumber() => Convert.ToNumber(Value);
 
-        public PhpString ToPhpString(Context ctx) => Convert.ToPhpString(Value, ctx);
+        public PhpString ToPhpString(Context ctx) => Value.ToPhpString(ctx);
 
         public bool IsEmpty() => Value.IsEmpty;
 

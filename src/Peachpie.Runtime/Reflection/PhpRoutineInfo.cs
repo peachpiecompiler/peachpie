@@ -186,12 +186,12 @@ namespace Pchp.Core.Reflection
 
     internal class DelegateRoutineInfo : RoutineInfo
     {
-        Delegate _delegate;
+        readonly Delegate _delegate;
         PhpInvokable _lazyInvokable;
 
         /// <summary>
         /// Cache of already bound methods,
-        /// avoids unnecessary allocations and dynamic code emittion.
+        /// avoids unnecessary allocations and dynamic code emit.
         /// </summary>
         static readonly Dictionary<MethodInfo, PhpInvokable> s_bound = new Dictionary<MethodInfo, PhpInvokable>();
 

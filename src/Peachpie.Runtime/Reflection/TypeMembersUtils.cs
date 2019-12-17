@@ -94,11 +94,11 @@ namespace Pchp.Core.Reflection
                 s_keyToString);
         }
 
-        public static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
+        public static readonly Func<IntStringKey, string> s_keyToString = k => k.ToString();
 
-        public static readonly Func<PhpPropertyInfo, string> s_propertyName = new Func<PhpPropertyInfo, string>(p => p.PropertyName);
+        public static readonly Func<PhpPropertyInfo, string> s_propertyName = p => p.PropertyName;
 
-        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForPrint = new Func<PhpPropertyInfo, string>(p =>
+        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForPrint = p =>
         {
             if (p.IsPublic)
             {
@@ -114,7 +114,7 @@ namespace Pchp.Core.Reflection
             {
                 return p.PropertyName + ":protected";
             }
-        });
+        };
 
         /// <summary>
         /// Enumerates instance fields of given object, transforms field names according to <c>var_dump</c> notation.
@@ -140,7 +140,7 @@ namespace Pchp.Core.Reflection
                 s_keyToString);
         }
 
-        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForDump = new Func<PhpPropertyInfo, string>(p =>
+        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForDump = p =>
         {
             var name = "\"" + p.PropertyName + "\"";
 
@@ -158,7 +158,7 @@ namespace Pchp.Core.Reflection
             {
                 return name + ":protected";
             }
-        });
+        };
 
         /// <summary>
         /// Enumerates instance fields of given object.

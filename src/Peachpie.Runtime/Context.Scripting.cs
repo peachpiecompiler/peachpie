@@ -56,7 +56,7 @@ namespace Pchp.Core
             /// <summary>
             /// Resolves global function handle(s).
             /// </summary>
-            IEnumerable<System.Reflection.MethodInfo> GetGlobalRoutineHandle(string name);
+            IEnumerable<MethodInfo> GetGlobalRoutineHandle(string name);
         }
 
         /// <summary>
@@ -106,7 +106,10 @@ namespace Pchp.Core
                         var ass = Assembly.Load(new AssemblyName("Peachpie.Library.Scripting"));
                         type = ass.GetType("Peachpie.Library.Scripting.ScriptingProvider", throwOnError: false);
                     }
-                    catch { }
+                    catch // FileNotFoundException, FileLoadException
+                    {
+                        // missing Peachpie.Library.Scripting assembly is expected => scripting is not allowed
+                    }
 
                     // instantiate the provider singleton
                     var provider = type != null

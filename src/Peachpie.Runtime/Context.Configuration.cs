@@ -180,7 +180,7 @@ namespace Pchp.Core
                 if (_includePathCache != IncludePaths)
                 {
                     _includePathCache = IncludePaths;
-                    _includePathsArray = IncludePaths.Split(new char[] { CurrentPlatform.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
+                    _includePathsArray = IncludePaths.Split(new [] { CurrentPlatform.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
                 }
 
                 return _includePathsArray;
@@ -293,8 +293,6 @@ namespace Pchp.Core
                         yield return pair.Value;
                     }
                 }
-
-                yield break;
             }
 
             IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<IPhpConfiguration>)this).GetEnumerator();

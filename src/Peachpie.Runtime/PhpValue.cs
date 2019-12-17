@@ -77,7 +77,7 @@ namespace Pchp.Core
         /// <summary>
         /// A value type container.
         /// </summary>
-        ValueField _value;
+        readonly ValueField _value;
 
         /// <summary>
         /// A reference type container.

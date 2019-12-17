@@ -121,7 +121,7 @@ namespace Pchp.Core.Reflection
             _frames = InitPhpStackFrames(clrtrace);
         }
 
-        static PhpStackFrame[] InitPhpStackFrames(StackTrace clrtrace)
+        static PhpStackFrame[] InitPhpStackFrames(StackTrace/*!*/clrtrace)
         {
             return clrtrace.GetFrames()
                 .Where(IsPhpStackFrame)

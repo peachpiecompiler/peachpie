@@ -87,7 +87,7 @@ namespace Pchp.Core.Reflection
                 SelectVisibleOverrides(ref overrides);
 
                 var info = PhpMethodInfo.Create(++index, m.Key, overrides, type);
-                var magic = MagicMethods.undefined;
+                MagicMethods magic;
 
                 if (IsSpecialName(overrides))
                 {

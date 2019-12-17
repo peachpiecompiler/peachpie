@@ -81,7 +81,7 @@ namespace Pchp.Core.Utilities
             // creates PHP Context within the ExecutionContext:
             Interlocked.CompareExchange(ref s_lazyCurrentContext, new AsyncLocal<Context>(), null);
 
-            return new Func<Context>(() =>
+            return () =>
             {
                 var value = s_lazyCurrentContext.Value;
                 if (value == null)
@@ -90,7 +90,7 @@ namespace Pchp.Core.Utilities
                 }
 
                 return value;
-            });
+            };
         }
         static AsyncLocal<Context> s_lazyCurrentContext;
 

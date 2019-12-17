@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Globalization;
 using Pchp.Core.Reflection;
 using System.Reflection;
 
@@ -283,7 +284,7 @@ namespace Pchp.Core
             public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => new PhpAlias(PhpValue.Null);
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
-            public override string DisplayString(ref PhpValue me) => me.Double.ToString();
+            public override string DisplayString(ref PhpValue me) => me.Double.ToString(CultureInfo.InvariantCulture);
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Double);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Double);
         }

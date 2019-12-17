@@ -10,14 +10,6 @@ namespace Pchp.Core
     {
         struct RecursionCheckKey : IEquatable<RecursionCheckKey>
         {
-            public class EqualityComparer : IEqualityComparer<RecursionCheckKey>
-            {
-                public static readonly EqualityComparer Instance = new EqualityComparer();
-                private EqualityComparer() { }
-                public bool Equals(RecursionCheckKey x, RecursionCheckKey y) => x.Equals(y);
-                public int GetHashCode(RecursionCheckKey obj) => obj.GetHashCode();
-            }
-
             readonly object _key;
             readonly int _subkey;
 
@@ -30,7 +22,7 @@ namespace Pchp.Core
 
             public bool Equals(RecursionCheckKey other) => _subkey == other._subkey && _key.Equals(other._key);
             public override int GetHashCode() => _key.GetHashCode() ^ _subkey;
-            public override bool Equals(object obj) => obj is RecursionCheckKey && Equals((RecursionCheckKey)obj);
+            public override bool Equals(object obj) => obj is RecursionCheckKey key && Equals(key);
         }
 
         public struct RecursionCheckToken : IDisposable

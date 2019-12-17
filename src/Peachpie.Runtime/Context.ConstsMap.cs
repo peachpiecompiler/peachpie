@@ -54,7 +54,7 @@ namespace Pchp.Core
         /// <summary>
         /// Information about app constants.
         /// </summary>
-        [DebuggerDisplay("Value={Value}, Extension={ExtensionName}")]
+        [DebuggerDisplay("Value={Data}, Extension={ExtensionName}")]
         struct ConstData
         {
             /// <summary>

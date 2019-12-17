@@ -160,12 +160,9 @@ namespace Pchp.Core.Reflection
             if (_processed.Add(ass))
             {
                 var attrs = ass.GetCustomAttributes<PhpExtensionAttribute>();
-                if (attrs != null)
+                foreach (var attr in attrs)
                 {
-                    foreach (var attr in attrs)
-                    {
-                        VisitAttribute(attr);
-                    }
+                    VisitAttribute(attr);
                 }
 
                 return true;

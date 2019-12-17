@@ -12,7 +12,7 @@ namespace Pchp.Core
         /// Gets whether error reporting is disabled or enabled.
         /// </summary>
         public bool ErrorReportingDisabled => _errorReportingDisabled != 0; // && !config.ErrorControl.IgnoreAtOperator;
-        int _errorReportingDisabled = 0;
+        int _errorReportingDisabled;
 
         /// <summary>
         /// Disables error reporting. Can be called for multiple times. To enable reporting again 
