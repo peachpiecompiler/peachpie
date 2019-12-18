@@ -233,6 +233,26 @@ namespace Pchp.Library
             return result.Count != 0 ? result : null;
         }
 
+        /// <summary>
+        /// Checks the given <paramref name="assertion"/> and take appropriate action if its result is <c>FALSE</c>.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="assertion"></param>
+        /// <param name="action"></param>
+        /// <returns>Assertion value.</returns>
+        public static bool assert(Context ctx, PhpValue assertion, PhpValue action = default)
+        {
+            // TODO: check assertion is enabled
+
+            if (assertion.IsString())
+            {
+                PhpException.InvalidArgumentType(nameof(assertion), PhpVariable.TypeNameBoolean);
+                return true;
+            }
+
+            return ctx.Assert(assertion, action);
+        }
+
         ///// <summary>
         ///// Returns an array of all currently active resources, optionally filtered by resource type.
         ///// </summary>
