@@ -536,12 +536,9 @@ namespace Pchp.Library
         /// </summary>
         public static ObjectPool<StringBuilder> Pool => s_lazyObjectPool.Value;
 
-        static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(() =>
-        {
-            var provider = new DefaultObjectPoolProvider();
-            var policy = new StringBuilderPooledObjectPolicy();
-            return provider.Create(policy);
-        }, System.Threading.LazyThreadSafetyMode.None);
+        static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(
+            () => new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy()),
+            System.Threading.LazyThreadSafetyMode.PublicationOnly);
 
         /// <summary>
         /// Gets the <paramref name="sb"/> value as string and return the instance to the <see cref="Pool"/>.
