@@ -82,14 +82,14 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets constants.
         /// </summary>
+        [return: NotNull]
         public PhpArray getConstants(Context ctx)
         {
             var result = new PhpArray();
 
-            // TODO: API for getting only extensions in specified extension
             foreach (var c in ctx.GetConstants())
             {
-                if (string.Equals( c.ExtensionName, this.name, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(c.ExtensionName, this.name, StringComparison.OrdinalIgnoreCase))
                 {
                     result[c.Name] = c.Value;
                 }
@@ -101,6 +101,7 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets dependencies.
         /// </summary>
+        [return: NotNull]
         public PhpArray getDependencies() { throw new NotImplementedException(); }
 
         /// <summary>
