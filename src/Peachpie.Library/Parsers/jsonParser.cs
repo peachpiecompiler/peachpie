@@ -127,18 +127,13 @@ internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
 				arr.Add( Core.Convert.StringToArrayKey(n.Value.Key), n.Value.Value );
 			}
 					
-			if (decodeOptions.Assoc)
-			{
-				yyval.value = PhpValue.Create(arr);
-			}
-			else
-			{
-				yyval.value = PhpValue.FromClass(arr.ToObject());
-			}
+			yyval.value = decodeOptions.Assoc ? PhpValue.Create(arr) : PhpValue.FromClass(arr.ToObject());
 		}
         return;
       case 4: // object -> OBJECT_OPEN OBJECT_CLOSE 
-{ yyval.value = PhpValue.FromClass(new stdClass()); }
+{
+            yyval.value = decodeOptions.Assoc ? PhpValue.Create(PhpArray.NewEmpty()) : PhpValue.FromClass(new stdClass());
+        }
         return;
       case 5: // members -> pair ITEMS_SEPARATOR members 
 {
