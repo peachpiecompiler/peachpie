@@ -2345,7 +2345,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 else
                 {
                     Debug.Assert(Receiver != null);
-                    throw cg.NotImplementedException();
+
+                    // methodRoutineInfo.BindTarget(Receiver)
+                    m.EmitLoadRoutineInfo(cg);
+                    cg.EmitConvert(Receiver, cg.CoreTypes.Object);
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Reflection.BindTarget_Object)
+                        .Expect(cg.CoreTypes.IPhpCallable);
                 }
             }
 

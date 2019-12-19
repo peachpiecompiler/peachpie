@@ -968,6 +968,10 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 _ct = ct;
                 _lazyCreateUserRoutine = null;
+                _lazyCreateUserRoutineMethod = null;
+
+                BindTarget_Object = ct.RoutineInfo.Method("BindTarget", ct.Object);
+                GetMethodFromHandle_RuntimeMethodHandle = ct.MethodBase.Method("GetMethodFromHandle", ct.RuntimeMethodHandle);
             }
 
             public MethodSymbol CreateUserRoutine_string_RuntimeMethodHandle_RuntimeMethodHandleArr
@@ -987,6 +991,27 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
             MethodSymbol _lazyCreateUserRoutine;
+
+            public MethodSymbol CreateUserRoutine_string_MethodInfoArr
+            {
+                get
+                {
+                    if (_lazyCreateUserRoutineMethod == null)
+                    {
+                        _lazyCreateUserRoutineMethod = _ct.RoutineInfo.Symbol.GetMembers("CreateUserRoutine").OfType<MethodSymbol>().Single(m =>
+                            m.ParameterCount == 2 &&
+                            m.Parameters[0].Type.SpecialType == SpecialType.System_String &&
+                            m.Parameters[1].Type.IsSZArray());
+                    }
+
+                    return _lazyCreateUserRoutineMethod;
+                }
+            }
+            MethodSymbol _lazyCreateUserRoutineMethod;
+
+            public readonly CoreMethod
+                BindTarget_Object,
+                GetMethodFromHandle_RuntimeMethodHandle;
         }
 
     }

@@ -727,14 +727,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         }
                     }
                 }
-                // TODO: Enable when supported in emit
-                //else if (MatchExprSkipCopy(item0, out BoundVariableRef varRef, out _) &&
-                //         varRef.Variable is ThisVariableReference thisVar &&
-                //         TryGetMethod(thisVar.Type, methodName, out var methodSymbol))
-                //{
-                //    // [$this, "methodName"]
-                //    return Transform(x, methodSymbol, varRef);
-                //}
+                else if (MatchExprSkipCopy(item0, out BoundVariableRef varRef, out _) &&
+                         varRef.Variable is ThisVariableReference thisVar &&
+                         TryGetMethod(thisVar.Type, methodName, out var methodSymbol) && !methodSymbol.IsStatic)
+                {
+                    // [$this, "methodName"]
+                    return Transform(x, methodSymbol, varRef);
+                }
             }
 
             return base.VisitArray(x);
