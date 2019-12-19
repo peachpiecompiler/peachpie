@@ -493,6 +493,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Only the last parameter can be variadic.
+        /// </summary>
+        internal static string ERR_VariadicParameterNotLast {
+            get {
+                return ResourceManager.GetString("ERR_VariadicParameterNotLast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A void function must not return a value.
         /// </summary>
         internal static string ERR_VoidFunctionCannotReturnValue {

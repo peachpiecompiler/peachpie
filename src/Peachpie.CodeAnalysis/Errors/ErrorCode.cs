@@ -145,6 +145,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_ThisOutOfObjectContext,
         /// <summary>Cannot set read-only property {0}::${1}</summary>
         ERR_ReadOnlyPropertyWritten,
+        /// <summary>Only the last parameter can be variadic</summary>
+        ERR_VariadicParameterNotLast,
 
         //
         // Warnings

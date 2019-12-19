@@ -357,4 +357,7 @@
   <data name="ERR_CantReadResource" xml:space="preserve">
     <value>Error reading resource '{0}' -- '{1}'</value>
   </data>
+  <data name="ERR_VariadicParameterNotLast" xml:space="preserve">
+    <value>Only the last parameter can be variadic</value>
+  </data>
 </root>

@@ -153,8 +153,11 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             // check mandatory behind and optional parameter
             bool foundopt = false;
-            foreach (var p in SyntaxSignature.FormalParams)
+            var ps = SyntaxSignature.FormalParams;
+            for (int i = 0; i < ps.Length; i++)
             {
+                var p = ps[i];
+                
                 if (p.InitValue == null)
                 {
                     if (foundopt && !p.IsVariadic)
@@ -165,6 +168,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 else
                 {
                     foundopt = true;
+                }
+
+                //
+                if (p.IsVariadic && i < ps.Length - 1)
+                {
+                    // Fatal Error: variadic parameter (...) must be the last parameter
+                    diagnostic.Add(this, p, Errors.ErrorCode.ERR_VariadicParameterNotLast);
                 }
             }
         }
