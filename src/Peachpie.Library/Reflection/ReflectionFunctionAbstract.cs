@@ -110,6 +110,8 @@ namespace Pchp.Library.Reflection
             var arr = new PhpArray(parameters.Count);
             for (int i = 0; i < parameters.Count; i++)
             {
+                Debug.Assert(!parameters[i]._isVariadic || i == parameters.Count - 1, "Variadic can be only last parameter");
+
                 arr.Add(PhpValue.FromClass(parameters[i]));
             }
 

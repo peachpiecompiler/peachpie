@@ -110,7 +110,7 @@ namespace Pchp.Library.Reflection
                     var p = ps[pi];
 
                     var allowsNull = p.IsNullable();
-                    var isVariadic = p.GetCustomAttribute<ParamArrayAttribute>() != null;
+                    var isVariadic = pi == ps.Length - 1 && p.GetCustomAttribute<ParamArrayAttribute>() != null;
 
                     PhpValue defaultValue;
                     DefaultValueAttribute defaultValueAttr;

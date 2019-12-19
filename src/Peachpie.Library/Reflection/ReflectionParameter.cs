@@ -66,21 +66,29 @@ namespace Pchp.Library.Reflection
             }
 
             _allowsNull |= allowsNull;
-            _isVariadic |= isVariadic;
-
+            
             if (!_defaultValue.IsSet && !defaultValue.IsDefault)
             {
                 _defaultValue = defaultValue;
             }
 
-            if (!Core.Reflection.ReflectionUtils.IsAllowedPhpName(_name))
+            if (Core.Reflection.ReflectionUtils.IsAllowedPhpName(_name))
             {
+                if (Core.Reflection.ReflectionUtils.IsAllowedPhpName(name))
+                {
+                    _isVariadic |= isVariadic;
+                }
+            }
+            else
+            {
+                // previous parameter definition was synthesized,
+                // override the reflection info
                 _name = name;
                 _isVariadic = isVariadic;
             }
         }
 
-        /// <summary>Marks the parameter as optional is not yet.</summary>
+        /// <summary>Marks the parameter as optional if not yet.</summary>
         internal void SetOptional()
         {
             if (_defaultValue.IsDefault)
