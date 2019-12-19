@@ -360,4 +360,7 @@
   <data name="ERR_VariadicParameterNotLast" xml:space="preserve">
     <value>Only the last parameter can be variadic</value>
   </data>
+  <data name="WRN_ArgumentVoid" xml:space="preserve">
+    <value>Argument has no value, parameter will be always NULL</value>
+  </data>
 </root>

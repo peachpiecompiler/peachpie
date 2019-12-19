@@ -198,6 +198,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_FieldPhpDocAssignIncompatible,
         /// <summary>Method {0}::__toString() must return a string value</summary>
         WRN_ToStringMustReturnString,
+        /// <summary>Argument has no value, parameter will be always NULL</summary>
+        WRN_ArgumentVoid,
 
         //
         // Visible information

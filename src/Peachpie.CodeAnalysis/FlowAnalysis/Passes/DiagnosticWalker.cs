@@ -546,6 +546,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
+        public override T VisitArgument(BoundArgument x)
+        {
+            base.VisitArgument(x);
+
+            if (!x.Value.TypeRefMask.IsRef) // if value is referenced, we dunno
+            {
+                // argument should not be 'void' (NULL in PHP)
+                if ((x.Type != null && x.Type.SpecialType == SpecialType.System_Void) ||
+                    x.Value.TypeRefMask.IsVoid(TypeCtx))
+                {
+                    // WRN: Argument has no value, parameter will be always NULL
+                    _diagnostics.Add(_routine, x.Value.PhpSyntax, ErrorCode.WRN_ArgumentVoid);
+                }
+            }
+
+            //
+            return default;
+        }
+
         public override T VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             CheckUndefinedFunctionCall(x);

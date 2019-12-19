@@ -574,6 +574,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Argument has no value, parameter will be always NULL.
+        /// </summary>
+        internal static string WRN_ArgumentVoid {
+            get {
+                return ResourceManager.GetString("WRN_ArgumentVoid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Assertion will always fail.
         /// </summary>
         internal static string WRN_AssertAlwaysFail {
