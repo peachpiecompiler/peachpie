@@ -94,8 +94,19 @@ namespace Pchp.Library.Reflection
             var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
             return (sep < 0) ? string.Empty : name.Remove(sep);
         }
-        public long getNumberOfParameters() { throw new NotImplementedException(); }
-        public long getNumberOfRequiredParameters() { throw new NotImplementedException(); }
+        
+        public long getNumberOfParameters()
+        {
+            return ReflectionUtils.ResolvePhpParameters(_routine.Methods).Count;
+        }
+
+        public long getNumberOfRequiredParameters()
+        {
+            return ReflectionUtils
+                .ResolvePhpParameters(_routine.Methods)
+                .TakeWhile(p => p.HasDefaultValue == false && p.GetCustomAttribute<DefaultValueAttribute>() == null && p.GetCustomAttribute<ParamArrayAttribute>() == null)
+                .Count();
+        }
 
         /// <summary>
         /// Get the parameters as an array of <see cref="ReflectionParameter"/>.

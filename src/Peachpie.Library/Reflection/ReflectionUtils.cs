@@ -95,6 +95,47 @@ namespace Pchp.Library.Reflection
             }
         }
 
+        public static List<ParameterInfo> ResolvePhpParameters(MethodInfo[] overloads)
+        {
+            var parameters = new List<ParameterInfo>();
+
+            for (int mi = 0; mi < overloads.Length; mi++)
+            {
+                var ps = overloads[mi].GetParameters();
+                var implicitps = Core.Reflection.ReflectionUtils.ImplicitParametersCount(ps);   // number of implicit compiler-generated parameters
+                int pi = implicitps;
+
+                for (; pi < ps.Length; pi++)
+                {
+                    var p = ps[pi];
+
+                    if (!Core.Reflection.ReflectionUtils.IsAllowedPhpName(p.Name))
+                    {
+                        break;  // synthesized at the end of CLR method
+                    }
+
+                    var index = pi - implicitps;
+
+                    if (index == parameters.Count)
+                    {
+                        parameters.Add(p);
+                    }
+                    else
+                    {
+                        // choose the better - the one with more metadata
+                        var oldp = parameters[index];
+                        if (p.HasDefaultValue || p.GetCustomAttribute<DefaultValueAttribute>() != null) // TODO: or has type information
+                        {
+                            parameters[index] = p;
+                        }
+                    }
+                }
+            }
+
+            //
+            return parameters;
+        }
+
         public static List<ReflectionParameter> ResolveReflectionParameters(Context ctx, ReflectionFunctionAbstract function, MethodInfo[] overloads)
         {
             var parameters = new List<ReflectionParameter>();
