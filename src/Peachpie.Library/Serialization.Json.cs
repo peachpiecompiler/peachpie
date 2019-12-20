@@ -265,6 +265,7 @@ namespace Pchp.Library
                 bool HasPrettyPrint => (_encodeOptions & JsonEncodeOptions.JSON_PRETTY_PRINT) != 0;
                 bool HasUnescapedSlashes => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_SLASHES) != 0;
                 bool HasUnescapedUnicode => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_UNICODE) != 0;
+                bool HasPreserveZeroFraction => (_encodeOptions & JsonEncodeOptions.JSON_PRESERVE_ZERO_FRACTION) != 0;
 
                 #endregion
 
@@ -337,7 +338,19 @@ namespace Pchp.Library
 
                 public override void Accept(double obj)
                 {
-                    WriteRaw(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    var aslong = unchecked((long)obj);
+
+                    if (HasPreserveZeroFraction && aslong == obj)
+                    {
+                        WriteRaw(aslong.ToString());
+                        WriteRaw(".0"); // as PHP does
+                    }
+                    else
+                    {
+                        // "G" format specifier,
+                        // does not append floating point if .0
+                        WriteRaw(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    }
                 }
 
                 /// <summary>
@@ -928,6 +941,11 @@ namespace Pchp.Library
             /// </summary>
             JSON_UNESCAPED_UNICODE = 256,
 
+            /// <summary>
+            /// Ensures that float values are always encoded as a float value.
+            /// </summary>
+            JSON_PRESERVE_ZERO_FRACTION = 1024,
+
             JSON_THROW_ON_ERROR = JsonSerialization.JSON_THROW_ON_ERROR,
         }
 
@@ -940,6 +958,7 @@ namespace Pchp.Library
         public const int JSON_UNESCAPED_SLASHES = (int)JsonEncodeOptions.JSON_UNESCAPED_SLASHES;
         public const int JSON_PRETTY_PRINT = (int)JsonEncodeOptions.JSON_PRETTY_PRINT;
         public const int JSON_UNESCAPED_UNICODE = (int)JsonEncodeOptions.JSON_UNESCAPED_UNICODE;
+        public const int JSON_PRESERVE_ZERO_FRACTION = (int)JsonEncodeOptions.JSON_PRESERVE_ZERO_FRACTION;
 
         /// <summary>
         /// Options given to json_decode function.
@@ -960,7 +979,6 @@ namespace Pchp.Library
             /// Big integers represent as strings rather than floats.
             /// </summary>
             JSON_BIGINT_AS_STRING = 2,
-
 
             JSON_THROW_ON_ERROR = JsonSerialization.JSON_THROW_ON_ERROR,
         }
