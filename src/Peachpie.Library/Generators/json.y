@@ -103,8 +103,8 @@ elements:
 	
 value:
 		STRING	{$$.value = PhpValue.Create((string)$1.obj);}
-	|	INTEGER	{$$.value = PhpValue.FromClr($1.obj);}
-	|	DOUBLE	{$$.value = PhpValue.FromClr($1.obj);}
+	|	INTEGER	{$$.value = $1.value;}
+	|	DOUBLE	{$$.value = $1.value;}
 	|	object	{$$.value = $1.value;}
 	|	array	{$$.value = $1.value;}
 	|	TRUE	{$$.value = PhpValue.True;}

@@ -175,10 +175,10 @@ internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
 {yyval.value = PhpValue.Create((string)value_stack.array[value_stack.top-1].yyval.obj);}
         return;
       case 13: // value -> INTEGER 
-{yyval.value = PhpValue.FromClr(value_stack.array[value_stack.top-1].yyval.obj);}
+{yyval.value = value_stack.array[value_stack.top-1].yyval.value;}
         return;
       case 14: // value -> DOUBLE 
-{yyval.value = PhpValue.FromClr(value_stack.array[value_stack.top-1].yyval.obj);}
+{yyval.value = value_stack.array[value_stack.top-1].yyval.value;}
         return;
       case 15: // value -> object 
 {yyval.value = value_stack.array[value_stack.top-1].yyval.value;}
