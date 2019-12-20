@@ -475,16 +475,16 @@ namespace Pchp.Library.DateTime
 
         #region IPhpCloneable
 
-        [PhpHidden]
-        public object Clone()
+        object IPhpCloneable.Clone()
         {
             if (GetType() == typeof(DateTime))
             {
+                // quick new instance
                 return new DateTime(_ctx, Time, TimeZone);
             }
             else
             {
-                return Operators.CloneRaw(_ctx, this);
+                return Operators.CloneInPlace(MemberwiseClone());
             }
         }
 
@@ -686,7 +686,18 @@ namespace Pchp.Library.DateTime
 
         #region IPhpCloneable
 
-        public object Clone() => new DateTimeImmutable(_ctx, Time, TimeZone);
+        object IPhpCloneable.Clone()
+        {
+            if (GetType() == typeof(DateTimeImmutable))
+            {
+                // quick new instance
+                return new DateTimeImmutable(_ctx, Time, TimeZone);
+            }
+            else
+            {
+                return Operators.CloneInPlace(MemberwiseClone());
+            }
+        }
 
         #endregion
     }

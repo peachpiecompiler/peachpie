@@ -1412,7 +1412,8 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Performs memberwise clone of the object, calling <c>__clone</c> eventually.
+        /// Performs memberwise clone of the object.
+        /// Calling <c>__clone</c> eventually.
         /// </summary>
         public static object CloneRaw(Context ctx, object value)
         {
@@ -1429,13 +1430,54 @@ namespace Pchp.Core
                 //
                 value = newobj;
 
-                // __clone()
-                // TODO: only if __clone() is public
-                tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone]?.Invoke(ctx, value);
+                // __clone(), only if __clone() is public
+                var __clone = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone];
+                if (__clone != null && __clone.IsPublic())
+                {
+                    __clone.Invoke(ctx, value);
+                }
             }
             else
             {
                 PhpException.Throw(PhpError.Error, Resources.ErrResources.class_instantiation_failed, tinfo.Name);
+            }
+
+            //
+            return value;
+        }
+
+        /// <summary>
+        /// Every property of type <see cref="PhpValue"/> will be deeply copied inplace, including runtime fields.
+        /// Calling <c>__clone</c> eventually.
+        /// </summary>
+        public static object CloneInPlace(object value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
+            var tinfo = value.GetPhpTypeInfo();
+
+            // clone runtime fields:
+            if (tinfo.RuntimeFieldsHolder != null)
+            {
+                var runtimefields = (PhpArray)tinfo.RuntimeFieldsHolder.GetValue(value);
+                tinfo.RuntimeFieldsHolder.SetValue(value, runtimefields?.Clone());
+            }
+
+            // deep copy instance fields (of type PhpValue)
+            foreach (var p in tinfo.DeclaredFields.InstanceProperties.OfType<PhpPropertyInfo.ClrFieldProperty>())
+            {
+                if (p.Field.FieldType == typeof(PhpValue))
+                {
+                    var oldvalue = (PhpValue)p.Field.GetValue(value);
+                    p.Field.SetValue(value, (object)oldvalue.DeepCopy());
+                }
+            }
+
+            // __clone(), only if __clone() is public
+            var __clone = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone];
+            if (__clone != null && __clone.IsPublic())
+            {
+                __clone.Invoke(null, value); // 'ctx' is not needed ... probably
             }
 
             //

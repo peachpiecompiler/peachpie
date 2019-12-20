@@ -179,6 +179,19 @@ namespace Pchp.Core.Reflection
                 : null;
         }
 
+        /// <summary>
+        /// Determines if the routine is entirely public.
+        /// </summary>
+        public static bool IsPublic(this RoutineInfo/*!*/routine)
+        {
+            var methods = routine.Methods;
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (!methods[i].IsPublic) return false;
+            }
+            return true;    // all methods are public
+        }
+
         public static bool IsPhpPublic(this MemberInfo m)
         {
             if (m is FieldInfo f) return f.IsPublic;
