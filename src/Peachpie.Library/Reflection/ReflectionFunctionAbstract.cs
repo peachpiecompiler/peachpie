@@ -58,18 +58,16 @@ namespace Pchp.Library.Reflection
         [return: CastToFalse]
         public string getDocComment() => ReflectionUtils.getDocComment(_routine.Methods[0]);
 
-        [return: CastToFalse]
-        public long getStartLine()
+        public virtual long getStartLine()
         {
             PhpException.FunctionNotSupported("ReflectionFunctionAbstract::getStartLine");
-            return -1;
+            return 0;
         }
 
-        [return: CastToFalse]
-        public long getEndLine()
+        public virtual long getEndLine()
         {
             PhpException.FunctionNotSupported("ReflectionFunctionAbstract::getEndLine");
-            return -1;
+            return 0;
         }
 
         public ReflectionExtension getExtension()
