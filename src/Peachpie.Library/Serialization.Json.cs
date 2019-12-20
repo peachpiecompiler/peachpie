@@ -809,7 +809,7 @@ namespace Pchp.Library
                 /// <summary>
                 /// When TRUE, returned object s will be converted into associative array s. 
                 /// </summary>
-                public bool Assoc = false;
+                public bool Assoc => (Options & JsonDecodeOptions.JSON_OBJECT_AS_ARRAY) != 0;
 
                 /// <summary>
                 /// User specified recursion depth. 
@@ -951,12 +951,21 @@ namespace Pchp.Library
             Default = 0,
 
             /// <summary>
+            /// Decodes JSON objects as PHP array.
+            /// This option can be added automatically by calling <see cref="json_decode"/>() with the second parameter equal to <c>TRUE</c>.
+            /// </summary>
+            JSON_OBJECT_AS_ARRAY = 1,
+
+            /// <summary>
             /// Big integers represent as strings rather than floats.
             /// </summary>
-            JSON_BIGINT_AS_STRING = 1,
+            JSON_BIGINT_AS_STRING = 2,
+
 
             JSON_THROW_ON_ERROR = JsonSerialization.JSON_THROW_ON_ERROR,
         }
+
+        public const int JSON_OBJECT_AS_ARRAY = (int)JsonDecodeOptions.JSON_OBJECT_AS_ARRAY;
 
         public const int JSON_BIGINT_AS_STRING = (int)JsonDecodeOptions.JSON_BIGINT_AS_STRING;
 
@@ -995,10 +1004,14 @@ namespace Pchp.Library
 
             var decodeoptions = new PhpSerialization.JsonSerializer.DecodeOptions()
             {
-                Assoc = assoc,
                 Depth = depth,
                 Options = options,
             };
+
+            if (assoc)
+            {
+                decodeoptions.Options |= JsonDecodeOptions.JSON_OBJECT_AS_ARRAY;
+            }
 
             return new PhpSerialization.JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, json, default);
         }
