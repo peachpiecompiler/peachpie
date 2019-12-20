@@ -30,11 +30,6 @@ namespace Pchp.CodeAnalysis.Emit
         SynthesizedScriptTypeSymbol _lazyScriptType;
 
         /// <summary>
-        /// Constructed method symbol <c>Context.DllLoader&lt;TScript&gt;.Bootstrap()</c> to be called by every static .cctor.
-        /// </summary>
-        MethodSymbol _lazyBootstrapMethod;
-
-        /// <summary>
         /// Manages synthesized methods and fields.
         /// </summary>
         public SynthesizedManager SynthesizedManager => _synthesized;
@@ -44,7 +39,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
         readonly ConcurrentDictionary<Symbol, object> _genericInstanceMap = new ConcurrentDictionary<Symbol, object>();
-        readonly Cci.RootModuleType _rootModuleType = new Cci.RootModuleType();
+        readonly PhpRootModuleType _rootModuleType = new PhpRootModuleType();
         PrivateImplementationDetails _privateImplementationDetails;
         HashSet<string> _namesOfTopLevelTypes;  // initialized with set of type names within first call to GetTopLevelTypes()
 
@@ -61,7 +56,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Builders for synthesized static constructors.
         /// </summary>
-        readonly ConcurrentDictionary<TypeSymbol, ILBuilder> _cctorBuilders = new ConcurrentDictionary<TypeSymbol, ILBuilder>(ReferenceEqualityComparer.Instance);
+        readonly ConcurrentDictionary<Cci.ITypeDefinition, ILBuilder> _cctorBuilders = new ConcurrentDictionary<Cci.ITypeDefinition, ILBuilder>(ReferenceEqualityComparer.Instance);
 
         protected PEModuleBuilder(
             PhpCompilation compilation,
@@ -105,28 +100,28 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         /// <param name="container">Containing type symbol.</param>
         /// <returns>Enumeration of synthesized fields.</returns>
-        public IEnumerable<FieldSymbol> GetSynthesizedFields(TypeSymbol container) => _synthesized.GetMembers<FieldSymbol>(container);
+        public IEnumerable<FieldSymbol> GetSynthesizedFields(Cci.ITypeDefinition container) => _synthesized.GetMembers<FieldSymbol>(container);
 
         /// <summary>
         /// Gets enumeration of synthesized properties for <paramref name="container"/>.
         /// </summary>
         /// <param name="container">Containing type symbol.</param>
         /// <returns>Enumeration of synthesized properties.</returns>
-        public IEnumerable<PropertySymbol> GetSynthesizedProperties(TypeSymbol container) => _synthesized.GetMembers<PropertySymbol>(container);
+        public IEnumerable<PropertySymbol> GetSynthesizedProperties(Cci.ITypeDefinition container) => _synthesized.GetMembers<PropertySymbol>(container);
 
         /// <summary>
         /// Gets enumeration of synthesized methods for <paramref name="container"/>.
         /// </summary>
         /// <param name="container">Containing type symbol.</param>
         /// <returns>Enumeration of synthesized methods.</returns>
-        public IEnumerable<MethodSymbol> GetSynthesizedMethods(TypeSymbol container) => _synthesized.GetMembers<MethodSymbol>(container);
+        public IEnumerable<MethodSymbol> GetSynthesizedMethods(Cci.ITypeDefinition container) => _synthesized.GetMembers<MethodSymbol>(container);
 
         /// <summary>
         /// Gets enumeration of synthesized nested types for <paramref name="container"/>.
         /// </summary>
         /// <param name="container">Containing type symbol.</param>
         /// <returns>Enumeration of synthesized nested types.</returns>
-        public IEnumerable<TypeSymbol> GetSynthesizedTypes(TypeSymbol container) => _synthesized.GetMembers<TypeSymbol>(container);
+        public IEnumerable<TypeSymbol> GetSynthesizedTypes(Cci.ITypeDefinition container) => _synthesized.GetMembers<TypeSymbol>(container);
 
         #endregion
 
@@ -319,7 +314,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Gets IL builder for lazy static constructor.
         /// </summary>
-        public ILBuilder GetStaticCtorBuilder(NamedTypeSymbol container)
+        public ILBuilder GetStaticCtorBuilder(Cci.ITypeDefinition container)
         {
             ILBuilder il;
 
@@ -340,6 +335,10 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         public void RealizeStaticCtors()
         {
+            // Create module static cctor
+            EmitAddScriptReference(GetStaticCtorBuilder(_rootModuleType));
+
+            // finish synthesized .cctor methods:
             foreach (var pair in _cctorBuilders)
             {
                 var cctor = SynthesizedManager.EnsureStaticCtor(pair.Key);
@@ -355,36 +354,22 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        #endregion
-
-        /// <summary>
-        /// Emits one-time bootstrap for given container (script file, PHP type)
-        /// </summary>
-        /// <param name="tcontainer">A script file or PHP type.</param>
-        public void EmitBootstrap(NamedTypeSymbol tcontainer)
+        void EmitAddScriptReference(ILBuilder il)
         {
-            EmitBootstrap(this.GetStaticCtorBuilder(tcontainer));
-        }
+            // Context.DllLoader<TScript>
+            var tDllLoader_T = this.Compilation.GetTypeByMetadataName(CoreTypes.Context_DllLoader_T);
+            var tDllLoader = tDllLoader_T.Construct(this.ScriptType);
 
-        internal void EmitBootstrap(ILBuilder il)
-        {
-            if (ReferenceEquals(_lazyBootstrapMethod, null))
-            {
-                // Context.DllLoader<TScript>
-                var tDllLoader_T = this.Compilation.GetTypeByMetadataName(CoreTypes.Context_DllLoader_T);
-                var tDllLoader = tDllLoader_T.Construct(this.ScriptType);
-
-                // .Bootstrap()
-                var method = (MethodSymbol)tDllLoader.GetMembers("Bootstrap").Single();
-
-                Interlocked.CompareExchange(ref _lazyBootstrapMethod, method, null);
-            }
+            // .AddScriptReference()
+            var addmethod = (MethodSymbol)tDllLoader.GetMembers("AddScriptReference").Single();
 
             // .call Context.DllLoader<TScript>.Bootstrap()
             il
-                .EmitCall(this, DiagnosticBag.GetInstance(), System.Reflection.Metadata.ILOpCode.Call, _lazyBootstrapMethod)
+                .EmitCall(this, DiagnosticBag.GetInstance(), System.Reflection.Metadata.ILOpCode.Call, addmethod)
                 .Expect(SpecialType.System_Void);
         }
+
+        #endregion
 
         internal override Compilation CommonCompilation => _compilation;
 
@@ -708,7 +693,7 @@ namespace Pchp.CodeAnalysis.Emit
                     return Cci.TypeMemberVisibility.Public;
 
                 case Accessibility.Private:
-                    if (symbol.ContainingType.TypeKind == TypeKind.Submission)
+                    if (symbol.ContainingType != null && symbol.ContainingType.TypeKind == TypeKind.Submission)
                     {
                         // top-level private member:
                         return Cci.TypeMemberVisibility.Public;

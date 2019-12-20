@@ -1,9 +1,9 @@
 ﻿using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -12,13 +12,11 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed partial class SynthesizedCctorSymbol : SynthesizedMethodSymbol
     {
-        public SynthesizedCctorSymbol(TypeSymbol container)
-            :base(container, WellKnownMemberNames.StaticConstructorName, true, false, container.DeclaringCompilation.CoreTypes.Void)
+        public SynthesizedCctorSymbol(Cci.ITypeDefinition container, ModuleSymbol module)
+            :base(container, module, WellKnownMemberNames.StaticConstructorName, true, false, module.DeclaringCompilation.CoreTypes.Void)
         {
-            
+            SetParameters(ImmutableArray<ParameterSymbol>.Empty);
         }
-
-        internal override PhpCompilation DeclaringCompilation => ContainingType.DeclaringCompilation;
 
         public override MethodKind MethodKind => MethodKind.StaticConstructor;
 

@@ -19,11 +19,6 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         internal void SynthesizeInit(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
-            if (!IsInterface)
-            {
-                module.EmitBootstrap(this);
-            }
-
             // .cctor
             EmitFieldsCctor(module);
 

@@ -531,7 +531,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 CheckDefinitionInvariant();
                 var isvirt = this.IsMetadataVirtual();
                 Debug.Assert(isvirt || (!IsMetadataFinal && !IsMetadataNewSlot()), "Method marked Final or NewSlot or CheckAccessOnOverride but not Virtual.");
-                Debug.Assert(!isvirt || this.MethodKind != MethodKind.Constructor, $"Virtual Instance Constructor in {ContainingType.Name} - instance constructor cannot be marked Virtual.");
+                Debug.Assert(!isvirt || this.MethodKind != MethodKind.Constructor, $"Virtual Instance Constructor in {ContainingType?.Name} - instance constructor cannot be marked Virtual.");
                 return isvirt;
             }
         }

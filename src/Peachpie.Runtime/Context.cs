@@ -74,9 +74,8 @@ namespace Pchp.Core
             /// <summary>
             /// Set of reflected script assemblies.
             /// </summary>
-            public static IReadOnlyCollection<Assembly> ProcessedAssemblies => s_processedAssembliesArr;
+            public static IReadOnlyCollection<Assembly> ProcessedAssemblies { get; private set; } = Array.Empty<Assembly>();
             static readonly HashSet<Assembly> s_processedAssemblies = new HashSet<Assembly>();
-            static Assembly[] s_processedAssembliesArr = Array.Empty<Assembly>();
 
             /// <summary>
             /// Reflects given assembly for PeachPie compiler specifics - compiled scripts, references to other assemblies, declared functions and classes.
@@ -97,7 +96,7 @@ namespace Pchp.Core
                     return;
                 }
 
-                s_processedAssembliesArr = ArrayUtils.AppendRange(assembly, s_processedAssembliesArr);    // TODO: ImmutableArray<T>
+                ProcessedAssemblies = s_processedAssemblies.ToArray();
 
                 // remember the assembly for class map:
                 s_assClassMap.AddPhpAssemblyNoLock(assembly);
@@ -202,9 +201,10 @@ namespace Pchp.Core
         public static class DllLoader<TScript>
         {
             /// <summary>
-            /// Called once per DLL (ensured by JIT).
+            /// Module initialization method.
+            /// Reflects given assembly (through <typeparamref name="TScript"/>.Assembly) 
             /// </summary>
-            static DllLoader()
+            public static void AddScriptReference()
             {
                 Trace.WriteLine($"DLL '{typeof(TScript).Assembly.FullName}' being loaded ...");
 
@@ -216,15 +216,6 @@ namespace Pchp.Core
                 {
                     Trace.TraceError($"Type '{typeof(TScript).Assembly.FullName}' is not expected! Use '{ScriptInfo.ScriptTypeName}' instead.");
                 }
-            }
-
-            /// <summary>
-            /// Dummy method, nop.
-            /// </summary>
-            public static void Bootstrap()
-            {
-                // do nothing,
-                // the loader is being ensured from a static .cctor of a PHP script or a PHP type
             }
         }
 
