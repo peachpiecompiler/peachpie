@@ -160,5 +160,14 @@ namespace Pchp.Library.Reflection
         /// Sets static property value.
         /// </summary>
         public virtual void setValue(Context ctx, PhpValue value) => setValue(ctx, null, value);
+
+        /// <summary>
+        /// Checks whether a property is initialized.
+        /// </summary>
+        public virtual bool isInitialized(Context ctx, object @object = null)
+        {
+            var value = _pinfo.GetValue(ctx, @object);
+            return Operators.IsSet(value);
+        }
     }
 }
