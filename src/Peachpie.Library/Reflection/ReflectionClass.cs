@@ -445,7 +445,11 @@ namespace Pchp.Library.Reflection
         public bool isInstantiable() => _tinfo.isInstantiable;
         public bool isInterface() => _tinfo.IsInterface;
         public bool isInternal() => !isUserDefined();
-        public bool isIterateable() => _tinfo.Type.IsSubclassOf(typeof(Iterator)) || _tinfo.Type.IsSubclassOf(typeof(IteratorAggregate)) || _tinfo.Type.IsSubclassOf(typeof(System.Collections.IEnumerable));
+
+        [Obsolete("Instead of the missspelled RefectionClass::isIterateable(), ReflectionClass::isIterable() should be preferred.")]
+        public bool isIterateable() => isIterable();    // alias to isIterable()
+
+        public bool isIterable() => _tinfo.Type.IsSubclassOf(typeof(Iterator)) || _tinfo.Type.IsSubclassOf(typeof(IteratorAggregate)) || _tinfo.Type.IsSubclassOf(typeof(System.Collections.IEnumerable));
 
         /// <summary>
         /// Checks if the class is a subclass of a specified class or implements a specified interface.
