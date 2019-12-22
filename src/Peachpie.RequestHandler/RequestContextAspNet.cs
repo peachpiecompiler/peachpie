@@ -324,6 +324,7 @@ namespace Peachpie.RequestHandler
         readonly HttpContext _httpctx;
 
         public RequestContextAspNet(HttpContext httpcontext)
+            : base(httpcontext)
         {
             Debug.Assert(httpcontext != null);
             Debug.Assert(HttpRuntime.UsingIntegratedPipeline);

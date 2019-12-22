@@ -21,12 +21,18 @@ namespace Pchp.Core
     /// Its instance is passed to all PHP function.
     /// The context is not thread safe.
     /// </remarks>
-    public partial class Context : IDisposable
+    public partial class Context : IDisposable, IServiceProvider
     {
         #region Create
 
-        protected Context()
+        /// <summary>
+        /// Initializes instance of context.
+        /// </summary>
+        /// <param name="services">Service provider. Can be <c>null</c> reference to use implicit services.</param>
+        protected Context(IServiceProvider services)
         {
+            _services = services;
+
             // tables
             _functions = new RoutinesTable();
             _types = new TypesTable();
@@ -44,7 +50,7 @@ namespace Pchp.Core
         /// </param>
         public static Context CreateEmpty(params string[] cmdargs)
         {
-            var ctx = new Context()
+            var ctx = new Context(null)
             {
                 RootPath = Directory.GetCurrentDirectory(),
                 EnableImplicitAutoload = true,
@@ -61,6 +67,20 @@ namespace Pchp.Core
 
             //
             return ctx;
+        }
+
+        /// <summary>
+        /// Base service provider, can be <c>null</c>.
+        /// Used to provide services to this instance of context.
+        /// </summary>
+        readonly IServiceProvider _services;
+
+        /// <summary>
+        /// Resolves service.
+        /// </summary>
+        object IServiceProvider.GetService(Type serviceType)
+        {
+            return null;
         }
 
         #endregion

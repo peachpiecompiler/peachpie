@@ -27,6 +27,7 @@ namespace Pchp.Core
             /// Initializes the console context.
             /// </summary>
             public ConsoleContext(string mainscript, string rootPath, Stream output, params string[] args)
+                : base(null)
             {
                 RootPath = WorkingDirectory = rootPath ?? Directory.GetCurrentDirectory();
 
