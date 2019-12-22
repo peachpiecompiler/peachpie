@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Pchp.Core.Dynamic;
-using Pchp.Core.QueryValue;
 using Pchp.Core.Utilities;
 
 namespace Pchp.Core.Reflection
@@ -282,8 +281,8 @@ namespace Pchp.Core.Reflection
                         candidate = (_ctx) => c.Invoke(new object[] { _ctx });
 
                     // [PhpFieldsOnly] .ctor(Context, Dummy)
-                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(QueryValue<DummyFieldsOnlyCtor>))
-                        candidate = (_ctx) => c.Invoke(new object[] { _ctx, default(QueryValue<DummyFieldsOnlyCtor>) });
+                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(DummyFieldsOnlyCtor))
+                        candidate = (_ctx) => c.Invoke(new object[] { _ctx, default(DummyFieldsOnlyCtor) });
 
                     //
                     if (c.IsPhpFieldsOnlyCtor())

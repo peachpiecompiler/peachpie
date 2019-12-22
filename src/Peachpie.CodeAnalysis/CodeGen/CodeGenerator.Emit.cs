@@ -1422,6 +1422,59 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Loads "self" class onto the stack.
+        /// </summary>
+        /// <param name="astype">Type to be used to represent "self" - PhpTypeInfo, string, RuntimeTypeHandle.</param>
+        /// <returns></returns>
+        TypeSymbol EmitLoadCurrentClassContext(TypeSymbol astype)
+        {
+            if (astype == CoreTypes.PhpTypeInfo)
+            {
+                if (this.CallerType == null && this.RuntimeCallerTypePlace == null)
+                {
+                    // null
+                    _il.EmitNullConstant();
+                }
+                else
+                {
+                    EmitLoadSelf(throwOnError: false);
+                }
+            }
+            else if (astype.SpecialType == SpecialType.System_String)
+            {
+                if (this.CallerType == null && this.RuntimeCallerTypePlace == null)
+                {
+                    // null
+                    Builder.EmitNullConstant();
+                }
+                else if (this.CallerType is IPhpTypeSymbol phpt)
+                {
+                    // type known in compile-time:
+                    Builder.EmitStringConstant(phpt.FullName.ToString());
+                }
+                else
+                {
+                    // {LOAD PhpTypeInfo}?.Name
+                    EmitLoadSelf(throwOnError: false);
+                    EmitNullCoalescing(
+                        () => EmitCall(ILOpCode.Call, CoreMethods.Operators.GetName_PhpTypeInfo.Getter).Expect(SpecialType.System_String),
+                        () => Builder.EmitNullConstant());
+                }
+            }
+            else if (astype == CoreTypes.RuntimeTypeHandle)
+            {
+                // LOAD <RuntimeTypeHandle>
+                return EmitCallerTypeHandle();
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(astype);
+            }
+
+            return astype;
+        }
+
         TypeSymbol LoadMethodSpecialArgument(ParameterSymbol p, BoundTypeRef staticType, ITypeSymbol selfType)
         {
             // Context
@@ -1430,104 +1483,50 @@ namespace Pchp.CodeAnalysis.CodeGen
                 Debug.Assert(p.Type == CoreTypes.Context);
                 return EmitLoadContext();
             }
-            // QueryValue<T>
-            else if (SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor, out var container))
+            // ImportValueAttribute( ValueSpec )
+            else if (SpecialParameterSymbol.IsImportValueParameter(p, out var value))
             {
-                switch (container)
+                switch (value)
                 {
-                    case SpecialParameterSymbol.QueryValueTypes.CallerScript:
-                        // Template: op_Implicit( RuntimeTypeHandle )
-                        Debug.Assert(ctor.ParameterCount == 1 && ctor.Parameters[0].Type == CoreTypes.RuntimeTypeHandle);
+                    case SpecialParameterSymbol.ValueSpec.CallerScript:
                         Debug.Assert(ContainingFile != null);
+                        Debug.Assert(p.Type == CoreTypes.RuntimeTypeHandle);
+                        return EmitLoadToken(ContainingFile, null);    // RuntimeTypeHandle
 
-                        EmitLoadToken(ContainingFile, null);    // RuntimeTypeHandle
-                        EmitCall(ILOpCode.Call, ctor);          // op_Implicit
-                        break;
+                    case SpecialParameterSymbol.ValueSpec.CallerArgs:
+                        Debug.Assert(p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpValue()); // PhpValue[]
+                        return Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
 
-                    case SpecialParameterSymbol.QueryValueTypes.CallerArgs:
-                        Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
-                        EmitCall(ILOpCode.Call, ctor);          // op_Implicit
-                        break;
-
-                    case SpecialParameterSymbol.QueryValueTypes.LocalVariables:
+                    case SpecialParameterSymbol.ValueSpec.Locals:
+                        Debug.Assert(p.Type.Is_PhpArray());
                         if (!HasUnoptimizedLocals) throw new InvalidOperationException();
-                        // op_Implicit( PhpArray )
-                        LocalsPlaceOpt.EmitLoad(Builder)
-                            .Expect(CoreTypes.PhpArray);    // PhpArray
-                        EmitCall(ILOpCode.Call, ctor);      // op_Implicit
-                        break;
+                        return LocalsPlaceOpt.EmitLoad(Builder).Expect(CoreTypes.PhpArray);    // PhpArray
 
-                    case SpecialParameterSymbol.QueryValueTypes.ThisVariable:
-                        this.EmitPhpThisOrNull();           // object
-                        Debug.Assert(ctor.MethodKind == MethodKind.Constructor);
-                        EmitCall(ILOpCode.Newobj, ctor);    // .ctor(object)
-                        break;
+                    case SpecialParameterSymbol.ValueSpec.This:
+                        Debug.Assert(p.Type.IsObjectType());
+                        return this.EmitPhpThisOrNull();           // object
 
-                    case SpecialParameterSymbol.QueryValueTypes.DummyFieldsOnlyCtor:
-                        return EmitLoadDefaultOfValueType(p.Type);  // default()
+                    case SpecialParameterSymbol.ValueSpec.CallerStaticClass:
+                        // current "static"
+                        if (p.Type == CoreTypes.PhpTypeInfo)
+                        {
+                            return EmitLoadStaticPhpTypeInfo();
+                        }
+                        throw ExceptionUtilities.UnexpectedValue(p.Type);
+
+                    case SpecialParameterSymbol.ValueSpec.CallerClass:
+                        // current class context (self)
+                        // note, can be obtain dynamically (global code, closure)
+                        return EmitLoadCurrentClassContext(p.Type);
+
+                    default:
+                        throw ExceptionUtilities.UnexpectedValue(value);
                 }
-
-                // Template: QueryValue<T>.op_Implicit( {STACK} )
-                var op = ((NamedTypeSymbol)p.Type).LookupMember<MethodSymbol>(WellKnownMemberNames.ImplicitConversionName);
-                Debug.Assert(op.ParameterCount == 1);
-                return EmitCall(ILOpCode.Call, op);
             }
             // class context
-            else if (SpecialParameterSymbol.IsCallerClassParameter(p) || SpecialParameterSymbol.IsSelfParameter(p))
+            else if (SpecialParameterSymbol.IsSelfParameter(p))
             {
-                if (p.Type == CoreTypes.PhpTypeInfo)
-                {
-                    if (this.CallerType == null && this.RuntimeCallerTypePlace == null)
-                    {
-                        // null
-                        _il.EmitNullConstant();
-                    }
-                    else
-                    {
-                        EmitLoadSelf(throwOnError: false);
-                    }
-                }
-                else if (p.Type.SpecialType == SpecialType.System_String)
-                {
-                    if (this.CallerType == null && this.RuntimeCallerTypePlace == null)
-                    {
-                        // null
-                        Builder.EmitNullConstant();
-                    }
-                    else if (this.CallerType is IPhpTypeSymbol phpt)
-                    {
-                        // type known in compile-time:
-                        Builder.EmitStringConstant(phpt.FullName.ToString());
-                    }
-                    else
-                    {
-                        // {LOAD PhpTypeInfo}?.Name
-                        EmitLoadSelf(throwOnError: false);
-                        EmitNullCoalescing(
-                            () => EmitCall(ILOpCode.Call, CoreMethods.Operators.GetName_PhpTypeInfo.Getter).Expect(SpecialType.System_String),
-                            () => Builder.EmitNullConstant());
-                    }
-                }
-                else if (p.Type == CoreTypes.RuntimeTypeHandle)
-                {
-                    // LOAD <RuntimeTypeHandle>
-                    return EmitCallerTypeHandle();
-                }
-                else
-                {
-                    throw ExceptionUtilities.UnexpectedValue(p.Type);
-                }
-
-                return p.Type;
-            }
-            // current "static"
-            else if (SpecialParameterSymbol.IsCallerStaticClassParameter(p))
-            {
-                if (p.Type == CoreTypes.PhpTypeInfo)
-                {
-                    return EmitLoadStaticPhpTypeInfo();
-                }
-                throw ExceptionUtilities.UnexpectedValue(p.Type);
+                return EmitLoadCurrentClassContext(p.Type);
             }
             // late static
             else if (SpecialParameterSymbol.IsLateStaticParameter(p))
@@ -1548,10 +1547,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                     throw ExceptionUtilities.Unreachable;
                 }
             }
+            // dummy parameter for ctors
+            else if (SpecialParameterSymbol.IsDummyFieldsOnlyCtorParameter(p))
+            {
+                return EmitLoadDefaultOfValueType(p.Type);  // default()
+            }
             // unhandled
             else
             {
-                throw new NotImplementedException();
+                throw ExceptionUtilities.UnexpectedValue(p.Type);
             }
         }
 

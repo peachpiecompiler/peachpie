@@ -10,7 +10,6 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Semantics;
-using Pchp.Core.QueryValue;
 
 namespace Pchp.Core.Dynamic
 {
@@ -27,12 +26,11 @@ namespace Pchp.Core.Dynamic
         public static bool IsImplicitParameter(this ParameterInfo p)
         {
             return
-                p.IsContextParameter() || p.IsQueryValueParameter() ||
+                p.IsContextParameter() ||
+                p.IsImportValueParameter(out _) ||
+                p.IsDummyFieldsOnlyCtor() ||
                 p.IsLateStaticParameter() ||
-                p.IsImportCallerClassParameter() || p.IsImportCallerStaticClassParameter() ||
                 p.IsClosureParameter();
-
-            // TODO: classCtx, <this>
         }
 
         public static bool IsContextParameter(this ParameterInfo p)
@@ -42,30 +40,29 @@ namespace Pchp.Core.Dynamic
                 && (p.Name == "ctx" || p.Name == "<ctx>" || p.Name == "context" || p.Name == ".ctx");
         }
 
-        public static bool IsQueryValueParameter(this ParameterInfo p)
-        {
-            return
-                p.ParameterType.IsGenericType &&
-                p.ParameterType.GetGenericTypeDefinition() == typeof(QueryValue<>);
-        }
-
         public static bool IsLateStaticParameter(this ParameterInfo p)
         {
             return p.ParameterType == typeof(PhpTypeInfo) && p.Name == "<static>";
         }
 
-        public static bool IsImportCallerClassParameter(this ParameterInfo p)
+        public static bool IsDummyFieldsOnlyCtor(this ParameterInfo p)
         {
-            return
-                (p.ParameterType == typeof(string) || p.ParameterType == typeof(RuntimeTypeHandle) || p.ParameterType == typeof(PhpTypeInfo)) &&
-                p.GetCustomAttribute(typeof(ImportCallerClassAttribute)) != null;
+            return p.ParameterType == typeof(DummyFieldsOnlyCtor);
         }
 
-        public static bool IsImportCallerStaticClassParameter(this ParameterInfo p)
+        public static bool IsImportValueParameter(this ParameterInfo p, out ImportValueAttribute.ValueSpec value)
         {
-            return
-                (p.ParameterType == typeof(PhpTypeInfo)) &&
-                p.GetCustomAttribute(typeof(ImportCallerStaticClassAttribute)) != null;
+            var attr = p.GetCustomAttribute<ImportValueAttribute>();
+            if (attr != null)
+            {
+                value = attr.Value;
+                return true;
+            }
+            else
+            {
+                value = default;
+                return false;
+            }
         }
 
         public static bool IsClosureParameter(this ParameterInfo p)
@@ -1038,41 +1035,53 @@ namespace Pchp.Core.Dynamic
             for (int i = 0; i < ps.Length; i++)
             {
                 var p = ps[i];
-                if (argi == 0 && p.IsImplicitParameter())
+                if (argi == 0)
                 {
                     if (p.IsContextParameter())
                     {
                         boundargs[i] = ctx;
+                        continue;
                     }
-                    else if (p.IsQueryValueParameter())
+                    else if (p.IsImportValueParameter(out var value))
                     {
-                        if (p.ParameterType == typeof(QueryValue<CallerScript>))
+                        switch (value)
                         {
-                            // we don't have this info
-                            throw new NotSupportedException("Pass <CallerScript> dynamically.");
-                        }
-                        else if (p.ParameterType == typeof(QueryValue<CallerArgs>))
-                        {
-                            // we don't have this info
-                            throw new NotSupportedException("Pass <CallerArgs> dynamically.");    // TODO: empty array & report warning
-                        }
-                        else if (p.ParameterType == typeof(QueryValue<LocalVariables>))
-                        {
-                            // pass NULL value if we don't have the locals
-                            boundargs[i] = Expression.Default(p.ParameterType);
+                            case ImportValueAttribute.ValueSpec.CallerScript:
+                                // we don't have this info
+                                throw new NotSupportedException("Pass <CallerScript> dynamically.");
 
-                            // TODO: report it might get wrong
-                            // TODO: if we create IPhpCallback in compile-time, we know the routine needs the locals, ...
+                            case ImportValueAttribute.ValueSpec.CallerArgs:
+                                // we don't have this info
+                                throw new NotSupportedException("Pass <CallerArgs> dynamically.");    // TODO: empty array & report warning
+
+                            case ImportValueAttribute.ValueSpec.Locals:
+                                // pass NULL value if we don't have the locals
+                                boundargs[i] = Expression.Default(p.ParameterType);
+
+                                // TODO: report it might get wrong
+                                // TODO: if we create IPhpCallback in compile-time, we know the routine needs the locals, ...
+                                break;
+
+                            case ImportValueAttribute.ValueSpec.This:
+                                // $this is unknown, get NULL
+                                boundargs[i] = Expression.Default(p.ParameterType);
+                                break;
+
+                            case ImportValueAttribute.ValueSpec.CallerClass:
+                                // TODO: pass classctx from the callsite
+                                Debug.WriteLine("TODO: pass classctx from the callsite");
+                                boundargs[i] = Expression.Default(p.ParameterType);
+                                break;
+
+                            case ImportValueAttribute.ValueSpec.CallerStaticClass:
+                                throw new NotSupportedException("ImportCallerStaticClassAttribute dynamically."); // we don't know current late static bound type
                         }
-                        else if (p.ParameterType == typeof(QueryValue<ThisVariable>))
-                        {
-                            // $this is unknown, get NULL
-                            boundargs[i] = Expression.Default(p.ParameterType);
-                        }
-                        else if (p.ParameterType == typeof(QueryValue<DummyFieldsOnlyCtor>))
-                        {
-                            boundargs[i] = Expression.Default(p.ParameterType);
-                        }
+
+                        continue;
+                    }
+                    else if (p.IsDummyFieldsOnlyCtor())
+                    {
+                        boundargs[i] = Expression.Default(p.ParameterType);
                     }
                     else if (p.IsLateStaticParameter())
                     {
@@ -1087,44 +1096,33 @@ namespace Pchp.Core.Dynamic
                         {
                             throw new InvalidOperationException("static context not available.");
                         }
-                    }
-                    else if (p.IsImportCallerClassParameter())
-                    {
-                        // TODO: pass classctx from the callsite
-                        Debug.WriteLine("TODO: pass classctx from the callsite");
 
-                        boundargs[i] = Expression.Default(p.ParameterType);
-                    }
-                    else if (p.IsImportCallerStaticClassParameter())
-                    {
-                        throw new NotSupportedException("ImportCallerStaticClassAttribute dynamically."); // we don't know current late static bound type
+                        continue;
                     }
                     else if (p.IsClosureParameter())
                     {
                         boundargs[i] = args.BindArgument(argi, p);
                         argi++;
+
+                        continue;
                     }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
+                }
+
+                // regular parameter:
+
+                if (i == ps.Length - 1 && p.IsParamsParameter())
+                {
+                    var element_type = p.ParameterType.GetElementType();
+                    boundargs[i] = args.BindParams(argi, element_type);
+                    break;
                 }
                 else
                 {
-                    if (i == ps.Length - 1 && p.IsParamsParameter())
-                    {
-                        var element_type = p.ParameterType.GetElementType();
-                        boundargs[i] = args.BindParams(argi, element_type);
-                        break;
-                    }
-                    else
-                    {
-                        boundargs[i] = args.BindArgument(argi, p);
-                    }
-
-                    //
-                    argi++;
+                    boundargs[i] = args.BindArgument(argi, p);
                 }
+
+                //
+                argi++;
             }
 
             //

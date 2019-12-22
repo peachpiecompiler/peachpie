@@ -72,17 +72,51 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Name of type arguments for <c>QueryValue&lt;T&gt;</c> special parameter.
+        /// Value to be imported.
+        /// From `Pchp.Core.ImportValueAttribute+ValueSpec`.
         /// </summary>
-        public enum QueryValueTypes
+        public enum ValueSpec
         {
-            None = 0,
+            /// <summary>
+            /// Not used.
+            /// </summary>
+            Error = 0,
 
-            CallerScript,
+            /// <summary>
+            /// Current class context.
+            /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <c>PhpTypeInfo</c> or <see cref="string"/>.
+            /// </summary>
+            CallerClass,
+
+            /// <summary>
+            /// Current late static bound class (<c>static</c>).
+            /// The parameter must be of type <c>PhpTypeInfo</c>.
+            /// </summary>
+            CallerStaticClass,
+
+            /// <summary>
+            /// Calue of <c>$this</c> variable or <c>null</c> if variable is not defined.
+            /// The parameter must be of type <see cref="object"/>.
+            /// </summary>
+            This,
+
+            /// <summary>
+            /// Provides a reference to the array of local PHP variables.
+            /// The parameter must be of type <c>PhpArray</c>.
+            /// </summary>
+            Locals,
+
+            /// <summary>
+            /// Provides callers parameters.
+            /// The parameter must be of type array of <c>PhpTypeInfo</c>.
+            /// </summary>
             CallerArgs,
-            LocalVariables,
-            ThisVariable,
-            DummyFieldsOnlyCtor,
+
+            /// <summary>
+            /// Provides reference to the current script container.
+            /// The parameter must be of type <see cref="RuntimeTypeHandle"/>.
+            /// </summary>
+            CallerScript,
         }
 
         /// <summary>
@@ -100,25 +134,35 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Determines whether given parameter is treated as a special implicitly provided, by the compiler or the runtime.
         /// </summary>
-        public static bool IsQueryValueParameter(IParameterSymbol p) => IsQueryValueParameter(p, out var _, out var _);
+        public static bool IsImportValueParameter(IParameterSymbol p) => IsImportValueParameter(p, out _);
 
         /// <summary>
         /// Determines whether given parameter is treated as a special implicitly provided, by the compiler or the runtime.
         /// </summary>
-        public static bool IsQueryValueParameter(IParameterSymbol p, out MethodSymbol containerCtor, out QueryValueTypes valueEnum)
+        public static bool IsImportValueParameter(IParameterSymbol p, out ValueSpec valueEnum)
         {
-            if (p != null && p.Type is NamedTypeSymbol named && named.Arity == 1 && named.MetadataName == "QueryValue`1") // TODO: && namespace == Pchp.Core.
+            if (p != null)
             {
-                var container = (NamedTypeSymbol)named.TypeArguments[0];
-                containerCtor = container.LookupMember<MethodSymbol>(WellKnownMemberNames.ImplicitConversionName) ?? container.InstanceConstructors.SingleOrDefault();
-                return Enum.TryParse<SpecialParameterSymbol.QueryValueTypes>(container.MetadataName, out valueEnum);
+                var attr = ((ParameterSymbol)p).GetAttribute("Pchp.Core.ImportValueAttribute");
+                if (attr != null)
+                {
+                    var args = attr.ConstructorArguments;
+                    if (args.Length == 1 && args[0].Value is int enumvalue)
+                    {
+                        valueEnum = (ValueSpec)enumvalue;
+                        return true;
+                    }
+                }
             }
 
             //
-            containerCtor = null;
             valueEnum = default;
             return false;
         }
+
+        public static bool IsDummyFieldsOnlyCtorParameter(IParameterSymbol p) => p.Type.Name == "DummyFieldsOnlyCtor";
+
+        public static bool IsCallerClassParameter(IParameterSymbol p) => IsImportValueParameter(p, out var spec) && spec == ValueSpec.CallerClass;
 
         /// <summary>
         /// Determines whether given parameter is a special lately static bound parameter.
@@ -133,15 +177,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static bool IsSelfParameter(ParameterSymbol p)
             => p != null && p.Type != null && p.Type.MetadataName == "RuntimeTypeHandle" && !(p is SourceParameterSymbol) && p.Name == SelfName;
-
-        public static bool IsCallerClassParameter(IParameterSymbol p)
-            => p != null && p.Type != null &&
-            (p.Type.MetadataName == "RuntimeTypeHandle" || p.Type.MetadataName == "Type" || p.Type.MetadataName == "PhpTypeInfo" || p.Type.SpecialType == SpecialType.System_String) &&
-            p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportCallerClassAttribute");
-
-        public static bool IsCallerStaticClassParameter(IParameterSymbol p)
-            => p != null && p.Type != null && p.Type.MetadataName == "PhpTypeInfo" &&
-            p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportCallerStaticClassAttribute");
 
         public override bool IsImplicitlyDeclared => true;
 

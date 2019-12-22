@@ -256,28 +256,27 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static RoutineFlags InvocationFlags(this IPhpRoutineSymbol routine)
         {
-            RoutineFlags f = RoutineFlags.None;
+            var f = RoutineFlags.None;
 
             var ps = routine.Parameters;
             foreach (var p in ps)
             {
                 if (p.IsImplicitlyDeclared)
                 {
-                    if (SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor, out var container))
+                    if (SpecialParameterSymbol.IsImportValueParameter(p, out var spec))
                     {
-                        switch (container)
+                        switch (spec)
                         {
-                            case SpecialParameterSymbol.QueryValueTypes.CallerArgs:
+                            case SpecialParameterSymbol.ValueSpec.CallerArgs:
                                 f |= RoutineFlags.UsesArgs;
                                 break;
-                            case SpecialParameterSymbol.QueryValueTypes.LocalVariables:
+                            case SpecialParameterSymbol.ValueSpec.Locals:
                                 f |= RoutineFlags.UsesLocals;
                                 break;
+                            case SpecialParameterSymbol.ValueSpec.CallerStaticClass:
+                                f |= RoutineFlags.UsesLateStatic;
+                                break;
                         }
-                    }
-                    else if (SpecialParameterSymbol.IsCallerStaticClassParameter(p))
-                    {
-                        f |= RoutineFlags.UsesLateStatic;
                     }
                 }
                 else
@@ -355,7 +354,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         {
                             if (result.Length != 0)
                                 result.Append("\n ");
-                            
+
                             result.Append(line.Trim());
                         }
                         else

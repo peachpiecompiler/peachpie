@@ -127,16 +127,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (IsInitFieldsOnly)
             {
-                // QueryValue<DummyFieldsOnlyCtor> _
-                var dummy = DeclaringCompilation.CoreTypes.QueryValue_T.Symbol.Construct(DeclaringCompilation.CoreTypes.QueryValue_DummyFieldsOnlyCtor);
-                yield return new SpecialParameterSymbol(this, dummy, "_", index++);
+                // DummyFieldsOnlyCtor _
+                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.DummyFieldsOnlyCtor, "_", index++);
             }
 
             // same parameters as PHP constructor
             foreach (var p in baseparams)
             {
                 if (SpecialParameterSymbol.IsContextParameter(p)) continue;
-                if (SpecialParameterSymbol.IsQueryValueParameter(p, out var _, out var t) && t == SpecialParameterSymbol.QueryValueTypes.DummyFieldsOnlyCtor) continue;
+                if (SpecialParameterSymbol.IsDummyFieldsOnlyCtorParameter(p)) continue;
 
                 yield return SynthesizedParameterSymbol.Create(this, p, index++);
             }

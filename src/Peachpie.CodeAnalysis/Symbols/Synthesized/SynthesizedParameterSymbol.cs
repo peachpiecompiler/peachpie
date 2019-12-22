@@ -187,7 +187,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 return
                     SpecialParameterSymbol.IsContextParameter(this) ||
-                    SpecialParameterSymbol.IsQueryValueParameter(this) ||
+                    SpecialParameterSymbol.IsImportValueParameter(this) ||
+                    SpecialParameterSymbol.IsDummyFieldsOnlyCtorParameter(this) ||
                     SpecialParameterSymbol.IsLateStaticParameter(this) ||
                     SpecialParameterSymbol.IsSelfParameter(this) ||
                     this.IsParams ||

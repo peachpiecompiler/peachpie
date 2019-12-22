@@ -1,5 +1,4 @@
 ﻿using Pchp.Core;
-using Pchp.Core.QueryValue;
 using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
@@ -939,7 +938,7 @@ namespace Pchp.Library
         /// Reads entire file into a string.
         /// </summary>
         [return: CastToFalse]
-        public static PhpString file_get_contents(Context ctx, QueryValue<LocalVariables> localsData, string path, FileOpenOptions flags = FileOpenOptions.Empty, PhpResource context = null, int offset = -1, int maxLength = -1)
+        public static PhpString file_get_contents(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.Locals)] PhpArray locals, string path, FileOpenOptions flags = FileOpenOptions.Empty, PhpResource context = null, int offset = -1, int maxLength = -1)
         {
             var sc = StreamContext.GetValid(context, true);
             if (sc == null)
@@ -958,7 +957,7 @@ namespace Pchp.Library
                 if (string.Compare(stream.Wrapper.Scheme, HttpStreamWrapper.scheme, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     var headers = stream.WrapperSpecificData as PhpArray;
-                    localsData.Value.Locals.SetItemValue(new IntStringKey(HttpResponseHeaderName), (PhpValue)headers);
+                    locals.SetItemValue(new IntStringKey(HttpResponseHeaderName), (PhpValue)headers);
                 }
 
                 //

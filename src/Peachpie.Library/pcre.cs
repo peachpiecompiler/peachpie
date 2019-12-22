@@ -83,7 +83,7 @@ namespace Pchp.Library
         public const int PREG_JIT_STACKLIMIT_ERROR = 6;
 
         /// <summary>PCRE version and release date</summary>
-        public const string PCRE_VERSION = "7.2 .NET";
+        public const string PCRE_VERSION = "8.4 .NET";
 
         #endregion
 

@@ -1,5 +1,4 @@
 ﻿using Pchp.Core;
-using Pchp.Core.QueryValue;
 using Pchp.Core.Reflection;
 using Pchp.Library.Resources;
 using System;
@@ -54,7 +53,7 @@ namespace Pchp.Library
         /// This function must be called within a method context, it can't be used outside a class.
         /// It uses the late static binding.
         /// </summary>
-        public static PhpValue forward_static_call(Context ctx, [ImportCallerStaticClass]PhpTypeInfo @static, IPhpCallable function, params PhpValue[] args)
+        public static PhpValue forward_static_call(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)]PhpTypeInfo @static, IPhpCallable function, params PhpValue[] args)
         {
             return (function is PhpCallback phpc)
                 ? phpc.BindToStatic(ctx, @static)(ctx, args)
@@ -67,7 +66,7 @@ namespace Pchp.Library
         /// It uses the late static binding.
         /// All arguments of the forwarded method are passed as values, and as an array, similarly to <see cref="call_user_func_array"/>.
         /// </summary>
-        public static PhpValue forward_static_call_array(Context ctx, [ImportCallerStaticClass]PhpTypeInfo @static, IPhpCallable function, PhpArray args)
+        public static PhpValue forward_static_call_array(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)]PhpTypeInfo @static, IPhpCallable function, PhpArray args)
         {
             return forward_static_call(ctx, @static, function, args.GetValues());
         }
@@ -79,13 +78,13 @@ namespace Pchp.Library
         /// <summary>
 		/// Retrieves the number of arguments passed to the current user-function.
 		/// </summary>
-		public static int func_num_args(QueryValue<CallerArgs> argsData) => argsData.Value.Arguments.Length;
+		public static int func_num_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args) => args.Length;
 
         /// <summary>
         /// Retrieves an argument passed to the current user-function.
         /// </summary>
         /// <remarks><seealso cref="PhpStack.GetArgument"/></remarks>
-        public static PhpValue func_get_arg(QueryValue<CallerArgs> argsData, int index)
+        public static PhpValue func_get_arg([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args, int index)
         {
             // checks correctness of the argument:
             if (index < 0)
@@ -94,7 +93,6 @@ namespace Pchp.Library
                 return PhpValue.False;
             }
 
-            var args = argsData.Value.Arguments;
             if (args == null || index >= args.Length)
             {
                 // Argument #{0} not passed to the function/method
@@ -111,11 +109,10 @@ namespace Pchp.Library
         /// </summary>
         /// <remarks><seealso cref="PhpStack.GetArguments"/>
         /// Also throws warning if called from global scope.</remarks>
-        public static PhpArray func_get_args(QueryValue<CallerArgs> argsData)
+        public static PhpArray func_get_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args)
         {
             // TODO: when called from global code, return FALSE
 
-            var args = argsData.Value.Arguments;
             var result = new PhpArray(args.Length);
 
             for (int i = 0; i < args.Length; i++)
