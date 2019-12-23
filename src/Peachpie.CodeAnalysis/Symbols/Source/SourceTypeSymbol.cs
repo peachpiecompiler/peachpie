@@ -1048,14 +1048,14 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_lazyCtors.IsDefault)
                 {
-                    ImmutableInterlocked.InterlockedInitialize(ref _lazyCtors, CreateInstanceConstructors().ToImmutableArray());
+                    ImmutableInterlocked.InterlockedInitialize(ref _lazyCtors, CreateInstanceConstructors());
                 }
 
                 return _lazyCtors;
             }
         }
 
-        protected virtual IEnumerable<MethodSymbol> CreateInstanceConstructors() => SynthesizedPhpCtorSymbol.CreateCtors(this);
+        protected virtual ImmutableArray<MethodSymbol> CreateInstanceConstructors() => SynthesizedPhpCtorSymbol.CreateCtors(this);
 
         /// <summary>
         /// Gets magic <c>__invoke</c> method of class or <c>null</c>.

@@ -154,11 +154,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// - Another ctor is created in order to call the main constructor and call PHP constructor function.
         /// - Ghost stubs of the other ctor are created in order to pass default parameter values which cannot be stored in metadata (e.g. array()).
         /// </remarks>
-        public static IEnumerable<MethodSymbol> CreateCtors(SourceTypeSymbol type)
+        public static ImmutableArray<MethodSymbol> CreateCtors(SourceTypeSymbol type)
         {
             if (type.IsStatic || type.IsInterface)
             {
-                yield break;
+                return ImmutableArray<MethodSymbol>.Empty;
             }
 
             // resolve php constructor
@@ -185,15 +185,16 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // type.BaseType was not resolved, reported by type.BaseType
                 // TODO: Err & ErrorMethodSymbol
-                yield break;
+                return ImmutableArray<MethodSymbol>.Empty;
             }
 
             MethodSymbol defaultctor = null; // .ctor to be used by default
-
+            var ctors = ImmutableArray.CreateBuilder<MethodSymbol>();
+            
             // create .ctor(s)
             if (phpconstruct == null)
             {
-                yield return defaultctor = new SynthesizedPhpCtorSymbol(type, Accessibility.Public, basector, null);
+                ctors.Add(defaultctor = new SynthesizedPhpCtorSymbol(type, Accessibility.Public, basector, null));
             }
             else
             {
@@ -202,7 +203,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     IsInitFieldsOnly = true,
                     IsEditorBrowsableHidden = true,
                 };
-                yield return fieldsinitctor;
+                ctors.Add(fieldsinitctor);
 
                 if (!type.IsAbstract)
                 {
@@ -216,7 +217,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     //    }
                     //}
 
-                    yield return defaultctor = new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct);
+                    ctors.Add(defaultctor = new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct));
                 }
             }
 
@@ -224,14 +225,18 @@ namespace Pchp.CodeAnalysis.Symbols
             if (defaultctor != null && defaultctor.DeclaredAccessibility == Accessibility.Public && type.DeclaredAccessibility == Accessibility.Public && !type.IsAbstract)
             {
                 // Template:
+                // [PhpHidden][CompilerGenerated]
                 // void .ctor(...) : this(ContextExtensions.CurrentContext, ...) { }
 
                 // NOTE: overload resolution will prioritize the overload with Context parameter over this one
 
-                yield return new SynthesizedParameterlessPhpCtorSymbol(type, Accessibility.Public, defaultctor);
+                // argless ctor must be first!
+                // used for various dependency-injection situations
+                ctors.Insert(0, new SynthesizedParameterlessPhpCtorSymbol(type, Accessibility.Public, defaultctor));
             }
 
-            yield break;
+            //
+            return ctors.ToImmutable();
         }
 
         static MethodSymbol ResolveBaseCtor(ImmutableArray<ParameterSymbol> givenparams, ImmutableArray<MethodSymbol> candidates)
