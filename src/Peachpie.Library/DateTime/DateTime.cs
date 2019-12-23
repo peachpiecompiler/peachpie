@@ -364,6 +364,20 @@ namespace Pchp.Library.DateTime
             };
         }
 
+        /// <summary>
+        /// Returns new DateTime object encapsulating the given DateTimeImmutable object.
+        /// </summary>
+        public static DateTime createFromImmutable(Context ctx, [NotNull]DateTimeImmutable datetime)
+        {
+            if (datetime == null)
+            {
+                PhpException.ArgumentNull(nameof(datetime));
+                return null;
+            }
+
+            return new DateTime(ctx, datetime.Time, datetime.TimeZone);
+        }
+
         [return: NotNull]
         public virtual DateTime setDate(int year, int month, int day)
         {
