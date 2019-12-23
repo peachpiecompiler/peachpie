@@ -693,6 +693,20 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
+        #region date_parse_from_format
+
+        /// <summary>
+        /// Get info about given date formatted according to the specified format.
+        /// </summary>
+        [return: NotNull]
+        public static PhpArray date_parse_from_format(Context ctx, string format, string date)
+        {
+            var dateinfo = DateInfo.ParseFromFormat(format, date, out var errors);
+            return AsArray(ctx, dateinfo, errors);
+        }
+
+        #endregion
+
         #region strftime, gmstrftime
 
         /// <summary>
@@ -1592,12 +1606,12 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public static PhpArray date_parse(Context ctx, string time)
         {
-            var errors = PhpArray.NewEmpty();
+            DateTimeErrors errors = null;
 
             if (string.IsNullOrEmpty(time))
             {
                 time = string.Empty;
-                errors.Add(Resources.DateResources.empty_string);
+                DateTimeErrors.AddError(ref errors, Resources.DateResources.empty_string);
             }
 
             //
@@ -1607,7 +1621,7 @@ namespace Pchp.Library.DateTime
                 var token = scanner.GetNextToken();
                 if (token == Tokens.ERROR || scanner.Errors > 0)
                 {
-                    errors.Add(string.Format(Resources.LibResources.parse_error, scanner.Position.ToString(), time.Substring(scanner.Position)));
+                    DateTimeErrors.AddError(ref errors, string.Format(Resources.LibResources.parse_error, scanner.Position.ToString(), time.Substring(scanner.Position)));
                     break;
                 }
 
@@ -1618,10 +1632,14 @@ namespace Pchp.Library.DateTime
             }
 
             //
-            var dateinfo = scanner.Time;
+            return AsArray(ctx, scanner.Time, errors);
+        }
+
+        static PhpArray AsArray(Context ctx, DateInfo dateinfo, DateTimeErrors errors)
+        {
             var datetime = dateinfo.GetDateTime(ctx, System_DateTime.UtcNow);
 
-            var result = new PhpArray(12);
+            var result = new PhpArray(16);
             //[year] => 2006
             result["year"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Year : PhpValue.False;
             //[month] => 12
@@ -1637,13 +1655,13 @@ namespace Pchp.Library.DateTime
             //[fraction] => 0.5
             result["fraction"] = dateinfo.have_time != 0 ? (PhpValue)dateinfo.f : PhpValue.False;
             //[warning_count] => 0
-            result["warning_count"] = (PhpValue)0;
+            result["warning_count"] = errors != null && errors.Warnings != null ? errors.Warnings.Count : 0;
             //[warnings] => Array()
-            result["warnings"] = (PhpValue)PhpArray.NewEmpty();
+            result["warnings"] = errors != null && errors.Warnings != null ? new PhpArray(errors.Warnings) : PhpArray.NewEmpty();
             //[error_count] => 0
-            result["error_count"] = (PhpValue)errors.Count;
+            result["error_count"] = errors != null && errors.Errors != null ? errors.Errors.Count : 0;
             //[errors] => Array()
-            result["errors"] = (PhpValue)errors;
+            result["errors"] = errors != null && errors.Errors != null ? new PhpArray(errors.Errors) : PhpArray.NewEmpty();
             //[is_localtime] => 
             result["is_localtime"] = (PhpValue)(false); // ???
 

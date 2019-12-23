@@ -1091,21 +1091,9 @@ namespace Pchp.Library.DateTime
             return true;
         }
 
-        private static void AddWarning(ref DateTimeErrors errors, string message)
-        {
-            if (errors == null) errors = new DateTimeErrors();
-            if (errors.Warnings == null) errors.Warnings = new List<string>();
+        private static void AddWarning(ref DateTimeErrors errors, string message) => DateTimeErrors.AddWarning(ref errors, message);
 
-            errors.Warnings.Add(message);
-        }
-
-        private static void AddError(ref DateTimeErrors errors, string message)
-        {
-            if (errors == null) errors = new DateTimeErrors();
-            if (errors.Errors == null) errors.Errors = new List<string>();
-
-            errors.Errors.Add(message);
-        }
+        private static void AddError(ref DateTimeErrors errors, string message) => DateTimeErrors.AddError(ref errors, message);
 
         #endregion
 
