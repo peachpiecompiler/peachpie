@@ -109,9 +109,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             return array.IntrinsicEnumerator.CurrentValue.GetValue(); // NOTE: gets FALSE if at end
@@ -142,9 +141,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             // note, key can't be of type PhpAlias, hence no dereferencing follows:
@@ -164,9 +162,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             // moves to the next item and returns false if there is no such item:
@@ -188,9 +185,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             // moves to the previous item and returns false if there is no such item:
@@ -210,9 +206,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             // moves to the last item and returns false if there is no such item:
@@ -232,7 +227,7 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
+                PhpException.ArgumentNull(nameof(array));
                 return PhpValue.Null;
             }
 
