@@ -137,10 +137,9 @@ namespace Pchp.Library.DateTime
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
         public void __construct(string time = null, DateTimeZone timezone = null)
         {
-            if (timezone != null)
-            {
-                this.TimeZone = timezone._timezone;
-            }
+            this.TimeZone = (timezone != null)
+                ? timezone._timezone
+                : PhpTimeZone.GetCurrentTimeZone(_ctx);
 
             if (this.TimeZone == null)
             {
@@ -537,7 +536,8 @@ namespace Pchp.Library.DateTime
         {
             Debug.Assert(ctx != null);
 
-            this._ctx = ctx;
+            _ctx = ctx;
+
             this.Time = time;
             this.TimeZone = tz;
         }
@@ -545,13 +545,15 @@ namespace Pchp.Library.DateTime
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
         public DateTimeImmutable(Context ctx, string time = null, DateTimeZone timezone = null)
         {
-            Debug.Assert(ctx != null);
-
             ctx.SetProperty(DateTimeErrors.Empty);
+            __construct(time, timezone);
+        }
 
-            this.TimeZone = (timezone == null)
-                ? PhpTimeZone.GetCurrentTimeZone(ctx)
-                : timezone._timezone;
+        public void __construct(string time = null, DateTimeZone timezone = null)
+        {
+            this.TimeZone = (timezone != null)
+                ? timezone._timezone
+                : PhpTimeZone.GetCurrentTimeZone(_ctx);
 
             if (TimeZone == null)
             {
@@ -560,8 +562,7 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentException();
             }
 
-            this._ctx = ctx;
-            this.Time = DateTime.StrToTime(ctx, time, System_DateTime.UtcNow);
+            this.Time = DateTime.StrToTime(_ctx, time, System_DateTime.UtcNow, TimeZone);
 
             //this.date.Value = this.Time.ToString("yyyy-mm-dd HH:mm:ss");
             //this.timezone_type.Value = 3;
