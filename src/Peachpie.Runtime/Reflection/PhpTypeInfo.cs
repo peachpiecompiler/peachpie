@@ -83,7 +83,7 @@ namespace Pchp.Core.Reflection
         /// Gets value indicating the type can be publically instantiated.
         /// If <c>true</c>, the class is not-abstract, not-trait, not-interface and has a public constructor.
         /// </summary>
-        public bool isInstantiable => this.Creator != null /*ensures flags initialized */ && (_flags & Flags.InstantiationNotAllowed) == 0;
+        public bool isInstantiable => this.Creator != null /*ensures _flags initialized */ && (_flags & Flags.InstantiationNotAllowed) == 0;
 
         /// <summary>
         /// Creates instance of the class without invoking its constructor.
