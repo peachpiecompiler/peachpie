@@ -69,8 +69,14 @@ namespace Pchp.Core.Dynamic
                 return new DynamicMetaObject(ConvertExpression.Bind(getter, _returnType, bound.Context), bound.Restrictions);
             }
 
-            // field not found
-            throw new NotImplementedException();
+            if (IsClassConst)
+            {
+                // error: constant not defined
+                // ...
+            }
+
+            // unreachable: property not found
+            throw new InvalidOperationException($"{bound.TargetType.Name}::{bound.Name} could not be resolved.");
         }
     }
 

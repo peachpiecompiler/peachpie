@@ -115,11 +115,6 @@ namespace Pchp.Core.Reflection
         TObjectCreator _lazyCreator, _lazyCreatorPrivate, _lazyCreatorProtected;
 
         /// <summary>
-        /// A delegate used for representing an inaccessible class constructor.
-        /// </summary>
-        static readonly TObjectCreator s_inaccessibleCreator = (ctx, _) => { throw new MethodAccessException(); };
-
-        /// <summary>
         /// Dynamically constructed delegate for object creation in specific type context.
         /// </summary>
         /// <param name="caller">Current type context in order to resolve only visible constructors.</param>
@@ -184,7 +179,7 @@ namespace Pchp.Core.Reflection
                         else
                         {
                             _flags |= Flags.InstantiationNotAllowed;
-                            _lazyCreator = s_inaccessibleCreator;
+                            _lazyCreator = (_1, _2) => throw new InvalidOperationException($"Class {this.Name} cannot be instantiated. No .ctor found.");
                         }
                     }
                     else
