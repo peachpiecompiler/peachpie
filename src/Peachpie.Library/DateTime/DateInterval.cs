@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using Pchp.Core;
@@ -16,8 +17,14 @@ namespace Pchp.Library.DateTime
     [DebuggerDisplay(nameof(DateInterval), Type = PhpVariable.TypeNameObject)]
     public class DateInterval
     {
+        /// <summary>
+        /// Years.
+        /// </summary>
         public int y;
 
+        /// <summary>
+        /// Months.
+        /// </summary>
         public int m;
 
         public int d
@@ -169,7 +176,134 @@ namespace Pchp.Library.DateTime
 
         public virtual string format(string format)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(format))
+            {
+                return string.Empty;
+            }
+
+            // here we are creating output string
+            bool percent = false;
+            var result = StringBuilderUtilities.Pool.Get();
+
+            foreach (char ch in format)
+            {
+                if (percent)
+                {
+                    percent = false;
+
+                    switch (ch)
+                    {
+                        // % Literal %   %
+                        case '%':
+                            result.Append('%');
+                            break;
+
+                        //Y   Years, numeric, at least 2 digits with leading 0    01, 03
+                        case 'Y':
+                            result.Append(y.ToString("D2", CultureInfo.InvariantCulture));
+                            break;
+
+                        //y Years, numeric  1, 3
+                        case 'y':
+                            result.Append(y.ToString(CultureInfo.InvariantCulture));
+                            break;
+
+                        //M Months, numeric, at least 2 digits with leading 0   01, 03, 12
+                        case 'M':
+                            result.Append(m.ToString("D2", CultureInfo.InvariantCulture));
+                            break;
+
+                        //m Months, numeric 1, 3, 12
+                        case 'm':
+                            result.Append(m.ToString(CultureInfo.InvariantCulture));
+                            break;
+
+                        //D Days, numeric, at least 2 digits with leading 0 01, 03, 31
+                        case 'D':
+                            result.Append(d.ToString("D2", CultureInfo.InvariantCulture));
+                            break;
+
+                        //d Days, numeric   1, 3, 31
+                        case 'd':
+                            result.Append(d.ToString(CultureInfo.InvariantCulture));
+                            break;
+
+                        //a Total number of days as a result of a DateTime::diff() or(unknown) otherwise   4, 18, 8123
+
+                        //H Hours, numeric, at least 2 digits with leading 0    01, 03, 23
+                        case 'H':
+                            result.Append(h.ToString("D2", CultureInfo.InvariantCulture));
+                            break;
+
+                        //h Hours, numeric  1, 3, 23
+                        case 'h':
+                            result.Append(h.ToString(CultureInfo.InvariantCulture));
+                            break;
+
+                        //I Minutes, numeric, at least 2 digits with leading 0  01, 03, 59
+                        case 'I':
+                            result.Append(i.ToString("D2", CultureInfo.InvariantCulture));
+                            break;
+
+                        //i Minutes, numeric    1, 3, 59
+                        case 'i':
+                            result.Append(i.ToString(CultureInfo.InvariantCulture));
+                            break;
+
+                        //S Seconds, numeric, at least 2 digits with leading 0  01, 03, 57
+                        case 'S':
+                            result.Append(s.ToString("D2", CultureInfo.InvariantCulture));
+                            break;
+                        //s Seconds, numeric    1, 3, 57
+                        case 's':
+                            result.Append(i.ToString(CultureInfo.InvariantCulture));
+                            break;
+
+                        //F Microseconds, numeric, at least 6 digits with leading 0 007701, 052738, 428291
+                        case 'F':
+                            result.Append((_span.Milliseconds * 1000).ToString("D6", CultureInfo.InvariantCulture));
+                            break;
+
+                        //f Microseconds, numeric   7701, 52738, 428291
+                        case 'f':
+                            result.Append((_span.Milliseconds * 1000).ToString(CultureInfo.InvariantCulture));
+                            break;
+
+                        //R Sign "-" when negative, "+" when positive   -, +
+                        case 'R':
+                            result.Append(invert != 0 ? '-' : '+');
+                            break;
+
+                        //r   Sign "-" when negative, empty when positive -,
+                        case 'r':
+                            if (invert != 0)
+                            {
+                                result.Append('-');
+                            }
+                            break;
+
+                        default:
+                            // unrecognized character, print it as-is.
+                            result.Append(ch);
+                            break;
+                    }
+                }
+                else if (ch == '%')
+                {
+                    percent = true;
+                }
+                else
+                {
+                    result.Append(ch);
+                }
+            }
+
+            if (percent)
+            {
+                result.Append('%');
+            }
+
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
     }
 }
