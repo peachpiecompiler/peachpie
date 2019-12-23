@@ -1396,7 +1396,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                             var dummyctor =
                                 (MethodSymbol)(targetType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly ??    // .ctor that only initializes fields with default values
-                                targetType.InstanceConstructors.Where(m => m.Parameters.All(p => p.IsImplicitlyDeclared)).FirstOrDefault();   // implicit ctor
+                                targetType.InstanceConstructors.Where(m => !m.IsPhpHidden() && m.Parameters.All(p => p.IsImplicitlyDeclared)).FirstOrDefault();   // implicit ctor
 
                             if (dummyctor != null)
                             {
