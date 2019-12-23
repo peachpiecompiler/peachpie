@@ -23,6 +23,22 @@ namespace Pchp.Library.DateTime
 
         public bool HasErrors => Errors != null && Errors.Count != 0;
 
+        internal static void AddWarning(ref DateTimeErrors errors, string message)
+        {
+            if (errors == null) errors = new DateTimeErrors();
+            if (errors.Warnings == null) errors.Warnings = new List<string>();
+
+            errors.Warnings.Add(message);
+        }
+
+        internal static void AddError(ref DateTimeErrors errors, string message)
+        {
+            if (errors == null) errors = new DateTimeErrors();
+            if (errors.Errors == null) errors.Errors = new List<string>();
+
+            errors.Errors.Add(message);
+        }
+
         public PhpArray ToPhpArray()
         {
             var warnings = new PhpArray(Warnings);
@@ -128,8 +144,9 @@ namespace Pchp.Library.DateTime
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
         public DateTime(Context ctx, string time = null, DateTimeZone timezone = null)
-            : this(ctx)
         {
+            _ctx = ctx;
+
             ctx.SetProperty(DateTimeErrors.Empty);
             __construct(time, timezone);
         }
@@ -545,6 +562,8 @@ namespace Pchp.Library.DateTime
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
         public DateTimeImmutable(Context ctx, string time = null, DateTimeZone timezone = null)
         {
+            _ctx = ctx;
+
             ctx.SetProperty(DateTimeErrors.Empty);
             __construct(time, timezone);
         }
