@@ -92,22 +92,35 @@ namespace Pchp.CodeAnalysis
                 _observedMetadata = observedMetadata ?? new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
             }
 
+            /// <summary>
+            /// Checks the assembly identities are similar - this is a quick workaround to use assemblies as resolved by build system (versions might not match).
+            /// </summary>
+            static bool IsIdentitySimilar(AssemblyIdentity a, AssemblyIdentity b)
+            {
+                return a.Name == b.Name && (!a.HasPublicKey || !b.HasPublicKey || a.PublicKey.Equals(b.PublicKey));
+            }
+
             AssemblySymbol CreateAssemblyFromIdentity(MetadataReferenceResolver resolver, AssemblyIdentity identity, string basePath, List<PEModuleSymbol> modules)
             {
-                PEAssemblySymbol ass;
-                if (!_observedMetadata.TryGetValue(identity, out ass))
+                if (!_observedMetadata.TryGetValue(identity, out var ass))
                 {
-                    // temporary: lookup ignoring minor version number
+                    // temporary: lookup ignoring version number
                     foreach (var pair in _observedMetadata)
                     {
-                        // TODO: _identityComparer
-                        if (pair.Key.Name.Equals(identity.Name, StringComparison.OrdinalIgnoreCase) &&
-                            (pair.Key.Version.Major == identity.Version.Major || identity.Version == new Version(0, 0, 0, 0)))
+                        if (IsIdentitySimilar(pair.Key, identity))
                         {
-                            _observedMetadata[identity] = pair.Value;
+                            _observedMetadata[identity] = pair.Value;   // do not resolve this ever again
                             return pair.Value;
                         }
                     }
+
+                    //foreach (var m in modules)
+                    //{
+                    //    if (IsIdentitySimilar(m.ContainingAssembly.Identity, identity))
+                    //    {
+                    //        return m.ContainingAssembly as PEAssemblySymbol;
+                    //    }
+                    //}
 
                     //
                     if (resolver != null)
