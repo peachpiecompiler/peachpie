@@ -72,7 +72,7 @@ namespace Peachpie.Library.MsSql
 
             //_ctx = ctx;
             _manager = manager;
-            _connection = new SqlConnection();
+            _connection = new SqlConnection(connectionString);
             // TODO: Connection.InfoMessage += new SqlInfoMessageEventHandler(InfoMessage);
         }
 
