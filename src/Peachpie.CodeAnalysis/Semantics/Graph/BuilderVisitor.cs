@@ -792,7 +792,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             label.LabelSpan = x.Name.Span;
 
             _current = Connect(_current, label.TargetBlock);
-            Debug.Assert(_current.Ordinal == LastOrdinal);
         }
 
         public override void VisitSwitchStmt(SwitchStmt x)
