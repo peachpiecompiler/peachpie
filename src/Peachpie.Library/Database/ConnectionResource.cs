@@ -61,10 +61,9 @@ namespace Pchp.Library.Database
         /// <summary>
         /// Constructs the connection resource.
         /// </summary>
-        /// <param name="ctx">Runtime context.</param>
         /// <param name="connectionString"></param>
         /// <param name="resourceTypeName"></param>
-        protected ConnectionResource(Context ctx, string connectionString, string resourceTypeName)
+        protected ConnectionResource(string connectionString, string resourceTypeName)
             : base(resourceTypeName)
         {
             Debug.Assert(connectionString != null);
@@ -241,7 +240,8 @@ namespace Pchp.Library.Database
             if (parameters != null)
             {
                 command.Parameters.Clear();
-                foreach (IDataParameter parameter in parameters)
+
+                foreach (var parameter in parameters)
                 {
                     command.Parameters.Add(parameter);
                 }

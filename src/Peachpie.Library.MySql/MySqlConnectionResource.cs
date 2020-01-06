@@ -32,7 +32,7 @@ namespace Peachpie.Library.MySql
         internal Context Context => _manager.Context;
 
         public MySqlConnectionResource(MySqlConnectionManager manager, string connectionString)
-            : base(manager.Context, connectionString, ResourceName)
+            : base(connectionString, ResourceName)
         {
             _manager = manager;
             _connection = new MySqlConnection(this.ConnectionString);
