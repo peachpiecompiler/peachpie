@@ -50,14 +50,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         /// Map of well-known routines and corresponding rewrite rule that can return a new expression as a replacement for the routine call.
         /// Return <c>null</c> if the routine was not rewritten.
         /// </summary>
-        readonly Dictionary<string, Func<BoundGlobalFunctionCall, BoundExpression>> _special_functions;
+        readonly Dictionary<QualifiedName, Func<BoundGlobalFunctionCall, BoundExpression>> _special_functions;
 
         private TransformationRewriter()
         {
             // initialize rewrite rules for specific well-known functions:
-            _special_functions = new Dictionary<string, Func<BoundGlobalFunctionCall, BoundExpression>>()
+            _special_functions = new Dictionary<QualifiedName, Func<BoundGlobalFunctionCall, BoundExpression>>()
             {
-                { NameUtils.SpecialNames.dirname.Name.Value, x =>
+                { NameUtils.SpecialNames.dirname, x =>
                 {
                     // dirname( __FILE__ ) -> __DIR__
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
@@ -69,7 +69,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                     return null;
                 } },
-                { NameUtils.SpecialNames.basename.Name.Value, x =>
+                { NameUtils.SpecialNames.basename, x =>
                 {
                     // basename( __FILE__ ) -> "filename"
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
@@ -82,7 +82,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                     return null;
                 } },
-                { NameUtils.SpecialNames.get_parent_class.Name.Value, x =>
+                { NameUtils.SpecialNames.get_parent_class, x =>
                 {
                     bool TryResolveParentClassInCurrentClassContext(SourceRoutineSymbol routine, out BoundLiteral newExpression)
                     {
@@ -148,7 +148,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                     return null;
                 } },
-                { NameUtils.SpecialNames.method_exists.Name.Value, x =>
+                { NameUtils.SpecialNames.method_exists, x =>
                 {
                     // method_exists(class_name, method_name) -> FALSE
                     if (x.ArgumentsInSourceOrder.Length == 2)
@@ -165,7 +165,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     return null;
                 } },
-                { NameUtils.SpecialNames.ini_get.Name.Value, x =>
+                { NameUtils.SpecialNames.ini_get, x =>
                 {
                     // ini_get( {svalue} ) : string|FALSE
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
@@ -186,7 +186,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                     return null;
                 } },
-                { NameUtils.SpecialNames.extension_loaded.Name.Value, x =>
+                { NameUtils.SpecialNames.extension_loaded, x =>
                 {
                     // extension_loaded( {ext_name} ) : true|false
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
@@ -205,7 +205,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     return null;
                 } },
-                { NameUtils.SpecialNames.ord.Name.Value, x =>
+                { NameUtils.SpecialNames.ord, x =>
                 {
                     var typeCtx = _routine.TypeRefContext;
 
@@ -497,7 +497,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             // use rewrite rule for this routine:
             if ((x = result as BoundGlobalFunctionCall) != null && x.TargetMethod != null &&
-                _special_functions.TryGetValue(x.TargetMethod.RoutineName, out var rewrite_func))
+                _special_functions.TryGetValue(new QualifiedName(new Name(x.TargetMethod.RoutineName)), out var rewrite_func))
             {
                 var newnode = rewrite_func(x);
                 if (newnode != null)
