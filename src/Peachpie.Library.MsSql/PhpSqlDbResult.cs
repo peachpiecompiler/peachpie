@@ -58,7 +58,7 @@ namespace Peachpie.Library.MsSql
             int j = 0;
             for (int i = 0; i < names.Length; i++)
             {
-                if (names[i] == "")
+                if (string.IsNullOrEmpty(names[i]))
                 {
                     names[i] = (j > 0) ? "computed" + j : "computed";
                     j++;
