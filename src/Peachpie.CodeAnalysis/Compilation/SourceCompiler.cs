@@ -399,7 +399,8 @@ namespace Pchp.CodeAnalysis
                 && !cancellationToken.IsCancellationRequested   // user canceled ?
                 && compiler.RewriteMethods());  // try lower the semantics
 
-            compilation.TrackMetric("transformations", transformation);
+            // Track the number of actually performed transformations
+            compilation.TrackMetric("transformations", transformation - 1);
 
             // 4. Collect diagnostics
             using (compilation.StartMetric("diagnostic"))
