@@ -3,6 +3,7 @@
   <Import Project="..\Targets\Settings.props" />
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+	<DisableImplicitPeachpieReferences>true</DisableImplicitPeachpieReferences>
   </PropertyGroup>
 
   <ItemGroup>
