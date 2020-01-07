@@ -9,7 +9,7 @@ before_install:
 
 install:
   - ./build/install_dependencies_ubuntu.sh
-  - dotnet build ./Peachpie.sln -p:TargetFrameworks=netcoreapp3.0 -p:RuntimeIdentifier=ubuntu.16.04-x64
+  - dotnet build ./Peachpie.sln -r ubuntu.16.04-x64
   - dotnet restore ./build/dummy
   - dotnet restore ./src/Tests/Peachpie.DiagnosticTests/
   - dotnet build ./tests -c Release
