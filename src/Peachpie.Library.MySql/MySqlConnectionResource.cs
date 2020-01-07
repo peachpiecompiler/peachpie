@@ -69,7 +69,7 @@ namespace Peachpie.Library.MySql
             };
         }
 
-        internal ResultResource ExecuteCommandInternal(IDbCommand command, bool convertTypes, IEnumerable<IDataParameter> parameters, bool skipResults)
+        internal ResultResource ExecuteCommandInternal(IDbCommand command, bool convertTypes, IList<IDataParameter> parameters, bool skipResults)
         {
             return ExecuteCommandProtected(command, convertTypes, parameters, skipResults);
         }

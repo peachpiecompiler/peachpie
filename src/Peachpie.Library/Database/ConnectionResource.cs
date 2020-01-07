@@ -195,7 +195,7 @@ namespace Pchp.Library.Database
         /// <returns>PhpDbResult class representing the data read from database.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="procedureName"/> is a <B>null</B> reference.</exception>
         /// <exception cref="PhpException">Procedure execution failed (Warning).</exception>
-        public ResultResource ExecuteProcedure(string/*!*/ procedureName, IEnumerable<IDataParameter> parameters, bool skipResults)
+        public ResultResource ExecuteProcedure(string/*!*/ procedureName, IList<IDataParameter> parameters, bool skipResults)
         {
             if (procedureName == null)
                 throw new ArgumentNullException("procedureName");
@@ -214,7 +214,7 @@ namespace Pchp.Library.Database
         /// <returns>PhpDbResult class representing the data read from database.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="commandText"/> is a <B>null</B> reference.</exception>
         /// <exception cref="PhpException">Command execution failed (Warning).</exception>
-        public ResultResource ExecuteCommand(string/*!*/ commandText, CommandType commandType, bool convertTypes, IEnumerable<IDataParameter> parameters, bool skipResults)
+        public ResultResource ExecuteCommand(string/*!*/ commandText, CommandType commandType, bool convertTypes, IList<IDataParameter> parameters, bool skipResults)
         {
             if (commandText == null)
             {
@@ -235,15 +235,15 @@ namespace Pchp.Library.Database
             }
         }
 
-        protected virtual ResultResource ExecuteCommandProtected(IDbCommand command, bool convertTypes, IEnumerable<IDataParameter> parameters, bool skipResults)
+        protected virtual ResultResource ExecuteCommandProtected(IDbCommand command, bool convertTypes, IList<IDataParameter> parameters, bool skipResults)
         {
             if (parameters != null)
             {
                 command.Parameters.Clear();
 
-                foreach (var parameter in parameters)
+                for (int iparam = 0; iparam < parameters.Count; iparam ++)
                 {
-                    command.Parameters.Add(parameter);
+                    command.Parameters.Add(parameters[iparam]);
                 }
             }
 
