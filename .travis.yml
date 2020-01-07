@@ -5,7 +5,7 @@ php:
   - '7.3'
 
 before_install:
-  - echo "extension=php_pdo_sqlite.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - echo "extension=pdo_sqlite.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 install:
   - ./build/install_dependencies_ubuntu.sh
