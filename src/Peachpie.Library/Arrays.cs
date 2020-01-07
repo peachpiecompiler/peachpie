@@ -328,7 +328,7 @@ namespace Pchp.Library
             // adds copies variables (if called by PHP):
             for (int i = 0; i < vars.Length; i++)
             {
-                array.Add(vars[i]);
+                array.Add(vars[i].GetValue());
             }
 
             return array.Count;
@@ -382,7 +382,7 @@ namespace Pchp.Library
             // prepends items indexing keys from 0 to the number of items - 1:
             for (int i = vars.Length - 1; i >= 0; i--)
             {
-                array.Prepend(i, vars[i]);
+                array.Prepend(i, vars[i].GetValue());
             }
 
             return array.Count;
