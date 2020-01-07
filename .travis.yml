@@ -14,10 +14,9 @@ install:
 #  - dotnet build ./Peachpie.sln
 
 # build projects we need:
-  - dotnet build ./src/Peachpie.App/ -f netstandard2.0
-  - dotnet build ./src/PDO/Peachpie.Library.PDO.Sqlite/
-  - dotnet build ./src/Peachpie.NET.Sdk/
-  - dotnet build ./src/Tests/Peachpie.DiagnosticTests/
+  - dotnet pack ./src/Peachpie.App/ -f netstandard2.0
+  - dotnet pack ./src/PDO/Peachpie.Library.PDO.Sqlite/
+  - dotnet pack ./src/Peachpie.NET.Sdk/
   - dotnet build ./tests -c Release
 
 # install nugets to nuget cache, and build the tests project
