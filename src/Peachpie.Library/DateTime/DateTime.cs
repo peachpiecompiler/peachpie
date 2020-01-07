@@ -617,16 +617,19 @@ namespace Pchp.Library.DateTime
             return DateTimeUtils.UtcToUnixTimeStamp(Time);
         }
 
+        [return: NotNull]
         public DateTimeImmutable setTimestamp(int unixtimestamp)
         {
             return new DateTimeImmutable(_ctx, DateTimeUtils.UnixTimeStampToUtc(unixtimestamp), this.TimeZone);
         }
 
+        [return: NotNull]
         public DateTimeZone getTimezone()
         {
             return new DateTimeZone(this.TimeZone);
         }
 
+        [return: NotNull]
         public virtual DateTimeImmutable modify(string modify)
         {
             if (modify == null)
@@ -643,8 +646,10 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
+        [return: NotNull]
         public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, interval.Apply(Time, negate: false), TimeZone);
 
+        [return: NotNull]
         public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(_ctx, interval.Apply(Time, negate: true), TimeZone);
 
         [return: CastToFalse]
