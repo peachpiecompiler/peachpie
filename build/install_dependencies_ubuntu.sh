@@ -1,3 +1,6 @@
+# pdo_sqlite
+#pecl install pdo_sqlite
+
 # Install .NET Core
 # https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current
 
@@ -16,6 +19,3 @@ sudo apt-get install dotnet-sdk-3.0 -y
 sudo apt-get -y install python-pip
 pip -V
 sudo pip install --upgrade icdiff
-
-# pdo_sqlite
-pecl install pdo_sqlite
