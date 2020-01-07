@@ -15,9 +15,23 @@ namespace Peachpie.Library.PDO
         /// <returns></returns>
         public virtual PhpValue getAttribute(PDO_ATTR attribute)
         {
-            if (m_attributes.TryGetValue(attribute, out var value))
+            switch (attribute)
             {
-                return value;
+                case PDO_ATTR.ATTR_DRIVER_NAME:
+                    return Driver.Name;
+
+                case PDO_ATTR.ATTR_SERVER_VERSION:
+                    return Connection.ServerVersion;
+
+                case PDO_ATTR.ATTR_CLIENT_VERSION:
+                    return Driver.ClientVersion;
+
+                default:
+                    if (m_attributes.TryGetValue(attribute, out var value))
+                    {
+                        return value;
+                    }
+                    break;
             }
 
             if (attribute > PDO_ATTR.ATTR_DRIVER_SPECIFIC)

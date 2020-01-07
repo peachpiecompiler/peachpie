@@ -7,6 +7,8 @@ using Pchp.Library;
 using System.Data.Common;
 using System.Diagnostics;
 using Pchp.Core.Reflection;
+using Pchp.Library.Database;
+using System.Data;
 
 namespace Peachpie.Library.PDO
 {
@@ -18,28 +20,112 @@ namespace Peachpie.Library.PDO
     [PhpExtension(PDOConfiguration.PdoExtensionName)]
     public partial class PDO : IDisposable
     {
+        /// <summary>Implementation of our connection resource to be used by PDO.</summary>
+        internal sealed class PdoConnectionResource : ConnectionResource
+        {
+            public PDO PDO { get; }
+
+            /// <summary>Current runtime context.</summary>
+            public Context Context => PDO._ctx;
+
+            public PdoConnectionResource(PDO pdo, DbConnection connection)
+                : base(connection.ConnectionString, nameof(PdoConnectionResource))
+            {
+                this.PDO = pdo;
+                this.Connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            }
+
+            /// <summary>Actual database connection.</summary>
+            public DbConnection Connection { get; }
+
+            protected override IDbConnection ActiveConnection => Connection;
+
+            public DbCommand LastCommand { get; private set; }
+
+            public DbCommand CreateCommand(string commandText)
+            {
+                var dbCommand = Connection.CreateCommand();
+                dbCommand.CommandText = commandText;
+                dbCommand.Transaction = PDO.CurrentTransaction;
+                dbCommand.CommandTimeout = (int)(PDO.m_attributes[PDO_ATTR.ATTR_TIMEOUT]) * 1000;
+
+                LastCommand = dbCommand;
+
+                return dbCommand;
+            }
+
+            protected override IDbCommand CreateCommand(string commandText, CommandType commandType) => CreateCommand(commandText);
+
+            protected override ResultResource GetResult(IDataReader reader, bool convertTypes)
+            {
+                return new PdoResultResource(this, reader, convertTypes);
+            }
+
+            internal ResultResource ExecuteCommand(IDbCommand command, bool convertTypes, IList<IDataParameter> parameters, bool skipResults)
+            {
+                return ExecuteCommandProtected(command, convertTypes, parameters, skipResults);
+            }
+        }
+
+        /// <summary>Result loaded with data supporting iteration.</summary>
+        sealed class PdoResultResource : ResultResource
+        {
+            public PdoResultResource(PdoConnectionResource connection, IDataReader reader, bool convertTypes)
+                : base(connection, reader, nameof(PdoResultResource), convertTypes)
+            {
+            }
+
+            protected override object[] GetValues(string[] dataTypes, bool convertTypes)
+            {
+                var my_reader = Reader;
+                var oa = new object[my_reader.FieldCount];
+
+                //if (convertTypes)
+                //{
+                //    for (int i = 0; i < oa.Length; i++)
+                //    {
+                //        oa[i] = ConvertDbValue(dataTypes[i], my_reader.GetValue(i));
+                //    }
+                //}
+                //else
+                {
+                    for (int i = 0; i < oa.Length; i++)
+                    {
+                        oa[i] = my_reader.GetValue(i);
+                    }
+                }
+
+                return oa;
+            }
+
+            protected override string MapFieldTypeName(string typeName)
+            {
+                return typeName;
+            }
+        }
+
+        private protected PdoConnectionResource _connection;
+
         /// <summary>Runtime context. Cannot be <c>null</c>.</summary>
         protected readonly Context _ctx; // "_ctx" is a special name recognized by compiler. Will be reused by inherited classes.
 
-        DbConnection m_con;
-        DbTransaction m_tx;
         readonly Dictionary<PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
 
-        internal DbTransaction CurrentTransaction { get { return this.m_tx; } }
+        internal DbTransaction CurrentTransaction { get; private set; }
         internal PDODriver Driver { get; private set; }
-        internal DbCommand CurrentCommand { get; private set; }
+        internal DbCommand CurrentCommand => _connection.LastCommand;
 
         /// <summary>
         /// Gets the native connection instance
         /// </summary>
-        public DbConnection Connection { get { return this.m_con; } }
+        public DbConnection Connection => _connection.Connection;
 
         /// <summary>
         /// true is there has been already a PDOStatement executed for this PDO, false otherwise
         /// </summary>
         public bool HasExecutedQuery { get; set; } = false;
 
-        private PDOStatement lastExecutedStatement = null;
+        private PDOStatement lastExecutedStatement = null;  // move to _connection
 
         /// <summary>
         /// Empty constructor.
@@ -75,7 +161,7 @@ namespace Peachpie.Library.PDO
         /// <param name="options">The options.</param>
         public void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
         {
-            this.SetDefaultAttributes();
+            this.SetDefaultAttributes();    // TODO: !!! do not
 
             string driver;
             ReadOnlySpan<char> connstring;
@@ -120,23 +206,19 @@ namespace Peachpie.Library.PDO
 
             try
             {
-                this.m_con = Driver.OpenConnection(connstring, username, password, options);
+                _connection = new PdoConnectionResource(this, Driver.OpenConnection(connstring, username, password, options));
             }
             catch (Exception e)
             {
                 throw new PDOException(e.Message);
             }
-
-            this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
-            this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)Driver.Name;
-            this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = (PhpValue)Driver.ClientVersion;
         }
 
         /// <summary>
         /// Checks if inside a transaction
         /// </summary>
         /// <returns></returns>
-        public bool inTransaction() => this.m_tx != null;
+        public bool inTransaction() => CurrentTransaction != null;
 
         /// <inheritDoc />
         public PhpValue __call(string name, PhpArray arguments)
@@ -150,7 +232,7 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         void IDisposable.Dispose()
         {
-            m_con?.Dispose();
+            Connection?.Dispose();
         }
 
         /// <summary>
@@ -165,30 +247,21 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Creates a DbCommand object.
         /// </summary>
-        /// <param name="statement">The statement.</param>
+        /// <param name="statement">The command text.</param>
         /// <returns></returns>
-        internal DbCommand CreateCommand(string statement)
-        {
-            var dbCommand = this.m_con.CreateCommand();
-            dbCommand.CommandText = statement;
-            dbCommand.Transaction = this.m_tx;
-            dbCommand.CommandTimeout = (int)(this.m_attributes[PDO_ATTR.ATTR_TIMEOUT]) * 1000;
-
-            CurrentCommand = dbCommand;
-
-            return dbCommand;
-        }
+        internal DbCommand CreateCommand(string statement) => _connection.CreateCommand(statement);
 
         /// <summary>
         /// Execute an SQL statement and return the number of affected rows.
         /// </summary>
         /// <param name="statement">The statement.</param>
-        /// <returns></returns>
-        public virtual PhpValue exec(string statement)
+        [return: CastToFalse]
+        public virtual int exec(string statement)
         {
             this.ClearError();
 
-            lastExecutedStatement?.CloseReader();
+            _connection.ClosePendingReader();
+            lastExecutedStatement = null;
 
             using (var dbCommand = this.CreateCommand(statement))
             {
@@ -198,9 +271,8 @@ namespace Peachpie.Library.PDO
                 }
                 catch (System.Exception ex)
                 {
-                    //TODO err
                     this.HandleError(ex);
-                    return PhpValue.False;
+                    return -1; // FALSE
                 }
             }
         }
@@ -212,10 +284,10 @@ namespace Peachpie.Library.PDO
         /// <returns>True if transaction started successfully, or false</returns>
         public virtual bool beginTransaction()
         {
-            if (this.m_tx != null)
+            if (CurrentTransaction != null)
                 throw new PDOException("Transaction already active");
             //TODO DbTransaction isolation level
-            this.m_tx = this.m_con.BeginTransaction();
+            CurrentTransaction = Connection.BeginTransaction();
             return true;
         }
 
@@ -225,10 +297,10 @@ namespace Peachpie.Library.PDO
         /// <returns></returns>
         public virtual bool commit()
         {
-            if (this.m_tx == null)
+            if (CurrentTransaction == null)
                 throw new PDOException("No active transaction");
-            this.m_tx.Commit();
-            this.m_tx = null;
+            CurrentTransaction.Commit();
+            CurrentTransaction = null;
             return true;
         }
 
@@ -238,10 +310,10 @@ namespace Peachpie.Library.PDO
         /// <returns></returns>
         public virtual bool rollBack()
         {
-            if (this.m_tx == null)
+            if (CurrentTransaction == null)
                 throw new PDOException("No active transaction");
-            this.m_tx.Rollback();
-            this.m_tx = null;
+            CurrentTransaction.Rollback();
+            CurrentTransaction = null;
             return true;
         }
 
@@ -256,25 +328,6 @@ namespace Peachpie.Library.PDO
         }
 
         /// <summary>
-        /// Stores the last executed query's result inside of the Statement, so that another data reader can be opened.
-        /// </summary>
-        /// <returns>true on success, false otherwise</returns>
-        internal bool StoreLastExecutedQuery()
-        {
-            if (lastExecutedStatement != null)
-            {
-                var res = lastExecutedStatement.StoreQueryResult();
-                if (res)
-                {
-                    lastExecutedStatement.CloseReader();
-                }
-                return res;
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Prepares a statement for execution and returns a statement object.
         /// </summary>
         /// <param name="statement">The statement.</param>
@@ -285,9 +338,7 @@ namespace Peachpie.Library.PDO
         {
             try
             {
-                PDOStatement newStatement = CreateStatement(statement, driver_options);
-                lastExecutedStatement = newStatement;
-                return newStatement;
+                return lastExecutedStatement = CreateStatement(statement, driver_options);
             }
             catch (System.Exception ex)
             {
@@ -356,7 +407,6 @@ namespace Peachpie.Library.PDO
             this.m_attributes[PDO_ATTR.ATTR_CASE] = (PhpValue)(int)PDO_CASE.CASE_LOWER;
             this.m_attributes[PDO_ATTR.ATTR_CURSOR_NAME] = PhpValue.Null;
             this.m_attributes[PDO_ATTR.ATTR_CURSOR] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)"";
             this.m_attributes[PDO_ATTR.ATTR_ORACLE_NULLS] = PhpValue.Null;
             this.m_attributes[PDO_ATTR.ATTR_PERSISTENT] = PhpValue.False;
             this.m_attributes[PDO_ATTR.ATTR_STATEMENT_CLASS] = PhpValue.Null;
@@ -369,8 +419,9 @@ namespace Peachpie.Library.PDO
         }
 
         [PhpHidden]
-        PDOStatement CreateStatement(string statement, PhpArray driver_options)
+        PDOStatement CreateStatement(string statement, PhpArray options)
         {
+            // TODO: lookup driver_options for `ATTR_STATEMENT_CLASS` instead ?
             if (m_attributes.TryGetValue(PDO_ATTR.ATTR_STATEMENT_CLASS, out var classattr) && classattr.IsSet && classattr.IsPhpArray(out var classarr))
             {
                 if (classarr[0].IsString(out var classname))
@@ -379,8 +430,8 @@ namespace Peachpie.Library.PDO
                     var args = classarr[1].IsPhpArray(out var argsarr) ? argsarr : PhpArray.Empty;
 
                     var instance = (PDOStatement)tinfo.GetUninitializedInstance(_ctx);
-                    
-                    instance.PrepareStatement(this, statement, driver_options);
+
+                    instance.Prepare(_connection, statement, options);
 
                     // __construct
                     var construct = tinfo.RuntimeMethods[ReflectionUtils.PhpConstructorName];
@@ -403,7 +454,7 @@ namespace Peachpie.Library.PDO
             else
             {
                 // shortcut
-                return new PDOStatement(_ctx, this, statement, driver_options);
+                return new PDOStatement(_connection, statement, options);
             }
         }
     }
