@@ -5,6 +5,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <StartupObject>program.phpx</StartupObject>
+	<DisableImplicitPeachpieReferences>true</DisableImplicitPeachpieReferences>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,8 @@
 
   <ItemGroup>
     <PackageReference Include="Peachpie.NET.Sdk" Version="$(Version)" PrivateAssets="Build" />
+	<ProjectReference Include="../src/Peachpie.App/Peachpie.App.csproj" />
+	<ProjectReference Include="../src/PDO/Peachpie.Library.PDO.Sqlite/Peachpie.Library.PDO.Sqlite" />
   </ItemGroup>
 
 </Project>
