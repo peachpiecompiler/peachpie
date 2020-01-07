@@ -141,7 +141,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public string PhpName => this.QualifiedName.ToString();
+        public override string RoutineName => this.QualifiedName.ToString();    // __FUNCTION__
 
         public override Symbol ContainingSymbol => _file.SourceModule;
 

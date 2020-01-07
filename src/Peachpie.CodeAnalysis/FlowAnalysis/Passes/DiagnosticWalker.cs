@@ -840,7 +840,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         static string GetMemberNameForDiagnostic(Symbol target, bool isMemberName)
         {
-            string name = target.Name;
+            string name = target.PhpName();
 
             if (isMemberName)
             {

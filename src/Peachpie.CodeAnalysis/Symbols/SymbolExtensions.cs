@@ -149,7 +149,7 @@ namespace Pchp.CodeAnalysis.Symbols
             switch (s)
             {
                 case IPhpRoutineSymbol routine: return routine.RoutineName;
-                case IPhpTypeSymbol type: return type.FullName.Name.Value;
+                case IPhpTypeSymbol type: return type.FullName.ToString();
                 default: return s.Name;
             }
         }
