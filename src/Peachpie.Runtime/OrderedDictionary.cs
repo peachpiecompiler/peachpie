@@ -1907,5 +1907,22 @@ namespace Pchp.Core
             value = default;
             return false;
         }
+
+        /// <summary>
+        /// Copies values to a new array.
+        /// </summary>
+        public static TValue[] GetValues(this OrderedDictionary/*<TValue>*/ table)
+        {
+            if (table.Count != 0)
+            {
+                var array = new TValue[table.Count];
+                table.CopyTo(array, 0);
+                return array;
+            }
+            else
+            {
+                return Array.Empty<PhpValue>();
+            }
+        }
     }
 }

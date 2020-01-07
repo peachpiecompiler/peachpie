@@ -845,19 +845,7 @@ namespace Pchp.Core
         /// <summary>
         /// Copies values to a new array.
         /// </summary>
-        public PhpValue[] GetValues()
-        {
-            if (this.Count != 0)
-            {
-                var array = new PhpValue[this.Count];
-                this.CopyValuesTo(array, 0);
-                return array;
-            }
-            else
-            {
-                return Array.Empty<PhpValue>();
-            }
-        }
+        public PhpValue[] GetValues() => table.GetValues();
 
         #endregion
 
