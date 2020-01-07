@@ -3,5 +3,15 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
+  
+  <ItemGroup Condition=" '$(DisableImplicitPeachpieReferences)' != 'true' ">
+	<PackageReference Include="Peachpie.AspNetCore.Web" Version="$(PackageVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.AspNetCore.Mvc" Version="$(PackageVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.App" Version="$(PackageVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO" Version="$(PackageVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(PackageVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.SqlSrv" Version="$(PackageVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.Sqlite" Version="$(PackageVersion)" PrivateAssets="Build" />
+  </ItemGroup>
 
 </Project>
