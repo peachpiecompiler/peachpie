@@ -17,7 +17,7 @@ install:
   - dotnet build ./src/Peachpie.NET.Sdk/
 
 # install NuGets to NuGet cache:
-  - dotnet restore ./build/dummy
+  - dotnet restore ./build/dummy -p:DisableImplicitPeachpieReferences=true
 
 # compile tests:
   - dotnet build ./tests -c Release

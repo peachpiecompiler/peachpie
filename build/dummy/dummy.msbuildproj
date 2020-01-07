@@ -1,13 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Peachpie.NET.Sdk/1.0.0-dev">
 
-  <Import Project="..\Targets\Settings.props" />
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
-	<DisableImplicitPeachpieReferences>true</DisableImplicitPeachpieReferences>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Peachpie.NET.Sdk" Version="$(PackageVersion)" PrivateAssets="Build" />
-  </ItemGroup>
-  
 </Project>
