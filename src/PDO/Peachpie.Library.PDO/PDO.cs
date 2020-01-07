@@ -155,53 +155,40 @@ namespace Peachpie.Library.PDO
         /// <param name="options">The options.</param>
         public void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
         {
-            string driver;
-            ReadOnlySpan<char> connstring;
-
             int doublecolon = dsn.IndexOf(':');
-            if (doublecolon >= 0)
+            if (doublecolon < 0)
             {
-                driver = dsn.Remove(doublecolon);
-                connstring = dsn.AsSpan(doublecolon + 1);
-            }
-            else
-            {
-                // Alias mode
-                throw new NotImplementedException("PDO DSN alias not implemented");
-                // replace DSN alias with value
-            }
-
-            if (driver == "uri") // TODO: move to a driver "UriDriver"
-            {
-                // Uri mode
-                if (Uri.TryCreate(connstring.ToString(), UriKind.Absolute, out var uri))
+                // lookup dsn alias
+                var dsn2 = _ctx.Configuration.Get<PDOConfiguration>()?.Dsn[dsn];
+                if (dsn2 == null)
                 {
-                    if (uri.Scheme.Equals("file", StringComparison.Ordinal))
-                    {
-                        throw new NotImplementedException("PDO uri DSN not implemented");
-                        //return
-                    }
-                    else
-                    {
-                        throw new PDOException("PDO DSN as URI does not support other schemes than 'file'");
-                    }
+                    throw new PDOException("Invalid DSN Alias.");
                 }
-                else
+
+                dsn = dsn2;
+                doublecolon = dsn.IndexOf(':');
+
+                if (doublecolon <= 0)
                 {
-                    throw new PDOException("Invalid uri in DSN");
+                    throw new PDOException("Invalid DSN.");
                 }
             }
 
-            // DSN mode
-            Driver = PDOEngine.TryGetDriver(driver)
-                ?? throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
+            //
+            var driver = dsn.Remove(doublecolon);
+            var connstring = dsn.AsSpan(doublecolon + 1);
+
+            // resolve the driver:
+            Driver = PDOEngine.TryGetDriver(driver) ?? throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
 
             try
             {
+                // create connection object:
                 _connection = new PdoConnectionResource(this, Driver.OpenConnection(connstring, username, password, options));
             }
             catch (Exception e)
             {
+                // PDO construct always throws PDOException on error:
                 throw new PDOException(e.Message);
             }
         }
