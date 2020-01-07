@@ -15,6 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\PDO\Peachpie.Library.PDO.Sqlite\Peachpie.Library.PDO.Sqlite.csproj" />
+    <ProjectReference Include="..\..\PDO\Peachpie.Library.PDO\Peachpie.Library.PDO.csproj" />
     <ProjectReference Include="..\..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
     <ProjectReference Include="..\..\Peachpie.Library.Graphics\Peachpie.Library.Graphics.csproj" />
     <ProjectReference Include="..\..\Peachpie.Library.Scripting\Peachpie.Library.Scripting.csproj" />

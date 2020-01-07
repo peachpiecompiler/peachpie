@@ -72,6 +72,12 @@ namespace Peachpie.Library.Scripting
             t = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.Graphics", "Peachpie.Library.Graphics.PhpImage"));
             if (t != null) impl.Add(t.Assembly);
 
+            t = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.PDO", "Peachpie.Library.PDO.PDO"));
+            if (t != null) impl.Add(t.Assembly);
+
+            t = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.PDO.Sqlite", "Peachpie.Library.PDO.Sqlite.PDOSqliteDriver"));
+            if (t != null) impl.Add(t.Assembly);
+
             //
             var set = new HashSet<Assembly>();
 
