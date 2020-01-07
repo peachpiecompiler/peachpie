@@ -9,25 +9,7 @@ before_install:
 
 install:
   - ./build/install_dependencies_ubuntu.sh
-  - dotnet restore ./Peachpie.sln /p:TargetFrameworks=netcoreapp2.1
-  - dotnet restore ./src/Peachpie.NET.Sdk/
-  - dotnet build ./src/Peachpie.NET.Sdk/
-  - dotnet build ./src/Peachpie.Runtime/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.Library/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.Library.Graphics/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.Library.Network/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.Library.XmlDom/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.Library.Scripting/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.Library.MsSql/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.Library.MySql/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/PDO/Peachpie.Library.PDO/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/PDO/Peachpie.Library.PDO.MySQL/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/PDO/Peachpie.Library.PDO.SqlSrv/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/PDO/Peachpie.Library.PDO.Sqlite/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.App/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.CodeAnalysis/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.AspNetCore.Web/ /p:TargetFrameworks=netcoreapp2.1
-  - dotnet build ./src/Peachpie.AspNetCore.Mvc/ /p:TargetFrameworks=netcoreapp2.1
+  - dotnet build ./Peachpie.sln /p:TargetFrameworks=netcoreapp3.0
   - dotnet restore ./build/dummy
   - dotnet restore ./src/Tests/Peachpie.DiagnosticTests/
   - dotnet build ./tests -c Release
