@@ -35,8 +35,8 @@ namespace Peachpie.Library.PDO
             Driver.HandleException(ex, out _errorSqlState, out _errorCode, out _errorMessage);
 
             //
-            PDO_ERRMODE mode = (PDO_ERRMODE)this.m_attributes[PDO_ATTR.ATTR_ERRMODE].ToLong();
-            switch (mode)
+            TryGetAttribute(PDO_ATTR.ATTR_ERRMODE, out var errmode);
+            switch ((PDO_ERRMODE)errmode.ToLong())
             {
                 case PDO_ERRMODE.ERRMODE_SILENT:
                     break;
@@ -64,8 +64,8 @@ namespace Peachpie.Library.PDO
 
             //
 
-            var mode = (PDO_ERRMODE)this.m_attributes[PDO_ATTR.ATTR_ERRMODE].ToLong();
-            switch (mode)
+            TryGetAttribute(PDO_ATTR.ATTR_ERRMODE, out var errmode);
+            switch ((PDO_ERRMODE)errmode.ToLong())
             {
                 case PDO_ERRMODE.ERRMODE_SILENT:
                     break;

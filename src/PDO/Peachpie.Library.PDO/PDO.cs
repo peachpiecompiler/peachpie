@@ -47,7 +47,7 @@ namespace Peachpie.Library.PDO
                 var dbCommand = Connection.CreateCommand();
                 dbCommand.CommandText = commandText;
                 dbCommand.Transaction = PDO.CurrentTransaction;
-                dbCommand.CommandTimeout = (int)(PDO.m_attributes[PDO_ATTR.ATTR_TIMEOUT]) * 1000;
+                dbCommand.CommandTimeout = (PDO.TryGetAttribute(PDO_ATTR.ATTR_TIMEOUT, out var timeout) ? (int)timeout : 30) * 1000;
 
                 LastCommand = dbCommand;
 
@@ -107,25 +107,19 @@ namespace Peachpie.Library.PDO
         private protected PdoConnectionResource _connection;
 
         /// <summary>Runtime context. Cannot be <c>null</c>.</summary>
-        protected readonly Context _ctx; // "_ctx" is a special name recognized by compiler. Will be reused by inherited classes.
-
-        readonly Dictionary<PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
+        /// <remarks>"_ctx" is a special name recognized by compiler. Will be reused by inherited classes.</remarks>
+        protected readonly Context _ctx;
 
         internal DbTransaction CurrentTransaction { get; private set; }
+
         internal PDODriver Driver { get; private set; }
+
         internal DbCommand CurrentCommand => _connection.LastCommand;
 
         /// <summary>
         /// Gets the native connection instance
         /// </summary>
         public DbConnection Connection => _connection.Connection;
-
-        /// <summary>
-        /// true is there has been already a PDOStatement executed for this PDO, false otherwise
-        /// </summary>
-        public bool HasExecutedQuery { get; set; } = false;
-
-        private PDOStatement lastExecutedStatement = null;  // move to _connection
 
         /// <summary>
         /// Empty constructor.
@@ -161,8 +155,6 @@ namespace Peachpie.Library.PDO
         /// <param name="options">The options.</param>
         public void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
         {
-            this.SetDefaultAttributes();    // TODO: !!! do not
-
             string driver;
             ReadOnlySpan<char> connstring;
 
@@ -238,7 +230,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// This function returns all currently available PDO drivers which can be used in DSN parameter of <see cref="PDO" /> constructor.
         /// </summary>
-        /// <returns></returns>
+        [return: NotNull]
         public static PhpArray getAvailableDrivers()
         {
             return PDOStatic.pdo_drivers();
@@ -261,7 +253,6 @@ namespace Peachpie.Library.PDO
             this.ClearError();
 
             _connection.ClosePendingReader();
-            lastExecutedStatement = null;
 
             using (var dbCommand = this.CreateCommand(statement))
             {
@@ -338,7 +329,7 @@ namespace Peachpie.Library.PDO
         {
             try
             {
-                return lastExecutedStatement = CreateStatement(statement, driver_options);
+                return CreateStatement(statement, driver_options);
             }
             catch (System.Exception ex)
             {
@@ -356,7 +347,7 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public virtual PDOStatement query(string statement, params PhpValue[] args)
         {
-            var stmt = lastExecutedStatement = CreateStatement(statement, null);
+            var stmt = CreateStatement(statement, null);
 
             if (args.Length > 0)
             {
@@ -394,35 +385,11 @@ namespace Peachpie.Library.PDO
         }
 
         [PhpHidden]
-        void SetDefaultAttributes()
-        {
-            this.m_attributes[PDO_ATTR.ATTR_AUTOCOMMIT] = (PhpValue)true;
-            this.m_attributes[PDO_ATTR.ATTR_PREFETCH] = (PhpValue)0;
-            this.m_attributes[PDO_ATTR.ATTR_TIMEOUT] = (PhpValue)30;
-            this.m_attributes[PDO_ATTR.ATTR_ERRMODE] = (PhpValue)ERRMODE_SILENT;
-            this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_SERVER_INFO] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_CONNECTION_STATUS] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_CASE] = (PhpValue)(int)PDO_CASE.CASE_LOWER;
-            this.m_attributes[PDO_ATTR.ATTR_CURSOR_NAME] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_CURSOR] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_ORACLE_NULLS] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_PERSISTENT] = PhpValue.False;
-            this.m_attributes[PDO_ATTR.ATTR_STATEMENT_CLASS] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_FETCH_CATALOG_NAMES] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_FETCH_TABLE_NAMES] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_STRINGIFY_FETCHES] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_MAX_COLUMN_LEN] = PhpValue.Null;
-            //this.m_attributes[PDO_ATTR.ATTR_DEFAULT_FETCH_MODE] = 0;
-            this.m_attributes[PDO_ATTR.ATTR_EMULATE_PREPARES] = PhpValue.False;
-        }
-
-        [PhpHidden]
         PDOStatement CreateStatement(string statement, PhpArray options)
         {
             // TODO: lookup driver_options for `ATTR_STATEMENT_CLASS` instead ?
-            if (m_attributes.TryGetValue(PDO_ATTR.ATTR_STATEMENT_CLASS, out var classattr) && classattr.IsSet && classattr.IsPhpArray(out var classarr))
+
+            if (TryGetAttribute(PDO_ATTR.ATTR_STATEMENT_CLASS, out var classattr) && classattr.IsSet && classattr.IsPhpArray(out var classarr))
             {
                 if (classarr[0].IsString(out var classname))
                 {
