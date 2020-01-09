@@ -5,13 +5,13 @@
   </PropertyGroup>
   
   <ItemGroup Condition=" '$(DisableImplicitPeachpieReferences)' != 'true' ">
-	<PackageReference Include="Peachpie.AspNetCore.Web" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.AspNetCore.Mvc" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.App" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.PDO" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.PDO.SqlSrv" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.PDO.Sqlite" Version="$(PackageVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.AspNetCore.Web" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.AspNetCore.Mvc" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.App" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.SqlSrv" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.Sqlite" Version="$(PeachpieVersion)" PrivateAssets="Build" />
   </ItemGroup>
 
 </Project>

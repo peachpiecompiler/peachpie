@@ -119,7 +119,7 @@
 
   <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="CollectPackageReferences" Outputs="$(ComposerJsonPath)">
     <PropertyGroup Condition=" '$(_cName)'!='' ">
-      <AssemblyName>$(_cName)</AssemblyName>
+      <!--AssemblyName>$(_cName)</AssemblyName-->
       <PackageId>$(_cName)</PackageId>
     </PropertyGroup>
 
