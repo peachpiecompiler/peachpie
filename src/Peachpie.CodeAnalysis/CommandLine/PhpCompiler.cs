@@ -248,7 +248,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 // single source file
 
                 var diagnosticInfos = new List<DiagnosticInfo>();
-                var content = TryReadFileContent(file, diagnosticInfos);
+                var content = TryReadFileContent(file, diagnosticInfos, out var normalizedFilePath);
 
                 if (diagnosticInfos.Count != 0)
                 {
@@ -260,7 +260,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 if (content != null)
                 {
-                    result = PhpSyntaxTree.ParseCode(content, parseOptions, scriptParseOptions, file.Path);
+                    result = PhpSyntaxTree.ParseCode(content, parseOptions, scriptParseOptions, normalizedFilePath);
                 }
 
                 if (result != null && result.Diagnostics.HasAnyErrors())
