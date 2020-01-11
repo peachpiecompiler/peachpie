@@ -87,6 +87,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (symbol is MethodSymbol m)
             {
+                if (m is SourceRoutineSymbol routine)
+                {
+                    return !routine.ReturnsNull;
+                }
+
                 if (m.CastToFalse)
                 {
                     // [return: CastToFalse] implicitly denotates method as [NotNull]

@@ -157,7 +157,7 @@ namespace Pchp.CodeAnalysis.Symbols
             for (int i = 0; i < ps.Length; i++)
             {
                 var p = ps[i];
-                
+
                 if (p.InitValue == null)
                 {
                     if (foundopt && !p.IsVariadic)
@@ -379,6 +379,33 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 
+        /// <summary>
+        /// Gets value indicating the routine can return <c>null</c>.
+        /// </summary>
+        public bool ReturnsNull
+        {
+            get
+            {
+                var thint = SyntaxReturnType;
+
+                if (thint == null)
+                {
+                    // use the result of type analysis if possible
+                    var tmask = ResultTypeMask;
+
+                    return this.IsOverrideable()
+                        ? true
+                        : tmask.IsAnyType || tmask.IsRef || this.TypeRefContext.IsNull(tmask);
+                }
+                else
+                {
+                    // if type hint is provided,
+                    // only can be NULL if specified
+                    return thint.IsNullable();
+                }
+            }
+        }
+
         public override RefKind RefKind => RefKind.None;
 
         public override TypeSymbol ReturnType => PhpRoutineSymbolExtensions.ConstructClrReturnType(this);
@@ -418,7 +445,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetReturnTypeAttributes()
         {
-            return base.GetReturnTypeAttributes(); // TODO: [return: NotNull]
+            if (!ReturnsNull)
+            {
+                // [return: NotNull]
+                var returnType = this.ReturnType;
+                if (returnType != null && (returnType.IsReferenceType || returnType.Is_PhpValue())) // only if it makes sense to check for NULL
+                {
+                    return ImmutableArray.Create<AttributeData>(DeclaringCompilation.CreateNotNullAttribute());
+                }
+            }
+
+            //
+            return ImmutableArray<AttributeData>.Empty;
         }
 
         internal override ObsoleteAttributeData ObsoleteAttributeData
