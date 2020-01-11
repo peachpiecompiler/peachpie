@@ -282,13 +282,13 @@ namespace Pchp.Library
         static string ToString(Context ctx, PhpString value, string forceencoding = null)
         {
             return value.ContainsBinaryData
-                ? value.ToString(GetEncoding(forceencoding) ?? ctx.StringEncoding)
+                ? value.ToString(GetEncoding(forceencoding) ?? GetInternalEncoding(ctx))
                 : value.ToString(ctx);  // no bytes have to be converted anyway
         }
 
         static byte[] ToBytes(Context ctx, PhpString value, string forceencoding = null)
         {
-            return value.ToBytes(GetEncoding(forceencoding) ?? ctx.StringEncoding);
+            return value.ToBytes(GetEncoding(forceencoding) ?? GetInternalEncoding(ctx));
         }
 
         #endregion
@@ -300,7 +300,7 @@ namespace Pchp.Library
         /// </summary>
         public static string mb_internal_encoding(Context ctx)
         {
-            return (ctx.Configuration.Get<MbConfig>().InternalEncoding ?? ctx.StringEncoding).WebName;
+            return GetInternalEncoding(ctx).WebName;
         }
 
         /// <summary>
