@@ -114,12 +114,12 @@ namespace Peachpie.Library.PDO
 
         internal PDODriver Driver { get; private set; }
 
-        internal DbCommand CurrentCommand => _connection.LastCommand;
+        internal DbCommand CurrentCommand => _connection?.LastCommand;
 
         /// <summary>
         /// Gets the native connection instance
         /// </summary>
-        public DbConnection Connection => _connection.Connection;
+        public DbConnection Connection => _connection?.Connection;
 
         /// <summary>
         /// Empty constructor.
