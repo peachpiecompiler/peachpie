@@ -1168,6 +1168,34 @@ namespace Pchp.Library
 
         #endregion
 
+        #region mb_ord, mb_chr
+
+        /// <summary>
+        /// Returns a code point of character or  on failure.
+        /// </summary>
+        [return: CastToFalse]
+        public static int mb_ord(Context ctx, PhpString str, string encoding = null)
+        {
+            var value = ToString(ctx, str, encoding);
+            if (string.IsNullOrEmpty(value))
+            {
+                return -1; // FALSE
+            }
+
+            //
+            return value[0];
+        }
+
+        /// <summary>
+        /// Returns a specific character or <c>FALSE</c> on failure.
+        /// </summary>
+        public static string mb_chr(int cp, string encoding = null)
+        {
+            return unchecked((char)cp).ToString();
+        }
+
+        #endregion
+
         #region mb_language, mb_send_mail
 
         /// <summary>
