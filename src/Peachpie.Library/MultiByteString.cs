@@ -120,12 +120,24 @@ namespace Pchp.Library
             MB_CASE_TITLE = 2,
 
             MB_CASE_FOLD = 3,
+
+            MB_CASE_UPPER_SIMPLE = 4,
+
+            MB_CASE_LOWER_SIMPLE = 5,
+
+            MB_CASE_TITLE_SIMPLE = 6,
+
+            MB_CASE_FOLD_SIMPLE = 7,
         }
 
         public const int MB_CASE_UPPER = (int)CaseConstants.MB_CASE_UPPER;
         public const int MB_CASE_LOWER = (int)CaseConstants.MB_CASE_LOWER;
         public const int MB_CASE_TITLE = (int)CaseConstants.MB_CASE_TITLE;
         public const int MB_CASE_FOLD = (int)CaseConstants.MB_CASE_FOLD;
+        public const int MB_CASE_UPPER_SIMPLE = (int)CaseConstants.MB_CASE_UPPER_SIMPLE;
+        public const int MB_CASE_LOWER_SIMPLE = (int)CaseConstants.MB_CASE_LOWER_SIMPLE;
+        public const int MB_CASE_TITLE_SIMPLE = (int)CaseConstants.MB_CASE_TITLE_SIMPLE;
+        public const int MB_CASE_FOLD_SIMPLE = (int)CaseConstants.MB_CASE_FOLD_SIMPLE;
 
         #endregion
 
@@ -656,9 +668,18 @@ namespace Pchp.Library
 
             switch (mode)
             {
-                case CaseConstants.MB_CASE_UPPER: return str.ToUpper();
-                case CaseConstants.MB_CASE_LOWER: return str.ToLower();
-                case CaseConstants.MB_CASE_TITLE: return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str);
+                case CaseConstants.MB_CASE_UPPER_SIMPLE:
+                case CaseConstants.MB_CASE_UPPER:
+                    return str.ToUpper();
+
+                case CaseConstants.MB_CASE_LOWER_SIMPLE:
+                case CaseConstants.MB_CASE_LOWER:
+                    return str.ToLower();
+
+                case CaseConstants.MB_CASE_TITLE_SIMPLE:
+                case CaseConstants.MB_CASE_TITLE:
+                    return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str);
+
                 default: throw new ArgumentException();
             }
         }
