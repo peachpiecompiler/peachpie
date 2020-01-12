@@ -1498,6 +1498,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // TODO: Err, variable or field must be passed into byref argument. foo("hello") where function foo(&$x){}
                 }
             }
+            else if (!expected.Type.IsAnyType && givenarg.Value is BoundVariableRef refvar && refvar.Name.IsDirect)
+            {
+                // Even for variables passed by value we may gain information about their type (if we previously had none),
+                // because not complying with the parameter type would have caused throwing a TypeError
+                var local = State.GetLocalHandle(refvar.Name.NameValue);
+                var localType = State.GetLocalType(local);
+                if (localType.IsAnyType && !localType.IsRef &&
+                    (TypeCtx.IsObject(expected.Type) || TypeCtx.IsArray(expected.Type)))
+                {
+                    State.SetLocalType(local, expected.Type.WithIsRef(localType.IsRef));
+                }
+            }
         }
 
         TypeRefMask BindValidRoutineCall(BoundRoutineCall call, MethodSymbol method, ImmutableArray<BoundArgument> args, bool maybeoverload)
