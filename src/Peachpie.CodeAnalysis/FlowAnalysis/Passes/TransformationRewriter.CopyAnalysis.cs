@@ -125,6 +125,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             private readonly Dictionary<BoundCopyValue, int> _copyIndices = new Dictionary<BoundCopyValue, int>();
             private readonly FlowContext _flowContext;
 
+            /// <summary>
+            /// Set of <see cref="BoundCopyValue"/> instances located in return statements, to be filtered in the exit node.
+            /// </summary>
+            private HashSet<BoundCopyValue> _lazyReturnCopies;
+
             private CopyAnalysisState _state;
             private BitMask _neededCopies;
 
@@ -142,7 +147,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var analysis = new FixPointAnalysis<CopyAnalysisContext, CopyAnalysisState>(context, routine);
                 analysis.Run();
 
-                HashSet<BoundCopyValue> result = null;
+                HashSet<BoundCopyValue> result = context._lazyReturnCopies;  // context won't be used anymore, no need to copy the set
                 foreach (var kvp in context._copyIndices)
                 {
                     if (!context._neededCopies.Get(kvp.Value))
@@ -281,6 +286,52 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                             MarkAllKnownAssignments();
                         }
                     } 
+                }
+
+                return default;
+            }
+
+            public override VoidStruct VisitReturn(BoundReturnStatement x)
+            {
+                if (x.Returned is BoundCopyValue copy && copy.Expression is BoundVariableRef varRef &&
+                    varRef.Name.IsDirect && !varRef.Name.NameValue.IsAutoGlobal)
+                {
+                    if (_lazyReturnCopies == null)
+                        _lazyReturnCopies = new HashSet<BoundCopyValue>();
+
+                    _lazyReturnCopies.Add(copy);
+                }
+
+                return base.VisitReturn(x);
+            }
+
+            public override VoidStruct VisitCFGExitBlock(ExitBlock x)
+            {
+                base.VisitCFGExitBlock(x);
+
+                // Filter out the copies of variables in return statements which cannot be removed
+                if (_lazyReturnCopies != null)
+                {
+                    List<BoundCopyValue> cannotRemove = null;
+
+                    foreach (var returnCopy in _lazyReturnCopies)
+                    {
+                        var varRef = (BoundVariableRef)returnCopy.Expression;
+                        var varindex = _flowContext.GetVarIndex(varRef.Name.NameValue);
+
+                        // We cannot remove a variable which might alias any other variable due to
+                        // a copying we removed earlier
+                        if ((_state.GetValue(varindex) & ~_neededCopies) != 0)
+                        {
+                            if (cannotRemove == null)
+                                cannotRemove = new List<BoundCopyValue>();
+
+                            cannotRemove.Add(returnCopy);
+                        }
+                    }
+
+                    if (cannotRemove != null)
+                        _lazyReturnCopies.ExceptWith(cannotRemove);
                 }
 
                 return default;

@@ -60,6 +60,8 @@ namespace Peachpie.CodeAnalysis.Utilities
 
         public static BitMask operator |(BitMask a, BitMask b) => FromMask(a.Mask | b.Mask);
 
+        public static BitMask operator &(BitMask a, BitMask b) => FromMask(a.Mask & b.Mask);
+
         public static implicit operator ulong(BitMask type) => type.Mask;
 
         public static implicit operator BitMask(ulong mask) => FromMask(mask);
