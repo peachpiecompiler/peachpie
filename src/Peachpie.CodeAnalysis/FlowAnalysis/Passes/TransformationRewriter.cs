@@ -713,18 +713,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 if (item0.ConstantValue.TryConvertToString(out var typeName))
                 {
                     var typeQName = NameUtils.MakeQualifiedName(typeName, true);
+                    TypeSymbol typeSymbol = null;
                     if (typeQName.IsReservedClassName)
                     {
-                        // TODO: ["self", "methodName"]
+                        if (typeQName.IsSelfClassName)
+                        {
+                            // ["self", "methodName"]
+                            typeSymbol = _routine.ContainingType.IsClassType() ? _routine.ContainingType : null;
+                        }
+                        else if (typeQName.IsParentClassName)
+                        {
+                            // ["parent", "methodName"]
+                            typeSymbol = _routine.ContainingType.IsClassType() ? _routine.ContainingType.BaseType : null;
+                        }
                     }
                     else
                     {
-                        var typeSymbol = DeclaringCompilation.GlobalSemantics.ResolveType(typeQName) as TypeSymbol;
-                        if (TryGetMethod(typeSymbol, methodName, out var methodSymbol) && methodSymbol.IsStatic)
-                        {
-                            // ["typeName", "methodName"]
-                            return Transform(x, methodSymbol);
-                        }
+                        typeSymbol = DeclaringCompilation.GlobalSemantics.ResolveType(typeQName) as TypeSymbol;
+                    }
+
+                    if (TryGetMethod(typeSymbol, methodName, out var methodSymbol) && methodSymbol.IsStatic)
+                    {
+                        // ["typeName", "methodName"]
+                        return Transform(x, methodSymbol);
                     }
                 }
                 else if (MatchExprSkipCopy(item0, out BoundVariableRef varRef, out _) &&
