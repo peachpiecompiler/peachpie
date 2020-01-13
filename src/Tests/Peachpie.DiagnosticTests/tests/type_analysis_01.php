@@ -22,7 +22,7 @@ function foo(/*|mixed|*/$x)
   /*|Closure|*/$closure = function($a, $b) { return $a + $b; };
   /*|resource|null|*/$resource = stream_context_create();
   /*|stdClass|*/$stdClass = new stdClass();
-  
+
   // TODO: Update when made more precise
   /*|object|*/$system_object2 = (object)array('a' => 'b');
 
@@ -79,5 +79,5 @@ echo /*|mixed|*/$i;
 function callable_check(
     callable /*|array|Closure|object|string|*/$c,
     ?callable /*|array|Closure|null|object|string|*/$cn,
-    callable &/*|mixed|*/$cr)
+    callable &/*|array|Closure|object|string|*/$cr)
 {}
