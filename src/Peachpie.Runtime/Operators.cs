@@ -717,23 +717,38 @@ namespace Pchp.Core
         /// </summary>
         public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet = false) => value.GetArrayItem(index, quiet);
 
-        public static bool TryGetItemValue(this PhpArray value, string index, ref PhpValue item) =>
-            value != null &&
-            value.TryGetValue(index, out item) &&
-            IsSet(item);
+        public static bool TryGetItemValue(this PhpArray value, string index, out PhpValue item)
+        {
+            if (value != null && value.TryGetValue(index, out item) && IsSet(item))
+            {
+                return true;
+            }
+            else
+            {
+                item = default;
+                return false;
+            }
+        }
 
-        public static bool TryGetItemValue(this PhpArray value, PhpValue index, ref PhpValue item) =>
-            value != null &&
-            index.TryToIntStringKey(out var key) &&
-            value.TryGetValue(key, out item) &&
-            IsSet(item);
+        public static bool TryGetItemValue(this PhpArray value, PhpValue index, out PhpValue item)
+        {
+            if (value != null && index.TryToIntStringKey(out var key) && value.TryGetValue(key, out item) && IsSet(item))
+            {
+                return true;
+            }
+            else
+            {
+                item = default;
+                return false;
+            }
+        }
 
-        public static bool TryGetItemValue(this PhpValue value, PhpValue index, ref PhpValue item)
+        public static bool TryGetItemValue(this PhpValue value, PhpValue index, out PhpValue item)
         {
             if (value.Object is PhpArray array)
             {
                 // Specialized call for array
-                return TryGetItemValue(array, index, ref item);
+                return TryGetItemValue(array, index, out item);
             }
             else
             {
@@ -745,6 +760,7 @@ namespace Pchp.Core
                 }
                 else
                 {
+                    item = default;
                     return false;
                 }
             }
