@@ -219,6 +219,7 @@ namespace Pchp.CodeAnalysis
             this.ParseOptions = parseOptions;
             this.Diagnostics = diagnostics;
             this.VersionString = versionString;
+            this.OptimizationLevel = optimizationLevel;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
