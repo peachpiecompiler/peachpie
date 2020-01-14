@@ -29,6 +29,11 @@ namespace Pchp.Library
                 PhpException.ArgumentNull("function");
                 return PhpValue.Null;
             }
+            else if (!PhpVariable.IsValidBoundCallback(ctx, function))
+            {
+                PhpException.InvalidArgument(nameof(function));
+                return PhpValue.Null;
+            }
 
             Debug.Assert(args != null);
 

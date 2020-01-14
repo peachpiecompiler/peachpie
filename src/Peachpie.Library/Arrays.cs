@@ -3197,6 +3197,12 @@ namespace Pchp.Library
         /// </remarks>
         public static PhpArray array_map(Context ctx /*, caller*/, IPhpCallable map, [In, Out] params PhpArray[] arrays)
         {
+            if (map != null && !PhpVariable.IsValidBoundCallback(ctx, map))
+            {
+                PhpException.InvalidArgument(nameof(map));
+                return null;
+            }
+
             //if (!PhpArgument.CheckCallback(map, caller, "map", 0, true)) return null;
             if (arrays == null || arrays.Length == 0)
             {
