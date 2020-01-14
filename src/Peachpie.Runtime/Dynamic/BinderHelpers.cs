@@ -506,10 +506,11 @@ namespace Pchp.Core.Dynamic
 
                 Debug.Assert(rvalue.Type == typeof(PhpAlias));
                 rvalue = ConvertExpression.Bind(rvalue, typeof(PhpAlias), ctx);
+                // TODO: PhpAlias.AddRef
 
                 if (expr.Type == typeof(PhpAlias))
                 {
-                    // ok    
+                    // ok
                 }
                 else if (expr.Type == typeof(PhpValue))
                 {

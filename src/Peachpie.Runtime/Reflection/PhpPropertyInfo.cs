@@ -109,7 +109,7 @@ namespace Pchp.Core.Reflection
 
             public override IPhpArray EnsureArray(Context ctx, object instance) => _lazyEnsureArray.Value(ctx, instance);
 
-            public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
+            public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value.GetValue());
 
             public override Expression Bind(Expression ctx, Expression target)
             {
