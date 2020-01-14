@@ -365,7 +365,7 @@ namespace Pchp.Library.Reflection
             return prop.GetValue(ctx, null);
         }
 
-        public void setStaticPropertyValue(Context ctx, string name, PhpAlias def_value)
+        public void setStaticPropertyValue(Context ctx, string name, PhpValue def_value)
         {
             var prop = _tinfo.GetDeclaredProperty(name) ?? throw new ReflectionException();
             prop.SetValue(ctx, null, def_value);
