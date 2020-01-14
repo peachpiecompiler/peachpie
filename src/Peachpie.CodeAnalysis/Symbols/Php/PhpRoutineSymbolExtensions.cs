@@ -144,11 +144,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     Debug.Assert(t.IsSZArray());
                     return ctx.GetArrayTypeMask(TypeRefFactory.CreateMask(ctx, ((ArrayTypeSymbol)t).ElementType));
                 }
-                else if (ps.Syntax.TypeHint.IsCallable(out bool isNullable))
+                else if (ps.Syntax.TypeHint.IsCallable())
                 {
                     var callableMask = ctx.GetCallableTypeMask();
                     callableMask.IsRef = ps.Syntax.PassedByRef;
-                    if (isNullable)
+                    if (!ps.IsNotNull)
                         callableMask |= ctx.GetNullTypeMask();
 
                     return callableMask;

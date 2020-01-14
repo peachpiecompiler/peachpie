@@ -78,6 +78,7 @@ echo /*|mixed|*/$i;
 
 function callable_check(
     callable /*|array|Closure|object|string|*/$c,
-    ?callable /*|array|Closure|null|object|string|*/$cn,
-    callable &/*|array|Closure|object|string|*/$cr)
+    callable &/*|array|Closure|object|string|*/$cr,
+    ?callable /*|array|Closure|null|object|string|*/$cn1,
+    callable /*|array|Closure|null|object|string|*/$cn2 = null)
 {}

@@ -307,16 +307,11 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Gets value indicating the type refers to <c>callable</c> or <c>?callable</c>.
         /// </summary>
-        public static bool IsCallable(this TypeRef tref, out bool isNullable)
+        public static bool IsCallable(this TypeRef tref)
         {
             if (tref is NullableTypeRef nullable)
             {
-                isNullable = true;
                 tref = nullable.TargetType;
-            }
-            else
-            {
-                isNullable = false;
             }
 
             return tref is PrimitiveTypeRef primitiveType &&
