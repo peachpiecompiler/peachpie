@@ -107,7 +107,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, normalizedPath => CreateDebugSourceDocument(normalizedPath, routine));
             }
 
-            ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
+            ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations.AsOptimizationLevel());
             try
             {
                 StateMachineMoveNextBodyDebugInfo stateMachineMoveNextDebugInfo = null;

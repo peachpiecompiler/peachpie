@@ -79,6 +79,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid &apos;{0}&apos; value: &apos;{1}&apos;..
+        /// </summary>
+        internal static string ERR_BadCompilationOptionValue {
+            get {
+                return ResourceManager.GetString("ERR_BadCompilationOptionValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Provided documentation mode is unsupported or invalid: &apos;{0}&apos;..
         /// </summary>
         internal static string ERR_BadDocumentationMode {

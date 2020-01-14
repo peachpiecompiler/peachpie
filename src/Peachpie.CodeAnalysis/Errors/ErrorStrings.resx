@@ -363,4 +363,7 @@
   <data name="WRN_ArgumentVoid" xml:space="preserve">
     <value>Argument has no value, parameter will be always NULL</value>
   </data>
+  <data name="ERR_BadCompilationOptionValue" xml:space="preserve">
+    <value>Invalid '{0}' value: '{1}'.</value>
+  </data>
 </root>

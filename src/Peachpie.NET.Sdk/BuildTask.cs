@@ -34,8 +34,10 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary></summary>
         public string NetFrameworkPath { get; set; }
 
-        /// <summary></summary>
-        public bool Optimize { get; set; } = true;
+        /// <summary>
+        /// Optimization level.
+        /// Can be a boolean value (true/false), an integer specifying the level(0-9), or an optimization name (debug, release).</summary>
+        public string Optimization { get; set; } = true.ToString();
 
         /// <summary></summary>
         public string DebugType { get; set; }
@@ -121,7 +123,7 @@ namespace Peachpie.NET.Sdk.Tools
             {
                 "/output-name:" + OutputName,
                 "/target:" + (EmitEntryPoint ? "exe" : "library"),
-                Optimize ? "/o+" : "/o-",
+                "/o:" + Optimization,
             };
 
             if (HasDebugPlus)

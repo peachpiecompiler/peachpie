@@ -129,7 +129,7 @@ namespace Pchp.CodeAnalysis
                     yield return "console";
                 }
 
-                if (this.Options.OptimizationLevel == OptimizationLevel.Debug)
+                if (this.Options.OptimizationLevel.IsDebug())
                 {
                     yield return "DEBUG";
                 }

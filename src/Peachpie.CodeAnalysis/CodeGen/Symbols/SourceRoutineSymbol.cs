@@ -478,7 +478,7 @@ namespace Pchp.CodeAnalysis.Symbols
             lock (cctor)
             {
                 using (var cg = new CodeGenerator(
-                        cctor, module, diagnostic, OptimizationLevel.Release, false, this.ContainingType,
+                        cctor, module, diagnostic, PhpOptimizationLevel.Release, false, this.ContainingType,
                         contextPlace: null, thisPlace: null, routine: this))
                 {
                     var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);

@@ -323,7 +323,7 @@ namespace Pchp.CodeAnalysis.Emit
                 if (!_cctorBuilders.TryGetValue(container, out il))
                 {
                     var cctor = SynthesizedManager.EnsureStaticCtor(container); // ensure .cctor is declared
-                    _cctorBuilders[container] = il = new ILBuilder(this, new LocalSlotManager(null), _compilation.Options.OptimizationLevel);
+                    _cctorBuilders[container] = il = new ILBuilder(this, new LocalSlotManager(null), _compilation.Options.OptimizationLevel.AsOptimizationLevel());
                 }
             }
 

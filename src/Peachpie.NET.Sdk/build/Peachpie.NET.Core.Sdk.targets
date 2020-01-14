@@ -227,7 +227,7 @@
                TempOutputPath="$(TempOutputDir)"
                TargetFramework="$(TargetFramework)"
                NetFrameworkPath="$(NetFrameworkPath)"
-               Optimize="$(Optimize)"
+               Optimization="$(Optimize)"
                DebugType="$(DebugType)"
                PdbFile="$(PdbFile)"
                DocumentationFile="$(DocumentationFile)"

@@ -96,6 +96,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public ImmutableArray<IObserver<object>> EventSources { get; internal set; }
 
+        /// <summary>
+        /// The compilation optimization level.
+        /// </summary>
+        public new PhpOptimizationLevel OptimizationLevel { get; internal set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -114,7 +119,7 @@ namespace Pchp.CodeAnalysis
             string mainTypeName = null,
             string scriptClassName = null,
             string versionString = null,
-            OptimizationLevel optimizationLevel = OptimizationLevel.Debug,
+            PhpOptimizationLevel optimizationLevel = PhpOptimizationLevel.Debug,
             bool checkOverflow = false,
             string cryptoKeyContainer = null,
             string cryptoKeyFile = null,
@@ -173,7 +178,7 @@ namespace Pchp.CodeAnalysis
             string mainTypeName,
             string scriptClassName,
             string versionString,
-            OptimizationLevel optimizationLevel,
+            PhpOptimizationLevel optimizationLevel,
             bool checkOverflow,
             string cryptoKeyContainer,
             string cryptoKeyFile,
@@ -200,7 +205,7 @@ namespace Pchp.CodeAnalysis
             PhpParseOptions parseOptions,
             bool referencesSupersedeLowerVersions)
             : base(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
-                   cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel, checkOverflow,
+                   cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel.AsOptimizationLevel(), checkOverflow,
                    platform, generalDiagnosticOption, warningLevel, specificDiagnosticOptions.ToImmutableDictionaryOrEmpty(),
                    concurrentBuild, deterministic, currentLocalTime, debugPlusMode, xmlReferenceResolver,
                    sourceReferenceResolver, metadataReferenceResolver, assemblyIdentityComparer,
@@ -347,12 +352,12 @@ namespace Pchp.CodeAnalysis
 
         public new PhpCompilationOptions WithOptimizationLevel(OptimizationLevel value)
         {
-            if (value == this.OptimizationLevel)
+            if (value == base.OptimizationLevel)
             {
                 return this;
             }
 
-            return new PhpCompilationOptions(this) { OptimizationLevel = value };
+            return new PhpCompilationOptions(this) { OptimizationLevel = value.AsPhpOptimizationLevel() };
         }
 
         public new PhpCompilationOptions WithOverflowChecks(bool enabled)

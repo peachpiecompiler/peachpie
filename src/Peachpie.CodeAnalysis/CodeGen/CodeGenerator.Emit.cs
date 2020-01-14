@@ -2650,7 +2650,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(expr);
             Debug.Assert(expr.Access.IsRead);
 
-            if (_optimizations == OptimizationLevel.Release)
+            if (_optimizations.IsRelease())
             {
                 // check if the value won't be an empty string:
                 if (expr.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(expr.ConstantValue.Value))
