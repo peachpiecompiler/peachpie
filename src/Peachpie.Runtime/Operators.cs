@@ -1757,7 +1757,7 @@ namespace Pchp.Core
             SetGeneratorCurrentFrom(g, value, key);
 
             // update the Generator auto-increment key
-            if (key.IsLong(out long ikey) && ikey > g._maxNumericalKey)
+            if (key.IsLong(out var ikey) && ikey > g._maxNumericalKey)
             {
                 g._maxNumericalKey = ikey;
             }
