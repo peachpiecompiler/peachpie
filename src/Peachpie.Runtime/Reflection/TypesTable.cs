@@ -22,7 +22,7 @@ namespace Pchp.Core.Reflection
         /// </summary>
         static readonly Dictionary<string, int> s_nameToIndex = new Dictionary<string, int>(512, StringComparer.OrdinalIgnoreCase);
         static readonly List<PhpTypeInfo> s_appTypes = new List<PhpTypeInfo>(256);
-        static readonly TypesTable.TypesCount s_contextTypesCounter = new TypesTable.TypesCount();
+        static readonly TypesCount s_contextTypesCounter = new TypesCount();
         static readonly ReaderWriterLockSlim s_rwLock = new ReaderWriterLockSlim();
 
         /// <summary>

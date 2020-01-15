@@ -55,22 +55,20 @@ namespace Pchp.Library.Json
                 case Json.Tokens.INTEGER:
                 case Json.Tokens.DOUBLE:
                     {
-                        long l;
-                        double d;
                         string numtext = yytext();
-                        switch (Core.Convert.StringToNumber(numtext, out l, out d) & Core.Convert.NumberInfo.TypeMask)
+                        switch (Core.Convert.StringToNumber(numtext, out var l, out var d) & Core.Convert.NumberInfo.TypeMask)
                         {
                             case Core.Convert.NumberInfo.Double:
                                 if (decodeOptions.BigIntAsString && token == Json.Tokens.INTEGER)
-                                    tokenSemantics.obj = numtext;   // it was integer, but converted to double because it was too long
+                                    tokenSemantics.value = numtext;   // it was integer, but converted to double because it was too long
                                 else
-                                    tokenSemantics.obj = d;
+                                    tokenSemantics.value = d;
                                 break;
                             case Core.Convert.NumberInfo.LongInteger:
-                                tokenSemantics.obj = l;
+                                tokenSemantics.value = l;
                                 break;
                             default:
-                                tokenSemantics.obj = numtext;
+                                tokenSemantics.value = numtext;
                                 break;
 
                         }

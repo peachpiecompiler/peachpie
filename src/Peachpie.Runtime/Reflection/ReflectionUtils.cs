@@ -137,7 +137,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Types that we do not expose in reflection.
         /// </summary>
-        readonly static HashSet<Type> s_hiddenTypes = new HashSet<Type>()
+        static readonly HashSet<Type> s_hiddenTypes = new HashSet<Type>()
         {
             typeof(object),
             typeof(IPhpCallable),
@@ -177,6 +177,19 @@ namespace Pchp.Core.Reflection
             return attrs != null && attrs.Length != 0
                 ? (ScriptAttribute)attrs[0]
                 : null;
+        }
+
+        /// <summary>
+        /// Determines if the routine is entirely public.
+        /// </summary>
+        public static bool IsPublic(this RoutineInfo/*!*/routine)
+        {
+            var methods = routine.Methods;
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (!methods[i].IsPublic) return false;
+            }
+            return true;    // all methods are public
         }
 
         public static bool IsPhpPublic(this MemberInfo m)

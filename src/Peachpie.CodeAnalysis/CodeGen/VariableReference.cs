@@ -875,8 +875,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitLoadContext();
                 cg.EmitCallerTypeHandle();
                 cg.EmitConvertToPhpValue(valueplace.EmitLoad(cg.Builder), default);     // To handle conversion from PhpAlias when the parameter is by ref
+                cg.Builder.EmitBoolConstant(!srcparam.IsNotNull);
                 cg.Builder.EmitIntConstant(srcparam.ParameterIndex + 1);
-                cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ThrowIfArgumentNotCallable_Context_RuntimeTypeHandle_PhpValue_int));
+                cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ThrowIfArgumentNotCallable_Context_RuntimeTypeHandle_PhpValue_Bool_int));
             }
         }
 

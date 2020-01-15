@@ -113,6 +113,11 @@ namespace Pchp.Library
                     // TODO: this can be set in .NET <see cref="Core.Convert.ToString(double, Context)"/> by specifying "G{precision}", consider performance
                     AssertGet(option, action);
                     return (PhpValue)15;    // default Double precision in .NET
+
+                case "register_globals":
+                    AssertGet(option, action);
+                    return PhpValue.False;  // always Off
+
                 case "allow_url_fopen":
                     return (PhpValue)GetSet(ref config.Core.AllowUrlFopen, true, value, action);
                 case "include_path":
@@ -267,6 +272,7 @@ namespace Pchp.Library
             Register("output_handler", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("post_max_size", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrcore);
             Register("precision", IniFlags.Supported | IniFlags.Local, gsrcore);
+            Register("register_globals", IniFlags.Supported | IniFlags.Global, gsrcore);
             Register("register_argc_argv", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("report_memleaks", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("safe_mode", IniFlags.Supported | IniFlags.Global, s_emptyGsr);

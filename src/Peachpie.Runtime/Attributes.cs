@@ -246,30 +246,74 @@ namespace Pchp.Core
     }
 
     /// <summary>
-    /// Denotates a function parameter that will be loaded with current class.
-    /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
+    /// Denotates a function parameter that will import a special runtime value.
     /// </summary>
     /// <remarks>
-    /// The parameter is used to access callers class context.
-    /// The parameter must be before regular parameters.</remarks>
+    /// This attribute instructs the caller to pass a special value to the parameter.
+    /// It is used byt library functions to get additional runtime information.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class ImportCallerClassAttribute : Attribute
+    public sealed class ImportValueAttribute : Attribute
     {
+        /// <summary>
+        /// Value to be imported.
+        /// </summary>
+        public enum ValueSpec
+        {
+            /// <summary>
+            /// Not used.
+            /// </summary>
+            Error = 0,
 
+            /// <summary>
+            /// Current class context.
+            /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
+            /// </summary>
+            CallerClass,
+
+            /// <summary>
+            /// Current late static bound class (<c>static</c>).
+            /// The parameter must be of type <see cref="PhpTypeInfo"/>.
+            /// </summary>
+            CallerStaticClass,
+
+            /// <summary>
+            /// Calue of <c>$this</c> variable or <c>null</c> if variable is not defined.
+            /// The parameter must be of type <see cref="object"/>.
+            /// </summary>
+            This,
+
+            /// <summary>
+            /// Provides a reference to the array of local PHP variables.
+            /// The parameter must be of type <see cref="PhpArray"/>.
+            /// </summary>
+            Locals,
+
+            /// <summary>
+            /// Provides callers parameters.
+            /// The parameter must be of type array of <see cref="PhpValue"/>.
+            /// </summary>
+            CallerArgs,
+
+            /// <summary>
+            /// Provides reference to the current script container.
+            /// The parameter must be of type <see cref="RuntimeTypeHandle"/>.
+            /// </summary>
+            CallerScript,
+        }
+
+        public ValueSpec Value { get; }
+
+        public ImportValueAttribute(ValueSpec value)
+        {
+            this.Value = value;
+        }
     }
 
     /// <summary>
-    /// Denotates a function parameter that will be loaded with current late static bound class.
-    /// The parameter must be of type <see cref="PhpTypeInfo"/>.
+    /// Dummy value, used for special generated .ctor symbols so they have a different signature than the regular .ctor.
     /// </summary>
-    /// <remarks>
-    /// The parameter is used to access calers' late static class (<c>static</c>).
-    /// The parameter must be before regular parameters.</remarks>
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class ImportCallerStaticClassAttribute : Attribute
-    {
-
-    }
+    public struct DummyFieldsOnlyCtor { }
 
     /// <summary>
 	/// Marks return values of methods implementing PHP functions which returns <B>false</B> on error

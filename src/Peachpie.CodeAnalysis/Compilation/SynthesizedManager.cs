@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
+using Roslyn.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Emit
 {
@@ -19,7 +21,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         public PhpCompilation DeclaringCompilation => _module.Compilation;
 
-        readonly ConcurrentDictionary<TypeSymbol, List<Symbol>> _membersByType = new ConcurrentDictionary<TypeSymbol, List<Symbol>>();
+        readonly ConcurrentDictionary<Cci.ITypeDefinition, List<Symbol>> _membersByType = new ConcurrentDictionary<Cci.ITypeDefinition, List<Symbol>>();
 
         public SynthesizedManager(PEModuleBuilder module)
         {
@@ -30,12 +32,12 @@ namespace Pchp.CodeAnalysis.Emit
 
         #region Synthesized Members
 
-        List<Symbol> EnsureList(TypeSymbol type)
+        List<Symbol> EnsureList(Cci.ITypeDefinition type)
         {
             return _membersByType.GetOrAdd(type, (_) => new List<Symbol>());
         }
 
-        void AddMember(TypeSymbol type, Symbol member)
+        void AddMember(Cci.ITypeDefinition type, Symbol member)
         {
             var members = EnsureList(type);
             lock (members)
@@ -54,7 +56,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Gets or initializes static constructor symbol.
         /// </summary>
-        public MethodSymbol/*!*/EnsureStaticCtor(TypeSymbol container)
+        public MethodSymbol/*!*/EnsureStaticCtor(Cci.ITypeDefinition container)
         {
             Contract.ThrowIfNull(container);
 
@@ -75,7 +77,7 @@ namespace Pchp.CodeAnalysis.Emit
                 var cctor = members.OfType<SynthesizedCctorSymbol>().FirstOrDefault();
                 if (cctor == null)
                 {
-                    cctor = new SynthesizedCctorSymbol(container);
+                    cctor = new SynthesizedCctorSymbol(container, DeclaringCompilation.SourceModule);
                     members.Add(cctor);
                 }
                 return cctor;
@@ -123,11 +125,11 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         /// <param name="container">Containing type.</param>
         /// <param name="nestedType">Type to be added as nested type.</param>
-        public void AddNestedType(TypeSymbol container, NamedTypeSymbol nestedType)
+        public void AddNestedType(Cci.ITypeDefinition container, NamedTypeSymbol nestedType)
         {
             Contract.ThrowIfNull(nestedType);
             Debug.Assert(nestedType.IsImplicitlyDeclared);
-            Debug.Assert(container.ContainingType == null); // can't nest in nested type
+            Debug.Assert((container as ISymbol)?.ContainingType == null); // can't nest in nested type
 
             AddMember(container, nestedType);
         }
@@ -135,7 +137,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Adds a synthesized method to the class.
         /// </summary>
-        public void AddMethod(TypeSymbol container, MethodSymbol method)
+        public void AddMethod(Cci.ITypeDefinition container, MethodSymbol method)
         {
             Contract.ThrowIfNull(method);
             Debug.Assert(method.IsImplicitlyDeclared);
@@ -146,7 +148,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Adds a synthesized property to the class.
         /// </summary>
-        public void AddProperty(TypeSymbol container, PropertySymbol property)
+        public void AddProperty(Cci.ITypeDefinition container, PropertySymbol property)
         {
             Contract.ThrowIfNull(property);
 
@@ -156,7 +158,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Adds a synthesized symbol to the class.
         /// </summary>
-        public void AddField(TypeSymbol container, FieldSymbol field)
+        public void AddField(Cci.ITypeDefinition container, FieldSymbol field)
         {
             AddMember(container, field);
         }
@@ -171,7 +173,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// <typeparam name="T">Type of members to enumerate.</typeparam>
         /// <param name="container">Containing type.</param>
         /// <returns>Enumeration of synthesized type members.</returns>
-        public IEnumerable<T> GetMembers<T>(TypeSymbol container) where T : ISymbol
+        public IEnumerable<T> GetMembers<T>(Cci.ITypeDefinition container) where T : ISymbol
         {
             List<Symbol> list;
             if (_membersByType.TryGetValue(container, out list) && list.Count != 0)
@@ -180,7 +182,7 @@ namespace Pchp.CodeAnalysis.Emit
             }
             else
             {
-                return ImmutableArray<T>.Empty;
+                return SpecializedCollections.EmptyEnumerable<T>();
             }
         }
 

@@ -53,7 +53,23 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Exception message in CLR.
         /// </summary>
-        public override string Message => this.message.IsSet ? this.message.ToString() : string.Empty;
+        public override string Message
+        {
+            get
+            {
+                if (Operators.IsSet(this.message))
+                {
+                    if (this.message.IsString(out var str))
+                    {
+                        return str;
+                    }
+
+                    return this.message.ToString(); // ASSERTION! no culture provided
+                }
+
+                return string.Empty;
+            }
+        }
 
         public void __construct(string message = "", long code = 0, Throwable previous = null)
         {
@@ -69,7 +85,7 @@ namespace Pchp.Library.Spl
 
         public virtual int getLine() => this.line;
 
-        public virtual string getMessage() => this.message.ToString();
+        public virtual string getMessage() => this.Message;
 
         public virtual Throwable getPrevious() => previous ?? this.InnerException as Throwable;
 

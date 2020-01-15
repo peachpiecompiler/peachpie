@@ -49,6 +49,8 @@ namespace Pchp.Library
         public const double M_2_PI = 0.63661977236758134308;
         public const double M_SQRTPI = 1.77245385090551602729;
         public const double M_2_SQRTPI = 1.12837916709551257390;
+        /// <summary>sqrt(2)</summary>
+        public const double M_SQRT2 = 1.41421356237309504880;
         public const double M_SQRT3 = 1.73205080756887729352;
         public const double M_SQRT1_2 = 0.70710678118654752440;
         public const double M_LNPI = 1.14472988584940017414;

@@ -79,6 +79,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid &apos;{0}&apos; value: &apos;{1}&apos;..
+        /// </summary>
+        internal static string ERR_BadCompilationOptionValue {
+            get {
+                return ResourceManager.GetString("ERR_BadCompilationOptionValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Provided documentation mode is unsupported or invalid: &apos;{0}&apos;..
         /// </summary>
         internal static string ERR_BadDocumentationMode {
@@ -165,6 +174,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_CannotUseNonTrait {
             get {
                 return ResourceManager.GetString("ERR_CannotUseNonTrait", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error reading resource &apos;{0}&apos; -- &apos;{1}&apos;.
+        /// </summary>
+        internal static string ERR_CantReadResource {
+            get {
+                return ResourceManager.GetString("ERR_CantReadResource", resourceCulture);
             }
         }
         
@@ -484,6 +502,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Only the last parameter can be variadic.
+        /// </summary>
+        internal static string ERR_VariadicParameterNotLast {
+            get {
+                return ResourceManager.GetString("ERR_VariadicParameterNotLast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A void function must not return a value.
         /// </summary>
         internal static string ERR_VoidFunctionCannotReturnValue {
@@ -552,6 +579,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string WRN_AmbiguousDeclaration {
             get {
                 return ResourceManager.GetString("WRN_AmbiguousDeclaration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Argument has no value, parameter will be always NULL.
+        /// </summary>
+        internal static string WRN_ArgumentVoid {
+            get {
+                return ResourceManager.GetString("WRN_ArgumentVoid", resourceCulture);
             }
         }
         

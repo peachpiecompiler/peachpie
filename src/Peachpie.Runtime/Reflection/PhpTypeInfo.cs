@@ -83,7 +83,7 @@ namespace Pchp.Core.Reflection
         /// Gets value indicating the type can be publically instantiated.
         /// If <c>true</c>, the class is not-abstract, not-trait, not-interface and has a public constructor.
         /// </summary>
-        public bool isInstantiable => this.Creator != null /*ensures flags initialized */ && (_flags & Flags.InstantiationNotAllowed) == 0;
+        public bool isInstantiable => this.Creator != null /*ensures _flags initialized */ && (_flags & Flags.InstantiationNotAllowed) == 0;
 
         /// <summary>
         /// Creates instance of the class without invoking its constructor.
@@ -113,11 +113,6 @@ namespace Pchp.Core.Reflection
         TObjectCreator Creator_private => _lazyCreatorPrivate ?? BuildCreatorPrivate();
         TObjectCreator Creator_protected => _lazyCreatorProtected ?? BuildCreatorProtected();
         TObjectCreator _lazyCreator, _lazyCreatorPrivate, _lazyCreatorProtected;
-
-        /// <summary>
-        /// A delegate used for representing an inaccessible class constructor.
-        /// </summary>
-        static readonly TObjectCreator s_inaccessibleCreator = (ctx, _) => { throw new MethodAccessException(); };
 
         /// <summary>
         /// Dynamically constructed delegate for object creation in specific type context.
@@ -184,7 +179,7 @@ namespace Pchp.Core.Reflection
                         else
                         {
                             _flags |= Flags.InstantiationNotAllowed;
-                            _lazyCreator = s_inaccessibleCreator;
+                            _lazyCreator = (_1, _2) => throw new InvalidOperationException($"Class {this.Name} cannot be instantiated. No .ctor found.");
                         }
                     }
                     else

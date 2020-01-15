@@ -94,9 +94,7 @@ namespace Pchp.Library
             {
                 // the property name might encode its visibility and "classification" -> use these
                 // information for suitable property desc lookups
-                FieldAttributes visibility;
-                string type_name;
-                string property_name = Serialization.ParseSerializedPropertyName(name, out type_name, out visibility);
+                var property_name = Serialization.ParseSerializedPropertyName(name, out var type_name, out var visibility);
 
                 var declarer = (type_name == null)
                     ? tinfo
@@ -672,16 +670,6 @@ namespace Pchp.Library
                 #region Utils
 
                 /// <summary>
-                /// Quickly check if the look ahead byte is digit. Assumes the value is in range 0x00 - 0xff.
-                /// </summary>
-                /// <param name="ch">The byte value.</param>
-                /// <returns>True if value is in range '0'-'9'.</returns>
-                static bool IsDigit(char ch)
-                {
-                    return Digit(ch) != -1;
-                }
-
-                /// <summary>
                 /// Quickly determine the numeric value of given <paramref name="ch"/> byte.
                 /// </summary>
                 /// <param name="ch">The byte value.</param>
@@ -1196,7 +1184,7 @@ namespace Pchp.Library
         /// <param name="caller">Caller class context.</param>
         /// <param name="value">The value to be serialized.</param>
         /// <returns></returns>
-        public static PhpString serialize(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue value)
+        public static PhpString serialize(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpValue value)
         {
             return PhpSerializer.Instance.Serialize(ctx, value, caller);
         }
@@ -1212,7 +1200,7 @@ namespace Pchp.Library
         /// The converted value is returned, and can be a boolean, integer, float, string, array or object.
         /// In case the passed string is not unserializeable, <c>FALSE</c> is returned and <b>E_NOTICE</b> is issued.
         /// </returns>
-        public static PhpValue unserialize(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpString str, PhpArray options = null)
+        public static PhpValue unserialize(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpString str, PhpArray options = null)
         {
             return PhpSerializer.Instance.Deserialize(ctx, str, caller);
         }

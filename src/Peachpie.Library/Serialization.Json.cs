@@ -139,7 +139,7 @@ namespace Pchp.Library
                     else
                     {
                         // upgrade _value to object[4]
-                        set.value = new object[] { set.value, obj, null, null, };
+                        set.value = new [] { set.value, obj, null, null, };
                         set.top = 2;
                     }
                 }
@@ -172,7 +172,7 @@ namespace Pchp.Library
 
             #region ObjectWriter
 
-            sealed class ObjectWriter : PhpVariableVisitor // TODO: :FormatterVisitor
+            internal sealed class ObjectWriter : PhpVariableVisitor
             {
                 //Encoding Encoding => _ctx.StringEncoding;
 
@@ -221,7 +221,7 @@ namespace Pchp.Library
 
                 sealed class PrettyPrintOn : IPrettyPrinter
                 {
-                    int _indent = 0;
+                    int _indent;
                     readonly StringBuilder _output;
 
                     public PrettyPrintOn(StringBuilder output)
@@ -265,6 +265,7 @@ namespace Pchp.Library
                 bool HasPrettyPrint => (_encodeOptions & JsonEncodeOptions.JSON_PRETTY_PRINT) != 0;
                 bool HasUnescapedSlashes => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_SLASHES) != 0;
                 bool HasUnescapedUnicode => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_UNICODE) != 0;
+                bool HasPreserveZeroFraction => (_encodeOptions & JsonEncodeOptions.JSON_PRESERVE_ZERO_FRACTION) != 0;
 
                 #endregion
 
@@ -337,7 +338,19 @@ namespace Pchp.Library
 
                 public override void Accept(double obj)
                 {
-                    WriteRaw(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    var aslong = unchecked((long)obj);
+
+                    if (HasPreserveZeroFraction && aslong == obj)
+                    {
+                        WriteRaw(aslong.ToString());
+                        WriteRaw(".0"); // as PHP does
+                    }
+                    else
+                    {
+                        // "G" format specifier,
+                        // does not append floating point if .0
+                        WriteRaw(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    }
                 }
 
                 /// <summary>
@@ -729,15 +742,15 @@ namespace Pchp.Library
                     WriteRaw(Tokens.ObjectClose);
                 }
 
-                static IEnumerable<KeyValuePair<string, PhpValue>> JsonArrayProperties(PhpArray array)
-                {
-                    var enumerator = array.GetFastEnumerator();
-                    while (enumerator.MoveNext())
-                    {
-                        var current = enumerator.Current;
-                        yield return new KeyValuePair<string, PhpValue>(current.Key.ToString(), current.Value);
-                    }
-                }
+                // static IEnumerable<KeyValuePair<string, PhpValue>> JsonArrayProperties(PhpArray array)
+                // {
+                //     var enumerator = array.GetFastEnumerator();
+                //     while (enumerator.MoveNext())
+                //     {
+                //         var current = enumerator.Current;
+                //         yield return new KeyValuePair<string, PhpValue>(current.Key.ToString(), current.Value);
+                //     }
+                // }
 
                 static IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(object/*!*/obj)
                 {
@@ -767,7 +780,7 @@ namespace Pchp.Library
                 }
                 else
                 {
-                    var errorcode = JsonSerialization.JSON_ERROR_SYNTAX;
+                    var errorcode = JSON_ERROR_SYNTAX;
 
                     if ((options.Options & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
                     {
@@ -809,7 +822,7 @@ namespace Pchp.Library
                 /// <summary>
                 /// When TRUE, returned object s will be converted into associative array s. 
                 /// </summary>
-                public bool Assoc = false;
+                public bool Assoc => (Options & JsonDecodeOptions.JSON_OBJECT_AS_ARRAY) != 0;
 
                 /// <summary>
                 /// User specified recursion depth. 
@@ -875,6 +888,7 @@ namespace Pchp.Library
         /// Options given to json_encode function.
         /// </summary>
         [PhpHidden]
+        [Flags]
         public enum JsonEncodeOptions
         {
             /// <summary>
@@ -927,6 +941,11 @@ namespace Pchp.Library
             /// </summary>
             JSON_UNESCAPED_UNICODE = 256,
 
+            /// <summary>
+            /// Ensures that float values are always encoded as a float value.
+            /// </summary>
+            JSON_PRESERVE_ZERO_FRACTION = 1024,
+
             JSON_THROW_ON_ERROR = JsonSerialization.JSON_THROW_ON_ERROR,
         }
 
@@ -939,22 +958,32 @@ namespace Pchp.Library
         public const int JSON_UNESCAPED_SLASHES = (int)JsonEncodeOptions.JSON_UNESCAPED_SLASHES;
         public const int JSON_PRETTY_PRINT = (int)JsonEncodeOptions.JSON_PRETTY_PRINT;
         public const int JSON_UNESCAPED_UNICODE = (int)JsonEncodeOptions.JSON_UNESCAPED_UNICODE;
+        public const int JSON_PRESERVE_ZERO_FRACTION = (int)JsonEncodeOptions.JSON_PRESERVE_ZERO_FRACTION;
 
         /// <summary>
         /// Options given to json_decode function.
         /// </summary>
         [PhpHidden]
+        [Flags]
         public enum JsonDecodeOptions
         {
             Default = 0,
 
             /// <summary>
+            /// Decodes JSON objects as PHP array.
+            /// This option can be added automatically by calling <see cref="json_decode"/>() with the second parameter equal to <c>TRUE</c>.
+            /// </summary>
+            JSON_OBJECT_AS_ARRAY = 1,
+
+            /// <summary>
             /// Big integers represent as strings rather than floats.
             /// </summary>
-            JSON_BIGINT_AS_STRING = 1,
+            JSON_BIGINT_AS_STRING = 2,
 
             JSON_THROW_ON_ERROR = JsonSerialization.JSON_THROW_ON_ERROR,
         }
+
+        public const int JSON_OBJECT_AS_ARRAY = (int)JsonDecodeOptions.JSON_OBJECT_AS_ARRAY;
 
         public const int JSON_BIGINT_AS_STRING = (int)JsonDecodeOptions.JSON_BIGINT_AS_STRING;
 
@@ -970,11 +999,12 @@ namespace Pchp.Library
         /// All string data must be UTF-8 encoded.</param>
         /// <param name="options"></param>
         /// <param name="depth">Set the maximum depth. Must be greater than zero.</param>
-        public static PhpString json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, int depth = 512)
+        public static string json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, int depth = 512)
         {
             // TODO: depth
 
-            return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
+            //return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
+            return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default);
         }
 
         /// <summary>
@@ -992,10 +1022,14 @@ namespace Pchp.Library
 
             var decodeoptions = new PhpSerialization.JsonSerializer.DecodeOptions()
             {
-                Assoc = assoc,
                 Depth = depth,
                 Options = options,
             };
+
+            if (assoc)
+            {
+                decodeoptions.Options |= JsonDecodeOptions.JSON_OBJECT_AS_ARRAY;
+            }
 
             return new PhpSerialization.JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, json, default);
         }

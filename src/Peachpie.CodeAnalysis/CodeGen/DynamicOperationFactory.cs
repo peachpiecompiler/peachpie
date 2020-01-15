@@ -253,8 +253,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     if (t.SpecialType == SpecialType.System_Void)
                     {
-                        Debug.Fail("Unexpected: argument evaluates to 'void'.");
-                        // NOTE: this is an error somewhere, no expression shall return void
+                        Debug.WriteLine("Unexpected: argument evaluates to 'void'.");
+                        // NOTE: this should be handled in diagnostics
                         t = _cg.Emit_PhpValue_Null();
                     }
 

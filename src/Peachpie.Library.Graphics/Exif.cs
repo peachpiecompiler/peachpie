@@ -16,6 +16,15 @@ namespace Peachpie.Library.Graphics
     [PhpExtension("exif")]
     public static class Exif
     {
+        #region Constants
+
+        /// <summary>
+        /// This constant has a value of <c>1</c> if the mbstring is enabled, otherwise it has a value of <c>0</c>.
+        /// </summary>
+        public const int EXIF_USE_MBSTRING = 1;
+
+        #endregion
+
         #region read_exif_data
 
         /// <summary>

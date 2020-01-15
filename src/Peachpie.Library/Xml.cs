@@ -43,29 +43,29 @@ namespace Pchp.Library
             XML_ERROR_EXTERNAL_ENTITY_HANDLING = 1,
         }
 
-        const int XML_ERROR_NONE = (int)XmlParserError.XML_ERROR_NONE;
-        const int XML_ERROR_GENERIC = (int)XmlParserError.XML_ERROR_GENERIC;
-        const int XML_ERROR_NO_MEMORY = (int)XmlParserError.XML_ERROR_NO_MEMORY;
-        const int XML_ERROR_SYNTAX = (int)XmlParserError.XML_ERROR_SYNTAX;
-        const int XML_ERROR_NO_ELEMENTS = (int)XmlParserError.XML_ERROR_NO_ELEMENTS;
-        const int XML_ERROR_INVALID_TOKEN = (int)XmlParserError.XML_ERROR_INVALID_TOKEN;
-        const int XML_ERROR_UNCLOSED_TOKEN = (int)XmlParserError.XML_ERROR_UNCLOSED_TOKEN;
-        const int XML_ERROR_PARTIAL_CHAR = (int)XmlParserError.XML_ERROR_PARTIAL_CHAR;
-        const int XML_ERROR_TAG_MISMATCH = (int)XmlParserError.XML_ERROR_TAG_MISMATCH;
-        const int XML_ERROR_DUPLICATE_ATTRIBUTE = (int)XmlParserError.XML_ERROR_DUPLICATE_ATTRIBUTE;
-        const int XML_ERROR_JUNK_AFTER_DOC_ELEMENT = (int)XmlParserError.XML_ERROR_JUNK_AFTER_DOC_ELEMENT;
-        const int XML_ERROR_PARAM_ENTITY_REF = (int)XmlParserError.XML_ERROR_PARAM_ENTITY_REF;
-        const int XML_ERROR_UNDEFINED_ENTITY = (int)XmlParserError.XML_ERROR_UNDEFINED_ENTITY;
-        const int XML_ERROR_RECURSIVE_ENTITY_REF = (int)XmlParserError.XML_ERROR_RECURSIVE_ENTITY_REF;
-        const int XML_ERROR_ASYNC_ENTITY = (int)XmlParserError.XML_ERROR_ASYNC_ENTITY;
-        const int XML_ERROR_BAD_CHAR_REF = (int)XmlParserError.XML_ERROR_BAD_CHAR_REF;
-        const int XML_ERROR_BINARY_ENTITY_REF = (int)XmlParserError.XML_ERROR_BINARY_ENTITY_REF;
-        const int XML_ERROR_ATTRIBUTE_EXTERNAL_ENTITY_REF = (int)XmlParserError.XML_ERROR_ATTRIBUTE_EXTERNAL_ENTITY_REF;
-        const int XML_ERROR_MISPLACED_XML_PI = (int)XmlParserError.XML_ERROR_MISPLACED_XML_PI;
-        const int XML_ERROR_UNKNOWN_ENCODING = (int)XmlParserError.XML_ERROR_UNKNOWN_ENCODING;
-        const int XML_ERROR_INCORRECT_ENCODING = (int)XmlParserError.XML_ERROR_INCORRECT_ENCODING;
-        const int XML_ERROR_UNCLOSED_CDATA_SECTION = (int)XmlParserError.XML_ERROR_UNCLOSED_CDATA_SECTION;
-        const int XML_ERROR_EXTERNAL_ENTITY_HANDLING = (int)XmlParserError.XML_ERROR_EXTERNAL_ENTITY_HANDLING;
+        public const int XML_ERROR_NONE = (int)XmlParserError.XML_ERROR_NONE;
+        public const int XML_ERROR_GENERIC = (int)XmlParserError.XML_ERROR_GENERIC;
+        public const int XML_ERROR_NO_MEMORY = (int)XmlParserError.XML_ERROR_NO_MEMORY;
+        public const int XML_ERROR_SYNTAX = (int)XmlParserError.XML_ERROR_SYNTAX;
+        public const int XML_ERROR_NO_ELEMENTS = (int)XmlParserError.XML_ERROR_NO_ELEMENTS;
+        public const int XML_ERROR_INVALID_TOKEN = (int)XmlParserError.XML_ERROR_INVALID_TOKEN;
+        public const int XML_ERROR_UNCLOSED_TOKEN = (int)XmlParserError.XML_ERROR_UNCLOSED_TOKEN;
+        public const int XML_ERROR_PARTIAL_CHAR = (int)XmlParserError.XML_ERROR_PARTIAL_CHAR;
+        public const int XML_ERROR_TAG_MISMATCH = (int)XmlParserError.XML_ERROR_TAG_MISMATCH;
+        public const int XML_ERROR_DUPLICATE_ATTRIBUTE = (int)XmlParserError.XML_ERROR_DUPLICATE_ATTRIBUTE;
+        public const int XML_ERROR_JUNK_AFTER_DOC_ELEMENT = (int)XmlParserError.XML_ERROR_JUNK_AFTER_DOC_ELEMENT;
+        public const int XML_ERROR_PARAM_ENTITY_REF = (int)XmlParserError.XML_ERROR_PARAM_ENTITY_REF;
+        public const int XML_ERROR_UNDEFINED_ENTITY = (int)XmlParserError.XML_ERROR_UNDEFINED_ENTITY;
+        public const int XML_ERROR_RECURSIVE_ENTITY_REF = (int)XmlParserError.XML_ERROR_RECURSIVE_ENTITY_REF;
+        public const int XML_ERROR_ASYNC_ENTITY = (int)XmlParserError.XML_ERROR_ASYNC_ENTITY;
+        public const int XML_ERROR_BAD_CHAR_REF = (int)XmlParserError.XML_ERROR_BAD_CHAR_REF;
+        public const int XML_ERROR_BINARY_ENTITY_REF = (int)XmlParserError.XML_ERROR_BINARY_ENTITY_REF;
+        public const int XML_ERROR_ATTRIBUTE_EXTERNAL_ENTITY_REF = (int)XmlParserError.XML_ERROR_ATTRIBUTE_EXTERNAL_ENTITY_REF;
+        public const int XML_ERROR_MISPLACED_XML_PI = (int)XmlParserError.XML_ERROR_MISPLACED_XML_PI;
+        public const int XML_ERROR_UNKNOWN_ENCODING = (int)XmlParserError.XML_ERROR_UNKNOWN_ENCODING;
+        public const int XML_ERROR_INCORRECT_ENCODING = (int)XmlParserError.XML_ERROR_INCORRECT_ENCODING;
+        public const int XML_ERROR_UNCLOSED_CDATA_SECTION = (int)XmlParserError.XML_ERROR_UNCLOSED_CDATA_SECTION;
+        public const int XML_ERROR_EXTERNAL_ENTITY_HANDLING = (int)XmlParserError.XML_ERROR_EXTERNAL_ENTITY_HANDLING;
 
         [PhpHidden]
         public enum XmlOption

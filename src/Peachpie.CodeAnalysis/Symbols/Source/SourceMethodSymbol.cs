@@ -330,14 +330,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 return true;
             }
         }
-
-        public override ImmutableArray<Location> Locations
-        {
-            get
-            {
-                return ImmutableArray.Create(Location.Create(ContainingFile.SyntaxTree, _syntax.Span.ToTextSpan()));
-            }
-        }
     }
 
     /// <summary>

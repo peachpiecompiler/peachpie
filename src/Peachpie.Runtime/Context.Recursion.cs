@@ -10,14 +10,6 @@ namespace Pchp.Core
     {
         struct RecursionCheckKey : IEquatable<RecursionCheckKey>
         {
-            public class EqualityComparer : IEqualityComparer<RecursionCheckKey>
-            {
-                public static readonly EqualityComparer Instance = new EqualityComparer();
-                private EqualityComparer() { }
-                public bool Equals(RecursionCheckKey x, RecursionCheckKey y) => x.Equals(y);
-                public int GetHashCode(RecursionCheckKey obj) => obj.GetHashCode();
-            }
-
             readonly object _key;
             readonly int _subkey;
 
@@ -30,7 +22,7 @@ namespace Pchp.Core
 
             public bool Equals(RecursionCheckKey other) => _subkey == other._subkey && _key.Equals(other._key);
             public override int GetHashCode() => _key.GetHashCode() ^ _subkey;
-            public override bool Equals(object obj) => obj is RecursionCheckKey && Equals((RecursionCheckKey)obj);
+            public override bool Equals(object obj) => obj is RecursionCheckKey key && Equals(key);
         }
 
         public struct RecursionCheckToken : IDisposable
@@ -43,7 +35,9 @@ namespace Pchp.Core
 
             private RecursionCheckToken(Context ctx, RecursionCheckKey key)
             {
-                IsInRecursion = (Pending = ctx._recursionPrevention).Contains(key);
+                Pending = (ctx._lazyRecursionPrevention ??= new Stack<RecursionCheckKey>());
+
+                IsInRecursion = Pending.Contains(key);
                 Pending.Push(key);
             }
 
@@ -66,6 +60,6 @@ namespace Pchp.Core
         /// Set of scopes we are entered into.
         /// Recursion prevention.
         /// </summary>
-        readonly Stack<RecursionCheckKey> _recursionPrevention = new Stack<RecursionCheckKey>();
+        Stack<RecursionCheckKey> _lazyRecursionPrevention;
     }
 }

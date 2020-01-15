@@ -13,7 +13,7 @@ namespace Peachpie.Library.XmlDom
     /// streams or files containing XML data.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("xmlwriter")]
-    public class XmlWriter
+    public class XMLWriter
     {
         #region Constants
 

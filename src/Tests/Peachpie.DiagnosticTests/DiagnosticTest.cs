@@ -372,7 +372,7 @@ namespace Peachpie.DiagnosticTests
                     outputKind: OutputKind.DynamicallyLinkedLibrary,
                     baseDirectory: System.IO.Directory.GetCurrentDirectory(),
                     sdkDirectory: null,
-                    optimizationLevel: OptimizationLevel.Release));
+                    optimizationLevel: PhpOptimizationLevel.Release));
 
             // bind reference manager, cache all references
             var assemblytmp = compilation.Assembly;

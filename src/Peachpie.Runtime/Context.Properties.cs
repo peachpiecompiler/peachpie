@@ -57,7 +57,11 @@ namespace Pchp.Core
                 _mainScriptFile = value;
 
                 // cwd = entering script directory
-                this.WorkingDirectory = string.Concat(RootPath, CurrentPlatform.DirectorySeparator.ToString(), PathUtils.DirectoryName(value.Path));
+                // simple Path.Concat:
+                var reldir = PathUtils.TrimFileName(value.Path);
+                this.WorkingDirectory = reldir.IsEmpty
+                    ? RootPath
+                    : StringUtils.Concat(RootPath.AsSpan(), CurrentPlatform.DirectorySeparator, reldir);
             }
         }
         ScriptInfo _mainScriptFile;
@@ -78,9 +82,7 @@ namespace Pchp.Core
             }
             set
             {
-                _rootPath = CurrentPlatform
-                    .NormalizeSlashes(value ?? throw new ArgumentNullException())
-                    .TrimEndSeparator();
+                _rootPath = CurrentPlatform.NormalizeSlashes((value ?? throw new ArgumentNullException()).TrimEndSeparator());
             }
         }
         string _rootPath = string.Empty;
@@ -99,8 +101,8 @@ namespace Pchp.Core
         /// Gets target PHP language specification.
         /// By default, this is reflected from the compiled PHP script.
         /// </summary>
-        public virtual TargetPhpLanguageAttribute TargetPhpLanguage { get => _targetPhpLanguageAttribute; }
-        static TargetPhpLanguageAttribute _targetPhpLanguageAttribute;
+        public virtual TargetPhpLanguageAttribute TargetPhpLanguage { get => s_targetPhpLanguageAttribute; }
+        static TargetPhpLanguageAttribute s_targetPhpLanguageAttribute;
 
         /// <summary>
         /// Gets value indicating whether not defined classes should be automatically included when used for the first time.

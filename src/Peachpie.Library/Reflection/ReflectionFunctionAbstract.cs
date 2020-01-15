@@ -56,33 +56,18 @@ namespace Pchp.Library.Reflection
         public virtual ReflectionClass getClosureScopeClass() { throw new NotImplementedException(); }
         public virtual object getClosureThis() { throw new NotImplementedException(); }
         [return: CastToFalse]
-        public string getDocComment()
-        {
-            var metadata = Peachpie.Runtime.Reflection.MetadataResourceManager.GetMetadata(_routine.Methods[0]);
-            if (metadata != null)
-            {
-                var decoded = (stdClass)StringUtils.JsonDecode(metadata).Object;
-                if (decoded.GetRuntimeFields().TryGetValue("doc", out var doc))
-                {
-                    return doc.AsString();
-                }
-            }
+        public string getDocComment() => ReflectionUtils.getDocComment(_routine.Methods[0]);
 
-            return null;
-        }
-
-        [return: CastToFalse]
-        public long getStartLine()
+        public virtual long getStartLine()
         {
             PhpException.FunctionNotSupported("ReflectionFunctionAbstract::getStartLine");
-            return -1;
+            return 0;
         }
 
-        [return: CastToFalse]
-        public long getEndLine()
+        public virtual long getEndLine()
         {
             PhpException.FunctionNotSupported("ReflectionFunctionAbstract::getEndLine");
-            return -1;
+            return 0;
         }
 
         public ReflectionExtension getExtension()
@@ -107,8 +92,19 @@ namespace Pchp.Library.Reflection
             var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
             return (sep < 0) ? string.Empty : name.Remove(sep);
         }
-        public long getNumberOfParameters() { throw new NotImplementedException(); }
-        public long getNumberOfRequiredParameters() { throw new NotImplementedException(); }
+        
+        public long getNumberOfParameters()
+        {
+            return ReflectionUtils.ResolvePhpParameters(_routine.Methods).Count;
+        }
+
+        public long getNumberOfRequiredParameters()
+        {
+            return ReflectionUtils
+                .ResolvePhpParameters(_routine.Methods)
+                .TakeWhile(p => p.HasDefaultValue == false && p.GetCustomAttribute<DefaultValueAttribute>() == null && p.GetCustomAttribute<ParamArrayAttribute>() == null)
+                .Count();
+        }
 
         /// <summary>
         /// Get the parameters as an array of <see cref="ReflectionParameter"/>.
@@ -123,6 +119,8 @@ namespace Pchp.Library.Reflection
             var arr = new PhpArray(parameters.Count);
             for (int i = 0; i < parameters.Count; i++)
             {
+                Debug.Assert(!parameters[i]._isVariadic || i == parameters.Count - 1, "Variadic can be only last parameter");
+
                 arr.Add(PhpValue.FromClass(parameters[i]));
             }
 

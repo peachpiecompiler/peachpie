@@ -1,5 +1,6 @@
-## Getting Started
-If you are looking for a quick start on how to work with Peachpie, please refer to our [Getting Started page](https://github.com/iolevel/peachpie/wiki/Getting-Started).
+## PeachPie Compiler and Runtime
 
-## Full Documentation
-We maintain our documentation and update it on a regular basis. You can find the full documentation [here](https://github.com/iolevel/peachpie/wiki).
+---
+
+- [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started) - for a quick start with PeachPie, and how to use the platform.
+- [Documentation](https://docs.peachpie.io/) - The project documentation.

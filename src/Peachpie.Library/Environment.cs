@@ -58,5 +58,7 @@ namespace Pchp.Library
         public static string PHP_EOL => System.Environment.NewLine;
 
         public const int PHP_MAXPATHLEN = 260; // The max path length on CLR is limited to 260 (see System.IO.Path.MaxPath)
+
+        public static readonly int PHP_DEBUG = ContextExtensions.IsDebugRuntime() ? 1 : 0;
     }
 }

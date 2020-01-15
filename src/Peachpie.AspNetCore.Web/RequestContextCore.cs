@@ -327,6 +327,7 @@ namespace Peachpie.AspNetCore.Web
         Timer _requestTimer;
 
         public RequestContextCore(HttpContext httpcontext, string rootPath, Encoding encoding)
+            : base(httpcontext.RequestServices)
         {
             Debug.Assert(httpcontext != null);
             Debug.Assert(encoding != null);

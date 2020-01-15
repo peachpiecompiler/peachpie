@@ -54,7 +54,7 @@ namespace Pchp.Core
         /// <summary>
         /// Information about app constants.
         /// </summary>
-        [DebuggerDisplay("Value={Value}, Extension={ExtensionName}")]
+        [DebuggerDisplay("Value={Data}, Extension={ExtensionName}")]
         struct ConstData
         {
             /// <summary>
@@ -144,14 +144,14 @@ namespace Pchp.Core
             ConstsMap(Context ctx)
             {
                 _ctx = ctx;
-                _valuesCtx = new PhpValue[s_countCtx];
+                _valuesCtx = Array.Empty<PhpValue>();
             }
 
             static void EnsureArray<T>(ref T[] arr, int size)
             {
                 if (arr.Length < size)
                 {
-                    Array.Resize(ref arr, size * 2 + 1);
+                    Array.Resize(ref arr, Math.Max(size * 2 + 1, s_countCtx));
                 }
             }
 

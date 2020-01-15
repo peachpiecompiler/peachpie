@@ -121,7 +121,7 @@ namespace Pchp.Core.Reflection
             _frames = InitPhpStackFrames(clrtrace);
         }
 
-        static PhpStackFrame[] InitPhpStackFrames(StackTrace clrtrace)
+        static PhpStackFrame[] InitPhpStackFrames(StackTrace/*!*/clrtrace)
         {
             return clrtrace.GetFrames()
                 .Where(IsPhpStackFrame)
@@ -407,7 +407,7 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
-        /// Determines if the stack frame coresponds to the core assembly.
+        /// Determines if the stack frame corresponds to the core assembly.
         /// </summary>
         public bool IsCoreAssembly
         {

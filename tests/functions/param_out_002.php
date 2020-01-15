@@ -34,7 +34,7 @@ function test4($a) {
     echo $a, ',';
 }
 
-test4(new X, 4);
+test4(new X);
 
 //
 $x = new X;

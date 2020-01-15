@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis
         /// Number of control flow graph transformation cycles to do at most.
         /// <c>0</c> to disable the lowering.
         /// </summary>
-        int MaxTransformCount => _compilation.Options.OptimizationLevel == OptimizationLevel.Release ? 8 : 0;
+        int MaxTransformCount => _compilation.Options.OptimizationLevel.GraphTransformationCount();
 
         public bool ConcurrentBuild => _compilation.Options.ConcurrentBuild;
 

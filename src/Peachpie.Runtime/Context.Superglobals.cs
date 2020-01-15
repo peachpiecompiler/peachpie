@@ -364,7 +364,7 @@ namespace Pchp.Core
 
         /// <summary>
         /// An associative array containing session variables available to the current script.
-        /// Cannot be <c>null</c>.
+        /// Can be <c>null</c>.
         /// </summary>
         public PhpArray Session
         {

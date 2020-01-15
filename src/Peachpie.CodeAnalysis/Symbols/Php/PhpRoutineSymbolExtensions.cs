@@ -7,7 +7,9 @@ using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -133,7 +135,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 t = ((PropertySymbol)symbol).Type;
             }
-            else if (symbol is ParameterSymbol ps)
+            else if (symbol is SourceParameterSymbol ps)
             {
                 t = ps.Type;
 
@@ -141,6 +143,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     Debug.Assert(t.IsSZArray());
                     return ctx.GetArrayTypeMask(TypeRefFactory.CreateMask(ctx, ((ArrayTypeSymbol)t).ElementType));
+                }
+                else if (ps.Syntax.TypeHint.IsCallable())
+                {
+                    var callableMask = ctx.GetCallableTypeMask();
+                    callableMask.IsRef = ps.Syntax.PassedByRef;
+                    if (!ps.IsNotNull)
+                        callableMask |= ctx.GetNullTypeMask();
+
+                    return callableMask;
                 }
             }
             else
@@ -254,28 +265,27 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static RoutineFlags InvocationFlags(this IPhpRoutineSymbol routine)
         {
-            RoutineFlags f = RoutineFlags.None;
+            var f = RoutineFlags.None;
 
             var ps = routine.Parameters;
             foreach (var p in ps)
             {
                 if (p.IsImplicitlyDeclared)
                 {
-                    if (SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor, out var container))
+                    if (SpecialParameterSymbol.IsImportValueParameter(p, out var spec))
                     {
-                        switch (container)
+                        switch (spec)
                         {
-                            case SpecialParameterSymbol.QueryValueTypes.CallerArgs:
+                            case SpecialParameterSymbol.ValueSpec.CallerArgs:
                                 f |= RoutineFlags.UsesArgs;
                                 break;
-                            case SpecialParameterSymbol.QueryValueTypes.LocalVariables:
+                            case SpecialParameterSymbol.ValueSpec.Locals:
                                 f |= RoutineFlags.UsesLocals;
                                 break;
+                            case SpecialParameterSymbol.ValueSpec.CallerStaticClass:
+                                f |= RoutineFlags.UsesLateStatic;
+                                break;
                         }
-                    }
-                    else if (SpecialParameterSymbol.IsCallerStaticClassParameter(p))
-                    {
-                        f |= RoutineFlags.UsesLateStatic;
                     }
                 }
                 else
@@ -310,6 +320,78 @@ namespace Pchp.CodeAnalysis.Symbols
             var lambdas = ((ILambdaContainerSymbol)file).Lambdas;
 
             return funcs.Concat(main).Concat(methods).Concat(lambdas);
+        }
+
+        /// <summary>
+        /// Gets PHPDoc assoviated with given source symbol.
+        /// </summary>
+        internal static PHPDocBlock TryGetPHPDocBlock(this Symbol symbol)
+        {
+            switch (symbol?.OriginalDefinition)
+            {
+                case SourceRoutineSymbol routine: return routine.PHPDocBlock;
+                case SourceFieldSymbol field: return field.PHPDocBlock;
+                case SourceTypeSymbol type: return type.Syntax.PHPDoc;
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// The resource contains an additional textual metadata to be used by the runtime if needed (JSON format).
+        /// The resource is indexed by the symbol full metadata name.
+        /// Can be <c>null</c>.
+        /// </summary>
+        internal static string GetSymbolMetadataResource(this Symbol symbol)
+        {
+            // CONSIDER: not for private/internal symbols ?
+
+            var phpdoc = TryGetPHPDocBlock(symbol);
+            if (phpdoc != null)
+            {
+                var phpdoctext = phpdoc.ContainingSourceUnit.GetSourceCode(phpdoc.Span);
+
+                // cleanup the phpdoctext
+                // trim lines:
+                var result = new StringBuilder(phpdoctext.Length);
+
+                using (var reader = new StringReader(phpdoctext))
+                {
+                    for (; ; )
+                    {
+                        var line = reader.ReadLine();
+                        if (line != null)
+                        {
+                            if (result.Length != 0)
+                                result.Append("\n ");
+
+                            result.Append(line.Trim());
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                ////
+                //var stream = new System.IO.StringWriter();
+                //using (var writer = new JsonWriter(stream))
+                //{
+                //    writer.WriteObjectStart();
+                //    writer.Write("doc", phpdoctext);
+                //    // TODO: location, return type, ...
+                //    writer.WriteObjectEnd();
+                //}
+
+                //return stream.ToString();
+
+                // create "smaller" json // CONSIDER: use some library that allows to skip whitespaces, newtonsoft or netcore 3.0
+                result.Replace("\\", "\\\\").Replace("\n", "\\n").Replace("\r", "").Replace("\"", "\\\"");  // naively escape
+                return $"{{\"doc\":\"{(result.ToString())}\"}}";
+            }
+
+            // no metadata
+            return null;
         }
     }
 }

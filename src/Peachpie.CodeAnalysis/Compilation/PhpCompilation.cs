@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis
         MethodSymbol _lazyMainMethod;
         readonly PhpCompilationOptions _options;
 
-        internal ImmutableArray<IObserver<object>> Observers => _options.Observers;
+        internal ImmutableArray<IObserver<object>> EventSources => _options.EventSources;
 
         Task<IEnumerable<Diagnostic>> _lazyAnalysisTask;
 
@@ -129,7 +129,7 @@ namespace Pchp.CodeAnalysis
                     yield return "console";
                 }
 
-                if (this.Options.OptimizationLevel == OptimizationLevel.Debug)
+                if (this.Options.OptimizationLevel.IsDebug())
                 {
                     yield return "DEBUG";
                 }
@@ -1047,19 +1047,36 @@ namespace Pchp.CodeAnalysis
         {
             return new ResourceDescription(".source.metadata.resources", () =>
             {
-                var stream = new MemoryStream();
-
                 var table = this.SourceSymbolCollection;
+                var symbols =
+                    // global functions
+                    table.GetFunctions().OfType<SourceRoutineSymbol>()
+                    // classes, interfaces, traits
+                    .Concat<Symbol>(table.GetDeclaredTypes())
+                    // type members - properties, constants
+                    .Concat<Symbol>(table.GetDeclaredTypes().SelectMany(t => t.GetMembers().Where(m => m is SourceRoutineSymbol || m is SourceFieldSymbol)));
 
-                var writer = new System.Resources.ResourceWriter(stream);
-                foreach (var r in table.AllRoutines)
+                var resources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var symbol in symbols)
                 {
-                    var metadata = r.GetSymbolMetadataResource();
+                    var metadata = symbol.GetSymbolMetadataResource();
                     if (!string.IsNullOrEmpty(metadata))
                     {
-                        var id = r.ContainingType.GetFullName() + "." + r.MetadataName;
-                        writer.AddResource(id, metadata);
+                        var id = symbol is SourceTypeSymbol type
+                            ? type.GetFullName()
+                            : symbol.ContainingType.GetFullName() + "." + symbol.MetadataName;
+
+                        resources[id] = metadata;
                     }
+                }
+
+                var stream = new MemoryStream();
+                var writer = new System.Resources.ResourceWriter(stream);
+
+                foreach (var pair in resources)
+                {
+                    writer.AddResource(pair.Key, pair.Value);
                 }
 
                 //
@@ -1093,7 +1110,10 @@ namespace Pchp.CodeAnalysis
                 manifestResources = manifestResources.Concat(SynthesizedResources);
             }
 
-            manifestResources = manifestResources.Concat(new[] { SourceMetadataResource() });
+            if (Options.EmbedSourceMetadata)
+            {
+                manifestResources = manifestResources.Concat(new[] { SourceMetadataResource() });
+            }
 
             PEModuleBuilder moduleBeingBuilt;
             if (_options.OutputKind.IsNetModule())

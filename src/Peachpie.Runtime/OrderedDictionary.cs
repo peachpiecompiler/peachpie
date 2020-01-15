@@ -34,7 +34,7 @@ namespace Pchp.Core
         /// <summary>
         /// <pre>new IntStringKey( "" )</pre>
         /// </summary>
-        internal readonly static IntStringKey EmptyStringKey = new IntStringKey(string.Empty);
+        internal static readonly IntStringKey EmptyStringKey = new IntStringKey(string.Empty);
 
         [DebuggerNonUserCode, DebuggerStepThrough]
         public class EqualityComparer : IEqualityComparer<IntStringKey>
@@ -55,13 +55,13 @@ namespace Pchp.Core
         /// Integer value iff <see cref="IsString"/> return <B>false</B>.
         /// </summary>
         public int Integer => _ikey;
-        private int _ikey; // Holds string hashcode if skey != null
+        readonly int _ikey; // Holds string hashcode if skey != null
 
         /// <summary>
         /// String value iff <see cref="IsString"/> return <B>true</B>.
         /// </summary>
         public string String => _skey;
-        private string _skey;
+        readonly string _skey;
 
         /// <summary>
         /// Gets array key, string or int as object.
@@ -100,15 +100,10 @@ namespace Pchp.Core
 
         internal static IntStringKey FromObject(object key)
         {
-            Debug.Assert(key is string || key is int);
-            if (key != null && key.GetType() == typeof(int))
-            {
-                return new IntStringKey((int)key);
-            }
-            else
-            {
-                return new IntStringKey((string)key);
-            }
+            if (key is string str) return new IntStringKey(str);
+            if (key is int i) return new IntStringKey(i);
+            
+            throw new ArgumentException();
         }
 
         public bool IsString => !IsInteger;
@@ -213,7 +208,7 @@ namespace Pchp.Core
         {
             if (capacity < _minCapacity)
             {
-                Debug.Assert(_isPowerOfTwo(_minCapacity) && _minCapacity > 0, "MinCapacity must be power of 2.");
+                Debug.Assert(_isPowerOfTwo(_minCapacity), "MinCapacity must be power of 2.");
                 return _minCapacity - 1;
             }
 
@@ -1336,13 +1331,13 @@ namespace Pchp.Core
                 if (array == null || array.Count == 0)
                 {
                     if (op == SetOperations.Intersection) return new OrderedDictionary/*<TValue>*/();
-                    if (op == SetOperations.Difference) continue;
+                    else /*if (op == SetOperations.Difference)*/ continue;
                 }
 
                 if (array == this)
                 {
                     if (op == SetOperations.Intersection) continue;
-                    if (op == SetOperations.Difference) return new OrderedDictionary/*<TValue>*/();
+                    else /*if (op == SetOperations.Difference)*/ return new OrderedDictionary/*<TValue>*/();
                 }
 
                 //
@@ -1517,9 +1512,9 @@ namespace Pchp.Core
             int count = this.Count;
 
             if (offset < 0 || offset > count)
-                throw new ArgumentOutOfRangeException("first");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             if (length < 0 || offset + length > count)
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
 
             var replaced = new OrderedDictionary((uint)length);
 
@@ -1824,7 +1819,7 @@ namespace Pchp.Core
                 return true;
             }
 
-            internal static bool MoveLast(OrderedDictionary array, ref int i)
+            internal static bool MoveLast(OrderedDictionary array, out int i)
             {
                 i = array._dataUsed;
                 return MovePrevious(array, ref i);
@@ -1911,6 +1906,23 @@ namespace Pchp.Core
 
             value = default;
             return false;
+        }
+
+        /// <summary>
+        /// Copies values to a new array.
+        /// </summary>
+        public static TValue[] GetValues(this OrderedDictionary/*<TValue>*/ table)
+        {
+            if (table.Count != 0)
+            {
+                var array = new TValue[table.Count];
+                table.CopyTo(array, 0);
+                return array;
+            }
+            else
+            {
+                return Array.Empty<PhpValue>();
+            }
         }
     }
 }

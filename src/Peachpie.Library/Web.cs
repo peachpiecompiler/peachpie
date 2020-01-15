@@ -3,12 +3,10 @@ using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Net;
-using Pchp.Core.QueryValue;
 using System.Threading;
 
 namespace Pchp.Library
@@ -306,7 +304,7 @@ namespace Pchp.Library
         public static void parse_str(string str, out PhpArray result)
         {
             result = new PhpArray();
-            parse_str((LocalVariables)result, str);
+            parse_str(result, str);
         }
 
         /// <summary>
@@ -315,11 +313,11 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="locals">Array of local variables passed from runtime, will be filled with parsed variables. Must not be <c>null</c>.</param>
         /// <param name="str">The string to parse.</param>
-        public static void parse_str(QueryValue<LocalVariables> locals, string str)
+        public static void parse_str([ImportValue(ImportValueAttribute.ValueSpec.Locals)] PhpArray locals, string str)
         {
             if (!string.IsNullOrEmpty(str))
             {
-                UriUtils.ParseQuery(str, locals.Value.Locals.AddVariable);
+                UriUtils.ParseQuery(str, locals.AddVariable);
             }
         }
 

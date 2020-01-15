@@ -120,12 +120,24 @@ namespace Pchp.Library
             MB_CASE_TITLE = 2,
 
             MB_CASE_FOLD = 3,
+
+            MB_CASE_UPPER_SIMPLE = 4,
+
+            MB_CASE_LOWER_SIMPLE = 5,
+
+            MB_CASE_TITLE_SIMPLE = 6,
+
+            MB_CASE_FOLD_SIMPLE = 7,
         }
 
         public const int MB_CASE_UPPER = (int)CaseConstants.MB_CASE_UPPER;
         public const int MB_CASE_LOWER = (int)CaseConstants.MB_CASE_LOWER;
         public const int MB_CASE_TITLE = (int)CaseConstants.MB_CASE_TITLE;
         public const int MB_CASE_FOLD = (int)CaseConstants.MB_CASE_FOLD;
+        public const int MB_CASE_UPPER_SIMPLE = (int)CaseConstants.MB_CASE_UPPER_SIMPLE;
+        public const int MB_CASE_LOWER_SIMPLE = (int)CaseConstants.MB_CASE_LOWER_SIMPLE;
+        public const int MB_CASE_TITLE_SIMPLE = (int)CaseConstants.MB_CASE_TITLE_SIMPLE;
+        public const int MB_CASE_FOLD_SIMPLE = (int)CaseConstants.MB_CASE_FOLD_SIMPLE;
 
         #endregion
 
@@ -282,13 +294,13 @@ namespace Pchp.Library
         static string ToString(Context ctx, PhpString value, string forceencoding = null)
         {
             return value.ContainsBinaryData
-                ? value.ToString(GetEncoding(forceencoding) ?? ctx.StringEncoding)
+                ? value.ToString(GetEncoding(forceencoding) ?? GetInternalEncoding(ctx))
                 : value.ToString(ctx);  // no bytes have to be converted anyway
         }
 
         static byte[] ToBytes(Context ctx, PhpString value, string forceencoding = null)
         {
-            return value.ToBytes(GetEncoding(forceencoding) ?? ctx.StringEncoding);
+            return value.ToBytes(GetEncoding(forceencoding) ?? GetInternalEncoding(ctx));
         }
 
         #endregion
@@ -300,7 +312,7 @@ namespace Pchp.Library
         /// </summary>
         public static string mb_internal_encoding(Context ctx)
         {
-            return (ctx.Configuration.Get<MbConfig>().InternalEncoding ?? ctx.StringEncoding).WebName;
+            return GetInternalEncoding(ctx).WebName;
         }
 
         /// <summary>
@@ -656,9 +668,18 @@ namespace Pchp.Library
 
             switch (mode)
             {
-                case CaseConstants.MB_CASE_UPPER: return str.ToUpper();
-                case CaseConstants.MB_CASE_LOWER: return str.ToLower();
-                case CaseConstants.MB_CASE_TITLE: return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str);
+                case CaseConstants.MB_CASE_UPPER_SIMPLE:
+                case CaseConstants.MB_CASE_UPPER:
+                    return str.ToUpper();
+
+                case CaseConstants.MB_CASE_LOWER_SIMPLE:
+                case CaseConstants.MB_CASE_LOWER:
+                    return str.ToLower();
+
+                case CaseConstants.MB_CASE_TITLE_SIMPLE:
+                case CaseConstants.MB_CASE_TITLE:
+                    return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str);
+
                 default: throw new ArgumentException();
             }
         }
@@ -1164,6 +1185,34 @@ namespace Pchp.Library
                 part,
                 () => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding),
                 false);
+        }
+
+        #endregion
+
+        #region mb_ord, mb_chr
+
+        /// <summary>
+        /// Returns a code point of character or  on failure.
+        /// </summary>
+        [return: CastToFalse]
+        public static int mb_ord(Context ctx, PhpString str, string encoding = null)
+        {
+            var value = ToString(ctx, str, encoding);
+            if (string.IsNullOrEmpty(value))
+            {
+                return -1; // FALSE
+            }
+
+            //
+            return value[0];
+        }
+
+        /// <summary>
+        /// Returns a specific character or <c>FALSE</c> on failure.
+        /// </summary>
+        public static string mb_chr(int cp, string encoding = null)
+        {
+            return unchecked((char)cp).ToString();
         }
 
         #endregion

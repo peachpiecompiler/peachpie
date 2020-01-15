@@ -6,6 +6,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Specialized;
 using System.Reflection;
+using Peachpie.Library.PDO.Utilities;
+using System.Text;
+using Pchp.Library;
 
 namespace Peachpie.Library.PDO
 {
@@ -114,6 +117,67 @@ namespace Peachpie.Library.PDO
         public virtual string Quote(string str, PDO.PARAM param)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Preprocesses the command for use with parameters.
+        /// Returns updated query string, optionally creates the <paramref name="bound_param_map"/> with parameter name mapping.
+        /// Most of ADO.NET drivers does not allow to use unnamed parameters - we'll rewrite them to named parameters.
+        /// </summary>
+        /// <param name="stmt">The original command text.</param>
+        /// <param name="options">Custom options.</param>
+        /// <param name="bound_param_map">Will be set to <c>null</c> or a map of user-provided names to rewritten parameter names.</param>
+        public virtual string RewriteCommand(PDOStatement stmt, PhpArray options, out Dictionary<IntStringKey, IntStringKey> bound_param_map)
+        {
+            string queryString;
+
+            //
+            using (var rewriter = new StatementStringRewriter())
+            {
+                rewriter.ParseString(stmt.queryString);
+
+                bound_param_map = rewriter.BoundParamMap;
+                queryString = rewriter.RewrittenQueryString;
+            }
+
+            //
+            return queryString;
+        }
+
+        private class StatementStringRewriter : StatementStringParser, IDisposable
+        {
+            StringBuilder _stringBuilder = StringBuilderUtilities.Pool.Get();
+            int _unnamedParamIndex = 0;
+
+            public string RewrittenQueryString => _stringBuilder?.ToString();
+
+            public Dictionary<IntStringKey, IntStringKey> BoundParamMap { get; private set; }
+
+            protected override void Next(Tokens token, string text, int start, int length)
+            {
+                switch (token)
+                {
+                    case Tokens.UnnamedParameter:
+
+                        if (BoundParamMap == null) BoundParamMap = new Dictionary<IntStringKey, IntStringKey>();
+                        string mappedParamName;
+                        BoundParamMap[_unnamedParamIndex++] = mappedParamName = "@_" + _unnamedParamIndex;
+
+                        _stringBuilder.Append(mappedParamName);
+
+                        break;
+
+                    default:
+                        _stringBuilder.Append(text, start, length);
+                        break;
+                }
+            }
+
+            void IDisposable.Dispose()
+            {
+                StringBuilderUtilities.Pool.Return(_stringBuilder);
+                _stringBuilder = null;
+            }
         }
 
         /// <summary>

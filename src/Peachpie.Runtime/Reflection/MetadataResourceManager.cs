@@ -12,7 +12,10 @@ namespace Peachpie.Runtime.Reflection
     /// </summary>
     public static class MetadataResourceManager
     {
-        static Dictionary<Assembly, ResourceManager> _resourceManagers;
+        /// <summary>
+        /// Cache or resource managers created for '.source.metadata.resources' of assemblies.
+        /// </summary>
+        static Dictionary<Assembly, ResourceManager> s_resourceManagers;
 
         /// <summary>
         /// Gets resource manager for assembly metadata (<c>.source.metadata.resources</c>).
@@ -20,7 +23,7 @@ namespace Peachpie.Runtime.Reflection
         /// <returns>Gets the resource manager or <c>null</c> if there are no metadata.</returns>
         public static ResourceManager GetResourceManager(Assembly ass)
         {
-            var managers = _resourceManagers;
+            var managers = s_resourceManagers;
 
             ResourceManager rm;
 
@@ -28,25 +31,25 @@ namespace Peachpie.Runtime.Reflection
             {
                 var dict = (managers != null) ? new Dictionary<Assembly, ResourceManager>(managers) : new Dictionary<Assembly, ResourceManager>();
                 dict[ass] = rm = new ResourceManager(".source.metadata", ass);
-                Interlocked.CompareExchange(ref _resourceManagers, dict, managers);
+                Interlocked.CompareExchange(ref s_resourceManagers, dict, managers);
             }
 
             //
             return rm;
         }
 
-        public static string GetMetadata(MethodInfo method)
+        public static string GetMetadata(Assembly assembly, string symbolId)
         {
-            var rm = GetResourceManager(method.DeclaringType.Assembly);
+            var rm = GetResourceManager(assembly);
             if (rm != null)
             {
                 try
                 {
-                    return rm.GetString(method.DeclaringType.FullName + "." + method.Name);
+                    return rm.GetString(symbolId);
                 }
                 catch
                 {
-
+                    // resource is missing
                 }
             }
 

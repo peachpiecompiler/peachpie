@@ -23,20 +23,19 @@ namespace Pchp.Core
     {
         static class StaticIndexes
         {
-            public static int StaticsCount = 0;
+            public static uint StaticsCount;
 
-            public static int StaticsIndex<T>() => Statics<T>.Index;
+            public static uint StaticsIndex<T>() => Statics<T>.Index;
 
-            static class Statics<T> { public static readonly int Index = StaticsCount++; }
+            static class Statics<T> { public static readonly uint Index = StaticsCount++; }
         }
 
         /// <summary>
         /// Gets static object instance within the context with given index.
         /// </summary>
-        T GetStatic<T>(int idx) where T : new()
+        T GetStatic<T>(uint idx) where T : new()
         {
-            EnsureStaticsSize(idx);
-            return GetStatic<T>(ref _statics[idx]);
+            return GetStatic<T>(ref EnsureStatics(idx));
         }
 
         /// <summary>
@@ -45,8 +44,9 @@ namespace Pchp.Core
         public T TryGetProperty<T>() where T : class
         {
             var idx = StaticIndexes.StaticsIndex<T>();
-            EnsureStaticsSize(idx);
-            return _statics[idx] as T;
+            var statics = _statics;
+
+            return idx < statics.Length ? statics[idx] as T : default;
         }
 
         /// <summary>
@@ -55,43 +55,42 @@ namespace Pchp.Core
         public void SetProperty<T>(T value)
         {
             var idx = StaticIndexes.StaticsIndex<T>();
-            EnsureStaticsSize(idx);
-            _statics[idx] = value;
+            EnsureStatics(idx) = value;
         }
 
         /// <summary>
         /// Ensures the <see cref="_statics"/> array has sufficient size to hold <paramref name="idx"/>;
         /// </summary>
         /// <param name="idx">Index of an object to be stored within statics.</param>
-        void EnsureStaticsSize(int idx)
+        ref object EnsureStatics(uint idx)
         {
             if (_statics.Length <= idx)
             {
-                Array.Resize(ref _statics, (idx + 1) * 2);
+                Array.Resize(ref _statics, (int)Math.Max((idx + 1) * 2, StaticIndexes.StaticsCount));
             }
+
+            return ref _statics[idx];
         }
 
         /// <summary>
         /// Ensures the context static object is initialized.
         /// </summary>
-        T GetStatic<T>(ref object obj) where T : new()
+        T GetStatic<T>(ref object slot) where T : new()
         {
-            if (obj == null)
-            {
-                obj = new T();
+            T value;
 
-                if (obj is IStaticInit)
-                {
-                    ((IStaticInit)obj).Init(this);
-                }
+            if (ReferenceEquals(slot, null))
+            {
+                ((slot = value = new T()) as IStaticInit)?.Init(this);
             }
             else
             {
-                Debug.Assert(obj is T);
+                Debug.Assert(slot is T);
+                value = (T)slot;
             }
 
             //
-            return (T)obj;
+            return value;
         }
 
         /// <summary>

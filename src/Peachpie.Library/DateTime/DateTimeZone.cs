@@ -14,7 +14,7 @@ namespace Pchp.Library.DateTime
     /// Representation of time zone.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
-    public class DateTimeZone
+    public class DateTimeZone : IPhpCloneable
     {
         internal TimeZoneInfo _timezone;
 
@@ -47,7 +47,7 @@ namespace Pchp.Library.DateTime
         }
 
         [PhpFieldsOnlyCtor]
-        protected DateTimeZone(Context ctx)
+        protected DateTimeZone()
         {
             // empty, __construct to be called by implementor
         }
@@ -76,6 +76,20 @@ namespace Pchp.Library.DateTime
                 //
                 _timezone = tz;
                 _name = timezone_name;
+            }
+        }
+
+        object IPhpCloneable.Clone()
+        {
+            if (GetType() == typeof(DateTimeZone))
+            {
+                // quick new instance
+                return new DateTimeZone(_timezone) { _name = _name, };
+            }
+            else
+            {
+                // 
+                return Operators.CloneInPlace(MemberwiseClone());
             }
         }
 

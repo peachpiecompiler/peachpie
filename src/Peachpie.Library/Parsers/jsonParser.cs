@@ -127,18 +127,13 @@ internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
 				arr.Add( Core.Convert.StringToArrayKey(n.Value.Key), n.Value.Value );
 			}
 					
-			if (decodeOptions.Assoc)
-			{
-				yyval.value = PhpValue.Create(arr);
-			}
-			else
-			{
-				yyval.value = PhpValue.FromClass(arr.ToObject());
-			}
+			yyval.value = decodeOptions.Assoc ? PhpValue.Create(arr) : PhpValue.FromClass(arr.ToObject());
 		}
         return;
       case 4: // object -> OBJECT_OPEN OBJECT_CLOSE 
-{ yyval.value = PhpValue.FromClass(new stdClass()); }
+{
+            yyval.value = decodeOptions.Assoc ? PhpValue.Create(PhpArray.NewEmpty()) : PhpValue.FromClass(new stdClass());
+        }
         return;
       case 5: // members -> pair ITEMS_SEPARATOR members 
 {
@@ -180,10 +175,10 @@ internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
 {yyval.value = PhpValue.Create((string)value_stack.array[value_stack.top-1].yyval.obj);}
         return;
       case 13: // value -> INTEGER 
-{yyval.value = PhpValue.FromClr(value_stack.array[value_stack.top-1].yyval.obj);}
+{yyval.value = value_stack.array[value_stack.top-1].yyval.value;}
         return;
       case 14: // value -> DOUBLE 
-{yyval.value = PhpValue.FromClr(value_stack.array[value_stack.top-1].yyval.obj);}
+{yyval.value = value_stack.array[value_stack.top-1].yyval.value;}
         return;
       case 15: // value -> object 
 {yyval.value = value_stack.array[value_stack.top-1].yyval.value;}

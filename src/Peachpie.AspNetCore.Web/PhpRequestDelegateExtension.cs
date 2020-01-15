@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Microsoft.AspNetCore.Builder
 {
-    public static class RequestDelegateExtension
+    public static class PhpRequestDelegateExtension
     {
         /// <summary>
         /// Installs request handler to compiled PHP scripts.

@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Pchp.Core.Dynamic;
-using Pchp.Core.QueryValue;
 using Pchp.Core.Utilities;
 
 namespace Pchp.Core.Reflection
@@ -94,11 +93,11 @@ namespace Pchp.Core.Reflection
                 s_keyToString);
         }
 
-        public static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
+        public static readonly Func<IntStringKey, string> s_keyToString = k => k.ToString();
 
-        public static readonly Func<PhpPropertyInfo, string> s_propertyName = new Func<PhpPropertyInfo, string>(p => p.PropertyName);
+        public static readonly Func<PhpPropertyInfo, string> s_propertyName = p => p.PropertyName;
 
-        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForPrint = new Func<PhpPropertyInfo, string>(p =>
+        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForPrint = p =>
         {
             if (p.IsPublic)
             {
@@ -114,7 +113,7 @@ namespace Pchp.Core.Reflection
             {
                 return p.PropertyName + ":protected";
             }
-        });
+        };
 
         /// <summary>
         /// Enumerates instance fields of given object, transforms field names according to <c>var_dump</c> notation.
@@ -140,7 +139,7 @@ namespace Pchp.Core.Reflection
                 s_keyToString);
         }
 
-        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForDump = new Func<PhpPropertyInfo, string>(p =>
+        static readonly Func<PhpPropertyInfo, string> s_formatPropertyNameForDump = p =>
         {
             var name = "\"" + p.PropertyName + "\"";
 
@@ -158,7 +157,7 @@ namespace Pchp.Core.Reflection
             {
                 return name + ":protected";
             }
-        });
+        };
 
         /// <summary>
         /// Enumerates instance fields of given object.
@@ -282,8 +281,8 @@ namespace Pchp.Core.Reflection
                         candidate = (_ctx) => c.Invoke(new object[] { _ctx });
 
                     // [PhpFieldsOnly] .ctor(Context, Dummy)
-                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(QueryValue<DummyFieldsOnlyCtor>))
-                        candidate = (_ctx) => c.Invoke(new object[] { _ctx, default(QueryValue<DummyFieldsOnlyCtor>) });
+                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(DummyFieldsOnlyCtor))
+                        candidate = (_ctx) => c.Invoke(new object[] { _ctx, default(DummyFieldsOnlyCtor) });
 
                     //
                     if (c.IsPhpFieldsOnlyCtor())

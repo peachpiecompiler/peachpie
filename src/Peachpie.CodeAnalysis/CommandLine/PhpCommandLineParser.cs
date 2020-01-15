@@ -173,7 +173,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string versionString = null;
             Encoding codepage = null;
             bool embedAllSourceFiles = false;
-            bool optimize = false;
+            PhpOptimizationLevel optimization = PhpOptimizationLevel.Debug;
             bool concurrentBuild = true;
             var diagnosticOptions = new Dictionary<string, ReportDiagnostic>();
             PhpDocTypes phpdocTypes = PhpDocTypes.None;
@@ -195,7 +195,6 @@ namespace Pchp.CodeAnalysis.CommandLine
             List<string> keyFileSearchPaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
-            var loggers = new List<string>();
 
             foreach (string arg in flattenedArgs)
             {
@@ -303,10 +302,27 @@ namespace Pchp.CodeAnalysis.CommandLine
                     case "optimize":
                     case "o+":
                     case "optimize+":
-                        if (value != null)
-                            break;
-
-                        optimize = true;
+                        if (value == null)
+                        {
+                            optimization = PhpOptimizationLevel.Release;
+                        }
+                        else if (bool.TryParse(value, out var optimizationBool))
+                        {
+                            optimization = optimizationBool ? PhpOptimizationLevel.Release : PhpOptimizationLevel.Debug;
+                        }
+                        else if (int.TryParse(value, out var optimizationNumber) && Enum.IsDefined(typeof(PhpOptimizationLevel), optimizationNumber))
+                        {
+                            optimization = (PhpOptimizationLevel)optimizationNumber;
+                        }
+                        else if (Enum.TryParse(value, true, out optimization))
+                        {
+                            //
+                        }
+                        else
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_BadCompilationOptionValue, Location.None, name, value));
+                        }
+                        
                         continue;
 
                     case "o-":
@@ -314,7 +330,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         if (value != null)
                             break;
 
-                        optimize = false;
+                        optimization = PhpOptimizationLevel.Debug;
                         continue;
 
                     case "p":
@@ -602,13 +618,6 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         continue;
 
-                    case "logger":
-                        if (value != null)
-                        {
-                            loggers.Add(value);
-                        }
-                        continue;
-
                     case "subdir":
                         if (!string.IsNullOrEmpty(value))
                         {
@@ -657,11 +666,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                 }
             }
 
-            // Observers
-            var observers = loggers.Select(name => CreateObserver(name, moduleName)).WhereNotNull();
+            // event source // TODO: change to EventSource
+            var evetsources = new[] { CreateObserver("Peachpie.Compiler.Diagnostics.Observer,Peachpie.Compiler.Diagnostics", moduleName) }.WhereNotNull();
 
 #if TRACE
-            observers = observers.Concat(new Utilities.CompilationTrackerExtension.TraceObserver());
+            evetsources = evetsources.Concat(new Utilities.CompilationTrackerExtension.TraceObserver());
 #endif
 
             // Dev11 searches for the key file in the current directory and assembly output directory.
@@ -724,7 +733,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 diagnostics: diagnostics.AsImmutable(),
                 specificDiagnosticOptions: diagnosticOptions,
                 //usings: usings,
-                optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
+                optimizationLevel: optimization,
                 checkOverflow: false, // checkOverflow,
                                       //deterministic: deterministic,
                 concurrentBuild: concurrentBuild,
@@ -739,7 +748,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 publicSign: publicSign
             )
             {
-                Observers = observers.AsImmutableOrEmpty(),
+                EventSources = evetsources.AsImmutableOrEmpty(),
             };
 
             if (debugPlus)
@@ -754,13 +763,13 @@ namespace Pchp.CodeAnalysis.CommandLine
                 pdbFilePath: null, // to be determined later
                 pdbChecksumAlgorithm: System.Security.Cryptography.HashAlgorithmName.SHA1,
                 outputNameOverride: null, // to be determined later
-                //baseAddress: baseAddress,
-                //highEntropyVirtualAddressSpace: highEntropyVA,
-                //fileAlignment: fileAlignment,
-                //subsystemVersion: subsystemVersion,
+                                          //baseAddress: baseAddress,
+                                          //highEntropyVirtualAddressSpace: highEntropyVA,
+                                          //fileAlignment: fileAlignment,
+                                          //subsystemVersion: subsystemVersion,
                 runtimeMetadataVersion: runtimeMetadataVersion
             );
-            
+
             return new PhpCommandLineArguments()
             {
                 // TODO: parsed arguments

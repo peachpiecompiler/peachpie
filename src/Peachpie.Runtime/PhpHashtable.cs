@@ -368,14 +368,14 @@ namespace Pchp.Core
             this.Add(IntStringKey.FromObject(key), PhpValue.FromClr(value));
         }
 
-        public void Add(string key, long value) => Add(new IntStringKey(key), (PhpValue)value);
-        public void Add(string key, string value) => Add(new IntStringKey(key), (PhpValue)value);
-        public void Add(string key, PhpArray value) => Add(new IntStringKey(key), (PhpValue)value);
-        public void Add(string key, bool value) => Add(new IntStringKey(key), (PhpValue)value);
-        public void Add(int key, long value) => Add(new IntStringKey(key), (PhpValue)value);
-        public void Add(int key, double value) => Add(new IntStringKey(key), (PhpValue)value);
-        public void Add(int key, string value) => Add(new IntStringKey(key), (PhpValue)value);
-        public void Add(int key, PhpArray value) => Add(new IntStringKey(key), (PhpValue)value);
+        public void Add(string key, long value) => Add(new IntStringKey(key), value);
+        public void Add(string key, string value) => Add(new IntStringKey(key), value);
+        public void Add(string key, PhpArray value) => Add(new IntStringKey(key), value);
+        public void Add(string key, bool value) => Add(new IntStringKey(key), value);
+        public void Add(int key, long value) => Add(new IntStringKey(key), value);
+        public void Add(int key, double value) => Add(new IntStringKey(key), value);
+        public void Add(int key, string value) => Add(new IntStringKey(key), value);
+        public void Add(int key, PhpArray value) => Add(new IntStringKey(key), value);
 
         /// <summary>
         /// Gets or sets a value associated with a key.
@@ -845,19 +845,7 @@ namespace Pchp.Core
         /// <summary>
         /// Copies values to a new array.
         /// </summary>
-        public PhpValue[] GetValues()
-        {
-            if (this.Count != 0)
-            {
-                var array = new PhpValue[this.Count];
-                this.CopyValuesTo(array, 0);
-                return array;
-            }
-            else
-            {
-                return Array.Empty<PhpValue>();
-            }
-        }
+        public PhpValue[] GetValues() => table.GetValues();
 
         #endregion
 
@@ -937,10 +925,10 @@ namespace Pchp.Core
             IComparer<KeyValuePair<IntStringKey, PhpValue>>/*!*/ comparer)
         {
             if (hashtables == null)
-                throw new ArgumentNullException("hashtables");
+                throw new ArgumentNullException(nameof(hashtables));
 
             if (comparer == null)
-                throw new ArgumentNullException("comparers");
+                throw new ArgumentNullException(nameof(comparer));
 
             if (hashtables.Length == 0)
                 return (PhpArray)this;

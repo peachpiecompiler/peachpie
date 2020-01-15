@@ -61,7 +61,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             public IEnumerable<PhpSyntaxTree> Trees;
 
             /// <summary>Additional resources.</summary>
-            public IEnumerable<ResourceDescription> Resources;
+            public ResourceDescription Resources;
         }
 
         public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger)
@@ -72,7 +72,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             IEnumerable<PhpSyntaxTree> sourceTrees;
             var resources = Enumerable.Empty<ResourceDescription>();
 
-            using (Arguments.CompilationOptions.Observers.StartMetric("parse"))
+            using (Arguments.CompilationOptions.EventSources.StartMetric("parse"))
             {
                 // PARSE
 
@@ -203,7 +203,8 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 var prefix = PhpFileUtilities.NormalizeSlashes(PhpFileUtilities.GetRelativePath(file.Path, Arguments.BaseDirectory));
                 var trees = new List<PhpSyntaxTree>();
-                var content = new List<ResourceDescription>();
+                var content = new List<Devsense.PHP.Phar.Entry>();
+
                 foreach (var entry in phar.Manifest.Entries.Values)
                 {
                     var entryName = PhpFileUtilities.NormalizeSlashes(entry.Name);
@@ -216,33 +217,38 @@ namespace Pchp.CodeAnalysis.CommandLine
                     }
                     else
                     {
-                        content.Add(new ResourceDescription(
-                            "phar://" + prefix + "/" + entryName,
-                            () =>
-                            {
-                                // TODO: not always UTF8
-                                var stream = new MemoryStream(entry.Code.Length);
-                                using (var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true))
-                                {
-                                    writer.Write(entry.Code);
-                                }
-                                stream.Position = 0;
-                                return stream;
-                            },
-                            isPublic: true));
+                        content.Add(entry);
                     }
                 }
 
+                // create resource file
+                var resources = new ResourceDescription($"phar://{prefix}.resources", () =>
+                {
+                    var stream = new MemoryStream();
+                    var writer = new System.Resources.ResourceWriter(stream);
+
+                    foreach (var entry in content)
+                    {
+                        var entryName = PhpFileUtilities.NormalizeSlashes(entry.Name);
+                        writer.AddResource(entryName, entry.Code);
+                    }
+
+                    //
+                    writer.Generate();
+                    stream.Position = 0;
+                    return stream;
+                }, isPublic: true);
+
                 // TODO: report errors if any
 
-                return new ParsedSource { SyntaxTree = stub, Manifest = phar.Manifest, Trees = trees, Resources = content, };
+                return new ParsedSource { SyntaxTree = stub, Manifest = phar.Manifest, Trees = trees, Resources = resources, };
             }
             else
             {
                 // single source file
 
                 var diagnosticInfos = new List<DiagnosticInfo>();
-                var content = TryReadFileContent(file, diagnosticInfos);
+                var content = TryReadFileContent(file, diagnosticInfos, out var normalizedFilePath);
 
                 if (diagnosticInfos.Count != 0)
                 {
@@ -254,7 +260,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 if (content != null)
                 {
-                    result = PhpSyntaxTree.ParseCode(content, parseOptions, scriptParseOptions, file.Path);
+                    result = PhpSyntaxTree.ParseCode(content, parseOptions, scriptParseOptions, normalizedFilePath);
                 }
 
                 if (result != null && result.Diagnostics.HasAnyErrors())

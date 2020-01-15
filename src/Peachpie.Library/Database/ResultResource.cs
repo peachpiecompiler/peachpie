@@ -46,14 +46,12 @@ namespace Pchp.Library.Database
         /// <summary>
         /// Source data reader.
         /// </summary>
-        internal protected IDataReader Reader { get { return reader; } set { reader = value; } }
-        private IDataReader reader;
+        internal protected IDataReader Reader { get; internal set; }
 
         /// <summary>
         /// Gets underlaying connection.
         /// </summary>
-        protected ConnectionResource Connection => connection;
-        private ConnectionResource connection;
+        protected ConnectionResource Connection { get; private set; }
         private List<ResultSet> resultSets;
 
         #region Fields and Properties
@@ -150,8 +148,8 @@ namespace Pchp.Library.Database
         protected ResultResource(ConnectionResource/*!*/ connection, IDataReader/*!*/ reader, string/*!*/ name, bool convertTypes)
             : base(name)
         {
-            this.reader = reader ?? throw new ArgumentNullException("reader");
-            this.connection = connection ?? throw new ArgumentNullException("connection");
+            this.Reader = reader ?? throw new ArgumentNullException("reader");
+            this.Connection = connection ?? throw new ArgumentNullException("connection");
 
             LoadData(convertTypes);
         }
@@ -164,7 +162,7 @@ namespace Pchp.Library.Database
         {
             this.resultSets = new List<ResultSet>(16);
 
-            var reader = this.reader;
+            var reader = this.Reader;
 
             do
             {
@@ -197,12 +195,12 @@ namespace Pchp.Library.Database
         protected override void FreeManaged()
         {
             base.FreeManaged();
-            if (this.reader != null) reader.Close();
+            this.Reader?.Close();
         }
 
         internal void ReleaseConnection()
         {
-            this.connection = null;
+            this.Connection = null;
         }
 
         #endregion
@@ -215,9 +213,11 @@ namespace Pchp.Library.Database
         /// <returns>An array of column names.</returns>
         protected virtual string[]/*!*/ GetNames()
         {
-            string[] names = new string[reader.FieldCount];
-            for (int i = 0; i < reader.FieldCount; i++)
-                names[i] = reader.GetName(i);
+            string[] names = new string[Reader.FieldCount];
+            for (int i = 0; i < Reader.FieldCount; i++)
+            {
+                names[i] = Reader.GetName(i);
+            }
 
             return names;
         }
@@ -228,9 +228,11 @@ namespace Pchp.Library.Database
         /// <returns>An array of column type names.</returns>
         protected virtual string[]/*!*/ GetDataTypes()
         {
-            string[] names = new string[reader.FieldCount];
-            for (int i = 0; i < reader.FieldCount; i++)
-                names[i] = reader.GetDataTypeName(i);
+            string[] names = new string[Reader.FieldCount];
+            for (int i = 0; i < Reader.FieldCount; i++)
+            {
+                names[i] = Reader.GetDataTypeName(i);
+            }
 
             return names;
         }
@@ -417,8 +419,8 @@ namespace Pchp.Library.Database
             // loads schema if not loaded yet:
             if (_schemaTables == null)
             {
-                connection.ReexecuteSchemaQuery(this);
-                if (reader.IsClosed)
+                Connection.ReexecuteSchemaQuery(this);
+                if (Reader.IsClosed)
                 {
                     PhpException.Throw(PhpError.Warning, Resources.LibResources.cannot_retrieve_schema);
                     return null;
@@ -427,9 +429,9 @@ namespace Pchp.Library.Database
                 _schemaTables = new List<DataTable>();
                 do
                 {
-                    _schemaTables.Add(reader.GetSchemaTable());
+                    _schemaTables.Add(Reader.GetSchemaTable());
                 }
-                while (reader.NextResult());
+                while (Reader.NextResult());
             }
 
             return _schemaTables[currentSetIndex];

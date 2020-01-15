@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -81,7 +82,7 @@ namespace Pchp.Core
 
         #region Debug
 
-        string GetDebuggerValue { get { return IsLong ? _long.ToString() : _double.ToString(); } }
+        string GetDebuggerValue { get { return IsLong ? _long.ToString() : _double.ToString(CultureInfo.InvariantCulture); } }
 
         string GetDebuggerType { get { return IsLong ? PhpVariable.TypeNameInteger : PhpVariable.TypeNameDouble; } }
 

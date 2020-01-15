@@ -39,7 +39,7 @@ namespace Pchp.Core
 		static int RegisterInternalInstance()
         {
             // Even numbers are reserved for internal use (odd for externals)
-            return Interlocked.Increment(ref ResourceIdCounter) * 2;
+            return Interlocked.Increment(ref s_ResourceIdCounter) * 2;
         }
 
         /// <summary>
@@ -169,14 +169,14 @@ namespace Pchp.Core
         /// <summary>
         /// Set in Dispose to avoid multiple cleanup attempts.
         /// </summary>
-        private bool _disposed = false;
+        private bool _disposed;
 
         /// <summary>Static counter for unique PhpResource instance Id's.</summary>
-        private static int ResourceIdCounter = 0;
+        private static int s_ResourceIdCounter;
 
         #region IPhpConvertible
 
-        double IPhpConvertible.ToDouble() => (double)((IPhpConvertible)this).ToLong();
+        double IPhpConvertible.ToDouble() => ((IPhpConvertible)this).ToLong();
 
         long IPhpConvertible.ToLong() => IsValid ? Id : 0;
 

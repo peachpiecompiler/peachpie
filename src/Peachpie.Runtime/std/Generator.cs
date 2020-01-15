@@ -67,8 +67,8 @@ public class Generator : Iterator
     /// <summary>
     /// Helper variables used for <see cref="rewind"/> and <see cref="checkIfRunToFirstYieldIfNotRun"/>
     /// </summary>
-    bool _runToFirstYield = false; // Might get replaced by _state logic
-    bool _runAfterFirstYield = false;
+    bool _runToFirstYield; // Might get replaced by _state logic
+    bool _runAfterFirstYield;
 
     #endregion
 

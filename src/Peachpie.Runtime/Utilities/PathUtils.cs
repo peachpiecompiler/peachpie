@@ -14,8 +14,17 @@ namespace Pchp.Core.Utilities
 
     public static class PathUtils
     {
+        /// <summary>
+        /// Windows-style path separator (back slash).
+        /// </summary>
         public const char DirectorySeparator = '\\';
+        
+        /// <summary>
+        /// Linux-style path separator (forward slash).
+        /// </summary>
         public const char AltDirectorySeparator = '/';
+        
+        static readonly char[] s_DirectorySeparators = new[] { DirectorySeparator, AltDirectorySeparator };
 
         public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
         
@@ -26,12 +35,12 @@ namespace Pchp.Core.Utilities
                 : path;
         }
 
-        public static string DirectoryName(string path)
+        public static ReadOnlySpan<char> TrimFileName(string path)
         {
-            var sepindex = path.LastIndexOfAny(new char[] { DirectorySeparator, AltDirectorySeparator });
-            return (sepindex < 0)
-                ? string.Empty
-                : path.Remove(sepindex);
+            var index = path.LastIndexOfAny(s_DirectorySeparators);
+            return (index <= 0)
+                ? ReadOnlySpan<char>.Empty
+                : path.AsSpan(0, index);
         }
     }
 
@@ -48,16 +57,16 @@ namespace Pchp.Core.Utilities
         {
             if (IsWindows)
             {
-                DirectorySeparator = '\\';
-                AltDirectorySeparator = '/';
+                DirectorySeparator = PathUtils.DirectorySeparator;
+                AltDirectorySeparator = PathUtils.AltDirectorySeparator;
                 PathSeparator = ';';
                 PathComparer = StringComparer.OrdinalIgnoreCase;
                 PathStringComparison = StringComparison.OrdinalIgnoreCase;
             }
             else
             {
-                DirectorySeparator = '/';
-                AltDirectorySeparator = '\\';
+                DirectorySeparator = PathUtils.AltDirectorySeparator;
+                AltDirectorySeparator = PathUtils.DirectorySeparator;
                 PathSeparator = ':';
                 PathComparer = StringComparer.Ordinal;
                 PathStringComparison = StringComparison.Ordinal;
@@ -110,7 +119,7 @@ namespace Pchp.Core.Utilities
     /// <summary>
     /// File system utilities.
     /// </summary>
-    public static partial class FileSystemUtils
+    public static class FileSystemUtils
     {
         /// <summary>
         /// Returns the given URL without the username/password information.
@@ -125,18 +134,18 @@ namespace Pchp.Core.Utilities
         {
             if (url == null) return null;
 
-            int url_start = url.LastIndexOf("://");
+            int url_start = url.LastIndexOf("://", StringComparison.Ordinal);
             if (url_start > 0)
             {
                 url_start += "://".Length;
                 int pass_end = url.IndexOf('@', url_start);
                 if (pass_end > url_start)
                 {
-                    StringBuilder sb = new StringBuilder(url.Length);
+                    var sb = new StringBuilder(url.Length);
                     sb.Append(url, 0, url_start);
                     sb.Append("...");
                     sb.Append(url, pass_end, url.Length - pass_end);  // results in: scheme://...@host
-                    return sb.ToString();
+                    url = sb.ToString();
                 }
             }
 
@@ -263,7 +272,7 @@ namespace Pchp.Core.Utilities
         public static string GetFilename(string/*!*/ path)
         {
             if (path.IndexOf(':') == -1 || Path.IsPathRooted(path)) return path;
-            if (path.IndexOf("file://") == 0) return path.Substring("file://".Length);
+            if (path.IndexOf("file://", StringComparison.Ordinal) == 0) return path.Substring("file://".Length);
             return null;
         }
 

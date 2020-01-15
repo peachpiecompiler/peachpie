@@ -141,7 +141,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public string PhpName => this.QualifiedName.ToString();
+        public override string RoutineName => this.QualifiedName.ToString();    // __FUNCTION__
 
         public override Symbol ContainingSymbol => _file.SourceModule;
 
@@ -170,13 +170,5 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsStatic => true;
 
         public override bool IsVirtual => false;
-
-        public override ImmutableArray<Location> Locations
-        {
-            get
-            {
-                return ImmutableArray.Create(Location.Create(ContainingFile.SyntaxTree, _syntax.Span.ToTextSpan()));
-            }
-        }
     }
 }

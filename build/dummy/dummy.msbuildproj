@@ -1,20 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Peachpie.NET.Sdk/1.0.0-dev">
 
-  <Import Project="..\Targets\Settings.props" />
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Peachpie.NET.Sdk" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.AspNetCore.Web" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.AspNetCore.Mvc" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.PDO" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.PDO.SqlSrv" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.PDO.Sqlite" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.Graphics" Version="$(PackageVersion)" PrivateAssets="Build" />
-	<PackageReference Include="Peachpie.Library.Network" Version="$(PackageVersion)" PrivateAssets="Build" />
-  </ItemGroup>
   
+  <ItemGroup Condition=" '$(DisableImplicitPeachpieReferences)' != 'true' ">
+	<PackageReference Include="Peachpie.AspNetCore.Web" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.AspNetCore.Mvc" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.App" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.SqlSrv" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.Sqlite" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+  </ItemGroup>
+
 </Project>

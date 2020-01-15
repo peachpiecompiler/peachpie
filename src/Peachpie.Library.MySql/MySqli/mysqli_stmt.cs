@@ -45,7 +45,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Prepared command.
         /// </summary>
-        protected internal MySqlCommand Command { get; private set; }
+        private protected MySqlCommand Command { get; private set; }
 
         /// <summary>
         /// Result of the command execute command.

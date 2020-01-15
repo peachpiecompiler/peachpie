@@ -148,7 +148,7 @@ namespace Pchp.CodeAnalysis.Symbols
             RuntimeChain_ChainEnd, RuntimeChain_Value_T, RuntimeChain_Property_T, RuntimeChain_ArrayItem_T, RuntimeChain_ArrayNewItem_T,
             PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
-            IntStringKey, PhpHashtable, QueryValue_T, QueryValue_DummyFieldsOnlyCtor,
+            IntStringKey, PhpHashtable, ImportValueAttribute, DummyFieldsOnlyCtor,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle, MethodBase, MethodInfo,
             stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
@@ -185,8 +185,6 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpString_Blob = Create("PhpString+Blob");
             IntStringKey = Create("IntStringKey");
             PhpHashtable = Create("PhpHashtable");
-            QueryValue_T = Create("QueryValue`1");
-            QueryValue_DummyFieldsOnlyCtor = Create("QueryValue.DummyFieldsOnlyCtor");
             ScriptDiedException = Create("ScriptDiedException");
             Context = Create("Context");
             Operators = Create("Operators");
@@ -199,6 +197,8 @@ namespace Pchp.CodeAnalysis.Symbols
             PharAttribute = Create("PharAttribute");
             PhpTypeAttribute = Create("PhpTypeAttribute");
             PhpHiddenAttribute = Create("PhpHiddenAttribute");
+            ImportValueAttribute = Create("ImportValueAttribute");
+            DummyFieldsOnlyCtor = Create("DummyFieldsOnlyCtor");
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
             NotNullAttribute = Create("NotNullAttribute");
             DefaultValueAttribute = Create("DefaultValueAttribute");

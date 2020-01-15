@@ -1,0 +1,4 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- helper import to get $(PeachpieVersion) property -->
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Peachpie.Version.props" />
+</Project>

@@ -54,7 +54,7 @@ namespace Pchp.Library.Reflection
         public ReflectionClass getDeclaringClass() => new ReflectionClass(_pinfo.ContainingType);
 
         [return: CastToFalse]
-        public string getDocComment() => null;
+        public string getDocComment() => ReflectionUtils.getDocComment(_pinfo.ContainingType.Type.Assembly, _pinfo.ContainingType.Type.FullName + "." + _pinfo.PropertyName);
 
         public int getModifiers()
         {

@@ -82,11 +82,26 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets constants.
         /// </summary>
-        public PhpArray getConstants() { throw new NotImplementedException(); }
+        [return: NotNull]
+        public PhpArray getConstants(Context ctx)
+        {
+            var result = new PhpArray();
+
+            foreach (var c in ctx.GetConstants())
+            {
+                if (string.Equals(c.ExtensionName, this.name, StringComparison.OrdinalIgnoreCase))
+                {
+                    result[c.Name] = c.Value;
+                }
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// Gets dependencies.
         /// </summary>
+        [return: NotNull]
         public PhpArray getDependencies() { throw new NotImplementedException(); }
 
         /// <summary>

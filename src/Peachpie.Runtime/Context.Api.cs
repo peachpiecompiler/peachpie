@@ -22,7 +22,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="function">Function name valid within current runtime context.</param>
         /// <returns>Returns value given from the function call.</returns>
-        public PhpValue Call(string function) => PhpCallback.Create(function, default(RuntimeTypeHandle)).Invoke(this, Array.Empty<PhpValue>());
+        public PhpValue Call(string function) => PhpCallback.Create(function).Invoke(this, Array.Empty<PhpValue>());
 
         /// <summary>
         /// Call a function by its name dynamically.
@@ -30,7 +30,7 @@ namespace Pchp.Core
         /// <param name="function">Function name valid within current runtime context.</param>
         /// <param name="arguments">Arguments to be passed to the function call.</param>
         /// <returns>Returns value given from the function call.</returns>
-        public PhpValue Call(string function, params PhpValue[] arguments) => PhpCallback.Create(function, default(RuntimeTypeHandle)).Invoke(this, arguments);
+        public PhpValue Call(string function, params PhpValue[] arguments) => PhpCallback.Create(function).Invoke(this, arguments);
 
         /// <summary>
         /// Call a function by its name dynamically.
@@ -38,7 +38,7 @@ namespace Pchp.Core
         /// <param name="function">Function name valid within current runtime context.</param>
         /// <param name="arguments">Arguments to be passed to the function call.</param>
         /// <returns>Returns value given from the function call.</returns>
-        public PhpValue Call(string function, params object[] arguments) => PhpCallback.Create(function, default(RuntimeTypeHandle)).Invoke(this, PhpValue.FromClr(arguments));
+        public PhpValue Call(string function, params object[] arguments) => PhpCallback.Create(function).Invoke(this, PhpValue.FromClr(arguments));
 
         #endregion
 
@@ -61,7 +61,7 @@ namespace Pchp.Core
         /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>New instance of <typeparamref name="T"/>.</returns>
-        public T Create<T>([ImportCallerClass]RuntimeTypeHandle caller, params PhpValue[] arguments)
+        public T Create<T>([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, params PhpValue[] arguments)
             => (T)TypeInfoHolder<T>.TypeInfo.ResolveCreator(Type.GetTypeFromHandle(caller))(this, arguments);
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace Pchp.Core
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>The object instance.</returns>
         /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
-        public object Create([ImportCallerClass]RuntimeTypeHandle caller, string classname, params PhpValue[] arguments)
+        public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, string classname, params PhpValue[] arguments)
         {
             var tinfo = this.GetDeclaredTypeOrThrow(classname, true);
             return Create(caller, tinfo, arguments);
@@ -114,7 +114,7 @@ namespace Pchp.Core
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>The object instance.</returns>
         /// <exception cref="ArgumentNullException">If provided <paramref name="tinfo"/> is <c>null</c>.</exception>
-        public object Create([ImportCallerClass]RuntimeTypeHandle caller, PhpTypeInfo tinfo, params PhpValue[] arguments)
+        public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpTypeInfo tinfo, params PhpValue[] arguments)
         {
             if (tinfo != null)
             {

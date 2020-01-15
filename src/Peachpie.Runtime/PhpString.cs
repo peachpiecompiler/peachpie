@@ -426,7 +426,7 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    _chunks = new object[2] { x, y };
+                    _chunks = new object[] { x, y };
                     _chunksCount = 2;
                     _flags = Flags.IsArrayOfChunks | Flags.IsNonEmpty;
                 }
@@ -711,7 +711,7 @@ namespace Pchp.Core
                     else
                     {
                         AssertChunkObject(chunks);
-                        _chunks = new object[4] { chunks, newchunk, null, null };
+                        _chunks = new [] { chunks, newchunk, null, null }; // [4]
                         _chunksCount = 2;
                         _flags |= Flags.IsArrayOfChunks;
                     }
@@ -789,7 +789,7 @@ namespace Pchp.Core
                 //Span<byte> bytes = stackalloc byte[enc.GetMaxByteCount(1)];
 
                 var ch = new char[1];
-                var bytes = new byte[(enc == Encoding.UTF8) ? 8 : enc.GetMaxByteCount(1)];
+                var bytes = new byte[ReferenceEquals(enc, Encoding.UTF8) ? 8 : enc.GetMaxByteCount(1)];
 
                 //int size = 0;
 

@@ -32,7 +32,7 @@ namespace Peachpie.Library.MySql
         internal Context Context => _manager.Context;
 
         public MySqlConnectionResource(MySqlConnectionManager manager, string connectionString)
-            : base(manager.Context, connectionString, ResourceName)
+            : base(connectionString, ResourceName)
         {
             _manager = manager;
             _connection = new MySqlConnection(this.ConnectionString);
@@ -69,7 +69,7 @@ namespace Peachpie.Library.MySql
             };
         }
 
-        internal ResultResource ExecuteCommandInternal(IDbCommand command, bool convertTypes, IEnumerable<IDataParameter> parameters, bool skipResults)
+        internal ResultResource ExecuteCommandInternal(IDbCommand command, bool convertTypes, IList<IDataParameter> parameters, bool skipResults)
         {
             return ExecuteCommandProtected(command, convertTypes, parameters, skipResults);
         }

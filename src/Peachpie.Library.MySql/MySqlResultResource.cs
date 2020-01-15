@@ -275,14 +275,14 @@ namespace Peachpie.Library.MySql
             switch (typeName)
             {
                 case "VARCHAR":
-                    return "string";
+                    return PhpVariable.TypeNameString;
 
                 case "INT":
                 case "BIGINT":
                 case "MEDIUMINT":
                 case "SMALLINT":
                 case "TINYINT":
-                    return "int";
+                    return PhpVariable.TypeNameInt;
 
                 case "FLOAT":
                 case "DOUBLE":
@@ -323,7 +323,7 @@ namespace Peachpie.Library.MySql
 
                 case null:
                 case "NULL":
-                    return "NULL";
+                    return PhpVariable.TypeNameNull;
 
                 default:
                     return "unknown";

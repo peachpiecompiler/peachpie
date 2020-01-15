@@ -111,6 +111,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal abstract SourceFileSymbol ContainingFile { get; }
 
+        public override ImmutableArray<Location> Locations =>
+            ImmutableArray.Create(
+                Location.Create(
+                    ContainingFile.SyntaxTree,
+                    Syntax is ILangElement element ? element.Span.ToTextSpan() : default
+            ));
+
         public override bool IsUnreachable => (Flags & RoutineFlags.IsUnreachable) != 0;
 
         protected ImmutableArray<ParameterSymbol> _implicitParameters;
@@ -146,8 +153,11 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             // check mandatory behind and optional parameter
             bool foundopt = false;
-            foreach (var p in SyntaxSignature.FormalParams)
+            var ps = SyntaxSignature.FormalParams;
+            for (int i = 0; i < ps.Length; i++)
             {
+                var p = ps[i];
+
                 if (p.InitValue == null)
                 {
                     if (foundopt && !p.IsVariadic)
@@ -158,6 +168,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 else
                 {
                     foundopt = true;
+                }
+
+                //
+                if (p.IsVariadic && i < ps.Length - 1)
+                {
+                    // Fatal Error: variadic parameter (...) must be the last parameter
+                    diagnostic.Add(this, p, Errors.ErrorCode.ERR_VariadicParameterNotLast);
                 }
             }
         }
@@ -362,6 +379,33 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 
+        /// <summary>
+        /// Gets value indicating the routine can return <c>null</c>.
+        /// </summary>
+        public bool ReturnsNull
+        {
+            get
+            {
+                var thint = SyntaxReturnType;
+
+                if (thint == null)
+                {
+                    // use the result of type analysis if possible
+                    var tmask = ResultTypeMask;
+
+                    return this.IsOverrideable()
+                        ? true
+                        : tmask.IsAnyType || tmask.IsRef || this.TypeRefContext.IsNull(tmask);
+                }
+                else
+                {
+                    // if type hint is provided,
+                    // only can be NULL if specified
+                    return thint.IsNullable();
+                }
+            }
+        }
+
         public override RefKind RefKind => RefKind.None;
 
         public override TypeSymbol ReturnType => PhpRoutineSymbolExtensions.ConstructClrReturnType(this);
@@ -395,16 +439,24 @@ namespace Pchp.CodeAnalysis.Symbols
                 // ...
             }
 
-            // [NotNullAttribute]
-            // ...
-
             //
             return base.GetAttributes().AddRange(attrs);
         }
 
         public override ImmutableArray<AttributeData> GetReturnTypeAttributes()
         {
-            return base.GetReturnTypeAttributes(); // TODO: [return: NotNull]
+            if (!ReturnsNull)
+            {
+                // [return: NotNull]
+                var returnType = this.ReturnType;
+                if (returnType != null && (returnType.IsReferenceType || returnType.Is_PhpValue())) // only if it makes sense to check for NULL
+                {
+                    return ImmutableArray.Create<AttributeData>(DeclaringCompilation.CreateNotNullAttribute());
+                }
+            }
+
+            //
+            return ImmutableArray<AttributeData>.Empty;
         }
 
         internal override ObsoleteAttributeData ObsoleteAttributeData
@@ -419,27 +471,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return null;
             }
-        }
-
-        internal override string GetSymbolMetadataResource()
-        {
-            //var phpdoc = this.PHPDocBlock;
-            //if (phpdoc != null)
-            //{
-            //    var stream = new System.IO.StringWriter();
-            //    using (var writer = new Roslyn.Utilities.JsonWriter(stream))
-            //    {
-            //        writer.WriteObjectStart();
-            //        writer.Write("doc", ContainingFile.SyntaxTree.GetText().ToString(phpdoc.Span.ToTextSpan()));
-            //        // type:
-            //        // ...
-            //        writer.WriteObjectEnd();
-            //    }
-
-            //    return stream.ToString();
-            //}
-
-            return null;
         }
 
         /// <summary>

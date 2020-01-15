@@ -41,14 +41,14 @@ namespace Pchp.Core.Utilities
             // appends characters to the result for each byte:
             for (int i = 0; i < length - 1; i++)
             {
-                c = (int)bytes[i];
+                c = bytes[i];
                 chars[0] = hex_digs[(c & 0xf0) >> 4];
                 chars[1] = hex_digs[(c & 0x0f)];
                 result.Append(chars);
             }
 
             // the last byte:
-            c = (int)bytes[length - 1];
+            c = bytes[length - 1];
             result.Append(hex_digs[(c & 0xf0) >> 4]);
             result.Append(hex_digs[(c & 0x0f)]);
 
@@ -61,7 +61,7 @@ namespace Pchp.Core.Utilities
         public static char LastChar(this string str) => string.IsNullOrEmpty(str) ? '\0' : str[str.Length - 1];
 
         /// <summary>
-        /// Most efficient way of searching for index of a substring ordinally.
+        /// Most efficient way of searching for index of a substring ordinarily.
         /// </summary>
         /// <param name="source">The string to search. </param>
         /// <param name="value">The string to locate within <paramref name="source" />. </param>
@@ -74,6 +74,20 @@ namespace Pchp.Core.Utilities
         public static int IndexOfOrdinal(this string source, string value, int startIndex, int count)
         {
             return System.Globalization.CultureInfo.InvariantCulture.CompareInfo.IndexOf(source, value, startIndex, count, System.Globalization.CompareOptions.Ordinal);
+        }
+
+        /// <summary>
+        /// Specialized <c>concat</c> method.
+        /// </summary>
+        public static string Concat(ReadOnlySpan<char> str1, char str2, ReadOnlySpan<char> str3)
+        {
+            Span<char> chars = stackalloc char[str1.Length + 1 + str3.Length]; // ~512 bytes
+
+            str1.CopyTo(chars);
+            chars[str1.Length] = str2;
+            str3.CopyTo(chars.Slice(str1.Length + 1));
+            
+            return chars.ToString();
         }
     }
 }

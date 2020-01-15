@@ -74,8 +74,35 @@ namespace Peachpie.Library.PDO
 
         internal static PDODriver TryGetDriver(string driverName)
         {
-            GetDrivers().TryGetValue(driverName, out var driver);
-            return driver;
+            return GetDrivers().TryGetValue(driverName, out var driver) || TryGetUriDriver(driverName, out driver) ? driver : null;
+        }
+
+        static bool TryGetUriDriver(string driverName, out PDODriver driver)
+        {
+            if (driverName == "uri")
+            {
+                throw new NotImplementedException("PDO uri DSN not implemented");
+
+                //// Uri mode
+                //if (Uri.TryCreate(connstring.ToString(), UriKind.Absolute, out var uri))
+                //{
+                //    if (uri.Scheme.Equals("file", StringComparison.Ordinal))
+                //    {
+                //        //return
+                //    }
+                //    else
+                //    {
+                //        throw new PDOException("PDO DSN as URI does not support other schemes than 'file'");
+                //    }
+                //}
+                //else
+                //{
+                //    throw new PDOException("Invalid uri in DSN");
+                //}
+            }
+
+            driver = null;
+            return false;
         }
     }
 }
