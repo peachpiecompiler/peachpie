@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -149,8 +151,9 @@ namespace Pchp.Core.Reflection
             public ContainedClrField(PhpTypeInfo tinfo, FieldInfo field)
                 : base(tinfo, field)
             {
-                Debug.Assert(field != null);
-                Debug.Assert(field.DeclaringType.Name == "_statics");
+                if (field == null) throw new ArgumentNullException(nameof(field));
+                
+                Debug.Assert(field.DeclaringType?.Name == "_statics");
                 Debug.Assert(!field.IsStatic);
             }
 
@@ -209,14 +212,13 @@ namespace Pchp.Core.Reflection
             public ClrProperty(PhpTypeInfo tinfo, PropertyInfo property)
                 : base(tinfo)
             {
-                Debug.Assert(property != null);
-                Property = property;
+                Property = property ?? throw new ArgumentNullException(nameof(property));
 
                 _lazyGetter = new Lazy<Func<object, PhpValue>>(() =>
                 {
                     var pinstance = Expression.Parameter(typeof(object));
 
-                    var expr = Bind(null, Expression.Convert(pinstance, Property.DeclaringType));
+                    var expr = Bind(null!, Expression.Convert(pinstance, Property.DeclaringType));
                     expr = ConvertExpression.BindToValue(expr);
 
                     //
@@ -525,7 +527,7 @@ namespace Pchp.Core.Reflection
         /// Gets value indicating the property is visible in given class context.
         /// </summary>
         /// <param name="caller">Class context. By default the method check if the property is publically visible.</param>
-        public bool IsVisible(Type caller = null)
+        public bool IsVisible(Type? caller = null)
         {
             if (IsPublic)
             {
