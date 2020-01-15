@@ -1,5 +1,5 @@
 <?php
-namespace transformations\expressions_001;
+namespace transformations\arithmetic_001;
 
 function minus_one_mul($x) {
   echo -1 * $x;

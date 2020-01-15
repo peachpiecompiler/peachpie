@@ -19,9 +19,7 @@ class A extends B
     call_user_func(["self", "bar"]);
     call_user_func(["parent", "bar"]);
     call_user_func([$this, "baz"]);
-
-    // TODO: Re-enable when warning mode for invalid callbacks works
-    //call_user_func(__NAMESPACE__ ."\\foo ");
+    call_user_func(__NAMESPACE__ ."\\foo ");
   }
 }
 
