@@ -5,6 +5,20 @@ class A {
   public function __toString() { return "A"; }
 }
 
+class SimpleArrayAccess implements \ArrayAccess {
+  public function offsetSet($offset, $value) { }
+
+  public function offsetExists($offset) {
+    return true;
+  }
+
+  public function offsetUnset($offset) { }
+
+  public function offsetGet($offset) {
+    return 42;
+  }
+}
+
 function test_string_int(string $s, int $i) {
   return ord($s[$i]);
 }
@@ -46,6 +60,7 @@ echo test_phpstring_any("foo", 1) ."\n";
 echo test_phpstring_any("foo", 666) ."\n";
 echo test_any_any("foo", 1) ."\n";
 echo test_any_any("foo", 666) ."\n";
+echo test_any_any(new SimpleArrayAccess, 1);
 echo test_latestring_int("foo", 1) ."\n";
 echo test_latestring_int("foo", 666) ."\n";
 echo test_latestring_int([], 1) ."\n";
