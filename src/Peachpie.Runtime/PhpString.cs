@@ -341,7 +341,7 @@ namespace Pchp.Core
             /// <summary>
             /// Cached concatenated string.
             /// </summary>
-            string? _string;
+            string _string;
 
             /// <summary>
             /// References count. More than one reference means the data are shared accross more instances (read-only).
@@ -1363,7 +1363,7 @@ namespace Pchp.Core
         /// Content of the string.
         /// Can be either <see cref="string"/> or <see cref="Blob"/> or a <c>null</c> reference (because of <c>default</c>).
         /// </summary>
-        object? _data;
+        object _data;
 
         /// <summary>
         /// Gets the count of characters and binary characters.
