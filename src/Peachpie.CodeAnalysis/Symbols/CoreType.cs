@@ -150,7 +150,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable, ImportValueAttribute, DummyFieldsOnlyCtor,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
-            RuntimeTypeHandle, RuntimeMethodHandle, MethodBase, MethodInfo,
+            RuntimeTypeHandle, RuntimeMethodHandle,
             stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
 
         public CoreTypes(PhpCompilation compilation)
@@ -169,8 +169,6 @@ namespace Pchp.CodeAnalysis.Symbols
             Exception = CreateFromFullName(WellKnownTypes.GetMetadataName(WellKnownType.System_Exception));
             RuntimeTypeHandle = Create(SpecialType.System_RuntimeTypeHandle);
             RuntimeMethodHandle = Create(SpecialType.System_RuntimeMethodHandle);
-            MethodBase = CreateFromFullName("System.Reflection.MethodBase");
-            MethodInfo = CreateFromFullName("System.Reflection.MethodInfo");
 
             PhpNumber = Create("PhpNumber");
             PhpAlias = Create("PhpAlias");

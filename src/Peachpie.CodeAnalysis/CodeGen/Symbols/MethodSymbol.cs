@@ -48,15 +48,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 // CreateUserRoutine("method", new[] { (MethodInfo)MethodBase.GetMethodFromHandle(ldtoken method), ... })
                 il.EmitStringConstant(method.MetadataName);
-                cg.Emit_NewArray(cg.CoreTypes.MethodInfo, overloads, m =>
+                var methodInfoType = cg.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Reflection_MethodInfo);
+                cg.Emit_NewArray(methodInfoType, overloads, m =>
                 {
                     cg.EmitLoadToken(m, null);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Reflection.GetMethodFromHandle_RuntimeMethodHandle);
-                    cg.EmitCastClass(cg.CoreTypes.MethodInfo);
-                    return cg.CoreTypes.MethodInfo;
+                    cg.EmitCall(ILOpCode.Call, (MethodSymbol)cg.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Reflection_MethodBase__GetMethodFromHandle));
+                    cg.EmitCastClass(methodInfoType);
+                    return methodInfoType;
                 });
 
-                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Reflection.CreateUserRoutine_string_MethodInfoArr);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Reflection.CreateUserRoutine_String_MethodInfoArray);
             }
         }
 
