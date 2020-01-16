@@ -18,21 +18,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         /// </summary>
         private struct CopyAnalysisState
         {
-            private BitMask[] _data;
+            private BitMask[] _varState;
 
             public CopyAnalysisState(int varCount)
             {
-                _data = new BitMask[varCount];
+                _varState = new BitMask[varCount];
             }
 
-            public bool IsDefault => _data == null;
+            public bool IsDefault => _varState == null;
 
-            public int VariableCount => _data.Length;
+            public int VariableCount => _varState.Length;
 
             public CopyAnalysisState Clone()
             {
-                var clone = new CopyAnalysisState(_data.Length);
-                _data.CopyTo(clone._data, 0);
+                var clone = new CopyAnalysisState(_varState.Length);
+                _varState.CopyTo(clone._varState, 0);
 
                 return clone;
             }
@@ -42,22 +42,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 if (this.IsDefault != other.IsDefault)
                     return false;
 
-                if ((this.IsDefault && other.IsDefault) || _data == other._data)
+                if ((this.IsDefault && other.IsDefault) || _varState == other._varState)
                     return true;
 
                 // We are supposed to compare only states from the same routine
-                Debug.Assert(_data.Length == other._data.Length);
+                Debug.Assert(_varState.Length == other._varState.Length);
 
-                for (int i = 0; i < other._data.Length; i++)
+                for (int i = 0; i < other._varState.Length; i++)
                 {
-                    if (_data[i] != other._data[i])
+                    if (_varState[i] != other._varState[i])
                         return false;
                 }
 
                 return true;
             }
 
-            public BitMask GetValue(int varIndex) => _data[varIndex];
+            public BitMask GetValue(int varIndex) => _varState[varIndex];
 
             public CopyAnalysisState WithMerge(CopyAnalysisState other)
             {
@@ -71,10 +71,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     return this;
                 }
 
-                var merged = new CopyAnalysisState(_data.Length);
-                for (int i = 0; i < merged._data.Length; i++)
+                var merged = new CopyAnalysisState(_varState.Length);
+                for (int i = 0; i < merged._varState.Length; i++)
                 {
-                    merged._data[i] = _data[i] | other._data[i];
+                    merged._varState[i] = _varState[i] | other._varState[i];
                 }
 
                 return merged;
@@ -84,14 +84,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 Debug.Assert(!IsDefault);
 
-                if (_data[varIndex] == value)
+                if (_varState[varIndex] == value)
                 {
                     return this;
                 }
                 else
                 {
                     var result = Clone();
-                    result._data[varIndex] = value;
+                    result._varState[varIndex] = value;
                     return result;
                 }
             }
@@ -102,11 +102,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                 var copyMask = BitMask.FromSingleValue(copyIndex);
 
-                if (_data[trgVarIndex] != copyMask || _data[srcVarIndex] != (_data[srcVarIndex] | copyMask))
+                if (_varState[trgVarIndex] != copyMask || _varState[srcVarIndex] != (_varState[srcVarIndex] | copyMask))
                 {
                     var result = Clone();
-                    result._data[trgVarIndex] = copyMask;
-                    result._data[srcVarIndex] |= copyMask;
+                    result._varState[trgVarIndex] = copyMask;
+                    result._varState[srcVarIndex] |= copyMask;
                     return result;
                 }
                 else
