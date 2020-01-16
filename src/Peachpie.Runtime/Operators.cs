@@ -745,7 +745,7 @@ namespace Pchp.Core
 
         public static bool TryGetItemValue(this PhpValue value, PhpValue index, out PhpValue item)
         {
-            if (value.Object is PhpArray array)
+            if (value.IsPhpArray(out var array))
             {
                 // Specialized call for array
                 return TryGetItemValue(array, index, out item);
