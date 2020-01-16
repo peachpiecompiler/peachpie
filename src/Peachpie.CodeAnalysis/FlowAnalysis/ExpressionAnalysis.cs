@@ -1507,7 +1507,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (localType.IsAnyType && !localType.IsRef &&
                     (TypeCtx.IsObject(expected.Type) || TypeCtx.IsArray(expected.Type)))
                 {
-                    State.SetLocalType(local, expected.Type.WithIsRef(localType.IsRef));
+                    Debug.Assert(!expected.Type.IsRef);
+                    State.SetLocalType(local, expected.Type);
                 }
             }
         }
