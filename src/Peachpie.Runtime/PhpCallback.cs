@@ -382,30 +382,6 @@ namespace Pchp.Core
 
         #endregion
 
-        #region BoundTargetCallable
-
-        /// <summary>
-        /// Helper lightweight class to reuse already bound <see cref="PhpInvokable"/> to be used as <see cref="PhpCallable"/>
-        /// by calling it on a given target.
-        /// </summary>
-        sealed class BoundTargetCallable : IPhpCallable
-        {
-            readonly object _target;
-            readonly PhpInvokable _invokable;
-
-            public BoundTargetCallable(object target, PhpInvokable invokable)
-            {
-                _target = target;
-                _invokable = invokable;
-            }
-
-            public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => _invokable.Invoke(ctx, _target, arguments);
-
-            public PhpValue ToPhpValue() => PhpValue.Null;
-        }
-
-        #endregion
-
         #region Create
 
         public static PhpCallback Create(IPhpCallable callable) => Create(callable.Invoke);
@@ -446,19 +422,6 @@ namespace Pchp.Core
         }
 
         public static PhpCallback Create(object targetInstance, string methodName, RuntimeTypeHandle callerCtx = default) => new ArrayCallback(PhpValue.FromClass(targetInstance), methodName, callerCtx);
-
-        /// <summary>
-        /// Creates an <see cref="IPhpCallable"/> from an instance method, binding the target to call the method on.
-        /// </summary>
-        public static IPhpCallable Create(object targetInstance, IPhpCallable callable)
-        {
-            if (callable is PhpMethodInfo methodInfo)
-            {
-                return new BoundTargetCallable(targetInstance, methodInfo.PhpInvokable);
-            }
-
-            return CreateInvalid();
-        }
 
         public static PhpCallback CreateInvalid() => new InvalidCallback();
 

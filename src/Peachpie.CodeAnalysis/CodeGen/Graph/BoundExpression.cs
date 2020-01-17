@@ -2349,7 +2349,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // PhpCallback.Create((object)Receiver, methodRoutineInfo)
                     cg.EmitConvert(Receiver, cg.CoreTypes.Object);
                     m.EmitLoadRoutineInfo(cg);
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpCallback.Create_Object_IPhpCallable)
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BindTargetToMethod_Object_RoutineInfo)
                         .Expect(cg.CoreTypes.IPhpCallable);
                 }
             }
