@@ -620,25 +620,26 @@ namespace Pchp.Core
         /// </summary>
         public static long GetItemOrdValue(PhpValue value, long index)
         {
-            switch (value.TypeCode)
+            if (value.TypeCode == PhpTypeCode.String)
             {
-                case PhpTypeCode.String:
-                    return GetItemOrdValue(value.String, index);
-                case PhpTypeCode.MutableString:
-                    return GetItemOrdValue(value.MutableString, index);
-                default:
-                    var item = value.GetArrayItem(index);
-                    var itemType = item.TypeCode;
-                    if (itemType == PhpTypeCode.MutableString)
-                    {
-                        var phpStr = item.MutableString;
-                        return phpStr.IsEmpty ? 0 : phpStr[0];
-                    }
-                    else
-                    {
-                        var str = item.ToString();
-                        return string.IsNullOrEmpty(str) ? 0 : str[0];
-                    }
+                return GetItemOrdValue(value.String, index);
+            }
+            else if (value.IsMutableString(out var phpString))
+            {
+                return GetItemOrdValue(phpString, index);
+            }
+            else
+            {
+                var item = value.GetArrayItem(index);
+                if (item.IsMutableString(out var itemPhpString))
+                {
+                    return itemPhpString.IsEmpty ? 0 : itemPhpString[0];
+                }
+                else
+                {
+                    var str = item.ToString();
+                    return string.IsNullOrEmpty(str) ? 0 : str[0];
+                }
             }
         }
 
