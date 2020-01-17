@@ -164,9 +164,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // analyse initializer
                 Accept(v.InitialValue);
 
-                bool isInitConst = v.InitialValue.ConstantValue.IsInteger(out long initVal);
-                State.SetLessThanLongMax(local, isInitConst && initVal < long.MaxValue);
-                State.SetGreaterThanLongMin(local, isInitConst && initVal > long.MinValue);
+                bool isInt = v.InitialValue.ConstantValue.IsInteger(out long intVal);
+                State.SetLessThanLongMax(local, isInt && intVal < long.MaxValue);
+                State.SetGreaterThanLongMin(local, isInt && intVal > long.MinValue);
 
                 State.SetLocalType(local, ((IPhpExpression)v.InitialValue).TypeRefMask | oldtype);
             }
