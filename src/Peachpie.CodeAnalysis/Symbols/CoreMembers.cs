@@ -237,6 +237,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly ContextHolder Context;
         public readonly DynamicHolder Dynamic;
         public readonly ReflectionHolder Reflection;
+        public readonly PhpCallbackHolder PhpCallback;
 
         public CoreMethods(CoreTypes types)
         {
@@ -255,6 +256,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Context = new ContextHolder(types);
             Dynamic = new DynamicHolder(types);
             Reflection = new ReflectionHolder(types);
+            PhpCallback = new PhpCallbackHolder(types);
         }
 
         public struct OperatorsHolder
@@ -969,8 +971,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 _ct = ct;
                 _lazyCreateUserRoutine = null;
                 _lazyCreateUserRoutine_String_MethodInfoArray = null;
-
-                BindTarget_Object = ct.RoutineInfo.Method("BindTarget", ct.Object);
             }
 
             public MethodSymbol CreateUserRoutine_string_RuntimeMethodHandle_RuntimeMethodHandleArr
@@ -1007,10 +1007,17 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
             MethodSymbol _lazyCreateUserRoutine_String_MethodInfoArray;
-
-            public readonly CoreMethod
-                BindTarget_Object;
         }
 
+        public struct PhpCallbackHolder
+        {
+            public PhpCallbackHolder(CoreTypes ct)
+            {
+                Create_Object_IPhpCallable = ct.PhpCallback.Method("Create", ct.Object, ct.IPhpCallable);
+            }
+
+            public readonly CoreMethod
+                Create_Object_IPhpCallable;
+        }
     }
 }

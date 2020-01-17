@@ -2346,10 +2346,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     Debug.Assert(Receiver != null);
 
-                    // methodRoutineInfo.BindTarget(Receiver)
-                    m.EmitLoadRoutineInfo(cg);
+                    // PhpCallback.Create((object)Receiver, methodRoutineInfo)
                     cg.EmitConvert(Receiver, cg.CoreTypes.Object);
-                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Reflection.BindTarget_Object)
+                    m.EmitLoadRoutineInfo(cg);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpCallback.Create_Object_IPhpCallable)
                         .Expect(cg.CoreTypes.IPhpCallable);
                 }
             }

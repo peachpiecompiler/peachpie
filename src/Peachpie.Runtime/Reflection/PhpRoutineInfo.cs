@@ -63,10 +63,6 @@ namespace Pchp.Core.Reflection
         /// <summary>Target instance when binding the MethodInfo call.</summary>
         internal virtual object Target => null;
 
-        /// <summary>Creates an <see cref="IPhpCallable"/> from an instance method, binding the target to call the method on.</summary>
-        /// <remarks>Returns <c>null</c> if not applicable.</remarks>
-        public virtual IPhpCallable BindTarget(object target) => null;
-
         protected RoutineInfo(int index, string name)
         {
             _index = index;
@@ -294,30 +290,6 @@ namespace Pchp.Core.Reflection
 
         #endregion
 
-        #region BoundTargetCallable
-
-        /// <summary>
-        /// Helper lightweight class to reuse already bound <see cref="PhpInvokable"/> to be used as <see cref="PhpCallable"/>
-        /// by calling it on a given target.
-        /// </summary>
-        sealed class BoundTargetCallable : IPhpCallable
-        {
-            readonly object _target;
-            readonly PhpInvokable _invokable;
-
-            public BoundTargetCallable(object target, PhpInvokable invokable)
-            {
-                _target = target;
-                _invokable = invokable;
-            }
-
-            public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => _invokable.Invoke(ctx, _target, arguments);
-
-            public PhpValue ToPhpValue() => PhpValue.Null;
-        }
-
-        #endregion
-
         /// <summary>
         /// Creates instance of <see cref="PhpMethodInfo"/>.
         /// </summary>
@@ -362,8 +334,6 @@ namespace Pchp.Core.Reflection
         readonly MethodInfo[] _methods;
 
         public override PhpTypeInfo DeclaringType => _methods[0].DeclaringType.GetPhpTypeInfo();
-
-        public override IPhpCallable BindTarget(object target) => new BoundTargetCallable(target, PhpInvokable);
 
         /// <summary>Optional. Bound static type.</summary>
         public virtual PhpTypeInfo LateStaticType => null;
