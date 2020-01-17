@@ -668,6 +668,27 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Checks the value is <c>string</c> or <c>&amp;string</c> constructed as <see cref="PhpString"/> (a mutable string).
+        /// </summary>
+        internal bool IsMutableStringImpl(out PhpString str)
+        {
+            if (ReferenceEquals(_type, TypeTable.MutableStringTable))
+            {
+                str = new PhpString(_obj.blob);
+                return true;
+            }
+            else if (IsAlias)
+            {
+                return Alias.Value.IsMutableStringImpl(out str);
+            }
+            else
+            {
+                str = default;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Checks the value is of type <c>string</c> (both unicode and single-byte) or an alias to a string.
         /// </summary>
         internal bool IsStringImpl()

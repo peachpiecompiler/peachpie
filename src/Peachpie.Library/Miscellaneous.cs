@@ -371,7 +371,7 @@ namespace Pchp.Library
         /// Returns the type of web server interface.
         /// </summary>
         /// <returns>The "isapi" string if runned under webserver (ASP.NET works via ISAPI) or "cli" otherwise.</returns>
-        public static string php_sapi_name(Context ctx) => ctx.ServerApi ?? "isapi";
+        public static string php_sapi_name(Context ctx) => ctx.ServerApi;
 
         #endregion
 

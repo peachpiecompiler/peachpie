@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -18,8 +20,9 @@ namespace Pchp.Core
 
         /// <summary>
         /// Gets name of the server API (aka <c>PHP_SAPI</c> PHP constant).
+        /// Always a lowercase string. Cannot be <c>null</c>.
         /// </summary>
-        public virtual string ServerApi => null;
+        public virtual string ServerApi => "isapi";
 
         /// <summary>
         /// Gets number format used for converting <see cref="double"/> to <see cref="string"/>.
@@ -37,7 +40,7 @@ namespace Pchp.Core
         /// 
         /// If it is a console context or a class library context, the property gets a <c>null</c> reference.
         /// </summary>
-        public virtual IHttpPhpContext HttpPhpContext => null;
+        public virtual IHttpPhpContext? HttpPhpContext => null;
 
         /// <summary>
         /// Gets or sets the initial script file.
@@ -101,8 +104,8 @@ namespace Pchp.Core
         /// Gets target PHP language specification.
         /// By default, this is reflected from the compiled PHP script.
         /// </summary>
-        public virtual TargetPhpLanguageAttribute TargetPhpLanguage { get => s_targetPhpLanguageAttribute; }
-        static TargetPhpLanguageAttribute s_targetPhpLanguageAttribute;
+        public TargetPhpLanguageAttribute? TargetPhpLanguage { get => s_targetPhpLanguageAttribute; }
+        static TargetPhpLanguageAttribute? s_targetPhpLanguageAttribute;
 
         /// <summary>
         /// Gets value indicating whether not defined classes should be automatically included when used for the first time.

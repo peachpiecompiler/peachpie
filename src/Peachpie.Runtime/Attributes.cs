@@ -1,4 +1,6 @@
-﻿using Pchp.Core.Reflection;
+﻿#nullable enable
+
+using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,7 +66,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets the first specified extension name or <c>null</c>.
         /// </summary>
-        public string FirstExtensionOrDefault
+        public string? FirstExtensionOrDefault
             => _extensions is string name ? name
             : _extensions is string[] names && names.Length != 0 ? names[0]
             : null;
@@ -82,11 +84,11 @@ namespace Pchp.Core
         /// The object is used to handle one-time initialization and context life-cycle.
         /// Implement initialization and subscription logic in .ctor.
         /// </remarks>
-        public Type Registrator { get; set; }
+        public Type? Registrator { get; set; }
 
         public PhpExtensionAttribute()
         {
-            _extensions = null;
+            _extensions = Array.Empty<string>();
         }
 
         public PhpExtensionAttribute(string extension)
@@ -163,7 +165,7 @@ namespace Pchp.Core
         /// <summary>
         /// Optional. Explicitly set type name.
         /// </summary>
-        public string ExplicitTypeName { get; }
+        public string? ExplicitTypeName { get; }
 
         /// <summary>
         /// Indicates how to treat the type name.
@@ -173,7 +175,7 @@ namespace Pchp.Core
         /// <summary>
         /// Optional. Relative path to the file where the type is defined.
         /// </summary>
-        public string FileName { get; }
+        public string? FileName { get; }
 
         /// <summary>
         /// Value stating that the type name is inherited from the CLR name excluding its namespace part, see <see cref="PhpTypeName.NameOnly"/>.
@@ -216,7 +218,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="phpTypeName">The type name that will be used in PHP context instead of CLR type name.</param>
         /// <param name="fileName">Optional relative path to the file where the type is defined.</param>
-        public PhpTypeAttribute(string phpTypeName, string fileName = null)
+        public PhpTypeAttribute(string phpTypeName, string fileName)
         {
             ExplicitTypeName = phpTypeName ?? throw new ArgumentNullException();
             FileName = fileName;
@@ -368,7 +370,7 @@ namespace Pchp.Core
         /// The type containing the backing field.
         /// <c>Null</c> indicates the containing type.
         /// </summary>
-        public Type ExplicitType { get; set; }
+        public Type? ExplicitType { get; set; }
 
         /// <summary>
         /// Name of the backing field.

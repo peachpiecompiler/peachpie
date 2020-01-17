@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -78,14 +80,29 @@ namespace Pchp.Core.Reflection
                     var pinstance = Expression.Parameter(typeof(object));
                     var pvalue = Expression.Parameter(typeof(PhpValue));
 
-                    // expr: <instance>.<field>
-                    var expr = Bind(pctx, Expression.Convert(pinstance, Field.DeclaringType));
+                    // field_expr: <instance>.<field>
+                    var field_expr = Bind(pctx, Expression.Convert(pinstance, Field.DeclaringType));
 
                     // expr: <field> := <value>
-                    expr = BinderHelpers.BindAccess(expr, pctx, AccessMask.Write, pvalue);
+                    // var expr = BinderHelpers.BindAccess(field_expr, pctx, AccessMask.Write, pvalue); // <-- does not allow passing PhpAlias
+
+                    Expression assign_expr = Expression.Block(
+                        Expression.Assign(field_expr, ConvertExpression.Bind(pvalue, Field.FieldType, pctx)),
+                        Expression.Empty());
+
+                    // when assigning to PhpValue, we have to write by value or by ref 
+                    if (Field.FieldType == typeof(PhpValue))
+                    {
+                        // assign_expr: value.IsAlias ? (field_expr = value) : SetValue(ref field_expr, value)
+                        assign_expr = Expression.Condition(
+                            test: Expression.Property(pvalue, Cache.Properties.PhpValue_IsAlias),
+                            ifTrue: assign_expr,
+                            ifFalse: Expression.Call(Cache.Operators.SetValue_PhpValueRef_PhpValue, field_expr, pvalue)
+                        );
+                    }
 
                     //
-                    var lambda = Expression.Lambda(Expression.Block(expr, Expression.Empty()), pctx, pinstance, pvalue);
+                    var lambda = Expression.Lambda(assign_expr, pctx, pinstance, pvalue);
 
                     return (Action<Context, object, PhpValue>)lambda.Compile();
                 });
@@ -109,7 +126,7 @@ namespace Pchp.Core.Reflection
 
             public override IPhpArray EnsureArray(Context ctx, object instance) => _lazyEnsureArray.Value(ctx, instance);
 
-            public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value.GetValue());
+            public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
 
             public override Expression Bind(Expression ctx, Expression target)
             {
@@ -134,8 +151,9 @@ namespace Pchp.Core.Reflection
             public ContainedClrField(PhpTypeInfo tinfo, FieldInfo field)
                 : base(tinfo, field)
             {
-                Debug.Assert(field != null);
-                Debug.Assert(field.DeclaringType.Name == "_statics");
+                if (field == null) throw new ArgumentNullException(nameof(field));
+                
+                Debug.Assert(field.DeclaringType?.Name == "_statics");
                 Debug.Assert(!field.IsStatic);
             }
 
@@ -194,14 +212,13 @@ namespace Pchp.Core.Reflection
             public ClrProperty(PhpTypeInfo tinfo, PropertyInfo property)
                 : base(tinfo)
             {
-                Debug.Assert(property != null);
-                Property = property;
+                Property = property ?? throw new ArgumentNullException(nameof(property));
 
                 _lazyGetter = new Lazy<Func<object, PhpValue>>(() =>
                 {
                     var pinstance = Expression.Parameter(typeof(object));
 
-                    var expr = Bind(null, Expression.Convert(pinstance, Property.DeclaringType));
+                    var expr = Bind(null!, Expression.Convert(pinstance, Property.DeclaringType));
                     expr = ConvertExpression.BindToValue(expr);
 
                     //
@@ -510,7 +527,7 @@ namespace Pchp.Core.Reflection
         /// Gets value indicating the property is visible in given class context.
         /// </summary>
         /// <param name="caller">Class context. By default the method check if the property is publically visible.</param>
-        public bool IsVisible(Type caller = null)
+        public bool IsVisible(Type? caller = null)
         {
             if (IsPublic)
             {

@@ -99,6 +99,7 @@ namespace Pchp.Core.Dynamic
         public static class Properties
         {
             public static readonly PropertyInfo PhpValue_Object = Types.PhpValue.GetProperty("Object");
+            public static readonly PropertyInfo PhpValue_IsAlias = Types.PhpValue.GetProperty("IsAlias");
             public static readonly FieldInfo PhpValue_Void = Types.PhpValue.GetField("Void");
             public static readonly FieldInfo PhpValue_Null = Types.PhpValue.GetField("Null");
             public static readonly FieldInfo PhpValue_False = Types.PhpValue.GetField("False");

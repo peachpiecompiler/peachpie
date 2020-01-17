@@ -711,7 +711,7 @@ namespace Pchp.Core
                     else
                     {
                         AssertChunkObject(chunks);
-                        _chunks = new [] { chunks, newchunk, null, null }; // [4]
+                        _chunks = new[] { chunks, newchunk, null, null }; // [4]
                         _chunksCount = 2;
                         _flags |= Flags.IsArrayOfChunks;
                     }
@@ -1008,16 +1008,16 @@ namespace Pchp.Core
 
             public byte[] ToBytes(Encoding encoding)
             {
-                var chunks = _chunks;
-                if (chunks != null)
+                if (IsEmpty)
                 {
-                    return (chunks.GetType() == typeof(object[]))
-                        ? ChunkToBytes(encoding, (object[])chunks, _chunksCount)
-                        : ChunkToBytes(encoding, chunks);
+                    return ArrayUtils.EmptyBytes;
                 }
                 else
                 {
-                    return ArrayUtils.EmptyBytes;
+                    var chunks = _chunks;
+                    return (chunks.GetType() == typeof(object[]))
+                        ? ChunkToBytes(encoding, (object[])chunks, _chunksCount)
+                        : ChunkToBytes(encoding, chunks);
                 }
             }
 
@@ -1466,9 +1466,7 @@ namespace Pchp.Core
         /// </summary>
         public Blob/*!*/EnsureWritable()
         {
-            Blob blob;
-
-            if ((blob = _data as Blob) != null)
+            if (_data is Blob blob)
             {
                 if (blob.IsShared)
                 {
@@ -1482,6 +1480,10 @@ namespace Pchp.Core
             else if (_data is string str)
             {
                 _data = blob = new Blob(str);
+            }
+            else
+            {
+                throw new InvalidOperationException();
             }
 
             //
@@ -1659,12 +1661,14 @@ namespace Pchp.Core
         /// <summary>
         /// Wraps the string into <see cref="PhpValue"/>.
         /// </summary>
-        internal static PhpValue AsPhpValue(PhpString str) =>
-            str.IsDefault
-            ? (PhpValue)string.Empty
-            : str._data is Blob b
-                ? PhpValue.Create(b.AddRef())
-                : PhpValue.Create((string)str._data);
+        internal static PhpValue AsPhpValue(PhpString str)
+        {
+            return ReferenceEquals(str._data, null) // default
+                ? (PhpValue)string.Empty
+                : str._data is Blob b
+                    ? PhpValue.Create(b.AddRef())
+                    : PhpValue.Create((string)str._data);
+        }
 
         /// <summary>
         /// Gets the first character.
@@ -1692,7 +1696,14 @@ namespace Pchp.Core
 
         public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
 
-        public byte[] ToBytes(Encoding encoding) => IsEmpty ? Array.Empty<byte>() : _data is Blob b ? b.ToBytes(encoding) : encoding.GetBytes((string)_data);
+        public byte[] ToBytes(Encoding encoding) =>
+            ReferenceEquals(_data, null)
+                ? ArrayUtils.EmptyBytes
+                : _data is Blob b
+                    ? b.ToBytes(encoding)
+                    : _data is string str && str.Length != 0
+                        ? encoding.GetBytes(str)
+                        : ArrayUtils.EmptyBytes;
 
         /// <summary>
         /// Implicit conversion to <see cref="long"/>.
