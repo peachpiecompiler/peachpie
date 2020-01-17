@@ -573,6 +573,12 @@ namespace Pchp.Core
         public static bool IsString(this PhpValue value, out string @string) => value.IsStringImpl(out @string);
 
         /// <summary>
+        /// Checks the value is constructed as mutable <see cref="PhpString"/>.
+        /// UTF strings are not handled by this method.
+        /// </summary>
+        public static bool IsMutableString(this PhpValue value, out PhpString @string) => value.IsMutableStringImpl(out @string);
+
+        /// <summary>
         /// Checks the value is of type <c>string</c> (both unicode and single-byte) or an alias to a string.
         /// </summary>
         public static bool IsString(this PhpValue value) => value.IsStringImpl();
