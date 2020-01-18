@@ -155,7 +155,7 @@ namespace Peachpie.Library.Network
                             { "filetime", DateTimeUtils.UtcToUnixTimeStamp(r.LastModified) },
                             { "total_time", r.TotalTime.TotalSeconds },
                             { "download_content_length", r.ContentLength },
-                            { "redirect_url", ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri }
+                            { "redirect_url", ch.FollowLocation && r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : string.Empty }
                         };
 
                         if (ch.RequestHeaders != null)
@@ -167,7 +167,7 @@ namespace Peachpie.Library.Network
                     case CURLConstants.CURLINFO_EFFECTIVE_URL:
                         return r.ResponseUri?.AbsoluteUri;
                     case CURLConstants.CURLINFO_REDIRECT_URL:
-                        return (ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri);
+                        return (ch.FollowLocation && r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : string.Empty);
                     case CURLConstants.CURLINFO_HTTP_CODE:
                         return (int)r.StatusCode;
                     case CURLConstants.CURLINFO_FILETIME:
@@ -308,11 +308,15 @@ namespace Peachpie.Library.Network
                 if (!string.IsNullOrEmpty(ch.ProxyUsername))
                 {
                     proxy.Credentials = new NetworkCredential(ch.ProxyUsername, ch.ProxyPassword ?? string.Empty);
-                } else {
+                }
+                else
+                {
                     proxy.Credentials = null;
                 }
                 req.Proxy = proxy;
-            } else {
+            }
+            else
+            {
                 // by default, curl does not go through system proxy
                 req.Proxy = new WebProxy();
             }
