@@ -162,7 +162,10 @@ namespace Peachpie.Library.Network
                         { "filetime", r.LastModifiedTimeStamp },
                         { "total_time", r.TotalTime.TotalSeconds },
                         { "download_content_length", r.ContentLength },
-                        { "redirect_url", ch.FollowLocation && r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : string.Empty }
+                        { "redirect_url", ch.FollowLocation && r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : string.Empty },
+                        //{ "http_version", CURL_HTTP_VERSION_*** }
+                        //{ "protocol", CURLPROTO_*** },
+                        //{ "scheme", STRING },
                     };
 
                     if (ch.RequestHeaders != null)
