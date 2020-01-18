@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 namespace Peachpie.Library.Network
@@ -321,6 +322,11 @@ namespace Peachpie.Library.Network
     sealed class CURLResponse
     {
         /// <summary>
+        /// Gets empty response with all the values zero (response of not executed request).
+        /// </summary>
+        public static CURLResponse Empty => new CURLResponse();
+
+        /// <summary>
         /// Error code number if exception happened.
         /// </summary>
         public CurlErrors ErrorCode { get; set; } = CurlErrors.CURLE_OK;
@@ -339,7 +345,7 @@ namespace Peachpie.Library.Network
 
         public HttpStatusCode StatusCode { get; }
 
-        public DateTime LastModified
+        public DateTime? LastModified
         {
             get
             {
@@ -349,21 +355,44 @@ namespace Peachpie.Library.Network
                 }
                 else
                 {
-                    return DateTime.UtcNow;
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets <c>lastmodified</c> header as a Unix time stamp.
+        /// Gets <c>-1</c> if header is not specified.
+        /// </summary>
+        public long LastModifiedTimeStamp
+        {
+            get
+            {
+                var date = this.LastModified;
+                if (date.HasValue)
+                {
+                    return DateTimeUtils.UtcToUnixTimeStamp(date.Value);
+                }
+                else
+                {
+                    return -1;
                 }
             }
         }
 
         /// <summary>
         /// Content length of download, read from Content-Length: field.
+        /// If not specified, gets <c>-1</c>.
         /// </summary>
         public long ContentLength => Headers != null && long.TryParse(Headers[HttpRequestHeader.ContentLength], out var length) ? length : -1;
 
-        public string ContentType => (Headers != null) ? Headers[HttpRequestHeader.ContentType] : string.Empty;
+        public string ContentType => (Headers != null) ? Headers[HttpRequestHeader.ContentType] : null;
 
         public string StatusHeader { get; set; } = string.Empty;
 
-        public int HeaderSize => StatusHeader.Length + HttpHeaders.HeaderSeparator.Length + ((Headers != null) ? Headers.ToByteArray().Length : 0);
+        public int HeaderSize =>
+            (string.IsNullOrEmpty(StatusHeader) ? 0 : (StatusHeader.Length + HttpHeaders.HeaderSeparator.Length)) +
+            ((Headers != null && Headers.Count != 0) ? Headers.ToByteArray().Length : 0);
 
         public WebHeaderCollection Headers { get; }
 
@@ -399,6 +428,11 @@ namespace Peachpie.Library.Network
             {
                 this.RequestHeaders = ch.RequestHeaders;
             }
+        }
+
+        private CURLResponse()
+        {
+            // everything to default, not exected request
         }
     }
 }
