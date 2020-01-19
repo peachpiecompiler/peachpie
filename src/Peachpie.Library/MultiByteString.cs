@@ -1174,17 +1174,30 @@ namespace Pchp.Library
 
         #endregion
 
-        #region mb_strrchr
+        #region mb_strrchr, mb_strrichr
 
         [return: CastToFalse]
-        public static string mb_strrchr(Context ctx, string haystack, string needle, bool part = false, string encoding = null)
+        public static string mb_strrchr(/*Context ctx,*/ string haystack, string needle, bool part = false, string encoding = null)
         {
             return StrrChr(
                 haystack,
                 needle,
                 part,
-                () => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding),
-                false);
+                ignoreCase: false
+                //() => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding)
+                );
+        }
+
+        [return: CastToFalse]
+        public static string mb_strrichr(/*Context ctx,*/ string haystack, string needle, bool part = false, string encoding = null)
+        {
+            return StrrChr(
+                haystack,
+                needle,
+                part,
+                ignoreCase: true
+                //() => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding),
+                );
         }
 
         #endregion
@@ -1555,13 +1568,11 @@ namespace Pchp.Library
             return (i < str.Length) ? str.Remove(i) : str;
         }
 
-        static string StrrChr(string haystack, string needle, bool beforeNeedle/*=false*/, Func<Encoding> encodingGetter, bool ignoreCase)
+        static string StrrChr(string haystack, string needle, bool beforeNeedle/*=false*/, bool ignoreCase/*, Func<Encoding> encodingGetter*/)
         {
             string uhaystack = haystack; //ObjectToString(haystack, encodingGetter);
-            char cneedle;
+            string uneedle = needle;
             {
-                string uneedle = needle;
-
                 //string uneedle;
 
                 //if (needle is string) uneedle = (string)needle;
@@ -1586,15 +1597,17 @@ namespace Pchp.Library
 
                 if (string.IsNullOrEmpty(uneedle))
                     return null;
-
-                cneedle = uneedle[0];
             }
 
-            int index = (ignoreCase) ? uhaystack.ToLower().LastIndexOf(char.ToLower(cneedle)) : uhaystack.LastIndexOf(cneedle);
-            if (index < 0)
+            int index = uhaystack.LastIndexOf(uneedle, ignoreCase ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture);
+            if (index >= 0)
+            {
+                return (beforeNeedle) ? uhaystack.Remove(index) : uhaystack.Substring(index);
+            }
+            else
+            {
                 return null;
-
-            return (beforeNeedle) ? uhaystack.Remove(index) : uhaystack.Substring(index);
+            }
         }
 
         static Encoding GetInternalEncoding(Context ctx)
