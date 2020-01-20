@@ -26,8 +26,7 @@ namespace Peachpie.Library.Network
             StoreRequestHeaders = 1,
             Verbose = 2,
             FailOnError = 4,
-            CookieFileSet = 8,
-            FollowLocation = 16,
+            FollowLocation = 8,
         }
 
         #endregion
@@ -133,16 +132,9 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// As long as <see cref="CURLConstants.CURLOPT_COOKIEFILE"/> is set (regardless of the value, even
         /// null suffices), the cookies retrieved from the server are recorded.
+        /// Otherwise this reference is <c>null</c>.
         /// </summary>
-        public bool CookieFileSet
-        {
-            get => (_flags & Flags.CookieFileSet) != 0;
-            set
-            {
-                if (value) _flags |= Flags.CookieFileSet;
-                else _flags &= ~Flags.CookieFileSet;
-            }
-        }
+        public CookieContainer CookieContainer { get; set; }
 
         public string Username { get; set; }
 

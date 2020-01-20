@@ -609,7 +609,7 @@ namespace Peachpie.Library.Network
                 case CURLOPT_HTTPHEADER: return SetOption<CurlOption_Headers, PhpArray>(ch, value.ToArray().DeepCopy());
                 case CURLOPT_ENCODING: return SetOption<CurlOption_AcceptEncoding, string>(ch, value.ToStringOrNull().EmptyToNull());
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
-                case CURLOPT_COOKIEFILE: ch.CookieFileSet = true; break;
+                case CURLOPT_COOKIEFILE: ch.CookieContainer ??= new CookieContainer(); break;
 
                 case CURLOPT_FILE: return TryProcessMethodFromStream(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
                 case CURLOPT_INFILE: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingRequest, readable: true);

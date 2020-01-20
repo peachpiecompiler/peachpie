@@ -191,7 +191,7 @@ namespace Peachpie.Library.Network
                 case CURLConstants.CURLINFO_PRIVATE:
                     return r.Private.IsSet ? r.Private.DeepCopy() : PhpValue.False;
                 case CURLConstants.CURLINFO_COOKIELIST:
-                    return ((ch.CookieFileSet && ch.Result != null) ? CreateCookieArray(ch.Result.Cookies) : PhpArray.Empty);
+                    return ((ch.CookieContainer != null && ch.Result != null) ? CreateCookiePhpArray(ch.Result.Cookies) : PhpArray.Empty);
                 case CURLConstants.CURLINFO_HEADER_SIZE:
                     return r.HeaderSize;
                 case CURLConstants.CURLINFO_HEADER_OUT:
@@ -202,18 +202,27 @@ namespace Peachpie.Library.Network
             }
         }
 
-        static PhpArray CreateCookieArray(CookieCollection cookies)
+        static PhpArray CreateCookiePhpArray(CookieCollection cookies)
         {
             var result = new PhpArray(cookies.Count);
+
             foreach (Cookie c in cookies)
             {
                 string subdomainAccess = "TRUE";                    // Simplified
-                string secure = c.Secure.ToString().ToUpper();
+                string secure = c.Secure.ToString().ToUpperInvariant();
                 long expires = (c.Expires.ToBinary() == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
                 result.Add($"{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}");
             }
 
             return result;
+        }
+
+        static void AddCookies(CookieCollection from, CookieContainer container)
+        {
+            if (from != null)
+            {
+                container?.Add(from);
+            }
         }
 
         static Uri? TryCreateUri(CURLResource ch)
@@ -225,7 +234,7 @@ namespace Peachpie.Library.Network
             }
 
             //
-            if (url.IndexOf("://") == -1)
+            if (url.IndexOf("://", StringComparison.Ordinal) == -1)
             {
                 url = string.Concat(ch.DefaultSheme, "://", url);
             }
@@ -303,9 +312,17 @@ namespace Peachpie.Library.Network
                 // equal or less than 0 will cause exception
                 req.MaximumAutomaticRedirections = ch.MaxRedirects < 0 ? int.MaxValue : ch.MaxRedirects;
             }
+            if (ch.CookieContainer != null)
+            {
+                if (ch.Result != null)
+                {
+                    // pass cookies from previous response to the request
+                    AddCookies(ch.Result.Cookies, ch.CookieContainer);
+                }
+                req.CookieContainer = ch.CookieContainer;
+            }
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
-            if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();
             if (ch.Username != null) req.Credentials = new NetworkCredential(ch.Username, ch.Password ?? string.Empty);
             // TODO: certificate
             if (!string.IsNullOrEmpty(ch.ProxyType) && !string.IsNullOrEmpty(ch.ProxyHost))
@@ -605,8 +622,8 @@ namespace Peachpie.Library.Network
             {
                 ch.VerboseOutput("Initiating HTTP(S) request.");
 
-                ch.Result = null;
                 ch.ResponseTask = ExecHttpRequestInternalAsync(ctx, ch, uri);
+                ch.Result = null;
             }
             else
             {
