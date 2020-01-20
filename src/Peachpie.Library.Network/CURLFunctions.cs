@@ -297,6 +297,7 @@ namespace Peachpie.Library.Network
             req.AllowAutoRedirect = ch.FollowLocation && ch.MaxRedirects != 0;
             req.Timeout = ch.Timeout <= 0 ? System.Threading.Timeout.Infinite : ch.Timeout;
             req.ContinueTimeout = ch.ContinueTimeout;
+            req.Accept = "*/*";    // default value
             if (req.AllowAutoRedirect)
             {
                 // equal or less than 0 will cause exception
@@ -306,25 +307,20 @@ namespace Peachpie.Library.Network
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
             if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();
             if (ch.Username != null) req.Credentials = new NetworkCredential(ch.Username, ch.Password ?? string.Empty);
-            if (ch.AcceptEncoding != null) req.Headers[HttpRequestHeader.AcceptEncoding] = ch.AcceptEncoding;
             // TODO: certificate
             if (!string.IsNullOrEmpty(ch.ProxyType) && !string.IsNullOrEmpty(ch.ProxyHost))
             {
-                var proxy = new WebProxy($"{ch.ProxyType}://{ch.ProxyHost}:{ch.ProxyPort}");
-                if (!string.IsNullOrEmpty(ch.ProxyUsername))
+                req.Proxy = new WebProxy($"{ch.ProxyType}://{ch.ProxyHost}:{ch.ProxyPort}")
                 {
-                    proxy.Credentials = new NetworkCredential(ch.ProxyUsername, ch.ProxyPassword ?? string.Empty);
-                }
-                else
-                {
-                    proxy.Credentials = null;
-                }
-                req.Proxy = proxy;
+                    Credentials = string.IsNullOrEmpty(ch.ProxyUsername)
+                        ? null
+                        : new NetworkCredential(ch.ProxyUsername, ch.ProxyPassword ?? string.Empty)
+                };
             }
             else
             {
                 // by default, curl does not go through system proxy
-                req.Proxy = new WebProxy();
+                //req.Proxy = new WebProxy();
             }
 
             foreach (var option in ch.Options)
@@ -465,7 +461,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Add the Cookie header if not present.
         /// </summary>
-        static void TryAddCookieHeader(HttpWebRequest req, string value)
+        static void TryAddCookieHeader(WebRequest req, string value)
         {
             if (req.Headers.Get(HttpRequestHeader.Cookie.ToString()) == null)
             {

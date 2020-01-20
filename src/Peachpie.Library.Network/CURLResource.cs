@@ -115,11 +115,6 @@ namespace Peachpie.Library.Network
             }
         }
 
-        /// <summary>
-        /// The contents of the <c>Accept-Encoding</c> header.
-        /// </summary>
-        public string AcceptEncoding { get; set; }
-
         public string Method { get; set; } = WebRequestMethods.Http.Get;
 
         /// <summary>

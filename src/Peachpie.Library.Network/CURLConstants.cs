@@ -606,8 +606,8 @@ namespace Peachpie.Library.Network
                         ? ProcessMethod.StdOut // NOTE: if ProcessingResponse is RETURN, RETURN headers as well
                         : ProcessMethod.Ignore;
                     break;
-                case CURLOPT_HTTPHEADER: SetOption<CurlOption_Headers, PhpArray>(ch, value.ToArray().DeepCopy()); break;
-                case CURLOPT_ENCODING: ch.AcceptEncoding = value.ToStringOrNull().EmptyToNull(); break;
+                case CURLOPT_HTTPHEADER: return SetOption<CurlOption_Headers, PhpArray>(ch, value.ToArray().DeepCopy());
+                case CURLOPT_ENCODING: return SetOption<CurlOption_AcceptEncoding, string>(ch, value.ToStringOrNull().EmptyToNull());
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
                 case CURLOPT_COOKIEFILE: ch.CookieFileSet = true; break;
 
@@ -748,11 +748,11 @@ namespace Peachpie.Library.Network
         {
             string proxy_string = Regex.Replace(proxy, @"\s+", "");
 
-            string scheme   = "http";
+            string scheme = "http";
             string username = "";
             string password = "";
-            string host     = "";
-            int    port     = 1080;
+            string host = "";
+            int port = 1080;
 
             if (proxy_string.IndexOf("://") != -1)
             {
@@ -918,6 +918,19 @@ namespace Peachpie.Library.Network
     }
 
     /// <summary>
+    /// Controls the "Accept-Encoding" header.
+    /// </summary>
+    sealed class CurlOption_AcceptEncoding : CurlOption<HttpWebRequest, string>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_ACCEPT_ENCODING;
+
+        public override void Apply(HttpWebRequest request)
+        {
+            request.Headers.Set(HttpRequestHeader.AcceptEncoding, this.OptionValue);
+        }
+    }
+
+    /// <summary>
     /// Headers to be send with the request.
     /// Keys of the array are ignored, values are in form of <c>header-name: value</c>
     /// </summary>
@@ -931,7 +944,32 @@ namespace Peachpie.Library.Network
             {
                 if (value.Value.IsString(out var header))
                 {
-                    request.Headers.Add(header);
+                    // split into name:value once
+                    string header_name, header_value;
+
+                    var colpos = header.IndexOf(':');
+                    if (colpos >= 0)
+                    {
+                        header_name = header.Remove(colpos);
+                        header_value = header.Substring(colpos + 1);
+                    }
+                    else
+                    {
+                        header_name = header;
+                        header_value = string.Empty;
+                    }
+
+                    // set the header,
+                    // replace previously set header or remove header with no value
+
+                    if (header_value.Length != 0)
+                    {
+                        request.Headers.Set(header_name, header_value);
+                    }
+                    else
+                    {
+                        request.Headers.Remove(header_name);
+                    }
                 }
             }
         }
