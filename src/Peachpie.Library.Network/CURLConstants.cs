@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 namespace Peachpie.Library.Network
@@ -609,7 +611,8 @@ namespace Peachpie.Library.Network
                 case CURLOPT_HTTPHEADER: return SetOption<CurlOption_Headers, PhpArray>(ch, value.ToArray().DeepCopy());
                 case CURLOPT_ENCODING: return SetOption<CurlOption_AcceptEncoding, string>(ch, value.ToStringOrNull().EmptyToNull());
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
-                case CURLOPT_COOKIEFILE: ch.CookieContainer ??= new CookieContainer(); break;
+                case CURLOPT_COOKIEFILE: ch.CookieContainer ??= new CookieContainer(); break;    // TODO: load netscape-like cookies from file if an existing file is specified 
+                case CURLOPT_COOKIEJAR: return SetOption<CurlOption_CookieJar, string>(ch, value.ToStringOrNull().EmptyToNull());
 
                 case CURLOPT_FILE: return TryProcessMethodFromStream(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
                 case CURLOPT_INFILE: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingRequest, readable: true);
@@ -979,6 +982,46 @@ namespace Peachpie.Library.Network
     {
         public override int OptionId => CURLConstants.CURLOPT_TCP_NODELAY;
         public override void Apply(HttpWebRequest request) => request.ServicePoint.UseNagleAlgorithm = !OptionValue;
+    }
+
+    /// <summary>
+    /// Provides value of <see cref="CURLConstants.CURLOPT_COOKIEJAR"/> option.
+    /// </summary>
+    sealed class CurlOption_CookieJar : CurlOption<HttpWebRequest, string>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_COOKIEJAR;
+        public override void Apply(HttpWebRequest request)
+        {
+            // invoked when initializing WebRequest
+            // do nothing
+        }
+
+        public void PrintCookies(Context ctx, CURLResource resource)
+        {
+            // called when cURL resource is being disposed
+            // output the cookies:
+            
+            Stream output;
+            
+            if (string.Equals(OptionValue, "-", StringComparison.Ordinal))
+            {
+                // current script output:
+                output = ctx.OutputStream;
+            }
+            else
+            {
+                // PHP-compliant file resolve function:
+                output = PhpStream.Open(ctx, OptionValue, "w", StreamOpenOptions.Empty, StreamContext.Default)?.RawStream;
+            }
+
+            if (output != null)
+            {
+                // TODO: output the cookies in netscape style
+                // - resource.Result?.Cookies
+                // or do we have to combine the request cookies with response cookies?
+                // - new CookieCollection( resource.CookieContainer ).Add( resource.Result.Cookies );
+            }
+        }
     }
 
     #endregion

@@ -10,6 +10,7 @@ using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Utilities;
@@ -31,7 +32,23 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Close a cURL session.
         /// </summary>
-        public static void curl_close(CURLResource resource) => resource?.Dispose();
+        public static void curl_close(Context ctx, CURLResource resource)
+        {
+            if (resource != null)
+            {
+                if (resource.TryGetOption<CurlOption_CookieJar>(out var jar))
+                {
+                    jar.PrintCookies(ctx, resource);
+                }
+                
+                //
+                resource.Dispose();
+            }
+            else
+            {
+                PhpException.ArgumentNull(nameof(resource));
+            }
+        }
 
         /// <summary>
         /// Sets an option on the given cURL session handle.
