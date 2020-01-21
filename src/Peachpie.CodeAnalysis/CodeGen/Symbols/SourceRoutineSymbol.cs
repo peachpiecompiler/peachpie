@@ -311,7 +311,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.DeclaringCompilation.Options.OptimizationLevel,
                 cg.EmitPdbSequencePoints,
                 this.ContainingType,
-                contextPlace: null,
+                contextPlace: cg.ContextPlaceOpt,
                 thisPlace: null,
                 routine: this, // needed to support static variables (they need enclosing routine while binding)
                 locals: new LocalPlace(generatorsLocals),
