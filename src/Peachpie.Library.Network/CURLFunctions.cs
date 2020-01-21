@@ -228,7 +228,7 @@ namespace Peachpie.Library.Network
                 string prefix = c.HttpOnly ? "#HttpOnly_" : "";
                 string subdomainAccess = "TRUE";                    // Simplified
                 string secure = c.Secure.ToString().ToUpperInvariant();
-                long expires = (c.Expires.ToBinary() == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
+                long expires = (c.Expires.Ticks == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
                 result.Add($"{prefix}{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}");
             }
 
