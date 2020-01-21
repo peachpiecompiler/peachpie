@@ -366,4 +366,7 @@
   <data name="ERR_BadCompilationOptionValue" xml:space="preserve">
     <value>Invalid '{0}' value: '{1}'.</value>
   </data>
+  <data name="ERR_CompileCancelled" xml:space="preserve">
+    <value>Compilation cancelled by user</value>
+  </data>
 </root>
