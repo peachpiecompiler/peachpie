@@ -157,6 +157,11 @@ namespace Peachpie.Library.Network
         public ProcessMethod ProcessingHeaders = ProcessMethod.Ignore;
 
         /// <summary>
+        /// Specify how to process received cookies.
+        /// </summary>
+        public ProcessMethod ProcessingCookieJar = ProcessMethod.Ignore;
+
+        /// <summary>
         /// Specify how to process content.
         /// </summary>
         public ProcessMethod ProcessingResponse = ProcessMethod.StdOut;
@@ -200,6 +205,7 @@ namespace Peachpie.Library.Network
             // clear references
             this.Result = null;
             this.ProcessingHeaders = ProcessMethod.Ignore;
+            this.ProcessingCookieJar = ProcessMethod.Ignore;
             this.ProcessingResponse = ProcessMethod.StdOut;
             this.ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
             this.PostFields = PhpValue.Void;

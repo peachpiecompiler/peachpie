@@ -610,6 +610,7 @@ namespace Peachpie.Library.Network
                 case CURLOPT_ENCODING: return SetOption<CurlOption_AcceptEncoding, string>(ch, value.ToStringOrNull().EmptyToNull());
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
                 case CURLOPT_COOKIEFILE: ch.CookieContainer ??= new CookieContainer(); break;
+                case CURLOPT_COOKIEJAR: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingCookieJar);
 
                 case CURLOPT_FILE: return TryProcessMethodFromStream(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
                 case CURLOPT_INFILE: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingRequest, readable: true);
