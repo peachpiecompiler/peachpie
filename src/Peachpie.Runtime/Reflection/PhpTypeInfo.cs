@@ -424,7 +424,7 @@ namespace Pchp.Core.Reflection
 
             if (type.IsByRef)
             {
-                type = type.GetElementType();
+                type = type.GetElementType() ?? throw new InvalidOperationException();
             }
 
             PhpTypeInfo result = null;
