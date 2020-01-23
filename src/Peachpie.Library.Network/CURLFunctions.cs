@@ -40,7 +40,7 @@ namespace Peachpie.Library.Network
                 {
                     jar.PrintCookies(ctx, resource);
                 }
-                
+
                 //
                 resource.Dispose();
             }
@@ -219,20 +219,21 @@ namespace Peachpie.Library.Network
             }
         }
 
-        static PhpArray CreateCookiePhpArray(CookieCollection cookies)
+        internal static IEnumerable<string> CookiesToNetscapeStyle(CookieCollection cookies)
         {
-            var result = new PhpArray(cookies.Count);
-
             foreach (Cookie c in cookies)
             {
                 string prefix = c.HttpOnly ? "#HttpOnly_" : "";
                 string subdomainAccess = "TRUE";                    // Simplified
                 string secure = c.Secure.ToString().ToUpperInvariant();
                 long expires = (c.Expires.Ticks == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
-                result.Add($"{prefix}{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}");
+                yield return $"{prefix}{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}";
             }
+        }
 
-            return result;
+        static PhpArray CreateCookiePhpArray(CookieCollection cookies)
+        {
+            return new PhpArray(CookiesToNetscapeStyle(cookies));
         }
 
         static void AddCookies(CookieCollection from, CookieContainer container)
@@ -311,7 +312,7 @@ namespace Peachpie.Library.Network
                 }
             }
         }
-        
+
         static readonly Lazy<IWebProxy> s_DefaultProxy = new Lazy<IWebProxy>(() => new WebProxy(), LazyThreadSafetyMode.None);
 
         static Task<WebResponse> ExecHttpRequestInternalAsync(Context ctx, CURLResource ch, Uri uri)
