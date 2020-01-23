@@ -1675,7 +1675,7 @@ namespace Pchp.Library.Streams
 
         // EX: cache this as a persistent stream
         static Lazy<PhpStream> s_stderr = new Lazy<PhpStream>(() => new NativeStream(
-            Utf8EncodingProvider.Instance, Console.OpenStandardInput(), null,
+            Utf8EncodingProvider.Instance, Console.OpenStandardError(), null,
             StreamAccessOptions.Write | StreamAccessOptions.UseText | StreamAccessOptions.Persistent,
             "php://stderr", StreamContext.Default)
         {

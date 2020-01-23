@@ -142,20 +142,24 @@ namespace Pchp.Library.Reflection
         [return: NotNull]
         public PhpArray getDefaultProperties(Context ctx)
         {
-            if (_tinfo.isInstantiable)
+            if (_tinfo.IsInterface)
             {
-                var inst = _tinfo.GetUninitializedInstance(ctx);
-                if (inst != null)
+                // interfaces cannot have properties:
+                return PhpArray.NewEmpty();
+            }
+            
+            // we have to instantiate the type to get the initial values:
+            var inst = _tinfo.GetUninitializedInstance(ctx);
+            if (inst != null)
+            {
+                var array = new PhpArray();
+
+                foreach (var p in _tinfo.GetDeclaredProperties())
                 {
-                    var array = new PhpArray();
-
-                    foreach (var p in TypeMembersUtils.GetDeclaredProperties(_tinfo))
-                    {
-                        array[p.PropertyName] = p.GetValue(ctx, inst);
-                    }
-
-                    return array;
+                    array[p.PropertyName] = p.GetValue(ctx, inst);
                 }
+
+                return array;
             }
 
             //

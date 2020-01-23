@@ -196,6 +196,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Compilation cancelled by user.
+        /// </summary>
+        internal static string ERR_CompileCancelled {
+            get {
+                return ResourceManager.GetString("ERR_CompileCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Default value for parameter ${0} with a {1} type can only be {1} or NULL, {2} type given.
         /// </summary>
         internal static string ERR_DefaultParameterValueTypeMismatch {

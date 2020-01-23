@@ -301,6 +301,12 @@ namespace Pchp.Library
             var tinfo = ctx.GetDeclaredType(class_name, true);
             if (tinfo != null)
             {
+                if (tinfo.IsInterface)
+                {
+                    // interfaces cannot have properties:
+                    return PhpArray.NewEmpty();
+                }
+                
                 var result = new PhpArray();
                 var callerType = Type.GetTypeFromHandle(caller);
 

@@ -80,7 +80,7 @@ namespace Pchp.Core.Reflection
         public TObjectCreator Creator => _lazyCreator ?? BuildCreator();
 
         /// <summary>
-        /// Gets value indicating the type can be publically instantiated.
+        /// Gets value indicating the type can be publicly instantiated.
         /// If <c>true</c>, the class is not-abstract, not-trait, not-interface and has a public constructor.
         /// </summary>
         public bool isInstantiable => this.Creator != null /*ensures _flags initialized */ && (_flags & Flags.InstantiationNotAllowed) == 0;
@@ -424,7 +424,7 @@ namespace Pchp.Core.Reflection
 
             if (type.IsByRef)
             {
-                type = type.GetElementType();
+                type = type.GetElementType() ?? throw new InvalidOperationException();
             }
 
             PhpTypeInfo result = null;

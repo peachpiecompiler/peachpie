@@ -686,5 +686,10 @@ namespace Pchp.Library.DateTime
         public static PhpArray timezone_location_get(DateTimeZone @object) => @object.getLocation();
 
         #endregion
+
+        /// <summary>
+        /// Alias to <see cref="DateTimeZone.getName"/>
+        /// </summary>
+        public static string timezone_name_get(DateTimeZone @object) => @object.getName();
     }
 }

@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Pchp.Core.Dynamic;
 using Pchp.Core.Utilities;
+using Peachpie.Runtime.Dynamic;
 
 namespace Pchp.Core.Reflection
 {
@@ -251,50 +253,86 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
-        /// Builds delegate that creates uninitialized class instance for purposes of deserialization.
+        /// Builds delegate that creates uninitialized class instance for purposes of deserialization and reflection.
         /// </summary>
         internal static bool TryBuildCreateEmptyObjectFunc(PhpTypeInfo tinfo, out Func<Context, object> activator)
         {
             Debug.Assert(tinfo != null);
 
-            Func<Context, object> candidate = null;
+            activator = null;
 
-            if (!tinfo.IsInterface && !tinfo.IsTrait && !tinfo.Type.IsAbstract)
+            if (tinfo.IsInterface)
             {
-                var ctors = tinfo.Type.DeclaredConstructors;
+                // cannot be instantiated
+            }
+            else if (tinfo.Type.IsAbstract)
+            {
+                // abstract class,
+                // generate a non-abstract class that implements this one:
 
-                foreach (var c in ctors)
+                var dummytype = EmitHelpers.CreatDefaultAbstractClassImplementation(tinfo.Type, out var ctor);
+                activator = _ctx => ctor.Invoke(new object[] {_ctx});
+            }
+            else if (tinfo.IsTrait)
+            {
+                // trait class, can be instantiated using following .ctor:
+                // .ctor( Context, TSelf )
+
+                // var t_object = tinfo.Type.IsGenericTypeDefinition
+                //     ? tinfo.Type.MakeGenericType(typeof(object))
+                //     : tinfo.Type;
+                //
+                // foreach (var c in t_object.GetConstructors())
+                // {
+                //     // there is only one .ctor:
+                //     var ps = c.GetParameters();
+                //     if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(object) && c.IsPublic)
+                //     {
+                //         activator = _ctx => c.Invoke(new[] { _ctx, new object(), });
+                //     }
+                // }
+            }
+            else
+            {
+                // regular instantiable class
+                
+                foreach (var c in tinfo.Type.DeclaredConstructors)
                 {
                     if (c.IsStatic || c.IsPrivate || c.IsPhpHidden())
                     {
                         continue;
                     }
-
+                    
                     var ps = c.GetParameters();
 
-                    // .ctor()
-                    if (ps.Length == 0)
-                        candidate = (_ctx) => c.Invoke(Array.Empty<object>());
-
-                    // .ctor(Context)
-                    if (ps.Length == 1 && ps[0].IsContextParameter())
-                        candidate = (_ctx) => c.Invoke(new object[] { _ctx });
-
-                    // [PhpFieldsOnly] .ctor(Context, Dummy)
-                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(DummyFieldsOnlyCtor))
-                        candidate = (_ctx) => c.Invoke(new object[] { _ctx, default(DummyFieldsOnlyCtor) });
-
-                    //
-                    if (c.IsPhpFieldsOnlyCtor())
+                    switch (ps.Length)
                     {
-                        Debug.Assert(candidate != null);
-                        break; // candidate found
+                        // .ctor()
+                        case 0:
+                            activator = (_ctx) => c.Invoke(Array.Empty<object>());
+                            break;
+                        
+                        // .ctor(Context)
+                        case 1 when ps[0].IsContextParameter():
+                            activator = (_ctx) => c.Invoke(new object[] {_ctx});
+                            break;
+                        
+                        // [PhpFieldsOnly] .ctor(Context, Dummy)
+                        case 2 when ps[0].IsContextParameter() && ps[1].ParameterType == typeof(DummyFieldsOnlyCtor):
+                            activator = (_ctx) => c.Invoke(new object[] {_ctx, default(DummyFieldsOnlyCtor)});
+                            break;
+                    }
+                    
+                    //
+                    if (activator != null && c.IsPhpFieldsOnlyCtor())
+                    {
+                        // best candidate
+                        break;
                     }
                 }
             }
 
             //
-            activator = candidate;
             return activator != null;
         }
 

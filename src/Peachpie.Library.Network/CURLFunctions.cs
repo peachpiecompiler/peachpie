@@ -10,6 +10,7 @@ using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Utilities;
@@ -31,7 +32,23 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Close a cURL session.
         /// </summary>
-        public static void curl_close(CURLResource resource) => resource?.Dispose();
+        public static void curl_close(Context ctx, CURLResource resource)
+        {
+            if (resource != null)
+            {
+                if (resource.TryGetOption<CurlOption_CookieJar>(out var jar))
+                {
+                    jar.PrintCookies(ctx, resource);
+                }
+                
+                //
+                resource.Dispose();
+            }
+            else
+            {
+                PhpException.ArgumentNull(nameof(resource));
+            }
+        }
 
         /// <summary>
         /// Sets an option on the given cURL session handle.
@@ -211,7 +228,7 @@ namespace Peachpie.Library.Network
                 string prefix = c.HttpOnly ? "#HttpOnly_" : "";
                 string subdomainAccess = "TRUE";                    // Simplified
                 string secure = c.Secure.ToString().ToUpperInvariant();
-                long expires = (c.Expires.ToBinary() == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
+                long expires = (c.Expires.Ticks == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
                 result.Add($"{prefix}{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}");
             }
 
@@ -294,6 +311,8 @@ namespace Peachpie.Library.Network
                 }
             }
         }
+        
+        static readonly Lazy<IWebProxy> s_DefaultProxy = new Lazy<IWebProxy>(() => new WebProxy(), LazyThreadSafetyMode.None);
 
         static Task<WebResponse> ExecHttpRequestInternalAsync(Context ctx, CURLResource ch, Uri uri)
         {
@@ -338,7 +357,7 @@ namespace Peachpie.Library.Network
             else
             {
                 // by default, curl does not go through system proxy
-                //req.Proxy = new WebProxy();
+                req.Proxy = s_DefaultProxy.Value;
             }
 
             foreach (var option in ch.Options)

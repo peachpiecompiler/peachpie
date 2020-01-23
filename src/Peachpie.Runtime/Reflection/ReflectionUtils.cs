@@ -108,7 +108,7 @@ namespace Pchp.Core.Reflection
         public static bool IsInstantiable(Type t) => t != null && !t.IsInterface && !t.IsAbstract; // => not static
 
         /// <summary>
-        /// Determines whether given parametr allows <c>NULL</c> as the argument value.
+        /// Determines whether given parameter allows <c>NULL</c> as the argument value.
         /// </summary>
         public static bool IsNullable(this ParameterInfo p)
         {
