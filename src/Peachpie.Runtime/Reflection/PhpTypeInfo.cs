@@ -608,19 +608,19 @@ namespace Pchp.Core.Reflection
                 // trait class, can be instantiated using following .ctor:
                 // .ctor( Context, TSelf )
 
-                // var t_object = tinfo.Type.IsGenericTypeDefinition
-                //     ? tinfo.Type.MakeGenericType(typeof(object))
-                //     : tinfo.Type;
-                //
-                // foreach (var c in t_object.GetConstructors())
-                // {
-                //     // there is only one .ctor:
-                //     var ps = c.GetParameters();
-                //     if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(object) && c.IsPublic)
-                //     {
-                //         activator = _ctx => c.Invoke(new[] { _ctx, new object(), });
-                //     }
-                // }
+                var t_object = tinfo.Type.IsGenericTypeDefinition
+                    ? tinfo.Type.MakeGenericType(typeof(object))
+                    : tinfo.Type;
+
+                foreach (var c in t_object.GetConstructors())
+                {
+                    // there is only one .ctor:
+                    var ps = c.GetParameters();
+                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(object) && c.IsPublic)
+                    {
+                        activator = _ctx => c.Invoke(new[] { _ctx, new object(), });
+                    }
+                }
             }
             else
             {
