@@ -428,7 +428,7 @@ namespace Pchp.Core.Reflection
                         {
                             // double checked lock
                         }
-                        else if (type.IsGenericTypeDefinition)
+                        else if (type.IsGenericTypeDefinition) // TODO: or type.IsByRefLike - netstandard2.1
                         {
                             // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
                             // just instantiate the type info and cache the result
