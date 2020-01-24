@@ -312,7 +312,7 @@ namespace Pchp.Library
 
                 // the class has to be instantiated in order to discover default instance property values
                 // (the constructor will initialize default properties, user defined constructor will not be called)
-                var instanceOpt = tinfo.GetUninitializedInstance(ctx);
+                var instanceOpt = tinfo.CreateUninitializedInstance(ctx);
 
                 foreach (var prop in tinfo.GetDeclaredProperties())
                 {

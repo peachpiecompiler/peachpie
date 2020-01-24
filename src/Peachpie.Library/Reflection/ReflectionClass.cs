@@ -149,7 +149,7 @@ namespace Pchp.Library.Reflection
             }
             
             // we have to instantiate the type to get the initial values:
-            var inst = _tinfo.GetUninitializedInstance(ctx);
+            var inst = _tinfo.CreateUninitializedInstance(ctx);
             if (inst != null)
             {
                 var array = new PhpArray();
@@ -477,7 +477,7 @@ namespace Pchp.Library.Reflection
         public bool isUserDefined() => _tinfo.IsUserType;
         public object newInstance(Context ctx, params PhpValue[] args) => _tinfo.Creator(ctx, args);
         public object newInstanceArgs(Context ctx, PhpArray args) => newInstance(ctx, args.GetValues());
-        public object newInstanceWithoutConstructor(Context ctx) => _tinfo.GetUninitializedInstance(ctx);
+        public object newInstanceWithoutConstructor(Context ctx) => _tinfo.CreateUninitializedInstance(ctx);
         public void setStaticPropertyValue(string name, PhpValue value) { throw new NotImplementedException(); }
 
         #region Reflector

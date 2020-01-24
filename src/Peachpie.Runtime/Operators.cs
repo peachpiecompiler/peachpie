@@ -1422,7 +1422,7 @@ namespace Pchp.Core
             var tinfo = value.GetPhpTypeInfo();
 
             // memberwise clone
-            var newobj = tinfo.GetUninitializedInstance(ctx);
+            var newobj = tinfo.CreateUninitializedInstance(ctx);
             if (newobj != null)
             {
                 Serialization.MemberwiseClone(tinfo, value, newobj);

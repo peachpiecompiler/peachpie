@@ -57,12 +57,18 @@ namespace Peachpie.Runtime.Dynamic
             if (type.IsAbstract == false) throw new ArgumentException();
 
             // 
-            var tb = s_lazyDynamicModuleBuilder.Value.DefineType(type.FullName + "`Impl", TypeAttributes.Public, parent: type);
+            var tb = s_lazyDynamicModuleBuilder.Value.DefineType(type.FullName + "#" + type.GetHashCode(), TypeAttributes.Public, parent: type);
 
             // implement abstract methods:
             foreach (var m in type.GetRuntimeMethods().Where(m => m.IsAbstract && !m.IsPrivate))
             {
-                var method = tb.DefineMethod(m.Name, m.Attributes | MethodAttributes.Virtual & (~MethodAttributes.Abstract));
+                var method = tb.DefineMethod(
+                    m.Name,
+                    (m.Attributes & MethodAttributes.MemberAccessMask) | MethodAttributes.Virtual | MethodAttributes.Final,
+                    CallingConventions.Standard,
+                    m.ReturnType,
+                    m.GetParametersType());
+
                 var il = method.GetILGenerator();
 
                 il.ThrowException(typeof(NotImplementedException));
@@ -74,7 +80,7 @@ namespace Peachpie.Runtime.Dynamic
             var basector = ResolveFieldInitCtor(type);
             if (basector != null)
             {
-                var cb = tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new[] {typeof(Context)});
+                var cb = tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(Context) });
                 // cb.DefineParameter(1, ParameterAttributes.None, "ctx");
                 cb.InitLocals = true;
                 var il = cb.GetILGenerator();

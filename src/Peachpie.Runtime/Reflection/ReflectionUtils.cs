@@ -180,6 +180,31 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
+        /// Gets types of parameters of given method
+        /// </summary>
+        public static Type[] GetParametersType(this MethodBase method)
+        {
+            if (method == null)
+            {
+                throw new ArgumentNullException(nameof(method));
+            }
+
+            var ps = method.GetParameters();
+            if (ps.Length == 0)
+            {
+                return Array.Empty<Type>();
+            }
+
+            //
+            var types = new Type[ps.Length];
+            for (int i = 0; i < types.Length; i++)
+            {
+                types[i] = ps[i].ParameterType;
+            }
+            return types;
+        }
+
+        /// <summary>
         /// Determines if the routine is entirely public.
         /// </summary>
         public static bool IsPublic(this RoutineInfo/*!*/routine)
