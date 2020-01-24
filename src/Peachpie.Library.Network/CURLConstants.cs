@@ -999,7 +999,7 @@ namespace Peachpie.Library.Network
         public void PrintCookies(Context ctx, CURLResource resource)
         {
             // called when cURL resource is being disposed
-            // output the cookies:.
+            // output the cookies:
             
             Stream output;
             
