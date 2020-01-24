@@ -266,26 +266,34 @@ namespace Pchp.Core.Reflection
         /// </summary>
         static string ResolvePhpTypeName(Type tinfo, PhpTypeAttribute attr)
         {
-            string name = null;
+            string name;
 
-            if (attr != null)
+            switch (attr != null ? attr.TypeNameAs : PhpTypeAttribute.PhpTypeName.Default)
             {
-                name = attr.TypeNameAs == PhpTypeAttribute.PhpTypeName.NameOnly
-                    ? tinfo.Name
-                    : attr.ExplicitTypeName;
+                case PhpTypeAttribute.PhpTypeName.Default:
+                    // CLR type
+                    name = tinfo.FullName       // full PHP type name instead of CLR type name
+                       .Replace('.', '\\')      // namespace separator
+                       .Replace('+', '\\');     // nested type separator
+                    break;
+
+                case PhpTypeAttribute.PhpTypeName.NameOnly:
+                    name = tinfo.Name;
+                    break;
+                        
+                case PhpTypeAttribute.PhpTypeName.CustomName:
+                    name = attr.ExplicitTypeName ?? tinfo.Name;
+                    break;
+
+                default:
+                    throw new ArgumentException();
             }
 
-            //
-            if (name == null)
-            {
-                // CLR type
-                name = tinfo.FullName       // full PHP type name instead of CLR type name
-                   .Replace('.', '\\')      // namespace separator
-                   .Replace('+', '\\');     // nested type separator
-            }
+            Debug.Assert(name != null);
+            Debug.Assert(name.Length != 0);
 
-            // remove suffixed indexes (after a special metadata character)
-            var idx = name.IndexOfAny(_metadataSeparators);
+            // remove suffixed indexes if any (after a special metadata character)
+            var idx = name.IndexOfAny(s_metadataSeparators);
             if (idx >= 0)
             {
                 name = name.Remove(idx);
@@ -303,7 +311,7 @@ namespace Pchp.Core.Reflection
         /// Array of characters used to separate class name from its metadata indexes (order, generics, etc).
         /// These characters and suffixed text has to be ignored.
         /// </summary>
-        private static readonly char[] _metadataSeparators = new[] { '#', '@', '`', '<', '?' };
+        private static readonly char[] s_metadataSeparators = new[] { '#', '`', '<', '?' };
 
         #region Reflection
 
