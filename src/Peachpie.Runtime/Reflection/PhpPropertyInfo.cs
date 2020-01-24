@@ -154,7 +154,7 @@ namespace Pchp.Core.Reflection
                 if (field == null) throw new ArgumentNullException(nameof(field));
                 
                 Debug.Assert(field.DeclaringType?.Name == "_statics");
-                Debug.Assert(!field.IsStatic);
+                Debug.Assert(!field.IsStatic || field.IsLiteral);
             }
 
             public override FieldAttributes Attributes
@@ -192,9 +192,20 @@ namespace Pchp.Core.Reflection
             {
                 Debug.Assert(ctx != null);
 
-                // Context.GetStatics<_statics>().FIELD
-                var getstatics = BinderHelpers.GetStatic_T_Method(Field.DeclaringType);
-                return Expression.Field(Expression.Call(ctx, getstatics), Field);
+                if (Field.IsLiteral)
+                {
+                    return Expression.Constant(Field.GetValue(null));
+                }
+                else if (Field.IsStatic)
+                {
+                    return Expression.Field(null, Field);
+                }
+                else
+                {
+                    // Context.GetStatics<_statics>().FIELD
+                    var getstatics = BinderHelpers.GetStatic_T_Method(Field.DeclaringType);
+                    return Expression.Field(Expression.Call(ctx, getstatics), Field);
+                }
             }
         }
 
