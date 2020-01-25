@@ -252,6 +252,10 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(this.IsGeneratorMethod());
 
             var genSymbol = new SourceGeneratorSymbol(this);
+            //var genConstructed = (genSymbol.ContainingType is SourceTraitTypeSymbol st)
+            //    ? genSymbol.AsMember(st.Construct(st.TypeArguments))
+            //    : genSymbol;
+            
             var il = cg.Builder;
 
             /* Template:
@@ -278,7 +282,9 @@ namespace Pchp.CodeAnalysis.Symbols
             // new GeneratorStateMachineDelegate(<genSymbol>) delegate for generator
             cg.Builder.EmitNullConstant(); // null
             cg.EmitOpCode(ILOpCode.Ldftn); // method
-            cg.EmitSymbolToken(genSymbol, null);
+            //cg.EmitSymbolToken(genSymbol, null);
+            cg.Builder.EmitToken(cg.Module.Translate(genSymbol, null, cg.Diagnostics, false), null, cg.Diagnostics); // !! needDeclaration: false
+
             cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
 
             // handleof(this)
