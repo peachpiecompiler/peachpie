@@ -95,7 +95,7 @@ namespace Pchp.Core.Dynamic
             return Expression.Or(expr1, expr2, or_method);
         }
 
-        static Expression CombineCosts(IList<Expression> ops) => BinaryOr<ConversionCost>(ops, CostOf.Or, typeof(CostOf).GetMethod("Or", typeof(ConversionCost), typeof(ConversionCost)));
+        static Expression CombineCosts(IList<Expression> ops) => BinaryOr<ConversionCost>(ops, CostOf.Or, Cache.Operators.Or_ConversionCost_ConversionCost);
 
         /// <summary>
         /// Gets array of parameters indexes that have different type in provided methods.
@@ -494,6 +494,8 @@ namespace Pchp.Core.Dynamic
                         // create specialized variable with default value
                         if (targetparam.HasDefaultValue || (defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>()) != null)
                         {
+                            Debug.Assert(!targetparam.ParameterType.IsByRef);   // parameter with a default value cannot be byref (at least we don't expect it)
+
                             // just for debugging purposes:
                             var defaultValueStr = defaultValueAttr != null
                                 ? defaultValueAttr.FieldName
@@ -523,9 +525,22 @@ namespace Pchp.Core.Dynamic
                         }
                     }
 
-                    return (targetparam == null)
-                        ? value.Expression
-                        : ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);
+                    if (targetparam == null)
+                    {
+                        return value.Expression;
+                    }
+                    else
+                    {
+                        var ptype = targetparam.ParameterType;
+
+                        // TODO: ptype.IsByRef -> implement write-back after the invocation
+                        if (ptype.IsByRef)
+                        {
+                            ptype = ptype.GetElementType(); // LINQ will create a local variable for it implicitly
+                        }
+
+                        return ConvertExpression.Bind(value.Expression, ptype, _ctx);
+                    }
                 }
 
                 public override Expression BindParams(int fromarg, Type element_type)
@@ -1093,6 +1108,8 @@ namespace Pchp.Core.Dynamic
 
             //
             body.Add(invoke);
+
+            // TODO: write-back of byref variables
 
             // return Block { ... ; invoke; }
             return Expression.Block(treturn, locals, body);
