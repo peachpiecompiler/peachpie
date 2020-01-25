@@ -142,19 +142,26 @@ namespace Pchp.Library.Reflection
         [return: NotNull]
         public PhpArray getDefaultProperties(Context ctx)
         {
-            if (_tinfo.IsInterface)
+            var tinfo = _tinfo;
+
+            if (tinfo.IsInterface)
             {
                 // interfaces cannot have properties:
                 return PhpArray.NewEmpty();
             }
-            
+            else if (tinfo.IsTrait && tinfo.Type.IsGenericTypeDefinition)
+            {
+                // construct the generic trait class with <object>
+                tinfo = tinfo.Type.MakeGenericType(typeof(object)).GetPhpTypeInfo();
+            }
+
             // we have to instantiate the type to get the initial values:
-            var inst = _tinfo.CreateUninitializedInstance(ctx);
+            var inst = tinfo.CreateUninitializedInstance(ctx);
             if (inst != null)
             {
                 var array = new PhpArray();
 
-                foreach (var p in _tinfo.GetDeclaredProperties())
+                foreach (var p in tinfo.GetDeclaredProperties())
                 {
                     array[p.PropertyName] = p.GetValue(ctx, inst);
                 }

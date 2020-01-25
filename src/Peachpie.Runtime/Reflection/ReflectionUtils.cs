@@ -98,7 +98,7 @@ namespace Pchp.Core.Reflection
 
             return
                 t.IsSealed &&
-                t.IsGenericTypeDefinition &&
+                t.IsGenericType &&
                 t.GetCustomAttribute<PhpTraitAttribute>(false) != null;
         }
 

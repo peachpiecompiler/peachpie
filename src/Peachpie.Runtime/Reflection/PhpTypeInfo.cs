@@ -613,20 +613,25 @@ namespace Pchp.Core.Reflection
             }
             else if (tinfo.IsTrait)
             {
-                // trait class, can be instantiated using following .ctor:
+                // trait class, can be instantiated using following (and the only) .ctor:
                 // .ctor( Context, TSelf )
 
-                var t_object = tinfo.Type.IsGenericTypeDefinition
-                    ? tinfo.Type.MakeGenericType(typeof(object))
-                    : tinfo.Type;
-
-                foreach (var c in t_object.GetConstructors())
+                if (tinfo.Type.IsGenericTypeDefinition)
                 {
-                    // there is only one .ctor:
-                    var ps = c.GetParameters();
-                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(object) && c.IsPublic)
+                    // trait class must be constructed first!
+                    throw new NotSupportedException("Trait type is not constructed, cannot be created.");
+                    // tinfo = tinfo.Type.MakeGenericType(typeof(object));
+                }
+                else
+                {
+                    foreach (var c in tinfo.Type.GetConstructors())
                     {
-                        activator = _ctx => c.Invoke(new[] { _ctx, new object(), });
+                        // there is only one .ctor:
+                        var ps = c.GetParameters();
+                        if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(object) && c.IsPublic)
+                        {
+                            activator = _ctx => c.Invoke(new[] { _ctx, new object(), });
+                        }
                     }
                 }
             }

@@ -306,6 +306,11 @@ namespace Pchp.Library
                     // interfaces cannot have properties:
                     return PhpArray.NewEmpty();
                 }
+                else if (tinfo.IsTrait && tinfo.Type.IsGenericTypeDefinition)
+                {
+                    // construct the generic trait class with <object>
+                    tinfo = tinfo.Type.MakeGenericType(typeof(object)).GetPhpTypeInfo();
+                }
                 
                 var result = new PhpArray();
                 var callerType = Type.GetTypeFromHandle(caller);
