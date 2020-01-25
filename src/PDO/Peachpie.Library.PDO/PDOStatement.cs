@@ -883,7 +883,7 @@ namespace Peachpie.Library.PDO
             {
                 foreach (var pair in bound_params)
                 {
-                    // unnamedand rewritten parameters are mapped to the real name
+                    // unnamed and rewritten parameters are mapped to the real name
                     var key = bound_param_map != null && bound_param_map.TryGetValue(pair.Key, out var newkey)
                         ? newkey
                         : pair.Key;
