@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 using Pchp.Core.Resources;
 
 namespace Pchp.Core.Utilities
@@ -42,74 +39,6 @@ namespace Pchp.Core.Utilities
                 ? ReadOnlySpan<char>.Empty
                 : path.AsSpan(0, index);
         }
-    }
-
-    #endregion
-
-    #region CurrentPlatform
-
-    /// <summary>
-    /// Platform specific constants.
-    /// </summary>
-    public static class CurrentPlatform
-    {
-        static CurrentPlatform()
-        {
-            if (IsWindows)
-            {
-                DirectorySeparator = PathUtils.DirectorySeparator;
-                AltDirectorySeparator = PathUtils.AltDirectorySeparator;
-                PathSeparator = ';';
-                PathComparer = StringComparer.OrdinalIgnoreCase;
-                PathStringComparison = StringComparison.OrdinalIgnoreCase;
-            }
-            else
-            {
-                DirectorySeparator = PathUtils.AltDirectorySeparator;
-                AltDirectorySeparator = PathUtils.DirectorySeparator;
-                PathSeparator = ':';
-                PathComparer = StringComparer.Ordinal;
-                PathStringComparison = StringComparison.Ordinal;
-            }
-        }
-
-        /// <summary>
-        /// Gets value indicating the guest operating.
-        /// </summary>
-        public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        
-        /// <summary>
-        /// Gets value indicating the guest operating.
-        /// </summary>
-        public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-        
-        /// <summary>
-        /// Gets value indicating the guest operating.
-        /// </summary>
-        public static bool IsOsx => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-
-        public static readonly char DirectorySeparator;
-
-        public static readonly char AltDirectorySeparator;
-
-        public static readonly char PathSeparator;
-
-        /// <summary>
-        /// Gets string comparer for path comparison on current platform.
-        /// </summary>
-        /// <remarks>Ignore case on Windows, otherwise case-sensitive.</remarks>
-        public static readonly StringComparer PathComparer;
-
-        /// <summary>
-        /// Gets string comparison method for path comparison on current platform.
-        /// </summary>
-        /// <remarks>Ignore case on Windows, otherwise case-sensitive.</remarks>
-        public static readonly StringComparison PathStringComparison;
-
-        /// <summary>
-        /// Replaces <see cref="AltDirectorySeparator"/> to <see cref="DirectorySeparator"/>.
-        /// </summary>
-        public static string NormalizeSlashes(string path) => path.Replace(AltDirectorySeparator, DirectorySeparator);
     }
 
     #endregion
@@ -209,7 +138,7 @@ namespace Pchp.Core.Utilities
             {
                 return schemespan.ToString();
             }
-            
+
             // When there is not scheme present (or it's a local path) return "file".
             return "file";
         }
@@ -233,7 +162,7 @@ namespace Pchp.Core.Utilities
                     return true;
                 }
             }
-            
+
             //
 
             scheme = default;

@@ -47,6 +47,12 @@ namespace Pchp.Core
                 InitSuperglobals();
                 InitializeServerVars(mainscript);
                 InitializeArgvArgc(args);
+
+                if (CurrentPlatform.IsWindows)
+                {
+                    // VT100
+                    WindowsPlatform.Enable_VT100();
+                }
             }
         }
 
