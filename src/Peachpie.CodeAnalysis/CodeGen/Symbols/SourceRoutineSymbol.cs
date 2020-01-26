@@ -259,12 +259,11 @@ namespace Pchp.CodeAnalysis.Symbols
             var il = cg.Builder;
 
             /* Template:
-             * return BuildGenerator( <ctx>, this, new PhpArray(){ p1, p2, ... }, new GeneratorStateMachineDelegate((IntPtr)<genSymbol>), (RuntimeMethodHandle)this )
+             * return BuildGenerator( <ctx>, new PhpArray(){ p1, p2, ... }, new GeneratorStateMachineDelegate((IntPtr)<genSymbol>), (RuntimeMethodHandle)this )
              */
 
             cg.EmitLoadContext(); // ctx for generator
-            cg.EmitThisOrNull();  // @this for generator
-
+            
             // new PhpArray for generator's locals
             cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
 
@@ -291,13 +290,29 @@ namespace Pchp.CodeAnalysis.Symbols
             cg.EmitLoadToken(this, null);
 
             // create generator object via Operators factory method
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle);
 
-            // .UseDynamicScope( scope ) : Generator
+            // .SetGeneratorThis( object ) : Generator
+            if (!this.IsStatic)
+            {
+                cg.EmitThisOrNull();
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorThis_Generator_Object)
+                    .Expect(cg.CoreTypes.Generator);
+            }
+
+            // .SetGeneratorLazyStatic( PhpTypeInfo ) : Generator
+            if (this.RequiresLateStaticBoundParam)
+            {
+                cg.EmitLoadStaticPhpTypeInfo();
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorLazyStatic_Generator_PhpTypeInfo)
+                    .Expect(cg.CoreTypes.Generator);
+            }
+
+            // .SetGeneratorDynamicScope( scope ) : Generator
             if (this is SourceLambdaSymbol lambda)
             {
                 lambda.GetCallerTypePlace().EmitLoad(cg.Builder); // RuntimeTypeContext
-                cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("UseDynamicScope", cg.CoreTypes.Generator, cg.CoreTypes.RuntimeTypeHandle))
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorDynamicScope_Generator_RuntimeTypeHandle)
                     .Expect(cg.CoreTypes.Generator);
             }
 

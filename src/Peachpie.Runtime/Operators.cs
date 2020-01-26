@@ -1712,7 +1712,7 @@ namespace Pchp.Core
         /// <summary>
         /// Create <see cref="Generator"/> with specified state machine function and parameters.
         /// </summary>
-        public static Generator BuildGenerator(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate smmethod, RuntimeMethodHandle ownerhandle) => new Generator(ctx, @this, locals, tmpLocals, smmethod, ownerhandle);
+        public static Generator BuildGenerator(Context ctx, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate smmethod, RuntimeMethodHandle ownerhandle) => new Generator(ctx, locals, tmpLocals, smmethod, ownerhandle);
 
         public static int GetGeneratorState(Generator g) => g._state;
 
@@ -1769,13 +1769,34 @@ namespace Pchp.Core
 
         public static object GetGeneratorThis(Generator g) => g._this;
 
+        public static Generator SetGeneratorThis(this Generator generator, object @this)
+        {
+            generator._this = @this;
+            return generator;
+        }
+
+        /// <summary>
+        /// Resolves generator's <c>static</c> type.
+        /// </summary>
+        /// <returns><see cref="PhpTypeInfo"/> refering to the lazy static bound type. Cannot be <c>null</c>.</returns>
+        public static PhpTypeInfo GetGeneratorLazyStatic(this Generator generator)
+        {
+            return generator._static ?? generator._this?.GetPhpTypeInfo() ?? throw new InvalidOperationException();
+        }
+
+        public static Generator SetGeneratorLazyStatic(this Generator generator, PhpTypeInfo @static)
+        {
+            generator._static = @static;
+            return generator;
+        }
+
         public static Context GetGeneratorContext(Generator g) => g._ctx;
 
         public static GeneratorStateMachineDelegate GetGeneratorMethod(Generator g) => g._stateMachineMethod;
 
         public static MethodInfo GetGeneratorOwnerMethod(Generator g) => (MethodInfo)MethodBase.GetMethodFromHandle(g._ownerhandle);
 
-        public static Generator UseDynamicScope(this Generator g, RuntimeTypeHandle scope)
+        public static Generator SetGeneratorDynamicScope(this Generator g, RuntimeTypeHandle scope)
         {
             g._scope = scope;
             return g;
