@@ -53,9 +53,11 @@ namespace Peachpie.Library.PDO.Utilities
                             if (text[i] == '\\') i++;   // skip the escaped character
                         }
 
+                        i++; // consume the closing quote
+
                         Next(Tokens.QuotedString, text, tstart, i - tstart);
 
-                        tstart = i + 1;
+                        tstart = i;
                         break;
                 }
             }

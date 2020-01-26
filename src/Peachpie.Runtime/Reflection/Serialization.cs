@@ -51,6 +51,8 @@ namespace Pchp.Core.Reflection
             {
                 tinfo.RuntimeFieldsHolder.SetValue(target, runtime_fields.Clone());
             }
+
+            // TODO: traits ?
         }
 
         #region ParseSerializedPropertyName, FormatSerializedPropertyName

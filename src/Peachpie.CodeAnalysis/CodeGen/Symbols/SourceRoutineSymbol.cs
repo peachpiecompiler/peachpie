@@ -252,14 +252,17 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(this.IsGeneratorMethod());
 
             var genSymbol = new SourceGeneratorSymbol(this);
+            //var genConstructed = (genSymbol.ContainingType is SourceTraitTypeSymbol st)
+            //    ? genSymbol.AsMember(st.Construct(st.TypeArguments))
+            //    : genSymbol;
+
             var il = cg.Builder;
 
             /* Template:
-             * return BuildGenerator( <ctx>, this, new PhpArray(){ p1, p2, ... }, new GeneratorStateMachineDelegate((IntPtr)<genSymbol>), (RuntimeMethodHandle)this )
+             * return BuildGenerator( <ctx>, new PhpArray(){ p1, p2, ... }, new GeneratorStateMachineDelegate((IntPtr)<genSymbol>), (RuntimeMethodHandle)this )
              */
 
             cg.EmitLoadContext(); // ctx for generator
-            cg.EmitThisOrNull();  // @this for generator
 
             // new PhpArray for generator's locals
             cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
@@ -278,20 +281,38 @@ namespace Pchp.CodeAnalysis.Symbols
             // new GeneratorStateMachineDelegate(<genSymbol>) delegate for generator
             cg.Builder.EmitNullConstant(); // null
             cg.EmitOpCode(ILOpCode.Ldftn); // method
-            cg.EmitSymbolToken(genSymbol, null);
+            //cg.EmitSymbolToken(genSymbol, null);
+            cg.Builder.EmitToken(cg.Module.Translate(genSymbol, null, cg.Diagnostics, false), null, cg.Diagnostics); // !! needDeclaration: false
+
             cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
 
             // handleof(this)
             cg.EmitLoadToken(this, null);
 
             // create generator object via Operators factory method
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle);
 
-            // .UseDynamicScope( scope ) : Generator
+            // .SetGeneratorThis( object ) : Generator
+            if (!this.IsStatic)
+            {
+                cg.EmitThisOrNull();
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorThis_Generator_Object)
+                    .Expect(cg.CoreTypes.Generator);
+            }
+
+            // .SetGeneratorLazyStatic( PhpTypeInfo ) : Generator
+            if ((this.Flags & RoutineFlags.UsesLateStatic) != 0 && this.IsStatic)
+            {
+                cg.EmitLoadStaticPhpTypeInfo();
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorLazyStatic_Generator_PhpTypeInfo)
+                    .Expect(cg.CoreTypes.Generator);
+            }
+
+            // .SetGeneratorDynamicScope( scope ) : Generator
             if (this is SourceLambdaSymbol lambda)
             {
                 lambda.GetCallerTypePlace().EmitLoad(cg.Builder); // RuntimeTypeContext
-                cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("UseDynamicScope", cg.CoreTypes.Generator, cg.CoreTypes.RuntimeTypeHandle))
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorDynamicScope_Generator_RuntimeTypeHandle)
                     .Expect(cg.CoreTypes.Generator);
             }
 

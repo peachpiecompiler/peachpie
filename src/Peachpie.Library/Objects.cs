@@ -306,13 +306,18 @@ namespace Pchp.Library
                     // interfaces cannot have properties:
                     return PhpArray.NewEmpty();
                 }
+                else if (tinfo.IsTrait && tinfo.Type.IsGenericTypeDefinition)
+                {
+                    // construct the generic trait class with <object>
+                    tinfo = tinfo.Type.MakeGenericType(typeof(object)).GetPhpTypeInfo();
+                }
                 
                 var result = new PhpArray();
                 var callerType = Type.GetTypeFromHandle(caller);
 
                 // the class has to be instantiated in order to discover default instance property values
                 // (the constructor will initialize default properties, user defined constructor will not be called)
-                var instanceOpt = tinfo.GetUninitializedInstance(ctx);
+                var instanceOpt = tinfo.CreateUninitializedInstance(ctx);
 
                 foreach (var prop in tinfo.GetDeclaredProperties())
                 {

@@ -9,6 +9,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.XPath;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 using Pchp.Library.Streams;
 
 namespace Peachpie.Library.XmlDom
@@ -504,7 +505,7 @@ namespace Peachpie.Library.XmlDom
             }
 
             // protected .ctor( Context ctx ) // does not call __construct
-            var instance = (SimpleXMLElement)type.GetUninitializedInstance(ctx);
+            var instance = (SimpleXMLElement)type.CreateUninitializedInstance(ctx);
 
             //var instance = (SimpleXMLElement)Activator.CreateInstance(
             //    type.Type,

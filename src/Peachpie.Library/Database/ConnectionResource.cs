@@ -283,7 +283,7 @@ namespace Pchp.Library.Database
         }
 
         /// <summary>
-		/// Reexecutes a command associated with a specified result resource to get schema of the command result.
+		/// Re-executes a command associated with a specified result resource to get schema of the command result.
 		/// </summary>
 		/// <param name="result">The result resource.</param>
 		internal void ReexecuteSchemaQuery(ResultResource/*!*/ result)

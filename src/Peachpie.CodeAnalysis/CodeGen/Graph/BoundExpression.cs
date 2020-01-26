@@ -2885,8 +2885,19 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (!TargetMethod.IsErrorMethodOrNull())
             {
-                // ensure type is declared
-                cg.EmitExpectTypeDeclared(TargetMethod.ContainingType);
+                // when instantiating anonoymous class
+                // it has to be declared into the context (right before instantiation)
+                if (TargetMethod.ContainingType.IsAnonymousType)
+                {
+                    // <ctx>.DeclareType<T>()
+                    cg.EmitLoadContext();
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.DeclareType_T.Symbol.Construct(TargetMethod.ContainingType)).Expect(SpecialType.System_Void);
+                }
+                else
+                {
+                    // ensure type is declared
+                    cg.EmitExpectTypeDeclared(TargetMethod.ContainingType);
+                }
 
                 // Template: new T(args)
                 return EmitDirectCall(cg, ILOpCode.Newobj, TargetMethod);

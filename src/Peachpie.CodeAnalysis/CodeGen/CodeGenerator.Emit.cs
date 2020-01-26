@@ -662,7 +662,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (GeneratorStateMachineMethod != null)
                 {
-                    // TODO: GeneratorStateMachineMethod.ThisParameter or ContainingType, but when in lambda we don't have containin type :/
+                    this.EmitGeneratorInstance(); // LOAD Generator
+                    return this.EmitCall(ILOpCode.Call, CoreMethods.Operators.GetGeneratorLazyStatic_Generator)
+                        .Expect(CoreTypes.PhpTypeInfo);
                 }
 
                 if (Routine is SourceLambdaSymbol lambda)

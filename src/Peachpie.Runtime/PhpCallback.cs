@@ -257,7 +257,7 @@ namespace Pchp.Core
                                 // CONSIDER: compiler (and this binder) creates dummy instance of self;
                                 // can we create a special singleton instance marked as "null" so use of $this inside the method will fail ?
                                 // TODO: use caller instance or warning (calling instance method statically)
-                                return routine.PhpInvokable.Bind(tinfo.GetUninitializedInstance(ctx));
+                                return routine.PhpInvokable.Bind(tinfo.CreateUninitializedInstance(ctx));
                             }
                         }
                     }

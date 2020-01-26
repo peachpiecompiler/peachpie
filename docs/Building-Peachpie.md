@@ -23,7 +23,7 @@ Visual Studio should automatically restore NuGet packages. If this feature is di
 
 Peachpie platform is distributed as NuGet packages (`Peachpie.*`). After building Peachpie from sources, all the packages are located in `\.nugs\` directory with the suffix `-dev` by default.
 
-In order to use your development packages, after successful build run the helper script `.\update-packages.ps1`. It copies packages from `/.nugs` to your local NuGet packages cache.
+In order to use your development packages, after successful build run the helper script `.\update-cache.ps1`. It copies packages from `/.nugs` to your local NuGet packages cache.
    
 ```shell
 PS \build\> .\update-packages.ps1

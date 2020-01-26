@@ -383,7 +383,7 @@ namespace Peachpie.Library.PDO
                     var tinfo = _ctx.GetDeclaredTypeOrThrow(classname, autoload: true);
                     var args = classarr[1].IsPhpArray(out var argsarr) ? argsarr : PhpArray.Empty;
 
-                    var instance = (PDOStatement)tinfo.GetUninitializedInstance(_ctx);
+                    var instance = (PDOStatement)tinfo.CreateUninitializedInstance(_ctx);
 
                     instance.Prepare(_connection, statement, options);
 
