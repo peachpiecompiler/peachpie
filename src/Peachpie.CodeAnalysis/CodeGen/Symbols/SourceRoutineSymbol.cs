@@ -255,7 +255,7 @@ namespace Pchp.CodeAnalysis.Symbols
             //var genConstructed = (genSymbol.ContainingType is SourceTraitTypeSymbol st)
             //    ? genSymbol.AsMember(st.Construct(st.TypeArguments))
             //    : genSymbol;
-            
+
             var il = cg.Builder;
 
             /* Template:
@@ -263,7 +263,7 @@ namespace Pchp.CodeAnalysis.Symbols
              */
 
             cg.EmitLoadContext(); // ctx for generator
-            
+
             // new PhpArray for generator's locals
             cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
 
@@ -301,7 +301,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // .SetGeneratorLazyStatic( PhpTypeInfo ) : Generator
-            if (this.RequiresLateStaticBoundParam)
+            if ((this.Flags & RoutineFlags.UsesLateStatic) != 0 && this.IsStatic)
             {
                 cg.EmitLoadStaticPhpTypeInfo();
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorLazyStatic_Generator_PhpTypeInfo)
