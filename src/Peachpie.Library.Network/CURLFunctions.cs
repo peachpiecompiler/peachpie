@@ -361,10 +361,8 @@ namespace Peachpie.Library.Network
                 req.Proxy = s_DefaultProxy.Value;
             }
 
-            foreach (var option in ch.Options)
-            {
-                option.Apply(req);
-            }
+            // 
+            ch.ApplyOptions(ctx, req);
 
             // make request:
 

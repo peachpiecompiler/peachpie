@@ -119,17 +119,18 @@ namespace Pchp.Library.Streams
         /// <param name="path">URI or filename of the resource to be opened</param>
         /// <param name="mode">File access mode</param>
         /// <returns></returns>
-        internal static PhpStream Open(Context ctx, string path, StreamOpenMode mode)
+        public static PhpStream Open(Context ctx, string path, StreamOpenMode mode)
         {
-            string modeStr = null;
+            string modeStr;
             switch (mode)
             {
                 case StreamOpenMode.ReadBinary: modeStr = "rb"; break;
                 case StreamOpenMode.WriteBinary: modeStr = "wb"; break;
                 case StreamOpenMode.ReadText: modeStr = "rt"; break;
                 case StreamOpenMode.WriteText: modeStr = "wt"; break;
+                default: throw new ArgumentException();
             }
-            Debug.Assert(modeStr != null);
+            
             return Open(ctx, path, modeStr, StreamOpenOptions.Empty, StreamContext.Default);
         }
 
@@ -190,15 +191,20 @@ namespace Pchp.Library.Streams
         public static PhpStream Open(Context ctx, string path, string mode, StreamOpenOptions options, StreamContext context)
         {
             if (context == null)
-                throw new ArgumentNullException("context");
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             Debug.Assert(ctx != null);
 
-            StreamWrapper wrapper;
-            if (!PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileMayExist, (CheckAccessOptions)options))
+            if (ResolvePath(ctx, ref path, out var wrapper, CheckAccessMode.FileMayExist, (CheckAccessOptions)options))
+            {
+                return wrapper.Open(ctx, ref path, mode, options, context);
+            }
+            else
+            {
                 return null;
-
-            return wrapper.Open(ctx, ref path, mode, options, context);
+            }
         }
 
         #endregion

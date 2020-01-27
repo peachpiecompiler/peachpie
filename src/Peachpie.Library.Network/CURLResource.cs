@@ -243,6 +243,17 @@ namespace Peachpie.Library.Network
         /// Gets enumeration of set of additional options.
         /// </summary>
         internal IEnumerable<ICurlOption>/*!*/Options => _options.Values;
+
+        /// <summary>
+        /// Applies all the options to the request.
+        /// </summary>
+        internal void ApplyOptions(Context ctx,  WebRequest request)
+        {
+            foreach (var option in this.Options)
+            {
+                option.Apply(ctx, request);
+            }
+        }
     }
 
     #region ProcessMethod, ProcessMethodEnum
