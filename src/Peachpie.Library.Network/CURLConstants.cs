@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 using Pchp.Core;
 using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
@@ -1085,11 +1086,58 @@ namespace Peachpie.Library.Network
 
         private static void LoadCookieFile(HttpWebRequest request, PhpStream stream)
         {
-            // TODO: load netscape-like or header-style cookies from stream
+            // load netscape-like or header-style cookies from stream
 
-            // request.CookieContainer.Add() // add parsed cookie
+            // TODO: add support for header-style cookies (`Set-Cookie: ...`).
+            //       currently, only curl's netscape-like cookies are supported.
 
             // request.CookieContainer.SetCookies( ... ) // set header style cookies
+
+            using (var reader = new StreamReader(stream.RawStream, Encoding.ASCII))
+            {
+				string line = String.Empty;
+
+				// iterate over the cookie jar lines
+				while ((line = reader.ReadLine()) != null)
+				{
+
+					// gather current cookie information in a new cookie object
+					var cookie = new Cookie();
+
+					// check for HttpOnly cookies and remove the #HttpOnly prefix
+					if (line.Length < 10 || line.Substring(0, 10) != "#HttpOnly_")
+                        cookie.HttpOnly = false;
+
+					else
+                    {
+						line = line.Substring(10);
+					    cookie.HttpOnly = true;
+					}
+
+					// we only look for non-comment, non-blank, valid cookies per lines
+					if (!String.IsNullOrWhiteSpace(line) && !line.StartsWith("#") && line.Count(c => c == '\t') == 6)
+					{
+						// get tokens in an array and trim them
+						string[] tokens = line.Split('\t').Select(token => token.Trim()).ToArray();
+
+						cookie.Domain = tokens[0]; // The domain that created AND can read the variable.
+						// var subdomainAccess = bool.Parse(tokens[1]); // boolean value indicating if all machines within a given domain can access the variable.
+						cookie.Path = tokens[2] ?? "/"; // The path within the domain that the variable is valid for.
+						cookie.Secure = bool.Parse(tokens[3]); // boolean value indicating if a secure connection with the domain is needed to access the variable.
+
+						// convert expiration date from unix timestamp
+						cookie.Expires = DateTimeOffset.FromUnixTimeSeconds(long.Parse(tokens[4])).UtcDateTime; // TODO: move to DateTimeUtils class?
+
+						// decode cookie name and value
+						cookie.Name = tokens[5];
+						cookie.Value = tokens[6];  // TODO: should HttpUtility.UrlDecode be used here? more research needed
+
+						// add the parsed cookie
+						request.CookieContainer.Add(cookie);
+
+					}
+				}
+            }
         }
     }
 
