@@ -208,7 +208,7 @@ namespace Peachpie.Library.Network
                 case CURLConstants.CURLINFO_PRIVATE:
                     return r.Private.IsSet ? r.Private.DeepCopy() : PhpValue.False;
                 case CURLConstants.CURLINFO_COOKIELIST:
-                    return ((ch.CookieContainer != null && ch.Result != null) ? CreateCookiePhpArray(ch.Result.Cookies) : PhpArray.Empty);
+                    return CreateCookiePhpArray(ch.Result?.Cookies) ?? PhpArray.Empty;
                 case CURLConstants.CURLINFO_HEADER_SIZE:
                     return r.HeaderSize;
                 case CURLConstants.CURLINFO_HEADER_OUT:
@@ -233,7 +233,7 @@ namespace Peachpie.Library.Network
 
         static PhpArray CreateCookiePhpArray(CookieCollection cookies)
         {
-            return new PhpArray(CookiesToNetscapeStyle(cookies));
+            return (cookies != null ? new PhpArray(CookiesToNetscapeStyle(cookies)) : PhpArray.Empty);
         }
 
         static void AddCookies(CookieCollection from, CookieContainer container)
