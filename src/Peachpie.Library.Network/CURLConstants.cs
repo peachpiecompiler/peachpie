@@ -1049,8 +1049,6 @@ namespace Peachpie.Library.Network
                         writer.WriteLine(line);
                     }
 
-                    writer.Close();
-
                 }
 
             }
