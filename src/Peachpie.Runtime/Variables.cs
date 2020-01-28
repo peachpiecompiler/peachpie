@@ -160,6 +160,17 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Provides explicit object behavior for <c>print_r</c> and <c>var_dump</c> implementations.
+    /// </summary>
+    public interface IPhpPrintable
+    {
+        /// <summary>
+        /// Returns properties to be printed.
+        /// </summary>
+        IEnumerable<KeyValuePair<string, PhpValue>> Properties { get; }
+    }
+
+    /// <summary>
     /// Visitor implementation for a variable.
     /// </summary>
     /// <remarks>Used for serialization, printing, dumping.</remarks>
