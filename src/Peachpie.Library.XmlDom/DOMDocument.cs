@@ -890,6 +890,9 @@ namespace Peachpie.Library.XmlDom
                 // load as XML
                 return loadXMLInternal(ctx, sw.ToString(), 0, true);
             }
+
+            //this.XmlDocument.LoadHtml(htmlDoc);
+            //return true;
         }
 
         /// <summary>
@@ -933,7 +936,8 @@ namespace Peachpie.Library.XmlDom
         {
             using (var sw = new StreamWriter(outStream, Encoding.ASCII, bufferSize: 128, leaveOpen: true))
             {
-                sw.WriteLine("<!DOCTYPE html PUBLIC \" -//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">");
+                // HTML 4.01 Transitional
+                sw.WriteLine("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">");
                 sw.Flush();
             }
         }
