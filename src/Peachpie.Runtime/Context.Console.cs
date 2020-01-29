@@ -32,7 +32,7 @@ namespace Pchp.Core
 
                 public override Encoding GetEncoding(string name)
                 {
-                    return (name == ProvidedEncoding.HeaderName) ? ProvidedEncoding : null;
+                    return /*(name == ProvidedEncoding.HeaderName) ? ProvidedEncoding : */null;
                 }
             }
 
