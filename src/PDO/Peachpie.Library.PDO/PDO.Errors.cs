@@ -80,6 +80,11 @@ namespace Peachpie.Library.PDO
         }
 
         /// <summary>
+        /// Raises simple "HY000" error.
+        /// </summary>
+        internal protected void RaiseError(string message) => RaiseError(null, "HY000", message);
+
+        /// <summary>
         /// Fetch the SQLSTATE associated with the last operation on the database handle
         /// </summary>
         /// <returns></returns>

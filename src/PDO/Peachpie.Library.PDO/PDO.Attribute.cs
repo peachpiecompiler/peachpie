@@ -15,6 +15,11 @@ namespace Peachpie.Library.PDO
         /// </summary>
         private protected Dictionary<PDO_ATTR, PhpValue> _lazyAttributes;
 
+        /// <summary>
+        /// "Oracle" handling of NULL and empty strings.
+        /// </summary>
+        private protected PDO_NULL _oracle_nulls; // = PDO_NULL.NULL_NATURAL; // 0
+
         private protected bool TryGetAttribute(PDO_ATTR attribute, out PhpValue value)
         {
             if (_lazyAttributes != null && _lazyAttributes.TryGetValue(attribute, out value))
@@ -28,6 +33,7 @@ namespace Peachpie.Library.PDO
                 case PDO_ATTR.ATTR_DRIVER_NAME: value = Driver.Name; return true;
                 case PDO_ATTR.ATTR_SERVER_VERSION: value = Connection.ServerVersion; return true;
                 case PDO_ATTR.ATTR_CLIENT_VERSION: value = Driver.ClientVersion; return true;
+                case PDO_ATTR.ATTR_ORACLE_NULLS: value = (int)_oracle_nulls; return true;
 
                 case PDO_ATTR.ATTR_AUTOCOMMIT: value = PhpValue.True; return true;
                 case PDO_ATTR.ATTR_PREFETCH: value = 0; return true;
@@ -38,7 +44,6 @@ namespace Peachpie.Library.PDO
                 case PDO_ATTR.ATTR_CASE: value = (int)PDO_CASE.CASE_LOWER; return true;
                 case PDO_ATTR.ATTR_CURSOR_NAME: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_CURSOR: value = PhpValue.Null; return true;
-                case PDO_ATTR.ATTR_ORACLE_NULLS: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_PERSISTENT: value = PhpValue.False; return true;
                 case PDO_ATTR.ATTR_STATEMENT_CLASS: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_FETCH_CATALOG_NAMES: value = PhpValue.Null; return true;
@@ -156,13 +161,25 @@ namespace Peachpie.Library.PDO
                     }
                     return false;
 
+                case PDO_ATTR.ATTR_ORACLE_NULLS:
+                    if (value.IsLong(out l))
+                    {
+                        Debug.Assert(l == (long)PDO_NULL.NULL_NATURAL, "nonstandard ATTR_ORACLE_NULLS is not yet supported");
+                        _oracle_nulls = (PDO_NULL)l;
+                        return true;
+                    }
+                    else
+                    {
+                        RaiseError("attribute value must be an integer");
+                        return false;
+                    }
+
                 case PDO_ATTR.ATTR_FETCH_CATALOG_NAMES:
                 case PDO_ATTR.ATTR_FETCH_TABLE_NAMES:
                 case PDO_ATTR.ATTR_MAX_COLUMN_LEN:
-                case PDO_ATTR.ATTR_ORACLE_NULLS:
                 case PDO_ATTR.ATTR_PERSISTENT:
                 case PDO_ATTR.ATTR_STRINGIFY_FETCHES:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException($"setAttribute( {attribute} )");
 
                 //statement only
                 case PDO_ATTR.ATTR_CURSOR_NAME:
