@@ -103,6 +103,7 @@ namespace Peachpie.Library.PDO
 
                 case PDO_ATTR.ATTR_AUTOCOMMIT:
                 case PDO_ATTR.ATTR_EMULATE_PREPARES:
+                case PDO_ATTR.ATTR_STRINGIFY_FETCHES:   // TODO: bool _stringify = false;
                     _lazyAttributes[attribute] = value;
                     return true;
 
@@ -178,7 +179,6 @@ namespace Peachpie.Library.PDO
                 case PDO_ATTR.ATTR_FETCH_TABLE_NAMES:
                 case PDO_ATTR.ATTR_MAX_COLUMN_LEN:
                 case PDO_ATTR.ATTR_PERSISTENT:
-                case PDO_ATTR.ATTR_STRINGIFY_FETCHES:
                     throw new NotImplementedException($"setAttribute( {attribute} )");
 
                 //statement only
