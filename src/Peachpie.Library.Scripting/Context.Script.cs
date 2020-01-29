@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 
 namespace Peachpie.Library.Scripting
 {
@@ -183,6 +184,9 @@ namespace Peachpie.Library.Scripting
                 Version.TryParse(language.LanguageVersion, out languageVersion);
             }
 
+            // unique in-memory assembly name
+            var name = builder.GetNewSubmissionName();
+
             // parse the source code
             var tree = PhpSyntaxTree.ParseCode(
                 SourceText.From(code, Encoding.UTF8),
@@ -191,16 +195,16 @@ namespace Peachpie.Library.Scripting
                     languageVersion: languageVersion,
                     shortOpenTags: shortOpenTags),
                 PhpParseOptions.Default,
-                options.Location.Path);
+                options.IsSubmission
+                    ? options.Location.Path + CurrentPlatform.DirectorySeparator + name.Name.Replace('<', '-').Replace('>', '-') + ".php" // generate file name for the submission code
+                    : options.Location.Path
+                );
 
             var diagnostics = tree.Diagnostics;
             if (!HasErrors(diagnostics))
             {
                 // TODO: collect required types from {tree}, remember as a script dependencies
                 // TODO: perform class autoload (now before compilation, and then always before invocation)
-
-                // unique in-memory assembly name
-                var name = builder.GetNewSubmissionName();
 
                 // list of scripts that were eval'ed in the context already,
                 // our compilation may depend on them
@@ -228,8 +232,12 @@ namespace Peachpie.Library.Scripting
                 if (options.EmitDebugInformation)
                 {
                     compilation = compilation.WithPhpOptions(compilation.Options.WithOptimizationLevel(OptimizationLevel.Debug).WithDebugPlusMode(true));
-                    //emitOptions = emitOptions.WithDebugInformationFormat(DebugInformationFormat.PortablePdb);
-                    //embeddedTexts = new[] { EmbeddedText.FromSource(tree.FilePath, tree.GetText()) };
+
+                    if (options.IsSubmission)
+                    {
+                        emitOptions = emitOptions.WithDebugInformationFormat(DebugInformationFormat.PortablePdb);
+                        embeddedTexts = new[] { EmbeddedText.FromSource(tree.FilePath, tree.GetText()) };
+                    }
                 }
                 else
                 {
