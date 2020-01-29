@@ -387,7 +387,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// RW lock used ot access underlaying cache.
         /// </summary>
-        readonly static ReaderWriterLockSlim s_lock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        readonly static ReaderWriterLockSlim s_lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         /// <summary>
         /// Gets <see cref="PhpTypeInfo"/> of given <typeparamref name="TType"/>.
