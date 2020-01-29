@@ -32,7 +32,7 @@ namespace Pchp.Library.Spl
         }
 
         protected PhpValue message; // laravel makes references to this variable hence it cannot be strictly `string` // https://github.com/peachpiecompiler/peachpie/issues/564 - can be typed as string once we allow making references to any type
-        protected long code;
+        protected PhpValue code;    // should be `long` only, but laravel assigns string as well here
         protected string file;
         protected int line;
 
