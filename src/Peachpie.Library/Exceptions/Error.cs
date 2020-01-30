@@ -79,7 +79,7 @@ namespace Pchp.Library.Spl
 
         public void __wakeup() => throw new NotImplementedException();
 
-        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, getMessage());   // TODO: _trace
+        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, this.Message);   // TODO: _trace
 
         public sealed override string ToString() => __toString();
     }

@@ -48,8 +48,8 @@ namespace Pchp.Library.Spl
         protected InvalidArgumentException() { }
 
         public InvalidArgumentException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
         {
-            __construct(message, code, previous);
         }
     }
 
