@@ -179,7 +179,12 @@ namespace Peachpie.Library.PDO
             var connstring = dsn.AsSpan(doublecolon + 1);
 
             // resolve the driver:
-            Driver = PDOEngine.TryGetDriver(driver) ?? throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
+            Driver = PDOEngine.TryGetDriver(driver) ?? throw new PDOException($"could not find driver: '{driver}'"); // TODO: resources
+
+            if (options != null && options.TryGetValue((int)PDO_ATTR.ATTR_PERSISTENT, out var persistent))
+            {
+                // TODO: lookup for persistent connection in `ConnectionManager`, mark as persistent
+            }
 
             try
             {
@@ -190,6 +195,21 @@ namespace Peachpie.Library.PDO
             {
                 // PDO construct always throws PDOException on error:
                 throw new PDOException(e.Message);
+            }
+
+            // set attributes
+            if (options != null)
+            {
+                var enumerator = options.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    var key = enumerator.CurrentKey;
+                    if (key.IsInteger &&
+                        key.Integer != ATTR_PERSISTENT)
+                    {
+                        setAttribute((PDO_ATTR)key.Integer, enumerator.CurrentValue);
+                    }
+                }
             }
         }
 

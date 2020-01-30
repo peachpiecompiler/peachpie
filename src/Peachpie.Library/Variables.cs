@@ -652,7 +652,7 @@ namespace Pchp.Library
             }
 
             var result = new PhpArray(names.Length);
-            
+
             for (int i = 0; i < names.Length; i++)
             {
                 string name;
@@ -998,7 +998,7 @@ namespace Pchp.Library
                 Accept(entry.Value);
                 _indent--;
 
-                _output.Append(_nl);
+                NewLine();
             }
 
             public override void AcceptObject(object obj)
@@ -1036,14 +1036,11 @@ namespace Pchp.Library
                     _indent++;
 
                     // object members
-                    foreach (var fld in TypeMembersUtils.EnumerateInstanceFieldsForPrint(obj))
+                    var flds = (obj is IPhpPrintable printable ? printable.Properties : TypeMembersUtils.EnumerateInstanceFieldsForPrint(obj)).ToList();
+                    foreach (var fld in flds)
                     {
-                        OutputIndent();
-                        _output.Append("[" + fld.Key + "] => ");
-                        _indent++;
-                        Accept(fld.Value);
-                        _indent--;
-                        NewLine();
+                        // [name] => value
+                        AcceptArrayItem(new KeyValuePair<IntStringKey, PhpValue>(fld.Key, fld.Value));
                     }
 
                     _indent--;
@@ -1351,7 +1348,7 @@ namespace Pchp.Library
                 // (size=COUNT)
                 // {
                 _output.Append($"({obj.Count}) {{");
-                _output.Append(_nl);
+                NewLine();
 
                 _indent++;
 
@@ -1373,10 +1370,10 @@ namespace Pchp.Library
 
                 _output.Append("[" + (entry.Key.IsString ? $"\"{entry.Key.String}\"" : entry.Key.Integer.ToString()) + "]");
                 _output.Append("=>");
-                _output.Append(_nl);
+                NewLine();
                 OutputIndent();
                 Accept(entry.Value);
-                _output.Append(_nl);
+                NewLine();
             }
 
             public override void AcceptObject(object obj)
@@ -1399,7 +1396,7 @@ namespace Pchp.Library
 
                 if (Enter(obj))
                 {
-                    var flds = TypeMembersUtils.EnumerateInstanceFieldsForDump(obj).ToList();
+                    var flds = (obj is IPhpPrintable printable ? printable.Properties : TypeMembersUtils.EnumerateInstanceFieldsForDump(obj)).ToList();
 
                     // Template: class NAME#ID (COUNT) {
                     _output.Append($"class {obj.GetPhpTypeInfo().Name}#{unchecked((uint)obj.GetHashCode())} ({flds.Count}) {{");

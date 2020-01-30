@@ -147,6 +147,7 @@ namespace Pchp.Core.Reflection
             typeof(System.Dynamic.IDynamicMetaObjectProvider),
             typeof(IPhpArray),
             typeof(IPhpConvertible),
+            typeof(IPhpPrintable),
             typeof(IPhpComparable),
         };
 

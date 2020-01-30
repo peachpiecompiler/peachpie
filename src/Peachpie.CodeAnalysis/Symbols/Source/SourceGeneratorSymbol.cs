@@ -35,9 +35,7 @@ namespace Pchp.CodeAnalysis.Symbols
         ParameterSymbol[] CreateParameters(SourceRoutineSymbol originalRoutine)
         {
             // resolve type of $this
-            TypeSymbol thisType = originalRoutine.GetPhpThisVariablePlace()?.Type ?? (TypeSymbol)originalRoutine.DeclaringCompilation.ObjectType;
-
-            Debug.Assert(thisType != null);
+            var thisType = originalRoutine.GetPhpThisVariablePlaceWithoutGenerator()?.Type ?? (TypeSymbol)originalRoutine.DeclaringCompilation.ObjectType;
 
             // yield sm method signature
             var index = 0;

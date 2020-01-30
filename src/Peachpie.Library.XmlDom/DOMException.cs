@@ -109,7 +109,7 @@ namespace Peachpie.Library.XmlDom
 		/// <summary>
 		/// Returns the exception code.
 		/// </summary>
-		public new long code => base.code;
+		public new long code => (long)base.code;
 
         #endregion
 

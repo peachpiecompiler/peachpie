@@ -2823,17 +2823,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal override TypeSymbol EmitTarget(CodeGenerator cg)
         {
-            var t = cg.EmitPhpThis();
-
-            if (t == null)
-            {
-                // null if this is not available
-                cg.Builder.EmitNullConstant();
-                t = cg.CoreTypes.Object;
-            }
-
-            //
-            return t;
+            return cg.EmitPhpThisOrNull();
         }
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
@@ -3171,10 +3161,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         void EmitThis(CodeGenerator cg)
         {
-            if (cg.EmitPhpThis() == null)
-            {
-                cg.Builder.EmitNullConstant();
-            }
+            cg.EmitPhpThisOrNull();
         }
 
         void EmitStaticType(CodeGenerator cg)

@@ -163,7 +163,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Available only within source routines.
         /// In case no $this is available, nothing is emitted and function returns <c>null</c> reference.
         /// </summary>
-        public TypeSymbol EmitPhpThis()
+        TypeSymbol EmitPhpThis()
         {
             if (GeneratorStateMachineMethod != null)
             {
@@ -172,6 +172,13 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (Routine != null)
             {
+                if (Routine.IsGeneratorMethod())
+                {
+                    // but GeneratorStateMachineMethod == null; We're not emitting SM yet
+                    Debug.Fail("$this not resolved");
+                }
+
+                //
                 var thisplace = Routine.GetPhpThisVariablePlace(this.Module);
                 if (thisplace != null)
                 {
@@ -3721,7 +3728,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, MethodSymbol symbol, SyntaxNode syntaxNode)
         {
-            il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics, true), syntaxNode, diagnostics);
+            il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics, needDeclaration: false), syntaxNode, diagnostics);
         }
 
         public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, FieldSymbol symbol, SyntaxNode syntaxNode)

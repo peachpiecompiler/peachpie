@@ -180,11 +180,13 @@ namespace Peachpie.Library.Scripting
 
         static int _counter = 0;
 
-        const string s_submissionAssemblyNamePrefix = "<submission>`";
+        const string s_submissionAssemblyNamePrefix = "<eval>`";
 
         public AssemblyName GetNewSubmissionName()
         {
-            return new AssemblyName(s_submissionAssemblyNamePrefix + (_counter++).ToString());
+            var id = Interlocked.Increment(ref _counter);
+
+            return new AssemblyName(s_submissionAssemblyNamePrefix + id.ToString());
         }
     }
 }

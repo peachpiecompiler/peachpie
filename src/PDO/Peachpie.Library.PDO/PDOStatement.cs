@@ -830,10 +830,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Raises simple "HY000" error.
         /// </summary>
-        private protected void RaiseError(string message)
-        {
-            PDO.RaiseError(null, "HY000", message);
-        }
+        private protected void RaiseError(string message) => PDO.RaiseError(message);
 
         private protected bool StoreParameter(ref Dictionary<IntStringKey, BoundParam> dict, IntStringKey parameter, PhpValue variable, PARAM? type)
         {
