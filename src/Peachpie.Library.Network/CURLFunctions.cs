@@ -208,7 +208,7 @@ namespace Peachpie.Library.Network
                 case CURLConstants.CURLINFO_PRIVATE:
                     return r.Private.IsSet ? r.Private.DeepCopy() : PhpValue.False;
                 case CURLConstants.CURLINFO_COOKIELIST:
-                    return CreateCookiePhpArray(ch.Result?.Cookies) ?? PhpArray.Empty;
+                    return ((ch.CookieContainer != null && ch.Result != null) ? CreateCookiePhpArray(ch.Result.Cookies) : PhpArray.Empty);
                 case CURLConstants.CURLINFO_HEADER_SIZE:
                     return r.HeaderSize;
                 case CURLConstants.CURLINFO_HEADER_OUT:
