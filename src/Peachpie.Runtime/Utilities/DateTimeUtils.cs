@@ -42,7 +42,7 @@ namespace Pchp.Core.Utilities
         /// <returns>Time.</returns>
         public static DateTime UnixTimeStampToUtc(long ts)
         {
-            return ts == 0 ? DateTime.MinValue : DateTimeOffset.FromUnixTimeSeconds(ts).UtcDateTime;
+            return DateTimeOffset.FromUnixTimeSeconds(ts).UtcDateTime;
         }
     }
 }
