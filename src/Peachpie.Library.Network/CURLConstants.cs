@@ -1127,24 +1127,41 @@ namespace Peachpie.Library.Network
                     // gather current cookie information in a new cookie object
                     var cookie = new Cookie();
 
-                    cookie.Domain = tokens[0].TrimStart('.'); // The domain that created AND can read the variable.
-                    // var subdomainAccess = bool.Parse(tokens[1]); // boolean value indicating if all machines within a given domain can access the variable.
-                    cookie.Path = tokens[2] ?? "/"; // The path within the domain that the variable is valid for.
-                    cookie.Secure = bool.Parse(tokens[3]); // boolean value indicating if a secure connection with the domain is needed to access the variable.
+                    // The domain that created AND can read the variable.
+                    cookie.Domain = tokens[0].TrimStart('.');
 
-                    // normalize cookie path according to curl behavior
-                    cookie.Path = cookie.Path.TrimEnd('/') + '/';
+                    // The path within the domain that the variable is valid for.
+                    cookie.Path = PathUtils.TrimEndSeparator(tokens[2]);
 
-                    // convert expiration date from unix timestamp
-                    long expires = long.Parse(tokens[4]);
+                    if (String.IsNullOrEmpty(cookie.Path))
+                        cookie.Path = "/";
 
-                    // note: if the "expires" property is set to "0", returns DateTime.MinValue as it makes this a session cookie (default)
-                    cookie.Expires = DateTimeUtils.UnixTimeStampToUtc(expires);
+                    bool subdomainAccess;
 
-                    // decode cookie name and value
+                    // boolean value indicating if all machines within a given domain can access the variable.
+                    if (!bool.TryParse(tokens[1], out subdomainAccess)) continue;
+                    //     cookie.subdomainAccess = subdomainAccess;  // ignored
+
+                    bool secure;
+
+                    if (!bool.TryParse(tokens[3], out secure)) continue;
+
+                    // boolean value indicating if a secure connection with the domain is needed to access the variable.
+                    cookie.Secure = secure;
+
+                    long expires;
+
+                    if (!long.TryParse(tokens[4], out expires)) continue;
+
+                    // expiration date from unix timestamp.
+                    // note: if the "expires" property is set to "0", set to DateTime.MinValue as it makes this a session cookie (default)
+                    cookie.Expires = expires == 0 ? DateTime.MinValue : DateTimeUtils.UnixTimeStampToUtc(expires);
+
+                    // set cookie name and value
                     cookie.Name = tokens[5];
                     cookie.Value = tokens[6];  // TODO: should HttpUtility.UrlDecode be used here? more research needed
 
+                    // Cookies marked with httpOnly are meant not to be accessible from javascripts
                     cookie.HttpOnly = httpOnly;
 
                     // add the parsed cookie
