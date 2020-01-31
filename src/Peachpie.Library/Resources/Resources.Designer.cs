@@ -538,6 +538,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Using an empty Initialization Vector (iv) is potentially insecure and not recommended.
+        /// </summary>
+        public static string empty_iv_vector {
+            get {
+                return ResourceManager.GetString("empty_iv_vector", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Equivalence class cannot be endpoint of range (first endpoint here).
         /// </summary>
         public static string equivalence_class_at_first_endpoint_of_range {
@@ -1078,6 +1087,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to IV passed is &apos;{0}&apos; bytes long which is longer than the &apos;{1}&apos; expected by selected cipher, truncating.
+        /// </summary>
+        public static string long_iv {
+            get {
+                return ResourceManager.GetString("long-iv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Method {0}::{1}() does not exist.
         /// </summary>
         public static string method_does_not_exist {
@@ -1420,6 +1438,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to IV passed is only &apos;{0}&apos; bytes long, cipher expects an IV of precisely &apos;{1}&apos; bytes, padding with \0.
+        /// </summary>
+        public static string short_iv {
+            get {
+                return ResourceManager.GetString("short_iv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} should be specified.
         /// </summary>
         public static string should_be_specified {
@@ -1605,6 +1632,15 @@ namespace Pchp.Library.Resources {
         public static string unknown_character_class {
             get {
                 return ResourceManager.GetString("unknown_character_class", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unknown cipher algorithm.
+        /// </summary>
+        public static string unknown_cipher {
+            get {
+                return ResourceManager.GetString("unknown_cipher", resourceCulture);
             }
         }
         
