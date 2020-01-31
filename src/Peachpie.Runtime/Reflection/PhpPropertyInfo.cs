@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -21,22 +23,23 @@ namespace Pchp.Core.Reflection
         /// </summary>
         internal class ClrFieldProperty : PhpPropertyInfo
         {
-            protected readonly FieldInfo _field;
+            public FieldInfo Field { get; }
 
-            readonly Lazy<Func<object, PhpValue>> _lazyGetter;
+            readonly Lazy<Func<Context, object, PhpValue>> _lazyGetter;
             readonly Lazy<Action<Context, object, PhpValue>> _lazySetValue;
-            readonly Lazy<Func<object, PhpAlias>> _lazyEnsureAlias;
-            readonly Lazy<Func<object, object>> _lazyEnsureObject;
-            readonly Lazy<Func<object, IPhpArray>> _lazyEnsureArray;
+            readonly Lazy<Func<Context, object, PhpAlias>> _lazyEnsureAlias;
+            readonly Lazy<Func<Context, object, object>> _lazyEnsureObject;
+            readonly Lazy<Func<Context, object, IPhpArray>> _lazyEnsureArray;
 
             /// <summary>
             /// Creates Func&lt;object, T&gt; depending on the access.
             /// </summary>
             Delegate CompileAccess(AccessMask access)
             {
+                var pctx = Expression.Parameter(typeof(Context));
                 var pinstance = Expression.Parameter(typeof(object));
 
-                var expr = Bind(null, Expression.Convert(pinstance, _field.DeclaringType));
+                var expr = Bind(pctx, Expression.Convert(pinstance, Field.DeclaringType));
                 if (access == AccessMask.Read)
                 {
                     expr = ConvertExpression.BindToValue(expr);
@@ -46,19 +49,20 @@ namespace Pchp.Core.Reflection
                     expr = BinderHelpers.BindAccess(expr, null, access, null);
                 }
 
-                return Expression.Lambda(expr, true, pinstance).Compile();
+                //
+                return Expression.Lambda(expr, tailCall: true, parameters: new[] { pctx, pinstance }).Compile();
             }
 
             public ClrFieldProperty(PhpTypeInfo tinfo, FieldInfo field)
                 : base(tinfo)
             {
-                _field = field ?? throw new ArgumentNullException(nameof(field));
+                Field = field ?? throw new ArgumentNullException(nameof(field));
 
                 //
-                _lazyGetter = new Lazy<Func<object, PhpValue>>(() => (Func<object, PhpValue>)CompileAccess(AccessMask.Read));
-                _lazyEnsureAlias = new Lazy<Func<object, PhpAlias>>(() => (Func<object, PhpAlias>)CompileAccess(AccessMask.ReadRef));
-                _lazyEnsureObject = new Lazy<Func<object, object>>(() => (Func<object, object>)CompileAccess(AccessMask.EnsureObject));
-                _lazyEnsureArray = new Lazy<Func<object, IPhpArray>>(() => (Func<object, IPhpArray>)CompileAccess(AccessMask.EnsureArray));
+                _lazyGetter = new Lazy<Func<Context, object, PhpValue>>(() => (Func<Context, object, PhpValue>)CompileAccess(AccessMask.Read));
+                _lazyEnsureAlias = new Lazy<Func<Context, object, PhpAlias>>(() => (Func<Context, object, PhpAlias>)CompileAccess(AccessMask.ReadRef));
+                _lazyEnsureObject = new Lazy<Func<Context, object, object>>(() => (Func<Context, object, object>)CompileAccess(AccessMask.EnsureObject));
+                _lazyEnsureArray = new Lazy<Func<Context, object, IPhpArray>>(() => (Func<Context, object, IPhpArray>)CompileAccess(AccessMask.EnsureArray));
 
                 // SetValue(instance, PhpValue): void
                 _lazySetValue = new Lazy<Action<Context, object, PhpValue>>(() =>
@@ -66,57 +70,72 @@ namespace Pchp.Core.Reflection
                     if (IsReadOnly)
                     {
                         // error
-                        return new Action<Context, object, PhpValue>((_, _instance, _value) =>
+                        return (_, _instance, _value) =>
                         {
                             PhpException.ErrorException(Resources.ErrResources.readonly_property_written, ContainingType.Name, PropertyName);
-                        });
+                        };
                     }
 
                     var pctx = Expression.Parameter(typeof(Context));
                     var pinstance = Expression.Parameter(typeof(object));
                     var pvalue = Expression.Parameter(typeof(PhpValue));
 
-                    // expr: <instance>.<field>
-                    var expr = Bind(pctx, Expression.Convert(pinstance, _field.DeclaringType));
+                    // field_expr: <instance>.<field>
+                    var field_expr = Bind(pctx, Expression.Convert(pinstance, Field.DeclaringType));
 
                     // expr: <field> := <value>
-                    expr = BinderHelpers.BindAccess(expr, pctx, AccessMask.Write, pvalue);
+                    // var expr = BinderHelpers.BindAccess(field_expr, pctx, AccessMask.Write, pvalue); // <-- does not allow passing PhpAlias
+
+                    Expression assign_expr = Expression.Block(
+                        Expression.Assign(field_expr, ConvertExpression.Bind(pvalue, Field.FieldType, pctx)),
+                        Expression.Empty());
+
+                    // when assigning to PhpValue, we have to write by value or by ref 
+                    if (Field.FieldType == typeof(PhpValue))
+                    {
+                        // assign_expr: value.IsAlias ? (field_expr = value) : SetValue(ref field_expr, value)
+                        assign_expr = Expression.Condition(
+                            test: Expression.Property(pvalue, Cache.Properties.PhpValue_IsAlias),
+                            ifTrue: assign_expr,
+                            ifFalse: Expression.Call(Cache.Operators.SetValue_PhpValueRef_PhpValue, field_expr, pvalue)
+                        );
+                    }
 
                     //
-                    var lambda = Expression.Lambda(Expression.Block(expr, Expression.Empty()), pctx, pinstance, pvalue);
+                    var lambda = Expression.Lambda(assign_expr, pctx, pinstance, pvalue);
 
                     return (Action<Context, object, PhpValue>)lambda.Compile();
                 });
             }
 
-            public override FieldAttributes Attributes => _field.Attributes;
+            public override FieldAttributes Attributes => Field.Attributes;
 
-            public override bool IsReadOnly => _field.IsInitOnly || _field.IsLiteral;
+            public override bool IsReadOnly => Field.IsInitOnly || Field.IsLiteral;
 
-            public override bool IsConstant => _field.IsLiteral;
+            public override bool IsConstant => Field.IsLiteral;
 
             public override bool IsRuntimeProperty => false;
 
-            public override string PropertyName => _field.Name;
+            public override string PropertyName => Field.Name;
 
-            public override PhpValue GetValue(Context _, object instance = null) => _lazyGetter.Value(instance);
+            public override PhpValue GetValue(Context ctx, object instance) => _lazyGetter.Value(ctx, instance);
 
-            public override PhpAlias EnsureAlias(Context _, object instance) => _lazyEnsureAlias.Value(instance);
+            public override PhpAlias EnsureAlias(Context ctx, object instance) => _lazyEnsureAlias.Value(ctx, instance);
 
-            public override object EnsureObject(Context _, object instance) => _lazyEnsureObject.Value(instance);
+            public override object EnsureObject(Context ctx, object instance) => _lazyEnsureObject.Value(ctx, instance);
 
-            public override IPhpArray EnsureArray(Context _, object instance) => _lazyEnsureArray.Value(instance);
+            public override IPhpArray EnsureArray(Context ctx, object instance) => _lazyEnsureArray.Value(ctx, instance);
 
             public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
 
-            public override Expression Bind(Expression _, Expression target)
+            public override Expression Bind(Expression ctx, Expression target)
             {
-                if (_field.IsLiteral)
+                if (Field.IsLiteral)
                 {
-                    return Expression.Constant(_field.GetValue(null));
+                    return Expression.Constant(Field.GetValue(null));
                 }
 
-                return Expression.Field(_field.IsStatic ? null : target, _field);
+                return Expression.Field(Field.IsStatic ? null : target, Field);
             }
         }
 
@@ -132,18 +151,19 @@ namespace Pchp.Core.Reflection
             public ContainedClrField(PhpTypeInfo tinfo, FieldInfo field)
                 : base(tinfo, field)
             {
-                Debug.Assert(field != null);
-                Debug.Assert(field.DeclaringType.Name == "_statics");
-                Debug.Assert(!field.IsStatic);
+                if (field == null) throw new ArgumentNullException(nameof(field));
+                
+                Debug.Assert(field.DeclaringType?.Name == "_statics");
+                Debug.Assert(!field.IsStatic || field.IsLiteral);
             }
 
             public override FieldAttributes Attributes
             {
                 get
                 {
-                    var attributes = _field.Attributes;
+                    var attributes = Field.Attributes;
 
-                    var membervisibility = _field.GetCustomAttribute<PhpMemberVisibilityAttribute>(false);
+                    var membervisibility = Field.GetCustomAttribute<PhpMemberVisibilityAttribute>(false);
                     if (membervisibility != null)
                     {
                         var access = attributes & FieldAttributes.FieldAccessMask;
@@ -172,9 +192,20 @@ namespace Pchp.Core.Reflection
             {
                 Debug.Assert(ctx != null);
 
-                // Context.GetStatics<_statics>().FIELD
-                var getstatics = BinderHelpers.GetStatic_T_Method(_field.DeclaringType);
-                return Expression.Field(Expression.Call(ctx, getstatics), _field);
+                if (Field.IsLiteral)
+                {
+                    return Expression.Constant(Field.GetValue(null));
+                }
+                else if (Field.IsStatic)
+                {
+                    return Expression.Field(null, Field);
+                }
+                else
+                {
+                    // Context.GetStatics<_statics>().FIELD
+                    var getstatics = BinderHelpers.GetStatic_T_Method(Field.DeclaringType);
+                    return Expression.Field(Expression.Call(ctx, getstatics), Field);
+                }
             }
         }
 
@@ -184,21 +215,21 @@ namespace Pchp.Core.Reflection
 
         internal sealed class ClrProperty : PhpPropertyInfo
         {
-            readonly PropertyInfo _property;
+            public PropertyInfo Property { get; }
+
             readonly Lazy<Func<object, PhpValue>> _lazyGetter;
             readonly Lazy<Action<Context, object, PhpValue>> _lazySetValue;
 
             public ClrProperty(PhpTypeInfo tinfo, PropertyInfo property)
                 : base(tinfo)
             {
-                Debug.Assert(property != null);
-                _property = property;
+                Property = property ?? throw new ArgumentNullException(nameof(property));
 
                 _lazyGetter = new Lazy<Func<object, PhpValue>>(() =>
                 {
                     var pinstance = Expression.Parameter(typeof(object));
 
-                    var expr = Bind(null, Expression.Convert(pinstance, _property.DeclaringType));
+                    var expr = Bind(null!, Expression.Convert(pinstance, Property.DeclaringType));
                     expr = ConvertExpression.BindToValue(expr);
 
                     //
@@ -211,10 +242,10 @@ namespace Pchp.Core.Reflection
                     if (IsReadOnly)
                     {
                         // error
-                        return new Action<Context, object, PhpValue>((_, _instance, _value) =>
+                        return (_, _instance, _value) =>
                         {
                             PhpException.ErrorException(Resources.ErrResources.readonly_property_written, ContainingType.Name, PropertyName);
-                        });
+                        };
                     }
 
                     var pctx = Expression.Parameter(typeof(Context));
@@ -222,7 +253,7 @@ namespace Pchp.Core.Reflection
                     var pvalue = Expression.Parameter(typeof(PhpValue));
 
                     // expr: <instance>.<field>
-                    var expr = Bind(pctx, Expression.Convert(pinstance, _property.DeclaringType));
+                    var expr = Bind(pctx, Expression.Convert(pinstance, Property.DeclaringType));
 
                     // expr: <property> := <value>
                     expr = Expression.Assign(expr, ConvertExpression.Bind(pvalue, expr.Type, pctx));    // TODO: PHP semantic (Operators.SetValue)
@@ -239,7 +270,7 @@ namespace Pchp.Core.Reflection
                 get
                 {
                     var flags = (FieldAttributes)0;
-                    var attr = _property.GetMethod.Attributes;
+                    var attr = Property.GetMethod.Attributes;
 
                     switch (attr & MethodAttributes.MemberAccessMask)
                     {
@@ -250,29 +281,29 @@ namespace Pchp.Core.Reflection
                         case MethodAttributes.Public: flags |= FieldAttributes.Public; break;
                     }
                     if ((attr & MethodAttributes.Static) != 0) flags |= FieldAttributes.Static;
-                    if ((_property.Attributes & PropertyAttributes.HasDefault) != 0) flags |= FieldAttributes.HasDefault;
+                    if ((Property.Attributes & PropertyAttributes.HasDefault) != 0) flags |= FieldAttributes.HasDefault;
 
                     return flags;
                 }
             }
 
-            public override bool IsReadOnly => _property.SetMethod == null;
+            public override bool IsReadOnly => Property.SetMethod == null;
 
             public override bool IsConstant => false;
 
             public override bool IsRuntimeProperty => false;
 
-            public override string PropertyName => _property.Name;
+            public override string PropertyName => Property.Name;
 
-            public override PhpValue GetValue(Context ctx, object instance = null) => _lazyGetter.Value(instance);
+            public override PhpValue GetValue(Context ctx, object instance) => _lazyGetter.Value(instance);
 
             public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
 
             public override Expression Bind(Expression ctx, Expression target)
             {
                 return Expression.Property(
-                    _property.GetMethod.IsStatic ? null : target,
-                    _property);
+                    Property.GetMethod.IsStatic ? null : target,
+                    Property);
             }
         }
 
@@ -507,7 +538,7 @@ namespace Pchp.Core.Reflection
         /// Gets value indicating the property is visible in given class context.
         /// </summary>
         /// <param name="caller">Class context. By default the method check if the property is publically visible.</param>
-        public bool IsVisible(Type caller = null)
+        public bool IsVisible(Type? caller = null)
         {
             if (IsPublic)
             {

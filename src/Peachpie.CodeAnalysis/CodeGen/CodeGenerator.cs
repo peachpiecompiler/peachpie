@@ -179,7 +179,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly ILBuilder _il;
         readonly SourceRoutineSymbol _routine;
         readonly PEModuleBuilder _moduleBuilder;
-        readonly OptimizationLevel _optimizations;
+        readonly PhpOptimizationLevel _optimizations;
         readonly bool _emitPdbSequencePoints;
         readonly DiagnosticBag _diagnostics;
         readonly DynamicOperationFactory _factory;
@@ -268,7 +268,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Whether to emit debug assertions.
         /// </summary>
-        public bool IsDebug => _optimizations == OptimizationLevel.Debug;
+        public bool IsDebug => _optimizations.IsDebug();
 
         /// <summary>
         /// Whether to emit sequence points (PDB).
@@ -343,7 +343,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         #region Construction
 
-        public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
+        public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, PhpOptimizationLevel optimizations, bool emittingPdb,
             NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, MethodSymbol routine = null, IPlace locals = null, bool localsInitialized = false, IPlace tempLocals = null)
         {
             Contract.ThrowIfNull(il);
@@ -388,7 +388,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _emmittedTag = cg._emmittedTag;
         }
 
-        public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb)
+        public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, PhpOptimizationLevel optimizations, bool emittingPdb)
             : this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(moduleBuilder), routine.GetThisPlace(), routine)
         {
             Contract.ThrowIfNull(routine);

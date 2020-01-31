@@ -7,7 +7,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// <see cref="Exception"/> is the base class for all Exceptions in PHP 5, and the base class for all user exceptions in PHP 7.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
     public class Exception : System.Exception, Throwable
     {
         /// <summary>
@@ -32,7 +32,7 @@ namespace Pchp.Library.Spl
         }
 
         protected PhpValue message; // laravel makes references to this variable hence it cannot be strictly `string` // https://github.com/peachpiecompiler/peachpie/issues/564 - can be typed as string once we allow making references to any type
-        protected long code;
+        protected PhpValue code;    // should be `long` only, but laravel assigns string as well here
         protected string file;
         protected int line;
 
@@ -53,7 +53,23 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Exception message in CLR.
         /// </summary>
-        public override string Message => this.message.IsSet ? this.message.ToString() : string.Empty;
+        public override string Message
+        {
+            get
+            {
+                if (Operators.IsSet(this.message))
+                {
+                    if (this.message.IsString(out var str))
+                    {
+                        return str;
+                    }
+
+                    return this.message.ToString(); // ASSERTION! no culture provided
+                }
+
+                return string.Empty;
+            }
+        }
 
         public void __construct(string message = "", long code = 0, Throwable previous = null)
         {
@@ -69,7 +85,7 @@ namespace Pchp.Library.Spl
 
         public virtual int getLine() => this.line;
 
-        public virtual string getMessage() => this.message.ToString();
+        public virtual string getMessage() => this.Message;
 
         public virtual Throwable getPrevious() => previous ?? this.InnerException as Throwable;
 
@@ -77,7 +93,9 @@ namespace Pchp.Library.Spl
 
         public virtual string getTraceAsString() => _stacktrace.GetStackTraceString(); // TODO: _trace
 
-        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, getMessage()); // TODO: _trace
+        public void __wakeup() => throw new NotImplementedException();
+
+        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, this.Message); // TODO: _trace
 
         public sealed override string ToString() => __toString();
     }
@@ -85,7 +103,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// An Error Exception.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
     public class ErrorException : Spl.Exception
     {
         protected long severity;
@@ -118,7 +136,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// The PharException class provides a phar-specific exception class.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("phar")]
     public class PharException : Spl.Exception
     {
         [PhpFieldsOnlyCtor]

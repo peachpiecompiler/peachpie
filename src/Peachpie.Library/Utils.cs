@@ -68,33 +68,47 @@ namespace Pchp.Library
         /// </returns>
         public static string/*!*/ StripCSlashes(string/*!*/ str)
         {
-            if (str == null) throw new ArgumentNullException("str");
-            if (str == "") return "";
+            if (str == null)
+            {
+                throw new ArgumentNullException(nameof(str));
+            }
 
-            StringBuilder result = new StringBuilder(str.Length);
+            if (str.Length == 0)
+            {
+                return string.Empty;
+            }
 
-            int i = 0;
-            while (i < str.Length - 1)
+            var result = StringBuilderUtilities.Pool.Get();
+            int from = 0;   // plain chunk start
+
+            for (int i = 0; i < str.Length; i++)
             {
                 if (str[i] == '\\')
                 {
-                    if (str[i + 1] == '0')
-                        result.Append('\0');
-                    else
-                        result.Append(str[i + 1]); // PHP strips all slashes, not only quotes and slash
+                    // 
+                    result.Append(str, from, i - from);
 
-                    i += 2;
-                }
-                else
-                {
-                    result.Append(str[i]);
-                    i++;
+                    //
+                    if (++i < str.Length)
+                    {
+                        // PHP strips all slashes, not only quotes and slash
+                        // "\0" has a special meaning => '\0'
+                        var slashed = str[i];
+                        result.Append(slashed == '0' ? '\0' : slashed);
+                    }
+
+                    from = i + 1;
                 }
             }
-            if (i < str.Length && str[i] != '\\')
-                result.Append(str[i]);
 
-            return result.ToString();
+            //
+            if (from < str.Length)
+            {
+                result.Append(str, from, str.Length - from);
+            }
+
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -194,7 +208,7 @@ namespace Pchp.Library
         /// In case if binary string, the conversion routine respects given <paramref name="charSet"/>.
         /// </summary>
         /// <param name="str">String to be converted to unicode string.</param>
-        /// <param name="charSet">Character set used to encode binary string to <see cref="System.String"/>.</param>
+        /// <param name="charSet">Character set used to encode binary string to <see cref="string"/>.</param>
         /// <returns>String representation of <paramref name="str"/>.</returns>
         internal static string ToString(this PhpString str, string charSet)
         {
@@ -205,11 +219,13 @@ namespace Pchp.Library
 
             Encoding encoding;
 
-            if (str.ContainsBinaryData)
+            if (str.ContainsBinaryData && !string.IsNullOrEmpty(charSet))
             {
-                encoding = Encoding.GetEncoding(charSet);
-
-                if (encoding == null)
+                try
+                {
+                    encoding = Encoding.GetEncoding(charSet);
+                }
+                catch (ArgumentException)
                 {
                     //throw new ArgumentException(string.Format(Strings.arg_invalid_value, "charSet", charSet), "charSet");
                     throw new ArgumentException("", nameof(charSet));   // TODO: Err
@@ -222,7 +238,7 @@ namespace Pchp.Library
             }
 
             //
-            return str.ToString(Encoding.UTF8);
+            return str.ToString(encoding);
         }
 
         /// <summary>
@@ -534,12 +550,9 @@ namespace Pchp.Library
         /// </summary>
         public static ObjectPool<StringBuilder> Pool => s_lazyObjectPool.Value;
 
-        static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(() =>
-        {
-            var provider = new DefaultObjectPoolProvider();
-            var policy = new StringBuilderPooledObjectPolicy();
-            return provider.Create(policy);
-        }, System.Threading.LazyThreadSafetyMode.None);
+        static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(
+            () => new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy()),
+            System.Threading.LazyThreadSafetyMode.PublicationOnly);
 
         /// <summary>
         /// Gets the <paramref name="sb"/> value as string and return the instance to the <see cref="Pool"/>.

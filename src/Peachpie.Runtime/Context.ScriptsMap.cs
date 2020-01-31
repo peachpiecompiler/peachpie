@@ -21,9 +21,11 @@ namespace Pchp.Core
         static class ScriptIndexHolder<T>
         {
             /// <summary>
-            /// Index of the object of type <typeparamref name="T"/>.
+            /// Index of the main script contained in type <typeparamref name="T"/>.
+            /// The value is indexed by its file path (scripts with the same path will have the same ID).
+            /// The index is zero-based.
             /// </summary>
-            public static int Index;
+            public static int Index { get; } = ScriptsMap.GetScriptIndex(typeof(T));
         }
 
         /// <summary>
@@ -120,12 +122,12 @@ namespace Pchp.Core
         /// <summary>
         /// Manages map of known scripts and bit array of already included.
         /// </summary>
-        protected class ScriptsMap
+        protected struct ScriptsMap
         {
             /// <summary>
             /// Mask of script indexes that has been included.
             /// </summary>
-            ElasticBitArray _included = new ElasticBitArray(s_scriptsMap.Count);
+            ElasticBitArray/*!*/_included;
 
             /// <summary>
             /// Maps script paths to their id.
@@ -146,6 +148,17 @@ namespace Pchp.Core
             /// Scripts descriptors corresponding to id.
             /// </summary>
             static ScriptInfo[] s_scripts = new ScriptInfo[64];
+
+            /// <summary>
+            /// Initialize the <see cref="ScriptsMap"/>.
+            /// </summary>
+            public static ScriptsMap Create()
+            {
+                return new ScriptsMap
+                {
+                    _included = new ElasticBitArray(s_scriptsMap.Count),
+                };
+            }
 
             static void AddToMapNoLock(string path, int index)
             {
@@ -232,9 +245,9 @@ namespace Pchp.Core
 
             static string NormalizeSlashes(string path) => CurrentPlatform.NormalizeSlashes(path);
 
-            public void SetIncluded<TScript>() => _included.SetTrue(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
+            public static void SetIncluded<TScript>(ref ScriptsMap scripts) => ElasticBitArray.SetTrue(ref scripts._included, ScriptIndexHolder<TScript>.Index);
 
-            public bool IsIncluded<TScript>() => IsIncluded(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
+            public bool IsIncluded<TScript>() => IsIncluded(ScriptIndexHolder<TScript>.Index);
 
             internal bool IsIncluded(ScriptInfo script) => script.IsValid && IsIncluded(script.Index);
 
@@ -242,8 +255,7 @@ namespace Pchp.Core
 
             public static ScriptInfo GetScript<TScript>()
             {
-                var idx = EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index);
-                return s_scripts[idx - 1];
+                return s_scripts[ScriptIndexHolder<TScript>.Index];
             }
 
             public static ScriptInfo GetDeclaredScript(string path)
@@ -278,17 +290,7 @@ namespace Pchp.Core
                 return s_scripts[index];
             }
 
-            static int EnsureIndex<TScript>(ref int script_id)
-            {
-                if (script_id == 0)
-                {
-                    script_id = GetScriptIndex(typeof(TScript)) + 1;
-                }
-
-                return script_id;
-            }
-
-            static int GetScriptIndex(Type script)
+            internal static int GetScriptIndex(Type script)
             {
                 var attr = Reflection.ReflectionUtils.GetScriptAttribute(script);
                 Debug.Assert(attr != null);

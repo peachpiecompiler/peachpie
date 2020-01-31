@@ -69,7 +69,7 @@ namespace Pchp.Core.Reflection
                 methods = methods.Where(s_notObjectMember);
             }
 
-            // skip [PhpHidden] methods
+            // skip [PhpHidden] methods and hidden methods (internal, private protected)
             methods = methods.Where(s_phpvisible);
 
             // collect available methods (including methods on base classes)
@@ -87,7 +87,7 @@ namespace Pchp.Core.Reflection
                 SelectVisibleOverrides(ref overrides);
 
                 var info = PhpMethodInfo.Create(++index, m.Key, overrides, type);
-                var magic = MagicMethods.undefined;
+                MagicMethods magic;
 
                 if (IsSpecialName(overrides))
                 {
@@ -132,7 +132,14 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<MethodInfo, bool> s_notObjectMember = m => m.DeclaringType != typeof(object);
 
-        static readonly Func<MethodInfo, bool> s_phpvisible = m => !ReflectionUtils.IsPhpHidden(m);
+        static readonly Func<MethodInfo, bool> s_phpvisible = m =>
+        {
+            var access = m.Attributes & MethodAttributes.MemberAccessMask;
+            return
+                access != MethodAttributes.Assembly &&
+                access != MethodAttributes.FamANDAssem &&
+                !ReflectionUtils.IsPhpHidden(m);
+        };
 
         static bool IsSpecialName(MethodInfo[] methods)
         {

@@ -184,7 +184,7 @@ namespace Pchp.Core
         /// The buffer may already exist or new one may be created.
         /// Works on the current level of buffering.
         /// </remarks>
-        private int AllocateBuffer(int sizeNeeded, bool binary, out System.Array buffer, out int position)
+        private int AllocateBuffer(int sizeNeeded, bool binary, out Array buffer, out int position)
         {
             Debug.Assert(_level != null);
 
@@ -277,7 +277,7 @@ namespace Pchp.Core
 
             if (top != 0)
             {
-                _level = (LevelElement)_levels[top - 1];
+                _level = _levels[top - 1];
                 return top - 1;
             }
             else
@@ -706,7 +706,7 @@ namespace Pchp.Core
         internal void WriteInternal(Array value, bool binary, int index, int count)
         {
             int position;
-            System.Array buffer;
+            Array buffer;
             int length = count;
             int chunk;
 
@@ -798,7 +798,7 @@ namespace Pchp.Core
         {
             if (_levels != null && filter != null)
                 for (int i = 0; i < Level; i++)
-                    if (_levels[i].filter == filter)
+                    if (ReferenceEquals(_levels[i].filter, filter))
                         return i;
 
             return -1;

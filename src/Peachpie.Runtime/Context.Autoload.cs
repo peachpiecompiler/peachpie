@@ -1,4 +1,6 @@
-﻿using Pchp.Core.Reflection;
+﻿#nullable enable
+
+using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +19,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="fullName">Full class, interface or trait name.</param>
         /// <returns>Type descriptor or a <c>null</c> reference if the process couldn't resolve the type.</returns>
-        PhpTypeInfo AutoloadTypeByName(string fullName);
+        PhpTypeInfo? AutoloadTypeByName(string fullName);
     }
 
     partial class Context : IPhpAutoloadService
@@ -25,12 +27,12 @@ namespace Pchp.Core
         /// <summary>
         /// Default implementation of PHP autoload.
         /// </summary>
-        PhpTypeInfo IPhpAutoloadService.AutoloadTypeByName(string fullName) => DefaultAutoloadTypeByName(fullName) ?? ImplicitAutoloadTypeByName(fullName);
+        PhpTypeInfo? IPhpAutoloadService.AutoloadTypeByName(string fullName) => DefaultAutoloadTypeByName(fullName) ?? ImplicitAutoloadTypeByName(fullName);
 
         /// <summary>
         /// Default implementation of PHP autoload looks for <c>__autoload</c> global function and calls it.
         /// </summary>
-        PhpTypeInfo DefaultAutoloadTypeByName(string fullName)
+        PhpTypeInfo? DefaultAutoloadTypeByName(string fullName)
         {
             var autoload = _lazyAutoloadRoutine;
             if (autoload == null)
@@ -71,7 +73,7 @@ namespace Pchp.Core
         /// This ensures when even the caller does not define PHP class autoloading, we allows seamless use of PHP classes and PHP program.
         /// This mechanism gets enabled by default, disabled only when SPL autoload gets initiated (or anything that sets own <see cref="Context.AutoloadService"/>).
         /// </summary>
-        PhpTypeInfo ImplicitAutoloadTypeByName(string fullName)
+        PhpTypeInfo? ImplicitAutoloadTypeByName(string fullName)
         {
             if (EnableImplicitAutoload)
             {
@@ -101,7 +103,7 @@ namespace Pchp.Core
 
                     if (script.IsValid && !_scripts.IsIncluded(script.Index))   // include_once:
                     {
-                        script.Evaluate(this, this.Globals, null, default);
+                        script.Evaluate(this, this.Globals, null);
 
                         return GetDeclaredType(fullName, autoload: false); // TODO: can we return types[0] directly in some cases?
                     }

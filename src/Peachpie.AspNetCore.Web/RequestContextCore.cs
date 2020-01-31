@@ -243,7 +243,7 @@ namespace Peachpie.AspNetCore.Web
                 }
                 else
                 {
-                    using (_requestTimer = new Timer(RequestTimeout, null, this.Configuration.Core.ExecutionTimeout, Timeout.Infinite))
+                    using (_requestTimer = new Timer(RequestTimeout, null, DefaultPhpConfigurationService.Instance.Core.ExecutionTimeout, Timeout.Infinite))
                     {
                         script.Evaluate(this, this.Globals, null);
                     }
@@ -300,14 +300,14 @@ namespace Peachpie.AspNetCore.Web
         /// <summary>
         /// Name of the server software as it appears in <c>$_SERVER[SERVER_SOFTWARE]</c> variable.
         /// </summary>
-        public const string ServerSoftware = "ASP.NET Core Server";
+        public static string ServerSoftware => "ASP.NET Core Server";
 
         /// <summary>
         /// Informational string exposing technology powering the web request and version.
         /// </summary>
-        static readonly string XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+        static readonly string s_XPoweredBy = $"PeachPie {ContextExtensions.GetRuntimeInformationalVersion()}";
 
-        static string DefaultContentType = "text/html; charset=UTF-8";
+        static string DefaultContentType => "text/html; charset=UTF-8";
 
         /// <summary>
         /// Unique key of item within <see cref="HttpContext.Items"/> associated with this <see cref="Context"/>.
@@ -327,6 +327,7 @@ namespace Peachpie.AspNetCore.Web
         Timer _requestTimer;
 
         public RequestContextCore(HttpContext httpcontext, string rootPath, Encoding encoding)
+            : base(httpcontext.RequestServices)
         {
             Debug.Assert(httpcontext != null);
             Debug.Assert(encoding != null);
@@ -372,7 +373,7 @@ namespace Peachpie.AspNetCore.Web
         void SetupHeaders()
         {
             _httpctx.Response.ContentType = DefaultContentType;                         // default content type if not set anything by the application
-            _httpctx.Response.Headers["X-Powered-By"] = new StringValues(XPoweredBy);   //
+            _httpctx.Response.Headers["X-Powered-By"] = new StringValues(s_XPoweredBy); //
         }
 
         static void AddVariables(PhpArray target, IEnumerable<KeyValuePair<string, StringValues>> values)

@@ -51,14 +51,14 @@ namespace Peachpie.Library.MsSql
         /// Array of column names. If a column doesn't have a name (it is calculated), 
         /// it is assigned "computed{number}" name.
         /// </returns>
-        protected override string[] GetNames()
+        protected override string[] GetNames(int fieldsCount)
         {
-            string[] names = base.GetNames();
+            var names = base.GetNames(fieldsCount);
 
             int j = 0;
             for (int i = 0; i < names.Length; i++)
             {
-                if (names[i] == "")
+                if (string.IsNullOrEmpty(names[i]))
                 {
                     names[i] = (j > 0) ? "computed" + j : "computed";
                     j++;

@@ -16,7 +16,7 @@ using Pchp.Core;
 /// which had been serialized before the class implemeted the interface, is unserialized,
 /// __wakeup() is called instead of the serialize method, what might be useful for migration purposes.
 /// </remarks>
-[PhpType(PhpTypeAttribute.InheritName)]
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
 public interface Serializable
 {
     /// <summary>

@@ -9,6 +9,7 @@ using Pchp.Core.Reflection;
 
 namespace Peachpie.Library.Scripting
 {
+    [PhpExtension("Core")]
     public static class PhpFunctions
     {
         const string _createFunctionTemplate = "function {0} ({1}) {{ {2} }}";
@@ -42,7 +43,7 @@ namespace Peachpie.Library.Scripting
             var script = ctx.ScriptingProvider.CreateScript(new Context.ScriptOptions()
             {
                 Context = ctx,
-                EmitDebugInformation = false,
+                EmitDebugInformation = Debugger.IsAttached, // CONSIDER
                 Location = new Location(Path.Combine(ctx.RootPath, "runtime-created function"), 0, 0),  // TODO: pass from calling script
                 IsSubmission = true
             }, source);

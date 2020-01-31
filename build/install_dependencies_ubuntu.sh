@@ -1,3 +1,6 @@
+# pdo_sqlite
+#pecl install pdo_sqlite
+
 # Install .NET Core
 # https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current
 

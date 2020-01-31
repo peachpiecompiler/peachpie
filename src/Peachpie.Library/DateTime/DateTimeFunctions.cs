@@ -60,13 +60,17 @@ namespace Pchp.Library.DateTime
 
         public const string DATE_RFC3339 = @"Y-m-d\TH:i:sP";
 
-        public const string DATE_RSS = @"D, d M Y H:i:s T";
+        public const string DATE_RFC7231 = @"D, d M Y H:i:s \G\M\T";
 
-        public const string DATE_W3C = @"Y-m-d\TH:i:sO";
+        public const string DATE_RFC3339_EXTENDED = @"Y-m-d\TH:i:s.vP";
+        
+        public const string DATE_RSS = @"D, d M Y H:i:s O";
+
+        public const string DATE_W3C = @"Y-m-d\TH:i:sP";
 
         #endregion
 
-        #region date_format, date_create, date_create_immutable, date_offset_get, date_modify, date_add, date_sub, date_diff, date_timestamp_set
+        #region date_format, date_create, date_create_immutable, date_offset_get, date_modify, date_add, date_sub, date_diff, date_timestamp_set, date_timestamp_get
 
         [return: CastToFalse]
         public static string date_format(DateTime datetime, string format)
@@ -200,6 +204,11 @@ namespace Pchp.Library.DateTime
         /// </summary>
         /// <returns>Returns the <see cref="DateTime"/> object for method chaining.</returns>
         public static DateTime date_timestamp_set(DateTime @object, long unixtimestamp) => @object.setTimestamp(unixtimestamp);
+
+        /// <summary>
+        /// Gets the date and time as Unix timestamp.
+        /// </summary>
+        public static long date_timestamp_get(DateTime @object) => @object.getTimestamp();
 
         #endregion
 
@@ -690,6 +699,20 @@ namespace Pchp.Library.DateTime
         /// Alias of <see cref="DateInterval.createFromDateString(string)"/>.
         /// </summary>
         public static DateInterval date_interval_create_from_date_string(string time) => DateInterval.createFromDateString(time);
+
+        #endregion
+
+        #region date_parse_from_format
+
+        /// <summary>
+        /// Get info about given date formatted according to the specified format.
+        /// </summary>
+        [return: NotNull]
+        public static PhpArray date_parse_from_format(Context ctx, string format, string date)
+        {
+            var dateinfo = DateInfo.ParseFromFormat(format, date, out var errors);
+            return AsArray(ctx, dateinfo, errors);
+        }
 
         #endregion
 
@@ -1462,7 +1485,7 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region microtime
+        #region microtime, hrtime
 
         /// <summary>
         /// Returns the string "msec sec" where sec is the current time measured in the number of seconds
@@ -1481,14 +1504,14 @@ namespace Pchp.Library.DateTime
             TimeSpan mSec = fromUnixEpoch.Subtract(new TimeSpan(seconds * 10000000)); // convert seconds to 100 ns
             double remaining = ((double)mSec.Ticks) / 10000000; // convert from 100ns to seconds
 
-            return remaining.ToString("G", System.Globalization.NumberFormatInfo.InvariantInfo) + " " + seconds.ToString();
+            return remaining.ToString("G", NumberFormatInfo.InvariantInfo) + " " + seconds.ToString();
         }
 
         /// <summary>
         /// Returns the fractional time in seconds from the start of the UNIX epoch.
         /// </summary>
         /// <param name="returnDouble"><c>true</c> to return the double, <c>false</c> to return string.</param>
-        /// <returns><see cref="String"/> containing number of miliseconds, space and number of seconds
+        /// <returns><see cref="string"/> containing number of miliseconds, space and number of seconds
         /// if <paramref name="returnDouble"/> is <c>false</c> and <see cref="double"/>
         /// containing the fractional count of seconds otherwise.</returns>
         public static PhpValue microtime(bool returnDouble)
@@ -1497,6 +1520,39 @@ namespace Pchp.Library.DateTime
                 return PhpValue.Create((System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds);
             else
                 return PhpValue.Create(microtime());
+        }
+
+        /// <summary>
+        /// Get the system's high resolution time.
+        /// </summary>
+        /// <param name="get_as_number">
+        /// Whether the high resolution time should be returned as array or number.
+        /// Default is to return the value as array.
+        /// </param>
+        /// <returns>
+        /// Returns nanoseconds of internal system counter.
+        /// If <paramref name="get_as_number"/> is <c>false</c>, the return value is split to array <code>[seconds, nanoseconds]</code>.
+        /// </returns>
+        /// <remarks>Internally the function uses <see cref="Stopwatch"/> which depends on the current platform implementation.</remarks>
+        public static PhpValue hrtime(bool get_as_number = false)
+        {
+            var ticks = Stopwatch.GetTimestamp();
+
+            const long ns = 1_000_000_000;
+
+            // convert ticks to nanoseconds
+            var seconds = ticks / Stopwatch.Frequency;
+            var nanoseconds = (ticks - (seconds * Stopwatch.Frequency)) * ns / Stopwatch.Frequency;
+
+            if (get_as_number)
+            {
+                return seconds * ns + nanoseconds;
+            }
+            else
+            {
+                // [seconds, nanoseconds]
+                return new PhpArray(2) { seconds, nanoseconds };
+            }
         }
 
         #endregion
@@ -1559,12 +1615,12 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public static PhpArray date_parse(Context ctx, string time)
         {
-            var errors = PhpArray.NewEmpty();
+            DateTimeErrors errors = null;
 
             if (string.IsNullOrEmpty(time))
             {
                 time = string.Empty;
-                errors.Add(Resources.DateResources.empty_string);
+                DateTimeErrors.AddError(ref errors, Resources.DateResources.empty_string);
             }
 
             //
@@ -1574,7 +1630,7 @@ namespace Pchp.Library.DateTime
                 var token = scanner.GetNextToken();
                 if (token == Tokens.ERROR || scanner.Errors > 0)
                 {
-                    errors.Add(string.Format(Resources.LibResources.parse_error, scanner.Position.ToString(), time.Substring(scanner.Position)));
+                    DateTimeErrors.AddError(ref errors, string.Format(Resources.LibResources.parse_error, scanner.Position.ToString(), time.Substring(scanner.Position)));
                     break;
                 }
 
@@ -1585,10 +1641,14 @@ namespace Pchp.Library.DateTime
             }
 
             //
-            var dateinfo = scanner.Time;
+            return AsArray(ctx, scanner.Time, errors);
+        }
+
+        static PhpArray AsArray(Context ctx, DateInfo dateinfo, DateTimeErrors errors)
+        {
             var datetime = dateinfo.GetDateTime(ctx, System_DateTime.UtcNow);
 
-            var result = new PhpArray(12);
+            var result = new PhpArray(16);
             //[year] => 2006
             result["year"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Year : PhpValue.False;
             //[month] => 12
@@ -1604,13 +1664,13 @@ namespace Pchp.Library.DateTime
             //[fraction] => 0.5
             result["fraction"] = dateinfo.have_time != 0 ? (PhpValue)dateinfo.f : PhpValue.False;
             //[warning_count] => 0
-            result["warning_count"] = (PhpValue)0;
+            result["warning_count"] = errors != null && errors.Warnings != null ? errors.Warnings.Count : 0;
             //[warnings] => Array()
-            result["warnings"] = (PhpValue)PhpArray.NewEmpty();
+            result["warnings"] = errors != null && errors.Warnings != null ? new PhpArray(errors.Warnings) : PhpArray.NewEmpty();
             //[error_count] => 0
-            result["error_count"] = (PhpValue)errors.Count;
+            result["error_count"] = errors != null && errors.Errors != null ? errors.Errors.Count : 0;
             //[errors] => Array()
-            result["errors"] = (PhpValue)errors;
+            result["errors"] = errors != null && errors.Errors != null ? new PhpArray(errors.Errors) : PhpArray.NewEmpty();
             //[is_localtime] => 
             result["is_localtime"] = (PhpValue)(false); // ???
 

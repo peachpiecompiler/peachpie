@@ -21,21 +21,24 @@ namespace Pchp.Core
     /// Its instance is passed to all PHP function.
     /// The context is not thread safe.
     /// </remarks>
-    public partial class Context : IDisposable
+    public partial class Context : IDisposable, IServiceProvider
     {
         #region Create
 
-        protected Context()
+        /// <summary>
+        /// Initializes instance of context.
+        /// </summary>
+        /// <param name="services">Service provider. Can be <c>null</c> reference to use implicit services.</param>
+        protected Context(IServiceProvider services)
         {
-            // tables
-            _functions = new RoutinesTable(FunctionRedeclared);
-            _types = new TypesTable(TypeRedeclared);
-            _statics = new object[StaticIndexes.StaticsCount];
-            _constants = new ConstsMap();
-            _scripts = new ScriptsMap();
+            _services = services;
 
-            //
-            this.DefineConstant("PHP_SAPI", (PhpValue)this.ServerApi, ignorecase: false);
+            // tables
+            _functions = new RoutinesTable();
+            _types = new TypesTable();
+            _statics = Array.Empty<object>();
+            _constants = ConstsMap.Create(this);
+            _scripts = ScriptsMap.Create();
         }
 
         /// <summary>
@@ -47,7 +50,7 @@ namespace Pchp.Core
         /// </param>
         public static Context CreateEmpty(params string[] cmdargs)
         {
-            var ctx = new Context()
+            var ctx = new Context(null)
             {
                 RootPath = Directory.GetCurrentDirectory(),
                 EnableImplicitAutoload = true,
@@ -66,6 +69,20 @@ namespace Pchp.Core
             return ctx;
         }
 
+        /// <summary>
+        /// Base service provider, can be <c>null</c>.
+        /// Used to provide services to this instance of context.
+        /// </summary>
+        readonly IServiceProvider _services;
+
+        /// <summary>
+        /// Resolves service.
+        /// </summary>
+        object IServiceProvider.GetService(Type serviceType)
+        {
+            return null;
+        }
+
         #endregion
 
         #region Symbols
@@ -77,9 +94,8 @@ namespace Pchp.Core
             /// <summary>
             /// Set of reflected script assemblies.
             /// </summary>
-            public static IReadOnlyCollection<Assembly> ProcessedAssemblies => s_processedAssembliesArr;
+            public static IReadOnlyCollection<Assembly> ProcessedAssemblies { get; private set; } = Array.Empty<Assembly>();
             static readonly HashSet<Assembly> s_processedAssemblies = new HashSet<Assembly>();
-            static Assembly[] s_processedAssembliesArr = Array.Empty<Assembly>();
 
             /// <summary>
             /// Reflects given assembly for PeachPie compiler specifics - compiled scripts, references to other assemblies, declared functions and classes.
@@ -100,7 +116,7 @@ namespace Pchp.Core
                     return;
                 }
 
-                s_processedAssembliesArr = ArrayUtils.AppendRange(assembly, s_processedAssembliesArr);    // TODO: ImmutableArray<T>
+                ProcessedAssemblies = s_processedAssemblies.ToArray();
 
                 // remember the assembly for class map:
                 s_assClassMap.AddPhpAssemblyNoLock(assembly);
@@ -177,6 +193,8 @@ namespace Pchp.Core
                     }
                 }
 
+                ConstsMap.DefineAppConstant("PHP_SAPI", new Func<Context, PhpValue>(ctx => ctx.ServerApi), false, "Core");
+
                 // scripts
                 foreach (var t in assembly.GetTypes())
                 {
@@ -192,10 +210,7 @@ namespace Pchp.Core
                 }
 
                 //
-                if (_targetPhpLanguageAttribute == null)
-                {
-                    _targetPhpLanguageAttribute = assembly.GetCustomAttribute<TargetPhpLanguageAttribute>();
-                }
+                s_targetPhpLanguageAttribute ??= assembly.GetCustomAttribute<TargetPhpLanguageAttribute>();
             }
         }
 
@@ -206,9 +221,10 @@ namespace Pchp.Core
         public static class DllLoader<TScript>
         {
             /// <summary>
-            /// Called once per DLL (ensured by JIT).
+            /// Module initialization method.
+            /// Reflects given assembly (through <typeparamref name="TScript"/>.Assembly) 
             /// </summary>
-            static DllLoader()
+            public static void AddScriptReference()
             {
                 Trace.WriteLine($"DLL '{typeof(TScript).Assembly.FullName}' being loaded ...");
 
@@ -220,15 +236,6 @@ namespace Pchp.Core
                 {
                     Trace.TraceError($"Type '{typeof(TScript).Assembly.FullName}' is not expected! Use '{ScriptInfo.ScriptTypeName}' instead.");
                 }
-            }
-
-            /// <summary>
-            /// Dummy method, nop.
-            /// </summary>
-            public static void Bootstrap()
-            {
-                // do nothing,
-                // the loader is being ensured from a static .cctor of a PHP script or a PHP type
             }
         }
 
@@ -245,9 +252,12 @@ namespace Pchp.Core
         /// <summary>
         /// Map of global constants.
         /// </summary>
-        readonly ConstsMap _constants;
+        ConstsMap _constants;
 
-        readonly ScriptsMap _scripts;
+        /// <summary>
+        /// Set of scripts that have been included in current context.
+        /// </summary>
+        ScriptsMap _scripts;
 
         /// <summary>
         /// Load PHP scripts and referenced symbols from PHP assembly.
@@ -301,7 +311,7 @@ namespace Pchp.Core
         /// Declare a runtime user type.
         /// </summary>
         /// <typeparam name="T">Type to be declared in current context.</typeparam>
-        public void DeclareType<T>() => _types.DeclareType<T>();
+        public void DeclareType<T>() => _types.DeclareType(TypeInfoHolder<T>.TypeInfo);
 
         /// <summary>
         /// Declare a runtime user type unser an aliased name.
@@ -405,20 +415,6 @@ namespace Pchp.Core
         /// <returns>True if the type has been declared on the current <see cref="Context"/>.</returns>
         internal bool IsUserTypeDeclared(PhpTypeInfo phptype) => _types.IsDeclared(phptype);
 
-        void FunctionRedeclared(RoutineInfo routine)
-        {
-            // TODO: ErrCode & throw
-            throw new InvalidOperationException($"Function {routine.Name} redeclared!");
-        }
-
-        void TypeRedeclared(PhpTypeInfo type)
-        {
-            Debug.Assert(type != null);
-
-            // TODO: ErrCode & throw
-            throw new InvalidOperationException($"Type {type.Name} redeclared!");
-        }
-
         #endregion
 
         #region Inclusions
@@ -434,7 +430,7 @@ namespace Pchp.Core
         /// Called by scripts Main method at its begining.
         /// </summary>
         /// <typeparam name="TScript">Script type containing the Main method/</typeparam>
-        public void OnInclude<TScript>() => _scripts.SetIncluded<TScript>();
+        public void OnInclude<TScript>() => ScriptsMap.SetIncluded<TScript>(ref _scripts);
 
         /// <summary>
         /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method within the global scope.
@@ -550,7 +546,7 @@ namespace Pchp.Core
 
         #region Shutdown
 
-        List<Action<Context>> _lazyShutdownCallbacks = null;
+        List<Action<Context>> _lazyShutdownCallbacks;
 
         /// <summary>
         /// Enqueues a callback to be invoked at the end of request.
@@ -633,7 +629,7 @@ namespace Pchp.Core
 
         #region Resources // objects that need dispose
 
-        HashSet<IDisposable> _lazyDisposables = null;
+        HashSet<IDisposable> _lazyDisposables;
 
         public virtual void RegisterDisposable(IDisposable obj)
         {
@@ -686,7 +682,10 @@ namespace Pchp.Core
                 foreach (var path in _temporaryFiles)
                 {
                     try { File.Delete(path); }
-                    catch { }
+                    catch
+                    {
+                        // ignored
+                    }
                 }
 
                 _temporaryFiles = null;

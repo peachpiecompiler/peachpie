@@ -1528,6 +1528,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Sleep until to time is less than current time.
+        /// </summary>
+        public static string time_sleep_until_in_past {
+            get {
+                return ResourceManager.GetString("time_sleep_until_in_past", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to String containg Unicode characters greater than &apos;\u0800&apos; are not supported.
         /// </summary>
         public static string too_big_unicode_character {

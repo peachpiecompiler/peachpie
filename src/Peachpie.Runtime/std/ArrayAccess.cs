@@ -5,7 +5,7 @@ using Pchp.Core;
 /// Interface to provide accessing objects as arrays.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Advanced)]
-[PhpType(PhpTypeAttribute.InheritName)]
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
 public interface ArrayAccess
 {
     /// <summary>

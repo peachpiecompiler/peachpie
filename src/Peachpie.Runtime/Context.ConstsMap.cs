@@ -54,7 +54,7 @@ namespace Pchp.Core
         /// <summary>
         /// Information about app constants.
         /// </summary>
-        [DebuggerDisplay("Value={Value}, Extension={ExtensionName}")]
+        [DebuggerDisplay("Value={Data}, Extension={ExtensionName}")]
         struct ConstData
         {
             /// <summary>
@@ -65,7 +65,20 @@ namespace Pchp.Core
             /// <summary>
             /// Resolves the constant value.
             /// </summary>
-            public PhpValue Value => Data.Object is Func<PhpValue> func ? func() : Data;
+            public PhpValue GetValue(Context ctx)
+            {
+                if (Data.Object is Delegate)
+                {
+                    return
+                        Data.Object is Func<PhpValue> func ? func() :
+                        Data.Object is Func<Context, PhpValue> func2 ? func2(ctx) :
+                        throw null;
+                }
+                else
+                {
+                    return Data;
+                }
+            }
 
             /// <summary>
             /// Optional extension name that the constant belongs to.
@@ -91,44 +104,60 @@ namespace Pchp.Core
 
         #endregion
 
-        class ConstsMap : IEnumerable<ConstantInfo>
+        struct ConstsMap : IEnumerable<ConstantInfo>
         {
             /// <summary>
             /// Maps of constant name to its ID.
             /// </summary>
-            readonly static Dictionary<ConstName, int> _map = new Dictionary<ConstName, int>(1024, new ConstName.ConstNameComparer());
+            readonly static Dictionary<ConstName, int> s_map = new Dictionary<ConstName, int>(1024, new ConstName.ConstNameComparer());
 
             /// <summary>
             /// Lock mechanism for accessing statics.
             /// </summary>
-            readonly static ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+            readonly static ReaderWriterLockSlim s_rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
             /// <summary>
             /// Maps constant ID to its actual value, accross all contexts (application wide).
             /// </summary>
-            static ConstData[] _valuesApp = new ConstData[1200];   // there is ~1162 builtin constants
+            static ConstData[] s_valuesApp = new ConstData[1200];   // there is ~1162 builtin constants
 
             /// <summary>
             /// Actual count of defined constant names.
             /// </summary>
-            static int _countApp, _countCtx;
+            static int s_countApp, s_countCtx;
 
             /// <summary>
             /// Maps constant ID to its actual value in current context.
             /// </summary>
-            PhpValue[] _valuesCtx = new PhpValue[_countCtx];
+            PhpValue[]/*!*/_valuesCtx;
+
+            /// <summary>
+            /// Runtime context.
+            /// </summary>
+            readonly Context _ctx;
+
+            /// <summary>
+            /// Initializes <see cref="ConstsMap"/>.
+            /// </summary>
+            public static ConstsMap Create(Context ctx) => new ConstsMap(ctx);
+
+            ConstsMap(Context ctx)
+            {
+                _ctx = ctx;
+                _valuesCtx = Array.Empty<PhpValue>();
+            }
 
             static void EnsureArray<T>(ref T[] arr, int size)
             {
                 if (arr.Length < size)
                 {
-                    Array.Resize(ref arr, size * 2 + 1);
+                    Array.Resize(ref arr, Math.Max(size * 2 + 1, s_countCtx));
                 }
             }
 
-            static Exception ConstantRedeclaredException(string name)
+            static void RedeclarationError(string name)
             {
-                return new InvalidOperationException(string.Format(Resources.ErrResources.constant_redeclared, name));
+                throw new InvalidOperationException(string.Format(Resources.ErrResources.constant_redeclared, name));
             }
 
             /// <summary>
@@ -141,30 +170,30 @@ namespace Pchp.Core
                 var cname = new ConstName(name, ignoreCase);
                 int idx;
 
-                _rwLock.EnterUpgradeableReadLock();
+                s_rwLock.EnterUpgradeableReadLock();
                 try
                 {
-                    if (!_map.TryGetValue(cname, out idx))
+                    if (!s_map.TryGetValue(cname, out idx))
                     {
-                        _rwLock.EnterWriteLock();
+                        s_rwLock.EnterWriteLock();
                         try
                         {
                             // new constant ID, non zero
                             idx = appConstant
-                                ? -(++_countApp)    // app constants are negative
-                                : (++_countCtx);    //
+                                ? -(++s_countApp)    // app constants are negative
+                                : (++s_countCtx);    //
 
-                            _map.Add(cname, idx);
+                            s_map.Add(cname, idx);
                         }
                         finally
                         {
-                            _rwLock.ExitWriteLock();
+                            s_rwLock.ExitWriteLock();
                         }
                     }
                 }
                 finally
                 {
-                    _rwLock.ExitUpgradeableReadLock();
+                    s_rwLock.ExitUpgradeableReadLock();
                 }
 
                 //
@@ -173,38 +202,28 @@ namespace Pchp.Core
 
             public static void DefineAppConstant(string name, PhpValue value, bool ignoreCase, string extensionName)
             {
-                Debug.Assert(value.IsScalar || value.Object is Func<PhpValue>);
+                Debug.Assert(value.IsScalar || value.Object is Func<PhpValue> || value.Object is Func<Context, PhpValue>);
 
                 var idx = -RegisterConstantId(name, ignoreCase, true);
                 Debug.Assert(idx != 0);
 
                 if (idx < 0)
                 {
-                    throw ConstantRedeclaredException(name);   // runtime constant with this name was already defined
+                    RedeclarationError(name);   // runtime constant with this name was already defined
                 }
 
-                EnsureArray(ref _valuesApp, idx);
+                EnsureArray(ref s_valuesApp, idx);
 
                 // fill in the app contant slot
-                ref var slot = ref _valuesApp[idx - 1];
+                ref var slot = ref s_valuesApp[idx - 1];
 
                 if (SetValue(ref slot.Data, value))
                 {
                     slot.ExtensionName = extensionName;
                 }
-                else
-                {
-                    Debug.Fail(string.Format(Resources.ErrResources.constant_redeclared, name));
-                }
             }
 
-            public bool DefineConstant(string name, PhpValue value, bool ignoreCase = false)
-            {
-                int idx = 0;
-                return DefineConstant(name, value, ref idx, ignoreCase);
-            }
-
-            public bool DefineConstant(string name, PhpValue value, ref int idx, bool ignoreCase = false)
+            public static bool DefineConstant(ref ConstsMap self, string name, PhpValue value, ref int idx, bool ignoreCase = false)
             {
                 Debug.Assert(value.IsScalar || value.IsArray);
 
@@ -216,11 +235,12 @@ namespace Pchp.Core
 
                 if (idx < 0) // app constant cannot be redeclared
                 {
-                    throw ConstantRedeclaredException(name);
+                    RedeclarationError(name);
                 }
 
-                EnsureArray(ref _valuesCtx, idx);
-                return SetValue(ref _valuesCtx[idx - 1], value);
+                ref var values = ref self._valuesCtx;
+                EnsureArray(ref values, idx);
+                return SetValue(ref values[idx - 1], value);
             }
 
             /// <summary>
@@ -262,14 +282,14 @@ namespace Pchp.Core
             {
                 if (idx == 0)
                 {
-                    _rwLock.EnterReadLock();
+                    s_rwLock.EnterReadLock();
                     try
                     {
-                        _map.TryGetValue(new ConstName(name), out idx);
+                        s_map.TryGetValue(new ConstName(name), out idx);
                     }
                     finally
                     {
-                        _rwLock.ExitReadLock();
+                        s_rwLock.ExitReadLock();
                     }
                 }
 
@@ -294,9 +314,9 @@ namespace Pchp.Core
                 else // if (idx < 0)
                 {
                     // app constant
-                    if (ArrayUtils.TryGetItem(_valuesApp, -idx - 1, out var data) && data.Data.IsSet)
+                    if (ArrayUtils.TryGetItem(s_valuesApp, -idx - 1, out var data) && data.Data.IsSet)
                     {
-                        value = data.Value;
+                        value = data.GetValue(_ctx);
                         return true;
                     }
 
@@ -317,23 +337,23 @@ namespace Pchp.Core
             /// </summary>
             public IEnumerator<ConstantInfo> GetEnumerator()
             {
-                var listApp = new ConstantInfo[_countApp];
-                var listCtx = new ConstantInfo[_countCtx];
+                var listApp = new ConstantInfo[s_countApp];
+                var listCtx = new ConstantInfo[s_countCtx];
 
                 //
-                _rwLock.EnterReadLock();
+                s_rwLock.EnterReadLock();
                 try
                 {
                     // initilize values
 
-                    var valuesApp = _valuesApp;
+                    var valuesApp = s_valuesApp;
                     for (int i = 0; i < valuesApp.Length; i++)
                     {
                         ref var data = ref valuesApp[i];
                         if (!data.Data.IsDefault)
                         {
                             ref var item = ref listApp[i];
-                            item.Value = data.Value;
+                            item.Value = data.GetValue(_ctx);
                             item.ExtensionName = data.ExtensionName;
                             //item.IsUser = false;
                         }
@@ -352,7 +372,7 @@ namespace Pchp.Core
                     }
 
                     // assign name from the map
-                    foreach (var pair in _map)
+                    foreach (var pair in s_map)
                     {
                         if (pair.Value < 0)
                         {
@@ -368,7 +388,7 @@ namespace Pchp.Core
                 }
                 finally
                 {
-                    _rwLock.ExitReadLock();
+                    s_rwLock.ExitReadLock();
                 }
 
                 //

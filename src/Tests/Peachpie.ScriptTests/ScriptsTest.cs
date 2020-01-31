@@ -36,6 +36,9 @@ namespace ScriptsTest
 
             _output.WriteLine("Testing {0} ...", path);
 
+            // 
+            Directory.SetCurrentDirectory(dir);
+
             // test script compilation and run it
             var result = CompileAndRun(path);
 

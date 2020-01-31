@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
 using Pchp.Core.Resources;
+using Peachpie.Runtime.Reflection;
 
 namespace Pchp.Library.Reflection
 {
@@ -94,6 +95,47 @@ namespace Pchp.Library.Reflection
             }
         }
 
+        public static List<ParameterInfo> ResolvePhpParameters(MethodInfo[] overloads)
+        {
+            var parameters = new List<ParameterInfo>();
+
+            for (int mi = 0; mi < overloads.Length; mi++)
+            {
+                var ps = overloads[mi].GetParameters();
+                var implicitps = Core.Reflection.ReflectionUtils.ImplicitParametersCount(ps);   // number of implicit compiler-generated parameters
+                int pi = implicitps;
+
+                for (; pi < ps.Length; pi++)
+                {
+                    var p = ps[pi];
+
+                    if (!Core.Reflection.ReflectionUtils.IsAllowedPhpName(p.Name))
+                    {
+                        break;  // synthesized at the end of CLR method
+                    }
+
+                    var index = pi - implicitps;
+
+                    if (index == parameters.Count)
+                    {
+                        parameters.Add(p);
+                    }
+                    else
+                    {
+                        // choose the better - the one with more metadata
+                        var oldp = parameters[index];
+                        if (p.HasDefaultValue || p.GetCustomAttribute<DefaultValueAttribute>() != null) // TODO: or has type information
+                        {
+                            parameters[index] = p;
+                        }
+                    }
+                }
+            }
+
+            //
+            return parameters;
+        }
+
         public static List<ReflectionParameter> ResolveReflectionParameters(Context ctx, ReflectionFunctionAbstract function, MethodInfo[] overloads)
         {
             var parameters = new List<ReflectionParameter>();
@@ -109,7 +151,7 @@ namespace Pchp.Library.Reflection
                     var p = ps[pi];
 
                     var allowsNull = p.IsNullable();
-                    var isVariadic = p.GetCustomAttribute<ParamArrayAttribute>() != null;
+                    var isVariadic = pi == ps.Length - 1 && p.GetCustomAttribute<ParamArrayAttribute>() != null;
 
                     PhpValue defaultValue;
                     DefaultValueAttribute defaultValueAttr;
@@ -157,6 +199,30 @@ namespace Pchp.Library.Reflection
 
             //
             return parameters;
+        }
+
+        public static string getDocComment(Assembly assembly, string symbolId)
+        {
+            var metadata = MetadataResourceManager.GetMetadata(assembly, symbolId);
+            return getDocComment(metadata);
+        }
+
+        public static string getDocComment(MethodInfo method) => getDocComment(method.DeclaringType.Assembly, method.DeclaringType.FullName + "." + method.Name);
+
+        public static string getDocComment(TypeInfo type) => getDocComment(type.Assembly, type.FullName);
+
+        static string getDocComment(string metadata)
+        {
+            if (metadata != null)
+            {
+                var decoded = (stdClass)StringUtils.JsonDecode(metadata).Object;
+                if (decoded.GetRuntimeFields().TryGetValue("doc", out var doc))
+                {
+                    return doc.AsString();
+                }
+            }
+
+            return null;
         }
     }
 }

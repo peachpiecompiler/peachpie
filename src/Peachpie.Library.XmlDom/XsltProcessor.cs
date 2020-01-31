@@ -32,7 +32,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Implements the XSLT processor.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("xsl")]
     public class XSLTProcessor
     {
         #region Delegates

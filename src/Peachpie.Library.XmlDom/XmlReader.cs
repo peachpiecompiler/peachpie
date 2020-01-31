@@ -13,7 +13,7 @@ namespace Peachpie.Library.XmlDom
     /// The XMLReader extension is an XML pull parser. The reader acts as a cursor going forward
     /// on the document stream and stopping at each node on the way.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("xmlreader")]
     public class XMLReader
     {
         #region XmlReader node types

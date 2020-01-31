@@ -79,6 +79,18 @@ namespace Pchp.Library
     }
 
     /// <summary>
+    /// Provides session ID. The interface can be implemented as a part of <see cref="SessionHandlerInterface"/>.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("session")]
+    public interface SessionIdInterface
+    {
+        /// <summary>
+        /// Create session ID.
+        /// </summary>
+        string create_sid();
+    }
+
+    /// <summary>
     /// 
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("session")]
@@ -103,8 +115,8 @@ namespace Pchp.Library
     /// Default file-system based session handler implementation.
     /// Implements <see cref="SessionHandlerInterface"/> to be used in combination with <see cref="Session.session_set_save_handler(SessionHandlerInterface, bool)"/> function.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
-    public class SessionHandler : SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("session")]
+    public class SessionHandler : SessionHandlerInterface, SessionIdInterface, SessionUpdateTimestampHandlerInterface
     {
         protected readonly Context _ctx;
 
@@ -330,9 +342,9 @@ namespace Pchp.Library
                     {
                         _isnewsession = true;
 
-                        if (_handler is SessionHandler legacyhandler)
+                        if (_handler is SessionIdInterface idinterface)
                         {
-                            _lazyid = legacyhandler.create_sid();
+                            _lazyid = idinterface.create_sid();
                         }
                         else
                         {
@@ -585,8 +597,7 @@ namespace Pchp.Library
             }
 
             ctx.Session = session_array;
-            ctx.Globals[PhpSessionHandler.SESSION_Variable] = PhpValue.Create(session_array);
-
+            
             //
             return true;
         }

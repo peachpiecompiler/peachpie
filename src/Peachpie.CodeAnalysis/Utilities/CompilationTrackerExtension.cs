@@ -69,9 +69,9 @@ namespace Pchp.CodeAnalysis.Utilities
 
         public static void TrackOnCompleted(this PhpCompilation c)
         {
-            if (!c.Observers.IsDefaultOrEmpty)
+            if (!c.EventSources.IsDefaultOrEmpty)
             {
-                c.Observers.ForEach(OnCompleted);
+                c.EventSources.ForEach(OnCompleted);
             }
         }
 
@@ -84,9 +84,9 @@ namespace Pchp.CodeAnalysis.Utilities
                     TrackException(c, innerEx);
                 }
             }
-            else if (ex != null && !c.Observers.IsDefaultOrEmpty)
+            else if (ex != null && !c.EventSources.IsDefaultOrEmpty)
             {
-                c.Observers.ForEach(o => o.OnError(ex));
+                c.EventSources.ForEach(o => o.OnError(ex));
             }
         }
 
@@ -100,17 +100,17 @@ namespace Pchp.CodeAnalysis.Utilities
 
         public static void TrackMetric(this PhpCompilation c, string name, double value)
         {
-            TrackMetric(c.Observers, name, value);
+            TrackMetric(c.EventSources, name, value);
         }
 
         public static void TrackEvent(this PhpCompilation c, string name)
         {
-            c.Observers.ForEach(o => o.OnNext(name));
+            c.EventSources.ForEach(o => o.OnNext(name));
         }
 
         public static TimeSpanMetric StartMetric(this PhpCompilation c, string name)
         {
-            return StartMetric(c.Observers, name);
+            return StartMetric(c.EventSources, name);
         }
 
         public static TimeSpanMetric StartMetric(this ImmutableArray<IObserver<object>> observers, string name)

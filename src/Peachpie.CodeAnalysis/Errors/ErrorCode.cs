@@ -145,6 +145,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_ThisOutOfObjectContext,
         /// <summary>Cannot set read-only property {0}::${1}</summary>
         ERR_ReadOnlyPropertyWritten,
+        /// <summary>Only the last parameter can be variadic</summary>
+        ERR_VariadicParameterNotLast,
 
         //
         // Warnings
@@ -196,6 +198,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_FieldPhpDocAssignIncompatible,
         /// <summary>Method {0}::__toString() must return a string value</summary>
         WRN_ToStringMustReturnString,
+        /// <summary>Argument has no value, parameter will be always NULL</summary>
+        WRN_ArgumentVoid,
 
         //
         // Visible information

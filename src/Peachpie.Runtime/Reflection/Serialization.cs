@@ -49,8 +49,10 @@ namespace Pchp.Core.Reflection
             var runtime_fields = tinfo.GetRuntimeFields(source);
             if (runtime_fields != null && runtime_fields.Count != 0)
             {
-                tinfo.RuntimeFieldsHolder.SetValue(target, runtime_fields.DeepCopy());
+                tinfo.RuntimeFieldsHolder.SetValue(target, runtime_fields.Clone());
             }
+
+            // TODO: traits ?
         }
 
         #region ParseSerializedPropertyName, FormatSerializedPropertyName

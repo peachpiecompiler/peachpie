@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
 
-[PhpType(PhpTypeAttribute.InheritName)]
-public sealed class Closure : IPhpCallable
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+public sealed class Closure : IPhpCallable, IPhpPrintable
 {
     /// <summary>Actual anonymous function.</summary>
     internal readonly IPhpCallable _callable;
@@ -27,12 +27,33 @@ public sealed class Closure : IPhpCallable
     /// <summary>
     /// Fixed (use) parameters to be passed to <see cref="_callable"/>.
     /// </summary>
-    readonly PhpArray @static;
+    internal readonly PhpArray @static;
 
     /// <summary>
     /// Anonymous function parameters, for dumping only.
     /// </summary>
-    readonly PhpArray parameter;
+    internal readonly PhpArray parameter;
+
+    /// <summary>
+    /// Explicitly provide properties to be printed in var_dump and print_r.
+    /// </summary>
+    IEnumerable<KeyValuePair<string, PhpValue>> IPhpPrintable.Properties
+    {
+        get
+        {
+            // 1. static
+            if (@static.Count != 0)
+            {
+                yield return new KeyValuePair<string, PhpValue>(nameof(@static), @static);
+            }
+
+            // 2. parameter
+            if (parameter.Count != 0)
+            {
+                yield return new KeyValuePair<string, PhpValue>(nameof(parameter), parameter);
+            }
+        }
+    }
 
     /// <summary>
     /// Constructs the closure.

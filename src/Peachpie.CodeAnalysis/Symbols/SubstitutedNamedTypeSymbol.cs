@@ -18,8 +18,6 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal abstract class SubstitutedNamedTypeSymbol : NamedTypeSymbol
     {
-        private static readonly Func<Symbol, NamedTypeSymbol, Symbol> s_symbolAsMemberFunc = SymbolExtensions.SymbolAsMember;
-
         private readonly bool _unbound;
         private readonly NamedTypeSymbol _originalDefinition;
         private readonly TypeMap _inputMap;

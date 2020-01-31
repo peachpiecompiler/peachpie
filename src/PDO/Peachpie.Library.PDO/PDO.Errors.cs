@@ -29,15 +29,14 @@ namespace Peachpie.Library.PDO
         /// <param name="ex">The ex.</param>
         /// <exception cref="Peachpie.Library.PDO.PDOException">
         /// </exception>
-        [PhpHidden]
-        internal void HandleError(System.Exception ex)
+        internal protected void HandleError(System.Exception ex)
         {
             // fill errorInfo
             Driver.HandleException(ex, out _errorSqlState, out _errorCode, out _errorMessage);
 
             //
-            PDO_ERRMODE mode = (PDO_ERRMODE)this.m_attributes[PDO_ATTR.ATTR_ERRMODE].ToLong();
-            switch (mode)
+            TryGetAttribute(PDO_ATTR.ATTR_ERRMODE, out var errmode);
+            switch ((PDO_ERRMODE)errmode.ToLong())
             {
                 case PDO_ERRMODE.ERRMODE_SILENT:
                     break;
@@ -55,6 +54,35 @@ namespace Peachpie.Library.PDO
                     }
             }
         }
+
+        /// <summary></summary>
+        internal protected void RaiseError(string sqlstate, string code, string message)
+        {
+            _errorSqlState = sqlstate;
+            _errorCode = code;
+            _errorMessage = message;
+
+            //
+
+            TryGetAttribute(PDO_ATTR.ATTR_ERRMODE, out var errmode);
+            switch ((PDO_ERRMODE)errmode.ToLong())
+            {
+                case PDO_ERRMODE.ERRMODE_SILENT:
+                    break;
+
+                case PDO_ERRMODE.ERRMODE_WARNING:
+                    PhpException.Throw(PhpError.E_WARNING, $"{code}: {message}");   // TODO: format string in resources
+                    break;
+
+                case PDO_ERRMODE.ERRMODE_EXCEPTION:
+                    throw new PDOException(message);
+            }
+        }
+
+        /// <summary>
+        /// Raises simple "HY000" error.
+        /// </summary>
+        internal protected void RaiseError(string message) => RaiseError(null, "HY000", message);
 
         /// <summary>
         /// Fetch the SQLSTATE associated with the last operation on the database handle

@@ -94,11 +94,14 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo RuntimeTypeHandle_Equals_RuntimeTypeHandle = typeof(RuntimeTypeHandle).GetMethod("Equals", typeof(RuntimeTypeHandle));
 
             public static readonly Func<Context, PhpTypeInfo, object, string, PhpValue> RuntimePropertyGetValue = new Func<Context, PhpTypeInfo, object, string, PhpValue>(Core.Operators.RuntimePropertyGetValue);
+
+            public static MethodInfo Or_ConversionCost_ConversionCost = typeof(CostOf).GetMethod("Or", typeof(ConversionCost), typeof(ConversionCost));
         }
 
         public static class Properties
         {
             public static readonly PropertyInfo PhpValue_Object = Types.PhpValue.GetProperty("Object");
+            public static readonly PropertyInfo PhpValue_IsAlias = Types.PhpValue.GetProperty("IsAlias");
             public static readonly FieldInfo PhpValue_Void = Types.PhpValue.GetField("Void");
             public static readonly FieldInfo PhpValue_Null = Types.PhpValue.GetField("Null");
             public static readonly FieldInfo PhpValue_False = Types.PhpValue.GetField("False");

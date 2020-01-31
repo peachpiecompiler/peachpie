@@ -14,7 +14,7 @@ namespace Pchp.Core.Reflection
     /// Runtime table of application PHP functions.
     /// </summary>
     [DebuggerNonUserCode]
-    internal class RoutinesTable
+    sealed class RoutinesTable
     {
         #region AppContext
 
@@ -24,10 +24,9 @@ namespace Pchp.Core.Reflection
         /// Positive number is context-wide function.
         /// Zero is not used.
         /// </summary>
-        static readonly Dictionary<string, int> _nameToIndex = new Dictionary<string, int>(2048, StringComparer.CurrentCultureIgnoreCase);
-        static readonly List<RoutineInfo> _appRoutines = new List<RoutineInfo>(2048);
-        static readonly RoutinesCount _contextRoutinesCounter = new RoutinesTable.RoutinesCount();
-        static readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
+        static readonly Dictionary<string, int> s_nameToIndex = new Dictionary<string, int>(2048, StringComparer.CurrentCultureIgnoreCase);
+        static readonly List<RoutineInfo> s_appRoutines = new List<RoutineInfo>(2048);
+        static readonly RoutinesCount s_contextRoutinesCounter = new RoutinesCount();
 
         /// <summary>
         /// Adds referenced symbol into the map.
@@ -40,8 +39,7 @@ namespace Pchp.Core.Reflection
 
             // TODO: W lock
 
-            int index;
-            if (_nameToIndex.TryGetValue(name, out index))
+            if (s_nameToIndex.TryGetValue(name, out var index))
             {
                 Debug.Assert(index != 0);
 
@@ -50,14 +48,14 @@ namespace Pchp.Core.Reflection
                     throw new InvalidOperationException();
                 }
 
-                (routine = (ClrRoutineInfo)_appRoutines[-index - 1]).AddOverload(method);
+                (routine = (ClrRoutineInfo)s_appRoutines[-index - 1]).AddOverload(method);
             }
             else
             {
-                index = -_appRoutines.Count - 1;
+                index = -s_appRoutines.Count - 1;
                 routine = new ClrRoutineInfo(index, name, method);
-                _appRoutines.Add(routine);
-                _nameToIndex[name] = index;
+                s_appRoutines.Add(routine);
+                s_nameToIndex[name] = index;
             }
 
             //
@@ -71,10 +69,10 @@ namespace Pchp.Core.Reflection
             int _count;
 
             /// <summary>
-            /// Returns new indexes indexed from <c>0</c>.
+            /// Returns new indexes indexed from <c>1</c>.
             /// </summary>
             /// <returns></returns>
-            public int GetNewIndex() => Interlocked.Increment(ref _count) - 1;
+            public int GetNewIndex() => Interlocked.Increment(ref _count);
 
             /// <summary>
             /// Gets count of returned indexes.
@@ -82,19 +80,23 @@ namespace Pchp.Core.Reflection
             public int Count => _count;
         }
 
-        RoutineInfo[] _contextRoutines = new RoutineInfo[_contextRoutinesCounter.Count];
+        RoutineInfo[] _contextRoutines;
 
-        readonly Action<RoutineInfo> _redeclarationCallback;
-
-        internal RoutinesTable(Action<RoutineInfo> redeclarationCallback)
+        public RoutinesTable()
         {
-            _redeclarationCallback = redeclarationCallback;
+            _contextRoutines = new RoutineInfo[s_contextRoutinesCounter.Count];
+        }
+
+        static void RedeclarationError(RoutineInfo routine)
+        {
+            // TODO: ErrCode & throw
+            throw new InvalidOperationException($"Function {routine.Name} redeclared!");
         }
 
         /// <summary>
         /// Gets enumeration of all routines declared within the context.
         /// </summary>
-        public IEnumerable<RoutineInfo> EnumerateRoutines() => _appRoutines.Concat(_contextRoutines.WhereNotNull());
+        public IEnumerable<RoutineInfo> EnumerateRoutines() => s_appRoutines.Concat(_contextRoutines.WhereNotNull());
 
         /// <summary>
         /// Declare a user PHP function.
@@ -107,19 +109,19 @@ namespace Pchp.Core.Reflection
             int index = routine.Index;
             if (index == 0)
             {
-                lock (_nameToIndex)
+                lock (s_nameToIndex)
                 {
-                    if (_nameToIndex.TryGetValue(routine.Name, out index))
+                    if (s_nameToIndex.TryGetValue(routine.Name, out index))
                     {
                         if (index < 0)  // redeclaring over an app context function
                         {
-                            _redeclarationCallback(routine);
+                            RedeclarationError(routine);
                         }
                     }
                     else
                     {
-                        index = _contextRoutinesCounter.GetNewIndex() + 1;
-                        _nameToIndex[routine.Name] = index;
+                        index = s_contextRoutinesCounter.GetNewIndex();
+                        s_nameToIndex[routine.Name] = index;
                     }
                 }
 
@@ -140,15 +142,15 @@ namespace Pchp.Core.Reflection
 
         void DeclarePhpRoutine(ref RoutineInfo slot, RoutineInfo routine)
         {
-            if (object.ReferenceEquals(slot, null))
+            if (ReferenceEquals(slot, null))
             {
                 slot = routine;
             }
             else
             {
-                if (!object.ReferenceEquals(slot, routine))
+                if (!ReferenceEquals(slot, routine))
                 {
-                    _redeclarationCallback(routine);
+                    RedeclarationError(routine);
                 }
             }
         }
@@ -168,7 +170,7 @@ namespace Pchp.Core.Reflection
                 }
 
                 int index;
-                if (_nameToIndex.TryGetValue(name, out index))
+                if (s_nameToIndex.TryGetValue(name, out index))
                 {
                     if (index > 0)
                     {
@@ -181,7 +183,7 @@ namespace Pchp.Core.Reflection
                     else
                     {
                         Debug.Assert(index != 0);
-                        return _appRoutines[-index - 1];
+                        return s_appRoutines[-index - 1];
                     }
                 }
             }

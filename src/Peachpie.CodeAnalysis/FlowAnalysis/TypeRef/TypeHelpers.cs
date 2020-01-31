@@ -207,6 +207,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return true;
         }
 
+        /// <summary>
+        /// Checks the given type mask represents <c>void</c>.
+        /// It may be zero mask (no types) or specifically "void" primitive type.
+        /// </summary>
+        internal static bool IsVoid(this TypeRefMask type, TypeRefContext/*!*/ctx)
+        {
+            if (type.IsVoid)
+            {
+                return true;
+            }
+
+            if (type.IsSingleType &&
+                ctx.GetTypes(type).FirstOrDefault() is BoundPrimitiveTypeRef primitive &&
+                primitive.TypeCode == PhpTypeCode.Void)
+            {
+                return true;
+            }
+
+            //
+            return false;
+        }
+
         ///// <summary>
         ///// Gets value indicating whether specified object of type <paramref name="type"/> can be used as <c>foreach</c> enumerable variable.
         ///// </summary>

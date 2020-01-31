@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -467,15 +469,10 @@ namespace Pchp.Library
 
         #region filter_input
 
-        public static PhpValue filter_input(Context/*!*/context, FilterInput type, string variable_name, int filter = (int)FilterSanitize.FILTER_DEFAULT)
-        {
-            return filter_input(context, type, variable_name, filter, PhpValue.Null);
-        }
-
         /// <summary>
         /// Gets a specific external variable by name and optionally filters it.
         /// </summary>
-        public static PhpValue filter_input(Context/*!*/context, FilterInput type, string variable_name, int filter, PhpValue options)
+        public static PhpValue filter_input(Context/*!*/context, FilterInput type, string variable_name, int filter = (int)FilterSanitize.FILTER_DEFAULT, PhpValue options = default)
         {
             var arrayobj = GetArrayByInput(context, type);
             PhpValue value;
@@ -508,35 +505,30 @@ namespace Pchp.Library
         /// <summary>
         /// Returns <see cref="PhpArray"/> containing required input.
         /// </summary>
-        /// <param name="context">CUrrent <see cref="ScriptContext"/>.</param>
+        /// <param name="context">Current runtime <see cref="Context"/>.</param>
         /// <param name="type"><see cref="FilterInput"/> value.</param>
         /// <returns>An instance of <see cref="PhpArray"/> or <c>null</c> if there is no such input.</returns>
-        private static PhpArray GetArrayByInput(Context/*!*/context, FilterInput type)
+        private static PhpArray? GetArrayByInput(Context/*!*/context, FilterInput type)
         {
-            PhpArray arrayobj = null;
-
             switch (type)
             {
                 case FilterInput.Get:
-                    arrayobj = context.Get; break;
+                    return context.Get;
                 case FilterInput.Post:
-                    arrayobj = context.Post; break;
+                    return context.Post;
                 case FilterInput.Server:
-                    arrayobj = context.Server; break;
+                    return context.Server;
                 case FilterInput.Request:
-                    arrayobj = context.Request; break;
+                    return context.Request;
                 case FilterInput.Env:
-                    arrayobj = context.Env; break;
+                    return context.Env;
                 case FilterInput.Cookie:
-                    arrayobj = context.Cookie; break;
+                    return context.Cookie;
                 case FilterInput.Session:
-                    arrayobj = context.Session; break;
+                    return context.Session;
                 default:
                     return null;
             }
-
-            // cast arrayobj to PhpArray if possible:
-            return arrayobj;
         }
 
         /// <summary>
@@ -547,10 +539,10 @@ namespace Pchp.Library
         /// <param name="filter">The ID of the filter to apply.</param>
         /// <param name="options">Associative array of options or bitwise disjunction of flags. If filter accepts options, flags can be provided in "flags" field of array. For the "callback" filter, callback type should be passed. The callback must accept one argument, the value to be filtered, and return the value after filtering/sanitizing it.</param>
         /// <returns>Returns the filtered data, or <c>false</c> if the filter fails.</returns>
-        public static PhpValue filter_var(Context ctx, PhpValue variable, int filter = FILTER_DEFAULT, PhpValue options = default(PhpValue))
+        public static PhpValue filter_var(Context ctx, PhpValue variable, int filter = FILTER_DEFAULT, PhpValue options = default)
         {
             var @default = PhpValue.False; // a default value
-            PhpArray options_arr = null;
+            PhpArray? options_arr;
             long flags = 0;
 
             // process options
@@ -580,6 +572,10 @@ namespace Pchp.Library
                 {
                     options.IsLong(out flags);
                 }
+            }
+            else
+            {
+                options_arr = null;
             }
 
             switch (filter)
@@ -815,34 +811,48 @@ namespace Pchp.Library
         /// </summary>
         private static string FilterSanitizeString(string str, Predicate<char>/*!*/predicate)
         {
-            Debug.Assert(predicate != null);
-
-            // nothing to sanitize:
-            if (string.IsNullOrEmpty(str)) return string.Empty;
-
-            // check if all the characters are valid first:
-            bool allvalid = true;
-            foreach (var c in str)
-                if (!predicate(c))
-                {
-                    allvalid = false;
-                    break;
-                }
-
-            if (allvalid)
+            if (predicate == null)
             {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            if (str == null)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder? newstr = null;
+
+            int from = 0;
+            for (int i = 0; i < str.Length; i++)
+            {
+                // "remove" not allowed characters:
+                if (!predicate(str[i]))
+                {
+                    if (newstr == null)
+                    {
+                        newstr = StringBuilderUtilities.Pool.Get();
+                    }
+
+                    newstr.Append(str, from, i - from);
+                    from = i + 1;
+                }
+            }
+
+            if (newstr == null)
+            {
+                // all characters matched predicate:
                 return str;
             }
             else
             {
-                // remove not allowed characters:
-                var newstr = new StringBuilder(str.Length, str.Length);
+                // finalize the string:
+                if (from < str.Length)
+                {
+                    newstr.Append(str, from, str.Length - from);
+                }
 
-                foreach (char c in str)
-                    if (predicate(c))
-                        newstr.Append(c);
-
-                return newstr.ToString();
+                return StringBuilderUtilities.GetStringAndReturn(newstr);
             }
         }
 

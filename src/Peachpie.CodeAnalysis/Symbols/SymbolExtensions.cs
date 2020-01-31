@@ -87,6 +87,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (symbol is MethodSymbol m)
             {
+                if (m is SourceRoutineSymbol routine)
+                {
+                    return !routine.ReturnsNull;
+                }
+
                 if (m.CastToFalse)
                 {
                     // [return: CastToFalse] implicitly denotates method as [NotNull]
@@ -149,7 +154,7 @@ namespace Pchp.CodeAnalysis.Symbols
             switch (s)
             {
                 case IPhpRoutineSymbol routine: return routine.RoutineName;
-                case IPhpTypeSymbol type: return type.FullName.Name.Value;
+                case IPhpTypeSymbol type: return type.FullName.ToString();
                 default: return s.Name;
             }
         }

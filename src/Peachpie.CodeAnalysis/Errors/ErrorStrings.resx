@@ -354,4 +354,19 @@
   <data name="ERR_ReadOnlyPropertyWritten" xml:space="preserve">
     <value>Cannot set read-only property {0}::${1}</value>
   </data>
+  <data name="ERR_CantReadResource" xml:space="preserve">
+    <value>Error reading resource '{0}' -- '{1}'</value>
+  </data>
+  <data name="ERR_VariadicParameterNotLast" xml:space="preserve">
+    <value>Only the last parameter can be variadic</value>
+  </data>
+  <data name="WRN_ArgumentVoid" xml:space="preserve">
+    <value>Argument has no value, parameter will be always NULL</value>
+  </data>
+  <data name="ERR_BadCompilationOptionValue" xml:space="preserve">
+    <value>Invalid '{0}' value: '{1}'.</value>
+  </data>
+  <data name="ERR_CompileCancelled" xml:space="preserve">
+    <value>Compilation cancelled by user</value>
+  </data>
 </root>

@@ -109,9 +109,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             return array.IntrinsicEnumerator.CurrentValue.GetValue(); // NOTE: gets FALSE if at end
@@ -142,9 +141,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             // note, key can't be of type PhpAlias, hence no dereferencing follows:
@@ -164,9 +162,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             // moves to the next item and returns false if there is no such item:
@@ -188,9 +185,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             // moves to the previous item and returns false if there is no such item:
@@ -210,9 +206,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             // moves to the last item and returns false if there is no such item:
@@ -232,7 +227,7 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
+                PhpException.ArgumentNull(nameof(array));
                 return PhpValue.Null;
             }
 
@@ -333,7 +328,7 @@ namespace Pchp.Library
             // adds copies variables (if called by PHP):
             for (int i = 0; i < vars.Length; i++)
             {
-                array.Add(vars[i]);
+                array.Add(vars[i].GetValue());
             }
 
             return array.Count;
@@ -387,7 +382,7 @@ namespace Pchp.Library
             // prepends items indexing keys from 0 to the number of items - 1:
             for (int i = vars.Length - 1; i >= 0; i--)
             {
-                array.Prepend(i, vars[i]);
+                array.Prepend(i, vars[i].GetValue());
             }
 
             return array.Count;
@@ -507,7 +502,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Implementation of <see cref="array_splice(PhpArray,int,int,object)"/> and <see cref="array_splice(PhpArray,int,int,object)"/>.
+        /// Implementation of <see cref="array_splice"/>.
         /// </summary>
         /// <remarks>Whether to make a deep-copy of items in the replacement.</remarks>
         internal static PhpArray SpliceInternal(PhpArray array, int offset, int length, PhpValue replacement)
@@ -3202,6 +3197,12 @@ namespace Pchp.Library
         /// </remarks>
         public static PhpArray array_map(Context ctx /*, caller*/, IPhpCallable map, [In, Out] params PhpArray[] arrays)
         {
+            if (map != null && !PhpVariable.IsValidBoundCallback(ctx, map))
+            {
+                PhpException.InvalidArgument(nameof(map));
+                return null;
+            }
+
             //if (!PhpArgument.CheckCallback(map, caller, "map", 0, true)) return null;
             if (arrays == null || arrays.Length == 0)
             {

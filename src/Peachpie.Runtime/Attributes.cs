@@ -1,4 +1,6 @@
-﻿using Pchp.Core.Reflection;
+﻿#nullable enable
+
+using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,7 +66,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets the first specified extension name or <c>null</c>.
         /// </summary>
-        public string FirstExtensionOrDefault
+        public string? FirstExtensionOrDefault
             => _extensions is string name ? name
             : _extensions is string[] names && names.Length != 0 ? names[0]
             : null;
@@ -82,11 +84,11 @@ namespace Pchp.Core
         /// The object is used to handle one-time initialization and context life-cycle.
         /// Implement initialization and subscription logic in .ctor.
         /// </remarks>
-        public Type Registrator { get; set; }
+        public Type? Registrator { get; set; }
 
         public PhpExtensionAttribute()
         {
-            _extensions = null;
+            _extensions = Array.Empty<string>();
         }
 
         public PhpExtensionAttribute(string extension)
@@ -163,7 +165,7 @@ namespace Pchp.Core
         /// <summary>
         /// Optional. Explicitly set type name.
         /// </summary>
-        public string ExplicitTypeName { get; }
+        public string? ExplicitTypeName { get; }
 
         /// <summary>
         /// Indicates how to treat the type name.
@@ -173,7 +175,7 @@ namespace Pchp.Core
         /// <summary>
         /// Optional. Relative path to the file where the type is defined.
         /// </summary>
-        public string FileName { get; }
+        public string? FileName { get; }
 
         /// <summary>
         /// Value stating that the type name is inherited from the CLR name excluding its namespace part, see <see cref="PhpTypeName.NameOnly"/>.
@@ -216,7 +218,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="phpTypeName">The type name that will be used in PHP context instead of CLR type name.</param>
         /// <param name="fileName">Optional relative path to the file where the type is defined.</param>
-        public PhpTypeAttribute(string phpTypeName, string fileName = null)
+        public PhpTypeAttribute(string phpTypeName, string fileName)
         {
             ExplicitTypeName = phpTypeName ?? throw new ArgumentNullException();
             FileName = fileName;
@@ -246,30 +248,74 @@ namespace Pchp.Core
     }
 
     /// <summary>
-    /// Denotates a function parameter that will be loaded with current class.
-    /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
+    /// Denotates a function parameter that will import a special runtime value.
     /// </summary>
     /// <remarks>
-    /// The parameter is used to access callers class context.
-    /// The parameter must be before regular parameters.</remarks>
+    /// This attribute instructs the caller to pass a special value to the parameter.
+    /// It is used byt library functions to get additional runtime information.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class ImportCallerClassAttribute : Attribute
+    public sealed class ImportValueAttribute : Attribute
     {
+        /// <summary>
+        /// Value to be imported.
+        /// </summary>
+        public enum ValueSpec
+        {
+            /// <summary>
+            /// Not used.
+            /// </summary>
+            Error = 0,
 
+            /// <summary>
+            /// Current class context.
+            /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
+            /// </summary>
+            CallerClass,
+
+            /// <summary>
+            /// Current late static bound class (<c>static</c>).
+            /// The parameter must be of type <see cref="PhpTypeInfo"/>.
+            /// </summary>
+            CallerStaticClass,
+
+            /// <summary>
+            /// Calue of <c>$this</c> variable or <c>null</c> if variable is not defined.
+            /// The parameter must be of type <see cref="object"/>.
+            /// </summary>
+            This,
+
+            /// <summary>
+            /// Provides a reference to the array of local PHP variables.
+            /// The parameter must be of type <see cref="PhpArray"/>.
+            /// </summary>
+            Locals,
+
+            /// <summary>
+            /// Provides callers parameters.
+            /// The parameter must be of type array of <see cref="PhpValue"/>.
+            /// </summary>
+            CallerArgs,
+
+            /// <summary>
+            /// Provides reference to the current script container.
+            /// The parameter must be of type <see cref="RuntimeTypeHandle"/>.
+            /// </summary>
+            CallerScript,
+        }
+
+        public ValueSpec Value { get; }
+
+        public ImportValueAttribute(ValueSpec value)
+        {
+            this.Value = value;
+        }
     }
 
     /// <summary>
-    /// Denotates a function parameter that will be loaded with current late static bound class.
-    /// The parameter must be of type <see cref="PhpTypeInfo"/>.
+    /// Dummy value, used for special generated .ctor symbols so they have a different signature than the regular .ctor.
     /// </summary>
-    /// <remarks>
-    /// The parameter is used to access calers' late static class (<c>static</c>).
-    /// The parameter must be before regular parameters.</remarks>
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class ImportCallerStaticClassAttribute : Attribute
-    {
-
-    }
+    public struct DummyFieldsOnlyCtor { }
 
     /// <summary>
 	/// Marks return values of methods implementing PHP functions which returns <B>false</B> on error
@@ -324,7 +370,7 @@ namespace Pchp.Core
         /// The type containing the backing field.
         /// <c>Null</c> indicates the containing type.
         /// </summary>
-        public Type ExplicitType { get; set; }
+        public Type? ExplicitType { get; set; }
 
         /// <summary>
         /// Name of the backing field.

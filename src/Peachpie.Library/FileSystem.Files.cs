@@ -627,6 +627,7 @@ namespace Pchp.Library
     /// Not supported. Implementations may be empty.
     /// </summary>
     /// <threadsafety static="true"/>
+    [PhpExtension("standard")]
     public static class UnixFile
     {
         #region Owners, Mode (chgrp, chmod, chown, umask)

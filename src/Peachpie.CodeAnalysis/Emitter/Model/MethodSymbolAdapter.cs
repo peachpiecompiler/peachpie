@@ -531,7 +531,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 CheckDefinitionInvariant();
                 var isvirt = this.IsMetadataVirtual();
                 Debug.Assert(isvirt || (!IsMetadataFinal && !IsMetadataNewSlot()), "Method marked Final or NewSlot or CheckAccessOnOverride but not Virtual.");
-                Debug.Assert(!isvirt || this.MethodKind != MethodKind.Constructor, $"Virtual Instance Constructor in {ContainingType.Name} - instance constructor cannot be marked Virtual.");
+                Debug.Assert(!isvirt || this.MethodKind != MethodKind.Constructor, $"Virtual Instance Constructor in {ContainingType?.Name} - instance constructor cannot be marked Virtual.");
                 return isvirt;
             }
         }
@@ -577,10 +577,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             CheckDefinitionInvariant();
 
-            //ImmutableArray<CSharpAttributeData> userDefined;
             //ArrayBuilder<SynthesizedAttributeData> synthesized = null;
 
-            //userDefined = this.GetReturnTypeAttributes();
+            var userDefined = this.GetReturnTypeAttributes();
             //this.AddSynthesizedReturnTypeAttributes(ref synthesized);
 
             //if (userDefined.IsEmpty && synthesized == null)
@@ -591,7 +590,8 @@ namespace Pchp.CodeAnalysis.Symbols
             //// Note that callers of this method (CCI and ReflectionEmitter) have to enumerate 
             //// all items of the returned iterator, otherwise the synthesized ArrayBuilder may leak.
             //return GetCustomAttributesToEmit(userDefined, synthesized, isReturnType: true, emittingAssemblyAttributesInNetModule: false);
-            yield break;
+
+            return userDefined;
         }
 
         bool Cci.IMethodDefinition.ReturnValueIsMarshalledExplicitly

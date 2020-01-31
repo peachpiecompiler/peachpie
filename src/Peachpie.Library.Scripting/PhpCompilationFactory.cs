@@ -72,6 +72,12 @@ namespace Peachpie.Library.Scripting
             t = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.Graphics", "Peachpie.Library.Graphics.PhpImage"));
             if (t != null) impl.Add(t.Assembly);
 
+            t = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.PDO", "Peachpie.Library.PDO.PDO"));
+            if (t != null) impl.Add(t.Assembly);
+
+            t = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.PDO.Sqlite", "Peachpie.Library.PDO.Sqlite.PDOSqliteDriver"));
+            if (t != null) impl.Add(t.Assembly);
+
             //
             var set = new HashSet<Assembly>();
 
@@ -174,11 +180,13 @@ namespace Peachpie.Library.Scripting
 
         static int _counter = 0;
 
-        const string s_submissionAssemblyNamePrefix = "<submission>`";
+        const string s_submissionAssemblyNamePrefix = "<eval>`";
 
         public AssemblyName GetNewSubmissionName()
         {
-            return new AssemblyName(s_submissionAssemblyNamePrefix + (_counter++).ToString());
+            var id = Interlocked.Increment(ref _counter);
+
+            return new AssemblyName(s_submissionAssemblyNamePrefix + id.ToString());
         }
     }
 }

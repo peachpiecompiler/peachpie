@@ -34,8 +34,10 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary></summary>
         public string NetFrameworkPath { get; set; }
 
-        /// <summary></summary>
-        public bool Optimize { get; set; } = true;
+        /// <summary>
+        /// Optimization level.
+        /// Can be a boolean value (true/false), an integer specifying the level(0-9), or an optimization name (debug, release).</summary>
+        public string Optimization { get; set; } = true.ToString();
 
         /// <summary></summary>
         public string DebugType { get; set; }
@@ -96,6 +98,12 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary></summary>
         public ITaskItem[] Resources { get; set; }
 
+        /// <summary>
+        /// Used for debugging purposes.
+        /// If enabled a debugger is attached to the current process upon the task execution.
+        /// </summary>
+        public bool DebuggerAttach { get; set; } = false;
+
         /// <summary></summary>
         public override bool Execute()
         {
@@ -115,7 +123,7 @@ namespace Peachpie.NET.Sdk.Tools
             {
                 "/output-name:" + OutputName,
                 "/target:" + (EmitEntryPoint ? "exe" : "library"),
-                Optimize ? "/o+" : "/o-",
+                "/o:" + Optimization,
             };
 
             if (HasDebugPlus)
@@ -148,8 +156,7 @@ namespace Peachpie.NET.Sdk.Tools
             AddNoEmpty(args, "sourcelink", SourceLink);
             AddNoEmpty(args, "codepage", CodePage);
             AddNoEmpty(args, "subdir", PhpRelativePath);
-            AddNoEmpty(args, "logger", "Peachpie.Compiler.Diagnostics.Observer,Peachpie.Compiler.Diagnostics");
-
+            
 			if (DefineConstants != null)
 			{
 				foreach (var d in DefineConstants)
@@ -206,6 +213,12 @@ namespace Peachpie.NET.Sdk.Tools
             if (IsCanceled())
             {
                 return false;
+            }
+
+            // Debugger.Launch
+            if (DebuggerAttach)
+            {
+                Debugger.Launch();
             }
 
             // compile

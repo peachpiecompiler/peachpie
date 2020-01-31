@@ -1634,4 +1634,7 @@ Additional information:
   <data name="uncloneable_cloned" xml:space="preserve">
     <value>Trying to clone an uncloneable object of class {0}</value>
   </data>
+  <data name="argument_not_callable" xml:space="preserve">
+    <value>Argument {0} must be callable, {1} given</value>
+  </data>
 </root>

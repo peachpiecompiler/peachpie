@@ -16,6 +16,26 @@ namespace Pchp.Core
         /// </summary>
 		sealed class ConsoleContext : Context
         {
+            sealed class OSEncodingProvider : EncodingProvider
+            {
+                public Encoding ProvidedEncoding { get; }
+
+                public OSEncodingProvider(Encoding providedEncoding)
+                {
+                    ProvidedEncoding = providedEncoding ?? throw new ArgumentNullException(nameof(providedEncoding));
+                }
+
+                public override Encoding GetEncoding(int codepage)
+                {
+                    return (codepage == ProvidedEncoding.CodePage) ? ProvidedEncoding : null;
+                }
+
+                public override Encoding GetEncoding(string name)
+                {
+                    return null;
+                }
+            }
+
             /// <summary>
             /// Gets server type interface name.
             /// </summary>
@@ -27,6 +47,7 @@ namespace Pchp.Core
             /// Initializes the console context.
             /// </summary>
             public ConsoleContext(string mainscript, string rootPath, Stream output, params string[] args)
+                : base(null)
             {
                 RootPath = WorkingDirectory = rootPath ?? Directory.GetCurrentDirectory();
 
@@ -46,6 +67,16 @@ namespace Pchp.Core
                 InitSuperglobals();
                 InitializeServerVars(mainscript);
                 InitializeArgvArgc(args);
+
+                if (CurrentPlatform.IsWindows)
+                {
+                    // VT100
+                    WindowsPlatform.Enable_VT100();
+                }
+
+                // (sometimes??) the Encoding used by Console cannot be resolved by Encoding.GetEncoding(),
+                // register it for sure:
+                Encoding.RegisterProvider(new OSEncodingProvider(Console.OutputEncoding));
             }
         }
 
@@ -57,13 +88,13 @@ namespace Pchp.Core
 
             // initialize server variables in order:
 
-            server[CommonPhpArrayKeys.PHP_SELF] = (PhpValue)mainscript;
-            server[CommonPhpArrayKeys.SCRIPT_NAME] = (PhpValue)mainscript;
-            server[CommonPhpArrayKeys.SCRIPT_FILENAME] = (PhpValue)mainscript;
-            server[CommonPhpArrayKeys.PATH_TRANSLATED] = (PhpValue)mainscript;
-            server[CommonPhpArrayKeys.DOCUMENT_ROOT] = (PhpValue)string.Empty;
-            server[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
-            server[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
+            server[CommonPhpArrayKeys.PHP_SELF] = mainscript;
+            server[CommonPhpArrayKeys.SCRIPT_NAME] = mainscript;
+            server[CommonPhpArrayKeys.SCRIPT_FILENAME] = mainscript;
+            server[CommonPhpArrayKeys.PATH_TRANSLATED] = mainscript;
+            server[CommonPhpArrayKeys.DOCUMENT_ROOT] = string.Empty;
+            server[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
+            server[CommonPhpArrayKeys.REQUEST_TIME] = DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
         }
 
         /// <summary>Initializes global $argv and $argc variables and corresponding $_SERVER entries.</summary>
@@ -75,8 +106,8 @@ namespace Pchp.Core
             // adds all arguments to the array (the 0-th argument is not '-' as in PHP but the program file):
             var argv = new PhpArray(args);
 
-            this.Globals["argv"] = (this.Server["argv"] = (PhpValue)argv).DeepCopy();
-            this.Globals["argc"] = this.Server["argc"] = (PhpValue)args.Length;
+            this.Globals["argv"] = (this.Server["argv"] = argv).DeepCopy();
+            this.Globals["argc"] = this.Server["argc"] = args.Length;
         }
 
         /// <summary>

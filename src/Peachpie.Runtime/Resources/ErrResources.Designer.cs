@@ -250,6 +250,15 @@ namespace Pchp.Core.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Argument {0} must be callable, {1} given.
+        /// </summary>
+        public static string argument_not_callable {
+            get {
+                return ResourceManager.GetString("argument_not_callable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Argument #{0} should be passed by reference.
         /// </summary>
         public static string argument_not_passed_byref {

@@ -70,6 +70,7 @@ namespace Pchp.Library.Reflection
         /// Runtime property information.
         /// Cannot be <c>null</c>.
         /// </summary>
+        [PhpHidden]
         PhpPropertyInfo _pinfo;
 
         #endregion
@@ -84,7 +85,7 @@ namespace Pchp.Library.Reflection
         #endregion
 
         #region Construction
-        
+
         internal ReflectionProperty(PhpPropertyInfo pinfo)
         {
             Debug.Assert(pinfo != null);
@@ -104,15 +105,9 @@ namespace Pchp.Library.Reflection
         //void __clone() { throw new NotImplementedException(); }
         public void __construct(Context ctx, PhpValue @class, string name)
         {
-            var classname = @class.ToStringOrNull();
-            if (classname != null)
-            {
-                var tinfo = ctx.GetDeclaredTypeOrThrow(classname, true);
-                if (tinfo != null)
-                {
-                    _pinfo = tinfo.GetDeclaredProperty(name);
-                }
-            }
+            var tinfo = ReflectionUtils.ResolvePhpTypeInfo(ctx, @class);
+
+            _pinfo = tinfo.GetDeclaredProperty(name);
 
             if (_pinfo == null)
             {
@@ -121,8 +116,10 @@ namespace Pchp.Library.Reflection
         }
         public static string export(PhpValue @class, string name, bool @return = false) { throw new NotImplementedException(); }
         public virtual ReflectionClass getDeclaringClass() => new ReflectionClass(_pinfo.ContainingType);
+
         [return: CastToFalse]
-        public string getDocComment() => null;
+        public string getDocComment() => ReflectionUtils.getDocComment(_pinfo.ContainingType.Type.Assembly, _pinfo.ContainingType.Type.FullName + "." + _pinfo.PropertyName);
+
         public virtual long getModifiers()
         {
             long flags = 0;
@@ -163,5 +160,14 @@ namespace Pchp.Library.Reflection
         /// Sets static property value.
         /// </summary>
         public virtual void setValue(Context ctx, PhpValue value) => setValue(ctx, null, value);
+
+        /// <summary>
+        /// Checks whether a property is initialized.
+        /// </summary>
+        public virtual bool isInitialized(Context ctx, object @object = null)
+        {
+            var value = _pinfo.GetValue(ctx, @object);
+            return Operators.IsSet(value);
+        }
     }
 }

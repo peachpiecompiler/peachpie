@@ -2823,17 +2823,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal override TypeSymbol EmitTarget(CodeGenerator cg)
         {
-            var t = cg.EmitPhpThis();
-
-            if (t == null)
-            {
-                // null if this is not available
-                cg.Builder.EmitNullConstant();
-                t = cg.CoreTypes.Object;
-            }
-
-            //
-            return t;
+            return cg.EmitPhpThisOrNull();
         }
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
@@ -2885,8 +2875,19 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (!TargetMethod.IsErrorMethodOrNull())
             {
-                // ensure type is declared
-                cg.EmitExpectTypeDeclared(TargetMethod.ContainingType);
+                // when instantiating anonoymous class
+                // it has to be declared into the context (right before instantiation)
+                if (TargetMethod.ContainingType.IsAnonymousType)
+                {
+                    // <ctx>.DeclareType<T>()
+                    cg.EmitLoadContext();
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.DeclareType_T.Symbol.Construct(TargetMethod.ContainingType)).Expect(SpecialType.System_Void);
+                }
+                else
+                {
+                    // ensure type is declared
+                    cg.EmitExpectTypeDeclared(TargetMethod.ContainingType);
+                }
 
                 // Template: new T(args)
                 return EmitDirectCall(cg, ILOpCode.Newobj, TargetMethod);
@@ -3160,10 +3161,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         void EmitThis(CodeGenerator cg)
         {
-            if (cg.EmitPhpThis() == null)
-            {
-                cg.Builder.EmitNullConstant();
-            }
+            cg.EmitPhpThisOrNull();
         }
 
         void EmitStaticType(CodeGenerator cg)

@@ -14,7 +14,7 @@ namespace Pchp.Library
     /// Phpinfo library
     /// </summary>
     [PhpExtension("standard")]
-    public static partial class PhpInfo
+    public static class PhpInfo
     {
         #region enum PhpInfoWhat
 

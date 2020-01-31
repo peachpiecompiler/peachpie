@@ -43,9 +43,6 @@ namespace Pchp.CodeAnalysis.Emit
                     var methods = this.Compilation.CoreMethods;
                     var args_place = new ParamPlace(realmethod.Parameters[0]);
 
-                    //
-                    this.EmitBootstrap(il);
-
                     // int exitcode = 0;
                     var exitcode_loc = il.LocalSlotManager.AllocateSlot(types.Int32.Symbol, LocalSlotConstraints.None);
                     il.EmitIntConstant(0);

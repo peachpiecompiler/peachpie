@@ -53,9 +53,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        protected override IEnumerable<MethodSymbol> CreateInstanceConstructors()
+        protected override ImmutableArray<MethodSymbol> CreateInstanceConstructors()
         {
-            yield return new SynthesizedPhpTraitCtorSymbol(this);
+            return ImmutableArray.Create<MethodSymbol>(new SynthesizedPhpTraitCtorSymbol(this));
         }
 
         public override bool IsTrait => true;

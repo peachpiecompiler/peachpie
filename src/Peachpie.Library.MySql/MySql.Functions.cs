@@ -536,7 +536,7 @@ namespace Peachpie.Library.MySql
         /// Field names corresponds to the column names.
         /// </returns>
         [return: CastToFalse]
-        public static object mysql_fetch_object(PhpResource resultHandle)
+        public static stdClass mysql_fetch_object(PhpResource resultHandle)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null) return null;
@@ -887,7 +887,7 @@ namespace Peachpie.Library.MySql
         /// </summary>
         /// <param name="resultHandle">Query result resource.</param>
         /// <returns>The PHP object.</returns>
-        public static object mysql_fetch_field(PhpResource resultHandle)
+        public static stdClass mysql_fetch_field(PhpResource resultHandle)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null)

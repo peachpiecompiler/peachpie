@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 using Pchp.Core.Resources;
 
 namespace Pchp.Core.Utilities
@@ -14,8 +11,17 @@ namespace Pchp.Core.Utilities
 
     public static class PathUtils
     {
+        /// <summary>
+        /// Windows-style path separator (back slash).
+        /// </summary>
         public const char DirectorySeparator = '\\';
+        
+        /// <summary>
+        /// Linux-style path separator (forward slash).
+        /// </summary>
         public const char AltDirectorySeparator = '/';
+        
+        static readonly char[] s_DirectorySeparators = new[] { DirectorySeparator, AltDirectorySeparator };
 
         public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
         
@@ -26,81 +32,13 @@ namespace Pchp.Core.Utilities
                 : path;
         }
 
-        public static string DirectoryName(string path)
+        public static ReadOnlySpan<char> TrimFileName(string path)
         {
-            var sepindex = path.LastIndexOfAny(new char[] { DirectorySeparator, AltDirectorySeparator });
-            return (sepindex < 0)
-                ? string.Empty
-                : path.Remove(sepindex);
+            var index = path.LastIndexOfAny(s_DirectorySeparators);
+            return (index <= 0)
+                ? ReadOnlySpan<char>.Empty
+                : path.AsSpan(0, index);
         }
-    }
-
-    #endregion
-
-    #region CurrentPlatform
-
-    /// <summary>
-    /// Platform specific constants.
-    /// </summary>
-    public static class CurrentPlatform
-    {
-        static CurrentPlatform()
-        {
-            if (IsWindows)
-            {
-                DirectorySeparator = '\\';
-                AltDirectorySeparator = '/';
-                PathSeparator = ';';
-                PathComparer = StringComparer.OrdinalIgnoreCase;
-                PathStringComparison = StringComparison.OrdinalIgnoreCase;
-            }
-            else
-            {
-                DirectorySeparator = '/';
-                AltDirectorySeparator = '\\';
-                PathSeparator = ':';
-                PathComparer = StringComparer.Ordinal;
-                PathStringComparison = StringComparison.Ordinal;
-            }
-        }
-
-        /// <summary>
-        /// Gets value indicating the guest operating.
-        /// </summary>
-        public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        
-        /// <summary>
-        /// Gets value indicating the guest operating.
-        /// </summary>
-        public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-        
-        /// <summary>
-        /// Gets value indicating the guest operating.
-        /// </summary>
-        public static bool IsOsx => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-
-        public static readonly char DirectorySeparator;
-
-        public static readonly char AltDirectorySeparator;
-
-        public static readonly char PathSeparator;
-
-        /// <summary>
-        /// Gets string comparer for path comparison on current platform.
-        /// </summary>
-        /// <remarks>Ignore case on Windows, otherwise case-sensitive.</remarks>
-        public static readonly StringComparer PathComparer;
-
-        /// <summary>
-        /// Gets string comparison method for path comparison on current platform.
-        /// </summary>
-        /// <remarks>Ignore case on Windows, otherwise case-sensitive.</remarks>
-        public static readonly StringComparison PathStringComparison;
-
-        /// <summary>
-        /// Replaces <see cref="AltDirectorySeparator"/> to <see cref="DirectorySeparator"/>.
-        /// </summary>
-        public static string NormalizeSlashes(string path) => path.Replace(AltDirectorySeparator, DirectorySeparator);
     }
 
     #endregion
@@ -110,7 +48,7 @@ namespace Pchp.Core.Utilities
     /// <summary>
     /// File system utilities.
     /// </summary>
-    public static partial class FileSystemUtils
+    public static class FileSystemUtils
     {
         /// <summary>
         /// Returns the given URL without the username/password information.
@@ -125,18 +63,18 @@ namespace Pchp.Core.Utilities
         {
             if (url == null) return null;
 
-            int url_start = url.LastIndexOf("://");
+            int url_start = url.LastIndexOf("://", StringComparison.Ordinal);
             if (url_start > 0)
             {
                 url_start += "://".Length;
                 int pass_end = url.IndexOf('@', url_start);
                 if (pass_end > url_start)
                 {
-                    StringBuilder sb = new StringBuilder(url.Length);
+                    var sb = new StringBuilder(url.Length);
                     sb.Append(url, 0, url_start);
                     sb.Append("...");
                     sb.Append(url, pass_end, url.Length - pass_end);  // results in: scheme://...@host
-                    return sb.ToString();
+                    url = sb.ToString();
                 }
             }
 
@@ -200,7 +138,7 @@ namespace Pchp.Core.Utilities
             {
                 return schemespan.ToString();
             }
-            
+
             // When there is not scheme present (or it's a local path) return "file".
             return "file";
         }
@@ -224,7 +162,7 @@ namespace Pchp.Core.Utilities
                     return true;
                 }
             }
-            
+
             //
 
             scheme = default;
@@ -263,7 +201,7 @@ namespace Pchp.Core.Utilities
         public static string GetFilename(string/*!*/ path)
         {
             if (path.IndexOf(':') == -1 || Path.IsPathRooted(path)) return path;
-            if (path.IndexOf("file://") == 0) return path.Substring("file://".Length);
+            if (path.IndexOf("file://", StringComparison.Ordinal) == 0) return path.Substring("file://".Length);
             return null;
         }
 

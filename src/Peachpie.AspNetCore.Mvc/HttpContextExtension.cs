@@ -99,14 +99,14 @@ namespace Peachpie.AspNetCore.Mvc
 
             // find the view:
             var action = new ActionContext(context, routedata, new ActionDescriptor());
-            viewEngine = viewEngine ?? context.RequestServices.GetService<ICompositeViewEngine>() ?? context.RequestServices.GetService<IViewEngine>();
+            viewEngine ??= context.RequestServices.GetService<ICompositeViewEngine>() ?? context.RequestServices.GetService<IViewEngine>();
             var view = viewEngine.FindView(action, viewName, isMainPage: false);
 
             if (view.Success)
             {
                 // render the view:
-                tmpdataFactory = tmpdataFactory ?? context.RequestServices.GetService<ITempDataDictionaryFactory>();
-                viewdata = viewdata ?? new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
+                tmpdataFactory ??= context.RequestServices.GetService<ITempDataDictionaryFactory>();
+                viewdata ??= new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
 
                 var viewctx = new ViewContext(action, view.View,
                     new CustomViewDataDictionary(viewdata, model, model != null ? model.GetType() : typeof(object)),

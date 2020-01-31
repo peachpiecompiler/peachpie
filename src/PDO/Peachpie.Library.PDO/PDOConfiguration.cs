@@ -21,7 +21,9 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public string ExtensionName => PdoExtensionName;
 
-        //public NameValueCollection Alias { get; set; } = new NameValueCollection();
-
+        /// <summary>
+        /// Defines DSN alias.
+        /// </summary>
+        public NameValueCollection Dsn { get; private set; } = new NameValueCollection();
     }
 }

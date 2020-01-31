@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (statics != null)
             {
                 // readonly __statics.CONSTANT
-                field = statics.GetMembers(name).OfType<FieldSymbol>().Where(f => f.IsReadOnly).SingleOrDefault();
+                field = statics.GetMembers(name).OfType<FieldSymbol>().Where(f => f.IsReadOnly || f.IsConst).SingleOrDefault();
             }
 
             // const CONSTANT

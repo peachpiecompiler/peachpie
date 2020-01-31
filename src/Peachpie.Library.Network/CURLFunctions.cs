@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,6 +10,7 @@ using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Utilities;
@@ -21,15 +24,31 @@ namespace Peachpie.Library.Network
         /// Create a CURLFile object.
         /// </summary>
         [return: NotNull]
-        public static CURLFile/*!*/curl_file_create(string filename, string mimetype = null, string postname = null) => new CURLFile(filename, mimetype, postname);
+        public static CURLFile/*!*/curl_file_create(string filename, string? mimetype = null, string? postname = null) => new CURLFile(filename, mimetype, postname);
 
         [return: NotNull]
-        public static CURLResource/*!*/curl_init(string url = null) => new CURLResource() { Url = url };
+        public static CURLResource/*!*/curl_init(string? url = null) => new CURLResource() { Url = url };
 
         /// <summary>
         /// Close a cURL session.
         /// </summary>
-        public static void curl_close(CURLResource resource) => resource?.Dispose();
+        public static void curl_close(Context ctx, CURLResource resource)
+        {
+            if (resource != null)
+            {
+                if (resource.TryGetOption<CurlOption_CookieJar>(out var jar))
+                {
+                    jar.PrintCookies(ctx, resource);
+                }
+
+                //
+                resource.Dispose();
+            }
+            else
+            {
+                PhpException.ArgumentNull(nameof(resource));
+            }
+        }
 
         /// <summary>
         /// Sets an option on the given cURL session handle.
@@ -91,6 +110,7 @@ namespace Peachpie.Library.Network
         {
             if (ch == null || !ch.IsValid)
             {
+                PhpException.ArgumentNull(nameof(ch));
                 return false;
             }
 
@@ -138,79 +158,93 @@ namespace Peachpie.Library.Network
         /// </summary>
         public static PhpValue curl_getinfo(CURLResource ch, int opt = 0)
         {
-            if (ch != null && ch.Result != null)
+            if (ch == null)
             {
-                var r = ch.Result;
-
-                switch (opt)
-                {
-                    case 0:
-                        // array of all information
-                        var arr = new PhpArray()
-                        {
-                            { "url", r.ResponseUri?.AbsoluteUri },
-                            { "content_type", r.ContentType },
-                            { "http_code", (long)r.StatusCode },
-                            { "header_size", r.HeaderSize },
-                            { "filetime", DateTimeUtils.UtcToUnixTimeStamp(r.LastModified) },
-                            { "total_time", r.TotalTime.TotalSeconds },
-                            { "download_content_length", r.ContentLength },
-                            { "redirect_url", ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri }
-                        };
-
-                        if (ch.RequestHeaders != null)
-                        {
-                            arr["request_header"] = ch.RequestHeaders;
-                        }
-
-                        return arr;
-                    case CURLConstants.CURLINFO_EFFECTIVE_URL:
-                        return r.ResponseUri?.AbsoluteUri;
-                    case CURLConstants.CURLINFO_REDIRECT_URL:
-                        return (ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri);
-                    case CURLConstants.CURLINFO_HTTP_CODE:
-                        return (int)r.StatusCode;
-                    case CURLConstants.CURLINFO_FILETIME:
-                        return DateTimeUtils.UtcToUnixTimeStamp(r.LastModified);
-                    case CURLConstants.CURLINFO_CONTENT_TYPE:
-                        return r.ContentType;
-                    case CURLConstants.CURLINFO_CONTENT_LENGTH_DOWNLOAD:
-                        return r.ContentLength;
-                    case CURLConstants.CURLINFO_TOTAL_TIME:
-                        return r.TotalTime.TotalSeconds;
-                    case CURLConstants.CURLINFO_PRIVATE:
-                        return r.Private.IsSet ? r.Private.DeepCopy() : PhpValue.False;
-                    case CURLConstants.CURLINFO_COOKIELIST:
-                        return ((ch.CookieFileSet && ch.Result != null) ? CreateCookieArray(ch.Result.Cookies) : PhpArray.Empty);
-                    case CURLConstants.CURLINFO_HEADER_SIZE:
-                        return r.HeaderSize;
-                    case CURLConstants.CURLINFO_HEADER_OUT:
-                        return r.RequestHeaders ?? PhpValue.False;
-                    default:
-                        PhpException.ArgumentValueNotSupported(nameof(opt), opt);
-                        break;
-                }
+                PhpException.ArgumentNull(nameof(ch));
+                return PhpValue.Null;
             }
 
-            // failure:
-            return PhpValue.False;
+            var r = ch.Result ?? CURLResponse.Empty;
+
+            switch (opt)
+            {
+                case 0:
+                    // array of all information
+                    var arr = new PhpArray(38)
+                    {
+                        { "url", r.ResponseUri != null ? r.ResponseUri?.AbsoluteUri : ch.Url },
+                        { "content_type", r.ContentType },
+                        { "http_code", (long)r.StatusCode },
+                        { "header_size", r.HeaderSize },
+                        { "filetime", r.LastModifiedTimeStamp },
+                        { "total_time", r.TotalTime.TotalSeconds },
+                        { "download_content_length", r.ContentLength },
+                        { "redirect_url", ch.FollowLocation && r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : string.Empty },
+                        //{ "http_version", CURL_HTTP_VERSION_*** }
+                        //{ "protocol", CURLPROTO_*** },
+                        //{ "scheme", STRING },
+                    };
+
+                    if (ch.RequestHeaders != null)
+                    {
+                        arr["request_header"] = ch.RequestHeaders;
+                    }
+
+                    return arr;
+                case CURLConstants.CURLINFO_EFFECTIVE_URL:
+                    return r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : ch.Url;
+                case CURLConstants.CURLINFO_REDIRECT_URL:
+                    return (ch.FollowLocation && r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : string.Empty);
+                case CURLConstants.CURLINFO_HTTP_CODE:
+                    return (int)r.StatusCode;
+                case CURLConstants.CURLINFO_FILETIME:
+                    return r.LastModifiedTimeStamp;
+                case CURLConstants.CURLINFO_CONTENT_TYPE:
+                    return r.ContentType;
+                case CURLConstants.CURLINFO_CONTENT_LENGTH_DOWNLOAD:
+                    return r.ContentLength;
+                case CURLConstants.CURLINFO_TOTAL_TIME:
+                    return r.TotalTime.TotalSeconds;
+                case CURLConstants.CURLINFO_PRIVATE:
+                    return r.Private.IsSet ? r.Private.DeepCopy() : PhpValue.False;
+                case CURLConstants.CURLINFO_COOKIELIST:
+                    return ((ch.CookieContainer != null && ch.Result != null) ? CreateCookiePhpArray(ch.Result.Cookies) : PhpArray.Empty);
+                case CURLConstants.CURLINFO_HEADER_SIZE:
+                    return r.HeaderSize;
+                case CURLConstants.CURLINFO_HEADER_OUT:
+                    return r.RequestHeaders ?? PhpValue.False;
+                default:
+                    PhpException.ArgumentValueNotSupported(nameof(opt), opt);
+                    return PhpValue.False;
+            }
         }
 
-        static PhpArray CreateCookieArray(CookieCollection cookies)
+        internal static IEnumerable<string> CookiesToNetscapeStyle(CookieCollection cookies)
         {
-            var result = new PhpArray(cookies.Count);
             foreach (Cookie c in cookies)
             {
+                string prefix = c.HttpOnly ? "#HttpOnly_" : "";
                 string subdomainAccess = "TRUE";                    // Simplified
-                string secure = c.Secure.ToString().ToUpper();
-                long expires = (c.Expires.ToBinary() == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
-                result.Add($"{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}");
+                string secure = c.Secure.ToString().ToUpperInvariant();
+                long expires = (c.Expires.Ticks == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
+                yield return $"{prefix}{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}";
             }
-
-            return result;
         }
 
-        static Uri TryCreateUri(CURLResource ch)
+        static PhpArray CreateCookiePhpArray(CookieCollection cookies)
+        {
+            return new PhpArray(CookiesToNetscapeStyle(cookies));
+        }
+
+        static void AddCookies(CookieCollection from, CookieContainer container)
+        {
+            if (from != null)
+            {
+                container?.Add(from);
+            }
+        }
+
+        static Uri? TryCreateUri(CURLResource ch)
         {
             var url = ch.Url;
             if (string.IsNullOrEmpty(url))
@@ -219,7 +253,7 @@ namespace Peachpie.Library.Network
             }
 
             //
-            if (url.IndexOf("://") == -1)
+            if (url.IndexOf("://", StringComparison.Ordinal) == -1)
             {
                 url = string.Concat(ch.DefaultSheme, "://", url);
             }
@@ -279,6 +313,8 @@ namespace Peachpie.Library.Network
             }
         }
 
+        static readonly Lazy<IWebProxy> s_DefaultProxy = new Lazy<IWebProxy>(() => new WebProxy(), LazyThreadSafetyMode.None);
+
         static Task<WebResponse> ExecHttpRequestInternalAsync(Context ctx, CURLResource ch, Uri uri)
         {
             var req = WebRequest.CreateHttp(uri);
@@ -291,36 +327,42 @@ namespace Peachpie.Library.Network
             req.AllowAutoRedirect = ch.FollowLocation && ch.MaxRedirects != 0;
             req.Timeout = ch.Timeout <= 0 ? System.Threading.Timeout.Infinite : ch.Timeout;
             req.ContinueTimeout = ch.ContinueTimeout;
+            req.Accept = "*/*";    // default value
             if (req.AllowAutoRedirect)
             {
                 // equal or less than 0 will cause exception
                 req.MaximumAutomaticRedirections = ch.MaxRedirects < 0 ? int.MaxValue : ch.MaxRedirects;
             }
+            if (ch.CookieContainer != null)
+            {
+                if (ch.Result != null)
+                {
+                    // pass cookies from previous response to the request
+                    AddCookies(ch.Result.Cookies, ch.CookieContainer);
+                }
+                req.CookieContainer = ch.CookieContainer;
+            }
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
-            if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();
             if (ch.Username != null) req.Credentials = new NetworkCredential(ch.Username, ch.Password ?? string.Empty);
-            if (ch.AcceptEncoding != null) req.Accept = ch.AcceptEncoding;
             // TODO: certificate
             if (!string.IsNullOrEmpty(ch.ProxyType) && !string.IsNullOrEmpty(ch.ProxyHost))
             {
-                WebProxy proxy = new WebProxy(string.Format("{0}://{2}:{3}", ch.ProxyType, ch.ProxyHost, ch.ProxyPort));
-                if (!string.IsNullOrEmpty(ch.ProxyUsername))
+                req.Proxy = new WebProxy($"{ch.ProxyType}://{ch.ProxyHost}:{ch.ProxyPort}")
                 {
-                    proxy.Credentials = new NetworkCredential(ch.ProxyUsername, ch.ProxyPassword ?? string.Empty);
-                } else {
-                    proxy.Credentials = null;
-                }
-                req.Proxy = proxy;
-            } else {
+                    Credentials = string.IsNullOrEmpty(ch.ProxyUsername)
+                        ? null
+                        : new NetworkCredential(ch.ProxyUsername, ch.ProxyPassword ?? string.Empty)
+                };
+            }
+            else
+            {
                 // by default, curl does not go through system proxy
-                req.Proxy = new WebProxy();
+                req.Proxy = s_DefaultProxy.Value;
             }
 
-            foreach (var option in ch.Options)
-            {
-                option.Apply(req);
-            }
+            // 
+            ch.ApplyOptions(ctx, req);
 
             // make request:
 
@@ -455,7 +497,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Add the Cookie header if not present.
         /// </summary>
-        static void TryAddCookieHeader(HttpWebRequest req, string value)
+        static void TryAddCookieHeader(WebRequest req, string value)
         {
             if (req.Headers.Get(HttpRequestHeader.Cookie.ToString()) == null)
             {
@@ -474,7 +516,7 @@ namespace Peachpie.Library.Network
             if (!ch.ProcessingHeaders.IsEmpty)
             {
                 var statusHeaders = HttpHeaders.StatusHeader(response) + HttpHeaders.HeaderSeparator; // HTTP/1.1 xxx xxx\r\n
-                Stream outputHeadersStream = null;
+                Stream? outputHeadersStream = null;
 
                 switch (ch.ProcessingHeaders.Method)
                 {
@@ -568,7 +610,6 @@ namespace Peachpie.Library.Network
 
             //
             stream.Dispose();
-            stream = null;
 
             //
 
@@ -600,8 +641,8 @@ namespace Peachpie.Library.Network
             {
                 ch.VerboseOutput("Initiating HTTP(S) request.");
 
-                ch.Result = null;
                 ch.ResponseTask = ExecHttpRequestInternalAsync(ctx, ch, uri);
+                ch.Result = null;
             }
             else
             {
@@ -726,13 +767,13 @@ namespace Peachpie.Library.Network
         /// Get information about the current transfers.
         /// </summary>
         [return: CastToFalse]
-        public static PhpArray curl_multi_info_read(CURLMultiResource mh) => curl_multi_info_read(mh, out _);
+        public static PhpArray? curl_multi_info_read(CURLMultiResource mh) => curl_multi_info_read(mh, out _);
 
         /// <summary>
         /// Get information about the current transfers.
         /// </summary>
         [return: CastToFalse]
-        public static PhpArray curl_multi_info_read(CURLMultiResource mh, out int msgs_in_queue)
+        public static PhpArray? curl_multi_info_read(CURLMultiResource mh, out int msgs_in_queue)
         {
             if (mh.MessageQueue.Count == 0)
             {

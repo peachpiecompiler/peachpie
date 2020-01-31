@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 
 public delegate void GeneratorStateMachineDelegate(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, Generator gen);
 
-[PhpType(PhpTypeAttribute.InheritName)]
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
 public class Generator : Iterator
 {
     #region BoundVariables
+
     /// <summary>
     /// Context associated in which the generator is run.
     /// </summary>
@@ -28,11 +30,6 @@ public class Generator : Iterator
     internal RuntimeTypeHandle _scope;
 
     /// <summary>
-    /// Bounded this for non-static enumerator methods, null for static ones.
-    /// </summary>
-    readonly internal object _this;
-
-    /// <summary>
     /// Lifted local variables from the state machine function.
     /// </summary>
     readonly PhpArray _locals;
@@ -41,6 +38,18 @@ public class Generator : Iterator
     /// Temporal locals of the state machine function.
     /// </summary>
     readonly PhpArray _tmpLocals;
+
+    /// <summary>
+    /// Bound `$this` for non-static enumerator methods, <c>null</c> for static ones.
+    /// </summary>
+    internal object _this;
+
+    /// <summary>
+    /// Lazy bound <c>static</c>.
+    /// Can be <c>null</c> if not used in the generator state function.
+    /// </summary>
+    internal PhpTypeInfo _static;
+
     #endregion
 
     #region StateVariables
@@ -67,8 +76,8 @@ public class Generator : Iterator
     /// <summary>
     /// Helper variables used for <see cref="rewind"/> and <see cref="checkIfRunToFirstYieldIfNotRun"/>
     /// </summary>
-    bool _runToFirstYield = false; // Might get replaced by _state logic
-    bool _runAfterFirstYield = false;
+    bool _runToFirstYield; // Might get replaced by _state logic
+    bool _runAfterFirstYield;
 
     #endregion
 
@@ -77,13 +86,13 @@ public class Generator : Iterator
     #endregion  
 
     #region Constructors
-    internal Generator(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate method, RuntimeMethodHandle ownerhandle)
+
+    internal Generator(Context ctx, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate method, RuntimeMethodHandle ownerhandle)
     {
         Debug.Assert(ctx != null);
         Debug.Assert(method != null);
 
         _ctx = ctx;
-        _this = @this;
         _locals = locals;
         _tmpLocals = tmpLocals;
         _stateMachineMethod = method;
@@ -94,6 +103,7 @@ public class Generator : Iterator
         _currSendItem = PhpValue.Null;
         _returnValue = PhpValue.Null;
     }
+
     #endregion
 
     #region IteratorMethods

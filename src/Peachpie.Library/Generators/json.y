@@ -56,16 +56,12 @@ object:
 				arr.Add( Core.Convert.StringToArrayKey(n.Value.Key), n.Value.Value );
 			}
 					
-			if (decodeOptions.Assoc)
-			{
-				$$.value = PhpValue.Create(arr);
-			}
-			else
-			{
-				$$.value = PhpValue.FromClass(arr.ToObject());
-			}
+			$$.value = decodeOptions.Assoc ? PhpValue.Create(arr) : PhpValue.FromClass(arr.ToObject());
 		}
-	|	OBJECT_OPEN OBJECT_CLOSE	{ $$.value = PhpValue.FromClass(new stdClass()); }
+	|	OBJECT_OPEN OBJECT_CLOSE
+        {
+            $$.value = decodeOptions.Assoc ? PhpValue.Create(PhpArray.NewEmpty()) : PhpValue.FromClass(new stdClass());
+        }
 	;
 	
 members:
@@ -107,8 +103,8 @@ elements:
 	
 value:
 		STRING	{$$.value = PhpValue.Create((string)$1.obj);}
-	|	INTEGER	{$$.value = PhpValue.FromClr($1.obj);}
-	|	DOUBLE	{$$.value = PhpValue.FromClr($1.obj);}
+	|	INTEGER	{$$.value = $1.value;}
+	|	DOUBLE	{$$.value = $1.value;}
 	|	object	{$$.value = $1.value;}
 	|	array	{$$.value = $1.value;}
 	|	TRUE	{$$.value = PhpValue.True;}

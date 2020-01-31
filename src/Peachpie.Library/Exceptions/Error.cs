@@ -10,7 +10,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// <see cref="Error"/> is the base class for all internal PHP errors.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
     public class Error : System.Exception, Throwable
     {
         [PhpHidden]
@@ -77,7 +77,9 @@ namespace Pchp.Library.Spl
 
         public virtual string getTraceAsString() => _stacktrace.GetStackTraceString(); // TODO: _trace
 
-        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, getMessage());   // TODO: _trace
+        public void __wakeup() => throw new NotImplementedException();
+
+        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, this.Message);   // TODO: _trace
 
         public sealed override string ToString() => __toString();
     }
@@ -85,7 +87,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Thrown when <c>assert()</c> fails.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("standard")]
     public class AssertionError : Error
     {
         [PhpFieldsOnlyCtor]
@@ -97,7 +99,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
     public class TypeError : Error
     {
         [PhpFieldsOnlyCtor]

@@ -119,7 +119,7 @@
 
   <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="CollectPackageReferences" Outputs="$(ComposerJsonPath)">
     <PropertyGroup Condition=" '$(_cName)'!='' ">
-      <AssemblyName>$(_cName)</AssemblyName>
+      <!--AssemblyName>$(_cName)</AssemblyName-->
       <PackageId>$(_cName)</PackageId>
     </PropertyGroup>
 
@@ -227,7 +227,7 @@
                TempOutputPath="$(TempOutputDir)"
                TargetFramework="$(TargetFramework)"
                NetFrameworkPath="$(NetFrameworkPath)"
-               Optimize="$(Optimize)"
+               Optimization="$(Optimize)"
                DebugType="$(DebugType)"
                PdbFile="$(PdbFile)"
                DocumentationFile="$(DocumentationFile)"
@@ -247,6 +247,7 @@
                ReferencePath="@(ReferencePath)"
                Compile="@(Compile)"
                Resources="@(EmbeddedResource)"
+               DebuggerAttach="$(DebuggerAttach)"
                />
 
     <Copy SourceFiles="$(TempOutputDir)$(DocumentationFile)" DestinationFolder="$(OutputPath)" Condition=" '$(GenerateDocumentation)'=='true' " />

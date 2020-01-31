@@ -76,7 +76,7 @@ namespace Peachpie.AspNetCore.Web
         {
             return string.IsNullOrEmpty(path)
                 ? string.Empty
-                : CurrentPlatform.NormalizeSlashes(path).TrimEndSeparator();
+                : CurrentPlatform.NormalizeSlashes(path.TrimEndSeparator());
         }
 
         /// <summary>

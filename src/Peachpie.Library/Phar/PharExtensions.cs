@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Text;
 using Pchp.Core;
 using Pchp.Core.Reflection;
@@ -34,10 +35,16 @@ namespace Pchp.Library.Phar
             /// </summary>
             public string[] Scripts { get; }
 
+            /// <summary>
+            /// Associated resource manager.
+            /// </summary>
+            public ResourceManager Resources { get; }
+
             public CachedPhar(Type stubScriptType)
             {
                 Assembly = stubScriptType.Assembly;
                 PharFile = GetPharFile(stubScriptType);
+                Resources = new ResourceManager($"phar://{PharFile}", Assembly);
 
                 Scripts = EnumeratePharScripts(stubScriptType.Assembly, PharFile)
                     .Select(t =>
@@ -64,7 +71,7 @@ namespace Pchp.Library.Phar
         /// Read-only dictionary of cached phars.
         /// Indexed by PharFile.
         /// </summary>
-        static Dictionary<string, CachedPhar> _cachedPhars = null; // TODO: ImmutableDictionary
+        static Dictionary<string, CachedPhar> s_cachedPhars; // TODO: ImmutableDictionary
 
         /// <summary>
         /// Resolves the phar's file name of given script representing phar stub.
@@ -118,15 +125,17 @@ namespace Pchp.Library.Phar
             var pharFile = GetPharFile(stubScriptType);
             if (pharFile != null)
             {
-                var cachedPhars = _cachedPhars;
+                var cachedPhars = s_cachedPhars;
                 if (cachedPhars == null || !cachedPhars.TryGetValue(pharFile, out cached))
                 {
+                    cached = new CachedPhar(stubScriptType);
+
                     var newdict = cachedPhars != null
                         ? new Dictionary<string, CachedPhar>(cachedPhars, CurrentPlatform.PathComparer)
                         : new Dictionary<string, CachedPhar>(CurrentPlatform.PathComparer);
 
-                    newdict[pharFile] = cached = new CachedPhar(stubScriptType);
-                    _cachedPhars = newdict;
+                    newdict[pharFile] = cached;
+                    s_cachedPhars = newdict;
                 }
             }
 
@@ -170,10 +179,11 @@ namespace Pchp.Library.Phar
         /// </summary>
         public static Stream GetResourceStream(string pharFile, string entryName)
         {
-            if (_cachedPhars != null && _cachedPhars.TryGetValue(pharFile, out var phar))
+            if (s_cachedPhars != null && s_cachedPhars.TryGetValue(pharFile, out var phar) && phar.Resources != null)
             {
-                var resourceName = "phar://" + pharFile + "/" + entryName.Replace('\\', '/');
-                return phar.Assembly.GetManifestResourceStream(resourceName);
+                // TODO: the resource should be embedded as Stream
+                var content = phar.Resources.GetString(entryName.Replace('\\', '/'));
+                return new MemoryStream(Encoding.UTF8.GetBytes(content));
             }
 
             return null;

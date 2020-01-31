@@ -1,4 +1,5 @@
 ﻿using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
@@ -119,9 +120,8 @@ namespace Pchp.Core
 
             protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
             {
-                Debug.WriteLine($"Function '{_function}' is not defined!");
-                // TODO: ctx.Error.CallToUndefinedFunction(_function)
-                return PhpValue.False;
+                PhpException.UndefinedFunctionCalled(_function);
+                return PhpValue.Void;
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as FunctionCallback);
@@ -174,10 +174,13 @@ namespace Pchp.Core
                     }
                 }
 
-                Debug.WriteLine($"Method '{_class}::{_method}' is not defined!");
-                // TODO: ctx.Error.CallToUndefinedMethod(_function)
-
                 return null;
+            }
+
+            protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
+            {
+                PhpException.UndefinedMethodCalled(_class, _method);
+                return PhpValue.Void;
             }
 
             PhpTypeInfo ResolveType(Context ctx) => ctx.ResolveType(_class, _callerCtx, true);
@@ -254,7 +257,7 @@ namespace Pchp.Core
                                 // CONSIDER: compiler (and this binder) creates dummy instance of self;
                                 // can we create a special singleton instance marked as "null" so use of $this inside the method will fail ?
                                 // TODO: use caller instance or warning (calling instance method statically)
-                                return routine.PhpInvokable.Bind(tinfo.GetUninitializedInstance(ctx));
+                                return routine.PhpInvokable.Bind(tinfo.CreateUninitializedInstance(ctx));
                             }
                         }
                     }
@@ -274,6 +277,21 @@ namespace Pchp.Core
                 }
 
                 return null;
+            }
+
+            protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
+            {
+                ResolveType(ctx, out var tinfo, out _);
+                if (tinfo != null)
+                {
+                    PhpException.UndefinedMethodCalled(tinfo.Name, _method);
+                }
+                else
+                {
+                    throw PhpException.ClassNotFoundException(_obj.ToString(ctx));
+                }
+
+                return PhpValue.Void;
             }
 
             void ResolveType(Context ctx, out PhpTypeInfo tinfo, out object target)
@@ -437,8 +455,7 @@ namespace Pchp.Core
         /// </summary>
         protected virtual PhpValue InvokeError(Context ctx, PhpValue[] arguments)
         {
-            // TODO: ctx.Errors.InvalidCallback();
-            return PhpValue.False;
+            throw PhpException.ErrorException(ErrResources.invalid_callback);
         }
 
         /// <summary>
@@ -462,7 +479,7 @@ namespace Pchp.Core
         public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Bind(ctx)(ctx, arguments);
 
         /// <summary>
-        /// Gets value representing the calleback.
+        /// Gets value representing the callback.
         /// Used for human readable representation of the callback.
         /// </summary>
         public abstract PhpValue ToPhpValue();

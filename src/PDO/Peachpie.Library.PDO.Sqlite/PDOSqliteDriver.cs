@@ -91,13 +91,13 @@ namespace Peachpie.Library.PDO.Sqlite
         /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)
         {
-            Debug.Fail("last_insert_id not implemented");
+            // The last_insert_rowid() SQL function is a wrapper around the sqlite3_last_insert_rowid()
+            // https://www.sqlite.org/lang_corefunc.html#last_insert_rowid
 
-            // this is probably not correct:
             using (var cmd = pdo.CreateCommand("SELECT LAST_INSERT_ROWID()"))
             {
-                object value = cmd.ExecuteScalar();
-                return value?.ToString();
+                object value = cmd.ExecuteScalar(); // can't be null
+                return value != null ? value.ToString() : string.Empty;
             }
         }
     }

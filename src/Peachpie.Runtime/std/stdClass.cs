@@ -8,7 +8,7 @@ using System.Diagnostics;
 /// Used for casting values to an <c>object</c>.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Advanced)]
-[PhpType(PhpTypeAttribute.InheritName)]
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
 public class stdClass
 {
     /// <summary>

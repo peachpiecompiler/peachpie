@@ -22,7 +22,7 @@ function foo(/*|mixed|*/$x)
   /*|Closure|*/$closure = function($a, $b) { return $a + $b; };
   /*|resource|null|*/$resource = stream_context_create();
   /*|stdClass|*/$stdClass = new stdClass();
-  
+
   // TODO: Update when made more precise
   /*|object|*/$system_object2 = (object)array('a' => 'b');
 
@@ -75,3 +75,10 @@ function baz(int /*|integer|*/$x) {
 /*|integer|*/$i = 5;
 // global variables may be changed from outside, so the type is always mixed
 echo /*|mixed|*/$i;
+
+function callable_check(
+    callable /*|array|Closure|object|string|*/$c,
+    callable &/*|array|Closure|object|string|*/$cr,
+    ?callable /*|array|Closure|null|object|string|*/$cn1,
+    callable /*|array|Closure|null|object|string|*/$cn2 = null)
+{}

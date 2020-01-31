@@ -77,7 +77,7 @@ namespace Pchp.Core
         /// <summary>
         /// A value type container.
         /// </summary>
-        ValueField _value;
+        readonly ValueField _value;
 
         /// <summary>
         /// A reference type container.
@@ -659,6 +659,27 @@ namespace Pchp.Core
             else if (IsAlias)
             {
                 return _obj.alias.Value.IsStringImpl(out str);
+            }
+            else
+            {
+                str = default;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks the value is <c>string</c> or <c>&amp;string</c> constructed as <see cref="PhpString"/> (a mutable string).
+        /// </summary>
+        internal bool IsMutableStringImpl(out PhpString str)
+        {
+            if (ReferenceEquals(_type, TypeTable.MutableStringTable))
+            {
+                str = new PhpString(_obj.blob);
+                return true;
+            }
+            else if (IsAlias)
+            {
+                return Alias.Value.IsMutableStringImpl(out str);
             }
             else
             {

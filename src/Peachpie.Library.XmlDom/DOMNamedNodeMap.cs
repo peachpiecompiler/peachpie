@@ -8,7 +8,7 @@ using Pchp.Core;
 
 namespace Peachpie.Library.XmlDom
 {
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public class DOMNamedNodeMap : Traversable, Iterator
     {
         #region MapKey

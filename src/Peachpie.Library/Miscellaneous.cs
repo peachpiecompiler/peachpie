@@ -1,4 +1,6 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +11,11 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
+    [PhpExtension("Core")]
     public static class Miscellaneous
     {
         // [return: CastToFalse] // once $extension will be supported
-        public static string phpversion(string extension = null)
+        public static string phpversion(string? extension = null)
         {
             if (extension != null)
             {
@@ -220,7 +223,7 @@ namespace Pchp.Library
         /// <param name="extension">Internal extension name (e.g. <c>sockets</c>).</param>
         /// <returns>The array of function names or <c>null</c> if the <paramref name="extension"/> is not loaded.</returns>
         [return: CastToFalse]
-        public static PhpArray get_extension_funcs(string extension)
+        public static PhpArray? get_extension_funcs(string extension)
         {
             var result = new PhpArray();
             foreach (var e in Context.GetRoutinesByExtension(extension))
@@ -232,6 +235,42 @@ namespace Pchp.Library
             return result.Count != 0 ? result : null;
         }
 
+        /// <summary>
+        /// Checks the given <paramref name="assertion"/> and take appropriate action if its result is <c>FALSE</c>.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="assertion"></param>
+        /// <param name="action"></param>
+        /// <returns>Assertion value.</returns>
+        public static bool assert(Context ctx, PhpValue assertion, PhpValue action = default)
+        {
+            // TODO: check assertion is enabled
+
+            if (assertion.IsString())
+            {
+                PhpException.InvalidArgumentType(nameof(assertion), PhpVariable.TypeNameBoolean);
+                return true;
+            }
+
+            return ctx.Assert(assertion, action);
+        }
+
+        ///// <summary>
+        ///// Returns an array of all currently active resources, optionally filtered by resource type.
+        ///// </summary>
+        ///// <param name="ctx">Runtime context.</param>
+        ///// <param name="type">
+        ///// If defined, this will cause get_resources() to only return resources of the given type. A list of resource types is available.
+        ///// If the string <code>Unknown</code> is provided as the type, then only resources that are of an unknown type will be returned.
+        ///// If omitted, all resources will be returned.
+        ///// </param>
+        ///// <returns>Returns an array of currently active resources, indexed by resource number.</returns>
+        //[return: NotNull]
+        //public static PhpArray get_resources(Context ctx, string type = null)
+        //{
+        //    throw new NotSupportedException();
+        //}
+
         #region gethostname, php_uname, memory_get_usage, php_sapi_name
 
         /// <summary>
@@ -239,12 +278,17 @@ namespace Pchp.Library
         /// </summary>
         /// <returns>Returns a string with the hostname on success, otherwise FALSE is returned. </returns>
         [return: CastToFalse]
-        public static string gethostname()
+        public static string? gethostname()
         {
-            string host = null;
-
-            try { host = System.Net.Dns.GetHostName(); }
-            catch { }
+            string? host;
+            try
+            {
+                host = System.Net.Dns.GetHostName();
+            }
+            catch
+            {
+                host = null;
+            }
 
             return host;
         }
@@ -334,21 +378,42 @@ namespace Pchp.Library
         /// Returns the type of web server interface.
         /// </summary>
         /// <returns>The "isapi" string if runned under webserver (ASP.NET works via ISAPI) or "cli" otherwise.</returns>
-        public static string php_sapi_name(Context ctx) => ctx.ServerApi ?? "isapi";
+        public static string php_sapi_name(Context ctx) => ctx.ServerApi;
 
         #endregion
 
-        #region getmypid, getlastmod, get_current_user, getmyuid
+        #region getmypid, getlastmod, get_current_user, getmyuid, posix_getpid
 
         /// <summary>
         /// Returns the PID of the current process. 
         /// </summary>
         /// <returns>The PID.</returns>
+        /// <remarks>
+        /// The current thread ID instead of process ID - 
+        /// oftenly used to get a unique ID of the current "request" 
+        /// but PID is always the same in .NET. 
+        /// In this way we get different values for different requests and also we don't expose system process ID
+        /// </remarks>
         public static int getmypid()
         {
-            return System.Diagnostics.Process.GetCurrentProcess().Id;
+            return System.Threading.Thread.CurrentThread.ManagedThreadId;
+            //return System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 
+        /// <summary>
+        /// Return the process identifier of the current process.
+        /// </summary>
+        /// <remarks>
+        /// The current thread ID instead of process ID - 
+        /// oftenly used to get a unique ID of the current "request" 
+        /// but PID is always the same in .NET. 
+        /// In this way we get different values for different requests and also we don't expose system process ID
+        /// </remarks>
+        public static int posix_getpid()
+        {
+            return System.Threading.Thread.CurrentThread.ManagedThreadId;
+            //return System.Diagnostics.Process.GetCurrentProcess().Id;
+        }
 
         /// <summary>
         /// Gets time of last page modification. 
@@ -427,9 +492,10 @@ namespace Pchp.Library
         /// </summary>
         public static bool fastcgi_finish_request(Context ctx)
         {
-            if (ctx.IsWebApplication)
+            var webctx = ctx.HttpPhpContext;
+            if (webctx != null)
             {
-                ctx.HttpPhpContext.Flush();
+                webctx.Flush();
 
                 // TODO: finish the request
 
@@ -485,6 +551,42 @@ namespace Pchp.Library
             if (seconds < 0) throw new ArgumentOutOfRangeException();
             System.Threading.Thread.Sleep((int)(seconds * 1000L));
             return 0;
+        }
+
+        /// <summary>
+        /// Delay for a number of seconds and nanoseconds.
+        /// </summary>
+        //[return: CastToFalse]
+        public static bool time_nanosleep(long seconds, long nanoseconds)
+        {
+            if (seconds < 0 || nanoseconds < 0) throw new ArgumentOutOfRangeException();
+            System.Threading.Thread.Sleep((int)(seconds * 1000L + nanoseconds / 1000000L));
+            return true;
+        }
+
+        /// <summary>
+        /// Makes the script sleep until the specified <paramref name="timestamp"/>.
+        /// </summary>
+        /// <param name="timestamp">The timestamp when the script should wake.</param>
+        /// <returns>Returns <c>TRUE</c> on success or <c>FALSE</c> on failure.</returns>
+        /// <exception cref="PhpException">If the specified timestamp is in the past, this function will generate a <c>E_WARNING</c>.</exception>
+        public static bool time_sleep_until(double timestamp)
+        {
+            var now = (System.DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds;    // see microtime(TRUE)
+            var sleep_ms = (timestamp - now) * 1000.0;
+
+            if (sleep_ms > 0.0)
+            {
+                System.Threading.Thread.Sleep((int)sleep_ms);
+                return true;
+            }
+            else
+            {
+                // note: php throws warning even if time is current time
+
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.time_sleep_until_in_past);
+                return false;
+            }
         }
 
         #endregion

@@ -65,14 +65,14 @@ namespace Peachpie.Library.MsSql
         /// <param name="manager">Containing connection manager.</param>
         /// <param name="connectionString">Connection string.</param>
         public PhpSqlDbConnection(SqlConnectionManager manager, string/*!*/ connectionString)
-            : base(manager.Context, connectionString, "mssql connection")
+            : base(connectionString, "mssql connection")
         {
             //if (ctx == null)
             //    throw new ArgumentNullException(nameof(ctx));
 
             //_ctx = ctx;
             _manager = manager;
-            _connection = new SqlConnection();
+            _connection = new SqlConnection(connectionString);
             // TODO: Connection.InfoMessage += new SqlInfoMessageEventHandler(InfoMessage);
         }
 

@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 namespace Peachpie.Library.Network
@@ -606,10 +608,24 @@ namespace Peachpie.Library.Network
                         ? ProcessMethod.StdOut // NOTE: if ProcessingResponse is RETURN, RETURN headers as well
                         : ProcessMethod.Ignore;
                     break;
-                case CURLOPT_HTTPHEADER: SetOption<CurlOption_Headers, PhpArray>(ch, value.ToArray().DeepCopy()); break;
-                case CURLOPT_ENCODING: ch.AcceptEncoding = value.ToStringOrNull().EmptyToNull(); break;
+                case CURLOPT_HTTPHEADER: return SetOption<CurlOption_Headers, PhpArray>(ch, value.ToArray().DeepCopy());
+                case CURLOPT_ENCODING: return SetOption<CurlOption_AcceptEncoding, string>(ch, value.ToStringOrNull().EmptyToNull());
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
-                case CURLOPT_COOKIEFILE: ch.CookieFileSet = true; break;
+                case CURLOPT_COOKIEFILE:
+                    ch.CookieContainer ??= new CookieContainer();   // enable the cookie container
+
+                    if (ch.TryGetOption<CurlOption_CookieFile>(out var cookiefileoption) == false)
+                    {
+                        ch.SetOption(cookiefileoption = new CurlOption_CookieFile());
+                    }
+
+                    // add the file name to the list of file names:
+                    cookiefileoption.OptionValue.Add(value.ToStringOrNull());
+
+                    break; // always return true
+                case CURLOPT_COOKIEJAR:
+                    ch.CookieContainer ??= new CookieContainer();   // enable the cookie container
+                    return SetOption<CurlOption_CookieJar, string>(ch, value.ToStringOrNull().EmptyToNull());
 
                 case CURLOPT_FILE: return TryProcessMethodFromStream(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
                 case CURLOPT_INFILE: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingRequest, readable: true);
@@ -748,11 +764,11 @@ namespace Peachpie.Library.Network
         {
             string proxy_string = Regex.Replace(proxy, @"\s+", "");
 
-            string scheme   = "http";
+            string scheme = "http";
             string username = "";
             string password = "";
-            string host     = "";
-            int    port     = 1080;
+            string host = "";
+            int port = 1080;
 
             if (proxy_string.IndexOf("://") != -1)
             {
@@ -804,9 +820,11 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Sets cURL option.
         /// </summary>
-        static bool SetOption<TOption, TValue>(CURLResource resource, TValue value) where TOption : CurlOption<HttpWebRequest, TValue>, new()
+        static bool SetOption<TOption, TValue>(CURLResource resource, TValue value)
+            where TOption : CurlOption<HttpWebRequest, TValue>, new()
+            where TValue : class
         {
-            if (value != default)
+            if (value != null)
             {
                 resource.SetOption<TOption>(new TOption() { OptionValue = value });
                 return true;
@@ -857,7 +875,7 @@ namespace Peachpie.Library.Network
     {
         int OptionId { get; }
 
-        void Apply(WebRequest request);
+        void Apply(Context ctx, WebRequest request);
     }
 
     /// <summary>
@@ -871,11 +889,11 @@ namespace Peachpie.Library.Network
 
         public TValue OptionValue { get; set; }
 
-        void ICurlOption.Apply(WebRequest request)
+        void ICurlOption.Apply(Context ctx, WebRequest request)
         {
             if (request is TRequest r)
             {
-                Apply(r);
+                Apply(ctx, r);
             }
             else
             {
@@ -883,7 +901,7 @@ namespace Peachpie.Library.Network
             }
         }
 
-        public abstract void Apply(TRequest request);
+        public abstract void Apply(Context ctx, TRequest request);
 
         bool IEquatable<ICurlOption>.Equals(ICurlOption other)
         {
@@ -894,25 +912,38 @@ namespace Peachpie.Library.Network
     sealed class CurlOption_UserAgent : CurlOption<HttpWebRequest, string>
     {
         public override int OptionId => CURLConstants.CURLOPT_USERAGENT;
-        public override void Apply(HttpWebRequest request) => request.UserAgent = this.OptionValue;
+        public override void Apply(Context ctx, HttpWebRequest request) => request.UserAgent = this.OptionValue;
     }
 
     sealed class CurlOption_Referer : CurlOption<HttpWebRequest, string>
     {
         public override int OptionId => CURLConstants.CURLOPT_REFERER;
-        public override void Apply(HttpWebRequest request) => request.Referer = this.OptionValue;
+        public override void Apply(Context ctx, HttpWebRequest request) => request.Referer = this.OptionValue;
     }
 
     sealed class CurlOption_ProtocolVersion : CurlOption<HttpWebRequest, Version>
     {
         public override int OptionId => CURLConstants.CURLOPT_HTTP_VERSION;
-        public override void Apply(HttpWebRequest request) => request.ProtocolVersion = this.OptionValue;
+        public override void Apply(Context ctx, HttpWebRequest request) => request.ProtocolVersion = this.OptionValue;
     }
 
     sealed class CurlOption_Private : CurlOption<WebRequest, PhpValue>
     {
         public override int OptionId => CURLConstants.CURLOPT_PRIVATE;
-        public override void Apply(WebRequest request) { }
+        public override void Apply(Context ctx, WebRequest request) { }
+    }
+
+    /// <summary>
+    /// Controls the "Accept-Encoding" header.
+    /// </summary>
+    sealed class CurlOption_AcceptEncoding : CurlOption<HttpWebRequest, string>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_ACCEPT_ENCODING;
+
+        public override void Apply(Context ctx, HttpWebRequest request)
+        {
+            request.Headers.Set(HttpRequestHeader.AcceptEncoding, this.OptionValue);
+        }
     }
 
     /// <summary>
@@ -923,13 +954,38 @@ namespace Peachpie.Library.Network
     {
         public override int OptionId => CURLConstants.CURLOPT_HTTPHEADER;
 
-        public override void Apply(HttpWebRequest request)
+        public override void Apply(Context ctx, HttpWebRequest request)
         {
             foreach (var value in this.OptionValue)
             {
                 if (value.Value.IsString(out var header))
                 {
-                    request.Headers.Add(header);
+                    // split into name:value once
+                    string header_name, header_value;
+
+                    var colpos = header.IndexOf(':');
+                    if (colpos >= 0)
+                    {
+                        header_name = header.Remove(colpos);
+                        header_value = header.Substring(colpos + 1);
+                    }
+                    else
+                    {
+                        header_name = header;
+                        header_value = string.Empty;
+                    }
+
+                    // set the header,
+                    // replace previously set header or remove header with no value
+
+                    if (header_value.Length != 0)
+                    {
+                        request.Headers.Set(header_name, header_value);
+                    }
+                    else
+                    {
+                        request.Headers.Remove(header_name);
+                    }
                 }
             }
         }
@@ -938,7 +994,85 @@ namespace Peachpie.Library.Network
     sealed class CurlOption_DisableTcpNagle : CurlOption<HttpWebRequest, bool>
     {
         public override int OptionId => CURLConstants.CURLOPT_TCP_NODELAY;
-        public override void Apply(HttpWebRequest request) => request.ServicePoint.UseNagleAlgorithm = !OptionValue;
+        public override void Apply(Context ctx, HttpWebRequest request) => request.ServicePoint.UseNagleAlgorithm = !OptionValue;
+    }
+
+    /// <summary>
+    /// Provides value of <see cref="CURLConstants.CURLOPT_COOKIEJAR"/> option.
+    /// </summary>
+    sealed class CurlOption_CookieJar : CurlOption<HttpWebRequest, string>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_COOKIEJAR;
+        public override void Apply(Context ctx, HttpWebRequest request)
+        {
+            // invoked when initializing WebRequest
+            // do nothing
+        }
+
+        public void PrintCookies(Context ctx, CURLResource resource)
+        {
+            // called when cURL resource is being disposed
+            // output the cookies:
+
+            Stream output;
+
+            if (string.Equals(OptionValue, "-", StringComparison.Ordinal))
+            {
+                // current script output:
+                output = ctx.OutputStream;
+            }
+            else
+            {
+                // PHP-compliant file resolve function:
+                output = PhpStream.Open(ctx, OptionValue, "w", StreamOpenOptions.Empty, StreamContext.Default)?.RawStream;
+            }
+
+            if (output != null)
+            {
+                // TODO: output the cookies in netscape style
+                // - resource.Result?.Cookies
+                // or do we have to combine the request cookies with response cookies?
+                // - new CookieCollection( resource.CookieContainer ).Add( resource.Result.Cookies );
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads cookies from a file according to <see cref="CURLConstants.CURLOPT_COOKIEFILE"/> option.
+    /// </summary>
+    sealed class CurlOption_CookieFile : CurlOption<HttpWebRequest, List<string>>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_COOKIEFILE;
+
+        public CurlOption_CookieFile()
+        {
+            OptionValue = new List<string>();
+        }
+
+        public override void Apply(Context ctx, HttpWebRequest request)
+        {
+            // invoked when initializing WebRequest
+
+            foreach (var fname in this.OptionValue)
+            {
+                using (var stream = PhpStream.Open(ctx, fname, StreamOpenMode.ReadText))
+                {
+                    if (stream != null)
+                    {
+                        LoadCookieFile(request, stream);
+                    }
+                }
+            }
+        }
+
+        private static void LoadCookieFile(HttpWebRequest request, PhpStream stream)
+        {
+            // TODO: load netscape-like or header-style cookies from stream
+
+            // request.CookieContainer.Add() // add parsed cookie
+
+            // request.CookieContainer.SetCookies( ... ) // set header style cookies
+        }
     }
 
     #endregion

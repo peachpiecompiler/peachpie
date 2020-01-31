@@ -88,7 +88,7 @@ namespace Pchp.Library.Reflection
         public override string getFileName(Context ctx)
         {
             var methods = _routine.Methods;
-            if (methods.Length == 1 && methods[0].IsStatic)
+            if (methods.Length != 0 && methods[0].IsStatic)
             {
                 var scriptattr = Core.Reflection.ReflectionUtils.GetScriptAttribute(methods[0].DeclaringType);
                 if (scriptattr != null)

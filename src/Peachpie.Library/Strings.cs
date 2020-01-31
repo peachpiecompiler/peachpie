@@ -52,14 +52,14 @@ namespace Pchp.Library
         /// Converts ordinal number of character to a binary string containing that character.
         /// </summary>
         /// <param name="charCode">The ASCII code.</param>
-        /// <returns>The character with <paramref name="charCode"/> ASCIT code.</returns>
+        /// <returns>The character with <paramref name="charCode"/> ASCII code.</returns>
         public static PhpString chr(int charCode) => new PhpString(new byte[] { (byte)charCode });
 
         /// <summary>
         /// Converts ordinal number of Unicode character to a string containing that character.
         /// </summary>
         /// <param name="charCode">The ordinal number of character.</param>
-        /// <returns>The character with <paramref name="charCode"/> ordnial number.</returns>
+        /// <returns>The character with <paramref name="charCode"/> ordinal number.</returns>
         /*public*/
         static string chr_unicode(int charCode)
         {
@@ -5314,7 +5314,7 @@ namespace Pchp.Library
         /// Retrieves the index of the first occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>
         /// (case insensitive).
         /// </summary>
-        /// <remarks>See <see cref="Strpos(string,object,int)"/> for details.</remarks>
+        /// <remarks>See <see cref="strpos"/> for details.</remarks>
         /// <exception cref="PhpException">Thrown if <paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
         [return: CastToFalse]
         public static int stripos(string haystack, PhpValue needle, int offset = 0)
@@ -5347,7 +5347,7 @@ namespace Pchp.Library
         /// Retrieves the index of the last occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>
         /// (case insensitive).
         /// </summary>
-        /// <remarks>See <see cref="Strrpos(string,object,int)"/> for details.</remarks>
+        /// <remarks>See <see cref="strrpos"/> for details.</remarks>
         /// <exception cref="PhpException">Thrown if <paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
         [return: CastToFalse]
         public static int strripos(string haystack, PhpValue needle, int offset = 0)

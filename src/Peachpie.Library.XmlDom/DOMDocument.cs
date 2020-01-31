@@ -14,7 +14,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Represents an entire HTML or XML document; serves as the root of the document tree.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public class DOMDocument : DOMNode
     {
         #region Fields and Properties
@@ -61,8 +61,8 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                XmlDocumentType doc_type = XmlDocument.DocumentType;
-                return (doc_type == null ? null : (DOMDocumentType)DOMNode.Create(doc_type));
+                var doc_type = XmlDocument.DocumentType;
+                return (DOMDocumentType)DOMNode.Create(doc_type);
             }
         }
 
@@ -79,7 +79,7 @@ namespace Peachpie.Library.XmlDom
             get
             {
                 XmlElement root = XmlDocument.DocumentElement;
-                return (root != null ? (DOMElement)Create(root) : null);
+                return (DOMElement)Create(root);
             }
         }
 
@@ -100,14 +100,16 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                XmlDeclaration decl = GetXmlDeclaration();
-                if (decl != null) return decl.Encoding;
-                return null;
+                var decl = GetXmlDeclaration();
+                return decl?.Encoding;
             }
             set
             {
-                XmlDeclaration decl = GetXmlDeclaration();
-                if (decl != null) decl.Encoding = value;
+                var decl = GetXmlDeclaration();
+                if (decl != null)
+                {
+                    decl.Encoding = value;
+                }
                 else
                 {
                     decl = XmlDocument.CreateXmlDeclaration("1.0", value, null);
@@ -139,8 +141,11 @@ namespace Peachpie.Library.XmlDom
             {
                 string stand = (value ? "yes" : "no");
 
-                XmlDeclaration decl = GetXmlDeclaration();
-                if (decl != null) decl.Standalone = stand;
+                var decl = GetXmlDeclaration();
+                if (decl != null)
+                {
+                    decl.Standalone = stand;
+                }
                 else
                 {
                     decl = XmlDocument.CreateXmlDeclaration("1.0", null, stand);
@@ -882,14 +887,17 @@ namespace Peachpie.Library.XmlDom
 
             CheckHtmlErrors(ctx, htmlDoc, filename);
 
-            // save to string as XML
-            using (var sw = new StringWriter())
-            {
-                htmlDoc.Save(sw);
+            //// save to string as XML
+            //using (var sw = new StringWriter())
+            //{
+            //    htmlDoc.Save(sw);
 
-                // load as XML
-                return loadXMLInternal(ctx, sw.ToString(), 0, true);
-            }
+            //    // load as XML
+            //    return loadXMLInternal(ctx, sw.ToString(), 0, true);
+            //}
+
+            this.XmlDocument.LoadHtml(htmlDoc);
+            return true;
         }
 
         /// <summary>
@@ -933,7 +941,8 @@ namespace Peachpie.Library.XmlDom
         {
             using (var sw = new StreamWriter(outStream, Encoding.ASCII, bufferSize: 128, leaveOpen: true))
             {
-                sw.WriteLine("<!DOCTYPE html PUBLIC \" -//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">");
+                // HTML 4.01 Transitional
+                sw.WriteLine("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">");
                 sw.Flush();
             }
         }

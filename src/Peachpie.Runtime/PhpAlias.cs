@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -17,7 +19,7 @@ namespace Pchp.Core
         #region Fields
 
         /// <summary>
-        /// Gets or sets the underlaying value.
+        /// Gets or sets the underlying value.
         /// </summary>
         /// <remarks>The field is not wrapped into a property, some internals need to access the raw field.</remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -71,13 +73,13 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Ensures the underlaying value is an object and gets its instance.
+        /// Ensures the underlying value is an object and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
         public object EnsureObject() => Value.EnsureObject();
 
         /// <summary>
-        /// Ensures the underlaying value is an array and gets its instance.
+        /// Ensures the underlying value is an array and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
         public IPhpArray EnsureArray() => Value.EnsureArray();
@@ -119,23 +121,23 @@ namespace Pchp.Core
 
         public static implicit operator PhpValue(PhpAlias alias) => PhpValue.Create(alias);
 
-        public static implicit operator bool(PhpAlias value) => (bool)value.Value;
+        public static implicit operator bool(PhpAlias value) => value.Value;
 
-        public static implicit operator IntStringKey(PhpAlias value) => (IntStringKey)value.Value;
+        public static implicit operator IntStringKey(PhpAlias value) => value.Value;
 
         /// <summary>
         /// Casts the value to object instance.
         /// Non-object values are wrapped to <see cref="stdClass"/>.
         /// </summary>
-        public object ToObject() => this.ToClass();
+        public object ToObject() => ToClass();
 
-        public object AsObject() => this.Value.AsObject();
+        public object AsObject() => Value.AsObject();
 
         public long ToLongOrThrow() => Value.ToLongOrThrow();
 
         public PhpNumber ToNumber() => Convert.ToNumber(Value);
 
-        public PhpString ToPhpString(Context ctx) => Convert.ToPhpString(Value, ctx);
+        public PhpString ToPhpString(Context ctx) => Value.ToPhpString(ctx);
 
         public bool IsEmpty() => Value.IsEmpty;
 
