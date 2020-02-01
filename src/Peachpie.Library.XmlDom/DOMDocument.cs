@@ -481,11 +481,14 @@ namespace Peachpie.Library.XmlDom
         }
 
         /// <summary>
-        /// Not yet implemented.
+        /// Gets the first element with the matching ID attribute.
         /// </summary>
+        /// <param name="elementId">The attribute ID to match.</param>
+        /// <returns>A <see cref="DOMElement"/>.</returns>
         public virtual DOMElement getElementById(string elementId)
         {
-            throw new NotImplementedException();
+            XmlElement element = XmlDocument.GetElementById(elementId);
+            return new DOMElement(element);
         }
 
         #endregion
