@@ -479,7 +479,7 @@ namespace Pchp.Core
         public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Bind(ctx)(ctx, arguments);
 
         /// <summary>
-        /// Gets value representing the calleback.
+        /// Gets value representing the callback.
         /// Used for human readable representation of the callback.
         /// </summary>
         public abstract PhpValue ToPhpValue();
