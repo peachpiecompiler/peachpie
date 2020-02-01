@@ -94,13 +94,16 @@ namespace Pchp.Library
             }
         }
 
+        [Flags]
+        public enum Option { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2};
+
         private enum CipherTypes { AES, DES, UNKNOWN};
 
         #endregion
 
         #region openssl_encrypt/decrypt
 
-        private static RijndaelManaged PrepareCipher(byte[] data, PhpString key, Cipher cipher, PhpString iv)
+        private static RijndaelManaged PrepareCipher(byte[] data, PhpString key, Cipher cipher, PhpString iv, Option options)
         {
             byte[] decodedKey = key.ToBytes(Encoding.Default);
 
@@ -129,13 +132,14 @@ namespace Pchp.Library
             if (cipher.Mode == CipherMode.CFB) // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
                 throw new NotSupportedException();
 
-            var result = new RijndaelManaged { Mode = cipher.Mode, Padding = PaddingMode.None, KeySize = cipher.KeyLength, BlockSize = 128, Key = decodedKey, IV = iVector };
+            var result = new RijndaelManaged { Mode = cipher.Mode, Padding = PaddingMode.PKCS7, KeySize = cipher.KeyLength, BlockSize = 128, Key = decodedKey, IV = iVector };
            
-            if (cipher.Mode != CipherMode.CFB)
-                result.Padding = PaddingMode.PKCS7;
+            if ((options & Option.OPENSSL_ZERO_PADDING) == Option.OPENSSL_ZERO_PADDING)
+                result.Padding = PaddingMode.None;
             
             if (cipher.Mode == CipherMode.CFB) 
             {
+                result.Padding = PaddingMode.None;
                 if (data.Length < 4)
                     result.FeedbackSize = 8;
                 else if (data.Length < 8)
@@ -163,7 +167,7 @@ namespace Pchp.Library
         /// <param name="aad">Additional authentication data.</param>
         /// <returns>The decrypted string on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static string openssl_decrypt(string data, string method, PhpString key, int option, PhpString iv, string tag = "", string aad = "")
+        public static string openssl_decrypt(string data, string method, PhpString key, Option options, PhpString iv, string tag = "", string aad = "")
         {
             // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1)
 
@@ -177,24 +181,39 @@ namespace Pchp.Library
             if (iv.IsEmpty)
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.empty_iv_vector);
 
-            switch (cipherMethod.Type)
+            try
             {
-                case CipherTypes.AES:
-                    return DecryptWithAES(data, key, cipherMethod, iv);
+                switch (cipherMethod.Type)
+                {
+                    case CipherTypes.AES:
+                        return DecryptWithAES(data, key, cipherMethod, iv, options);
 
-                case CipherTypes.DES:
-                    throw new NotImplementedException();
-                
-                default:
-                    throw new NotImplementedException();
+                    case CipherTypes.DES:
+                        throw new NotImplementedException();
+
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+            catch (CryptographicException)
+            {
+                return "";
             }
         }
 
-        private static string DecryptWithAES(string data, PhpString key, Cipher cipher, PhpString iv)
+        private static string DecryptWithAES(string data, PhpString key, Cipher cipher, PhpString iv, Option options)
         {
-            byte[] encryptedBytes = System.Convert.FromBase64String(data);
+            byte[] encryptedBytes;
+            if ((options & Option.OPENSSL_RAW_DATA) == Option.OPENSSL_RAW_DATA)
+            {
+                encryptedBytes = new byte[data.Length];
+                for (int i = 0; i < data.Length; i++)
+                    encryptedBytes[i] = (byte)data[i];
+            }
+            else
+                encryptedBytes = System.Convert.FromBase64String(data);
 
-            RijndaelManaged aesAlg = PrepareCipher(encryptedBytes, key, cipher, iv);
+            RijndaelManaged aesAlg = PrepareCipher(encryptedBytes, key, cipher, iv, options);
             ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
             string plaintext;
@@ -225,7 +244,7 @@ namespace Pchp.Library
         /// <param name="aad">Additional authentication data.</param>
         /// <param name="tag_length">The length of the authentication tag. Its value can be between 4 and 16 for GCM mode.</param>
         /// <returns>Returns the encrypted string on success or FALSE on failure.</returns>
-        public static string openssl_encrypt(string data, string method, PhpString key, int options, PhpString iv, string tag = "", string aad = "", int tag_length = 16)
+        public static string openssl_encrypt(string data, string method, PhpString key, Option options, PhpString iv, string tag = "", string aad = "", int tag_length = 16)
         {
             // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1)
 
@@ -239,24 +258,32 @@ namespace Pchp.Library
             if (iv.IsEmpty)
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.empty_iv_vector);
 
-            switch (cipherMethod.Type)
+            try
             {
-                case CipherTypes.AES:
-                    return EncryptWithAES(data, key, cipherMethod, iv);
+                switch (cipherMethod.Type)
+                {
+                    case CipherTypes.AES:
+                        return EncryptWithAES(data, key, cipherMethod, iv, options);
 
-                case CipherTypes.DES:
-                    throw new NotImplementedException();
+                    case CipherTypes.DES:
+                        throw new NotImplementedException();
 
-                default:
-                    throw new NotImplementedException();
+                    default:
+                        throw new NotImplementedException();
+                }
             }
+            catch (CryptographicException)
+            {
+
+                return "";
+            }  
         }
 
-        private static string EncryptWithAES(string data, PhpString key, Cipher cipher, PhpString iv)
+        private static string EncryptWithAES(string data, PhpString key, Cipher cipher, PhpString iv, Option options)
         {
             byte[] encrypted = null;
             byte[] dataBytes = Encoding.UTF8.GetBytes(data);
-            RijndaelManaged aesAlg = PrepareCipher(dataBytes, key, cipher, iv);
+            RijndaelManaged aesAlg = PrepareCipher(dataBytes, key, cipher, iv, options);
             ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
             using (MemoryStream msEncrypt = new MemoryStream())
@@ -269,7 +296,7 @@ namespace Pchp.Library
                         {
                             byte[] buffer = new byte[aesAlg.FeedbackSize];
 
-                            for (int i = 0; i < dataBytes.Length; i+= buffer.Length)
+                            for (int i = 0; i < dataBytes.Length; i += buffer.Length)
                             {
                                 Buffer.BlockCopy(dataBytes, i, buffer, 0, Math.Min(buffer.Length, dataBytes.Length - i + 1));
                                 swEncrypt.Write(buffer);
@@ -279,7 +306,7 @@ namespace Pchp.Library
                             if (reminder != 0)
                             {
                                 buffer = new byte[aesAlg.FeedbackSize];
-                                Buffer.BlockCopy(dataBytes, dataBytes.Length - reminder -1, buffer, 0, reminder);
+                                Buffer.BlockCopy(dataBytes, dataBytes.Length - reminder - 1, buffer, 0, reminder);
                                 swEncrypt.Write(buffer);
                             }
                         }
@@ -290,7 +317,10 @@ namespace Pchp.Library
                 }
             }
 
-            return System.Convert.ToBase64String(cipher.Mode == CipherMode.CFB ? encrypted.Slice(0, dataBytes.Length) : encrypted);   
+            if ((options & Option.OPENSSL_RAW_DATA) == Option.OPENSSL_RAW_DATA)
+                return cipher.Mode == CipherMode.CFB ? Encoding.UTF8.GetString(encrypted.Slice(0, dataBytes.Length)) : Encoding.UTF8.GetString(encrypted);
+            else
+                return System.Convert.ToBase64String(cipher.Mode == CipherMode.CFB ? encrypted.Slice(0, dataBytes.Length) : encrypted);
         }
 
         #endregion
