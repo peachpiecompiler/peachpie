@@ -172,7 +172,7 @@ namespace Peachpie.Library.Network
                     // array of all information
                     var arr = new PhpArray(38)
                     {
-                        { "url", r.ResponseUri != null ? r.ResponseUri?.AbsoluteUri : ch.Url },
+                        { "url", ch.Url ?? string.Empty },
                         { "content_type", r.ContentType },
                         { "http_code", (long)r.StatusCode },
                         { "header_size", r.HeaderSize },
@@ -192,7 +192,7 @@ namespace Peachpie.Library.Network
 
                     return arr;
                 case CURLConstants.CURLINFO_EFFECTIVE_URL:
-                    return r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : ch.Url;
+                    return ch.Url ?? string.Empty;
                 case CURLConstants.CURLINFO_REDIRECT_URL:
                     return (ch.FollowLocation && r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : string.Empty);
                 case CURLConstants.CURLINFO_HTTP_CODE:
@@ -612,6 +612,10 @@ namespace Peachpie.Library.Network
             stream.Dispose();
 
             //
+            if (response.ResponseUri != null)
+            {
+                ch.Url = response.ResponseUri.AbsoluteUri;
+            }
 
             return (returnstream != null)
                 ? PhpValue.Create(new PhpString(returnstream.ToArray()))
