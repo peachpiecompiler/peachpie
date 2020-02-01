@@ -163,7 +163,7 @@ namespace Pchp.Library
         /// <param name="aad">Additional authentication data.</param>
         /// <returns>The decrypted string on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static string openssl_decrypt(string data, string method, string key, int options = 0, string iv = "", string tag = "", string aad = "")
+        public static string openssl_decrypt(string data, string method, PhpString key, int option, PhpString iv, string tag = "", string aad = "")
         {
             // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1)
 
@@ -174,7 +174,7 @@ namespace Pchp.Library
                 return null;
             }
 
-            if (String.IsNullOrEmpty(iv))
+            if (iv.IsEmpty)
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.empty_iv_vector);
 
             switch (cipherMethod.Type)
