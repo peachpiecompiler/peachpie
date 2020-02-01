@@ -15,7 +15,9 @@ namespace Pchp.Library
     {
         #region Variables
         
-        private static Cipher[] Ciphers = { new Cipher("aes-256-cbc", 16) };
+        private static Cipher[] Ciphers = { new Cipher("aes-256-cbc", 16), new Cipher("aes-192-cbc", 16), new Cipher("aes-128-cbc", 16),
+                                            new Cipher("aes-256-ecb", 16), new Cipher("aes-192-ecb", 16), new Cipher("aes-128-ecb", 16),
+                                            new Cipher("aes-256-cfb", 16), new Cipher("aes-192-cfb", 16), new Cipher("aes-128-cfb", 16) };
 
         /// <summary>
         /// Information about supported cipher.
@@ -98,33 +100,55 @@ namespace Pchp.Library
 
         #region openssl_encrypt/decrypt
 
-        private static RijndaelManaged PrepareCipher(string data, string key, Cipher cipher, string iv)
+        private static RijndaelManaged PrepareCipher(byte[] data, PhpString key, Cipher cipher, PhpString iv)
         {
-            byte[] decodedKey = Encoding.UTF8.GetBytes(key);
+            byte[] decodedKey = key.ToBytes(Encoding.Default);
 
-            // Pad key out to 32 bytes (256bits) if its too short
-            if (decodedKey.Length < cipher.KeyLength / 8)
+            // Pad key out to 32 bytes (256bits) if its too short or trancuate if it is too long
+            if (decodedKey.Length < cipher.KeyLength / 8 || decodedKey.Length > cipher.KeyLength / 8)
             {
-                var paddedKey = new byte[cipher.KeyLength / 8];
-                Buffer.BlockCopy(decodedKey, 0, paddedKey, 0, key.Length);
-                decodedKey = paddedKey;
+                var resizedKey = new byte[cipher.KeyLength / 8];
+                Buffer.BlockCopy(decodedKey, 0, resizedKey, 0, Math.Min(key.Length,resizedKey.Length));
+                decodedKey = resizedKey;
             }
 
 
             byte[] iVector = new byte[cipher.IVLength];
-            if (!String.IsNullOrEmpty(iv))
+            if (!iv.IsEmpty)
             {
-                byte[] decodedIV = System.Convert.FromBase64String(iv);
+                byte[] decodedIV = iv.ToBytes(Encoding.Default);
 
                 if (decodedIV.Length < cipher.IVLength) // Pad zeros
                     PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.short_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
                 else if (decodedIV.Length > cipher.IVLength) // Trancuate
                     PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.long_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
 
-                Buffer.BlockCopy(decodedIV, 0, iVector, 0, cipher.IVLength);
+                Buffer.BlockCopy(decodedIV, 0, iVector, 0, Math.Min(cipher.IVLength,decodedIV.Length));
             }
 
-            return new RijndaelManaged { Mode = cipher.Mode, Padding = PaddingMode.PKCS7, KeySize = cipher.KeyLength, BlockSize = 128, Key = decodedKey, IV = iVector }; //FeedbackSize = 8
+            if (cipher.Mode == CipherMode.CFB) // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
+                throw new NotSupportedException();
+
+            var result = new RijndaelManaged { Mode = cipher.Mode, Padding = PaddingMode.None, KeySize = cipher.KeyLength, BlockSize = 128, Key = decodedKey, IV = iVector };
+           
+            if (cipher.Mode != CipherMode.CFB)
+                result.Padding = PaddingMode.PKCS7;
+            
+            if (cipher.Mode == CipherMode.CFB) 
+            {
+                if (data.Length < 4)
+                    result.FeedbackSize = 8;
+                else if (data.Length < 8)
+                    result.FeedbackSize = 16;
+                else if (data.Length < 16)
+                    result.FeedbackSize = 32;
+                else if (data.Length < 32)
+                    result.FeedbackSize = 64;
+                else
+                    result.FeedbackSize = 128;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -166,11 +190,11 @@ namespace Pchp.Library
             }
         }
 
-        private static string DecryptWithAES(string data, string key, Cipher cipher, string iv)
+        private static string DecryptWithAES(string data, PhpString key, Cipher cipher, PhpString iv)
         {
             byte[] encryptedBytes = System.Convert.FromBase64String(data);
 
-            RijndaelManaged aesAlg = PrepareCipher(data, key, cipher, iv);
+            RijndaelManaged aesAlg = PrepareCipher(encryptedBytes, key, cipher, iv);
             ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
             string plaintext;
@@ -201,7 +225,7 @@ namespace Pchp.Library
         /// <param name="aad">Additional authentication data.</param>
         /// <param name="tag_length">The length of the authentication tag. Its value can be between 4 and 16 for GCM mode.</param>
         /// <returns>Returns the encrypted string on success or FALSE on failure.</returns>
-        public static string openssl_encrypt(string data, string method, string key, int options = 0, string iv = "", string tag = "", string aad = "", int tag_length = 16)
+        public static string openssl_encrypt(string data, string method, PhpString key, int options, PhpString iv, string tag = "", string aad = "", int tag_length = 16)
         {
             // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1)
 
@@ -212,7 +236,7 @@ namespace Pchp.Library
                 return null;
             }
 
-            if (String.IsNullOrEmpty(iv))
+            if (iv.IsEmpty)
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.empty_iv_vector);
 
             switch (cipherMethod.Type)
@@ -228,11 +252,11 @@ namespace Pchp.Library
             }
         }
 
-        private static string EncryptWithAES(string data, string key, Cipher cipher, string iv)
+        private static string EncryptWithAES(string data, PhpString key, Cipher cipher, PhpString iv)
         {
             byte[] encrypted = null;
-
-            RijndaelManaged aesAlg = PrepareCipher(data, key, cipher, iv);
+            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+            RijndaelManaged aesAlg = PrepareCipher(dataBytes, key, cipher, iv);
             ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
             using (MemoryStream msEncrypt = new MemoryStream())
@@ -241,13 +265,32 @@ namespace Pchp.Library
                 {
                     using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
                     {
-                        swEncrypt.Write(data);
+                        if (cipher.Mode == CipherMode.CFB) // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
+                        {
+                            byte[] buffer = new byte[aesAlg.FeedbackSize];
+
+                            for (int i = 0; i < dataBytes.Length; i+= buffer.Length)
+                            {
+                                Buffer.BlockCopy(dataBytes, i, buffer, 0, Math.Min(buffer.Length, dataBytes.Length - i + 1));
+                                swEncrypt.Write(buffer);
+                            }
+
+                            int reminder = dataBytes.Length % buffer.Length;
+                            if (reminder != 0)
+                            {
+                                buffer = new byte[aesAlg.FeedbackSize];
+                                Buffer.BlockCopy(dataBytes, dataBytes.Length - reminder -1, buffer, 0, reminder);
+                                swEncrypt.Write(buffer);
+                            }
+                        }
+                        else
+                            swEncrypt.Write(data);
                     }
                     encrypted = msEncrypt.ToArray();
                 }
             }
 
-            return System.Convert.ToBase64String(encrypted);   
+            return System.Convert.ToBase64String(cipher.Mode == CipherMode.CFB ? encrypted.Slice(0, dataBytes.Length) : encrypted);   
         }
 
         #endregion
