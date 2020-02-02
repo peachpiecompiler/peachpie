@@ -692,14 +692,17 @@ namespace Peachpie.Library.XmlDom
         /// <returns>The number of bytes written or <B>false</B> on error.</returns>
         public virtual PhpValue save(Context ctx, string fileName, int options = 0)
         {
-            using (PhpStream stream = PhpStream.Open(ctx, fileName, "wt"))
+            using (PhpStream stream = PhpStream.Open(ctx, fileName, StreamOpenMode.WriteText))
             {
                 if (stream == null) return PhpValue.Create(false);
 
                 try
                 {
                     // direct stream write indents
-                    if (_formatOutput) XmlDocument.Save(stream.RawStream);
+                    if (_formatOutput)
+                    {
+                        XmlDocument.Save(stream.RawStream);
+                    }
                     else
                     {
                         var settings = new XmlWriterSettings()
@@ -784,6 +787,7 @@ namespace Peachpie.Library.XmlDom
                 NewLineHandling = NewLineHandling.None,
                 Encoding = Utils.GetNodeEncoding(ctx, xml_node),
                 Indent = _formatOutput,
+                ConformanceLevel = node == null ? ConformanceLevel.Document : ConformanceLevel.Fragment,
                 OmitXmlDeclaration = omitXmlDeclaration
             };
 
@@ -921,8 +925,10 @@ namespace Peachpie.Library.XmlDom
         {
             using (var ms = new MemoryStream())
             {
-                if (XmlDocument?.DocumentType == null)
+                if (node == null && XmlDocument?.DocumentType == null)
                 {
+                    // we are saving the whole document and there is no DOCTYPE,
+                    // output the default DOCTYPE:
                     OutputDefaultHtmlDoctype(ms);
                 }
 
