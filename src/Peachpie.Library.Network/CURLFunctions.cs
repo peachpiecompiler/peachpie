@@ -221,6 +221,11 @@ namespace Peachpie.Library.Network
 
         internal static IEnumerable<string> CookiesToNetscapeStyle(CookieCollection cookies)
         {
+            if (cookies == null || cookies.Count == 0)
+            {
+                yield break;
+            }
+
             foreach (Cookie c in cookies)
             {
                 string prefix = c.HttpOnly ? "#HttpOnly_" : "";
@@ -233,7 +238,7 @@ namespace Peachpie.Library.Network
 
         static PhpArray CreateCookiePhpArray(CookieCollection cookies)
         {
-            return (cookies != null ? new PhpArray(CookiesToNetscapeStyle(cookies)) : PhpArray.Empty);
+            return new PhpArray(CookiesToNetscapeStyle(cookies));
         }
 
         static void AddCookies(CookieCollection from, CookieContainer container)
