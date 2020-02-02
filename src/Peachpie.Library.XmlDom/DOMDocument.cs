@@ -488,7 +488,7 @@ namespace Peachpie.Library.XmlDom
         public virtual DOMElement getElementById(string elementId)
         {
             XmlElement element = XmlDocument.GetElementById(elementId);
-            return new DOMElement(element);
+            return element != null ? new DOMElement(element) : null;
         }
 
         #endregion
