@@ -846,7 +846,10 @@ namespace Peachpie.Library.XmlDom
         public virtual bool loadHTML(Context ctx, string source, int options = 0)
         {
             if (string.IsNullOrEmpty(source))
+            {
+                PhpException.InvalidArgument(nameof(source), Pchp.Library.Resources.Resources.arg_null_or_empty);
                 return false;
+            }
 
             return loadHTML(ctx, new StringReader(source), null);
         }
