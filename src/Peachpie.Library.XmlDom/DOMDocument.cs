@@ -764,10 +764,14 @@ namespace Peachpie.Library.XmlDom
         {
             XmlNode xml_node;
 
-            if (node == null) xml_node = XmlDocument;
+            if (node == null)
+            {
+                xml_node = XmlDocument;
+            }
             else
             {
                 xml_node = node.XmlNode;
+
                 if (xml_node.OwnerDocument != XmlDocument && xml_node != XmlNode)
                 {
                     DOMException.Throw(ExceptionCode.WrongDocument);
@@ -917,7 +921,11 @@ namespace Peachpie.Library.XmlDom
         {
             using (var ms = new MemoryStream())
             {
-                OutputHtmlDoctype(ms);
+                if (XmlDocument?.DocumentType == null)
+                {
+                    OutputDefaultHtmlDoctype(ms);
+                }
+
                 SaveXMLInternal(ctx, ms, node, omitXmlDeclaration: true);
 
                 return new PhpString(ms.ToArray());
@@ -933,9 +941,16 @@ namespace Peachpie.Library.XmlDom
         {
             using (PhpStream stream = PhpStream.Open(ctx, file, "wt"))
             {
-                if (stream == null) return PhpValue.Create(false);
+                if (stream == null)
+                {
+                    return PhpValue.False;
+                }
 
-                OutputHtmlDoctype(stream.RawStream);
+                if (XmlDocument?.DocumentType == null)
+                {
+                    OutputDefaultHtmlDoctype(stream.RawStream);
+                }
+
                 SaveXMLInternal(ctx, stream.RawStream, null, omitXmlDeclaration: true);
 
                 // TODO:
@@ -943,7 +958,7 @@ namespace Peachpie.Library.XmlDom
             }
         }
 
-        private void OutputHtmlDoctype(Stream outStream)
+        private void OutputDefaultHtmlDoctype(Stream outStream)
         {
             using (var sw = new StreamWriter(outStream, Encoding.ASCII, bufferSize: 128, leaveOpen: true))
             {
