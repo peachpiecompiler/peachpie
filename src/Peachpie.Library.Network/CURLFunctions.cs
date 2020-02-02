@@ -289,6 +289,8 @@ namespace Peachpie.Library.Network
                 {
                     // TODO: ch.FailOnError ?
 
+                    var exception = webEx.InnerException ?? webEx;
+
                     switch (webEx.Status)
                     {
                         case WebExceptionStatus.ProtocolError:
@@ -296,11 +298,11 @@ namespace Peachpie.Library.Network
                             return new CURLResponse(await ProcessResponse(ctx, ch, (HttpWebResponse)webEx.Response), (HttpWebResponse)webEx.Response, ch);
 
                         case WebExceptionStatus.Timeout:
-                            return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, webEx);
+                            return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, exception);
                         case WebExceptionStatus.TrustFailure:
-                            return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, webEx);
+                            return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, exception);
                         default:
-                            return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, webEx);
+                            return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, exception);
                     }
                 }
                 else if (ex is ProtocolViolationException)
