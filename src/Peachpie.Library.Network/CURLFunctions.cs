@@ -233,7 +233,7 @@ namespace Peachpie.Library.Network
 
         static PhpArray CreateCookiePhpArray(CookieCollection cookies)
         {
-            return new PhpArray(CookiesToNetscapeStyle(cookies));
+            return (cookies != null ? new PhpArray(CookiesToNetscapeStyle(cookies)) : PhpArray.Empty);
         }
 
         static void AddCookies(CookieCollection from, CookieContainer container)
