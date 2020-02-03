@@ -19,11 +19,11 @@ namespace Pchp.Core
         readonly OrderedDictionary _locals;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        IntStringKey _name;
+        readonly IntStringKey _name;
 
         // TODO: cache ref to the value (avoid repetitious lookups to hashtable), check _locals.version (_locals.entries) did not change
 
-        //[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public PhpValue Value
         {
             get => _locals.GetValueOrNull(_name);
