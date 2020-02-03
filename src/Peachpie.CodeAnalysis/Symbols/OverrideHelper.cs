@@ -398,7 +398,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(a);
             Contract.ThrowIfNull(b);
 
-            if (a.ReturnType != b.ReturnType)
+            if (a.ReturnType != b.ReturnType || a.RefKind != b.RefKind)
             {
                 return false;
             }
