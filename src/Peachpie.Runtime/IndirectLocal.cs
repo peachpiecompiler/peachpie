@@ -21,13 +21,11 @@ namespace Pchp.Core
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         readonly IntStringKey _name;
 
-        // TODO: cache ref to the value (avoid repetitious lookups to hashtable), check _locals.version (_locals.entries) did not change
-
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public PhpValue Value
+        public object Value
         {
-            get => _locals.GetValueOrNull(_name);
-            set => _locals[_name] = value;
+            get => _locals.TryGetValue(_name, out var value) ? value.ToClr() : null;
+            //set => _locals[_name] = value;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -40,10 +38,10 @@ namespace Pchp.Core
         public PhpAlias EnsureAlias() => ValueRef.EnsureAlias();
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        string DisplayString => Value.DisplayString;
+        string DisplayString => _locals.GetValueOrNull(_name).DisplayString;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        string DebugTypeName => Value.DebugTypeName;
+        string DebugTypeName => _locals.GetValueOrNull(_name).DebugTypeName;
 
         public IndirectLocal(OrderedDictionary/*!*/locals, IntStringKey/*!*/name)
         {

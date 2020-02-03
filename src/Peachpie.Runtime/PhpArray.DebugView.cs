@@ -7,11 +7,12 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
-    [DebuggerDisplay("array(length = {Count})", Type = PhpTypeName)]
+    [DebuggerDisplay("array (length = {Count})", Type = PhpTypeName)]
     [DebuggerTypeProxy(typeof(PhpArrayDebugView))]
     [DebuggerNonUserCode, DebuggerStepThrough]
     partial class PhpArray
     {
+        [DebuggerNonUserCode]
         sealed class PhpArrayDebugView
         {
             readonly PhpArray _array;
@@ -22,61 +23,57 @@ namespace Pchp.Core
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public PhpHashEntryDebugView[] Items
+            public PhpArrayEntryDebugProxy[] Items
             {
                 get
                 {
-                    var result = new PhpHashEntryDebugView[_array.Count];
+                    var count = Math.Min(_array.Count, 100);
+                    if (count == 0)
+                    {
+                        return Array.Empty<PhpArrayEntryDebugProxy>();
+                    }
+
+                    //
+                    var result = new PhpArrayEntryDebugProxy[count];
 
                     int i = 0;
                     var enumerator = _array.GetFastEnumerator();
-                    while (enumerator.MoveNext())
+                    while (enumerator.MoveNext() && i < count)
                     {
-                        result[i++] = new PhpHashEntryDebugView(enumerator.CurrentKey, enumerator.CurrentValue);
+                        result[i++] = new PhpArrayEntryDebugProxy(_array, enumerator.CurrentKey, enumerator.CurrentValue);
                     }
-                    
+
                     return result;
                 }
             }
         }
 
-        [DebuggerDisplay("{_value.DisplayString,nq}", Name = "[{Key}]", Type = "{KeyType,nq} => {ValueType,nq}")]
-        sealed class PhpHashEntryDebugView
+        [DebuggerDisplay("{_value}", Name = "{_key}", Type = "{DebugTypeName,nq}")]
+        [DebuggerNonUserCode]
+        struct PhpArrayEntryDebugProxy
         {
-            [DebuggerDisplay("{Key}", Name = "Key", Type = "{KeyType,nq}")]
-            [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            public object Key { get { return _key.Object; } }
-
-            [DebuggerDisplay("{_value}", Name = "Value", Type = "{ValueType,nq}")]
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public PhpValue Value { get { return _value; } }
-
-            [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            readonly IntStringKey _key;
+            //[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+            //readonly PhpArray _array;
 
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             readonly PhpValue _value;
 
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            public string KeyType
-            {
-                get
-                {
-                    return _key.IsInteger ? PhpVariable.TypeNameInteger : PhpVariable.TypeNameString;
-                }
-            }
+            readonly IntStringKey _key;
 
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            public string ValueType
+            string DebugTypeName => _value.DebugTypeName;
+            //string DebugTypeName => $"{(_key.IsInteger ? PhpVariable.TypeNameInteger : PhpVariable.TypeNameString)} => {_value.DebugTypeName}";
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public object Value
             {
-                get
-                {
-                    return PhpVariable.GetTypeName(_value);
-                }
+                get => _value.ToClr();
             }
 
-            public PhpHashEntryDebugView(IntStringKey key, PhpValue value)
+            public PhpArrayEntryDebugProxy(PhpArray array, IntStringKey key, PhpValue value)
             {
+                //_array = array ?? throw new ArgumentNullException();
                 _key = key;
                 _value = value;
             }
