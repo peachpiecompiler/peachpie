@@ -22,7 +22,7 @@ namespace Pchp.Core
         readonly IntStringKey _name;
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public object Value
+        object DebugValue
         {
             get => _locals.TryGetValue(_name, out var value) ? value.ToClr() : null;
             //set => _locals[_name] = value;
