@@ -176,7 +176,12 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Performs a query on the database.
         /// </summary>
-        public static PhpValue mysqli_query(mysqli link, PhpString query, int resultmode = Constants.MYSQLI_STORE_RESULT) => link.query(query, resultmode);
+        public static PhpValue mysqli_query(mysqli link, PhpString query, int resultmode = Constants.MYSQLI_STORE_RESULT)
+        {
+            PhpException.ThrowIfArgumentNull(link, 1);
+
+            return link.query(query, resultmode);
+        }
 
         /// <summary>
         /// Returns the auto generated id used in the latest query.
