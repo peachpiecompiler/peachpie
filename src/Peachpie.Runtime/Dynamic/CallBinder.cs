@@ -104,7 +104,7 @@ namespace Pchp.Core.Dynamic
                 }
                 else
                 {
-                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, bound.IsStaticSyntax, lateStaticType: bound.TargetType);
+                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, bound.IsStaticSyntax, lateStaticType: bound.TargetType, classContext: bound.ClassContext);
                 }
             }
             else

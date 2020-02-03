@@ -148,8 +148,8 @@ namespace Pchp.Library.Database
         protected ResultResource(ConnectionResource/*!*/ connection, IDataReader/*!*/ reader, string/*!*/ name, bool convertTypes)
             : base(name)
         {
-            this.Reader = reader ?? throw new ArgumentNullException("reader");
-            this.Connection = connection ?? throw new ArgumentNullException("connection");
+            Reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            Connection = connection ?? throw new ArgumentNullException(nameof(connection));
 
             LoadData(convertTypes);
         }
@@ -166,11 +166,24 @@ namespace Pchp.Library.Database
 
             do
             {
+                int fieldsCount;
+                try
+                {
+                    fieldsCount = reader.FieldCount;
+                }
+                catch (Exception ex)
+                {
+                    // some DataReader implementations (i.e. SqliteDataReader)
+                    // throws an exception when there are no fields in the reader:
+                    Debug.WriteLine($"{reader.GetType().Name}.FieldCount: {ex.Message}");
+                    fieldsCount = 0;
+                }
+                
                 var result_set = new ResultSet()
                 {
                     Rows = new List<object[]>(),
-                    Names = GetNames(),
-                    DataTypes = GetDataTypes(),
+                    Names = GetNames(fieldsCount),
+                    DataTypes = GetDataTypes(fieldsCount),
                     RecordsAffected = reader.RecordsAffected,
                     CustomData = GetCustomData(),
                 };
@@ -211,10 +224,19 @@ namespace Pchp.Library.Database
         /// Retrieves column names from the reader.
         /// </summary>
         /// <returns>An array of column names.</returns>
-        protected virtual string[]/*!*/ GetNames()
+        protected virtual string[]/*!*/ GetNames(int fieldsCount)
         {
-            string[] names = new string[Reader.FieldCount];
-            for (int i = 0; i < Reader.FieldCount; i++)
+            if (fieldsCount == 0)
+            {
+                return Array.Empty<string>();
+            }
+            else if (fieldsCount < 0)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+            
+            var names = new string[fieldsCount];
+            for (int i = 0; i < fieldsCount; i++)
             {
                 names[i] = Reader.GetName(i);
             }
@@ -226,10 +248,19 @@ namespace Pchp.Library.Database
         /// Retrieves column type names from the reader.
         /// </summary>
         /// <returns>An array of column type names.</returns>
-        protected virtual string[]/*!*/ GetDataTypes()
+        protected virtual string[]/*!*/ GetDataTypes(int fieldsCount)
         {
-            string[] names = new string[Reader.FieldCount];
-            for (int i = 0; i < Reader.FieldCount; i++)
+            if (fieldsCount == 0)
+            {
+                return Array.Empty<string>();
+            }
+            else if (fieldsCount < 0)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+            
+            var names = new string[fieldsCount];
+            for (int i = 0; i < fieldsCount; i++)
             {
                 names[i] = Reader.GetDataTypeName(i);
             }

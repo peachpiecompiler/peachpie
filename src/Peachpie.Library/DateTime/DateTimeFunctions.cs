@@ -60,9 +60,13 @@ namespace Pchp.Library.DateTime
 
         public const string DATE_RFC3339 = @"Y-m-d\TH:i:sP";
 
-        public const string DATE_RSS = @"D, d M Y H:i:s T";
+        public const string DATE_RFC7231 = @"D, d M Y H:i:s \G\M\T";
 
-        public const string DATE_W3C = @"Y-m-d\TH:i:sO";
+        public const string DATE_RFC3339_EXTENDED = @"Y-m-d\TH:i:s.vP";
+        
+        public const string DATE_RSS = @"D, d M Y H:i:s O";
+
+        public const string DATE_W3C = @"Y-m-d\TH:i:sP";
 
         #endregion
 

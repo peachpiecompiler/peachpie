@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -155,6 +157,17 @@ namespace Pchp.Core
         /// Returns the object clone.
         /// </summary>
         object Clone();
+    }
+
+    /// <summary>
+    /// Provides explicit object behavior for <c>print_r</c> and <c>var_dump</c> implementations.
+    /// </summary>
+    public interface IPhpPrintable
+    {
+        /// <summary>
+        /// Returns properties to be printed.
+        /// </summary>
+        IEnumerable<KeyValuePair<string, PhpValue>> Properties { get; }
     }
 
     /// <summary>
@@ -409,9 +422,9 @@ namespace Pchp.Core
         /// <summary>
         /// Determines if given callable is syntactically valid.
         /// </summary>
-        public static bool IsValidCallback(IPhpCallable callable)
+        public static bool IsValidCallback(IPhpCallable? callable)
         {
-            PhpCallback tmp;
+            PhpCallback? tmp;
 
             return callable != null && ((tmp = callable as PhpCallback) == null || tmp.IsValid);
         }
@@ -471,7 +484,7 @@ namespace Pchp.Core
         /// <summary>
         /// In case value is a resource, gets its reference.
         /// </summary>
-        public static PhpResource AsResource(this PhpValue value)
+        public static PhpResource? AsResource(this PhpValue value)
         {
             return value.AsObject() as PhpResource;
         }
@@ -481,7 +494,7 @@ namespace Pchp.Core
         /// its instance is returned. Otherwise <c>null</c>.
         /// </summary>
         /// <remarks>Value is dereferenced if necessary.</remarks>
-        public static PhpArray ArrayOrNull(this PhpValue value) => AsArray(value);
+        public static PhpArray? ArrayOrNull(this PhpValue value) => AsArray(value);
 
         /// <summary>
         /// Alias to <see cref="ToStringOrNull(PhpValue)"/>.
@@ -504,7 +517,7 @@ namespace Pchp.Core
         /// its string representation is returned.
         /// Otherwise <c>null</c>.
         /// </summary>
-        public static byte[] ToBytesOrNull(this PhpValue value)
+        public static byte[]? ToBytesOrNull(this PhpValue value)
         {
             switch (value.TypeCode)
             {
@@ -520,7 +533,7 @@ namespace Pchp.Core
         /// its string representation is returned.
         /// Otherwise <c>null</c>.
         /// </summary>
-        public static byte[] ToBytesOrNull(this PhpValue value, Context ctx)
+        public static byte[]? ToBytesOrNull(this PhpValue value, Context ctx)
         {
             switch (value.TypeCode)
             {
@@ -544,7 +557,7 @@ namespace Pchp.Core
         /// <summary>
         /// In case the value contains a php string with binary data, gets array of bytes. Otherwise <c>null</c>.
         /// </summary>
-        public static byte[] AsBytesOrNull(this PhpValue value, Context ctx)
+        public static byte[]? AsBytesOrNull(this PhpValue value, Context ctx)
         {
             return (value.Object is PhpAlias alias ? alias.Value.Object : value.Object) is PhpString.Blob blob && blob.ContainsBinaryData
                 ? blob.ToBytes(ctx)
@@ -555,7 +568,7 @@ namespace Pchp.Core
         /// In case given value contains an array (<see cref="PhpArray"/>),
         /// it is returned. Otherwise <c>null</c>.
         /// </summary>
-        public static PhpArray AsArray(this PhpValue value)
+        public static PhpArray? AsArray(this PhpValue value)
         {
             return (value.Object is PhpAlias alias ? alias.Value.Object : value.Object) as PhpArray;
         }
@@ -564,7 +577,7 @@ namespace Pchp.Core
         /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
         /// Single-byte strings are decoded using <c>UTF-8</c>.
         /// </summary>
-        public static bool IsPhpArray(this PhpValue value, out PhpArray array) => (array = value.AsArray()) != null;
+        public static bool IsPhpArray(this PhpValue value, /*[MaybeNullWhen(false)]*/out PhpArray? array) => (array = value.AsArray()) != null; // TODO: STANDARD21
 
         /// <summary>
         /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
@@ -613,7 +626,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating the variable is Unicode string value.
         /// </summary>
-        public static bool IsUnicodeString(this PhpValue value, out string @string)
+        public static bool IsUnicodeString(this PhpValue value, /*[MaybeNullWhen(false)]*/out string? @string)
         {
             switch (value.TypeCode)
             {
@@ -636,7 +649,7 @@ namespace Pchp.Core
                     return value.Alias.Value.IsUnicodeString(out @string);
 
                 default:
-                    @string = default;
+                    @string = null;
                     return false;
             }
         }
@@ -669,7 +682,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias:
                     return IsDouble(value.Alias.Value, out d);
                 default:
-                    d = default(double);
+                    d = default;
                     return false;
             }
         }

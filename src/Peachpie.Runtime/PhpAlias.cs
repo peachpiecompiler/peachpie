@@ -19,7 +19,7 @@ namespace Pchp.Core
         #region Fields
 
         /// <summary>
-        /// Gets or sets the underlaying value.
+        /// Gets or sets the underlying value.
         /// </summary>
         /// <remarks>The field is not wrapped into a property, some internals need to access the raw field.</remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -73,13 +73,13 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Ensures the underlaying value is an object and gets its instance.
+        /// Ensures the underlying value is an object and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
         public object EnsureObject() => Value.EnsureObject();
 
         /// <summary>
-        /// Ensures the underlaying value is an array and gets its instance.
+        /// Ensures the underlying value is an array and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
         public IPhpArray EnsureArray() => Value.EnsureArray();

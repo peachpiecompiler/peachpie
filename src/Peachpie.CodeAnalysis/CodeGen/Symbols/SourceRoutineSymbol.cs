@@ -42,32 +42,38 @@ namespace Pchp.CodeAnalysis.Symbols
                 : null;
         }
 
-        /// <summary>
-        /// Gets place of PHP <c>$this</c> variable.
-        /// </summary>
-        public virtual IPlace GetPhpThisVariablePlace(PEModuleBuilder module = null)
+        internal virtual IPlace GetPhpThisVariablePlaceWithoutGenerator(PEModuleBuilder module = null)
         {
             var thisPlace = GetThisPlace();
             if (thisPlace != null)
             {
-                if (this.IsGeneratorMethod())
-                {
-                    // $this ~ arg1
-                    thisPlace = new ArgPlace(thisPlace.Type, 1);
-                }
-                else if (this.ContainingType.IsTraitType())
+                if (this.ContainingType.IsTraitType())
                 {
                     // $this ~ this.<>this
-                    thisPlace = new FieldPlace(thisPlace, ((SourceTraitTypeSymbol)this.ContainingType).RealThisField, module);
+                    return new FieldPlace(thisPlace, ((SourceTraitTypeSymbol)this.ContainingType).RealThisField, module);
                 }
+            }
 
-                //
-                return thisPlace;
-            }
-            else
+            //
+            return thisPlace;
+        }
+
+        /// <summary>
+        /// Gets place of PHP <c>$this</c> variable.
+        /// </summary>
+        public IPlace GetPhpThisVariablePlace(PEModuleBuilder module = null)
+        {
+            var thisPlace = GetPhpThisVariablePlaceWithoutGenerator(module);
+
+            if (this.IsGeneratorMethod())
             {
-                return null;
+                // $this ~ arg1
+                return thisPlace != null
+                    ? new ArgPlace(thisPlace.Type, 1)
+                    : null;
             }
+
+            return thisPlace;
         }
 
         /// <summary>
@@ -222,7 +228,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                 // {field} = new Func<Context, PhpValue>( {func} )
                                 cg.Builder.EmitNullConstant(); // null
                                 cg.EmitOpCode(ILOpCode.Ldftn); // method
-                                cg.Builder.EmitToken(module.Translate(funcsymbol, null, cg.Diagnostics, false), null, cg.Diagnostics); // !! needDeclaration: false
+                                cg.EmitSymbolToken(funcsymbol, null);
                                 cg.EmitCall(ILOpCode.Newobj, func_ctor);
                             }
                             fldplace.EmitStore(cg.Builder);
@@ -252,14 +258,18 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(this.IsGeneratorMethod());
 
             var genSymbol = new SourceGeneratorSymbol(this);
+            //var genConstructed = (genSymbol.ContainingType is SourceTraitTypeSymbol st)
+            //    ? genSymbol.AsMember(st.Construct(st.TypeArguments))
+            //    : genSymbol;
+
             var il = cg.Builder;
+            var lambda = this as SourceLambdaSymbol;
 
             /* Template:
-             * return BuildGenerator( <ctx>, this, new PhpArray(){ p1, p2, ... }, new GeneratorStateMachineDelegate((IntPtr)<genSymbol>), (RuntimeMethodHandle)this )
+             * return BuildGenerator( <ctx>, new PhpArray(){ p1, p2, ... }, new GeneratorStateMachineDelegate((IntPtr)<genSymbol>), (RuntimeMethodHandle)this )
              */
 
             cg.EmitLoadContext(); // ctx for generator
-            cg.EmitThisOrNull();  // @this for generator
 
             // new PhpArray for generator's locals
             cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
@@ -279,19 +289,37 @@ namespace Pchp.CodeAnalysis.Symbols
             cg.Builder.EmitNullConstant(); // null
             cg.EmitOpCode(ILOpCode.Ldftn); // method
             cg.EmitSymbolToken(genSymbol, null);
+
             cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
 
             // handleof(this)
             cg.EmitLoadToken(this, null);
 
             // create generator object via Operators factory method
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle);
 
-            // .UseDynamicScope( scope ) : Generator
-            if (this is SourceLambdaSymbol lambda)
+            // .SetGeneratorThis( object ) : Generator
+            if (!this.IsStatic || (lambda != null && lambda.UseThis))
+            {
+                GetPhpThisVariablePlaceWithoutGenerator(cg.Module).EmitLoad(cg.Builder);
+                cg.EmitCastClass(cg.DeclaringCompilation.GetSpecialType(SpecialType.System_Object));
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorThis_Generator_Object)
+                    .Expect(cg.CoreTypes.Generator);
+            }
+
+            // .SetGeneratorLazyStatic( PhpTypeInfo ) : Generator
+            if ((this.Flags & RoutineFlags.UsesLateStatic) != 0 && this.IsStatic)
+            {
+                cg.EmitLoadStaticPhpTypeInfo();
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorLazyStatic_Generator_PhpTypeInfo)
+                    .Expect(cg.CoreTypes.Generator);
+            }
+
+            // .SetGeneratorDynamicScope( scope ) : Generator
+            if (lambda != null)
             {
                 lambda.GetCallerTypePlace().EmitLoad(cg.Builder); // RuntimeTypeContext
-                cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("UseDynamicScope", cg.CoreTypes.Generator, cg.CoreTypes.RuntimeTypeHandle))
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorDynamicScope_Generator_RuntimeTypeHandle)
                     .Expect(cg.CoreTypes.Generator);
             }
 
@@ -311,7 +339,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.DeclaringCompilation.Options.OptimizationLevel,
                 cg.EmitPdbSequencePoints,
                 this.ContainingType,
-                contextPlace: null,
+                contextPlace: cg.ContextPlaceOpt,
                 thisPlace: null,
                 routine: this, // needed to support static variables (they need enclosing routine while binding)
                 locals: new LocalPlace(generatorsLocals),
@@ -520,7 +548,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return base.GetThisPlace();
         }
 
-        public override IPlace GetPhpThisVariablePlace(PEModuleBuilder module = null)
+        internal override IPlace GetPhpThisVariablePlaceWithoutGenerator(PEModuleBuilder module = null)
         {
             return GetThisPlace();
         }

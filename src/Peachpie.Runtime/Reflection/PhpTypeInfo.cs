@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Pchp.Core.Dynamic;
+using Peachpie.Runtime.Dynamic;
 
 namespace Pchp.Core.Reflection
 {
@@ -80,35 +82,10 @@ namespace Pchp.Core.Reflection
         public TObjectCreator Creator => _lazyCreator ?? BuildCreator();
 
         /// <summary>
-        /// Gets value indicating the type can be publically instantiated.
+        /// Gets value indicating the type can be publicly instantiated.
         /// If <c>true</c>, the class is not-abstract, not-trait, not-interface and has a public constructor.
         /// </summary>
         public bool isInstantiable => this.Creator != null /*ensures _flags initialized */ && (_flags & Flags.InstantiationNotAllowed) == 0;
-
-        /// <summary>
-        /// Creates instance of the class without invoking its constructor.
-        /// </summary>
-        public object GetUninitializedInstance(Context ctx)
-        {
-            if (_lazyEmptyCreator == null)
-            {
-                if (TypeMembersUtils.TryBuildCreateEmptyObjectFunc(this, out var activator))
-                {
-                    _lazyEmptyCreator = activator;
-                }
-                else
-                {
-                    _lazyEmptyCreator = (_ctx) =>
-                    {
-                        Debug.Fail(string.Format(Resources.ErrResources.construct_not_supported, this.Name));
-                        return null;
-                    };
-                }
-            }
-
-            return _lazyEmptyCreator(ctx);
-        }
-        Func<Context, object> _lazyEmptyCreator;
 
         TObjectCreator Creator_private => _lazyCreatorPrivate ?? BuildCreatorPrivate();
         TObjectCreator Creator_protected => _lazyCreatorProtected ?? BuildCreatorProtected();
@@ -289,26 +266,34 @@ namespace Pchp.Core.Reflection
         /// </summary>
         static string ResolvePhpTypeName(Type tinfo, PhpTypeAttribute attr)
         {
-            string name = null;
+            string name;
 
-            if (attr != null)
+            switch (attr != null ? attr.TypeNameAs : PhpTypeAttribute.PhpTypeName.Default)
             {
-                name = attr.TypeNameAs == PhpTypeAttribute.PhpTypeName.NameOnly
-                    ? tinfo.Name
-                    : attr.ExplicitTypeName;
+                case PhpTypeAttribute.PhpTypeName.Default:
+                    // CLR type
+                    name = tinfo.FullName       // full PHP type name instead of CLR type name
+                       .Replace('.', '\\')      // namespace separator
+                       .Replace('+', '\\');     // nested type separator
+                    break;
+
+                case PhpTypeAttribute.PhpTypeName.NameOnly:
+                    name = tinfo.Name;
+                    break;
+                        
+                case PhpTypeAttribute.PhpTypeName.CustomName:
+                    name = attr.ExplicitTypeName ?? tinfo.Name;
+                    break;
+
+                default:
+                    throw new ArgumentException();
             }
 
-            //
-            if (name == null)
-            {
-                // CLR type
-                name = tinfo.FullName       // full PHP type name instead of CLR type name
-                   .Replace('.', '\\')      // namespace separator
-                   .Replace('+', '\\');     // nested type separator
-            }
+            Debug.Assert(name != null);
+            Debug.Assert(name.Length != 0);
 
-            // remove suffixed indexes (after a special metadata character)
-            var idx = name.IndexOfAny(_metadataSeparators);
+            // remove suffixed indexes if any (after a special metadata character)
+            var idx = name.IndexOfAny(s_metadataSeparators);
             if (idx >= 0)
             {
                 name = name.Remove(idx);
@@ -326,7 +311,7 @@ namespace Pchp.Core.Reflection
         /// Array of characters used to separate class name from its metadata indexes (order, generics, etc).
         /// These characters and suffixed text has to be ignored.
         /// </summary>
-        private static readonly char[] _metadataSeparators = new[] { '#', '@', '`', '<', '?' };
+        private static readonly char[] s_metadataSeparators = new[] { '#', '`', '<', '?' };
 
         #region Reflection
 
@@ -402,7 +387,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// RW lock used ot access underlaying cache.
         /// </summary>
-        readonly static ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        readonly static ReaderWriterLockSlim s_lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         /// <summary>
         /// Gets <see cref="PhpTypeInfo"/> of given <typeparamref name="TType"/>.
@@ -424,26 +409,26 @@ namespace Pchp.Core.Reflection
 
             if (type.IsByRef)
             {
-                type = type.GetElementType();
+                type = type.GetElementType() ?? throw new InvalidOperationException();
             }
 
             PhpTypeInfo result = null;
             var handle = type.TypeHandle;
 
             // lookup cache first
-            _lock.EnterUpgradeableReadLock();
+            s_lock.EnterUpgradeableReadLock();
             try
             {
                 if (!s_cache.TryGetValue(handle, out result))
                 {
-                    _lock.EnterWriteLock();
+                    s_lock.EnterWriteLock();
                     try
                     {
                         if (s_cache.TryGetValue(handle, out result))
                         {
                             // double checked lock
                         }
-                        else if (type.IsGenericTypeDefinition)
+                        else if (type.IsGenericTypeDefinition) // TODO: or type.IsByRefLike - netstandard2.1
                         {
                             // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
                             // just instantiate the type info and cache the result
@@ -462,13 +447,13 @@ namespace Pchp.Core.Reflection
                     }
                     finally
                     {
-                        _lock.ExitWriteLock();
+                        s_lock.ExitWriteLock();
                     }
                 }
             }
             finally
             {
-                _lock.ExitUpgradeableReadLock();
+                s_lock.ExitUpgradeableReadLock();
             }
 
             //
@@ -490,14 +475,14 @@ namespace Pchp.Core.Reflection
             }
 
             // lookup cache first
-            _lock.EnterReadLock();
+            s_lock.EnterReadLock();
             try
             {
                 s_cache.TryGetValue(handle, out result);
             }
             finally
             {
-                _lock.ExitReadLock();
+                s_lock.ExitReadLock();
             }
 
             return result ?? GetPhpTypeInfo(Type.GetTypeFromHandle(handle));
@@ -558,7 +543,141 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the type has been declared in the context.
         /// </summary>
-        public static bool IsDeclared(this PhpTypeInfo phptype, Context ctx) => (phptype.IsUserType && ctx.IsUserTypeDeclared(phptype)) || phptype.Index < 0/*app-type*/;
+        public static bool IsDeclared(this PhpTypeInfo phptype, Context ctx) => !phptype.IsUserType || ctx.IsUserTypeDeclared(phptype);
+
+        /// <summary>
+        /// Cached functions that creates an empty instance (instance of a class without calling its PHP constructor).
+        /// </summary>
+        readonly static Dictionary<PhpTypeInfo, Func<Context, object>> s_emptyObjectActivators = new Dictionary<PhpTypeInfo, Func<Context, object>>();
+
+        /// <summary>
+        /// Creates instance of the class without invoking its constructor.
+        /// </summary>
+        public static object CreateUninitializedInstance(this PhpTypeInfo phptype, Context ctx)
+        {
+            Func<Context, object> activator;
+
+            s_lock.EnterUpgradeableReadLock();
+            try
+            {
+                if (!s_emptyObjectActivators.TryGetValue(phptype, out activator))
+                {
+                    s_lock.EnterWriteLock();
+                    try
+                    {
+                        if (!s_emptyObjectActivators.TryGetValue(phptype, out activator) &&
+                            !TryBuildCreateEmptyObjectFunc(phptype, out activator))
+                        {
+                            activator = (_ctx) =>
+                            {
+                                throw new NotSupportedException();
+                            };
+                        }
+
+                        s_emptyObjectActivators[phptype] = activator;
+                    }
+                    finally
+                    {
+                        s_lock.ExitWriteLock();
+                    }
+                }
+            }
+            finally
+            {
+                s_lock.ExitUpgradeableReadLock();
+            }
+
+            return activator(ctx);
+        }
+
+        /// <summary>
+        /// Builds delegate that creates uninitialized class instance for purposes of deserialization and reflection.
+        /// </summary>
+        static bool TryBuildCreateEmptyObjectFunc(PhpTypeInfo tinfo, out Func<Context, object> activator)
+        {
+            Debug.Assert(tinfo != null);
+
+            activator = null;
+
+            if (tinfo.IsInterface)
+            {
+                // cannot be instantiated
+            }
+            else if (tinfo.Type.IsAbstract)
+            {
+                // abstract class,
+                // generate a non-abstract class that implements this one:
+
+                var dummytype = EmitHelpers.CreatDefaultAbstractClassImplementation(tinfo.Type, out var ctor);
+                activator = _ctx => ctor.Invoke(new object[] { _ctx });
+            }
+            else if (tinfo.IsTrait)
+            {
+                // trait class, can be instantiated using following (and the only) .ctor:
+                // .ctor( Context, TSelf )
+
+                if (tinfo.Type.IsGenericTypeDefinition)
+                {
+                    // trait class must be constructed first!
+                    throw new NotSupportedException("Trait type is not constructed, cannot be created.");
+                    // tinfo = tinfo.Type.MakeGenericType(typeof(object));
+                }
+                else
+                {
+                    foreach (var c in tinfo.Type.GetConstructors())
+                    {
+                        // there is only one .ctor:
+                        var ps = c.GetParameters();
+                        if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(object) && c.IsPublic)
+                        {
+                            activator = _ctx => c.Invoke(new[] { _ctx, new object(), });
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // regular instantiable class
+
+                foreach (var c in tinfo.Type.DeclaredConstructors)
+                {
+                    if (c.IsStatic || c.IsPrivate || c.IsPhpHidden())
+                    {
+                        continue;
+                    }
+
+                    var ps = c.GetParameters();
+
+                    switch (ps.Length)
+                    {
+                        // .ctor()
+                        case 0:
+                            activator = (_ctx) => c.Invoke(Array.Empty<object>());
+                            break;
+
+                        // .ctor(Context)
+                        case 1 when ps[0].IsContextParameter():
+                            activator = (_ctx) => c.Invoke(new object[] { _ctx });
+                            break;
+
+                        // [PhpFieldsOnly] .ctor(Context, Dummy)
+                        case 2 when ps[0].IsContextParameter() && ps[1].ParameterType == typeof(DummyFieldsOnlyCtor):
+                            activator = (_ctx) => c.Invoke(new object[] { _ctx, default(DummyFieldsOnlyCtor) });
+                            break;
+                    }
+
+                    //
+                    if (activator != null && c.IsPhpFieldsOnlyCtor())
+                    {
+                        // best candidate
+                        break;
+                    }
+                }
+            }
+
+            //
+            return activator != null;
+        }
     }
 
     /// <summary>

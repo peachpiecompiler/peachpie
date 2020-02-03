@@ -163,7 +163,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Available only within source routines.
         /// In case no $this is available, nothing is emitted and function returns <c>null</c> reference.
         /// </summary>
-        public TypeSymbol EmitPhpThis()
+        TypeSymbol EmitPhpThis()
         {
             if (GeneratorStateMachineMethod != null)
             {
@@ -172,6 +172,13 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (Routine != null)
             {
+                if (Routine.IsGeneratorMethod())
+                {
+                    // but GeneratorStateMachineMethod == null; We're not emitting SM yet
+                    Debug.Fail("$this not resolved");
+                }
+
+                //
                 var thisplace = Routine.GetPhpThisVariablePlace(this.Module);
                 if (thisplace != null)
                 {
@@ -662,7 +669,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (GeneratorStateMachineMethod != null)
                 {
-                    // TODO: GeneratorStateMachineMethod.ThisParameter or ContainingType, but when in lambda we don't have containin type :/
+                    this.EmitGeneratorInstance(); // LOAD Generator
+                    return this.EmitCall(ILOpCode.Call, CoreMethods.Operators.GetGeneratorLazyStatic_Generator)
+                        .Expect(CoreTypes.PhpTypeInfo);
                 }
 
                 if (Routine is SourceLambdaSymbol lambda)
@@ -2806,7 +2815,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         static bool TryConvertToIntKey(string key, out int ikey)
         {
-            ikey = default(int);
+            ikey = default;
 
             if (string.IsNullOrEmpty(key))
             {
@@ -2815,11 +2824,16 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // See Pchp.Core.Convert.StringToArrayKey:
 
-            if (key[0] == '0' ||
-                (key[0] == '-' && (key.Length == 1 || key[1] == '0')))
+            if (key.Length > 1)
             {
-                return false;
+                // following are treated as string keys:
+                // "-0..."
+                // "-0"
+                // "0..."
+                if (key[0] == '0') return false;
+                if (key[0] == '-' && key[1] == '0') return false;
             }
+
 
             return int.TryParse(key, out ikey);
         }
@@ -3719,7 +3733,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, MethodSymbol symbol, SyntaxNode syntaxNode)
         {
-            il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics, true), syntaxNode, diagnostics);
+            il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics, needDeclaration: false), syntaxNode, diagnostics);
         }
 
         public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, FieldSymbol symbol, SyntaxNode syntaxNode)

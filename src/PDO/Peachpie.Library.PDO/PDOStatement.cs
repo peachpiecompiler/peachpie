@@ -830,10 +830,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Raises simple "HY000" error.
         /// </summary>
-        private protected void RaiseError(string message)
-        {
-            PDO.RaiseError(null, "HY000", message);
-        }
+        private protected void RaiseError(string message) => PDO.RaiseError(message);
 
         private protected bool StoreParameter(ref Dictionary<IntStringKey, BoundParam> dict, IntStringKey parameter, PhpValue variable, PARAM? type)
         {
@@ -883,7 +880,7 @@ namespace Peachpie.Library.PDO
             {
                 foreach (var pair in bound_params)
                 {
-                    // unnamedand rewritten parameters are mapped to the real name
+                    // unnamed and rewritten parameters are mapped to the real name
                     var key = bound_param_map != null && bound_param_map.TryGetValue(pair.Key, out var newkey)
                         ? newkey
                         : pair.Key;

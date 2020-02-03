@@ -345,7 +345,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 BindTargetToMethod_Object_RoutineInfo = ct.Operators.Method("BindTargetToMethod", ct.Object, ct.RoutineInfo);
 
-                BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.PhpArray, ct.GeneratorStateMachineDelegate, ct.RuntimeMethodHandle);
+                BuildGenerator_Context_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle = ct.Operators.Method("BuildGenerator", ct.Context, ct.PhpArray, ct.PhpArray, ct.GeneratorStateMachineDelegate, ct.RuntimeMethodHandle);
+                SetGeneratorDynamicScope_Generator_RuntimeTypeHandle = ct.Operators.Method("SetGeneratorDynamicScope", ct.Generator, ct.RuntimeTypeHandle);
+                SetGeneratorThis_Generator_Object = ct.Operators.Method("SetGeneratorThis", ct.Generator, ct.Object);
+                SetGeneratorLazyStatic_Generator_PhpTypeInfo = ct.Operators.Method("SetGeneratorLazyStatic", ct.Generator, ct.PhpTypeInfo);
+                GetGeneratorLazyStatic_Generator = ct.Operators.Method("GetGeneratorLazyStatic", ct.Generator);
                 GetGeneratorState_Generator = ct.Operators.Method("GetGeneratorState", ct.Generator);
                 SetGeneratorState_Generator_int = ct.Operators.Method("SetGeneratorState", ct.Generator, ct.Int32);
                 HandleGeneratorException_Generator = ct.Operators.Method("HandleGeneratorException", ct.Generator);
@@ -444,7 +448,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 BindTargetToMethod_Object_RoutineInfo,
 
-                BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle,
+                // Generator
+                BuildGenerator_Context_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle,
+                SetGeneratorDynamicScope_Generator_RuntimeTypeHandle, SetGeneratorThis_Generator_Object,
+                SetGeneratorLazyStatic_Generator_PhpTypeInfo, GetGeneratorLazyStatic_Generator,
                 GetGeneratorState_Generator, SetGeneratorState_Generator_int, HandleGeneratorException_Generator,
                 SetGeneratorCurrent_Generator_PhpValue, SetGeneratorCurrent_Generator_PhpValue_PhpValue, SetGeneratorCurrentFrom_Generator_PhpValue_PhpValue,
                 GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,

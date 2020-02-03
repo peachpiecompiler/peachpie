@@ -142,20 +142,31 @@ namespace Pchp.Library.Reflection
         [return: NotNull]
         public PhpArray getDefaultProperties(Context ctx)
         {
-            if (_tinfo.isInstantiable)
+            var tinfo = _tinfo;
+
+            if (tinfo.IsInterface)
             {
-                var inst = _tinfo.GetUninitializedInstance(ctx);
-                if (inst != null)
+                // interfaces cannot have properties:
+                return PhpArray.NewEmpty();
+            }
+            else if (tinfo.IsTrait && tinfo.Type.IsGenericTypeDefinition)
+            {
+                // construct the generic trait class with <object>
+                tinfo = tinfo.Type.MakeGenericType(typeof(object)).GetPhpTypeInfo();
+            }
+
+            // we have to instantiate the type to get the initial values:
+            var inst = tinfo.CreateUninitializedInstance(ctx);
+            if (inst != null)
+            {
+                var array = new PhpArray();
+
+                foreach (var p in tinfo.GetDeclaredProperties())
                 {
-                    var array = new PhpArray();
-
-                    foreach (var p in TypeMembersUtils.GetDeclaredProperties(_tinfo))
-                    {
-                        array[p.PropertyName] = p.GetValue(ctx, inst);
-                    }
-
-                    return array;
+                    array[p.PropertyName] = p.GetValue(ctx, inst);
                 }
+
+                return array;
             }
 
             //
@@ -473,7 +484,7 @@ namespace Pchp.Library.Reflection
         public bool isUserDefined() => _tinfo.IsUserType;
         public object newInstance(Context ctx, params PhpValue[] args) => _tinfo.Creator(ctx, args);
         public object newInstanceArgs(Context ctx, PhpArray args) => newInstance(ctx, args.GetValues());
-        public object newInstanceWithoutConstructor(Context ctx) => _tinfo.GetUninitializedInstance(ctx);
+        public object newInstanceWithoutConstructor(Context ctx) => _tinfo.CreateUninitializedInstance(ctx);
         public void setStaticPropertyValue(string name, PhpValue value) { throw new NotImplementedException(); }
 
         #region Reflector

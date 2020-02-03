@@ -9,7 +9,7 @@ namespace Peachpie.Library.PDO
     partial class PDO
     {
         /// <summary>
-        /// oracle interop settings
+        /// "oracle" NULL handling
         /// </summary>
         [PhpHidden]
         public enum PDO_NULL

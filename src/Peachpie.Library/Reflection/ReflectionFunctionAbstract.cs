@@ -128,7 +128,7 @@ namespace Pchp.Library.Reflection
         }
         public virtual ReflectionType getReturnType()
         {
-            return ResolveReturnType(out var t, out var nullable) ? new ReflectionNamedType(t, nullable) : null;
+            return ResolveReturnType(out var t, out var notNullFlag) ? new ReflectionNamedType(t, notNullFlag) : null;
         }
         public string getShortName()
         {

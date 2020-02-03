@@ -1037,7 +1037,7 @@ namespace Pchp.Library
                     object obj;
                     if (tinfo != null)
                     {
-                        obj = tinfo.GetUninitializedInstance(_ctx);
+                        obj = tinfo.CreateUninitializedInstance(_ctx);
                         if (obj == null)
                         {
                             throw new ArgumentException(string.Format(LibResources.class_instantiation_failed, class_name));

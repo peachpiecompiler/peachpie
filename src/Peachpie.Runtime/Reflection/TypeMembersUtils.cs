@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Pchp.Core.Dynamic;
 using Pchp.Core.Utilities;
+using Peachpie.Runtime.Dynamic;
 
 namespace Pchp.Core.Reflection
 {
@@ -248,54 +250,6 @@ namespace Pchp.Core.Reflection
             {
                 return " * " + p.PropertyName;
             }
-        }
-
-        /// <summary>
-        /// Builds delegate that creates uninitialized class instance for purposes of deserialization.
-        /// </summary>
-        internal static bool TryBuildCreateEmptyObjectFunc(PhpTypeInfo tinfo, out Func<Context, object> activator)
-        {
-            Debug.Assert(tinfo != null);
-
-            Func<Context, object> candidate = null;
-
-            if (!tinfo.IsInterface && !tinfo.IsTrait && !tinfo.Type.IsAbstract)
-            {
-                var ctors = tinfo.Type.DeclaredConstructors;
-
-                foreach (var c in ctors)
-                {
-                    if (c.IsStatic || c.IsPrivate || c.IsPhpHidden())
-                    {
-                        continue;
-                    }
-
-                    var ps = c.GetParameters();
-
-                    // .ctor()
-                    if (ps.Length == 0)
-                        candidate = (_ctx) => c.Invoke(Array.Empty<object>());
-
-                    // .ctor(Context)
-                    if (ps.Length == 1 && ps[0].IsContextParameter())
-                        candidate = (_ctx) => c.Invoke(new object[] { _ctx });
-
-                    // [PhpFieldsOnly] .ctor(Context, Dummy)
-                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(DummyFieldsOnlyCtor))
-                        candidate = (_ctx) => c.Invoke(new object[] { _ctx, default(DummyFieldsOnlyCtor) });
-
-                    //
-                    if (c.IsPhpFieldsOnlyCtor())
-                    {
-                        Debug.Assert(candidate != null);
-                        break; // candidate found
-                    }
-                }
-            }
-
-            //
-            activator = candidate;
-            return activator != null;
         }
 
         /// <summary>

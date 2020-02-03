@@ -2079,8 +2079,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
 
-            if (x.Access.IsEnsure) x.TypeRefMask = TypeRefMask.AnyType;
-            else x.TypeRefMask = TypeRefMask.AnyType.WithRefFlag; // result might be a reference
+            x.TypeRefMask =
+                x.Access.IsReadRef ? TypeRefMask.AnyType.WithRefFlag :
+                x.Access.IsEnsure ? TypeRefMask.AnyType : // object|array ?
+                TypeRefMask.AnyType.WithRefFlag; // result might be a anything (including a reference?)
 
             return default;
         }
