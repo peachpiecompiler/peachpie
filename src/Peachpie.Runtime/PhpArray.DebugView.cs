@@ -48,7 +48,7 @@ namespace Pchp.Core
             }
         }
 
-        [DebuggerDisplay("{_value}", Name = "{_key}", Type = "{DebugTypeName,nq}")]
+        [DebuggerDisplay("{Value}", Name = "{_key}", Type = "{DebugTypeName,nq}")]
         [DebuggerNonUserCode]
         struct PhpArrayEntryDebugProxy
         {
