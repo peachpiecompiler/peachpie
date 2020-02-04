@@ -884,7 +884,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Load HTML DOM from given <paramref name="stream"/>.
         /// </summary>
-        private bool loadHTML(Context ctx, TextReader stream, string filename, int options = 0)
+        private protected bool loadHTML(Context ctx, TextReader stream, string filename, int options = 0)
         {
             HtmlAgilityPack.HtmlDocument htmlDoc = new HtmlAgilityPack.HtmlDocument();
 
