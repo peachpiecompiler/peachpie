@@ -104,7 +104,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 Debug.Assert(t != method.ContainingType); // cannot override a member on the same type
 
-                foreach (var m in t.GetMembers(method.Name).OfType<MethodSymbol>())
+                foreach (var m in t.GetMembersByPhpName(method.Name).OfType<MethodSymbol>())
                 {
                     if (overriden.Contains(m))
                     {
@@ -365,7 +365,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(basemethod);
 
             //
-            if (method.Name.EqualsOrdinalIgnoreCase(basemethod.Name) == false ||
+            if (string.Equals(method.Name, basemethod.Name, StringComparison.InvariantCultureIgnoreCase) == false ||
                 basemethod.IsOverrideable() == false ||
                 method.CanOverride() == false)
             {
