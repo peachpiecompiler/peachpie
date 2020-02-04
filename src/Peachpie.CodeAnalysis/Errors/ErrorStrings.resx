@@ -308,8 +308,8 @@
   <data name="WRN_CloneNonObject" xml:space="preserve">
     <value>Cloning of non-object: {0}.</value>
   </data>
-  <data name="INF_ClassNameWrongCase" xml:space="preserve">
-    <value>Wrong case in class name '{0}', expected '{1}'.</value>
+  <data name="INF_TypeNameCaseMismatch" xml:space="preserve">
+    <value>Name '{0}' does not match the expected name '{1}', letter casing mismatch.</value>
   </data>
   <data name="WRN_ForeachNonIterable" xml:space="preserve">
     <value>Using non-iterable type in foreach: {0}.</value>
@@ -368,5 +368,8 @@
   </data>
   <data name="ERR_CompileCancelled" xml:space="preserve">
     <value>Compilation cancelled by user</value>
+  </data>
+  <data name="INF_OverrideNameCaseMismatch" xml:space="preserve">
+    <value>Overriden function name '{0}' does not match it's parent name '{1}', letter casing mismatch.</value>
   </data>
 </root>

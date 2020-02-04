@@ -149,6 +149,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return false;
         }
 
+        /// <summary>
+        /// Determines if both identifiers differ only in casing.
+        /// </summary>
+        static bool IsLetterCasingMismatch(string str1, string str2)
+        {
+            return str1 != str2 && string.Equals(str1, str2, StringComparison.InvariantCultureIgnoreCase);
+        }
+
         private void CheckParams()
         {
             // Check the compatibility of type hints with PhpDoc, if both exist
@@ -348,12 +356,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                 if (ct.Type.Kind != SymbolKind.ErrorType)
                 {
-                    string symbolName = ct.Type.Name;
+                    var symbolName = ct.Type.Name;
 
-                    if (refName != symbolName && refName.Equals(symbolName, StringComparison.InvariantCultureIgnoreCase))
+                    if (IsLetterCasingMismatch(refName, symbolName))
                     {
                         // Wrong class name case
-                        _diagnostics.Add(_routine, typeRef.PhpSyntax, ErrorCode.INF_ClassNameWrongCase, refName, symbolName);
+                        _diagnostics.Add(_routine, typeRef.PhpSyntax, ErrorCode.INF_TypeNameCaseMismatch, refName, symbolName);
                     }
                 }
             }
