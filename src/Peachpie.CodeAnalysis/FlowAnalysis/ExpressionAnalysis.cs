@@ -22,9 +22,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Visits single expressions and project transformations to flow state.
     /// </summary>
-    internal class ExpressionAnalysis<T> : AnalysisWalker<T>
+    internal class ExpressionAnalysis<T> : AnalysisWalker<FlowState, T>
     {
         #region Fields & Properties
+
+        /// <summary>
+        /// The worklist to be used to enqueue next blocks.
+        /// </summary>
+        internal Worklist<BoundBlock> Worklist { get; }
 
         /// <summary>
         /// Gets model for symbols resolution.
@@ -36,6 +41,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Reference to corresponding source routine.
         /// </summary>
         protected SourceRoutineSymbol Routine => State.Routine;
+
+        /// <summary>
+        /// Gets current type context for type masks resolving.
+        /// </summary>
+        internal TypeRefContext TypeCtx => State.TypeRefContext;
 
         protected PhpCompilation DeclaringCompilation => _model.Compilation;
 
@@ -134,15 +144,173 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         protected OverloadsList.VisibilityScope VisibilityScope => OverloadsList.VisibilityScope.Create(TypeCtx.SelfType, Routine);
 
+        protected void PingSubscribers(ExitBlock exit)
+        {
+            if (exit != null)
+            {
+                bool wasNotAnalysed = false;
+                if (State.Routine?.IsReturnAnalysed == false)
+                {
+                    wasNotAnalysed = true;
+                    State.Routine.IsReturnAnalysed = true;
+                }
+
+                // Ping the subscribers either if the return type has changed or
+                // it is the first time the analysis reached the routine exit
+                var rtype = State.GetReturnType();
+                if (rtype != exit._lastReturnTypeMask || wasNotAnalysed)
+                {
+                    exit._lastReturnTypeMask = rtype;
+                    var subscribers = exit.Subscribers;
+                    if (subscribers.Count != 0)
+                    {
+                        lock (subscribers)
+                        {
+                            foreach (var subscriber in subscribers)
+                            {
+                                Worklist.PingReturnUpdate(exit, subscriber);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a double and nothing else.
+        /// </summary>
+        protected bool IsDoubleOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && this.TypeCtx.IsDouble(tmask);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a double and nothing else.
+        /// </summary>
+        protected bool IsDoubleOnly(BoundExpression x) => IsDoubleOnly(x.TypeRefMask);
+
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        protected bool IsLongOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && this.TypeCtx.IsLong(tmask);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        protected bool IsLongOnly(BoundExpression x) => IsLongOnly(x.TypeRefMask);
+
+        /// <summary>
+        /// Gets value indicating the given type is long or double or both but nothing else.
+        /// </summary>
+        /// <param name="tmask"></param>
+        /// <returns></returns>
+        protected bool IsNumberOnly(TypeRefMask tmask)
+        {
+            if (TypeCtx.IsLong(tmask) || TypeCtx.IsDouble(tmask))
+            {
+                if (tmask.IsSingleType)
+                {
+                    return true;
+                }
+
+                return !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsNumber();
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents only class types.
+        /// </summary>
+        protected bool IsClassOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsObject();
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents only array types.
+        /// </summary>
+        protected bool IsArrayOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsArray();
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type is long or double or both but nothing else.
+        /// </summary>
+        protected bool IsNumberOnly(BoundExpression x) => IsNumberOnly(x.TypeRefMask);
+
         #endregion
 
         #region Construction
 
+        /// <summary>
+        /// Creates an instance of <see cref="ExpressionAnalysis{T}"/> that can analyse a block.
+        /// </summary>
+        /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
+        /// <param name="model">The semantic context of the compilation.</param>
         public ExpressionAnalysis(Worklist<BoundBlock> worklist, ISymbolProvider model)
-            : base(worklist)
         {
             Debug.Assert(model != null);
             _model = model;
+            Worklist = worklist;
+        }
+
+        #endregion
+
+        #region State and worklist handling
+
+        protected override bool IsStateInitialized(FlowState state) => state != null;
+
+        protected override bool AreStatesEqual(FlowState a, FlowState b) => a.Equals(b);
+
+        protected override FlowState GetState(BoundBlock block) => block.FlowState;
+
+        protected override void SetState(BoundBlock block, FlowState state) => block.FlowState = state;
+
+        protected override FlowState CloneState(FlowState state) => state.Clone();
+
+        protected override FlowState MergeStates(FlowState a, FlowState b) => a.Merge(b);
+
+        protected override void SetStateUnknown(ref FlowState state) => state.SetAllUnknown(true);
+
+        protected override void EnqueueBlock(BoundBlock block) => Worklist.Enqueue(block);
+
+        #endregion
+
+        #region Visit blocks
+
+        public override T VisitCFGExitBlock(ExitBlock x)
+        {
+            VisitCFGBlock(x);
+
+            // TODO: EdgeToCallers:
+            PingSubscribers(x);
+
+            return default;
+        }
+
+        public override T VisitCFGCatchBlock(CatchBlock x)
+        {
+            VisitCFGBlockInit(x);
+
+            // add catch control variable to the state
+            x.TypeRef.Accept(this);
+            x.Variable.Access = BoundAccess.Write.WithWrite(x.TypeRef.GetTypeRefMask(TypeCtx));
+            State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue), x.Variable.Access.WriteMask);
+
+            Accept(x.Variable);
+
+            //
+            x.Variable.ResultType = (Symbols.TypeSymbol)x.TypeRef.Type;
+
+            //
+            DefaultVisitBlock(x);
+
+            return default;
         }
 
         #endregion
