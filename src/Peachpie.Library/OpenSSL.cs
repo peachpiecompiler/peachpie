@@ -14,68 +14,113 @@ namespace Pchp.Library
     public static class OpenSSL
     {
         #region Variables
-        
-        private static Cipher[] Ciphers = { new Cipher("aes-256-cbc", 16), new Cipher("aes-192-cbc", 16), new Cipher("aes-128-cbc", 16),
-                                            new Cipher("aes-256-ecb", 16), new Cipher("aes-192-ecb", 16), new Cipher("aes-128-ecb", 16),
-                                            new Cipher("aes-256-cfb", 16), new Cipher("aes-192-cfb", 16), new Cipher("aes-128-cfb", 16) };
+        private const int KeyLengthDES = 64;
+        private const int KeyLengthTripleDES = 192;
+        private const int MaxKeyLengthRC2 = 128;
+        private const int IVLengthAES = 16;
+        private const int IVLengthDES = 8;
+
+        private static Cipher[] Ciphers = { Cipher.ParseAES("aes-256-cbc", IVLengthAES), Cipher.ParseAES("aes-192-cbc", IVLengthAES), Cipher.ParseAES("aes-128-cbc", IVLengthAES),
+                                            Cipher.ParseAES("aes-256-ecb", 0), Cipher.ParseAES("aes-192-ecb", 0), Cipher.ParseAES("aes-128-ecb", 0),
+                                            // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
+                                            Cipher.ParseDES("des-ecb", 0), Cipher.ParseDES("des-cbc", IVLengthDES),
+                                            Cipher.ParseTripleDES("des-ede3", 0), Cipher.ParseTripleDES("des-ede3-cbc", IVLengthDES),
+                                            //RC2 is ok when there is right length of password, but when it is longer, PHP transforms password in some way, but i can not figure out how. 
+                                            Cipher.ParseRC2("rc2-40-cbc",IVLengthDES), Cipher.ParseRC2("rc2-64-cbc",IVLengthDES), Cipher.ParseRC2("rc2-ecb",0), Cipher.ParseRC2("rc2-cbc",IVLengthDES)
+                                          };
 
         /// <summary>
         /// Information about supported cipher.
         /// </summary>
         private struct Cipher
         {
-            public string Name;
-            public CipherTypes Type;
-            public int IVLength;
-            public CipherMode Mode;
-            public int KeyLength; // In Bits
+            public readonly string Name;
+            public readonly CipherTypes Type;
+            public readonly int IVLength;
+            public readonly CipherMode Mode;
+            public readonly int KeyLength; // In Bits
 
-            /// <summary>
-            /// Use when name is in format [Cipher]-[KeyLength]-[CipherMode].
-            /// </summary>
-            public Cipher(string name, int iVLength)
+            private Cipher(string name, CipherTypes type, int iVLength, CipherMode mode, int keyLength)
             {
                 // Initialization
                 Name = name;
+                Type = type;
                 IVLength = iVLength;
-                Type = CipherTypes.UNKNOWN;
-                Mode = CipherMode.CBC;
-                KeyLength = 0;
-
-                // Parse data from name
-                ParseName(name);
+                Mode = mode;
+                KeyLength = keyLength;
             }
 
-            private void ParseName(string name)
+            /// <summary>
+            /// Parse AES algorithm
+            /// </summary>
+            /// <param name="name">Format aes/AES-[KeyLength]-[CipherMode]</param>
+            public static Cipher ParseAES(string name, int iVLength)
             {
                 var tokens = name.Split('-');
+                if (tokens.Length != 3)
+                    throw new ArgumentException("Wrong format of name", nameof(name));
 
-                if (tokens.Length > 0)
-                    Type = ParseCipherType(tokens[0]);
-
-                if (tokens.Length > 1)
-                    KeyLength = int.Parse(tokens[1]);
-
-                if (tokens.Length > 2)
-                    Mode = ParseMode(tokens[2]);
+                return new Cipher(name, CipherTypes.AES, iVLength, ParseMode(tokens[2]), int.Parse(tokens[1]));
             }
 
-            private CipherTypes ParseCipherType(string type)
+            /// <summary>
+            /// Parse DES algorithm
+            /// </summary>
+            /// <param name="name">Format des-[CipherMode]</param>
+            public static Cipher ParseDES(string name, int iVLength)
             {
-                switch (type)
-                {
-                    case "aes":
-                        return CipherTypes.AES;
+                var tokens = name.Split('-');
+                if (tokens.Length != 2)
+                    throw new ArgumentException("Wrong format of name", nameof(name));
 
-                    case "des":
-                        return CipherTypes.DES;
-
-                    default:
-                        return CipherTypes.UNKNOWN;
-                }
+                return new Cipher(name, CipherTypes.DES, iVLength, ParseMode(tokens[1]), KeyLengthDES);
             }
-        
-            private CipherMode ParseMode(string mode)
+
+            /// <summary>
+            /// Parse TripleDES algorithm
+            /// </summary>
+            /// <param name="name">Format des-ede3(-[CipherMode])</param>
+            public static Cipher ParseTripleDES(string name, int iVLength)
+            {
+                var tokens = name.Split('-');
+                CipherMode mode;
+
+                if (tokens.Length == 2)
+                    mode = CipherMode.ECB;
+                else if (tokens.Length == 3)
+                    mode = ParseMode(tokens[2]);
+                else
+                    throw new ArgumentException("Wrong format of name", nameof(name));
+
+                return new Cipher(name, CipherTypes.TripleDES, iVLength, mode, KeyLengthTripleDES);
+            }
+
+            /// <summary>
+            /// Parse RC2 algorithm
+            /// </summary>
+            /// <param name="name">Format rc2(-[Keylength])-[CipherMode]</param>
+            public static Cipher ParseRC2(string name, int iVLength)
+            {
+                var tokens = name.Split('-');
+                CipherMode mode;
+                int KeyLength = MaxKeyLengthRC2;
+
+                if (tokens.Length == 2)
+                {
+                    mode = ParseMode(tokens[1]);
+                }
+                else if (tokens.Length == 3)
+                {
+                    KeyLength = int.Parse(tokens[1]);
+                    mode = ParseMode(tokens[2]);
+                }
+                else
+                    throw new ArgumentException("Wrong format of name", nameof(name));
+
+                return new Cipher(name, CipherTypes.RC2, iVLength, mode, KeyLength);
+            }
+
+            private static CipherMode ParseMode(string mode)
             {
                 switch (mode)
                 {
@@ -84,9 +129,6 @@ namespace Pchp.Library
 
                     case "ecb":
                         return CipherMode.ECB;
-
-                    case "cfb":
-                        return CipherMode.CFB;
 
                     default:
                         return CipherMode.CBC;
@@ -97,17 +139,17 @@ namespace Pchp.Library
         [Flags]
         public enum Option { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2};
 
-        private enum CipherTypes { AES, DES, UNKNOWN};
+        private enum CipherTypes { AES, DES, TripleDES, RC2, UNKNOWN};
 
         #endregion
 
         #region openssl_encrypt/decrypt
 
-        private static RijndaelManaged PrepareCipher(byte[] data, PhpString key, Cipher cipher, PhpString iv, Option options)
+        private static SymmetricAlgorithm PrepareCipher(byte[] data, PhpString key, Cipher cipher, PhpString iv, Option options)
         {
             byte[] decodedKey = key.ToBytes(Encoding.Default);
 
-            // Pad key out to 32 bytes (256bits) if its too short or trancuate if it is too long
+            // Pad key out to KeyLength in bytes if its too short or trancuate if it is too long
             if (decodedKey.Length < cipher.KeyLength / 8 || decodedKey.Length > cipher.KeyLength / 8)
             {
                 var resizedKey = new byte[cipher.KeyLength / 8];
@@ -115,8 +157,25 @@ namespace Pchp.Library
                 decodedKey = resizedKey;
             }
 
-
-            byte[] iVector = new byte[cipher.IVLength];
+            // In .NET there must be non zero length IV, but in PHP cipher mode ECB has zero length. Due to compatibility in openssl_cipher_iv_length
+            // There is this wierd thing.
+            int lengthForECB = 0;
+            switch (cipher.Type)
+            {
+                case CipherTypes.AES:
+                    lengthForECB = IVLengthAES;
+                    break;
+                case CipherTypes.DES:
+                    lengthForECB = IVLengthDES;
+                    break;
+                case CipherTypes.TripleDES:
+                    lengthForECB = IVLengthDES;
+                    break;
+                case CipherTypes.RC2:
+                    lengthForECB = IVLengthDES;
+                    break;
+            }
+            byte[] iVector = new byte[cipher.Mode == CipherMode.ECB ? lengthForECB : cipher.IVLength];
             if (!iv.IsEmpty)
             {
                 byte[] decodedIV = iv.ToBytes(Encoding.Default);
@@ -129,30 +188,34 @@ namespace Pchp.Library
                 Buffer.BlockCopy(decodedIV, 0, iVector, 0, Math.Min(cipher.IVLength,decodedIV.Length));
             }
 
-            if (cipher.Mode == CipherMode.CFB) // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
-                throw new NotSupportedException();
-
-            var result = new RijndaelManaged { Mode = cipher.Mode, Padding = PaddingMode.PKCS7, KeySize = cipher.KeyLength, BlockSize = 128, Key = decodedKey, IV = iVector };
-           
-            if ((options & Option.OPENSSL_ZERO_PADDING) == Option.OPENSSL_ZERO_PADDING)
-                result.Padding = PaddingMode.None;
-            
-            if (cipher.Mode == CipherMode.CFB) 
+            SymmetricAlgorithm alg = null;
+            switch (cipher.Type)
             {
-                result.Padding = PaddingMode.None;
-                if (data.Length < 4)
-                    result.FeedbackSize = 8;
-                else if (data.Length < 8)
-                    result.FeedbackSize = 16;
-                else if (data.Length < 16)
-                    result.FeedbackSize = 32;
-                else if (data.Length < 32)
-                    result.FeedbackSize = 64;
-                else
-                    result.FeedbackSize = 128;
+                case CipherTypes.AES:
+                    alg = new RijndaelManaged { Padding = PaddingMode.PKCS7, KeySize = cipher.KeyLength };
+                    break;
+                case CipherTypes.DES:
+                    alg = DES.Create();
+                    break;
+                case CipherTypes.TripleDES:
+                    alg = TripleDES.Create();
+                    break;
+                case CipherTypes.RC2:
+                    alg = RC2.Create();
+                    alg.KeySize = cipher.KeyLength;
+                    break;
+                case CipherTypes.UNKNOWN:
+                    throw new NotImplementedException();
             }
 
-            return result;
+            alg.Mode = cipher.Mode;
+            alg.Key = decodedKey;
+            alg.IV = iVector;
+
+            if ((options & Option.OPENSSL_ZERO_PADDING) == Option.OPENSSL_ZERO_PADDING)
+                alg.Padding = PaddingMode.None;
+
+            return alg;
         }
 
         /// <summary>
@@ -183,17 +246,7 @@ namespace Pchp.Library
 
             try
             {
-                switch (cipherMethod.Type)
-                {
-                    case CipherTypes.AES:
-                        return DecryptWithAES(data, key, cipherMethod, iv, options);
-
-                    case CipherTypes.DES:
-                        throw new NotImplementedException();
-
-                    default:
-                        throw new NotImplementedException();
-                }
+                 return Decrypt(data, key, cipherMethod, iv, options);
             }
             catch (CryptographicException)
             {
@@ -201,7 +254,7 @@ namespace Pchp.Library
             }
         }
 
-        private static string DecryptWithAES(string data, PhpString key, Cipher cipher, PhpString iv, Option options)
+        private static string Decrypt(string data, PhpString key, Cipher cipher, PhpString iv, Option options)
         {
             byte[] encryptedBytes;
             if ((options & Option.OPENSSL_RAW_DATA) == Option.OPENSSL_RAW_DATA)
@@ -213,7 +266,7 @@ namespace Pchp.Library
             else
                 encryptedBytes = System.Convert.FromBase64String(data);
 
-            RijndaelManaged aesAlg = PrepareCipher(encryptedBytes, key, cipher, iv, options);
+            var aesAlg = PrepareCipher(encryptedBytes, key, cipher, iv, options);
             ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
             string plaintext;
@@ -260,30 +313,20 @@ namespace Pchp.Library
 
             try
             {
-                switch (cipherMethod.Type)
-                {
-                    case CipherTypes.AES:
-                        return EncryptWithAES(data, key, cipherMethod, iv, options);
-
-                    case CipherTypes.DES:
-                        throw new NotImplementedException();
-
-                    default:
-                        throw new NotImplementedException();
-                }
+                return Encrypt(data, key, cipherMethod, iv, options);
             }
             catch (CryptographicException)
             {
-
                 return "";
             }  
         }
 
-        private static string EncryptWithAES(string data, PhpString key, Cipher cipher, PhpString iv, Option options)
+        private static string Encrypt(string data, PhpString key, Cipher cipher, PhpString iv, Option options)
         {
             byte[] encrypted = null;
             byte[] dataBytes = Encoding.UTF8.GetBytes(data);
-            RijndaelManaged aesAlg = PrepareCipher(dataBytes, key, cipher, iv, options);
+
+            var aesAlg = PrepareCipher(dataBytes, key, cipher, iv, options);
             ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
             using (MemoryStream msEncrypt = new MemoryStream())
@@ -292,25 +335,6 @@ namespace Pchp.Library
                 {
                     using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
                     {
-                        if (cipher.Mode == CipherMode.CFB) // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
-                        {
-                            byte[] buffer = new byte[aesAlg.FeedbackSize];
-
-                            for (int i = 0; i < dataBytes.Length; i += buffer.Length)
-                            {
-                                Buffer.BlockCopy(dataBytes, i, buffer, 0, Math.Min(buffer.Length, dataBytes.Length - i + 1));
-                                swEncrypt.Write(buffer);
-                            }
-
-                            int reminder = dataBytes.Length % buffer.Length;
-                            if (reminder != 0)
-                            {
-                                buffer = new byte[aesAlg.FeedbackSize];
-                                Buffer.BlockCopy(dataBytes, dataBytes.Length - reminder - 1, buffer, 0, reminder);
-                                swEncrypt.Write(buffer);
-                            }
-                        }
-                        else
                             swEncrypt.Write(data);
                     }
                     encrypted = msEncrypt.ToArray();
@@ -318,9 +342,9 @@ namespace Pchp.Library
             }
 
             if ((options & Option.OPENSSL_RAW_DATA) == Option.OPENSSL_RAW_DATA)
-                return cipher.Mode == CipherMode.CFB ? Encoding.UTF8.GetString(encrypted.Slice(0, dataBytes.Length)) : Encoding.UTF8.GetString(encrypted);
+                return Encoding.UTF8.GetString(encrypted);
             else
-                return System.Convert.ToBase64String(cipher.Mode == CipherMode.CFB ? encrypted.Slice(0, dataBytes.Length) : encrypted);
+                return System.Convert.ToBase64String(encrypted);
         }
 
         #endregion
