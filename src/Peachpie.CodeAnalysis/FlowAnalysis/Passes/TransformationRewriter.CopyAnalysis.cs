@@ -5,6 +5,7 @@ using System.Text;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Pchp.CodeAnalysis.Utilities;
 using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
@@ -120,8 +121,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         /// Implements copy analysis using <see cref="CopyAnalysisState"/>, producing a set of <see cref="BoundCopyValue"/>
         /// instances available for removal.
         /// </summary>
-        private class CopyAnalysisContext : SingleBlockWalker<VoidStruct>, IFixPointAnalysisContext<CopyAnalysisState>
+        private class CopyAnalysis : AnalysisWalker<CopyAnalysisState, VoidStruct>
         {
+            #region Fields
+
             private readonly Dictionary<BoundCopyValue, int> _copyIndices = new Dictionary<BoundCopyValue, int>();
             private readonly FlowContext _flowContext;
 
@@ -130,12 +133,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             /// </summary>
             private HashSet<BoundCopyValue> _lazyReturnCopies;
 
-            private CopyAnalysisState _state;
             private BitMask _neededCopies;
 
             private int VariableCount => _flowContext.VarsType.Length;
 
-            private CopyAnalysisContext(FlowContext flowContext)
+            private Dictionary<BoundBlock, CopyAnalysisState> _blockToStateMap = new Dictionary<BoundBlock, CopyAnalysisState>();
+
+            private DistinctQueue<BoundBlock> _worklist = new DistinctQueue<BoundBlock>(new BoundBlock.OrdinalComparer());
+
+            #endregion
+
+            #region Usage
+
+            private CopyAnalysis(FlowContext flowContext)
             {
                 _flowContext = flowContext;
             }
@@ -143,14 +153,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             public static HashSet<BoundCopyValue> TryGetUnnecessaryCopies(SourceRoutineSymbol routine)
             {
                 var cfg = routine.ControlFlowGraph;
-                var context = new CopyAnalysisContext(cfg.FlowContext);
-                var analysis = new FixPointAnalysis<CopyAnalysisContext, CopyAnalysisState>(context, routine);
-                analysis.Run();
+                var analysis = new CopyAnalysis(cfg.FlowContext);
 
-                HashSet<BoundCopyValue> result = context._lazyReturnCopies;  // context won't be used anymore, no need to copy the set
-                foreach (var kvp in context._copyIndices)
+                analysis._blockToStateMap[cfg.Start] = new CopyAnalysisState(analysis.VariableCount);
+                analysis._worklist.Enqueue(cfg.Start);
+                while (analysis._worklist.TryDequeue(out var block))
                 {
-                    if (!context._neededCopies.Get(kvp.Value))
+                    analysis.Accept(block);
+                }
+
+                HashSet<BoundCopyValue> result = analysis._lazyReturnCopies;  // analysis won't be used anymore, no need to copy the set
+                foreach (var kvp in analysis._copyIndices)
+                {
+                    if (!analysis._neededCopies.Get(kvp.Value))
                     {
                         if (result == null)
                             result = new HashSet<BoundCopyValue>();
@@ -162,18 +177,37 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 return result;
             }
 
-            public bool StatesEqual(CopyAnalysisState x, CopyAnalysisState y) => x.Equals(y);
+            #endregion
 
-            public CopyAnalysisState GetInitialState() => new CopyAnalysisState(VariableCount);
+            #region State handling
 
-            public CopyAnalysisState MergeStates(CopyAnalysisState x, CopyAnalysisState y) => x.WithMerge(y);
+            protected override bool IsStateInitialized(CopyAnalysisState state) => !state.IsDefault;
 
-            public CopyAnalysisState ProcessBlock(BoundBlock block, CopyAnalysisState state)
+            protected override bool AreStatesEqual(CopyAnalysisState a, CopyAnalysisState b) => a.Equals(b);
+
+            protected override CopyAnalysisState GetState(BoundBlock block) => _blockToStateMap.TryGetOrDefault(block);
+
+            protected override void SetState(BoundBlock block, CopyAnalysisState state) => _blockToStateMap[block] = state;
+
+            protected override CopyAnalysisState CloneState(CopyAnalysisState state) => state;  // Copy-on-write semantics
+
+            protected override CopyAnalysisState MergeStates(CopyAnalysisState a, CopyAnalysisState b) => a.WithMerge(b);
+
+            protected override void SetStateUnknown(ref CopyAnalysisState state)
             {
-                _state = state;
-                block.Accept(this);
-                return _state;
+                // TODO: Make more precise after the precision of try block analysis is improved in AnalysisWalker
+
+                // Assume the worst case and require all the copy operations
+                _neededCopies.SetAll();
+                _lazyReturnCopies = null;
+                _flags |= AnalysisFlags.IsCanceled;
             }
+
+            protected override void EnqueueBlock(BoundBlock block) => _worklist.Enqueue(block);
+
+            #endregion
+
+            #region Visit expressions
 
             public override VoidStruct VisitAssign(BoundAssignEx assign)
             {
@@ -225,12 +259,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                             // Make the assignment a candidate for copy removal, possibly causing aliasing.
                             // It is removed if either trgVar or srcVar are modified later.
                             int copyIndex = EnsureCopyIndex((BoundCopyValue)assign.Value);
-                            _state = _state.WithCopyAssignment(trgHandle, srcHandle, copyIndex);
+                            State = State.WithCopyAssignment(trgHandle, srcHandle, copyIndex);
                         }
                         else
                         {
                             // The copy was removed by a previous transformation, making them aliases sharing the assignments
-                            _state = _state.WithValue(trgHandle, _state.GetValue(srcHandle));
+                            State = State.WithValue(trgHandle, State.GetValue(srcHandle));
                         }
 
                         // Visiting trgVar would destroy the effort (due to the assignment it's considered as MightChange),
@@ -243,7 +277,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         assign.Value.Accept(this);
 
                         // Do not attempt to remove copying from any other expression, just clear the assignment set for trgVar
-                        _state = _state.WithValue(trgHandle, 0);
+                        State = State.WithValue(trgHandle, 0);
 
                         // Prevent from visiting trgVar due to its MightChange property
                         return trgHandle;
@@ -258,9 +292,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 void MarkAllKnownAssignments()
                 {
-                    for (int i = 0; i < _state.VariableCount; i++)
+                    for (int i = 0; i < State.VariableCount; i++)
                     {
-                        _neededCopies |= _state.GetValue(i);
+                        _neededCopies |= State.GetValue(i);
                     }
                 }
 
@@ -278,7 +312,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         var varindex = _flowContext.GetVarIndex(x.Name.NameValue);
                         if (!_flowContext.IsReference(varindex))
                         {
-                            _neededCopies |= _state.GetValue(varindex);
+                            _neededCopies |= State.GetValue(varindex);
                         }
                         else
                         {
@@ -321,7 +355,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                         // We cannot remove a variable which might alias any other variable due to
                         // a copying we removed earlier
-                        if ((_state.GetValue(varindex) & ~_neededCopies) != 0)
+                        if ((State.GetValue(varindex) & ~_neededCopies) != 0)
                         {
                             if (cannotRemove == null)
                                 cannotRemove = new List<BoundCopyValue>();
@@ -337,6 +371,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 return default;
             }
 
+            #endregion
+
+            #region Helpers
+
             private int EnsureCopyIndex(BoundCopyValue copy)
             {
                 if (!_copyIndices.TryGetValue(copy, out int index))
@@ -347,6 +385,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                 return index;
             }
+
+            #endregion
         }
     }
 }

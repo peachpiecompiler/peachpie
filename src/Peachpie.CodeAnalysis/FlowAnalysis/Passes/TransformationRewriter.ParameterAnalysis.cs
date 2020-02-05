@@ -6,6 +6,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Pchp.CodeAnalysis.Utilities;
 using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
@@ -38,8 +39,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         /// Implements parameter value passing analysis using <see cref="ParameterAnalysisState"/>, retrieving information
         /// about on which parameters we don't need to call PassValue.
         /// </summary>
-        private class ParameterAnalysisContext : SingleBlockWalker<VoidStruct>, IFixPointAnalysisContext<ParameterAnalysisState>
+        private class ParameterAnalysis : AnalysisWalker<ParameterAnalysisState, VoidStruct>
         {
+            #region Fields
+
             /// <summary>
             /// Records parameters which need to be deep copied and dealiased upon routine start.
             /// </summary>
@@ -47,9 +50,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             private FlowContext _flowContext;
 
-            private ParameterAnalysisState _state;
+            private Dictionary<BoundBlock, ParameterAnalysisState> _blockToStateMap = new Dictionary<BoundBlock, ParameterAnalysisState>();
 
-            private ParameterAnalysisContext(FlowContext flowContext)
+            private DistinctQueue<BoundBlock> _worklist = new DistinctQueue<BoundBlock>(new BoundBlock.OrdinalComparer());
+
+            #endregion
+
+            #region Usage
+
+            private ParameterAnalysis(FlowContext flowContext)
             {
                 _flowContext = flowContext;
             }
@@ -62,31 +71,47 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
 
                 var cfg = routine.ControlFlowGraph;
-                var context = new ParameterAnalysisContext(cfg.FlowContext);
-                var analysis = new FixPointAnalysis<ParameterAnalysisContext, ParameterAnalysisState>(context, routine);
-                analysis.Run();
+                var analysis = new ParameterAnalysis(cfg.FlowContext);
 
-                return context._needPassValueParams;
+                analysis._blockToStateMap[cfg.Start] = ParameterAnalysisState.Clean;
+                analysis._worklist.Enqueue(cfg.Start);
+                while (analysis._worklist.TryDequeue(out var block))
+                {
+                    analysis.Accept(block);
+                }
+
+                return analysis._needPassValueParams;
             }
 
-            public bool StatesEqual(ParameterAnalysisState x, ParameterAnalysisState y) => x == y;
+            #endregion
 
-            public ParameterAnalysisState GetInitialState() => ParameterAnalysisState.Clean;
+            #region State handling
 
-            public ParameterAnalysisState MergeStates(ParameterAnalysisState x, ParameterAnalysisState y) => x > y ? x : y;
+            protected override bool IsStateInitialized(ParameterAnalysisState state) => state != default;
 
-            public ParameterAnalysisState ProcessBlock(BoundBlock block, ParameterAnalysisState state)
-            {
-                _state = state;
-                block.Accept(this);
-                return _state;
-            }
+            protected override bool AreStatesEqual(ParameterAnalysisState a, ParameterAnalysisState b) => a == b;
+
+            protected override ParameterAnalysisState GetState(BoundBlock block) => _blockToStateMap.TryGetOrDefault(block);
+
+            protected override void SetState(BoundBlock block, ParameterAnalysisState state) => _blockToStateMap[block] = state;
+
+            protected override ParameterAnalysisState CloneState(ParameterAnalysisState state) => state;
+
+            protected override ParameterAnalysisState MergeStates(ParameterAnalysisState a, ParameterAnalysisState b) => a > b ? a : b;
+
+            protected override void SetStateUnknown(ref ParameterAnalysisState state) => state = ParameterAnalysisState.Dirty;
+
+            protected override void EnqueueBlock(BoundBlock block) => _worklist.Enqueue(block);
+
+            #endregion
+
+            #region Visit expressions
 
             public override VoidStruct VisitArgument(BoundArgument x)
             {
                 VariableHandle varindex;
 
-                if (_state != ParameterAnalysisState.Dirty
+                if (State != ParameterAnalysisState.Dirty
                     && x.Value is BoundVariableRef varRef
                     && varRef.Variable is ParameterReference
                     && varRef.Name.IsDirect
@@ -133,7 +158,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 // An external alias can be modified when the routine is actually called, after processing the arguments
                 base.VisitRoutineCall(x);
-                _state = ParameterAnalysisState.Dirty;
+                State = ParameterAnalysisState.Dirty;
 
                 return default;
             }
@@ -156,24 +181,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     var argTypeMask = arg.Value.TypeRefMask;
                     if (argTypeMask.IsAnyType || _flowContext.TypeRefContext.IsObject(argTypeMask))
                     {
-                        _state = ParameterAnalysisState.Dirty;
+                        State = ParameterAnalysisState.Dirty;
                     }
                 }
 
                 return default;
             }
 
-            public override VoidStruct VisitUnaryExpression(BoundUnaryEx x)
+            protected override void Visit(BoundUnaryEx x, ConditionBranch branch)
             {
-                base.VisitUnaryExpression(x);
+                base.Visit(x, branch);
 
                 // Cloning causes calling __clone with arbitrary code
                 if (x.Operation == Devsense.PHP.Syntax.Ast.Operations.Clone)
                 {
-                    _state = ParameterAnalysisState.Dirty;
+                    State = ParameterAnalysisState.Dirty;
                 }
-
-                return default;
             }
 
             public override VoidStruct VisitConversion(BoundConversionEx x)
@@ -186,7 +209,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 if (opTypeMask.IsAnyType || typeRefCtx.IsObject(opTypeMask)
                     && (x.Conversion.IsUserDefined || typeRefCtx.IsAString(x.TargetType.GetTypeRefMask(typeRefCtx))))
                 {
-                    _state = ParameterAnalysisState.Dirty;
+                    State = ParameterAnalysisState.Dirty;
                 }
 
                 return default;
@@ -195,7 +218,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             public override VoidStruct VisitFieldRef(BoundFieldRef x)
             {
                 base.VisitFieldRef(x);
-                _state = ParameterAnalysisState.Dirty;
+                State = ParameterAnalysisState.Dirty;
 
                 return default;
             }
@@ -203,7 +226,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             public override VoidStruct VisitArrayItem(BoundArrayItemEx x)
             {
                 base.VisitArrayItem(x);
-                _state = ParameterAnalysisState.Dirty;
+                State = ParameterAnalysisState.Dirty;
 
                 return default;
             }
@@ -211,7 +234,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             public override VoidStruct VisitOffsetExists(BoundOffsetExists x)
             {
                 base.VisitOffsetExists(x);
-                _state = ParameterAnalysisState.Dirty;
+                State = ParameterAnalysisState.Dirty;
 
                 return default;
             }
@@ -220,11 +243,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 // As anything can happen in eval, force value passing of all parameters
                 base.VisitEval(x);
-                _state = ParameterAnalysisState.Dirty;
+                State = ParameterAnalysisState.Dirty;
                 _needPassValueParams.SetAll();
 
                 return default;
             }
+
+            #endregion
         }
     }
 }

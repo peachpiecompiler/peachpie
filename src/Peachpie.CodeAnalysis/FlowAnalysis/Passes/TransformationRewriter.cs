@@ -229,12 +229,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             _routine = routine ?? throw ExceptionUtilities.ArgumentNull(nameof(routine));
 
             // Gather information about value copy operations which can be removed
-            _unnecessaryCopies = CopyAnalysisContext.TryGetUnnecessaryCopies(_routine);
+            _unnecessaryCopies = CopyAnalysis.TryGetUnnecessaryCopies(_routine);
         }
 
         private void TryTransformParameters()
         {
-            var needPassValueParams = ParameterAnalysisContext.GetNeedPassValueParams(_routine);
+            var needPassValueParams = ParameterAnalysis.GetNeedPassValueParams(_routine);
 
             foreach (var parameter in _routine.LocalsTable.Variables.OfType<ParameterReference>())
             {
