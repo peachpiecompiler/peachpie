@@ -699,4 +699,7 @@
   <data name="short_iv" xml:space="preserve">
     <value>IV passed is only '{0}' bytes long, cipher expects an IV of precisely '{1}' bytes, padding with \0</value>
   </data>
+  <data name="unknown_hash" xml:space="preserve">
+    <value>Unknown signature algorithm</value>
+  </data>
 </root>

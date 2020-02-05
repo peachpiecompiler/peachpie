@@ -26,7 +26,7 @@ namespace Pchp.Library
                                             Cipher.ParseDES("des-ecb", 0), Cipher.ParseDES("des-cbc", IVLengthDES),
                                             Cipher.ParseTripleDES("des-ede3", 0), Cipher.ParseTripleDES("des-ede3-cbc", IVLengthDES),
                                             //RC2 is ok when there is right length of password, but when it is longer, PHP transforms password in some way, but i can not figure out how. 
-                                            Cipher.ParseRC2("rc2-40-cbc",IVLengthDES), Cipher.ParseRC2("rc2-64-cbc",IVLengthDES), Cipher.ParseRC2("rc2-ecb",0), Cipher.ParseRC2("rc2-cbc",IVLengthDES)
+                                            //Cipher.ParseRC2("rc2-40-cbc",IVLengthDES), Cipher.ParseRC2("rc2-64-cbc",IVLengthDES), Cipher.ParseRC2("rc2-ecb",0), Cipher.ParseRC2("rc2-cbc",IVLengthDES)
                                           };
 
         /// <summary>
@@ -137,9 +137,9 @@ namespace Pchp.Library
         }
 
         [Flags]
-        public enum Option { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2};
+        public enum Option { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2 };
 
-        private enum CipherTypes { AES, DES, TripleDES, RC2, UNKNOWN};
+        private enum CipherTypes { AES, DES, TripleDES, RC2, UNKNOWN };
 
         #endregion
 
@@ -153,7 +153,7 @@ namespace Pchp.Library
             if (decodedKey.Length < cipher.KeyLength / 8 || decodedKey.Length > cipher.KeyLength / 8)
             {
                 var resizedKey = new byte[cipher.KeyLength / 8];
-                Buffer.BlockCopy(decodedKey, 0, resizedKey, 0, Math.Min(key.Length,resizedKey.Length));
+                Buffer.BlockCopy(decodedKey, 0, resizedKey, 0, Math.Min(key.Length, resizedKey.Length));
                 decodedKey = resizedKey;
             }
 
@@ -185,7 +185,7 @@ namespace Pchp.Library
                 else if (decodedIV.Length > cipher.IVLength) // Trancuate
                     PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.long_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
 
-                Buffer.BlockCopy(decodedIV, 0, iVector, 0, Math.Min(cipher.IVLength,decodedIV.Length));
+                Buffer.BlockCopy(decodedIV, 0, iVector, 0, Math.Min(cipher.IVLength, decodedIV.Length));
             }
 
             SymmetricAlgorithm alg = null;
@@ -246,7 +246,7 @@ namespace Pchp.Library
 
             try
             {
-                 return Decrypt(data, key, cipherMethod, iv, options);
+                return Decrypt(data, key, cipherMethod, iv, options);
             }
             catch (CryptographicException)
             {
@@ -318,7 +318,7 @@ namespace Pchp.Library
             catch (CryptographicException)
             {
                 return "";
-            }  
+            }
         }
 
         private static string Encrypt(string data, PhpString key, Cipher cipher, PhpString iv, Option options)
@@ -335,7 +335,7 @@ namespace Pchp.Library
                 {
                     using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
                     {
-                            swEncrypt.Write(data);
+                        swEncrypt.Write(data);
                     }
                     encrypted = msEncrypt.ToArray();
                 }
@@ -355,9 +355,9 @@ namespace Pchp.Library
         /// <param name="method">The cipher method, see openssl_get_cipher_methods() for a list of potential values.</param>
         /// <returns>Returns the cipher length on success, or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static int openssl_cipher_iv_length(string method) 
+        public static int openssl_cipher_iv_length(string method)
         {
-            Cipher result = Array.Find(Ciphers, cipher => cipher.Name == method);
+            Cipher result = Array.Find(Ciphers, cipher => cipher.Name == method.ToLower());
 
             if (String.IsNullOrEmpty(result.Name)) // Unknown cipher algorithm.
             {
@@ -367,6 +367,68 @@ namespace Pchp.Library
             else
                 return result.IVLength;
         }
-        
+
+        /// <summary>
+        /// Gets a list of available cipher methods.
+        /// </summary>
+        /// <param name="aliases">Set to TRUE if cipher aliases should be included within the returned array.</param>
+        /// <returns>An array of available cipher methods.</returns>
+        public static PhpArray openssl_get_cipher_methods(bool aliases = false)
+        {
+            PhpArray result = new PhpArray(Ciphers.Length);
+
+            foreach (var cipher in Ciphers)
+                result.Add(cipher.Name);
+
+            if (aliases)
+                throw new NotImplementedException();
+
+            return result;
+        }
+
+        #region openssl_digest/get_md_methods
+
+        private static string[] HashMethods = new string[]{ "md5" };
+
+        /// <summary>
+        /// Computes a digest hash value for the given data using a given method, and returns a raw or binhex encoded string.
+        /// </summary>
+        /// <param name="data">The data.</param>
+        /// <param name="method">The digest method to use, e.g. "sha256", see openssl_get_md_methods() for a list of available digest methods.</param>
+        /// <param name="raw_output">Setting to TRUE will return as raw output data, otherwise the return value is binhex encoded.</param>
+        /// <returns>Returns the digested hash value on success or FALSE on failure.</returns>
+        [return: CastToFalse]
+        public static string openssl_digest(string data , string method, bool raw_output = false)
+        {
+            string result = Array.Find(HashMethods, hashName => hashName == method.ToLower());
+
+            if (String.IsNullOrEmpty(result)) // Unknown cipher algorithm.
+            {
+                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.unknown_hash);
+                return null;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets a list of available digest methods.
+        /// </summary>
+        /// <param name="aliases">Set to TRUE if digest aliases should be included within the returned array.</param>
+        /// <returns>An array of available digest methods.</returns>
+        public static PhpArray openssl_get_md_methods(bool aliases = false)
+        {
+            PhpArray result = new PhpArray(Ciphers.Length);
+
+            foreach (var hash in HashMethods)
+                result.Add(hash);
+
+            if (aliases)
+                throw new NotImplementedException();
+
+            return result;
+        }
+   
+        #endregion
     }
 }

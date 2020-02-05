@@ -1663,6 +1663,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unknown signature algorithm.
+        /// </summary>
+        public static string unknown_hash {
+            get {
+                return ResourceManager.GetString("unknown_hash", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Configuration option &apos;{0}&apos; is not known.
         /// </summary>
         public static string unknown_option {
