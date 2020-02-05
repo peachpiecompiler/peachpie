@@ -259,20 +259,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return block;
         }
 
-        private BoundBlock/*!*/NewUnorderedBlock() => new BoundBlock();
-
-        private CatchBlock/*!*/NewUnorderedBlock(CatchItem item)
+        private CatchBlock/*!*/NewBlock(CatchItem item)
         {
-            return new CatchBlock(_binder.BindTypeRef(item.TargetType), _binder.BindCatchVariable(item)) { PhpSyntax = item };
+            return WithNewOrdinal(new CatchBlock(_binder.BindTypeRef(item.TargetType), _binder.BindCatchVariable(item)) { PhpSyntax = item });
         }
 
-        private CaseBlock/*!*/NewUnorderedBlock(SwitchItem item)
+        private CaseBlock/*!*/NewBlock(SwitchItem item)
         {
             BoundItemsBag<BoundExpression> caseValueBag = item is CaseItem caseItem
                 ? _binder.BindWholeExpression(caseItem.CaseVal, BoundAccess.Read)
                 : BoundItemsBag<BoundExpression>.Empty; // BoundItem -eq null => DefaultItem
 
-            return new CaseBlock(caseValueBag) { PhpSyntax = item };
+            return WithNewOrdinal(new CaseBlock(caseValueBag) { PhpSyntax = item });
         }
 
         private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression condition, bool isloop = false)
@@ -333,11 +331,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Gets new block index.
         /// </summary>
         private int NewOrdinal() => _index++;
-
-        /// <summary>
-        /// Gets the last set (and currently the highest) index, -1 if none was set yet.
-        /// </summary>
-        private int LastOrdinal => _index - 1;
 
         private T WithNewOrdinal<T>(T block) where T : BoundBlock
         {
@@ -555,9 +548,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var boundEnumereeBag = _binder.BindWholeExpression(x.Enumeree, BoundAccess.Read);
             ConnectBoundItemsBagBlocksToCurrentBlock(boundEnumereeBag);
 
-            var end = NewUnorderedBlock();
+            var end = NewBlock();
             var move = NewBlock();
-            var body = NewUnorderedBlock();
+            var body = NewBlock();
 
             // _current -> move -> body -> move -> ...
 
@@ -605,7 +598,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private void BuildForLoop(IList<Expression> initExpr, IList<Expression> condExpr, IList<Expression> actionExpr, Statement/*!*/bodyStmt)
         {
-            var end = NewUnorderedBlock();
+            var end = NewBlock();
 
             bool hasActions = actionExpr != null && actionExpr.Count != 0;
             bool hasConditions = condExpr != null && condExpr.Count != 0;
@@ -614,9 +607,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (initExpr != null && initExpr.Count != 0)
                 initExpr.ForEach(expr => this.Add(new ExpressionStmt(expr.Span, expr)));
 
-            var body = NewUnorderedBlock();
-            var cond = hasConditions ? NewUnorderedBlock() : body;
-            var action = hasActions ? NewUnorderedBlock() : cond;
+            var body = NewBlock();
+            var cond = hasConditions ? NewBlock() : body;
+            var action = hasActions ? NewBlock() : cond;
             OpenBreakScope(end, action);
 
             // while (x.Codition) {
@@ -631,8 +624,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 _deadBlocks.Add(end);
             }
-
-            Debug.Assert(_current.Ordinal == LastOrdinal);
 
             //   { x.Body }
             OpenScope(_current);
@@ -658,10 +649,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private void BuildDoLoop(Expression condExpr, Statement/*!*/bodyStmt)
         {
-            var end = NewUnorderedBlock();
+            var end = NewBlock();
 
-            var body = NewUnorderedBlock();
-            var cond = NewUnorderedBlock();
+            var body = NewBlock();
+            var cond = NewBlock();
 
             OpenBreakScope(end, cond);
 
@@ -675,7 +666,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // } while ( COND )
             _current = WithNewOrdinal(Connect(_current, cond));
-            _current = Connect(_current, body, end, condExpr, true);    // body already has an appropriate Ordinal
+            _current = WithNewOrdinal(Connect(_current, body, end, condExpr, true));
 
             //
             CloseBreakScope();
@@ -746,7 +737,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitIfStmt(IfStmt x)
         {
-            var end = NewUnorderedBlock();
+            var end = NewBlock();
 
             var conditions = x.Conditions;
             Debug.Assert(conditions.Count != 0);
@@ -756,7 +747,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 var cond = conditions[i];
                 if (cond.Condition != null)  // if (Condition) ...
                 {
-                    elseBlock = (i == conditions.Count - 1) ? end : NewUnorderedBlock();
+                    elseBlock = (i == conditions.Count - 1) ? end : NewBlock();
                     _current = Connect(_current, NewBlock(), elseBlock, cond.Condition);
                 }
                 else  // else ...
@@ -776,7 +767,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             Debug.Assert(_current == end);
-            Debug.Assert(_current.Ordinal == LastOrdinal);
+            WithNewOrdinal(_current);
         }
 
         public override void VisitLabelStmt(LabelStmt x)
@@ -791,7 +782,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Defined;        // label is defined
             label.LabelSpan = x.Name.Span;
 
-            _current = Connect(_current, label.TargetBlock);
+            _current = WithNewOrdinal(Connect(_current, label.TargetBlock));
         }
 
         public override void VisitSwitchStmt(SwitchStmt x)
@@ -805,19 +796,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             ConnectBoundItemsBagBlocksToCurrentBlock(boundBagForSwitchValue);
             var switchValue = boundBagForSwitchValue.BoundElement;
 
-            var end = NewUnorderedBlock();
+            var end = NewBlock();
 
             bool hasDefault = false;
             var cases = new List<CaseBlock>(items.Length);
             for (int i = 0; i < items.Length; i++)
             {
-                cases.Add(NewUnorderedBlock(items[i]));
+                cases.Add(NewBlock(items[i]));
                 hasDefault |= (items[i] is DefaultItem);
             }
             if (!hasDefault)
             {
                 // create implicit default:
-                cases.Add(NewUnorderedBlock(new DefaultItem(x.Span, EmptyArray<Statement>.Instance)));
+                cases.Add(NewBlock(new DefaultItem(x.Span, EmptyArray<Statement>.Instance)));
             }
 
             // if switch value isn't a constant & there're case values with preBoundStatements 
@@ -850,7 +841,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             CloseBreakScope();
 
             Debug.Assert(_current == end);
-            Debug.Assert(_current.Ordinal == LastOrdinal);
         }
 
         public override void VisitThrowStmt(ThrowStmt x)
@@ -894,8 +884,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // finally { body }
             // end
 
-            var end = NewUnorderedBlock();
-            var body = NewUnorderedBlock();
+            var end = NewBlock();
+            var body = NewBlock();
 
             // init catch blocks and finally block
             var catchBlocks = ImmutableArray<CatchBlock>.Empty;
@@ -904,7 +894,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 var catchBuilder = ImmutableArray.CreateBuilder<CatchBlock>(x.Catches.Length);
                 for (int i = 0; i < x.Catches.Length; i++)
                 {
-                    catchBuilder.Add(NewUnorderedBlock(x.Catches[i]));
+                    catchBuilder.Add(NewBlock(x.Catches[i]));
                 }
 
                 catchBlocks = catchBuilder.MoveToImmutable();
@@ -912,7 +902,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             BoundBlock finallyBlock = null;
             if (x.FinallyItem != null)
-                finallyBlock = NewUnorderedBlock();
+                finallyBlock = NewBlock();
 
             // TryCatchEdge // Connects _current to body, catch blocks and finally
             var edge = new TryCatchEdge(_current, body, catchBlocks, finallyBlock, end);
