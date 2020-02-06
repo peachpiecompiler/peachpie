@@ -1,15 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Xml;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 
 namespace Peachpie.Library.XmlDom
 {
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
-    public class DOMNode
+    public class DOMNode : IPhpPrintable
     {
         #region Fields and Properties
+
+        /// <summary>
+        /// Overrides default debug print behavior.
+        /// </summary>
+        IEnumerable<KeyValuePair<string, PhpValue>> IPhpPrintable.Properties
+        {
+            get
+            {
+                // only public properties
+                // remove duplicates
+                // ignore properties referring to another DOMNode (https://github.com/peachpiecompiler/peachpie/issues/658)
+
+                var set = new HashSet<string>();
+
+                var fields = TypeMembersUtils.EnumerateInstanceFields(
+                    instance: this,
+                    keyFormatter: TypeMembersUtils.s_propertyName,
+                    keyFormatter2: TypeMembersUtils.s_keyToString,
+                    predicate: p => p.IsPublic && set.Add(p.PropertyName) && !typeof(DOMNode).IsAssignableFrom(p.PropertyType)
+                );
+
+                // TODO: properties containing DOMNode should be listed, but with a dummy value "(object value omitted)"
+
+                return fields;
+            }
+        }
 
         [PhpHidden]
         private protected XmlNode _xmlNode;
