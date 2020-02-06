@@ -11,7 +11,7 @@ namespace Peachpie.CodeAnalysis.Utilities
     /// The minimum and initial lattice element is 0, the maximum is ~0. Indices outside the scope of ulong (64)
     /// are regarded as present in the set.
     /// </remarks>
-    internal struct BitMask
+    internal struct BitMask64
     {
         /// <summary>
         /// Size of ulong bit array (<c>64</c>).
@@ -20,11 +20,11 @@ namespace Peachpie.CodeAnalysis.Utilities
 
         public ulong Mask { get; private set; }
 
-        public static BitMask FromMask(ulong mask) => new BitMask() { Mask = mask };
+        public static BitMask64 FromMask(ulong mask) => new BitMask64() { Mask = mask };
 
-        public static BitMask FromSingleValue(int index)
+        public static BitMask64 FromSingleValue(int index)
         {
-            var result = new BitMask();
+            var result = new BitMask64();
             result.Set(index);
             return result;
         }
@@ -54,21 +54,21 @@ namespace Peachpie.CodeAnalysis.Utilities
             }
         }
 
-        public static bool operator ==(BitMask a, BitMask b) => a.Mask == b.Mask;
+        public static bool operator ==(BitMask64 a, BitMask64 b) => a.Mask == b.Mask;
 
-        public static bool operator !=(BitMask a, BitMask b) => a.Mask != b.Mask;
+        public static bool operator !=(BitMask64 a, BitMask64 b) => a.Mask != b.Mask;
 
-        public static BitMask operator |(BitMask a, BitMask b) => FromMask(a.Mask | b.Mask);
+        public static BitMask64 operator |(BitMask64 a, BitMask64 b) => FromMask(a.Mask | b.Mask);
 
-        public static BitMask operator &(BitMask a, BitMask b) => FromMask(a.Mask & b.Mask);
+        public static BitMask64 operator &(BitMask64 a, BitMask64 b) => FromMask(a.Mask & b.Mask);
 
-        public static implicit operator ulong(BitMask type) => type.Mask;
+        public static implicit operator ulong(BitMask64 type) => type.Mask;
 
-        public static implicit operator BitMask(ulong mask) => FromMask(mask);
+        public static implicit operator BitMask64(ulong mask) => FromMask(mask);
 
         public override bool Equals(object obj)
         {
-            return obj is BitMask mask && Mask == mask.Mask;
+            return obj is BitMask64 mask && Mask == mask.Mask;
         }
 
         public override int GetHashCode()

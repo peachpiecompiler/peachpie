@@ -46,7 +46,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             /// <summary>
             /// Records parameters which need to be deep copied and dealiased upon routine start.
             /// </summary>
-            private BitMask _needPassValueParams;
+            private BitMask64 _needPassValueParams;
 
             private FlowContext _flowContext;
 
@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 _flowContext = flowContext;
             }
 
-            public static BitMask GetNeedPassValueParams(SourceRoutineSymbol routine)
+            public static BitMask64 GetNeedPassValueParams(SourceRoutineSymbol routine)
             {
                 if (routine.ParameterCount == 0)
                 {

@@ -19,11 +19,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         /// </summary>
         private struct CopyAnalysisState
         {
-            private BitMask[] _varState;
+            private BitMask64[] _varState;
 
             public CopyAnalysisState(int varCount)
             {
-                _varState = new BitMask[varCount];
+                _varState = new BitMask64[varCount];
             }
 
             public bool IsDefault => _varState == null;
@@ -58,7 +58,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 return true;
             }
 
-            public BitMask GetValue(int varIndex) => _varState[varIndex];
+            public BitMask64 GetValue(int varIndex) => _varState[varIndex];
 
             public CopyAnalysisState WithMerge(CopyAnalysisState other)
             {
@@ -81,7 +81,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 return merged;
             }
 
-            public CopyAnalysisState WithValue(int varIndex, BitMask value)
+            public CopyAnalysisState WithValue(int varIndex, BitMask64 value)
             {
                 Debug.Assert(!IsDefault);
 
@@ -101,7 +101,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 Debug.Assert(!IsDefault);
 
-                var copyMask = BitMask.FromSingleValue(copyIndex);
+                var copyMask = BitMask64.FromSingleValue(copyIndex);
 
                 if (_varState[trgVarIndex] != copyMask || _varState[srcVarIndex] != (_varState[srcVarIndex] | copyMask))
                 {
@@ -133,7 +133,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             /// </summary>
             private HashSet<BoundCopyValue> _lazyReturnCopies;
 
-            private BitMask _neededCopies;
+            private BitMask64 _neededCopies;
 
             private int VariableCount => _flowContext.VarsType.Length;
 
