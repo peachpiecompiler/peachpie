@@ -38,14 +38,14 @@ function test($locale, $domain, $dir) {
   echo "\n";
 }
 
-test("en_US.utf8", null, null);
+test("en_GB", null, null);
 test(null, "nonexisting_domain", null);
 test(null, null, "nonexisting_dir");
 test(null, "gettext_001_invalid", "translations");
 test(null, "gettext_001_default", "translations");
-test("cs_CZ.utf8", null, null);
-test("cs_CZ.utf8", "gettext_001_alternate", "translations");
+test("cs_CZ", null, null);
+test("cs_CZ", "gettext_001_alternate", "translations");
 test(null, "gettext_001_alternate", null);
-test("sk_SK.utf8", "gettext_001_default", "translations");
-test("cs_CZ.utf8", null, null);
+test("sk_SK", "gettext_001_default", "translations");
+test("cs_CZ", null, null);
 test(null, "gettext_001_default", "translations2");
