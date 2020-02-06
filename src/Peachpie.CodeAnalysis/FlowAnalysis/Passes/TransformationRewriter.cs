@@ -239,7 +239,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             foreach (var parameter in _routine.SourceParameters)
             {
                 var varindex = _routine.ControlFlowGraph.FlowContext.GetVarIndex(parameter.Syntax.Name.Name);
-                var paramType = parameter.Type;
                 if (!needPassValueParams.Get(varindex) && parameter.CopyOnPass)
                 {
                     // It is unnecessary to copy a parameter whose value is only passed to another routines and cannot change

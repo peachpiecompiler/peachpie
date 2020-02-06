@@ -464,7 +464,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         var lhs = new LhsStack();
 
                         cg.EmitConvert(receiver, 0, lhs.Stack = symbol.ContainingType);
-                        
+
                         if (symbol.ContainingType.IsValueType)
                         {
                             cg.EmitStructAddr(symbol.ContainingType);
@@ -958,29 +958,31 @@ namespace Pchp.CodeAnalysis.Semantics
 
             public void EmitPass(CodeGenerator cg)
             {
+                if (_param.CopyOnPass == false ||
+                    cg.IsCopiable(_place.Type) == false)
+                {
+                    // copy is not necessary
+                    return;
+                }
+
                 // inplace copies the parameter
 
-                if (_param.CopyOnPass)
+                if (_place.Type == cg.CoreTypes.PhpValue)
                 {
-                    Debug.Assert(cg.IsCopiable(_place.Type));
+                    // dereference & copy
+                    // (ref <param>).PassValue()
+                    _place.EmitLoadAddress(cg.Builder);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValue);
+                }
+                else
+                {
+                    _place.EmitStorePrepare(cg.Builder);
 
-                    if (_place.Type == cg.CoreTypes.PhpValue)
-                    {
-                        // dereference & copy
-                        // (ref <param>).PassValue()
-                        _place.EmitLoadAddress(cg.Builder);
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValue);
-                    }
-                    else
-                    {
-                        _place.EmitStorePrepare(cg.Builder);
+                    // copy
+                    // <param> = DeepCopy(<param>)
+                    cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_param.IsNotNull);
 
-                        // copy
-                        // <param> = DeepCopy(<param>)
-                        cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_param.IsNotNull);
-
-                        _place.EmitStore(cg.Builder);
-                    }
+                    _place.EmitStore(cg.Builder);
                 }
             }
 
