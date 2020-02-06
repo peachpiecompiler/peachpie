@@ -626,7 +626,7 @@ namespace Pchp.Library.DateTime
         /// </summary>
         public void SetRelative(string str, int amount, int behavior)
         {
-            switch (str)
+            switch (str.ToLowerInvariant())
             {
                 case "sec":
                 case "secs":
@@ -692,30 +692,45 @@ namespace Pchp.Library.DateTime
             }
         }
 
+        /// <summary>Map of a week day name into it's ordinal. Sunday is zero.</summary>
+        readonly static Dictionary<string, int> s_weedays = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "mon", 1 },
+            { "monday", 1 },
+
+            { "tue", 2 },
+            { "tuesday" , 2 },
+
+            { "wed", 3 },
+            { "wednesday" , 3 },
+
+            { "thu", 4 },
+            { "thursday" , 4 },
+
+            { "fri", 5 },
+            { "friday" , 5 },
+
+            { "sat", 6 },
+            { "saturday" , 6 },
+
+            { "sun", 0 },
+            { "sunday" , 0 },
+        };
+
         /// <summary>
         /// Sets relative week day according to a specified text.
         /// </summary>
         public bool SetWeekDay(string str)
         {
-            switch (str)
+            if (s_weedays.TryGetValue(str, out var weekday))
             {
-                case "mon":
-                case "monday": relative.weekday = 1; break;
-                case "tue":
-                case "tuesday": relative.weekday = 2; break;
-                case "wed":
-                case "wednesday": relative.weekday = 3; break;
-                case "thu":
-                case "thursday": relative.weekday = 4; break;
-                case "fri":
-                case "friday": relative.weekday = 5; break;
-                case "sat":
-                case "saturday": relative.weekday = 6; break;
-                case "sun":
-                case "sunday": relative.weekday = 0; break;
-                default: return false;
+                relative.weekday = weekday;
+                return true;
             }
-            return true;
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>
