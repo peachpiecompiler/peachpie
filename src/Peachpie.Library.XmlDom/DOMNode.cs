@@ -11,8 +11,11 @@ namespace Peachpie.Library.XmlDom
     {
         #region Fields and Properties
 
-        private XmlNode _xmlNode;
-        internal XmlNode XmlNode
+        [PhpHidden]
+        private protected XmlNode _xmlNode;
+
+        [PhpHidden]
+        internal protected XmlNode XmlNode
         {
             get
             {
@@ -25,7 +28,8 @@ namespace Peachpie.Library.XmlDom
             }
         }
 
-        internal bool IsAssociated => _xmlNode != null;
+        [PhpHidden]
+        internal protected bool IsAssociated => _xmlNode != null;
 
         /// <summary>
         /// Returns the name of the node (exact meaning depends on the particular subtype).
@@ -251,7 +255,8 @@ namespace Peachpie.Library.XmlDom
 
         #region Construction
 
-        internal static DOMNode Create(XmlNode xmlNode)
+        [PhpHidden]
+        internal protected static DOMNode Create(XmlNode xmlNode)
         {
             if (xmlNode == null) return null;
             switch (xmlNode.NodeType)
@@ -278,7 +283,7 @@ namespace Peachpie.Library.XmlDom
         }
 
         [PhpHidden]
-        protected virtual DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected virtual DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             DOMException.Throw(ExceptionCode.InvalidState);
             return null;
@@ -318,15 +323,18 @@ namespace Peachpie.Library.XmlDom
 
         #region Hierarchy
 
-        internal virtual void Associate(XmlDocument/*!*/ document)
-        { }
+        [PhpHidden]
+        internal protected virtual void Associate(XmlDocument/*!*/ document)
+        {
+        }
 
-        private delegate XmlNode NodeAction(DOMNode/*!*/ newNode, DOMNode auxNode);
+        private protected delegate XmlNode NodeAction(DOMNode/*!*/ newNode, DOMNode auxNode);
 
         /// <summary>
         /// Performs a child-adding action with error checks.
         /// </summary>
-        private XmlNode CheckedChildOperation(DOMNode/*!*/ newNode, DOMNode auxNode, NodeAction/*!*/ action)
+        [PhpHidden]
+        private protected XmlNode CheckedChildOperation(DOMNode/*!*/ newNode, DOMNode auxNode, NodeAction/*!*/ action)
         {
             newNode.Associate(XmlNode.OwnerDocument != null ? XmlNode.OwnerDocument : (XmlDocument)XmlNode);
 

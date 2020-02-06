@@ -286,7 +286,7 @@ namespace Peachpie.Library.XmlDom
             this.XmlDocument = xmlDocument;
         }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields) => new DOMDocument(XmlDocument);
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields) => new DOMDocument(XmlDocument);
 
         public virtual void __construct(string version = null, string encoding = null)
         {

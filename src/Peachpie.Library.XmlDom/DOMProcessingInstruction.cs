@@ -83,7 +83,7 @@ namespace Peachpie.Library.XmlDom
 			this.XmlProcessingInstruction = xmlProcessingInstruction;
 		}
 
-		protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
 		{
 			if (IsAssociated) return new DOMProcessingInstruction(XmlProcessingInstruction);
 			else

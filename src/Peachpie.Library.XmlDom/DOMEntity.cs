@@ -75,7 +75,7 @@ namespace Peachpie.Library.XmlDom
             this.XmlEntity = xmlEntity;
         }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             if (IsAssociated) return new DOMEntity(XmlEntity);
             else return new DOMEntity();

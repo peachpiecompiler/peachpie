@@ -96,7 +96,7 @@ namespace Peachpie.Library.XmlDom
             this.XmlAttribute = xmlAttribute;
         }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             if (IsAssociated) return new DOMAttr(XmlAttribute);
             else
@@ -126,7 +126,7 @@ namespace Peachpie.Library.XmlDom
 
         #region Hierarchy
 
-        internal override void Associate(XmlDocument/*!*/ document)
+        internal protected override void Associate(XmlDocument/*!*/ document)
         {
             if (!IsAssociated)
             {
