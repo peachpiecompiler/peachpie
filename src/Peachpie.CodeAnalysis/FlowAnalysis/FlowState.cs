@@ -406,6 +406,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public bool IsLessThanLongMax(VariableHandle handle) => HasConstrain(handle, NoteKind.LessThanLongMax);
 
+        /// <summary>
+        /// Sets or removes GTInt64 flag for a variable.
+        /// </summary>
+        public void SetGreaterThanLongMin(VariableHandle handle, bool lt) => SetConstrain(handle, NoteKind.GreaterThanLongMin, lt);
+
+        /// <summary>
+        /// Gets GTInt64 flag for a variable.
+        /// </summary>
+        public bool IsGreaterThanLongMin(VariableHandle handle) => HasConstrain(handle, NoteKind.GreaterThanLongMin);
+
         #endregion
 
         /// <summary>

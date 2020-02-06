@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.Library.Scripting;
 using Xunit;
@@ -29,6 +30,8 @@ namespace Peachpie.DiagnosticTests
         private static readonly Regex DiagnosticAnnotationRegex = new Regex(@"/\*!([A-Z]*[0-9]*)!\*/");
         private static readonly Regex TypeAnnotationRegex = new Regex(@"/\*\|([^/]*)\|\*/");
         private static readonly Regex RoutinePropertiesRegex = new Regex(@"/\*{version:([0-9]+)}\*/");
+        private static readonly Regex ParameterPropertiesRegex = new Regex(@"/\*{skipPass:([01])}\*/");
+        private static readonly Regex OperationPropertiesRegex = new Regex(@"/\*{skipCopy:([01])}\*/");
 
         /// <summary>
         /// Init test class.
@@ -62,17 +65,21 @@ namespace Peachpie.DiagnosticTests
                 .ToArray();
             isCorrect &= CheckDiagnostics(syntaxTree, actualDiags, expectedDiags);
 
-            // Gather and check types if there are any annotations
+            // Gather and check types and parameter properties if there are any annotations
             var expectedTypes = TypeAnnotationRegex.Matches(code);
-            if (expectedTypes.Count > 0)
+            var expectedParamProps = ParameterPropertiesRegex.Matches(code);
+            if (expectedTypes.Count > 0 || expectedParamProps.Count > 0)
             {
                 var symbolsInfo = compilation.UserDeclaredRoutines
                         .Where(routine => routine.ControlFlowGraph != null)
                         .Select(routine => SymbolsSelector.Select(routine.ControlFlowGraph))
                         .Concat(compilation.UserDeclaredRoutines.Select(routine => SymbolsSelector.Select(routine)))    // routine declarations
                         .Concat(compilation.UserDeclaredTypes.Select(type => SymbolsSelector.Select(type)))    // type declarations
-                        .SelectMany(enumerators => enumerators);    // IEnumerable<IEnumerable<T>> => IEnumerable<T>
+                        .SelectMany(enumerators => enumerators)    // IEnumerable<IEnumerable<T>> => IEnumerable<T>
+                        .ToArray();                                // Cache results
+
                 isCorrect &= CheckTypes(syntaxTree, symbolsInfo, expectedTypes);
+                isCorrect &= CheckParameterProperties(syntaxTree, symbolsInfo, expectedParamProps);
             }
 
             // Gather and check routine properties if there are any annotations
@@ -80,6 +87,18 @@ namespace Peachpie.DiagnosticTests
             if (expectedRoutineProps.Count > 0)
             {
                 isCorrect &= CheckRoutineProperties(syntaxTree, compilation.SourceSymbolCollection.AllRoutines, expectedRoutineProps);
+            }
+
+            // Gather and check operation properties if there are any annotations
+            var expectedOpProps = OperationPropertiesRegex.Matches(code);
+            if (expectedOpProps.Count > 0)
+            {
+                var interestingOps = compilation.UserDeclaredRoutines
+                    .OfType<SourceRoutineSymbol>()
+                    .SelectMany(r => OperationSelector.Select(r))
+                    .ToArray();
+
+                isCorrect &= CheckOperationProperties(syntaxTree, interestingOps, expectedOpProps);
             }
 
             Assert.True(isCorrect);
@@ -275,6 +294,64 @@ namespace Peachpie.DiagnosticTests
                     var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
                     _output.WriteLine(
                         $"Wrong final flow analysis version {actualVersion} instead of {expectedVersion} of the routine {routine.Name} on {linePos.Line},{linePos.Character}");
+                    isCorrect = false;
+                }
+            }
+
+            return isCorrect;
+        }
+
+        private bool CheckParameterProperties(PhpSyntaxTree syntaxTree, IEnumerable<SymbolsSelector.SymbolStat> symbolStats, MatchCollection expectedParamProps)
+        {
+            var positionParamMap = new Dictionary<int, SourceParameterSymbol>(
+                from symbolStat in symbolStats
+                let symbol = symbolStat.Symbol
+                where symbol is SourceParameterSymbol
+                select new KeyValuePair<int, SourceParameterSymbol>(symbolStat.Span.End, (SourceParameterSymbol)symbol));
+
+            bool isCorrect = true;
+            foreach (Match match in expectedParamProps)
+            {
+                int expectedPos = match.Index;
+                if (!positionParamMap.TryGetValue(expectedPos, out var param))
+                {
+                    var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
+                    _output.WriteLine($"Cannot get parameter information for properties on {linePos.Line},{linePos.Character}");
+                    isCorrect = false;
+                    continue;
+                }
+
+                bool expectedSkipPass = (int.Parse(match.Groups[1].Value) != 0);
+                bool actualSkipPass = !param.CopyOnPass;
+                if (expectedSkipPass != actualSkipPass)
+                {
+                    var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
+                    _output.WriteLine(
+                        $"Wrong value of SkipPass {actualSkipPass} instead of {expectedSkipPass} of the parameter {param.Name} in {param.Routine.Name} on {linePos.Line},{linePos.Character}");
+                    isCorrect = false;
+                }
+            }
+
+            return isCorrect;
+        }
+
+        private bool CheckOperationProperties(PhpSyntaxTree syntaxTree, IEnumerable<IPhpOperation> interestingOps, MatchCollection expectedOpProps)
+        {
+            var copyPositionSet = new HashSet<int>(
+                interestingOps
+                .OfType<BoundCopyValue>()
+                .Select(c => c.Expression.PhpSyntax.Span.End));
+
+            bool isCorrect = true;
+            foreach (Match match in expectedOpProps)
+            {
+                bool expectedSkipCopy = (int.Parse(match.Groups[1].Value) != 0);
+                bool actualSkipCopy = !copyPositionSet.Contains(match.Index);
+                if (expectedSkipCopy != actualSkipCopy)
+                {
+                    var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
+                    _output.WriteLine(
+                        $"Wrong value of copy skipping {actualSkipCopy} instead of {expectedSkipCopy} of the expression on {linePos.Line},{linePos.Character}");
                     isCorrect = false;
                 }
             }

@@ -22,9 +22,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Visits single expressions and project transformations to flow state.
     /// </summary>
-    internal class ExpressionAnalysis<T> : AnalysisWalker<T>
+    internal class ExpressionAnalysis<T> : AnalysisWalker<FlowState, T>
     {
         #region Fields & Properties
+
+        /// <summary>
+        /// The worklist to be used to enqueue next blocks.
+        /// </summary>
+        internal Worklist<BoundBlock> Worklist { get; }
 
         /// <summary>
         /// Gets model for symbols resolution.
@@ -36,6 +41,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Reference to corresponding source routine.
         /// </summary>
         protected SourceRoutineSymbol Routine => State.Routine;
+
+        /// <summary>
+        /// Gets current type context for type masks resolving.
+        /// </summary>
+        internal TypeRefContext TypeCtx => State.TypeRefContext;
 
         protected PhpCompilation DeclaringCompilation => _model.Compilation;
 
@@ -134,15 +144,173 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         protected OverloadsList.VisibilityScope VisibilityScope => OverloadsList.VisibilityScope.Create(TypeCtx.SelfType, Routine);
 
+        protected void PingSubscribers(ExitBlock exit)
+        {
+            if (exit != null)
+            {
+                bool wasNotAnalysed = false;
+                if (State.Routine?.IsReturnAnalysed == false)
+                {
+                    wasNotAnalysed = true;
+                    State.Routine.IsReturnAnalysed = true;
+                }
+
+                // Ping the subscribers either if the return type has changed or
+                // it is the first time the analysis reached the routine exit
+                var rtype = State.GetReturnType();
+                if (rtype != exit._lastReturnTypeMask || wasNotAnalysed)
+                {
+                    exit._lastReturnTypeMask = rtype;
+                    var subscribers = exit.Subscribers;
+                    if (subscribers.Count != 0)
+                    {
+                        lock (subscribers)
+                        {
+                            foreach (var subscriber in subscribers)
+                            {
+                                Worklist.PingReturnUpdate(exit, subscriber);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a double and nothing else.
+        /// </summary>
+        protected bool IsDoubleOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && this.TypeCtx.IsDouble(tmask);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a double and nothing else.
+        /// </summary>
+        protected bool IsDoubleOnly(BoundExpression x) => IsDoubleOnly(x.TypeRefMask);
+
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        protected bool IsLongOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && this.TypeCtx.IsLong(tmask);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        protected bool IsLongOnly(BoundExpression x) => IsLongOnly(x.TypeRefMask);
+
+        /// <summary>
+        /// Gets value indicating the given type is long or double or both but nothing else.
+        /// </summary>
+        /// <param name="tmask"></param>
+        /// <returns></returns>
+        protected bool IsNumberOnly(TypeRefMask tmask)
+        {
+            if (TypeCtx.IsLong(tmask) || TypeCtx.IsDouble(tmask))
+            {
+                if (tmask.IsSingleType)
+                {
+                    return true;
+                }
+
+                return !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsNumber();
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents only class types.
+        /// </summary>
+        protected bool IsClassOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsObject();
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents only array types.
+        /// </summary>
+        protected bool IsArrayOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsArray();
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type is long or double or both but nothing else.
+        /// </summary>
+        protected bool IsNumberOnly(BoundExpression x) => IsNumberOnly(x.TypeRefMask);
+
         #endregion
 
         #region Construction
 
+        /// <summary>
+        /// Creates an instance of <see cref="ExpressionAnalysis{T}"/> that can analyse a block.
+        /// </summary>
+        /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
+        /// <param name="model">The semantic context of the compilation.</param>
         public ExpressionAnalysis(Worklist<BoundBlock> worklist, ISymbolProvider model)
-            : base(worklist)
         {
             Debug.Assert(model != null);
             _model = model;
+            Worklist = worklist;
+        }
+
+        #endregion
+
+        #region State and worklist handling
+
+        protected override bool IsStateInitialized(FlowState state) => state != null;
+
+        protected override bool AreStatesEqual(FlowState a, FlowState b) => a.Equals(b);
+
+        protected override FlowState GetState(BoundBlock block) => block.FlowState;
+
+        protected override void SetState(BoundBlock block, FlowState state) => block.FlowState = state;
+
+        protected override FlowState CloneState(FlowState state) => state.Clone();
+
+        protected override FlowState MergeStates(FlowState a, FlowState b) => a.Merge(b);
+
+        protected override void SetStateUnknown(ref FlowState state) => state.SetAllUnknown(true);
+
+        protected override void EnqueueBlock(BoundBlock block) => Worklist.Enqueue(block);
+
+        #endregion
+
+        #region Visit blocks
+
+        public override T VisitCFGExitBlock(ExitBlock x)
+        {
+            VisitCFGBlock(x);
+
+            // TODO: EdgeToCallers:
+            PingSubscribers(x);
+
+            return default;
+        }
+
+        public override T VisitCFGCatchBlock(CatchBlock x)
+        {
+            VisitCFGBlockInit(x);
+
+            // add catch control variable to the state
+            x.TypeRef.Accept(this);
+            x.Variable.Access = BoundAccess.Write.WithWrite(x.TypeRef.GetTypeRefMask(TypeCtx));
+            State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue), x.Variable.Access.WriteMask);
+
+            Accept(x.Variable);
+
+            //
+            x.Variable.ResultType = (Symbols.TypeSymbol)x.TypeRef.Type;
+
+            //
+            DefaultVisitBlock(x);
+
+            return default;
         }
 
         #endregion
@@ -164,12 +332,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // analyse initializer
                 Accept(v.InitialValue);
 
-                State.SetLessThanLongMax(local, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
+                bool isInt = v.InitialValue.ConstantValue.IsInteger(out long intVal);
+                State.SetLessThanLongMax(local, isInt && intVal < long.MaxValue);
+                State.SetGreaterThanLongMin(local, isInt && intVal > long.MinValue);
+
                 State.SetLocalType(local, ((IPhpExpression)v.InitialValue).TypeRefMask | oldtype);
             }
             else
             {
                 State.SetLessThanLongMax(local, false);
+                State.SetGreaterThanLongMin(local, false);
                 State.SetLocalType(local, TypeCtx.GetNullTypeMask() | oldtype);
                 // TODO: explicitly State.SetLocalUninitialized() ?
             }
@@ -455,6 +627,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //
                 State.SetLocalType(local, vartype);
                 State.SetLessThanLongMax(local, false);
+                State.SetGreaterThanLongMin(local, false);
                 x.TypeRefMask = vartype;
             }
 
@@ -463,6 +636,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TypeRefMask = TypeCtx.GetNullTypeMask();
                 State.SetLocalType(local, x.TypeRefMask);
                 State.SetLessThanLongMax(local, false);
+                State.SetGreaterThanLongMin(local, false);
                 State.SetVarUninitialized(local);
             }
         }
@@ -530,20 +704,36 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             TypeRefMask resulttype;
             TypeRefMask sourcetype = x.Target.TypeRefMask;  // type of target before operation
 
+            VariableHandle lazyVarHandle = default;
+            bool lessThanLongMax = false;               // whether the variable's value is less than the max long value
+            bool greaterThanLongMin = false;            // or greater than the min long value
+
             if (IsDoubleOnly(x.Target))
             {
                 // double++ => double
                 resulttype = TypeCtx.GetDoubleTypeMask();
             }
-            else if (State.IsLessThanLongMax(TryGetVariableHandle(x.Target)))    // we'd like to keep long if we are sure we don't overflow to double
-            {
-                // long++ [< long.MaxValue] => long
-                resulttype = TypeCtx.GetLongTypeMask();
-            }
             else
             {
-                // long|double|anything++ => number
-                resulttype = TypeCtx.GetNumberTypeMask();
+                // we'd like to keep long if we are sure we don't overflow to double
+                lazyVarHandle = TryGetVariableHandle(x.Target);
+                if (lazyVarHandle.IsValid && x.IsIncrement && State.IsLessThanLongMax(lazyVarHandle))
+                {
+                    // long++ [< long.MaxValue] => long
+                    resulttype = TypeCtx.GetLongTypeMask();
+                    lessThanLongMax = true;
+                }
+                else if (lazyVarHandle.IsValid && !x.IsIncrement && State.IsGreaterThanLongMin(lazyVarHandle))
+                {
+                    // long-- [> long.MinValue] => long
+                    resulttype = TypeCtx.GetLongTypeMask();
+                    greaterThanLongMin = true;
+                }
+                else
+                {
+                    // long|double|anything++/-- => number
+                    resulttype = TypeCtx.GetNumberTypeMask();
+                }
             }
 
             Visit(x.Target, BoundAccess.Write.WithWrite(resulttype));
@@ -551,6 +741,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             x.Target.Access = x.Target.Access.WithRead();   // put read access back to the target
             x.TypeRefMask = x.IsPostfix ? sourcetype : resulttype;
+
+            // We expect that an incrementation doesn't change the property of being less than the max long value,
+            // it needs to be restored due to the write access of the target variable
+            if (lessThanLongMax)
+            {
+                Debug.Assert(lazyVarHandle.IsValid);
+                State.SetLessThanLongMax(lazyVarHandle, true);
+            }
+
+            // The same for the min long value
+            if (greaterThanLongMin)
+            {
+                Debug.Assert(lazyVarHandle.IsValid);
+                State.SetGreaterThanLongMin(lazyVarHandle, true);
+            }
 
             return default;
         }
@@ -765,6 +970,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return type;
         }
 
+        /// <summary>
+        /// Gets resulting type of <c>-</c> operation.
+        /// </summary>
+        TypeRefMask GetMinusOperationType(BoundExpression left, BoundExpression right)
+        {
+            if (State.IsGreaterThanLongMin(TryGetVariableHandle(left)) && IsLongConstant(right, 1)) // LONG -1, where LONG > long.MinValue
+                return TypeCtx.GetLongTypeMask();
+            else if (IsDoubleOnly(left.TypeRefMask) || IsDoubleOnly(right.TypeRefMask)) // some operand is double and nothing else
+                return TypeCtx.GetDoubleTypeMask(); // double if we are sure about operands
+            else
+                return TypeCtx.GetNumberTypeMask();
+        }
+
         protected override void Visit(BoundBinaryEx x, ConditionBranch branch)
         {
             x.TypeRefMask = ResolveBinaryEx(x, branch);
@@ -790,6 +1008,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return GetPlusOperationType(x.Left, x.Right);
 
                 case Operations.Sub:
+                    return GetMinusOperationType(x.Left, x.Right);
+
                 case Operations.Div:
                 case Operations.Mul:
                 case Operations.Pow:
@@ -875,10 +1095,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // comparison with long value
                     if (branch == ConditionBranch.ToTrue && IsLongOnly(x.Right))
                     {
-                        if (x.Operation == Operations.LessThan)
+                        if (x.Operation == Operations.LessThan ||
+                            (x.Operation == Operations.LessThanOrEqual && x.Right.ConstantValue.IsInteger(out long rightVal) && rightVal < long.MaxValue))
                         {
-                            // $x < LONG
+                            // $x < Long.Max
                             State.SetLessThanLongMax(TryGetVariableHandle(x.Left), true);
+                        }
+                        else if (x.Operation == Operations.GreaterThan ||
+                            (x.Operation == Operations.GreaterThanOrEqual && x.Right.ConstantValue.IsInteger(out long rightVal2) && rightVal2 > long.MinValue))
+                        {
+                            // $x > Long.Min
+                            State.SetGreaterThanLongMin(TryGetVariableHandle(x.Left), true);
                         }
                     }
 
@@ -1287,6 +1514,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
+        public override T VisitTryGetItem(BoundTryGetItem x)
+        {
+            // array, index, fallback
+            base.VisitTryGetItem(x);
+
+            // TODO: resulting type if possible (see VisitArrayItem)
+
+            // The result of array[index] might be a reference
+            x.TypeRefMask = TypeRefMask.AnyType.WithRefFlag;
+
+            return default;
+        }
+
         #endregion
 
         #region TypeRef
@@ -1414,6 +1654,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 else
                 {
                     // TODO: Err, variable or field must be passed into byref argument. foo("hello") where function foo(&$x){}
+                }
+            }
+            else if (!expected.Type.IsAnyType && givenarg.Value is BoundVariableRef refvar && refvar.Name.IsDirect)
+            {
+                // Even for variables passed by value we may gain information about their type (if we previously had none),
+                // because not complying with the parameter type would have caused throwing a TypeError
+                var local = State.GetLocalHandle(refvar.Name.NameValue);
+                var localType = State.GetLocalType(local);
+                if (localType.IsAnyType && !localType.IsRef &&
+                    (TypeCtx.IsObject(expected.Type) || TypeCtx.IsArray(expected.Type)))
+                {
+                    Debug.Assert(!expected.Type.IsRef);
+                    State.SetLocalType(local, expected.Type);
                 }
             }
         }
@@ -1958,7 +2211,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        #region Visit ArrayEx, ArrayItemEx
+        #region Visit ArrayEx, ArrayItemEx, ArrayItemOrdEx
 
         public override T VisitArray(BoundArrayEx x)
         {
@@ -2000,6 +2253,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 TypeRefMask.AnyType.WithRefFlag; // result might be a anything (including a reference?)
 
             return default;
+        }
+
+        public override T VisitArrayItemOrd(BoundArrayItemOrdEx x)
+        {
+            Accept(x.Array);
+            Accept(x.Index);
+
+            // ord($s[$i]) cannot be used as an l-value
+            Debug.Assert(!x.Access.MightChange);
+
+            x.TypeRefMask = TypeCtx.GetLongTypeMask();
+
+            return base.VisitArrayItemOrd(x);
         }
 
         #endregion

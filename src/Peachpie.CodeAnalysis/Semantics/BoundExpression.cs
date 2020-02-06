@@ -108,7 +108,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets value indicating the variable might be changed in context of the access.
         /// </summary>
-        public bool MightChange => IsWrite || IsUnset || IsEnsure;
+        public bool MightChange => IsWrite || IsUnset || IsEnsure || (IsQuiet && !IsIsSet);
 
         /// <summary>
         /// In case an alias will be written to the variable.
@@ -2038,6 +2038,40 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitArrayItem(this);
     }
 
+    #region BoundArrayItemOrdEx
+
+    public partial class BoundArrayItemOrdEx : BoundArrayItemEx
+    {
+        public BoundArrayItemOrdEx(PhpCompilation compilation, BoundExpression array, BoundExpression index) :
+            base(compilation, array, index)
+        { }
+
+        public new BoundArrayItemOrdEx Update(BoundExpression array, BoundExpression index)
+        {
+            if (array == Array && index == Index)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundArrayItemOrdEx(DeclaringCompilation, array, index).WithContext(this);
+            }
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitArrayElementReference(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitArrayElementReference(this, argument);
+
+        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
+        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
+        /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitArrayItemOrd(this);
+    }
+
+    #endregion
+
     #endregion
 
     #region BoundInstanceOfEx
@@ -2240,7 +2274,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundIsSetEx, BoundOffsetExists, BoundIsEmptyEx
+    #region BoundIsSetEx, BoundOffsetExists, BoundIsEmptyEx, BoundTryGetItem
 
     public partial class BoundIsEmptyEx : BoundExpression
     {
@@ -2360,6 +2394,52 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor)
             => visitor.VisitOffsetExists(this);
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+    }
+
+    /// <summary>
+    /// Shortcut for <c>isset($Array[$Index]) ? $Array[$Index] : Fallback</c>.
+    /// </summary>
+    public partial class BoundTryGetItem : BoundExpression
+    {
+        public override OperationKind Kind => OperationKind.None;
+
+        public BoundExpression Array { get; }
+        public BoundExpression Index { get; }
+        public BoundExpression Fallback { get; }
+
+        public override bool RequiresContext => Array.RequiresContext || Index.RequiresContext || Fallback.RequiresContext;
+
+        public BoundTryGetItem(BoundExpression array, BoundExpression index, BoundExpression fallback)
+        {
+            Debug.Assert(array != null);
+            Debug.Assert(index != null);
+            Debug.Assert(fallback != null);
+
+            Array = array;
+            Index = index;
+            Fallback = fallback;
+        }
+
+        public BoundTryGetItem Update(BoundExpression array, BoundExpression index, BoundExpression fallback)
+        {
+            if (Array == array && Index == index && Fallback == fallback)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundTryGetItem(array, index, fallback);
+            }
+        }
+
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor)
+            => visitor.VisitTryGetItem(this);
 
         public override void Accept(OperationVisitor visitor)
             => visitor.DefaultVisit(this);

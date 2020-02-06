@@ -910,23 +910,19 @@ namespace Pchp.CodeAnalysis.Semantics
         sealed class DirectParameter : IParameterSource, IParameterTarget
         {
             readonly IPlace _place;
-            readonly bool _isparams;
-            readonly bool _byref;
-            readonly bool _notNull;
+            readonly SourceParameterSymbol _param;
 
-            public DirectParameter(IPlace place, bool isparams, bool byref, bool notNull)
+            public DirectParameter(IPlace place, SourceParameterSymbol param)
             {
                 Debug.Assert(place != null);
                 _place = place;
-                _isparams = isparams;
-                _byref = byref;
-                _notNull = notNull;
+                _param = param;
             }
 
             /// <summary>Loads copied parameter value.</summary>
             public TypeSymbol EmitLoad(CodeGenerator cg)
             {
-                if (_isparams)
+                if (_param.IsParams)
                 {
                     // converts params -> PhpArray
                     Debug.Assert(_place.Type.IsSZArray());
@@ -948,8 +944,15 @@ namespace Pchp.CodeAnalysis.Semantics
                         t = _place.EmitLoad(cg.Builder);
                     }
 
-                    // make copy of given value
-                    return cg.EmitDeepCopy(t, nullcheck: !_notNull);
+                    if (_param.CopyOnPass)
+                    {
+                        // make copy of given value
+                        return cg.EmitDeepCopy(t, nullcheck: !_param.IsNotNull);
+                    }
+                    else
+                    {
+                        return t;
+                    }
                 }
             }
 
@@ -957,22 +960,27 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // inplace copies the parameter
 
-                if (_place.Type == cg.CoreTypes.PhpValue)
+                if (_param.CopyOnPass)
                 {
-                    // dereference & copy
-                    // (ref <param>).PassValue()
-                    _place.EmitLoadAddress(cg.Builder);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValue);
-                }
-                else if (cg.IsCopiable(_place.Type))
-                {
-                    _place.EmitStorePrepare(cg.Builder);
+                    Debug.Assert(cg.IsCopiable(_place.Type));
 
-                    // copy
-                    // <param> = DeepCopy(<param>)
-                    cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_notNull);
+                    if (_place.Type == cg.CoreTypes.PhpValue)
+                    {
+                        // dereference & copy
+                        // (ref <param>).PassValue()
+                        _place.EmitLoadAddress(cg.Builder);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValue);
+                    }
+                    else
+                    {
+                        _place.EmitStorePrepare(cg.Builder);
 
-                    _place.EmitStore(cg.Builder);
+                        // copy
+                        // <param> = DeepCopy(<param>)
+                        cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_param.IsNotNull);
+
+                        _place.EmitStore(cg.Builder);
+                    }
                 }
             }
 
@@ -1146,7 +1154,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var source = srcparam.IsFake
                 ? (IParameterSource)new IndirectParameterSource(srcparam, srcparam.Routine.GetParamsParameter())
-                : (IParameterSource)new DirectParameter(new ParamPlace(srcparam), srcparam.IsParams, byref: srcparam.Syntax.PassedByRef, notNull: srcparam.IsNotNull);
+                : (IParameterSource)new DirectParameter(new ParamPlace(srcparam), srcparam);
 
             if (cg.HasUnoptimizedLocals == false) // usual case - optimized locals
             {
@@ -1168,7 +1176,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var target = cg.HasUnoptimizedLocals
                 ? (IParameterTarget)new IndirectLocalTarget(srcparam.Name)
                 : (lazyPlace != null)
-                    ? new DirectParameter(lazyPlace, srcparam.IsParams, byref: srcparam.Syntax.PassedByRef, notNull: srcparam.IsNotNull/*not important*/)
+                    ? new DirectParameter(lazyPlace, srcparam)
                     : (DirectParameter)source;
 
             // 1. TypeCheck
@@ -1176,7 +1184,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (source == target)
             {
-                // 2a. (source == target): Pass (inplace copy)
+                // 2a. (source == target): Pass (inplace copy and dereference) if necessary
                 source.EmitPass(cg);
             }
             else

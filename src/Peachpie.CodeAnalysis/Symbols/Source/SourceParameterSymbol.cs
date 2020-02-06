@@ -37,6 +37,12 @@ namespace Pchp.CodeAnalysis.Symbols
         public override BoundExpression Initializer => _initializer;
         readonly BoundExpression _initializer;
 
+        /// <summary>
+        /// Whether the parameter needs to be copied when passed by value. Can be set to <c>false</c> by analysis
+        /// (e.g. unused parameter or only delegation to another method).
+        /// </summary>
+        public bool CopyOnPass { get; set; }
+
         public override FieldSymbol DefaultValueField
         {
             get
@@ -120,6 +126,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     .BindWholeExpression(syntax.InitValue, BoundAccess.Read)
                     .SingleBoundElement()
                 : null;
+
+            // Only copiable types need to be copied when passed (see CodeGenerator.IsCopiable)
+            var ct = routine.DeclaringCompilation.CoreTypes;
+            CopyOnPass = (Type == ct.PhpValue || Type == ct.PhpString || Type == ct.PhpArray);
         }
 
         /// <summary>
