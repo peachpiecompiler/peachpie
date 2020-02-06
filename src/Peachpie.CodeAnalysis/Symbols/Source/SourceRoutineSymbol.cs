@@ -479,7 +479,29 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && IsMetadataVirtual(ignoreInterfaceImplementationChanges);
 
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual && (!ContainingType.IsSealed || IsOverride || IsAbstract); // do not make method virtual if not necessary
+        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false)
+        {
+            return IsVirtual && (!ContainingType.IsSealed || IsOverride || IsAbstract || OverrideOfMethod() != null);  // do not make method virtual if not necessary
+        }
+
+        /// <summary>
+        /// Gets value indicating the method is an override of another virtual method.
+        /// In such a case, this method MUST be virtual.
+        /// </summary>
+        private MethodSymbol OverrideOfMethod()
+        {
+            var overrides = ContainingType.ResolveOverrides(DiagnosticBag.GetInstance());   // Gets override resolution matrix. This is already resolved and does not cause an overhead.
+
+            for (int i = 0; i < overrides.Length; i++)
+            {
+                if (overrides[i].Override == this)
+                {
+                    return overrides[i].Method;
+                }
+            }
+
+            return null;
+        }
 
         internal override bool IsMetadataFinal => base.IsMetadataFinal && IsMetadataVirtual(); // altered IsMetadataVirtual -> causes change to '.final' metadata as well
 
