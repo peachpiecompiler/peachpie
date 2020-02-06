@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Library.Streams;
+using static Pchp.Library.Network;
 
 namespace Pchp.Library
 {
@@ -169,7 +170,7 @@ namespace Pchp.Library
 
     /// <summary>Functions working with DNS.</summary>
     [PhpExtension("standard")]
-	public static class PhpDns
+    public static class PhpDns
     {
         //#region NS: dns_check_record, checkdnsrr
 
@@ -204,40 +205,29 @@ namespace Pchp.Library
 
         //       #endregion
 
-        //       #region NS: dns_get_record
+        #region dns_get_record
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
-        //       public static PhpArray GetRecord(string host)
-        //       {
-        //           return GetRecord(host, DnsRecordType.All);
-        //       }
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray dns_get_record(string host, DnsRecordType type = DnsRecordType.All)
+        {
+            throw new NotSupportedException();
+        }
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
-        //       public static PhpArray GetRecord(string host, DnsRecordType type)
-        //       {
-        //           PhpException.FunctionNotSupported();
-        //           return null;
-        //       }
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray dns_get_record(string host, DnsRecordType type, out PhpArray authNS, out PhpArray additional)
+        {
+            authNS = null;
+            additional = null;
+            throw new NotSupportedException();
+        }
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
-        //       public static PhpArray GetRecord(string host, DnsRecordType type, out PhpArray authNS, out PhpArray additional)
-        //       {
-        //           PhpException.FunctionNotSupported();
-        //           authNS = null;
-        //           additional = null;
-        //           return null;
-        //       }
-
-        //       #endregion
+        #endregion
 
         #region gethostbyaddr, gethostbyname, gethostbynamel
 
