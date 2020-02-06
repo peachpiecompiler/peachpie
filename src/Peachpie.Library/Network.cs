@@ -172,38 +172,22 @@ namespace Pchp.Library
     [PhpExtension("standard")]
     public static class PhpDns
     {
-        //#region NS: dns_check_record, checkdnsrr
+        #region dns_check_record, checkdnsrr
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("checkdnsrr", FunctionImplOptions.NotSupported)]
-        //       public static int CheckRecordRows(string host)
-        //       {
-        //           return CheckRecords(host, "MX");
-        //       }
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        public static bool checkdnsrr(string host, string type = "MX") => dns_check_record(host, type);
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("checkdnsrr", FunctionImplOptions.NotSupported)]
-        //       public static int CheckRecordRows(string host, string type)
-        //       {
-        //           return CheckRecords(host, type);
-        //       }
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        public static bool dns_check_record(string host, string type = "MX")
+        {
+            throw new NotImplementedException();
+        }
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("dns_check_record", FunctionImplOptions.NotSupported)]
-        //       public static int CheckRecords(string host, string type)
-        //       {
-        //           PhpException.FunctionNotSupported();
-        //           return 0;
-        //       }
-
-
-        //       #endregion
+        #endregion
 
         #region dns_get_record
 
@@ -213,7 +197,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray dns_get_record(string host, DnsRecordType type = DnsRecordType.All)
         {
-            throw new NotSupportedException();
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -224,7 +208,7 @@ namespace Pchp.Library
         {
             authNS = null;
             additional = null;
-            throw new NotSupportedException();
+            throw new NotImplementedException();
         }
 
         #endregion
