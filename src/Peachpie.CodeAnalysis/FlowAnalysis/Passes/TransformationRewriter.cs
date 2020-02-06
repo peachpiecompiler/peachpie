@@ -236,14 +236,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             var needPassValueParams = ParameterAnalysis.GetNeedPassValueParams(_routine);
 
-            foreach (var parameter in _routine.LocalsTable.Variables.OfType<ParameterReference>())
+            foreach (var parameter in _routine.SourceParameters)
             {
-                var varindex = _routine.ControlFlowGraph.FlowContext.GetVarIndex(parameter.BoundName.NameValue);
-                var paramType = parameter.Parameter.Type;
-                if (!needPassValueParams.Get(varindex) && !parameter.SkipPass)
+                var varindex = _routine.ControlFlowGraph.FlowContext.GetVarIndex(parameter.Syntax.Name.Name);
+                var paramType = parameter.Type;
+                if (!needPassValueParams.Get(varindex) && parameter.CopyOnPass)
                 {
                     // It is unnecessary to copy a parameter whose value is only passed to another routines and cannot change
-                    parameter.SkipPass = true;
+                    parameter.CopyOnPass = false;
                     TransformationCount++;
                 }
             }

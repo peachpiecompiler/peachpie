@@ -322,11 +322,7 @@ namespace Peachpie.DiagnosticTests
                 }
 
                 bool expectedSkipPass = (int.Parse(match.Groups[1].Value) != 0);
-                bool actualSkipPass =
-                    param.Routine.LocalsTable.Variables
-                    .OfType<ParameterReference>()
-                    .Single(pr => pr.Symbol == param)
-                    .SkipPass;
+                bool actualSkipPass = !param.CopyOnPass;
                 if (expectedSkipPass != actualSkipPass)
                 {
                     var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
