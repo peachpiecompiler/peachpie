@@ -73,6 +73,23 @@ class A {
     $this->p =& $p;
     $this->foo5($p);
   }
+
+  // Modification in __clone
+
+  public function __clone() {
+    $this->p = 666;
+  }
+
+  private function foo6($p) {
+    $that = clone $this;
+    echo $p;
+  }
+
+  public function test6() {
+    $p = 42;
+    $this->p =& $p;
+    $this->foo6($p);
+  }
 }
 
 (new A)->test1();
@@ -84,3 +101,5 @@ echo "\n";
 (new A)->test4();
 echo "\n";
 (new A)->test5();
+echo "\n";
+(new A)->test6();
