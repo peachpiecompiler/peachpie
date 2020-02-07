@@ -773,7 +773,7 @@ namespace Pchp.Library.DateTime
             }
             else
             {
-                result = SetZoneOffset(str.Substring(pos, str.Length - pos));
+                result = SetZoneOffset(str.AsSpan(pos));
                 pos = str.Length;
             }
 
@@ -828,10 +828,10 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Sets zone offset by zone abbreviation.
         /// </summary>
-        private bool SetZoneOffset(string/*!*/ abbreviation)                             // PHP: timelib_lookup_zone, zone_search
+        private bool SetZoneOffset(ReadOnlySpan<char>/*!*/ abbreviation)                             // PHP: timelib_lookup_zone, zone_search
         {
             // source http://www.worldtimezone.com/wtz-names/timezonenames.html
-            switch (abbreviation)
+            switch (abbreviation.ToString().ToLowerInvariant())
             {
                 case "z":
                 case "utc":
@@ -1477,6 +1477,8 @@ namespace Pchp.Library.DateTime
                             //int tz_not_found;
                             //s->time->z = timelib_parse_zone((char**)&ptr, &s->time->dst, s->time, &tz_not_found, s->tzdb, tz_get_wrapper);
                             //if (tz_not_found)
+
+                            if (!time.SetTimeZone(str, ref si))
                             {
                                 AddError(ref errors, DateResources.tz_notfound);
                             }
