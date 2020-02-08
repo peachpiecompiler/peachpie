@@ -29,6 +29,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Wraps an argument passed to callsite denotating a special meaning of the value.
     /// </summary>
+    [DebuggerNonUserCode]
     public struct ContextParam : ISpecialParamHolder
     {
         /// <summary>
@@ -50,6 +51,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Wraps an argument passed to callsite denotating a function or property name.
     /// </summary>
+    [DebuggerNonUserCode]
     public struct NameParam<T> : ISpecialParamHolder
     {
         /// <summary>
@@ -84,6 +86,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Wraps an argument passed to callsite denotating target type of a static invocation operation (call, static field, class const).
     /// </summary>
+    [DebuggerNonUserCode]
     public struct TargetTypeParam : ISpecialParamHolder
     {
         /// <summary>
@@ -108,6 +111,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Wraps an argument passed to callsite denotating a generic argument.
     /// </summary>
+    [DebuggerNonUserCode]
     public struct GenericParam : ISpecialParamHolder
     {
         /// <summary>
@@ -129,6 +133,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Wraps an argument passed to callsite denotating a caller type.
     /// </summary>
+    [DebuggerNonUserCode]
     public struct CallerTypeParam : ISpecialParamHolder
     {
         /// <summary>
@@ -151,6 +156,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Wraps the argument unpacking.
     /// </summary>
+    [DebuggerNonUserCode]
     public struct UnpackingParam<T> : ISpecialParamHolder
     {
         public T Value;

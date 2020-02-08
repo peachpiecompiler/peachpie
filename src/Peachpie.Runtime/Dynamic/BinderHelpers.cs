@@ -13,6 +13,7 @@ using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.Core.Dynamic
 {
+    [DebuggerNonUserCode]
     internal static class BinderHelpers
     {
         public static bool IsParamsParameter(this ParameterInfo p)

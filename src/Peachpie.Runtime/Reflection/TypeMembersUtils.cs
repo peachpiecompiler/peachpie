@@ -11,6 +11,7 @@ using Peachpie.Runtime.Dynamic;
 
 namespace Pchp.Core.Reflection
 {
+    [DebuggerNonUserCode]
     public static class TypeMembersUtils
     {
         /// <summary>
