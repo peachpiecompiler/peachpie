@@ -543,11 +543,16 @@ namespace Pchp.Library.DateTime
             this.TimeZone = tz;
         }
 
-        // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
-        public DateTimeImmutable(Context ctx, string time = null, DateTimeZone timezone = null)
+        [PhpFieldsOnlyCtor]
+        protected DateTimeImmutable(Context ctx)
         {
             _ctx = ctx;
+        }
 
+        // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
+        public DateTimeImmutable(Context ctx, string time = null, DateTimeZone timezone = null)
+            : this(ctx)
+        {
             ctx.SetProperty(DateTimeErrors.Empty);
             __construct(time, timezone);
         }
