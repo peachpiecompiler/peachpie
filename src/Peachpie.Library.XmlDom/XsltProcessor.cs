@@ -169,8 +169,7 @@ namespace Peachpie.Library.XmlDom
         [return: CastToFalse]
         public DOMDocument transformToDoc(DOMNode node)
         {
-            XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
+            var doc = PhpXmlDocument.Create();
 
             using (MemoryStream stream = new MemoryStream())
             {

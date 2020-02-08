@@ -273,10 +273,7 @@ namespace Peachpie.Library.XmlDom
 
         public DOMDocument(string version = null, string encoding = null)
         {
-            this.XmlDocument = new XmlDocument()
-            {
-                PreserveWhitespace = true,
-            };
+            this.XmlDocument = PhpXmlDocument.Create();
 
             __construct(version, encoding);
         }

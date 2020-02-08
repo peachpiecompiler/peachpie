@@ -106,10 +106,7 @@ namespace Peachpie.Library.XmlDom
 
             if (MasterDocument == null)
             {
-                document = new XmlDocument()
-                {
-                    PreserveWhitespace = true,
-                };
+                document = PhpXmlDocument.Create();
 
                 document.Load(xpointer == null
                     ? (XmlReader)new XmlBaseAwareXmlReader(absoluteUri)
