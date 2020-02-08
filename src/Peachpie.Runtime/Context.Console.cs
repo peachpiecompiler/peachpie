@@ -59,6 +59,9 @@ namespace Pchp.Core
                 }
                 else
                 {
+                    //Console.OutputEncoding = Encoding.UTF8;
+                    //Console.Write("\xfeff"); // bom = byte order mark
+
                     // use the default Console output stream
                     InitOutput(Console.OpenStandardOutput(), Console.Out);
                 }
