@@ -101,13 +101,17 @@ namespace Pchp.Core
         protected void InitializeArgvArgc(params string[] args)
         {
             Debug.Assert(args != null);
+            
+            // PHP array with command line arguments
+            // including 0-th argument corresponding to program executable
+            var argv = new PhpArray(1 + args.Length);
+
+            argv.Add(Process.GetCurrentProcess().ProcessName);   // NOTE: can be also mainscript or assembly name - neither of it is much useful since one cannot count on it
+            argv.AddRange(args);
 
             // command line argc, argv:
-            // adds all arguments to the array (the 0-th argument is not '-' as in PHP but the program file):
-            var argv = new PhpArray(args);
-
             this.Globals["argv"] = (this.Server["argv"] = argv).DeepCopy();
-            this.Globals["argc"] = this.Server["argc"] = args.Length;
+            this.Globals["argc"] = this.Server["argc"] = argv.Count;
         }
 
         /// <summary>
