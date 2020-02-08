@@ -66,7 +66,7 @@ namespace Pchp.Core
                 // Globals
                 InitSuperglobals();
                 InitializeServerVars(mainscript);
-                InitializeArgvArgc(args);
+                InitializeArgvArgc(mainscript, args);
 
                 if (CurrentPlatform.IsWindows)
                 {
@@ -98,7 +98,7 @@ namespace Pchp.Core
         }
 
         /// <summary>Initializes global $argv and $argc variables and corresponding $_SERVER entries.</summary>
-        protected void InitializeArgvArgc(params string[] args)
+        protected void InitializeArgvArgc(string mianscript, params string[] args)
         {
             Debug.Assert(args != null);
             
@@ -106,7 +106,7 @@ namespace Pchp.Core
             // including 0-th argument corresponding to program executable
             var argv = new PhpArray(1 + args.Length);
 
-            argv.Add(Process.GetCurrentProcess().ProcessName);   // NOTE: can be also mainscript or assembly name - neither of it is much useful since one cannot count on it
+            argv.Add(mianscript ?? "-");
             argv.AddRange(args);
 
             // command line argc, argv:
