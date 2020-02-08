@@ -533,20 +533,18 @@ namespace Pchp.Library.DateTime
         /// </summary>
         internal TimeZoneInfo TimeZone { get; private set; }
 
-        internal DateTimeImmutable(Context ctx, System_DateTime time, TimeZoneInfo tz)
-        {
-            Debug.Assert(ctx != null);
-
-            _ctx = ctx;
-
-            this.Time = time;
-            this.TimeZone = tz;
-        }
-
         [PhpFieldsOnlyCtor]
         protected DateTimeImmutable(Context ctx)
         {
+            Debug.Assert(ctx != null);
             _ctx = ctx;
+        }
+
+        internal DateTimeImmutable(Context ctx, System_DateTime time, TimeZoneInfo tz)
+            : this(ctx)
+        {
+            this.Time = time;
+            this.TimeZone = tz;
         }
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
