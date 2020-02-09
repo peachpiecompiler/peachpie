@@ -20,6 +20,7 @@ using System.Diagnostics;
 using Pchp.Core;
 using Pchp.Library.Resources;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Pchp.Library.DateTime
 {
@@ -111,6 +112,13 @@ namespace Pchp.Library.DateTime
         /// </summary>
         public int z = 0;
 
+        /// <summary>
+        /// Optional.
+        /// The time zone abbreviation if specified.
+        /// Upper case.
+        /// </summary>
+        public string z_abbr;
+
         #endregion
 
         #region Parse
@@ -139,7 +147,100 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region GetUnixTimeStamp
+        #region
+
+        internal const int TIMELIB_ZONETYPE_OFFSET = 1;
+        internal const int TIMELIB_ZONETYPE_ABBR = 2;
+        internal const int TIMELIB_ZONETYPE_ID = 3;
+
+        /// <summary>
+        /// 1: offset in form of +00:00
+        /// 2: timezone abbreviation
+        /// 3: TimeZone object
+        /// </summary>
+        public static int GetTimeLibZoneType(TimeZoneInfo zone)
+        {
+            if (zone == null)
+            {
+                return TIMELIB_ZONETYPE_OFFSET;
+            }
+
+            var tz = zone.Id;
+
+            if (tz.Length != 0 && (tz[0] == '+' || tz[0] == '-'))
+            {
+                // 1: offset
+                return DateInfo.TIMELIB_ZONETYPE_OFFSET;
+            }
+            else if (DateInfo.GetZoneOffsetFromAbbr(tz, out _))
+            {
+                // 2: abbreviation
+                return DateInfo.TIMELIB_ZONETYPE_ABBR;
+            }
+            else
+            {
+                // 3: A timezone identifier
+                return DateInfo.TIMELIB_ZONETYPE_ID;
+            }
+        }
+
+        string GetTimeZoneString()
+        {
+            if (have_zone > 0)
+            {
+                if (z_abbr != null)
+                {
+                    Debug.Assert(z_abbr.ToUpperInvariant() == z_abbr);  // is upper case
+                    return z_abbr;
+                }
+                else
+                {
+                    // [+-]00:00
+                    return
+                        (z < 0 ? "-" : "+") +
+                        (z / 60).ToString("D2") +
+                        ":" +
+                        (z % 60).ToString("D2");
+                }
+            }
+
+            //
+            throw new InvalidOperationException();
+        }
+
+        /// <summary>Gets the time zone object describing the time zone - <see cref="z"/>.
+        /// Its ID is either in the offset format or the abbreviation when specified.</summary>
+        /// <exception cref="InvalidOperationException">The time zone is not specified.</exception>
+        public TimeZoneInfo ResolveTimeZone()
+        {
+            if (have_zone > 0)
+            {
+                var name = GetTimeZoneString();
+                return TimeZoneInfo.CreateCustomTimeZone(name, TimeSpan.FromMinutes(z), null, null);
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        /// <summary>
+        /// Gets time zone object describing the parsed time zone, or a default time zone.
+        /// </summary>
+        public TimeZoneInfo ResolveTimeZone(Context ctx, TimeZoneInfo @default = null)
+        {
+            if (have_zone > 0)
+            {
+                // note: provided default time zone is ignored
+
+                var name = GetTimeZoneString();
+                return TimeZoneInfo.CreateCustomTimeZone(name, TimeSpan.FromMinutes(z), name, name);
+            }
+            else
+            {
+                return @default // provided time zone
+                    ?? PhpTimeZone.GetCurrentTimeZone(ctx)    // default time zone
+                    ?? throw new InvalidOperationException(); // does not happen
+            }
+        }
 
         public System.DateTime GetDateTime(Context ctx, System.DateTime utcStart, TimeZoneInfo timeZone = null)
         {
@@ -754,84 +855,119 @@ namespace Pchp.Library.DateTime
         {
             if (have_zone > 0) return false;
 
+            // skip leading whitespace and opening parenthesis:
             while (pos < str.Length && (str[pos] == ' ' || str[pos] == '('))
                 pos++;
 
-            bool result;
-
-            if (pos < str.Length && str[pos] == '+')
+            if (pos >= str.Length)
             {
-                pos++;
-                z = ParseTimeZone(str, ref pos);
-                result = true;
+                return false;
             }
-            else if (pos < str.Length && str[pos] == '-')
+
+            if (str[pos] == '+')
             {
                 pos++;
-                z = -ParseTimeZone(str, ref pos);
-                result = true;
+                if (TryParseTimeZoneOffset(str, pos, out z))
+                {
+                    HAVE_TZ();
+                }
+                pos = str.Length;
+            }
+            else if (str[pos] == '-')
+            {
+                pos++;
+                if (TryParseTimeZoneOffset(str, pos, out z))
+                {
+                    z = -z;
+                    HAVE_TZ();
+                }
+                pos = str.Length;
             }
             else
             {
-                result = SetZoneOffset(str.AsSpan(pos));
+                var abbr = str.Substring(pos);
+                if (GetZoneOffsetFromAbbr(abbr, out z))
+                {
+                    z_abbr = abbr.ToUpperInvariant();
+                    HAVE_TZ();
+                }
+
                 pos = str.Length;
             }
 
+            // skip trailing whitespace and closing parenthesis:
             while (pos < str.Length && str[pos] == ')')
                 pos++;
 
-            if (result) HAVE_TZ();
-
-            return result;
+            return have_zone > 0;
         }
 
         /// <summary>
-        /// Parses numeric timezones. Returns offset in minutes.
+        /// Parses numeric timezones. Resolves offset in minutes.
         /// </summary>
-        static int ParseTimeZone(string str, ref int pos)                               // PHP: timelib_parse_tz_cor
+        internal static bool TryParseTimeZoneOffset(string str, int pos, out int minutes)                               // PHP: timelib_parse_tz_cor
         {
-            int result = 0;
             int length = str.Length - pos;
+            int value;
 
             switch (length)
             {
                 case 1: // 0
                 case 2: // 00
-                    result = Int32.Parse(str.Substring(pos, length)) * 60;
+                    if (int.TryParse(str.Substring(pos, length), out value))
+                    {
+                        minutes = value * 60;
+                        return true;
+                    }
                     break;
 
                 case 3: // 000, 0:0
                 case 4: // 0000, 0:00, 00:0
+
+                    // TODO: "TryParse":
+
                     if (str[pos + 1] == ':')       // 0:0, 0:00
                     {
-                        result = (str[pos] - '0') * 60 + Int32.Parse(str.Substring(pos + 2, length - 2));
+                        minutes = (str[pos] - '0') * 60 + int.Parse(str.Substring(pos + 2, length - 2));
                     }
                     else if (str[pos + 2] == ':')  // 00:0
                     {
-                        result = ((str[pos] - '0') * 10 + (str[pos + 1] - '0')) * 60 + (str[pos + 3] - '0');
+                        minutes = ((str[pos] - '0') * 10 + (str[pos + 1] - '0')) * 60 + (str[pos + 3] - '0');
                     }
                     else                          // 000, 0000
                     {
-                        result = Int32.Parse(str.Substring(pos, length));
-                        result = (result / 100) * 60 + result % 100;
+                        minutes = int.Parse(str.Substring(pos, length));
+                        minutes = (minutes / 100) * 60 + minutes % 100;
                     }
-                    break;
+                    return true;
 
                 case 5: // 00:00
-                    result = Int32.Parse(str.Substring(pos, 2)) * 60 + Int32.Parse(str.Substring(pos + 3, 2));
+
+                    if (int.TryParse(str.Substring(pos, 2), NumberStyles.None, CultureInfo.InvariantCulture.NumberFormat, out value))
+                    {
+                        minutes = value * 60;
+
+                        if (int.TryParse(str.Substring(pos + 3, 2), NumberStyles.None, CultureInfo.InvariantCulture.NumberFormat, out value))
+                        {
+                            minutes += value;
+                            return true;
+                        }
+                    }
                     break;
             }
 
-            return result;
+            //
+            minutes = 0;
+            return false;
         }
 
         /// <summary>
         /// Sets zone offset by zone abbreviation.
         /// </summary>
-        private bool SetZoneOffset(ReadOnlySpan<char>/*!*/ abbreviation)                             // PHP: timelib_lookup_zone, zone_search
+        internal static bool GetZoneOffsetFromAbbr(string/*!*/ abbreviation, out int z)                             // PHP: timelib_lookup_zone, zone_search
         {
             // source http://www.worldtimezone.com/wtz-names/timezonenames.html
-            switch (abbreviation.ToString().ToLowerInvariant())
+            switch (abbreviation.ToLowerInvariant())
             {
                 case "z":
                 case "utc":
@@ -1100,7 +1236,9 @@ namespace Pchp.Library.DateTime
                 case "zp5": z = 60 * 5; break;
                 case "zp6": z = 60 * 6; break;
 
-                default: return false;
+                default:
+                    z = default;
+                    return false;
             }
 
             return true;

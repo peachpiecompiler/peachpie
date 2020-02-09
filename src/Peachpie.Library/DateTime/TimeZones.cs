@@ -60,7 +60,7 @@ namespace Pchp.Library.DateTime
             public readonly TimeZoneInfo Info;
 
             /// <summary>
-            /// Abbrevation. If more than one, separated with comma.
+            /// Abbreviation. If more than one, separated with comma.
             /// </summary>
             public readonly string Abbreviation;
 
@@ -146,8 +146,8 @@ namespace Pchp.Library.DateTime
                     var idx = line.IndexOf(' ');
                     if (idx > 0)
                     {
-                        // abbrevation[space]timezone_id
-                        var abbr = line.Remove(idx); // abbrevation
+                        // abbreviation[space]timezone_id
+                        var abbr = line.Remove(idx); // abbreviation
                         var tz = line.Substring(idx + 1); // timezone_id
                         if (abbrs.TryGetValue(tz, out var oldabbr))
                         {
@@ -259,13 +259,6 @@ namespace Pchp.Library.DateTime
                 yield return new TimeZoneInfoItem(pair.Key, pair.Value, abbreviation, IsAlias(pair.Key));
             }
         }
-
-        /// <summary>
-        /// Matching timezone UTC offset
-        /// </summary>
-        private static readonly Lazy<Regex> s_lazyTimeZoneOffsetRegex = new Lazy<Regex>(
-            () => new Regex(@"^[+-](\d{2}):{0,1}(\d{2})$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
-            System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
 
         #endregion
 
@@ -426,7 +419,9 @@ namespace Pchp.Library.DateTime
         internal static TimeZoneInfo GetTimeZone(string/*!*/ phpName)
         {
             if (string.IsNullOrEmpty(phpName))
+            {
                 return null;
+            }
 
             // simple binary search (not the Array.BinarySearch)
             var timezones = PhpTimeZone.s_lazyTimeZones.Value;
@@ -444,27 +439,18 @@ namespace Pchp.Library.DateTime
                     b = x - 1;
             }
 
-            // try custom UTC offset
-            var m = s_lazyTimeZoneOffsetRegex.Value.Match(phpName);
-            if (m.Success)
+            // try custom offset or a known abbreviation:
+            var dt = new DateInfo();
+            var _ = 0;
+            if (dt.SetTimeZone(phpName, ref _))
             {
-                var utcoffset = new TimeSpan(
-                    int.Parse(m.Groups[1].Value),
-                    int.Parse(m.Groups[2].Value),
-                    0);
-
-                // normalize the timezone name // [+-]D2:D2
-                var tzname = $"{phpName[0]}{utcoffset.Hours.ToString("D2")}:{utcoffset.Minutes.ToString("D2")}";
-
-                if (phpName[0] == '-')
-                {
-                    utcoffset = utcoffset.Negate();
-                }
-
-                //
-                return TimeZoneInfo.CreateCustomTimeZone("UTC" + tzname, utcoffset, null, null);
+                // +00:00
+                // -00:00
+                // abbr
+                return dt.ResolveTimeZone();
             }
 
+            //
             return null;
         }
 
