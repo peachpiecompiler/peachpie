@@ -215,6 +215,16 @@ namespace Pchp.Library.DateTime
         {
             if (have_zone > 0)
             {
+                //// fast special cases:
+                //if (z == 0)
+                //{
+                //    if (z_abbr == null || string.Equals(z_abbr, "UTC", StringComparison.OrdinalIgnoreCase))
+                //    {
+                //        return TimeZoneInfo.Utc;
+                //    }
+                //}
+
+                // create time zone object wth our offset:
                 var name = GetTimeZoneString();
                 return TimeZoneInfo.CreateCustomTimeZone(name, TimeSpan.FromMinutes(z), null, null);
             }
