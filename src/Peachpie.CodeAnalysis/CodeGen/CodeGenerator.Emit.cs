@@ -3614,19 +3614,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                 object lblnull = null;
                 if (nullcheck && t.IsReferenceType)
                 {
-                    if (nullcheck)
-                    {
-                        // ?.
-                        var lbltrue = new object();
-                        lblnull = new object();
+                    // ?.
+                    var lbltrue = new object();
+                    lblnull = new object();
 
-                        _il.EmitOpCode(ILOpCode.Dup);
-                        _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
-                        _il.EmitOpCode(ILOpCode.Pop);
-                        _il.EmitNullConstant();
-                        _il.EmitBranch(ILOpCode.Br, lblnull);
-                        _il.MarkLabel(lbltrue);
-                    }
+                    _il.EmitOpCode(ILOpCode.Dup);
+                    _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
+                    _il.EmitOpCode(ILOpCode.Pop);
+                    _il.EmitNullConstant();
+                    _il.EmitBranch(ILOpCode.Br, lblnull);
+                    _il.MarkLabel(lbltrue);
                 }
 
                 if (t == CoreTypes.PhpValue)
