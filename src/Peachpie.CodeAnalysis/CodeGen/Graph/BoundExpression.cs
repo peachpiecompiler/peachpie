@@ -2502,7 +2502,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
             }
 
-            // Template: Operators: EmitListAccess( (PhpValue)value )
+            // Template: Operators: GetListAccess( (PhpValue)value )
             cg.EmitConvertToPhpValue(valueType, 0);
             return cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("GetListAccess", cg.CoreTypes.PhpValue));
         }
@@ -2530,7 +2530,15 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 cg.EmitIntStringKey(target.Key);
             }
-            var itemtype = cg.EmitDereference(cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey));
+
+            // GetItemVaue
+            var itemtype = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey);
+
+            // dereference
+            itemtype = cg.EmitDereference(itemtype);
+
+            // copy
+            itemtype = cg.EmitDeepCopy(itemtype, nullcheck: true);
 
             // STORE vars[i]
             boundtarget.EmitStore(cg, ref lhs, itemtype, target.Value.Access);
