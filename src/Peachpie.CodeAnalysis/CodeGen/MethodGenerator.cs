@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // TODO: method might be synthesized and we create an incomplete DebugSourceDocument
 
-            var srcf = method is SourceRoutineSymbol srcr ? srcr.ContainingFile : null;
+            var srcf = (method as SourceRoutineSymbol)?.ContainingFile;
             if (srcf != null)
             {
                 var srctext = srcf.SyntaxTree.GetText();
@@ -104,7 +104,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (emittingPdb)
             {
-                debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, normalizedPath => CreateDebugSourceDocument(normalizedPath, routine));
+                debugDocumentProvider = (path, basePath) => moduleBuilder.DebugDocumentsBuilder.GetOrAddDebugDocument(path, basePath, normalizedPath => CreateDebugSourceDocument(normalizedPath, routine));
             }
 
             ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations.AsOptimizationLevel());

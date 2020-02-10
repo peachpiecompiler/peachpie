@@ -281,8 +281,8 @@ namespace Pchp.CodeAnalysis
 
         public override bool TryGetText(out SourceText text)
         {
-            text = default;
-            return false;
+            text = _source.SourceText;
+            return text != null;
         }
 
         public override SyntaxTree WithChangedText(SourceText newText)
