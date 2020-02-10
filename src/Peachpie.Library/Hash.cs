@@ -2662,25 +2662,56 @@ namespace Pchp.Library
         private const int threadsDefault = 1;
         private const int memory_costDefault = 4;
 
-        public const int PASSWORD_DEFAULT = 0;
-        public const int PASSWORD_BCRYPT = 1;
-        public const int PASSWORD_ARGON2I = 2;
-        public const int PASSWORD_ARGON2ID = 3;
+        public const string PASSWORD_DEFAULT = null;
+        public const string PASSWORD_BCRYPT = "2y";
+        public const string PASSWORD_ARGON2I = "argon2i";
+        public const string PASSWORD_ARGON2ID = "argon2id";
 
         /// <summary>
-        /// Password type for <c>password_*</c> functions.
+        /// Internal password type for <c>password_*</c> functions.
         /// </summary>
-        public enum PasswordType
+        private enum PasswordType
         {
-            Default = PASSWORD_DEFAULT,
-            BCrypt = PASSWORD_BCRYPT,
-            Argon2i = PASSWORD_ARGON2I,
-            Argon2id = PASSWORD_ARGON2ID,
+            Default = 0,
+            BCrypt = 1,
+            Argon2i = 2,
+            Argon2id = 3,
+            Unknown = 4
         }
 
         #endregion
 
         #region password_hash, password_verify, password_needs_rehash
+
+        /// <summary>
+        /// Since PHP 7.4, the <c>PASSWORD_*</c> constants were changed to nullable strings, but the functions still support the original ints.
+        /// See https://wiki.php.net/rfc/password_registry
+        /// </summary>
+        private static PasswordType ParsePasswordType(PhpValue value)
+        {
+            if (value.IsString(out string str))
+            {
+                return str switch
+                {
+                    PASSWORD_BCRYPT => PasswordType.BCrypt,
+                    PASSWORD_ARGON2I => PasswordType.Argon2i,
+                    PASSWORD_ARGON2ID => PasswordType.Argon2id,
+                    _ => PasswordType.Unknown
+                };
+            }
+            else if (value.IsNull)
+            {
+                return PasswordType.Default;
+            }
+            else if (value.IsLong(out long i))
+            {
+                return (i >= (long)PasswordType.Default && i < (long)PasswordType.Unknown) ? (PasswordType)i : PasswordType.Unknown;
+            }
+            else
+            {
+                return PasswordType.Unknown;
+            }
+        }
 
         static PasswordType GetPasswordType(string name)
         {
@@ -2796,9 +2827,11 @@ namespace Pchp.Library
         /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
         /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
         /// <returns>Returns the hashed password, or FALSE on failure.</returns>
-        public static PhpValue password_hash(string password, PasswordType algo, PhpArray opt = null)
+        public static PhpValue password_hash(string password, PhpValue algo, PhpArray opt = null)
         {
-            switch (algo)
+            var algoType = ParsePasswordType(algo);
+
+            switch (algoType)
             {
                 // Default
                 case PasswordType.Default:
@@ -2808,7 +2841,7 @@ namespace Pchp.Library
                 // Argon2i
                 case PasswordType.Argon2i:
                 case PasswordType.Argon2id:
-                    return HashPasswordArgon2(password, opt, algo == PasswordType.Argon2i);
+                    return HashPasswordArgon2(password, opt, algoType == PasswordType.Argon2i);
                 // Unknown algorithm
                 default:
                     return PhpValue.False;
@@ -2832,7 +2865,7 @@ namespace Pchp.Library
         /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
         /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
         /// <returns>Returns TRUE if the hash should be rehashed to match the given algo and options, or FALSE otherwise.</returns>
-        public static bool password_needs_rehash(string hash, PasswordType algo, PhpArray opt = null)
+        public static bool password_needs_rehash(string hash, PhpValue algo, PhpArray opt = null)
         {
             if (string.IsNullOrEmpty(hash))
             {
@@ -2841,7 +2874,9 @@ namespace Pchp.Library
 
             var result = false;
 
-            switch (algo)
+            var algoType = ParsePasswordType(algo);
+
+            switch (algoType)
             {
                 // Default
                 case PasswordType.Default:
@@ -2867,7 +2902,7 @@ namespace Pchp.Library
                 case PasswordType.Argon2id:
 
                     var match = s_expressionHashArgon2.Match(hash);
-                    if (match.Success && algo == GetPasswordType(match.Groups[1].Value)) // Check right algorithm
+                    if (match.Success && algoType == GetPasswordType(match.Groups[1].Value)) // Check right algorithm
                     {
                         if (opt != null) // Check options
                         {
@@ -2930,7 +2965,7 @@ namespace Pchp.Library
 
                         return new PhpArray(3)
                         {
-                            { "algo", (int)GetPasswordType(argon.Groups[1].Value) },
+                            { "algo", argon.Groups[1].Value },
                             { "algoName", argon.Groups[1].Value },
                             { "options", opt },
                         };
@@ -2941,7 +2976,7 @@ namespace Pchp.Library
             // unknown
             return new PhpArray(3)
             {
-                { "algo", PASSWORD_DEFAULT /*PhpValue.Null*/ }, // some version of PHP gets NULL
+                { "algo", PASSWORD_DEFAULT },
                 { "algoName", "unknown" },
                 { "options", new PhpArray() },
             };
