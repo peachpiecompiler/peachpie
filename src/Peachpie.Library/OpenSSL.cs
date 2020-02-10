@@ -4,6 +4,7 @@ using System.Text;
 using Pchp.Core;
 using System.Security.Cryptography;
 using System.IO;
+using static Pchp.Library.PhpHash;
 
 namespace Pchp.Library
 {
@@ -28,6 +29,7 @@ namespace Pchp.Library
         // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
         // RC2 is ok when there is right length of password, but when it is longer, PHP transforms password in some way, but i can not figure out how.
         // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1)
+        // TODO: Aliases for supported algos
         };
 
         /// <summary>
@@ -267,28 +269,44 @@ namespace Pchp.Library
         }
 
         #region openssl_digest/get_md_methods
+        
+        // TODO: Aliases for supported algos
 
-        private static string[] HashMethods = new string[]{ "md5" };
+        private static string[] HashMethodsImplementedHere = new string[]{ "sha384" };
 
         /// <summary>
         /// Computes a digest hash value for the given data using a given method, and returns a raw or binhex encoded string.
         /// </summary>
+        /// <param name="ctx">Context of the script.</param>
         /// <param name="data">The data.</param>
         /// <param name="method">The digest method to use, e.g. "sha256", see openssl_get_md_methods() for a list of available digest methods.</param>
         /// <param name="raw_output">Setting to TRUE will return as raw output data, otherwise the return value is binhex encoded.</param>
         /// <returns>Returns the digested hash value on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static string openssl_digest(string data , string method, bool raw_output = false)
-        {
-            string result = Array.Find(HashMethods, hashName => hashName == method.ToLower());
-
-            if (String.IsNullOrEmpty(result)) // Unknown cipher algorithm.
+        public static PhpString openssl_digest(Context ctx, PhpString data, string method, bool raw_output = false)
+        {            
+            if (HashPhpResource.HashAlgorithms.ContainsKey(method)) // Supported in Hash.cs
             {
-                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.unknown_hash);
-                return null;
+                return PhpHash.hash(method, data.ToBytes(ctx), raw_output);
+            }
+            else if (Array.Find(HashMethodsImplementedHere, name => name == method) != null) // Supported here
+            {
+                byte[] hashedBytes = null;
+                
+                switch (method)
+                {
+                    case "sha384":
+                        var sHA384 = SHA384Managed.Create();
+                        hashedBytes = sHA384.ComputeHash(data.ToBytes(ctx));
+                        break;
+                }
+
+                return raw_output ? new PhpString(hashedBytes) : StringUtils.BinToHex(hashedBytes, string.Empty);
             }
 
-            throw new NotImplementedException();
+            // Unknown cipher algorithm.
+            PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.unknown_hash);
+            return null;
         }
 
         /// <summary>
@@ -298,7 +316,15 @@ namespace Pchp.Library
         /// <returns>An array of available digest methods.</returns>
         public static PhpArray openssl_get_md_methods(bool aliases = false)
         {
+            var algos = hash_algos();
+
+            foreach (string name in HashMethodsImplementedHere)
+                algos.Add(name);
+
+            if (aliases)
                 throw new NotImplementedException();
+
+            return algos;
         }
    
         #endregion
