@@ -246,25 +246,9 @@ namespace Pchp.Library
                 return -1;
             }
 
-            if (cipherMethod.Mode == CipherMode.ECB)
-            {
-                // In .NET there must be non zero length IV, but in PHP cipher mode ECB has zero length. 
-                // Due to compatibility in openssl_cipher_iv_length, there is this wierd thing.              
-                switch (cipherMethod.Type)
-                {
-                    case CipherTypes.AES:
-                        return Cipher.IVLengthAES;
-                    case CipherTypes.DES:
-                    case CipherTypes.TripleDES:
-                        return Cipher.IVLengthDES;
-                    default:
-                        return -1;
-                }
-            }
-            else
-            {
-                return cipherMethod.IVLength;
-            }
+            // In .NET there must be non zero length IV, but in PHP cipher mode ECB has zero length. 
+            // Due to compatibility in openssl_cipher_iv_length, there is this wierd thing.         
+            return (cipherMethod.Mode == CipherMode.ECB) ? 0 : cipherMethod.IVLength;
         }
 
         /// <summary>
