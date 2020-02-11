@@ -403,6 +403,72 @@ namespace Pchp.Library
             return (new X509Resource(new X509Certificate2(resource.Certificate)));
         }
 
+        /// <summary>
+        /// Stores x509 into a file named by outfilename in a PEM encoded format.
+        /// </summary>
+        /// <param name="x509">X.509 resource returned from openssl_x509_read()</param>
+        /// <param name="outfilename">Path to the output file.</param>
+        /// <param name="notext">The optional parameter notext affects the verbosity of the output; if it is FALSE, then additional human-readable information is included in the output. The default value of notext is TRUE.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool openssl_x509_export_to_file(PhpResource x509, string outfilename, bool notext = true)
+        {
+            var resource = ValidateX509Resource(x509);
+            if (resource == null)
+                return false;
+
+            return X509ExportToFile(resource, outfilename, notext);
+        }
+
+        /// <summary>
+        /// Stores x509 into a file named by outfilename in a PEM encoded format.
+        /// </summary>
+        /// <param name="x509">Path to file with PEM encoded certificate or a string containing the content of a certificate</param>
+        /// <param name="outfilename">Path to the output file.</param>
+        /// <param name="notext">The optional parameter notext affects the verbosity of the output; if it is FALSE, then additional human-readable information is included in the output. The default value of notext is TRUE.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool openssl_x509_export_to_file(Context ctx, string x509, string outfilename, bool notext = true)
+        {
+            X509Resource resource = null;
+            if ((resource = openssl_x509_read(ctx, x509)) == null)
+            {
+                return false;
+            }
+            else
+            {
+                return X509ExportToFile(resource, outfilename, notext);
+            }
+        }
+
+        private static bool X509ExportToFile(X509Resource x509, string outfilename, bool notext)
+        {
+            using StreamWriter wr = new StreamWriter(outfilename);
+
+            if (!notext)
+            {
+                // TODO: Add Human readable text
+                throw new NotImplementedException();
+            }
+            wr.WriteLine("-----BEGIN CERTIFICATE-----");
+            
+            int alignment = 64;
+            string encoded = System.Convert.ToBase64String(x509.Certificate.Export(X509ContentType.Cert));
+            
+            int reminder = 0;
+            while (reminder < encoded.Length - alignment)
+            {
+                wr.WriteLine(encoded.Substring(reminder, alignment));
+                reminder += alignment;
+            }
+
+            if (reminder != encoded.Length - 1)
+                wr.WriteLine(encoded.Substring(reminder, encoded.Length - reminder));
+
+            wr.Write("-----END CERTIFICATE-----");
+            wr.Close();
+
+            return true;
+        }
+
         #endregion
     }
 }
