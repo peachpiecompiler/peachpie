@@ -702,4 +702,7 @@
   <data name="unknown_hash" xml:space="preserve">
     <value>Unknown signature algorithm</value>
   </data>
+  <data name="X509_cannot_be_coerced" xml:space="preserve">
+    <value>supplied parameter cannot be coerced into an X509 certificate!</value>
+  </data>
 </root>

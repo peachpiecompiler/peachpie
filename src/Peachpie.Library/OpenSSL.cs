@@ -5,6 +5,7 @@ using Pchp.Core;
 using System.Security.Cryptography;
 using System.IO;
 using static Pchp.Library.PhpHash;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Pchp.Library
 {
@@ -326,7 +327,87 @@ namespace Pchp.Library
 
             return algos;
         }
-   
+
+        #endregion
+
+        #region X.509
+        const string filePrefix = "file://";
+
+        /// <summary>
+        /// Context of X509 certificate
+        /// </summary>
+        public class X509Resource : PhpResource
+        {
+            public X509Certificate2 Certificate { get; private set; }
+            public X509Resource(X509Certificate2 certificate) : base ("OpenSSL X.509")
+            {
+                Certificate = certificate;
+            }
+        }
+
+        /// <summary>
+        /// Gets instance of <see cref="X509Resource"/> or <c>null</c>.
+        /// If given argument is not an instance of <see cref="X509Resource"/>, PHP warning is reported.
+        /// </summary>
+        static X509Resource ValidateX509Resource(PhpResource context)
+        {
+            if (context is X509Resource h && h.IsValid)
+                return h;
+
+            //
+            PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_context_resource);
+            return null;
+        }
+
+        /// <summary>
+        /// Parses the certificate supplied by x509certdata and returns a resource identifier for it.
+        /// </summary>
+        /// <param name="ctx">Context of the script.</param>
+        /// <param name="x509certdata">Path to file with PEM encoded certificate or a string containing the content of a certificate</param>
+        /// <returns>Returns a resource identifier on success or FALSE on failure.</returns>
+        [return: CastToFalse]
+        public static X509Resource openssl_x509_read(Context ctx,string x509certdata)
+        {
+            if (String.IsNullOrEmpty(x509certdata))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
+                return null;
+            }
+
+            try
+            {
+                if (x509certdata.StartsWith(filePrefix)) // Load from file (In PHP it must have suffix .pem, but in .NET is supported .cer as well -> Check it ?)
+                    return new X509Resource(new X509Certificate2(new Uri(x509certdata).LocalPath));
+                else // Load from string
+                    return new X509Resource(new X509Certificate2(ctx.StringEncoding.GetBytes(x509certdata)));
+            }
+            catch (Exception ex)
+            {
+                if (ex is UriFormatException || ex is CryptographicException)
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
+                    return null;
+                }
+
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Parses the certificate supplied by x509certdata and returns a resource identifier for it.
+        /// </summary>
+        /// <param name="x509certdata">X.509 resource returned from openssl_x509_read()</param>
+        /// <returns>Returns a resource identifier on success or FALSE on failure.</returns>
+        [return: CastToFalse]
+        public static X509Resource openssl_x509_read(PhpResource x509certdata)
+        {
+            var resource = ValidateX509Resource(x509certdata);
+            if (resource == null)
+                return null;
+
+            return (new X509Resource(new X509Certificate2(resource.Certificate)));
+        }
+
         #endregion
     }
 }

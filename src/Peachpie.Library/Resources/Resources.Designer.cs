@@ -1789,6 +1789,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to supplied parameter cannot be coerced into an X509 certificate!.
+        /// </summary>
+        public static string X509_cannot_be_coerced {
+            get {
+                return ResourceManager.GetString("X509_cannot_be_coerced", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Zero is not a valid argument number.
         /// </summary>
         public static string zero_argument_invalid {
