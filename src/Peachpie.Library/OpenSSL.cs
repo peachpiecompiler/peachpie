@@ -377,20 +377,15 @@ namespace Pchp.Library
             try
             {
                 if (x509certdata.StartsWith(filePrefix)) // Load from file (In PHP it must have suffix .pem, but in .NET is supported .cer as well -> Check it ?)
-                    return new X509Resource(new X509Certificate2(new Uri(x509certdata).LocalPath));
+                    return new X509Resource(new X509Certificate2(x509certdata.Remove(0,filePrefix.Length)));
                 else // Load from string
                     return new X509Resource(new X509Certificate2(ctx.StringEncoding.GetBytes(x509certdata)));
             }
-            catch (Exception ex)
+            catch ( CryptographicException)
             {
-                if (ex is UriFormatException || ex is CryptographicException)
-                {
-                    PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
-                    return null;
-                }
-
-                throw;
-            }
+                PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
+                return null;
+            }     
         }
 
         /// <summary>
