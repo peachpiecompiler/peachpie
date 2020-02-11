@@ -422,6 +422,7 @@ namespace Pchp.Library
         /// <summary>
         /// Stores x509 into a file named by outfilename in a PEM encoded format.
         /// </summary>
+        /// <param name="ctx">Context of the script.</param>
         /// <param name="x509">Path to file with PEM encoded certificate or a string containing the content of a certificate</param>
         /// <param name="outfilename">Path to the output file.</param>
         /// <param name="notext">The optional parameter notext affects the verbosity of the output; if it is FALSE, then additional human-readable information is included in the output. The default value of notext is TRUE.</param>
@@ -467,6 +468,50 @@ namespace Pchp.Library
             wr.Close();
 
             return true;
+        }
+
+        /// <summary>
+        /// Calculates the fingerprint, or digest, of a given X.509 certificate
+        /// </summary>
+        /// <param name="x509">X.509 resource returned from openssl_x509_read()</param>
+        /// <param name="hash_algorithm">The digest method or hash algorithm to use, e.g. "sha256", one of openssl_get_md_methods().</param>
+        /// <param name="raw_output">When set to TRUE, outputs raw binary data. FALSE outputs lowercase hexits.</param>
+        /// <returns>Returns a string containing the calculated certificate fingerprint as lowercase hexits unless raw_output is set to TRUE in which case the raw binary representation of the message digest is returned.</returns>
+        [return: CastToFalse]
+        public static PhpString openssl_x509_fingerprint(Context ctx, PhpResource x509, string hash_algorithm = "sha1", bool raw_output = false)
+        {
+            var resource = ValidateX509Resource(x509);
+            if (resource == null)
+                return null;
+
+            return X509Fingerprint(ctx, resource, hash_algorithm, raw_output);
+        }
+
+        /// <summary>
+        /// Calculates the fingerprint, or digest, of a given X.509 certificate
+        /// </summary>
+        /// <param name="ctx">Context of the script.</param>
+        /// <param name="x509">Path to file with PEM encoded certificate or a string containing the content of a certificate</param>
+        /// <param name="hash_algorithm">The digest method or hash algorithm to use, e.g. "sha256", one of openssl_get_md_methods().</param>
+        /// <param name="raw_output">When set to TRUE, outputs raw binary data. FALSE outputs lowercase hexits.</param>
+        /// <returns>Returns a string containing the calculated certificate fingerprint as lowercase hexits unless raw_output is set to TRUE in which case the raw binary representation of the message digest is returned.</returns>
+        [return: CastToFalse]
+        public static PhpString openssl_x509_fingerprint(Context ctx, string x509, string hash_algorithm = "sha1", bool raw_output = false)
+        {
+            X509Resource resource = null;
+            if ((resource = openssl_x509_read(ctx, x509)) == null)
+            {
+                return null;
+            }
+            else
+            {
+                return X509Fingerprint(ctx, resource, hash_algorithm, raw_output);
+            }
+        }
+
+        private static PhpString X509Fingerprint(Context ctx, X509Resource x509, string hash_algorithm, bool raw_output)
+        {
+            return openssl_digest(ctx, new PhpString(x509.Certificate.Export(X509ContentType.Cert)), hash_algorithm, raw_output);
         }
 
         #endregion
