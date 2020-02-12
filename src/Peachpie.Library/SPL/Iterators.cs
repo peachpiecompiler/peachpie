@@ -1176,7 +1176,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Return the string representation of the current element.
         /// </summary>
-        public override string ToString()
+        public virtual string __toString()
         {
             if ((_flags & (CALL_TOSTRING | TOSTRING_USE_INNER)) != 0)
             {
@@ -1196,6 +1196,8 @@ namespace Pchp.Library.Spl
                 return string.Empty;
             }
         }
+
+        public override string ToString() => __toString();
 
         protected private virtual void NextImpl()
         {
