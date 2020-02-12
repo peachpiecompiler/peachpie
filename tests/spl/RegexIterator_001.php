@@ -1,5 +1,5 @@
 <?php
-namespace spl\RegexIterator_001; 
+namespace spl\RegexIterator_001;
 
 class A {
     public function __toString() {
@@ -11,7 +11,7 @@ function test() {
     $it = new \ArrayIterator(array("foo" => new A(), array("bla" => 856), "bar", "832", 8123, 8.12));
     $it = new \RegexIterator($it, "/^8/");
     print_r(iterator_to_array($it));
-    
+
     // Examples from https://adayinthelifeof.nl/2014/02/12/spl-deepdive-regexiterator/
 
     $it = new \ArrayIterator(array("foo" => "123", "bar" => "456", "baz" => "789"));
@@ -20,6 +20,14 @@ function test() {
 
     $it = new \ArrayIterator(array("foo" => "123", "bar" => "456", "baz" => "789"));
     $it = new \RegexIterator($it, "/^ba/", \RegexIterator::MATCH, \RegexIterator::USE_KEY);
+    print_r(iterator_to_array($it));
+
+    $it = new \ArrayIterator(array("foo" => "123", "bar" => "456", "baz" => "789"));
+    $it = new \RegexIterator($it, "/^ba/", \RegexIterator::MATCH, \RegexIterator::INVERT_MATCH);
+    print_r(iterator_to_array($it));
+
+    $it = new \ArrayIterator(array("foo" => "123", "bar" => "456", "baz" => "789"));
+    $it = new \RegexIterator($it, "/^ba/", \RegexIterator::MATCH, \RegexIterator::USE_KEY | \RegexIterator::INVERT_MATCH);
     print_r(iterator_to_array($it));
 
     $it = new \ArrayIterator(array("foo", "bar", "bazbar"));

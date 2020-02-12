@@ -1399,6 +1399,11 @@ namespace Pchp.Library.Spl
         /// </summary>
         public const int USE_KEY = 1;
 
+        /// <summary>
+        /// Special flag: Filter out the entries which match the pattern.
+        /// </summary>
+        public const int INVERT_MATCH = 2;
+
         #endregion
 
         #region Fields and properties
@@ -1554,6 +1559,9 @@ namespace Pchp.Library.Spl
                     result = false;
                     break;
             }
+
+            if ((_flags & INVERT_MATCH) != 0)
+                result = !result;
 
             return result;
         }
