@@ -7,8 +7,8 @@
         ItemType="Compile">
     </ContentType>
 
-    <ItemType Name="Compile" UpToDateCheckInput="true" DisplayName="PeachPie compiler"/>
-    <ItemType Name="AdditionalFiles" UpToDateCheckInput="true" DisplayName="PeachPie analyzer additional file"/>
+    <ItemType Name="Compile" UpToDateCheckInput="true" DisplayName="Compile"/>
+    <!-- ItemType Name="AdditionalFiles" UpToDateCheckInput="true" DisplayName="PeachPie analyzer additional file"/ -->
 
     <FileExtension Name=".php" ContentType="PhpSourceFile"/>
     <FileExtension Name=".phar" ContentType="PhpSourceFile"/>
