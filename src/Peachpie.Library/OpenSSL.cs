@@ -16,21 +16,34 @@ namespace Pchp.Library
     public static class OpenSSL
     {
         #region Constants
-        public const int OPENSSL_RAW_DATA = (int)Option.OPENSSL_RAW_DATA;
-        public const int OPENSSL_ZERO_PADDING = (int)Option.OPENSSL_ZERO_PADDING;
+        public const int OPENSSL_RAW_DATA = (int)Options.OPENSSL_RAW_DATA;
+        public const int OPENSSL_ZERO_PADDING = (int)Options.OPENSSL_ZERO_PADDING;
 
-        private static Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher> { 
-        {"aes-256-cbc", new Cipher(CipherTypes.AES, Cipher.IVLengthAES, CipherMode.CBC,256)}, {"aes-192-cbc", new Cipher(CipherTypes.AES, Cipher.IVLengthAES, CipherMode.CBC, 192)},
-        {"aes-128-cbc", new Cipher(CipherTypes.AES, Cipher.IVLengthAES, CipherMode.CBC,128)}, {"aes-256-ecb", new Cipher(CipherTypes.AES, Cipher.IVLengthAES, CipherMode.ECB, 256)},
-        {"aes-192-ecb", new Cipher(CipherTypes.AES, Cipher.IVLengthAES, CipherMode.ECB,192)}, {"aes-128-ecb", new Cipher(CipherTypes.AES, Cipher.IVLengthAES, CipherMode.ECB, 128)},
-        {"des-ecb", new Cipher(CipherTypes.DES, Cipher.IVLengthDES, CipherMode.ECB, Cipher.KeyLengthDES)},
-        {"des-cbc", new Cipher(CipherTypes.DES, Cipher.IVLengthDES,CipherMode.CBC, Cipher.KeyLengthDES)},
-        {"des-ede3", new Cipher(CipherTypes.TripleDES, Cipher.IVLengthDES, CipherMode.ECB, Cipher.KeyLengthTripleDES)},
-        {"des-ede3-cbc", new Cipher(CipherTypes.TripleDES, Cipher.IVLengthDES, CipherMode.CBC, Cipher.KeyLengthTripleDES)}
+        private static Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher>
+        {
+            {"aes-256-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC,256)},
+            {"aes-192-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC, 192)},
+            {"aes-128-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC,128)},
+            {"aes-256-ecb", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.ECB, 256)},
+            {"aes-192-ecb", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.ECB,192)},
+            {"aes-128-ecb", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.ECB, 128)},
+            {"des-ecb", new Cipher(CipherType.DES, Cipher.IVLengthDES, CipherMode.ECB, Cipher.KeyLengthDES)},
+            {"des-cbc", new Cipher(CipherType.DES, Cipher.IVLengthDES,CipherMode.CBC, Cipher.KeyLengthDES)},
+            {"des-ede3", new Cipher(CipherType.TripleDES, Cipher.IVLengthDES, CipherMode.ECB, Cipher.KeyLengthTripleDES)},
+            {"des-ede3-cbc", new Cipher(CipherType.TripleDES, Cipher.IVLengthDES, CipherMode.CBC, Cipher.KeyLengthTripleDES)}
         // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
         // RC2 is ok when there is right length of password, but when it is longer, PHP transforms password in some way, but i can not figure out how.
         // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1)
-        // TODO: Aliases for supported algos
+        };
+
+        private static Dictionary<string, string> CiphersAliases = new Dictionary<string, string>
+        {
+            {"aes128", "aes-128-cbc"},
+            {"aes192", "aes-192-cbc"},
+            {"aes256", "aes-256-cbc"},
+            {"des", "des-cbc"},
+            {"des-ede3-ecb", "des-ede3"},
+            {"des3", "des-ede3-cbc"}
         };
 
         /// <summary>
@@ -43,12 +56,12 @@ namespace Pchp.Library
             public const int IVLengthAES = 16;
             public const int IVLengthDES = 8;
 
-            public readonly CipherTypes Type;
+            public readonly CipherType Type;
             public readonly int IVLength;
             public readonly CipherMode Mode;
             public readonly int KeyLength; // In Bits
 
-            public Cipher(CipherTypes type, int iVLength, CipherMode mode, int keyLength)
+            public Cipher(CipherType type, int iVLength, CipherMode mode, int keyLength)
             {
                 // Initialization
                 Type = type;
@@ -59,26 +72,26 @@ namespace Pchp.Library
         }
 
         [Flags]
-        public enum Option { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2 };
+        public enum Options { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2 };
 
-        private enum CipherTypes { AES, DES, TripleDES};
+        private enum CipherType { AES, DES, TripleDES };
 
         #endregion
 
         #region openssl_encrypt/decrypt
 
-        private static SymmetricAlgorithm PrepareCipher(Context ctx, byte[] data, PhpString key, Cipher cipher, PhpString iv, Option options)
+        private static SymmetricAlgorithm PrepareCipher(Context ctx, byte[] data, PhpString key, Cipher cipher, PhpString iv, Options options)
         {
             byte[] decodedKey = key.ToBytes(ctx);
 
             // Pad key out to KeyLength in bytes if its too short or trancuate if it is too long
-            if (decodedKey.Length < cipher.KeyLength / 8 || decodedKey.Length > cipher.KeyLength / 8)
+            int KeyLengthInBytes = cipher.KeyLength / 8;
+            if (decodedKey.Length < KeyLengthInBytes || decodedKey.Length > KeyLengthInBytes)
             {
-                var resizedKey = new byte[cipher.KeyLength / 8];
+                var resizedKey = new byte[KeyLengthInBytes];
                 Buffer.BlockCopy(decodedKey, 0, resizedKey, 0, Math.Min(key.Length, resizedKey.Length));
                 decodedKey = resizedKey;
             }
-
 
             byte[] iVector = new byte[cipher.IVLength];
             if (!iv.IsEmpty)
@@ -96,13 +109,13 @@ namespace Pchp.Library
             SymmetricAlgorithm alg = null;
             switch (cipher.Type)
             {
-                case CipherTypes.AES:
+                case CipherType.AES:
                     alg = new RijndaelManaged { Padding = PaddingMode.PKCS7, KeySize = cipher.KeyLength };
                     break;
-                case CipherTypes.DES:
+                case CipherType.DES:
                     alg = DES.Create();
                     break;
-                case CipherTypes.TripleDES:
+                case CipherType.TripleDES:
                     alg = TripleDES.Create();
                     break;
             }
@@ -111,7 +124,7 @@ namespace Pchp.Library
             alg.Key = decodedKey;
             alg.IV = iVector;
 
-            if ((options & Option.OPENSSL_ZERO_PADDING) == Option.OPENSSL_ZERO_PADDING)
+            if ((options & Options.OPENSSL_ZERO_PADDING) == Options.OPENSSL_ZERO_PADDING)
                 alg.Padding = PaddingMode.None;
 
             return alg;
@@ -130,8 +143,11 @@ namespace Pchp.Library
         /// <param name="aad">Additional authentication data.</param>
         /// <returns>The decrypted string on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static string openssl_decrypt(Context ctx, PhpString data, string method, PhpString key, Option options, PhpString iv, string tag = "", string aad = "")
+        public static string openssl_decrypt(Context ctx, PhpString data, string method, PhpString key, Options options, PhpString iv, string tag = "", string aad = "")
         {
+            if (CiphersAliases.TryGetValue(method, out string methodName))
+                method = methodName;
+
             Cipher cipherMethod;
             if (!Ciphers.TryGetValue(method, out cipherMethod))
             {
@@ -140,24 +156,25 @@ namespace Pchp.Library
                 return null;
             }
 
+
             if (iv.IsEmpty)
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.empty_iv_vector);
 
-            try 
+            try
             {
                 return Decrypt(ctx, data, key, cipherMethod, iv, options);
             }
             catch (CryptographicException ex)
             {
                 PhpException.Throw(PhpError.E_WARNING, ex.Message);
-                return ""; 
+                return "";
             }
         }
 
-        private static string Decrypt(Context ctx, PhpString data, PhpString key, Cipher cipher, PhpString iv, Option options)
+        private static string Decrypt(Context ctx, PhpString data, PhpString key, Cipher cipher, PhpString iv, Options options)
         {
             byte[] encryptedBytes;
-            if ((options & Option.OPENSSL_RAW_DATA) == Option.OPENSSL_RAW_DATA)
+            if ((options & Options.OPENSSL_RAW_DATA) == Options.OPENSSL_RAW_DATA)
                 encryptedBytes = data.ToBytes(ctx);
             else
                 encryptedBytes = System.Convert.FromBase64String(data.ToString(ctx));
@@ -185,8 +202,11 @@ namespace Pchp.Library
         /// <param name="aad">Additional authentication data.</param>
         /// <param name="tag_length">The length of the authentication tag. Its value can be between 4 and 16 for GCM mode.</param>
         /// <returns>Returns the encrypted string on success or FALSE on failure.</returns>
-        public static PhpString openssl_encrypt(Context ctx, string data, string method, PhpString key, Option options, PhpString iv, string tag = "", string aad = "", int tag_length = 16)
+        public static PhpString openssl_encrypt(Context ctx, string data, string method, PhpString key, Options options, PhpString iv, string tag = "", string aad = "", int tag_length = 16)
         {
+            if (CiphersAliases.TryGetValue(method, out string methodName))
+                method = methodName;
+
             Cipher cipherMethod;
             if (!Ciphers.TryGetValue(method, out cipherMethod))
             {
@@ -209,7 +229,7 @@ namespace Pchp.Library
             }
         }
 
-        private static PhpString Encrypt(Context ctx, string data, PhpString key, Cipher cipher, PhpString iv, Option options)
+        private static PhpString Encrypt(Context ctx, string data, PhpString key, Cipher cipher, PhpString iv, Options options)
         {
             byte[] encrypted = null;
             byte[] dataBytes = ctx.StringEncoding.GetBytes(data);
@@ -219,13 +239,13 @@ namespace Pchp.Library
 
             using MemoryStream msEncrypt = new MemoryStream();
             using CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
-            
+
             using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
                 swEncrypt.Write(data);
 
             encrypted = msEncrypt.ToArray();
 
-            if ((options & Option.OPENSSL_RAW_DATA) == Option.OPENSSL_RAW_DATA)
+            if ((options & Options.OPENSSL_RAW_DATA) == Options.OPENSSL_RAW_DATA)
                 return new PhpString(encrypted);
             else
                 return System.Convert.ToBase64String(encrypted);
@@ -241,6 +261,9 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int openssl_cipher_iv_length(string method)
         {
+            if (CiphersAliases.TryGetValue(method, out string methodName))
+                method = methodName;
+
             Cipher cipherMethod;
             if (!Ciphers.TryGetValue(method, out cipherMethod))
             {
@@ -264,16 +287,28 @@ namespace Pchp.Library
             PhpArray result = new PhpArray(Ciphers.Keys);
 
             if (aliases)
-                throw new NotImplementedException();
+                result.AddRange(CiphersAliases);
 
             return result;
         }
 
         #region openssl_digest/get_md_methods
-        
-        // TODO: Aliases for supported algos
 
-        private static string[] HashMethodsImplementedHere = new string[]{ "sha384" };
+        // There are algos, which are implemented in .NET but there are not implemented in Hash.cs
+        private static Dictionary<string, Func<byte[], byte[]>> AditionaHashMethods = new Dictionary<string, Func<byte[], byte[]>>
+        {
+            {"sha384", (byte[] data) => SHA384Managed.Create().ComputeHash(data)}
+        };
+
+        private static Dictionary<string, string> HashAliases = new Dictionary<string, string>
+        {
+            {"RSA-MD4", "md4"},
+            {"RSA-MD5", "md5"},
+            {"RSA-SHA1", "sha1"},
+            {"RSA-SHA256", "sha256"},
+            {"RSA-SHA384", "sha384"},
+            {"RSA-SHA512", "sha512"}
+        };
 
         /// <summary>
         /// Computes a digest hash value for the given data using a given method, and returns a raw or binhex encoded string.
@@ -285,29 +320,26 @@ namespace Pchp.Library
         /// <returns>Returns the digested hash value on success or FALSE on failure.</returns>
         [return: CastToFalse]
         public static PhpString openssl_digest(Context ctx, PhpString data, string method, bool raw_output = false)
-        {            
+        {
+            if (HashAliases.TryGetValue(method, out string methodName))
+                method = methodName;
+
             if (HashPhpResource.HashAlgorithms.ContainsKey(method)) // Supported in Hash.cs
             {
                 return PhpHash.hash(method, data.ToBytes(ctx), raw_output);
             }
-            else if (Array.Find(HashMethodsImplementedHere, name => name == method) != null) // Supported here
+            else
             {
-                byte[] hashedBytes = null;
-                
-                switch (method)
+                byte[] hashedBytes = AditionaHashMethods[method]?.Invoke(data.ToBytes(ctx));
+
+                if (hashedBytes == null)  // Unknown cipher algorithm.
                 {
-                    case "sha384":
-                        var sHA384 = SHA384Managed.Create();
-                        hashedBytes = sHA384.ComputeHash(data.ToBytes(ctx));
-                        break;
+                    PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.unknown_hash);
+                    return null;
                 }
-
-                return raw_output ? new PhpString(hashedBytes) : StringUtils.BinToHex(hashedBytes, string.Empty);
+                else
+                    return raw_output ? new PhpString(hashedBytes) : StringUtils.BinToHex(hashedBytes, string.Empty);
             }
-
-            // Unknown cipher algorithm.
-            PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.unknown_hash);
-            return null;
         }
 
         /// <summary>
@@ -319,11 +351,10 @@ namespace Pchp.Library
         {
             var algos = hash_algos();
 
-            foreach (string name in HashMethodsImplementedHere)
-                algos.Add(name);
+            algos.AddRange(AditionaHashMethods.Keys);
 
             if (aliases)
-                throw new NotImplementedException();
+                algos.AddRange(HashAliases);
 
             return algos;
         }
@@ -331,14 +362,15 @@ namespace Pchp.Library
         #endregion
 
         #region X.509
-        const string filePrefix = "file://";
+        private const string FileSchemePrefix = "file://";
 
         /// <summary>
         /// Context of X509 certificate
         /// </summary>
         public class X509Resource : PhpResource
         {
-            public X509Certificate2 Certificate { get; private set; }
+            public X509Certificate2 Certificate { get; }
+
             public X509Resource(X509Certificate2 certificate) : base ("OpenSSL X.509")
             {
                 Certificate = certificate;
@@ -349,13 +381,35 @@ namespace Pchp.Library
         /// Gets instance of <see cref="X509Resource"/> or <c>null</c>.
         /// If given argument is not an instance of <see cref="X509Resource"/>, PHP warning is reported.
         /// </summary>
-        static X509Resource ValidateX509Resource(PhpResource context)
+        static X509Resource ParseX509Certificate(Context ctx, PhpValue mixed)
         {
-            if (context is X509Resource h && h.IsValid)
+            string cert;
+
+            if (mixed.AsResource() is X509Resource h && h.IsValid)
+            {
                 return h;
+            }
+            else if ((cert = mixed.AsString(ctx)) != null)
+            {
+                try
+                {
+                    if (cert.StartsWith(FileSchemePrefix)) // Load from file 
+                    {
+                        // TO DO: get absolute path context
+                        return new X509Resource(new X509Certificate2(cert.Remove(0, FileSchemePrefix.Length))); 
+                    }
+                    else // Load from string
+                        return new X509Resource(new X509Certificate2(ctx.StringEncoding.GetBytes(cert)));
+                }
+                catch (CryptographicException)
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
+                    return null;
+                }
+            }
 
             //
-            PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_context_resource);
+            PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
             return null;
         }
 
@@ -363,155 +417,105 @@ namespace Pchp.Library
         /// Parses the certificate supplied by x509certdata and returns a resource identifier for it.
         /// </summary>
         /// <param name="ctx">Context of the script.</param>
-        /// <param name="x509certdata">Path to file with PEM encoded certificate or a string containing the content of a certificate</param>
+        /// <param name="x509certdata">Path to file with PEM encoded certificate or a string containing the content of a certificate or X509Resource</param>
         /// <returns>Returns a resource identifier on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static X509Resource openssl_x509_read(Context ctx,string x509certdata)
+        public static X509Resource openssl_x509_read(Context ctx, PhpValue x509certdata)
         {
-            if (String.IsNullOrEmpty(x509certdata))
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
-                return null;
-            }
-
-            try
-            {
-                if (x509certdata.StartsWith(filePrefix)) // Load from file (In PHP it must have suffix .pem, but in .NET is supported .cer as well -> Check it ?)
-                    return new X509Resource(new X509Certificate2(x509certdata.Remove(0,filePrefix.Length)));
-                else // Load from string
-                    return new X509Resource(new X509Certificate2(ctx.StringEncoding.GetBytes(x509certdata)));
-            }
-            catch ( CryptographicException)
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
-                return null;
-            }     
-        }
-
-        /// <summary>
-        /// Parses the certificate supplied by x509certdata and returns a resource identifier for it.
-        /// </summary>
-        /// <param name="x509certdata">X.509 resource returned from openssl_x509_read()</param>
-        /// <returns>Returns a resource identifier on success or FALSE on failure.</returns>
-        [return: CastToFalse]
-        public static X509Resource openssl_x509_read(PhpResource x509certdata)
-        {
-            var resource = ValidateX509Resource(x509certdata);
-            if (resource == null)
-                return null;
-
-            return (new X509Resource(new X509Certificate2(resource.Certificate)));
-        }
-
-        /// <summary>
-        /// Stores x509 into a file named by outfilename in a PEM encoded format.
-        /// </summary>
-        /// <param name="x509">X.509 resource returned from openssl_x509_read()</param>
-        /// <param name="outfilename">Path to the output file.</param>
-        /// <param name="notext">The optional parameter notext affects the verbosity of the output; if it is FALSE, then additional human-readable information is included in the output. The default value of notext is TRUE.</param>
-        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        public static bool openssl_x509_export_to_file(PhpResource x509, string outfilename, bool notext = true)
-        {
-            var resource = ValidateX509Resource(x509);
-            if (resource == null)
-                return false;
-
-            return X509ExportToFile(resource, outfilename, notext);
+            return ParseX509Certificate(ctx, x509certdata);
         }
 
         /// <summary>
         /// Stores x509 into a file named by outfilename in a PEM encoded format.
         /// </summary>
         /// <param name="ctx">Context of the script.</param>
-        /// <param name="x509">Path to file with PEM encoded certificate or a string containing the content of a certificate</param>
+        /// <param name="x509">Path to file with PEM encoded certificate or a string containing the content of a certificate or X509Resource</param>
         /// <param name="outfilename">Path to the output file.</param>
         /// <param name="notext">The optional parameter notext affects the verbosity of the output; if it is FALSE, then additional human-readable information is included in the output. The default value of notext is TRUE.</param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        public static bool openssl_x509_export_to_file(Context ctx, string x509, string outfilename, bool notext = true)
+        public static bool openssl_x509_export_to_file(Context ctx, PhpValue x509, string outfilename, bool notext = true)
         {
-            X509Resource resource = null;
-            if ((resource = openssl_x509_read(ctx, x509)) == null)
-            {
+            var resource = ParseX509Certificate(ctx, x509);
+            if (resource == null)
                 return false;
-            }
-            else
+
+            string certificate = Export(resource, notext);
+
+            try
             {
-                return X509ExportToFile(resource, outfilename, notext);
+                using (StreamWriter wr = new StreamWriter(outfilename))
+                    wr.Write(certificate);
             }
+            catch (IOException) {  return false; }
+
+            return true;
         }
 
-        private static bool X509ExportToFile(X509Resource x509, string outfilename, bool notext)
+        private static string Export(X509Resource x509, bool notext)
         {
-            using StreamWriter wr = new StreamWriter(outfilename);
+            StringBuilder builder = new StringBuilder();
 
             if (!notext)
             {
                 // TODO: Add Human readable text
                 throw new NotImplementedException();
             }
-            wr.WriteLine("-----BEGIN CERTIFICATE-----");
-            
+
+            builder.AppendLine("-----BEGIN CERTIFICATE-----");
+
             int alignment = 64;
             string encoded = System.Convert.ToBase64String(x509.Certificate.Export(X509ContentType.Cert));
-            
+
             int reminder = 0;
             while (reminder < encoded.Length - alignment)
             {
-                wr.WriteLine(encoded.Substring(reminder, alignment));
+                builder.AppendLine(encoded.Substring(reminder, alignment));
                 reminder += alignment;
             }
 
             if (reminder != encoded.Length - 1)
-                wr.WriteLine(encoded.Substring(reminder, encoded.Length - reminder));
+                builder.AppendLine(encoded.Substring(reminder, encoded.Length - reminder));
 
-            wr.Write("-----END CERTIFICATE-----");
-            wr.Close();
+            builder.Append("-----END CERTIFICATE-----");
 
-            return true;
-        }
-
-        /// <summary>
-        /// Calculates the fingerprint, or digest, of a given X.509 certificate
-        /// </summary>
-        /// <param name="x509">X.509 resource returned from openssl_x509_read()</param>
-        /// <param name="hash_algorithm">The digest method or hash algorithm to use, e.g. "sha256", one of openssl_get_md_methods().</param>
-        /// <param name="raw_output">When set to TRUE, outputs raw binary data. FALSE outputs lowercase hexits.</param>
-        /// <returns>Returns a string containing the calculated certificate fingerprint as lowercase hexits unless raw_output is set to TRUE in which case the raw binary representation of the message digest is returned.</returns>
-        [return: CastToFalse]
-        public static PhpString openssl_x509_fingerprint(Context ctx, PhpResource x509, string hash_algorithm = "sha1", bool raw_output = false)
-        {
-            var resource = ValidateX509Resource(x509);
-            if (resource == null)
-                return null;
-
-            return X509Fingerprint(ctx, resource, hash_algorithm, raw_output);
+            return builder.ToString();
         }
 
         /// <summary>
         /// Calculates the fingerprint, or digest, of a given X.509 certificate
         /// </summary>
         /// <param name="ctx">Context of the script.</param>
-        /// <param name="x509">Path to file with PEM encoded certificate or a string containing the content of a certificate</param>
+        /// <param name="x509">Path to file with PEM encoded certificate or a string containing the content of a certificate or X509Resource</param>
         /// <param name="hash_algorithm">The digest method or hash algorithm to use, e.g. "sha256", one of openssl_get_md_methods().</param>
         /// <param name="raw_output">When set to TRUE, outputs raw binary data. FALSE outputs lowercase hexits.</param>
         /// <returns>Returns a string containing the calculated certificate fingerprint as lowercase hexits unless raw_output is set to TRUE in which case the raw binary representation of the message digest is returned.</returns>
         [return: CastToFalse]
-        public static PhpString openssl_x509_fingerprint(Context ctx, string x509, string hash_algorithm = "sha1", bool raw_output = false)
+        public static PhpString openssl_x509_fingerprint(Context ctx, PhpValue x509, string hash_algorithm = "sha1", bool raw_output = false)
         {
-            X509Resource resource = null;
-            if ((resource = openssl_x509_read(ctx, x509)) == null)
-            {
+            var resource = ParseX509Certificate(ctx, x509);
+            if (resource == null)
                 return null;
-            }
-            else
-            {
-                return X509Fingerprint(ctx, resource, hash_algorithm, raw_output);
-            }
+
+            return openssl_digest(ctx, new PhpString(resource.Certificate.Export(X509ContentType.Cert)), hash_algorithm, raw_output);
         }
 
-        private static PhpString X509Fingerprint(Context ctx, X509Resource x509, string hash_algorithm, bool raw_output)
+        /// <summary>
+        /// Stores x509 into a string named by output in a PEM encoded form
+        /// </summary>
+        /// <param name="ctx">Context of the script.</param>
+        /// <param name="x509">Path to file with PEM encoded certificate or a string containing the content of a certificate or X509Resource</param>
+        /// <param name="output">On success, this will hold the PEM.</param>
+        /// <param name="notext">The optional parameter notext affects the verbosity of the output; if it is FALSE, then additional human-readable information is included in the output. The default value of notext is TRUE.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool openssl_x509_export(Context ctx, PhpValue x509, ref string output, bool notext = true)
         {
-            return openssl_digest(ctx, new PhpString(x509.Certificate.Export(X509ContentType.Cert)), hash_algorithm, raw_output);
+            var resource = ParseX509Certificate(ctx, x509);
+            if (resource == null)
+                return false;
+
+            output = Export(resource, notext);
+
+            return true;
         }
 
         #endregion
