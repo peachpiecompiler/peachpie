@@ -116,7 +116,7 @@ namespace Pchp.Library.Spl
 
         bool _isValid = false;
 
-        private int _flags;
+        protected int _flags;
 
         /// <summary>
         /// Lazily initialized array to store values set as properties if <see cref="ARRAY_AS_PROPS"/> is not set.
@@ -470,7 +470,10 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class RecursiveArrayIterator : ArrayIterator, RecursiveIterator
     {
-        // TODO: Add and use the CHILD_ARRAYS_ONLY constant when flags are functional
+        /// <summary>
+        /// Treat only arrays (not objects) as having children for recursive iteration.
+        /// </summary>
+        public const int CHILD_ARRAYS_ONLY = 4;
 
         [PhpFieldsOnlyCtor]
         protected RecursiveArrayIterator(Context/*!*/ctx) : base(ctx)
@@ -490,16 +493,16 @@ namespace Pchp.Library.Spl
                 return null;
             }
 
-            var elem = current();
+            var elem = hasChildren() ? current() : PhpArray.NewEmpty();
             var type = GetType();
             if (type == typeof(RecursiveArrayIterator))
             {
-                return new RecursiveArrayIterator(_ctx, elem);
+                return new RecursiveArrayIterator(_ctx, elem, _flags);
             }
             else
             {
                 // We create an instance of the current type, if used from a subclass
-                return (RecursiveArrayIterator)_ctx.Create(default(RuntimeTypeHandle), type.GetPhpTypeInfo(), elem);
+                return (RecursiveArrayIterator)_ctx.Create(default(RuntimeTypeHandle), type.GetPhpTypeInfo(), elem, _flags);
             }
         }
 
@@ -508,7 +511,7 @@ namespace Pchp.Library.Spl
         public bool hasChildren()
         {
             var elem = current();
-            return (elem.IsArray || elem.IsObject) && !elem.IsEmpty;
+            return (elem.IsArray || ((_flags & CHILD_ARRAYS_ONLY) == 0 && elem.IsObject)) && !elem.IsEmpty;
         }
     }
 
