@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
+using System.Runtime.CompilerServices;
 
 namespace Pchp.Library.Spl
 {
@@ -81,6 +83,23 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterator, Countable
     {
+        #region Constants
+
+        /// <summary>
+        /// Properties of the object have their normal functionality when accessed as list (var_dump, foreach, etc.).
+        /// </summary>
+        /// <remarks>
+        /// Not used by Peachpie, as it currently does not change any observable behavior in PHP either (as of PHP 7.4).
+        /// </remarks>
+        public const int STD_PROP_LIST = 1;
+
+        /// <summary>
+        /// Entries can be accessed as properties (read and write).
+        /// </summary>
+        public const int ARRAY_AS_PROPS = 2;
+
+        #endregion
+
         #region Fields & Properties
 
         readonly protected Context _ctx;
@@ -97,6 +116,18 @@ namespace Pchp.Library.Spl
 
         bool _isValid = false;
 
+        private int _flags;
+
+        /// <summary>
+        /// Lazily initialized array to store values set as properties if <see cref="ARRAY_AS_PROPS"/> is not set.
+        /// </summary>
+        /// <remarks>
+        /// Its presence also enables <see cref="__get(PhpValue)"/> and <see cref="__set(PhpValue, PhpValue)"/>
+        /// to work properly.
+        /// </remarks>
+        [CompilerGenerated]
+        internal PhpArray __peach__runtimeFields;
+
         /// <summary>
         /// Instantiates new enumerator and advances its position to the first element.
         /// </summary>
@@ -106,6 +137,51 @@ namespace Pchp.Library.Spl
 
             _enumerator = Operators.GetForeachEnumerator(storage, false, default);
             _isValid = _enumerator.MoveNext();
+        }
+
+        public virtual void __set(PhpValue prop, PhpValue value)
+        {
+            // TODO: Make aliases work (they currently get dealiased before passed here)
+
+            if ((_flags & ARRAY_AS_PROPS) == 0)
+            {
+                if (__peach__runtimeFields == null)
+                    __peach__runtimeFields = new PhpArray();
+
+                __peach__runtimeFields.SetItemValue(prop, value);
+            }
+            else if (storage is PhpArray array)
+            {
+                array.SetItemValue(prop, value);
+            }
+            else
+            {
+                Operators.PropertySetValue(default(RuntimeTypeHandle), storage, prop, value);
+            }
+        }
+
+        public virtual PhpValue __get(PhpValue prop)
+        {
+            if ((_flags & ARRAY_AS_PROPS) == 0)
+            {
+                if (__peach__runtimeFields != null && __peach__runtimeFields.TryGetValue(prop, out var val))
+                {
+                    return val;
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.undefined_property_accessed, this.GetPhpTypeInfo().Name, prop.ToString());
+                    return PhpValue.Null;
+                }
+            }
+            else if (storage is PhpArray array)
+            {
+                return array.GetItemValue(prop);
+            }
+            else
+            {
+                return Operators.PropertyGetValue(default(RuntimeTypeHandle), storage, prop);
+            }
         }
 
         #endregion
@@ -131,6 +207,8 @@ namespace Pchp.Library.Spl
         /// <param name="flags">Flags to control the behaviour of the ArrayIterator object. See ArrayIterator::setFlags().</param>
         public virtual void __construct(Context/*!*/ctx, PhpValue array = default, int flags = 0)
         {
+            _flags = flags;
+
             if (array.IsPhpArray(out var phparray))
             {
                 storage = phparray;
@@ -185,15 +263,9 @@ namespace Pchp.Library.Spl
 
         #region ArrayIterator (getFlags, setFlags, append, getArrayCopy)
 
-        public virtual int getFlags()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual int getFlags() => _flags;
 
-        public virtual object setFlags(int flags)
-        {
-            throw new NotImplementedException();
-        }
+        public virtual void setFlags(int flags) => _flags = flags;
 
         public virtual PhpArray getArrayCopy()
         {
