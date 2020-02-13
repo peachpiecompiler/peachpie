@@ -35,6 +35,7 @@ namespace Pchp.Core.Reflection
             __invoke, __tostring,
             __clone, __set_state, __debuginfo,
             __sleep, __wakeup,
+            __serialize, __unserialize,
 
             // magic CLR methods
             get_item, set_item,
