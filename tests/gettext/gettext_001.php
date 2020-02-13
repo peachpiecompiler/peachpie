@@ -32,7 +32,7 @@ function test($locale, $domain, $dir) {
 
   if ($dir) {
     $res = bindtextdomain($domain ?: "messages", $dir);
-    echo ($res === false) ? "false" : $res;
+    echo ($res === false) ? "false" : strtolower($res);
     echo " ";
   }
 
