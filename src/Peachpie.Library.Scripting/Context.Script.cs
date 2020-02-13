@@ -201,11 +201,21 @@ namespace Peachpie.Library.Scripting
             // unique in-memory assembly name
             var name = builder.GetNewSubmissionName();
 
+            // submission do not have the opening "<?php" script tag:
+            var kind = options.IsSubmission ? SourceCodeKind.Script : SourceCodeKind.Regular;
+
+            if (kind == SourceCodeKind.Script && options.EmitDebugInformation)
+            {
+                // since submission do not have the opening "<?php" tag,
+                // add a comment with the opening tag, so source code editors don't get confused and colorize the code properly:
+                code = $"#<?php\n{code}";
+            }
+
             // parse the source code
             var tree = PhpSyntaxTree.ParseCode(
                 SourceText.From(code, Encoding.UTF8, SourceHashAlgorithm.Sha256),
                 new PhpParseOptions(
-                    kind: options.IsSubmission ? SourceCodeKind.Script : SourceCodeKind.Regular,
+                    kind: kind,
                     languageVersion: languageVersion,
                     shortOpenTags: shortOpenTags),
                 PhpParseOptions.Default,
