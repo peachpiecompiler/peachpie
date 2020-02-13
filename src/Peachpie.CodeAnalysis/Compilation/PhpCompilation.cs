@@ -906,12 +906,28 @@ namespace Pchp.CodeAnalysis
 
         IEnumerable<EmbeddedText> CollectAdditionalEmbeddedTexts()
         {
-            return this.SourceSymbolCollection
-                .GetFiles()
-                .Select(f => f.SyntaxTree)
-                .Where(tree => tree.IsPharEntry || tree.FilePath.IsPharFile())
-                .Select(tree => EmbeddedText.FromSource(tree.FilePath, tree.GetText()))
-                .ToList();
+            // TODO: if (EmbedPharContentIntoPdb):
+
+            foreach (var f in this.SourceSymbolCollection.GetFiles())
+            {
+                var tree = f.SyntaxTree;
+                var fname = tree.FilePath;
+
+                if (f.SyntaxTree.IsPharEntry) // embed phar entry
+                {
+                    // ok, fname is already a virtual file path of the phar entry
+                }
+                else if (fname.IsPharFile()) // embed phar stub
+                {
+                    fname = PhpFileUtilities.BuildPharStubFileName(fname); // virtual file name for the phar stub entry
+                }
+                else
+                {
+                    continue; // not embedded into PDB
+                }
+
+                yield return EmbeddedText.FromSource(fname, tree.GetText());
+            }
         }
 
         IEnumerable<ResourceDescription> CollectAdditionalManifestResources()

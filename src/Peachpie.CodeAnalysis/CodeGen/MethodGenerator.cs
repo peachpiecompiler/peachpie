@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
+using Pchp.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -24,10 +25,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             // TODO: method might be synthesized and we create an incomplete DebugSourceDocument
 
             var srcf = (method as SourceRoutineSymbol)?.ContainingFile;
-            if (srcf != null)
+            if (srcf != null && srcf.SyntaxTree.TryGetText(out var srctext))
             {
-                var srctext = srcf.SyntaxTree.GetText();
-
                 return new Cci.DebugSourceDocument(
                     normalizedPath,
                     Constants.CorSymLanguageTypePeachpie,
@@ -104,7 +103,18 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (emittingPdb)
             {
-                debugDocumentProvider = (path, basePath) => moduleBuilder.DebugDocumentsBuilder.GetOrAddDebugDocument(path, basePath, normalizedPath => CreateDebugSourceDocument(normalizedPath, routine));
+                debugDocumentProvider = (path, basePath) =>
+                {
+                    if (path.IsPharFile())
+                    {
+                        path = PhpFileUtilities.BuildPharStubFileName(path);
+                    }
+
+                    return moduleBuilder.DebugDocumentsBuilder.GetOrAddDebugDocument(
+                        path,
+                        basePath,
+                        normalizedPath => CreateDebugSourceDocument(normalizedPath, routine));
+                };
             }
 
             ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations.AsOptimizationLevel());
