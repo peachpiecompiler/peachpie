@@ -45,14 +45,6 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal readonly CommonModuleCompilationState CompilationState;
 
-        // This is a map from the document "name" to the document.
-        // Document "name" is typically a file path like "C:\Abc\Def.cs". However, that is not guaranteed.
-        // For compatibility reasons the names are treated as case-sensitive in C# and case-insensitive in VB.
-        // Neither language trims the names, so they are both sensitive to the leading and trailing whitespaces.
-        // NOTE: We are not considering how filesystem or debuggers do the comparisons, but how native implementations did.
-        // Deviating from that may result in unexpected warnings or different behavior (possibly without warnings).
-        readonly ConcurrentDictionary<string, Cci.DebugSourceDocument> _debugDocuments;
-
         /// <summary>
         /// Builders for synthesized static constructors.
         /// </summary>
@@ -74,7 +66,6 @@ namespace Pchp.CodeAnalysis.Emit
             _sourceModule = sourceModule;
             _emitOptions = emitOptions;
             this.CompilationState = new CommonModuleCompilationState();
-            _debugDocuments = new ConcurrentDictionary<string, Cci.DebugSourceDocument>(compilation.IsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
             _synthesized = new SynthesizedManager(this);
 
             AssemblyOrModuleSymbolToModuleRefMap.Add(sourceModule, this);
@@ -231,11 +222,6 @@ namespace Pchp.CodeAnalysis.Emit
         internal sealed override Cci.ICustomAttribute SynthesizeAttribute(WellKnownMember attributeConstructor)
         {
             throw new NotImplementedException();
-        }
-
-        internal Cci.DebugSourceDocument GetOrAddDebugDocument(string path, string basePath, Func<string, Cci.DebugSourceDocument> factory)
-        {
-            return _debugDocuments.GetOrAdd(NormalizeDebugDocumentPath(path, basePath), factory);
         }
 
         private string NormalizeDebugDocumentPath(string path, string basePath)

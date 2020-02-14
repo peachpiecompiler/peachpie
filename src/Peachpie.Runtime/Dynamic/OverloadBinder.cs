@@ -14,6 +14,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Helper class for method overload resolution and binding to an <see cref="Expression"/>.
     /// </summary>
+    [DebuggerNonUserCode]
     internal static class OverloadBinder
     {
         #region Helpers

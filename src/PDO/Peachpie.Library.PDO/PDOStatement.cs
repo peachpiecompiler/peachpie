@@ -295,7 +295,7 @@ namespace Peachpie.Library.PDO
             BindParameters(_cmd.Parameters, input_parameters);
 
             // execute
-            Result = Connection.ExecuteCommand(_cmd, convertTypes: false, parameters: null /*already set*/, skipResults: false);
+            Result = Connection.ExecuteCommand(_cmd, convertTypes: true, parameters: null /*already set*/, skipResults: false);
 
             // handle error:
             if (Connection.LastException == null)

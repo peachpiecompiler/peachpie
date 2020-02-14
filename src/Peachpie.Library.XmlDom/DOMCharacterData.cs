@@ -49,7 +49,7 @@ namespace Peachpie.Library.XmlDom
         public DOMCharacterData()
         { }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             return new DOMCharacterData();
         }
@@ -229,7 +229,7 @@ namespace Peachpie.Library.XmlDom
             return copy;
         }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             if (IsAssociated) return new DOMText(XmlCharacterData);
             else
@@ -247,7 +247,7 @@ namespace Peachpie.Library.XmlDom
 
         #region Hierarchy
 
-        internal override void Associate(XmlDocument/*!*/ document)
+        internal protected override void Associate(XmlDocument/*!*/ document)
         {
             if (!IsAssociated)
             {
@@ -350,7 +350,7 @@ namespace Peachpie.Library.XmlDom
             this.XmlCDataSection = xmlCDataSection;
         }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             if (IsAssociated) return new DOMCdataSection(XmlCDataSection);
             else
@@ -370,7 +370,7 @@ namespace Peachpie.Library.XmlDom
 
         #region Hierarchy
 
-        internal override void Associate(XmlDocument/*!*/ document)
+        internal protected override void Associate(XmlDocument/*!*/ document)
         {
             if (!IsAssociated)
             {
@@ -446,7 +446,7 @@ namespace Peachpie.Library.XmlDom
             this.XmlComment = xmlComment;
         }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             if (IsAssociated) return new DOMComment(XmlComment);
             else
@@ -466,7 +466,7 @@ namespace Peachpie.Library.XmlDom
 
         #region Hierarchy
 
-        internal override void Associate(XmlDocument/*!*/ document)
+        internal protected override void Associate(XmlDocument/*!*/ document)
         {
             if (!IsAssociated)
             {

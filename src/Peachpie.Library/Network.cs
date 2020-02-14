@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Library.Streams;
+using static Pchp.Library.Network;
 
 namespace Pchp.Library
 {
@@ -169,75 +170,48 @@ namespace Pchp.Library
 
     /// <summary>Functions working with DNS.</summary>
     [PhpExtension("standard")]
-	public static class PhpDns
+    public static class PhpDns
     {
-        //#region NS: dns_check_record, checkdnsrr
+        #region dns_check_record, checkdnsrr
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("checkdnsrr", FunctionImplOptions.NotSupported)]
-        //       public static int CheckRecordRows(string host)
-        //       {
-        //           return CheckRecords(host, "MX");
-        //       }
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        public static bool checkdnsrr(string host, string type = "MX") => dns_check_record(host, type);
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("checkdnsrr", FunctionImplOptions.NotSupported)]
-        //       public static int CheckRecordRows(string host, string type)
-        //       {
-        //           return CheckRecords(host, type);
-        //       }
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        public static bool dns_check_record(string host, string type = "MX")
+        {
+            throw new NotImplementedException();
+        }
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("dns_check_record", FunctionImplOptions.NotSupported)]
-        //       public static int CheckRecords(string host, string type)
-        //       {
-        //           PhpException.FunctionNotSupported();
-        //           return 0;
-        //       }
+        #endregion
 
+        #region dns_get_record
 
-        //       #endregion
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray dns_get_record(string host, DnsRecordType type = DnsRecordType.All)
+        {
+            throw new NotImplementedException();
+        }
 
-        //       #region NS: dns_get_record
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray dns_get_record(string host, DnsRecordType type, out PhpArray authNS, out PhpArray additional)
+        {
+            authNS = null;
+            additional = null;
+            throw new NotImplementedException();
+        }
 
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
-        //       public static PhpArray GetRecord(string host)
-        //       {
-        //           return GetRecord(host, DnsRecordType.All);
-        //       }
-
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
-        //       public static PhpArray GetRecord(string host, DnsRecordType type)
-        //       {
-        //           PhpException.FunctionNotSupported();
-        //           return null;
-        //       }
-
-        //       /// <summary>
-        //       /// Not supported.
-        //       /// </summary>
-        //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
-        //       public static PhpArray GetRecord(string host, DnsRecordType type, out PhpArray authNS, out PhpArray additional)
-        //       {
-        //           PhpException.FunctionNotSupported();
-        //           authNS = null;
-        //           additional = null;
-        //           return null;
-        //       }
-
-        //       #endregion
+        #endregion
 
         #region gethostbyaddr, gethostbyname, gethostbynamel
 

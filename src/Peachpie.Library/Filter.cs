@@ -544,6 +544,7 @@ namespace Pchp.Library
             var @default = PhpValue.False; // a default value
             PhpArray? options_arr;
             long flags = 0;
+            long l; // tmp
 
             // process options
 
@@ -669,18 +670,43 @@ namespace Pchp.Library
 
                 case (int)FilterValidate.INT:
                     {
-                        int result;
-                        if (int.TryParse((PhpVariable.AsString(variable) ?? string.Empty).Trim(), out result))
-                        {
-                            if (Operators.IsSet(options))
-                                PhpException.ArgumentValueNotSupported("options", "!null");
+                        // TODO: switch:
 
-                            return (PhpValue)result;  // TODO: options: min_range, max_range
+                        if (variable.IsLong(out l))
+                        {
+                            // ok
+                        }
+                        else if (variable.IsString(out var str) && long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out l))
+                        {
+                            // ok
+                        }
+                        else if (variable.IsBoolean(out var b))
+                        {
+                            l = b ? 1 : 0;
+                        }
+                        else if (variable.IsDouble(out var d))
+                        {
+                            l = (long)d;
                         }
                         else
                         {
+                            // null
+                            // array
+                            // invalid string
+                            // object
                             return @default;
                         }
+
+                        //
+
+                        if (Operators.IsSet(options))
+                        {
+                            PhpException.ArgumentValueNotSupported("options", "!null");
+                        }
+
+                        // TODO: options: min_range, max_range
+
+                        return l;
                     }
                 case (int)FilterValidate.BOOLEAN:
                     {

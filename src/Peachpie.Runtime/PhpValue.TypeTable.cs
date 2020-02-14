@@ -674,7 +674,7 @@ namespace Pchp.Core
                 // invalid
                 return base.AsCallable(ref me, callerCtx, callerObj);
             }
-            public override string DisplayString(ref PhpValue me) => "array(length = " + me.Array.Count.ToString() + ")";
+            public override string DisplayString(ref PhpValue me) => "array (length = " + me.Array.Count.ToString() + ")";
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo((string)me.Array);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Array);
         }

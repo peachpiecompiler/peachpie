@@ -406,10 +406,23 @@ namespace Pchp.Library
 
                     var classnameBytes = Encoding.GetBytes(classname);
 
+                    PhpArray serializedArray = null;
                     byte[] serializedBytes = null;
                     List<KeyValuePair<string, PhpValue>> serializedProperties = null;
 
-                    if (obj is global::Serializable serializable)
+                    var __serialize = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__serialize];
+                    if (__serialize != null)
+                    {
+                        // TODO: check accessibility // CONSIDER do not reflect non-public methods in tinfo.RuntimeMethods at all!
+                        var rvalue = __serialize.Invoke(_ctx, obj);
+                        if (rvalue.IsPhpArray(out serializedArray) == false)
+                        {
+                            // FATAL ERROR
+                            // {0}::__serialize must return an array
+                            throw PhpException.TypeErrorException(string.Format(LibResources.__serialize_must_return_array, tinfo.Name));
+                        }
+                    }
+                    else if (obj is global::Serializable serializable)
                     {
                         var res = serializable.serialize();
                         if (res.IsDefault)
@@ -478,6 +491,16 @@ namespace Pchp.Library
                         // write serialized data
                         Write(serializedBytes);
                     }
+                    else if (serializedArray != null)
+                    {
+                        // write out property count
+                        Write(serializedArray.Count.ToString());
+                        Write(Tokens.Colon);
+                        Write(Tokens.BraceOpen);
+
+                        // enumerate array items and serialize them
+                        base.Accept(serializedArray);
+                    }
                     else
                     {
                         // write out property count
@@ -489,7 +512,7 @@ namespace Pchp.Library
                         AcceptObjectProperties(serializedProperties);
                     }
 
-                    //
+                    // }
                     Write(Tokens.BraceClose);
                 }
 
@@ -1051,6 +1074,7 @@ namespace Pchp.Library
                         throw new NotImplementedException("__PHP_Incomplete_Class");
                     }
 
+                    // {
                     Consume(Tokens.BraceOpen);
 
                     if (serializable)
@@ -1083,33 +1107,50 @@ namespace Pchp.Library
                     }
                     else
                     {
+                        var __unserialize = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__unserialize];
+                        var __unserialize_array = __unserialize != null ? new PhpArray(count) : null;
+
                         // parse properties
                         while (--count >= 0)
                         {
-                            // parse property name
-                            var nameval = Parse();
-                            var pname = nameval.ToStringOrNull();
-                            if (pname == null)
+                            var key = Parse();
+                            var value = Parse();
+
+                            //
+                            if (key.TryToIntStringKey(out var iskey))
                             {
-                                if (!nameval.IsInteger()) ThrowInvalidDataType();
-                                pname = nameval.ToStringOrThrow(_ctx);
+                                if (__unserialize_array != null)
+                                {
+                                    __unserialize_array[iskey] = value;
+                                }
+                                else
+                                {
+                                    // set property
+                                    SetProperty(obj, tinfo, iskey.ToString(), value, _ctx);
+                                }
                             }
-
-                            // parse property value
-                            var pvalue = Parse();
-
-                            // set property
-                            SetProperty(obj, tinfo, pname, pvalue, _ctx);
+                            else
+                            {
+                                this.ThrowInvalidDataType();
+                            }
                         }
 
-                        // __wakeup
-                        var __wakeup = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__wakeup];
-                        if (__wakeup != null)
+                        if (__unserialize != null)
                         {
-                            __wakeup.Invoke(_ctx, obj);
+                            __unserialize.Invoke(_ctx, obj, __unserialize_array);
+                        }
+                        else
+                        {
+                            // __wakeup
+                            var __wakeup = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__wakeup];
+                            if (__wakeup != null)
+                            {
+                                __wakeup.Invoke(_ctx, obj);
+                            }
                         }
                     }
 
+                    // }
                     Consume(Tokens.BraceClose);
 
                     //

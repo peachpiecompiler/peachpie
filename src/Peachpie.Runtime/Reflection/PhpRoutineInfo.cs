@@ -15,6 +15,7 @@ namespace Pchp.Core.Reflection
     /// Runtime information about a function.
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
+    [DebuggerNonUserCode]
     public abstract class RoutineInfo : IPhpCallable, ICloneable
     {
         /// <summary>
@@ -108,6 +109,7 @@ namespace Pchp.Core.Reflection
         object ICloneable.Clone() => this;
     }
 
+    [DebuggerNonUserCode]
     internal class PhpRoutineInfo : RoutineInfo
     {
         readonly RuntimeMethodHandle _handle;
@@ -178,6 +180,7 @@ namespace Pchp.Core.Reflection
     }
 
     /// <summary>Represents anonymous function with special <see cref="Closure"/> parameter.</summary>
+    [DebuggerNonUserCode]
     internal sealed class PhpAnonymousRoutineInfo : PhpRoutineInfo
     {
         public PhpAnonymousRoutineInfo(string name, RuntimeMethodHandle handle)
@@ -186,6 +189,7 @@ namespace Pchp.Core.Reflection
         }
     }
 
+    [DebuggerNonUserCode]
     internal class DelegateRoutineInfo : RoutineInfo
     {
         readonly Delegate _delegate;
@@ -234,6 +238,7 @@ namespace Pchp.Core.Reflection
         }
     }
 
+    [DebuggerNonUserCode]
     internal class ClrRoutineInfo : RoutineInfo
     {
         PhpCallable? _lazyDelegate;
@@ -273,6 +278,7 @@ namespace Pchp.Core.Reflection
     /// <summary>
     /// PHP routine representing class methods.
     /// </summary>
+    [DebuggerNonUserCode]
     internal class PhpMethodInfo : RoutineInfo
     {
         #region PhpMethodInfoWithBoundType

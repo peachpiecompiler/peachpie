@@ -24,8 +24,7 @@ namespace Pchp.Core
         /// </summary>
         internal string DebugTypeName => IsDefault ? UndefinedTypeName : PhpVariable.GetTypeName(this);
 
-        [DebuggerDisplay("{_value.DisplayString,nq}", Type = "{_value.DebugTypeName,nq}")]
-        internal sealed class PhpValueDebugView
+        sealed class PhpValueDebugView
         {
             readonly PhpValue _value;
 
@@ -34,7 +33,7 @@ namespace Pchp.Core
 
             public PhpValueDebugView(PhpValue value)
             {
-                _value = value;
+                _value = value.IsDefault ? Void : value;
             }
         }
     }

@@ -63,7 +63,7 @@ namespace Pchp.Library.DateTime
         public const string DATE_RFC7231 = @"D, d M Y H:i:s \G\M\T";
 
         public const string DATE_RFC3339_EXTENDED = @"Y-m-d\TH:i:s.vP";
-        
+
         public const string DATE_RSS = @"D, d M Y H:i:s O";
 
         public const string DATE_W3C = @"Y-m-d\TH:i:sP";
@@ -1646,23 +1646,26 @@ namespace Pchp.Library.DateTime
 
         static PhpArray AsArray(Context ctx, DateInfo dateinfo, DateTimeErrors errors)
         {
-            var datetime = dateinfo.GetDateTime(ctx, System_DateTime.UtcNow);
+            var timezone = dateinfo.ResolveTimeZone(ctx, null);
+            var datetime = dateinfo.GetDateTime(ctx, System_DateTime.UtcNow);   // gets UTC time!
+
+            var localtime = TimeZoneInfo.ConvertTimeFromUtc(datetime, timezone);
 
             var result = new PhpArray(16);
             //[year] => 2006
-            result["year"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Year : PhpValue.False;
+            result["year"] = dateinfo.y >= 0 ? (PhpValue)localtime.Year : PhpValue.False;
             //[month] => 12
-            result["month"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Month : PhpValue.False;
+            result["month"] = dateinfo.m >= 0 ? (PhpValue)localtime.Month : PhpValue.False;
             //[day] => 12
-            result["day"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Day : PhpValue.False;
+            result["day"] = dateinfo.d >= 0 ? (PhpValue)localtime.Day : PhpValue.False;
             //[hour] => 10
-            result["hour"] = dateinfo.have_time != 0 ? (PhpValue)datetime.Hour : PhpValue.False;
+            result["hour"] = dateinfo.h >= 0 ? (PhpValue)localtime.Hour : PhpValue.False;
             //[minute] => 0
-            result["minute"] = dateinfo.have_time != 0 ? (PhpValue)datetime.Minute : PhpValue.False;
+            result["minute"] = dateinfo.i >= 0 ? (PhpValue)localtime.Minute : PhpValue.False;
             //[second] => 0
-            result["second"] = dateinfo.have_time != 0 ? (PhpValue)datetime.Second : PhpValue.False;
+            result["second"] = dateinfo.s >= 0 ? (PhpValue)localtime.Second : PhpValue.False;
             //[fraction] => 0.5
-            result["fraction"] = dateinfo.have_time != 0 ? (PhpValue)dateinfo.f : PhpValue.False;
+            result["fraction"] = dateinfo.have_time != 0 ? (PhpValue)dateinfo.f : 0;
             //[warning_count] => 0
             result["warning_count"] = errors != null && errors.Warnings != null ? errors.Warnings.Count : 0;
             //[warnings] => Array()
@@ -1672,11 +1675,21 @@ namespace Pchp.Library.DateTime
             //[errors] => Array()
             result["errors"] = errors != null && errors.Errors != null ? new PhpArray(errors.Errors) : PhpArray.NewEmpty();
             //[is_localtime] => 
-            result["is_localtime"] = (PhpValue)(false); // ???
+            result["is_localtime"] = dateinfo.have_zone != 0; // ???
+
+            if (dateinfo.have_zone != 0)
+            {
+                // [zone_type] => 1
+                result["zone_type"] = DateInfo.GetTimeLibZoneType(timezone);
+                // [zone] => 37800
+                result["zone"] = dateinfo.z * 60; // seconds!
+                // [is_dst] => 
+                result["is_dst"] = timezone.IsDaylightSavingTime(localtime);
+            }
 
             if (dateinfo.have_relative != 0)
             {
-                result["relative"] = (PhpValue)new PhpArray(6)
+                result["relative"] = new PhpArray(6)
                 {
                     //[year] => 0
                     { "year", dateinfo.relative.y },
@@ -1690,6 +1703,8 @@ namespace Pchp.Library.DateTime
                     { "minute", dateinfo.relative.i },
                     //[second] => 0
                     { "second", dateinfo.relative.s },
+                    //[weekday] => 1
+                    { "weekday", dateinfo.have_weekday_relative != 0 ? dateinfo.relative.weekday : 0 },
                 };
             }
 

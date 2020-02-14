@@ -273,6 +273,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetItemValue_String_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.String, ct.PhpValue, ct.Boolean);
                 GetItemValue_String_Int = ct.Operators.Method("GetItemValue", ct.String, ct.Int32);
                 GetItemValue_PhpValue_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.PhpValue, ct.PhpValue, ct.Boolean);
+                TryGetItemValue_PhpArray_string_PhpValueRef = ct.Operators.Method("TryGetItemValue", ct.PhpArray, ct.String, ct.PhpValue);
+                TryGetItemValue_PhpArray_PhpValue_PhpValueRef = ct.Operators.Method("TryGetItemValue", ct.PhpArray, ct.PhpValue, ct.PhpValue);
+                TryGetItemValue_PhpValue_PhpValue_PhpValueRef = ct.Operators.Method("TryGetItemValue", ct.PhpValue, ct.PhpValue, ct.PhpValue);
+                GetItemOrdValue_PhpValue_Long = ct.Operators.Method("GetItemOrdValue", ct.PhpValue, ct.Long);
+                GetItemOrdValue_String_Long = ct.Operators.Method("GetItemOrdValue", ct.String, ct.Long);
+                GetItemOrdValue_PhpString_Long = ct.Operators.Method("GetItemOrdValue", ct.PhpString, ct.Long);
                 EnsureItemAlias_PhpValue_PhpValue_Bool = ct.Operators.Method("EnsureItemAlias", ct.PhpValue, ct.PhpValue, ct.Boolean);
                 EnsureItemAlias_IPhpArray_PhpValue_Bool = ct.Operators.Method("EnsureItemAlias", ct.IPhpArray, ct.PhpValue, ct.Boolean);
                 EnsureItemArray_IPhpArray_PhpValue = ct.Operators.Method("EnsureItemArray", ct.IPhpArray, ct.PhpValue);
@@ -336,6 +342,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Scope_Closure = ct.Operators.Method("Scope", ct.Closure);
                 Static_Closure = ct.Operators.Method("Static", ct.Closure);
                 Context_Closure = ct.Operators.Method("Context", ct.Closure);
+
+                BindTargetToMethod_Object_RoutineInfo = ct.Operators.Method("BindTargetToMethod", ct.Object, ct.RoutineInfo);
 
                 BuildGenerator_Context_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle = ct.Operators.Method("BuildGenerator", ct.Context, ct.PhpArray, ct.PhpArray, ct.GeneratorStateMachineDelegate, ct.RuntimeMethodHandle);
                 SetGeneratorDynamicScope_Generator_RuntimeTypeHandle = ct.Operators.Method("SetGeneratorDynamicScope", ct.Generator, ct.RuntimeTypeHandle);
@@ -408,6 +416,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetValue_PhpValueRef_PhpValue,
                 EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef, EnsureArray_ArrayAccess, EnsureArray_Object, EnsureWritableString_PhpArrayRef,
                 GetItemValue_String_IntStringKey, GetItemValueOrNull_String_IntStringKey, GetItemValue_String_PhpValue_Bool, GetItemValue_String_Int, GetItemValue_PhpValue_PhpValue_Bool,
+                TryGetItemValue_PhpArray_string_PhpValueRef, TryGetItemValue_PhpArray_PhpValue_PhpValueRef, TryGetItemValue_PhpValue_PhpValue_PhpValueRef,
+                GetItemOrdValue_PhpValue_Long, GetItemOrdValue_String_Long, GetItemOrdValue_PhpString_Long,
                 EnsureItemAlias_IPhpArray_PhpValue_Bool, EnsureItemAlias_PhpValue_PhpValue_Bool,
                 EnsureItemArray_IPhpArray_PhpValue,
                 EnsureItemObject_IPhpArray_PhpValue,
@@ -435,6 +445,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray,
                 This_Closure, Scope_Closure, Static_Closure, Context_Closure,
+
+                BindTargetToMethod_Object_RoutineInfo,
 
                 // Generator
                 BuildGenerator_Context_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle,
@@ -967,6 +979,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 _ct = ct;
                 _lazyCreateUserRoutine = null;
+                _lazyCreateUserRoutine_String_MethodInfoArray = null;
             }
 
             public MethodSymbol CreateUserRoutine_string_RuntimeMethodHandle_RuntimeMethodHandleArr
@@ -986,7 +999,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
             MethodSymbol _lazyCreateUserRoutine;
-        }
 
+            public MethodSymbol CreateUserRoutine_String_MethodInfoArray
+            {
+                get
+                {
+                    if (_lazyCreateUserRoutine_String_MethodInfoArray == null)
+                    {
+                        _lazyCreateUserRoutine_String_MethodInfoArray = _ct.RoutineInfo.Symbol.GetMembers("CreateUserRoutine").OfType<MethodSymbol>().Single(m =>
+                            m.ParameterCount == 2 &&
+                            m.Parameters[0].Type.SpecialType == SpecialType.System_String &&
+                            m.Parameters[1].Type.IsSZArray());
+                    }
+
+                    return _lazyCreateUserRoutine_String_MethodInfoArray;
+                }
+            }
+            MethodSymbol _lazyCreateUserRoutine_String_MethodInfoArray;
+        }
     }
 }

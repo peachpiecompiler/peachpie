@@ -614,6 +614,67 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Shortcut for calling <c>ord($s[$i])</c> on a <see cref="PhpValue"/>
+        /// without any extra allocation.
+        /// </summary>
+        public static long GetItemOrdValue(PhpValue value, long index)
+        {
+            if (value.TypeCode == PhpTypeCode.String)
+            {
+                return GetItemOrdValue(value.String, index);
+            }
+            else if (value.IsMutableString(out var phpString))
+            {
+                return GetItemOrdValue(phpString, index);
+            }
+            else
+            {
+                var item = value.GetArrayItem(index);
+                if (item.IsMutableString(out var itemPhpString))
+                {
+                    return itemPhpString.IsEmpty ? 0 : itemPhpString[0];
+                }
+                else
+                {
+                    var str = item.ToString();
+                    return string.IsNullOrEmpty(str) ? 0 : str[0];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shortcut for calling <c>ord($s[$i])</c> on a <see cref="string"/>
+        /// without any extra allocation.
+        /// </summary>
+        public static long GetItemOrdValue(string value, long index)
+        {
+            int i = (int)index;
+            if (value != null && i >= 0 && i < value.Length)
+            {
+                return value[i];
+            }
+
+            PhpException.InvalidArgument(nameof(index));
+            return 0;
+        }
+
+        /// <summary>
+        /// Shortcut for calling <c>ord($s[$i])</c> on a <see cref="PhpString"/>
+        /// without any extra allocation.
+        /// </summary>
+        public static long GetItemOrdValue(PhpString value, long index)
+        {
+            int i = (int)index;
+            if (!value.IsDefault && i >= 0 && i < value.Length)
+            {
+                return value[i];
+            }
+
+            PhpException.InvalidArgument(nameof(index));
+            return 0;
+        }
+
         public static object EnsureItemObject(this IPhpArray array, PhpValue index)
         {
             if (Convert.TryToIntStringKey(index, out IntStringKey key))
@@ -656,6 +717,55 @@ namespace Pchp.Core
         /// Implements <c>[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
         public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet = false) => value.GetArrayItem(index, quiet);
+
+        public static bool TryGetItemValue(this PhpArray value, string index, out PhpValue item)
+        {
+            if (value != null && value.TryGetValue(index, out item) && IsSet(item))
+            {
+                return true;
+            }
+            else
+            {
+                item = default;
+                return false;
+            }
+        }
+
+        public static bool TryGetItemValue(this PhpArray value, PhpValue index, out PhpValue item)
+        {
+            if (value != null && index.TryToIntStringKey(out var key) && value.TryGetValue(key, out item) && IsSet(item))
+            {
+                return true;
+            }
+            else
+            {
+                item = default;
+                return false;
+            }
+        }
+
+        public static bool TryGetItemValue(this PhpValue value, PhpValue index, out PhpValue item)
+        {
+            if (value.IsPhpArray(out var array))
+            {
+                // Specialized call for array
+                return TryGetItemValue(array, index, out item);
+            }
+            else
+            {
+                // Otherwise use the original semantics of isset($x[$y]) ? $x[$y] : ...;
+                if (offsetExists(value, index))
+                {
+                    item = GetItemValue(value, index);
+                    return true;
+                }
+                else
+                {
+                    item = default;
+                    return false;
+                }
+            }
+        }
 
         /// <summary>
         /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
@@ -1844,6 +1954,43 @@ namespace Pchp.Core
         /// Normalizes path's slashes for the current platform.
         /// </summary>
         public static string NormalizePath(string value) => Utilities.CurrentPlatform.NormalizeSlashes(value);
+
+        #endregion
+
+        #region BindTargetToMethod
+
+        /// <summary>
+        /// Helper lightweight class to reuse already bound <see cref="PhpInvokable"/> to be used as <see cref="PhpCallable"/>
+        /// by calling it on a given target.
+        /// </summary>
+        sealed class BoundTargetCallable : IPhpCallable
+        {
+            readonly object _target;
+            readonly PhpInvokable _invokable;
+
+            public BoundTargetCallable(object target, PhpInvokable invokable)
+            {
+                _target = target;
+                _invokable = invokable;
+            }
+
+            public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => _invokable.Invoke(ctx, _target, arguments);
+
+            public PhpValue ToPhpValue() => PhpValue.Null;
+        }
+
+        /// <summary>
+        /// Creates an <see cref="IPhpCallable"/> from an instance method, binding the target to call the method on.
+        /// </summary>
+        public static IPhpCallable BindTargetToMethod(object targetInstance, RoutineInfo routine)
+        {
+            if (routine is PhpMethodInfo methodInfo)
+            {
+                return new BoundTargetCallable(targetInstance, methodInfo.PhpInvokable);
+            }
+
+            return PhpCallback.CreateInvalid();
+        }
 
         #endregion
     }

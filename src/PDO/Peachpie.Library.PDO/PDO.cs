@@ -80,14 +80,14 @@ namespace Peachpie.Library.PDO
                 var my_reader = Reader;
                 var oa = new object[my_reader.FieldCount];
 
-                //if (convertTypes)
-                //{
-                //    for (int i = 0; i < oa.Length; i++)
-                //    {
-                //        oa[i] = ConvertDbValue(dataTypes[i], my_reader.GetValue(i));
-                //    }
-                //}
-                //else
+                if (convertTypes)
+                {
+                    for (int i = 0; i < oa.Length; i++)
+                    {
+                        oa[i] = ConvertDbValue(dataTypes[i], my_reader.GetValue(i));
+                    }
+                }
+                else
                 {
                     for (int i = 0; i < oa.Length; i++)
                     {
@@ -101,6 +101,81 @@ namespace Peachpie.Library.PDO
             protected override string MapFieldTypeName(string typeName)
             {
                 return typeName;
+            }
+
+            /// <summary>
+            /// Converts a value of a specified MySQL DB type to PHP value.
+            /// </summary>
+            /// <param name="dataType">MySQL DB data type.</param>
+            /// <param name="sqlValue">The value.</param>
+            /// <returns>PHP value.</returns>
+            private static object ConvertDbValue(string dataType, object sqlValue)
+            {
+                //if (sqlValue == null || sqlValue.GetType() == typeof(string))
+                //    return sqlValue;
+
+                //if (sqlValue.GetType() == typeof(double))
+                //    return Pchp.Core.Convert.ToString((double)sqlValue);
+
+                if (sqlValue == DBNull.Value)
+                    return null;
+
+                //if (sqlValue.GetType() == typeof(int))
+                //    return ((int)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(uint))
+                //    return ((uint)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(bool))
+                //    return (bool)sqlValue ? "1" : "0";
+
+                //if (sqlValue.GetType() == typeof(byte))
+                //    return ((byte)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(sbyte))
+                //    return ((sbyte)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(short))
+                //    return ((short)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(ushort))
+                //    return ((ushort)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(float))
+                //    return Pchp.Core.Convert.ToString((float)sqlValue);
+
+                //if (sqlValue.GetType() == typeof(System.DateTime))
+                //    return ConvertDateTime(dataType, (System.DateTime)sqlValue);
+
+                //if (sqlValue.GetType() == typeof(long))
+                //    return ((long)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(ulong))
+                //    return ((ulong)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(TimeSpan))
+                //    return ((TimeSpan)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(decimal))
+                //    return ((decimal)sqlValue).ToString();
+
+                //if (sqlValue.GetType() == typeof(byte[]))
+                //    return (byte[])sqlValue;
+
+                ////MySqlDateTime sql_date_time = sqlValue as MySqlDateTime;
+                //if (sqlValue.GetType() == typeof(MySqlDateTime))
+                //{
+                //    MySqlDateTime sql_date_time = (MySqlDateTime)sqlValue;
+                //    if (sql_date_time.IsValidDateTime)
+                //        return ConvertDateTime(dataType, sql_date_time.GetDateTime());
+
+                //    if (dataType == "DATE" || dataType == "NEWDATE")
+                //        return "0000-00-00";
+                //    else
+                //        return "0000-00-00 00:00:00";
+                //}
+
+                return sqlValue;
             }
         }
 

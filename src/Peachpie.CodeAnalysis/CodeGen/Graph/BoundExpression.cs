@@ -2345,7 +2345,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 else
                 {
                     Debug.Assert(Receiver != null);
-                    throw cg.NotImplementedException();
+
+                    // PhpCallback.Create((object)Receiver, methodRoutineInfo)
+                    cg.EmitConvert(Receiver, cg.CoreTypes.Object);
+                    m.EmitLoadRoutineInfo(cg);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BindTargetToMethod_Object_RoutineInfo)
+                        .Expect(cg.CoreTypes.IPhpCallable);
                 }
             }
 
@@ -2497,7 +2502,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
             }
 
-            // Template: Operators: EmitListAccess( (PhpValue)value )
+            // Template: Operators: GetListAccess( (PhpValue)value )
             cg.EmitConvertToPhpValue(valueType, 0);
             return cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("GetListAccess", cg.CoreTypes.PhpValue));
         }
@@ -2525,7 +2530,15 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 cg.EmitIntStringKey(target.Key);
             }
-            var itemtype = cg.EmitDereference(cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey));
+
+            // GetItemVaue
+            var itemtype = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey);
+
+            // dereference
+            itemtype = cg.EmitDereference(itemtype);
+
+            // copy
+            itemtype = cg.EmitDeepCopy(itemtype, nullcheck: true);
 
             // STORE vars[i]
             boundtarget.EmitStore(cg, ref lhs, itemtype, target.Value.Access);
@@ -4656,6 +4669,50 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
     }
 
+    partial class BoundArrayItemOrdEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            Debug.Assert(!Access.MightChange);
+            Debug.Assert(Index != null);
+
+            // Either specialize the call for the string types or fall back to PhpValue
+            TypeSymbol arrType;
+            MethodSymbol operation;
+
+            var arrTypeMask = Array.TypeRefMask;
+            if (arrTypeMask.IsSingleType && !arrTypeMask.IsRef && cg.TypeRefContext.IsAString(arrTypeMask))
+            {
+                arrType = cg.EmitSpecialize(Array);
+            }
+            else
+            {
+                arrType = cg.EmitConvertToPhpValue(Array);
+            }
+
+            if (arrType == cg.CoreTypes.String)
+            {
+                operation = cg.CoreMethods.Operators.GetItemOrdValue_String_Long;
+            }
+            else if (arrType == cg.CoreTypes.PhpString)
+            {
+                operation = cg.CoreMethods.Operators.GetItemOrdValue_PhpString_Long;
+            }
+            else
+            {
+                Debug.Assert(arrType == cg.CoreTypes.PhpValue);
+                operation = cg.CoreMethods.Operators.GetItemOrdValue_PhpValue_Long.Symbol;
+            }
+
+            // The index must be integral
+            var indexType = cg.EmitSpecialize(Index);
+            Debug.Assert(indexType.IsIntegralType());
+            cg.EmitConvertIntToLong(indexType);
+
+            return cg.EmitCall(ILOpCode.Call, operation);
+        }
+    }
+
     partial class BoundInstanceOfEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
@@ -4968,6 +5025,85 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 throw cg.NotImplementedException($"offsetExists({arrayType}, {indexType})", this);
             }
+        }
+    }
+
+    partial class BoundTryGetItem
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            Debug.Assert(!Access.IsEnsure);
+
+            // Either specialize the call for PhpArray (possibly with string index) or fall back to PhpValue
+
+            TypeSymbol arrType, indexType;
+            MethodSymbol operation;
+
+            var arrTypeMask = Array.TypeRefMask;
+            if (arrTypeMask.IsSingleType && !arrTypeMask.IsRef && cg.TypeRefContext.IsArray(arrTypeMask))
+            {
+                arrType = cg.EmitSpecialize(Array);
+            }
+            else
+            {
+                arrType = cg.EmitConvertToPhpValue(Array);
+            }
+
+            var indexTypeMask = Index.TypeRefMask;
+            if (arrType == cg.CoreTypes.PhpArray &&
+                indexTypeMask.IsSingleType && !indexTypeMask.IsRef && cg.TypeRefContext.IsReadonlyString(indexTypeMask))
+            {
+                indexType = cg.EmitSpecialize(Index);
+            }
+            else
+            {
+                indexType = cg.EmitConvertToPhpValue(Index);
+            }
+
+            if (arrType == cg.CoreTypes.PhpArray)
+            {
+                if (indexType == cg.CoreTypes.String)
+                {
+                    operation = cg.CoreMethods.Operators.TryGetItemValue_PhpArray_string_PhpValueRef;
+                }
+                else
+                {
+                    Debug.Assert(indexType == cg.CoreTypes.PhpValue);
+                    operation = cg.CoreMethods.Operators.TryGetItemValue_PhpArray_PhpValue_PhpValueRef;
+                }
+            }
+            else
+            {
+                Debug.Assert(arrType == cg.CoreTypes.PhpValue);
+                Debug.Assert(indexType == cg.CoreTypes.PhpValue);
+                operation = cg.CoreMethods.Operators.TryGetItemValue_PhpValue_PhpValue_PhpValueRef;
+            }
+
+            // TryGetItemValue(Array, Index, out PhpValue temp) ? temp : Fallback
+
+            object trueLbl = new object();
+            object endLbl = new object();
+
+            // call
+            var temp = cg.GetTemporaryLocal(cg.CoreTypes.PhpValue);
+            cg.Builder.EmitLocalAddress(temp);
+            cg.EmitCall(ILOpCode.Call, operation);
+            cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
+
+            // fallback:
+            cg.EmitConvertToPhpValue(Fallback);
+            cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
+
+            // trueLbl:
+            cg.Builder.MarkLabel(trueLbl);
+            cg.Builder.EmitLocalLoad(temp);
+
+            // endLbl:
+            cg.Builder.MarkLabel(endLbl);
+
+            cg.ReturnTemporaryLocal(temp);
+
+            return cg.CoreTypes.PhpValue;
         }
     }
 

@@ -37,6 +37,12 @@ namespace Pchp.CodeAnalysis.Symbols
         public override BoundExpression Initializer => _initializer;
         readonly BoundExpression _initializer;
 
+        /// <summary>
+        /// Whether the parameter needs to be copied when passed by value.
+        /// Can be set to <c>false</c> by analysis (e.g. unused parameter or only delegation to another method).
+        /// </summary>
+        public bool CopyOnPass { get; set; } = true;
+
         public override FieldSymbol DefaultValueField
         {
             get

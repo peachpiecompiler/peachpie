@@ -64,9 +64,11 @@ namespace Pchp.Core.Dynamic
                     // Template: arg.EnsureAlias()
                     return Expression.Call(arg, Cache.IndirectLocal.EnsureAlias);
                 }
-
-                // Template: arg.Value
-                return Bind(Expression.Property(arg, Cache.IndirectLocal.Value), target, ctx);
+                else
+                {
+                    // Template: arg.GetValue()
+                    return Bind(Expression.Call(arg, Cache.IndirectLocal.GetValue), target, ctx);
+                }
             }
 
             Debug.Assert(ctx != null, "!ctx");
@@ -481,7 +483,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpNumber)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpNumber), expr);
             if (source == typeof(PhpArray)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpArray), expr);
             if (source == typeof(PhpAlias)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpAlias), expr);   // PhpValue.Create(PhpAlias)
-            if (source == typeof(IndirectLocal)) return Expression.Property(expr, Cache.IndirectLocal.Value);   // IndirectLocal.Value
+            if (source == typeof(IndirectLocal)) return Expression.Call(expr, Cache.IndirectLocal.GetValue);   // IndirectLocal.GetValue()
 
             if (source.GetTypeInfo().IsValueType)
             {
@@ -651,7 +653,7 @@ namespace Pchp.Core.Dynamic
 
             if (t == Cache.Types.IndirectLocal)
             {
-                return BindCost(Expression.Property(arg, Cache.IndirectLocal.Value), target); // PhpValue -> target
+                return BindCost(Expression.Call(arg, Cache.IndirectLocal.GetValue), target); // PhpValue -> target
             }
 
             if (target == typeof(PhpValue))

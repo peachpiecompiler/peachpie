@@ -34,5 +34,15 @@ namespace Pchp.Core.Utilities
         {
             return (dt - UtcStartOfUnixEpoch).TotalSeconds;
         }
+
+        /// <summary>
+        /// Converts UNIX timestamp to <see cref="DateTime"/> representing UTC time.
+        /// </summary>
+        /// <param name="ts">Unix timestamp.</param>
+        /// <returns>Time.</returns>
+        public static DateTime UnixTimeStampToUtc(long ts)
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(ts).UtcDateTime;
+        }
     }
 }

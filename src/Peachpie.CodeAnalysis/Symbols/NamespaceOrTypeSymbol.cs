@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public abstract ImmutableArray<Symbol> GetMembers(string name);
 
         /// <summary>
-        /// Gets all the members with particula PHP name visible in PHP scope.
+        /// Gets all the members with particular PHP name visible in PHP scope.
         /// </summary>
         /// <param name="name">The case-insensitive name of the symbol (method, field, constant).</param>
         /// <returns>An ImmutableArray containing all the members with given name.</returns>

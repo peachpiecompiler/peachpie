@@ -211,7 +211,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                     if (entry.IsCompileEntry())
                     {
-                        var tree = PhpSyntaxTree.ParseCode(SourceText.From(entry.Code, Encoding.UTF8), parseOptions, scriptParseOptions, prefix + "/" + entryName);
+                        var tree = PhpSyntaxTree.ParseCode(SourceText.From(entry.Code, Encoding.UTF8), parseOptions, scriptParseOptions, $"{prefix}/{entryName}");
                         tree.PharStubFile = stub;
                         trees.Add(tree);
                     }
@@ -298,7 +298,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             }
 
             // ignore __HALT_COMPILER and following
-            var halt = stub.LastIndexOf("__HALT_COMPILER", StringComparison.Ordinal);
+            var halt = stub.LastIndexOf("__HALT_COMPILER", StringComparison.OrdinalIgnoreCase);
             if (halt >= 0)
             {
                 stub = stub.Remove(halt);

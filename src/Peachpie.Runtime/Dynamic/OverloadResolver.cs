@@ -15,6 +15,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Methods for selecting best method overload from possible candidates.
     /// </summary>
+    [DebuggerNonUserCode]
     internal static class OverloadResolver
     {
         /// <summary>

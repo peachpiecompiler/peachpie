@@ -1,11 +1,17 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Xml;
 using System.Linq;
+using System.Xml.Resolvers;
 using HtmlAgilityPack;
 using Pchp.Core;
+using System.Threading.Tasks;
+using System.IO;
+using System.Reflection;
 
 namespace Peachpie.Library.XmlDom
 {
@@ -34,7 +40,6 @@ namespace Peachpie.Library.XmlDom
             }
         }
 
-
         internal static Encoding/*!*/ GetNodeEncoding(Context ctx, XmlNode xmlNode)
         {
             var xml_document = xmlNode as XmlDocument ?? xmlNode.OwnerDocument;
@@ -55,6 +60,155 @@ namespace Peachpie.Library.XmlDom
                 : encoding;
         }
 
+        public static XmlDocument/*!*/GetXmlDocument(this XmlNode node) => node as XmlDocument ?? node.OwnerDocument ?? throw new InvalidOperationException();
+
+        //#region XmlHtmlResolver
+
+        //sealed internal class HtmlXmlDtdResolver : XmlPreloadedResolver
+        //{
+        //    public static readonly Lazy<XmlResolver> Instance = new Lazy<XmlResolver>(() => new HtmlXmlDtdResolver());
+
+        //    /// <summary>
+        //    /// Represents DTD information stored in an embedded resource file.
+        //    /// </summary>
+        //    internal struct XmlKnownDtdData
+        //    {
+        //        public string PublicId { get; }
+
+        //        public string SystemId { get; }
+
+        //        string ResourceName { get; }
+
+        //        internal XmlKnownDtdData(string publicId, string systemId, string resourceName)
+        //        {
+        //            Debug.Assert(resourceName != null);
+
+        //            PublicId = publicId;
+        //            SystemId = systemId;
+        //            ResourceName = resourceName ?? throw new ArgumentNullException(nameof(resourceName));
+        //        }
+
+        //        public Stream AsStream()
+        //        {
+        //            var executingAssembly = Assembly.GetExecutingAssembly();
+        //            return executingAssembly.GetManifestResourceStream(ResourceName);
+        //        }
+
+        //        public TextReader AsTextReader() => new StreamReader(AsStream());
+        //    }
+
+        //    /// <summary>
+        //    /// Default HTML DTD.
+        //    /// </summary>
+        //    internal static XmlKnownDtdData DefaultDtd => Html4Loose;
+
+        //    internal static XmlKnownDtdData Html4Loose => new XmlKnownDtdData("-//W3C//DTD HTML 4.01 Transitional//EN", "http://www.w3.org/TR/html4/loose.dtd", "html4-loose.dtd");
+
+        //    internal static XmlKnownDtdData Html4Strict => new XmlKnownDtdData("-//W3C//DTD HTML 4.01//EN", "http://www.w3.org/TR/html4/strict.dtd", "html4-strict.dtd");
+
+        //    internal static XmlKnownDtdData Html4Frameset => new XmlKnownDtdData("-//W3C//DTD HTML 4.01 Frameset//EN", "http://www.w3.org/TR/html4/frameset.dtd", "html4-frameset.dtd");
+
+        //    readonly Dictionary<Uri, XmlKnownDtdData> _knownHtmlDtdMapping = new Dictionary<Uri, XmlKnownDtdData>(16);
+
+        //    /// <summary>
+        //    /// HTML DTDs.
+        //    /// </summary>
+        //    readonly static XmlKnownDtdData[] s_knownHtmlDtd = new XmlKnownDtdData[]
+        //    {
+        //        Html4Loose,
+        //        Html4Strict,
+        //        Html4Frameset,
+
+        //        //new XmlKnownDtdData("-//W3C//ENTITIES Latin1//EN//HTML", "", ""),
+        //    };
+
+        //    private HtmlXmlDtdResolver() // XmlKnownDtds.All
+        //    {
+        //        // init dictionary:
+        //        Add(s_knownHtmlDtd);
+        //    }
+
+        //    void Add(XmlKnownDtdData[] knownDtds)
+        //    {
+        //        foreach (var data in knownDtds)
+        //        {
+        //            Add(data.PublicId, data);
+        //            Add(data.SystemId, data);
+        //        }
+        //    }
+
+        //    void Add(string uri, XmlKnownDtdData data)
+        //    {
+        //        if (string.IsNullOrEmpty(uri))
+        //        {
+        //            return;
+        //        }
+
+        //        _knownHtmlDtdMapping[new Uri(uri, UriKind.RelativeOrAbsolute)] = data;
+        //    }
+
+        //    public override Uri ResolveUri(Uri baseUri, string relativeUri)
+        //    {
+        //        if (relativeUri != null && relativeUri.StartsWith("-//W3C//", StringComparison.OrdinalIgnoreCase))
+        //        {
+        //            return new Uri(relativeUri, UriKind.Relative);
+        //        }
+
+        //        return base.ResolveUri(baseUri, relativeUri);
+        //    }
+
+        //    public override bool SupportsType(Uri absoluteUri, Type type)
+        //    {
+        //        return type == null || type == typeof(Stream) || base.SupportsType(absoluteUri, type);
+        //    }
+
+        //    public override object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
+        //    {
+        //        if (_knownHtmlDtdMapping.TryGetValue(absoluteUri, out var data))
+        //        {
+        //            if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(object))
+        //            {
+        //                return data.AsStream();
+        //            }
+        //            else if (ofObjectToReturn == typeof(TextReader))
+        //            {
+        //                return data.AsTextReader();
+        //            }
+        //            else
+        //            {
+        //                throw new ArgumentException(nameof(ofObjectToReturn));
+        //            }
+        //        }
+
+        //        // XML DTDs:
+        //        return base.GetEntity(absoluteUri, role, ofObjectToReturn);
+        //    }
+
+        //    public override Task<object> GetEntityAsync(Uri absoluteUri, string role, Type ofObjectToReturn)
+        //    {
+        //        if (_knownHtmlDtdMapping.TryGetValue(absoluteUri, out var data))
+        //        {
+        //            if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(object))
+        //            {
+        //                return Task.FromResult<object>(data.AsStream());
+        //            }
+        //            else if (ofObjectToReturn == typeof(TextReader))
+        //            {
+        //                return Task.FromResult<object>(data.AsTextReader());
+        //            }
+        //            else
+        //            {
+        //                throw new ArgumentException(nameof(ofObjectToReturn));
+        //            }
+        //        }
+
+        //        // XML DTDs:
+        //        return base.GetEntityAsync(absoluteUri, role, ofObjectToReturn);
+        //    }
+        //}
+
+        //#endregion
+
         /// <summary>
         /// Loads HTML document into XML document.
         /// </summary>
@@ -63,14 +217,14 @@ namespace Peachpie.Library.XmlDom
         internal static void LoadHtml(this XmlDocument xmldoc, HtmlDocument htmldoc)
         {
             xmldoc.RemoveAll();
-
+            //xmldoc.XmlResolver = HtmlXmlDtdResolver.Instance.Value;   // causes DTD validation, needed for DTD's and GetAttributeById() to work
             LoadHtml(xmldoc, htmldoc.DocumentNode);
         }
 
         /// <summary>
         /// Finds first node of given type.
         /// </summary>
-        static bool TryGetNodeOfType(this XmlNodeList nodes, XmlNodeType nt, out XmlNode node)
+        static bool TryGetNodeOfType(this XmlNodeList nodes, XmlNodeType nt, out XmlNode? node)
         {
             if (nodes != null && nodes.Count != 0)
             {
@@ -90,7 +244,9 @@ namespace Peachpie.Library.XmlDom
 
         static void LoadHtml(this XmlNode containing, HtmlNode node)
         {
-            var xmldoc = containing as XmlDocument ?? containing.OwnerDocument ?? throw new InvalidOperationException();
+            //var dtd = HtmlXmlDtdResolver.DefaultDtd;
+            var xmldoc = containing.GetXmlDocument();
+            var phpdoc = xmldoc as PhpXmlDocument;
 
             switch (node.NodeType)
             {
@@ -150,6 +306,9 @@ namespace Peachpie.Library.XmlDom
                         element_attr.Value = attr.Value;
 
                         element.Attributes.Append(element_attr);
+
+                        // add the attribute to the attribute ID map:
+                        phpdoc?.HandleNewAttribute(element_attr);
                     }
 
                     // nested children
@@ -182,7 +341,11 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         static bool ConsumeToken(string text, ref int pos, out ReadOnlySpan<char> token)
         {
-            Debug.Assert(text != null);
+            if (text == null)
+            {
+                throw new ArgumentNullException(nameof(text));
+            }
+
             Debug.Assert(pos >= 0);
 
             // skip whitespaces
@@ -236,7 +399,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Parses the DOCTYPE comment if possible.
         /// </summary>
-        public static bool TryParseDocumentType(string text, out string name, out string publicId, out string systemId, out string subset)
+        public static bool TryParseDocumentType(string text, out string? name, out string? publicId, out string? systemId, out string? subset)
         {
             name = publicId = systemId = subset = null;
 
@@ -249,7 +412,7 @@ namespace Peachpie.Library.XmlDom
                 int index = 0; // token index
 
                 // <!DOCTYPE {NAME} PUBLIC|SYSTEM {ID1} {ID2}>
-                string pub = null;
+                string pub = string.Empty;
 
                 while (ConsumeToken(text, ref pos, out var token))
                 {

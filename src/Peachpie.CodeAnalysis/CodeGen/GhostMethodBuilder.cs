@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             //}
 
             var ghost = new SynthesizedMethodSymbol(
-                containingtype, /*prefix +*/ name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility, phphidden: phphidden)
+                containingtype, /*prefix +*/ name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility, isfinal: false, phphidden: phphidden)
             {
                 ExplicitOverride = explicitOverride,
                 ForwardedCall = method,

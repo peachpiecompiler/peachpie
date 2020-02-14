@@ -324,6 +324,7 @@ namespace Pchp.Library.Spl
         public virtual void setCsvControl(string delimiter = ",", string enclosure = "\"", string escape = "\\") { throw new NotImplementedException(); }
         public virtual void setFlags(int flags) { throw new NotImplementedException(); }
         public virtual void setMaxLineLen(int max_len) { throw new NotImplementedException(); }
+        public virtual PhpString getCurrentLine() => fgets();
     }
 
     /// <summary>
