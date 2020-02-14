@@ -44,5 +44,11 @@ namespace Pchp.CodeAnalysis.Utilities
         /// Gets value indicating whether the file should be treated as a PHAR file archive.
         /// </summary>
         public static bool IsPharFile(this string path) => path != null && path.EndsWith(".phar", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Virtual file name corresponding to the phar file stub.
+        /// Gets embedded into PDB so it can be debugged.
+        /// </summary>
+        public static string BuildPharStubFileName(string pharfilename) => $"{pharfilename}.stub.php";
     }
 }

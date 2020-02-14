@@ -16,6 +16,7 @@ namespace Pchp.Core.Reflection
     /// Hides special methods and hidden methods.
     /// Hides private methods from base classes.
     /// </summary>
+    [DebuggerNonUserCode]
     public class TypeMethods : IEnumerable<RoutineInfo>
     {
         /// <summary>
@@ -34,6 +35,7 @@ namespace Pchp.Core.Reflection
             __invoke, __tostring,
             __clone, __set_state, __debuginfo,
             __sleep, __wakeup,
+            __serialize, __unserialize,
 
             // magic CLR methods
             get_item, set_item,

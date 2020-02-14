@@ -28,8 +28,9 @@ namespace Pchp.Core
     /// <summary>
     /// Represents both integer or string array key.
     /// </summary>
+    [DebuggerDisplay("[{Object}]")]
     [DebuggerNonUserCode, DebuggerStepThrough]
-    public struct IntStringKey : IEquatable<IntStringKey>, IComparable<IntStringKey>
+    public readonly struct IntStringKey : IEquatable<IntStringKey>, IComparable<IntStringKey>
     {
         /// <summary>
         /// <pre>new IntStringKey( "" )</pre>

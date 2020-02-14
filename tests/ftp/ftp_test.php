@@ -1,6 +1,10 @@
 <?php
 namespace ftp\ftp_test;
-// Enviroment variables PEACHPIE_FTP_TEST_SERVER, PEACHPIE_FTP_TEST_USER, PEACHPIE_FTP_TEST_PASSWORD must be setted
+// Enviroment variables containing credentials must be set
+if (!getenv('PEACHPIE_FTP_TEST_SERVER') || !getenv('PEACHPIE_FTP_TEST_USER') || !getenv('PEACHPIE_FTP_TEST_PASSWORD')){
+  exit("***SKIP***");
+}
+
 $server = $user_name = $user_pass = false;
 
 if (!Init()){

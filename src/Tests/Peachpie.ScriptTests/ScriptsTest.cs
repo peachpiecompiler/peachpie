@@ -16,6 +16,11 @@ namespace ScriptsTest
         /// </summary>
         const string PEACHPIE_TEST_PHP = "PEACHPIE_TEST_PHP";
 
+        /// <summary>
+        /// If the test returns this string, skip it.
+        /// </summary>
+        const string SkippedTestReturn = "***SKIP***";
+
         static readonly Context.IScriptingProvider _provider = Context.DefaultScriptingProvider; // use IScriptingProvider singleton 
 
         private readonly ITestOutputHelper _output;
@@ -42,6 +47,9 @@ namespace ScriptsTest
             // test script compilation and run it
             var result = CompileAndRun(path);
 
+            // Skip if Peachpie wants it to
+            Skip.If(result == SkippedTestReturn);
+
             // invoke php.exe if possible and compare results
 
             if (Environment.GetEnvironmentVariable(PEACHPIE_TEST_PHP) != "0")
@@ -57,6 +65,9 @@ namespace ScriptsTest
                     _output.WriteLine("Running PHP failed.");
                     return;
                 }
+
+                // Skip if PHP wants it to
+                Skip.If(phpresult == SkippedTestReturn);
 
                 //
                 Assert.Equal(phpresult, result);

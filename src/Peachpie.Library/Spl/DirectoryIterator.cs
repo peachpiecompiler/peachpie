@@ -194,6 +194,8 @@ namespace Pchp.Library.Spl
         public const int SKIP_DOTS = 4096;
         public const int UNIX_PATHS = 8192;
 
+        public const int OTHER_MODE_MASK = SKIP_DOTS | UNIX_PATHS;
+
         private protected int _flags;
         private protected FileSystemInfo _current;
 

@@ -172,7 +172,7 @@ namespace Peachpie.Library.Network
                     // array of all information
                     var arr = new PhpArray(38)
                     {
-                        { "url", r.ResponseUri != null ? r.ResponseUri?.AbsoluteUri : ch.Url },
+                        { "url", ch.Url ?? string.Empty },
                         { "content_type", r.ContentType },
                         { "http_code", (long)r.StatusCode },
                         { "header_size", r.HeaderSize },
@@ -192,7 +192,7 @@ namespace Peachpie.Library.Network
 
                     return arr;
                 case CURLConstants.CURLINFO_EFFECTIVE_URL:
-                    return r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : ch.Url;
+                    return ch.Url ?? string.Empty;
                 case CURLConstants.CURLINFO_REDIRECT_URL:
                     return (ch.FollowLocation && r.ResponseUri != null ? r.ResponseUri.AbsoluteUri : string.Empty);
                 case CURLConstants.CURLINFO_HTTP_CODE:
@@ -221,6 +221,11 @@ namespace Peachpie.Library.Network
 
         internal static IEnumerable<string> CookiesToNetscapeStyle(CookieCollection cookies)
         {
+            if (cookies == null || cookies.Count == 0)
+            {
+                yield break;
+            }
+
             foreach (Cookie c in cookies)
             {
                 string prefix = c.HttpOnly ? "#HttpOnly_" : "";
@@ -284,6 +289,8 @@ namespace Peachpie.Library.Network
                 {
                     // TODO: ch.FailOnError ?
 
+                    var exception = webEx.InnerException ?? webEx;
+
                     switch (webEx.Status)
                     {
                         case WebExceptionStatus.ProtocolError:
@@ -291,11 +298,11 @@ namespace Peachpie.Library.Network
                             return new CURLResponse(await ProcessResponse(ctx, ch, (HttpWebResponse)webEx.Response), (HttpWebResponse)webEx.Response, ch);
 
                         case WebExceptionStatus.Timeout:
-                            return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, webEx);
+                            return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, exception);
                         case WebExceptionStatus.TrustFailure:
-                            return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, webEx);
+                            return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, exception);
                         default:
-                            return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, webEx);
+                            return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, exception);
                     }
                 }
                 else if (ex is ProtocolViolationException)
@@ -612,6 +619,10 @@ namespace Peachpie.Library.Network
             stream.Dispose();
 
             //
+            if (response.ResponseUri != null)
+            {
+                ch.Url = response.ResponseUri.AbsoluteUri;
+            }
 
             return (returnstream != null)
                 ? PhpValue.Create(new PhpString(returnstream.ToArray()))

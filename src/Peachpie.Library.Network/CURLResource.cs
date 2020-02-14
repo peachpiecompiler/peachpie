@@ -407,7 +407,12 @@ namespace Peachpie.Library.Network
 
         public PhpValue ExecValue { get; }
 
-        public static CURLResponse CreateError(CurlErrors errcode, Exception ex = null) => new CURLResponse(PhpValue.False) { ErrorCode = errcode, ErrorMessage = ex?.Message };
+        public static CURLResponse CreateError(CurlErrors errcode, Exception ex = null) =>
+            new CURLResponse(PhpValue.False)
+            {
+                ErrorCode = errcode,
+                ErrorMessage = ex?.Message,
+            };
 
         public CURLResponse(PhpValue execvalue, HttpWebResponse response = null, CURLResource ch = null)
         {

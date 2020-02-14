@@ -61,6 +61,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0}::__serialize() must return an array.
+        /// </summary>
+        public static string @__serialize_must_return_array {
+            get {
+                return ResourceManager.GetString("__serialize_must_return_array", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Additional parameters not supported.
         /// </summary>
         public static string additional_parameters_not_supported {

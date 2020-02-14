@@ -207,9 +207,11 @@ namespace Pchp.CodeAnalysis.Errors
         INF_UnableToLoadSomeTypesInAnalyzer = 6000,
         INF_EvalDiscouraged,
         INF_RedundantCast,
-        /// <summary>Wrong case in class name '{0}', expected '{1}'.</summary>
-        INF_ClassNameWrongCase,
+        /// <summary>Name '{0}' does not match the expected name '{1}', letter casing mismatch.</summary>
+        INF_TypeNameCaseMismatch,
         /// <summary></summary>
         INF_DestructDiscouraged,
+        /// <summary>Overriden function name '{0}' does not match it's parent name '{1}', letter casing mismatch.</summary>
+        INF_OverrideNameCaseMismatch,
     }
 }

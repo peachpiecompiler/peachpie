@@ -53,7 +53,7 @@ namespace Peachpie.Library.XmlDom
             this.XmlDocumentFragment = xmlDocumentFragment;
         }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             return new DOMDocumentFragment(XmlDocumentFragment);
         }
@@ -62,7 +62,7 @@ namespace Peachpie.Library.XmlDom
 
         #region Hierarchy
 
-        internal override void Associate(XmlDocument document)
+        internal protected override void Associate(XmlDocument document)
         {
             if (!IsAssociated)
             {

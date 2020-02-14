@@ -1,6 +1,11 @@
 <?php
 namespace gettext\gettext_001;
 
+// Neither setlocale nor LC_ALL= works on Travis CI
+if (getenv("TRAVIS")) {
+    exit("***SKIP***");
+}
+
 function translate() {
   echo _("Hi");
   echo " ";
@@ -27,7 +32,7 @@ function test($locale, $domain, $dir) {
 
   if ($dir) {
     $res = bindtextdomain($domain ?: "messages", $dir);
-    echo ($res === false) ? "false" : $res;
+    echo ($res === false) ? "false" : strtolower($res);
     echo " ";
   }
 

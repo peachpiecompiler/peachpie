@@ -35,10 +35,9 @@ namespace Peachpie.Library.XmlDom
         [return: CastToFalse]
         public static SimpleXMLElement simplexml_load_file(Context ctx, string fileName, string className = null, int options = 0)
         {
-            XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
+            var doc = PhpXmlDocument.Create();
 
-            using (var stream = PhpStream.Open(ctx, fileName, "rt"))
+            using (var stream = PhpStream.Open(ctx, fileName, StreamOpenMode.ReadText))
             {
                 if (stream == null)
                 {
@@ -81,8 +80,7 @@ namespace Peachpie.Library.XmlDom
         [return: CastToFalse]
         public static SimpleXMLElement simplexml_load_string(Context ctx, string data, string className = null, int options = 0)
         {
-            XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
+            var doc = PhpXmlDocument.Create();
 
             try
             {
@@ -446,14 +444,13 @@ namespace Peachpie.Library.XmlDom
 
         public void __construct(string data, int options = 0, bool dataIsUrl = false)
         {
-            XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
+            var doc = PhpXmlDocument.Create();
 
             try
             {
                 if (dataIsUrl)
                 {
-                    using (PhpStream stream = PhpStream.Open(_ctx, data, "rt"))
+                    using (var stream = PhpStream.Open(_ctx, data, StreamOpenMode.ReadText))
                     {
                         if (stream != null) doc.Load(stream.RawStream);
                     }

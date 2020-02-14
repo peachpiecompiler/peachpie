@@ -2815,7 +2815,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         static bool TryConvertToIntKey(string key, out int ikey)
         {
-            ikey = default(int);
+            ikey = default;
 
             if (string.IsNullOrEmpty(key))
             {
@@ -2824,11 +2824,16 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // See Pchp.Core.Convert.StringToArrayKey:
 
-            if (key[0] == '0' ||
-                (key[0] == '-' && (key.Length == 1 || key[1] == '0')))
+            if (key.Length > 1)
             {
-                return false;
+                // following are treated as string keys:
+                // "-0..."
+                // "-0"
+                // "0..."
+                if (key[0] == '0') return false;
+                if (key[0] == '-' && key[1] == '0') return false;
             }
+
 
             return int.TryParse(key, out ikey);
         }
@@ -3609,19 +3614,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                 object lblnull = null;
                 if (nullcheck && t.IsReferenceType)
                 {
-                    if (nullcheck)
-                    {
-                        // ?.
-                        var lbltrue = new object();
-                        lblnull = new object();
+                    // ?.
+                    var lbltrue = new object();
+                    lblnull = new object();
 
-                        _il.EmitOpCode(ILOpCode.Dup);
-                        _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
-                        _il.EmitOpCode(ILOpCode.Pop);
-                        _il.EmitNullConstant();
-                        _il.EmitBranch(ILOpCode.Br, lblnull);
-                        _il.MarkLabel(lbltrue);
-                    }
+                    _il.EmitOpCode(ILOpCode.Dup);
+                    _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
+                    _il.EmitOpCode(ILOpCode.Pop);
+                    _il.EmitNullConstant();
+                    _il.EmitBranch(ILOpCode.Br, lblnull);
+                    _il.MarkLabel(lbltrue);
                 }
 
                 if (t == CoreTypes.PhpValue)

@@ -29,7 +29,7 @@
 
   <!-- ProjectCapability -->
   <ItemGroup Condition="'$(DefineCommonManagedCapabilities)' == 'true'">
-    <ProjectCapability Include="PHP;PeachPie;Managed;Pack;Publish;AppDesigner;OpenProjectFile;GenerateDocumentationFile;" />
+    <ProjectCapability Include="PHP;PeachPie;Managed;Pack;Publish;AppDesigner;OpenProjectFile;GenerateDocumentationFile;LaunchProfiles;" />
   </ItemGroup>
 
   <!-- Returns command-line arguments for the language service -->

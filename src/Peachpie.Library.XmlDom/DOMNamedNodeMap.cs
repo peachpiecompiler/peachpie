@@ -11,9 +11,9 @@ namespace Peachpie.Library.XmlDom
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("dom")]
     public class DOMNamedNodeMap : Traversable, Iterator
     {
-        #region MapKey
+        #region Nested struct: MapKey
 
-        private struct MapKey : IEquatable<MapKey>
+        private protected struct MapKey : IEquatable<MapKey>
         {
             public readonly string NamespaceUri;
             public readonly string/*!*/ LocalName;
@@ -45,22 +45,26 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-        #region Fields and Properties
+        #region CLR Fields
 
         /// <summary>
         /// Hash map of the names to the nodex.
         /// </summary>
-        private Dictionary<MapKey, DOMNode>/*!*/ _map;
+        private protected Dictionary<MapKey, DOMNode>/*!*/ _map;
 
         /// <summary>
         /// List of the nodes.
         /// </summary>
-        private List<DOMNode>/*!*/ _list;
+        private protected List<DOMNode>/*!*/ _list;
 
         /// <summary>
         /// Current element index.
         /// </summary>
-        private int _element;
+        private protected int _element;
+
+        #endregion
+
+        #region Properties
 
         /// <summary>
         /// The number of nodes in the map. The range of valid child node indices is 0 to <see cref="length"/> - 1 inclusive.
@@ -82,7 +86,7 @@ namespace Peachpie.Library.XmlDom
 
         #region Item access
 
-        internal void AddNode(DOMNode/*!*/ node)
+        internal protected void AddNode(DOMNode/*!*/ node)
         {
             Debug.Assert(node != null);
 

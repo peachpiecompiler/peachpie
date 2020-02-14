@@ -75,7 +75,7 @@ namespace Peachpie.Library.XmlDom
             this.XmlNotation = xmlNotation;
         }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             if (IsAssociated) return new DOMNotation(XmlNotation);
             else return new DOMNotation();

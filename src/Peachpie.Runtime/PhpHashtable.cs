@@ -636,6 +636,18 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Adds range of values at the end of the hashtable.
+        /// </summary>
+        /// <param name="enumeration">The value enumeration. Cannot be <c>null</c>.</param>
+        public void AddRange(string[] enumeration)
+        {
+            for (int i = 0; i < enumeration.Length; i++)
+            {
+                AddToEnd(enumeration[i]);
+            }
+        }
+
         #endregion
 
         #region Prepend

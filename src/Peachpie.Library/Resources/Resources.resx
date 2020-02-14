@@ -687,4 +687,7 @@
   <data name="time_sleep_until_in_past" xml:space="preserve">
     <value>Sleep until to time is less than current time</value>
   </data>
+  <data name="__serialize_must_return_array" xml:space="preserve">
+    <value>{0}::__serialize() must return an array</value>
+  </data>
 </root>

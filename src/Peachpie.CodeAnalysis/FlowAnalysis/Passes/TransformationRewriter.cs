@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -14,10 +15,11 @@ using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal class TransformationRewriter : GraphRewriter
+    internal partial class TransformationRewriter : GraphRewriter
     {
         private readonly DelayedTransformations _delayedTransformations;
         private readonly SourceRoutineSymbol _routine;
+        private readonly HashSet<BoundCopyValue> _unnecessaryCopies;    // Possibly null if all are necessary
 
         protected PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
         protected BoundTypeRefFactory BoundTypeRefFactory => DeclaringCompilation.TypeRefFactory;
@@ -37,9 +39,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             var currentCFG = routine.ControlFlowGraph;
             var updatedCFG = (ControlFlowGraph)rewriter.VisitCFG(currentCFG);
 
+            rewriter.TryTransformParameters();
             routine.ControlFlowGraph = updatedCFG;
 
-            Debug.Assert((rewriter.TransformationCount != 0) == (updatedCFG != currentCFG)); // transformations <=> cfg updated                                                                                 //
+            Debug.Assert(updatedCFG == currentCFG || rewriter.TransformationCount != 0); // cfg updated => transformations (not <= due to parameter transformations)
             return updatedCFG != currentCFG;
         }
 
@@ -202,6 +205,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     return null;
                 } },
+                { NameUtils.SpecialNames.ord, x =>
+                {
+                    var typeCtx = _routine.TypeRefContext;
+
+                    // ord($s[$i]) -> (int)s[i]     (elimination of the unnecessary allocation of a 1-char string)
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value is BoundArrayItemEx itemAccess &&
+                        itemAccess.Index != null && itemAccess.Index.TypeRefMask.IsSingleType && typeCtx.IsLong(itemAccess.Index.TypeRefMask))
+                    {
+                        return new BoundArrayItemOrdEx(DeclaringCompilation, itemAccess.Array, itemAccess.Index).WithContext(x);
+                    }
+
+                    return null;
+                } },
             };
         }
 
@@ -210,6 +227,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             _delayedTransformations = delayedTransformations;
             _routine = routine ?? throw ExceptionUtilities.ArgumentNull(nameof(routine));
+
+            // Gather information about value copy operations which can be removed
+            _unnecessaryCopies = CopyAnalysis.TryGetUnnecessaryCopies(_routine);
+        }
+
+        private void TryTransformParameters()
+        {
+            var needPassValueParams = ParameterAnalysis.GetNeedPassValueParams(_routine);
+
+            foreach (var parameter in _routine.SourceParameters)
+            {
+                var varindex = _routine.ControlFlowGraph.FlowContext.GetVarIndex(parameter.Syntax.Name.Name);
+                if (!needPassValueParams.Get(varindex) && parameter.CopyOnPass)
+                {
+                    // It is unnecessary to copy a parameter whose value is only passed to another routines and cannot change
+                    parameter.CopyOnPass = false;
+                    TransformationCount++;
+                }
+            }
         }
 
         protected override void OnVisitCFG(ControlFlowGraph x)
@@ -256,6 +292,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                 }
 
+                // (isset($a[$x]) ? $a[$x] : fallback) or (isset($a['const']) ? $a['const'] : fallback)
+                if (x.Condition is BoundOffsetExists issetArrItem &&
+                    x.IfTrue is BoundArrayItemEx trueArrItem &&
+                    issetArrItem.Receiver is BoundVariableRef issetArrayVar &&
+                    trueArrItem.Array is BoundVariableRef trueArrayVar &&
+                    issetArrayVar.Variable == trueArrayVar.Variable &&
+                    ((issetArrItem.Index is BoundVariableRef issetIndexVar &&
+                        trueArrItem.Index is BoundVariableRef trueIndexVar &&
+                        issetIndexVar.Variable == trueIndexVar.Variable)
+                    || (issetArrItem.Index.ConstantValue.HasValue &&
+                        issetArrItem.Index.ConstantValue.EqualsOptional(trueArrItem.Index.ConstantValue))))
+                {
+                    ++TransformationCount;
+                    return new BoundTryGetItem(issetArrayVar, issetArrItem.Index, x.IfFalse).WithAccess(x);
+                }
+
                 // handled in BoundConditionalEx.Emit:
                 //// !COND ? A : B => COND ? B : A
                 //if (x.Condition is BoundUnaryEx unary && unary.Operation == Ast.Operations.LogicNegation)
@@ -270,10 +322,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override object VisitBinaryExpression(BoundBinaryEx x)
         {
-            // AND, OR:
             if (x.Operation == Ast.Operations.And ||
                 x.Operation == Ast.Operations.Or)
             {
+                // AND, OR:
                 if (x.Left.ConstantValue.TryConvertToBool(out var bleft))
                 {
                     if (x.Operation == Ast.Operations.And)
@@ -307,6 +359,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                 }
             }
+            else if (x.Operation == Ast.Operations.Mul)
+            {
+                if ((x.Left.ConstantValue.TryConvertToLong(out long leftCons) && leftCons == -1)
+                    || (x.Right.ConstantValue.TryConvertToLong(out long rightCons) && rightCons == -1))
+                {
+                    // X * -1, -1 * X -> -X
+                    TransformationCount++;
+                    return new BoundUnaryEx(leftCons == -1 ? x.Right : x.Left, Ast.Operations.Minus).WithAccess(x.Access);
+                }
+            }
 
             //
             return base.VisitBinaryExpression(x);
@@ -329,7 +391,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         public override object VisitCopyValue(BoundCopyValue x)
         {
             var valueEx = (BoundExpression)Accept(x.Expression);
-            if (valueEx.IsDeeplyCopied)
+            if (valueEx.IsDeeplyCopied && _unnecessaryCopies?.Contains(x) != true)
             {
                 return x.Update(valueEx);
             }
@@ -433,7 +495,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             var result = base.VisitGlobalFunctionCall(x);
 
             // use rewrite rule for this routine:
-            if ((x = result as BoundGlobalFunctionCall) != null && x.Name.IsDirect && _special_functions.TryGetValue(x.Name.NameValue, out var rewrite_func))
+            if ((x = result as BoundGlobalFunctionCall) != null && x.TargetMethod != null &&
+                _special_functions.TryGetValue(new QualifiedName(new Name(x.TargetMethod.RoutineName)), out var rewrite_func))
             {
                 var newnode = rewrite_func(x);
                 if (newnode != null)
@@ -533,7 +596,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var dc = fnName.IndexOf(Name.ClassMemberSeparator, StringComparison.Ordinal);
                 if (dc < 0)
                 {
-                    symbol = (MethodSymbol)DeclaringCompilation.ResolveFunction(QualifiedName.Parse(fnName, true), _routine);
+                    var fnQName = NameUtils.MakeQualifiedName(fnName, true);
+                    symbol = (MethodSymbol)DeclaringCompilation.ResolveFunction(fnQName, _routine);
                 }
                 else
                 {
@@ -568,18 +632,122 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitFunctionDeclaration(x);
         }
 
-        //public override object VisitArray(BoundArrayEx x)
-        //{
-        //    if (x.Access.TargetType == DeclaringCompilation.CoreTypes.IPhpCallable &&
-        //        x.Items.Length == 2 &&
-        //        x.Items[0].Value.ConstantValue.TryConvertToString(out var tname) &&   // TODO: or $this
-        //        x.Items[1].Value.ConstantValue.TryConvertToString(out var mname))
-        //    {
-        //          -> BoundCallableConvert
-        //    }
+        public override object VisitIsEmpty(BoundIsEmptyEx x)
+        {
+            if (x.Operand is BoundVariableRef varRef && varRef.Name.IsDirect && !varRef.Name.NameValue.IsAutoGlobal)
+            {
+                var flowContext = _routine.ControlFlowGraph.FlowContext;
 
-        //    return base.VisitArray(x);
-        //}
+                var varType = flowContext.GetVarType(varRef.Name.NameValue);
+                if (!varType.IsRef && (varType.IsVoid || flowContext.TypeRefContext.WithoutNull(varType).IsVoid)
+                    && !_routine.IsGlobalScope && (_routine.Flags & RoutineFlags.RequiresLocalsArray) == 0)
+                {
+                    // empty($x) where $x is undefined or null -> TRUE
+                    TransformationCount++;
+                    return new BoundLiteral(true.AsObject()).WithAccess(x.Access);
+                }
+            }
+
+            return base.VisitIsEmpty(x);
+        }
+
+        public override object VisitExpressionStatement(BoundExpressionStatement x)
+        {
+            // Transform the original expression first
+            x = (BoundExpressionStatement)base.VisitExpressionStatement(x);
+
+            // Transform functions which can be turned only to statements (i.e. not to expressions)
+            if (_routine.IsGlobalScope && x.Expression is BoundGlobalFunctionCall call && call.Name.IsDirect)
+            {
+                var args = call.ArgumentsInSourceOrder;
+                if (call.Name.NameValue == NameUtils.SpecialNames.define && args.Length == 2
+                    && args[0].Value.ConstantValue.TryConvertToString(out string constName)
+                    && args[1].Value.ConstantValue.HasValue)
+                {
+                    // define("CONST", "value") -> const \CONST = value
+                    TransformationCount++;
+                    return new BoundGlobalConstDeclStatement(NameUtils.MakeQualifiedName(constName, true), args[1].Value);
+                }
+            }
+
+            return x;
+        }
+
+        public override object VisitArray(BoundArrayEx x)
+        {
+            bool TryGetMethod(TypeSymbol typeSymbol, string methodName, out MethodSymbol methodSymbol)
+            {
+                if (typeSymbol != null && typeSymbol.TypeKind != TypeKind.Error &&
+                    typeSymbol.LookupMethods(methodName).SingleOrDefault() is MethodSymbol mSymbol && mSymbol.IsValidMethod() &&
+                    mSymbol.IsAccessible(_routine.ContainingType))
+                {
+                    methodSymbol = mSymbol;
+                    return true;
+                }
+                else
+                {
+                    methodSymbol = null;
+                    return false;
+                }
+            }
+
+            BoundCallableConvert Transform(BoundArrayEx origArray, IMethodSymbol targetCallable, BoundExpression receiver = null)
+            {
+                // read the literal as array, do not rewrite it to BoundCallableConvert again
+                origArray.Access = origArray.Access.WithRead(DeclaringCompilation.CoreTypes.PhpArray);
+
+                TransformationCount++;
+                return new BoundCallableConvert(origArray, DeclaringCompilation)
+                {
+                    TargetCallable = targetCallable,
+                    Receiver = receiver
+                }.WithContext(origArray);
+            }
+
+            // implicit conversion: ["typeName" / $this, "methodName"] -> callable
+            if (x.Access.TargetType == DeclaringCompilation.CoreTypes.IPhpCallable &&
+                x.Items.Length == 2 && x.Items[1].Value.ConstantValue.TryConvertToString(out var methodName))
+            {
+                var item0 = x.Items[0].Value;
+                if (item0.ConstantValue.TryConvertToString(out var typeName))
+                {
+                    var typeQName = NameUtils.MakeQualifiedName(typeName, true);
+                    TypeSymbol typeSymbol = null;
+                    if (typeQName.IsReservedClassName)
+                    {
+                        if (typeQName.IsSelfClassName)
+                        {
+                            // ["self", "methodName"]
+                            typeSymbol = _routine.ContainingType.IsClassType() ? _routine.ContainingType : null;
+                        }
+                        else if (typeQName.IsParentClassName)
+                        {
+                            // ["parent", "methodName"]
+                            typeSymbol = _routine.ContainingType.IsClassType() ? _routine.ContainingType.BaseType : null;
+                        }
+                    }
+                    else
+                    {
+                        typeSymbol = DeclaringCompilation.GlobalSemantics.ResolveType(typeQName) as TypeSymbol;
+                    }
+
+                    if (TryGetMethod(typeSymbol, methodName, out var methodSymbol) && methodSymbol.IsStatic)
+                    {
+                        // ["typeName", "methodName"]
+                        return Transform(x, methodSymbol);
+                    }
+                }
+                else if (MatchExprSkipCopy(item0, out BoundVariableRef varRef, out _) &&
+                         varRef.Variable is ThisVariableReference thisVar &&
+                         TryGetMethod(thisVar.Type, methodName, out var methodSymbol) && !methodSymbol.IsStatic)
+                {
+                    // [$this, "methodName"]
+                    return Transform(x, methodSymbol, varRef);
+                }
+            }
+
+            return base.VisitArray(x);
+        }
 
         /// <summary>
         /// If <paramref name="expr"/> is of type <typeparamref name="T"/> or it is a <see cref="BoundCopyValue" /> enclosing an
@@ -597,7 +765,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
             else if (expr is BoundCopyValue copyVal)
             {
-                return MatchExprSkipCopy<T>(copyVal.Expression, out typedExpr, out isCopied);
+                isCopied = true;
+                return MatchExprSkipCopy<T>(copyVal.Expression, out typedExpr, out _);
             }
             else
             {

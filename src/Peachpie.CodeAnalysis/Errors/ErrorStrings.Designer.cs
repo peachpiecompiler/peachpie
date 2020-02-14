@@ -547,15 +547,6 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Wrong case in class name &apos;{0}&apos;, expected &apos;{1}&apos;..
-        /// </summary>
-        internal static string INF_ClassNameWrongCase {
-            get {
-                return ResourceManager.GetString("INF_ClassNameWrongCase", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Use of &apos;__destruct&apos; is discouraged. Garbage collection behavior is a subject to change..
         /// </summary>
         internal static string INF_DestructDiscouraged {
@@ -574,11 +565,29 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Overriden function name &apos;{0}&apos; does not match it&apos;s parent name &apos;{1}&apos;, letter casing mismatch..
+        /// </summary>
+        internal static string INF_OverrideNameCaseMismatch {
+            get {
+                return ResourceManager.GetString("INF_OverrideNameCaseMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cast is redundant..
         /// </summary>
         internal static string INF_RedundantCast {
             get {
                 return ResourceManager.GetString("INF_RedundantCast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Name &apos;{0}&apos; does not match the expected name &apos;{1}&apos;, letter casing mismatch..
+        /// </summary>
+        internal static string INF_TypeNameCaseMismatch {
+            get {
+                return ResourceManager.GetString("INF_TypeNameCaseMismatch", resourceCulture);
             }
         }
         

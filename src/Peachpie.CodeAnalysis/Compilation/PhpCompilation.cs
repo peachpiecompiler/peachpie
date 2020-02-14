@@ -906,12 +906,16 @@ namespace Pchp.CodeAnalysis
 
         IEnumerable<EmbeddedText> CollectAdditionalEmbeddedTexts()
         {
-            return this.SourceSymbolCollection
-                .GetFiles()
-                .Select(f => f.SyntaxTree)
-                .Where(tree => tree.IsPharEntry || tree.FilePath.IsPharFile())
-                .Select(tree => EmbeddedText.FromSource(tree.FilePath, tree.GetText()))
-                .ToList();
+            // TODO: if (EmbedPharContentIntoPdb):
+
+            foreach (var f in this.SourceSymbolCollection.GetFiles())
+            {
+                var tree = f.SyntaxTree;
+                if (tree.IsPharEntry || tree.IsPharStub)
+                {
+                    yield return EmbeddedText.FromSource(tree.GetDebugSourceDocumentPath(), tree.GetText());
+                }
+            }
         }
 
         IEnumerable<ResourceDescription> CollectAdditionalManifestResources()

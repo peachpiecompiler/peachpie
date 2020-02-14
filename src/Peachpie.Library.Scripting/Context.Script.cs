@@ -163,6 +163,20 @@ namespace Peachpie.Library.Scripting
                 : Array.Empty<Script>();
         }
 
+        static string BuildSubmissionFileName(string referrer, string evalname)
+        {
+            // build a non-existing file path for the submission code (i.e. eval) being invoked from within a source code (referrer)
+
+            // embedded code file and file paths in general do not like some special characters,
+            // get rid of them:
+            return $"{referrer}.{evalname}.php"
+                .Replace("<", "")
+                .Replace(">", "")
+                .Replace("`", "")
+                .Replace("~", "")
+                ;
+        }
+
         /// <summary>
         /// Compiles <paramref name="code"/> and creates script.
         /// </summary>
@@ -187,18 +201,26 @@ namespace Peachpie.Library.Scripting
             // unique in-memory assembly name
             var name = builder.GetNewSubmissionName();
 
+            // submission do not have the opening "<?php" script tag:
+            var kind = options.IsSubmission ? SourceCodeKind.Script : SourceCodeKind.Regular;
+
+            if (kind == SourceCodeKind.Script && options.EmitDebugInformation)
+            {
+                // since submission do not have the opening "<?php" tag,
+                // add a comment with the opening tag, so source code editors don't get confused and colorize the code properly:
+                code = $"#<?php\n{code}";
+            }
+
             // parse the source code
             var tree = PhpSyntaxTree.ParseCode(
-                SourceText.From(code, Encoding.UTF8),
+                SourceText.From(code, Encoding.UTF8, SourceHashAlgorithm.Sha256),
                 new PhpParseOptions(
-                    kind: options.IsSubmission ? SourceCodeKind.Script : SourceCodeKind.Regular,
+                    kind: kind,
                     languageVersion: languageVersion,
                     shortOpenTags: shortOpenTags),
                 PhpParseOptions.Default,
-                options.IsSubmission
-                    ? options.Location.Path + CurrentPlatform.DirectorySeparator + name.Name.Replace('<', '-').Replace('>', '-') + ".php" // generate file name for the submission code
-                    : options.Location.Path
-                );
+                options.IsSubmission ? BuildSubmissionFileName(options.Location.Path, name.Name) : options.Location.Path
+            );
 
             var diagnostics = tree.Diagnostics;
             if (!HasErrors(diagnostics))
@@ -258,6 +280,14 @@ namespace Peachpie.Library.Scripting
 
                     if (result.Success)
                     {
+                        //if (pdbStream != null)
+                        //{
+                        //    // DEBUG DUMP
+                        //    var fname = @"C:\Users\jmise\OneDrive\Desktop\" + Path.GetFileNameWithoutExtension(tree.FilePath);
+                        //    File.WriteAllBytes(fname + ".dll", peStream.ToArray());
+                        //    File.WriteAllBytes(fname + ".pdb", pdbStream.ToArray());
+                        //}
+
                         return new Script(name, peStream, pdbStream, builder, previousSubmissions);
                     }
                     else

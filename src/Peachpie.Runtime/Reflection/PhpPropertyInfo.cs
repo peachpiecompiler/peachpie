@@ -118,6 +118,8 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => Field.Name;
 
+            public override Type PropertyType => Field.FieldType;
+
             public override PhpValue GetValue(Context ctx, object instance) => _lazyGetter.Value(ctx, instance);
 
             public override PhpAlias EnsureAlias(Context ctx, object instance) => _lazyEnsureAlias.Value(ctx, instance);
@@ -295,6 +297,8 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => Property.Name;
 
+            public override Type PropertyType => Property.PropertyType;
+
             public override PhpValue GetValue(Context ctx, object instance) => _lazyGetter.Value(instance);
 
             public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
@@ -330,6 +334,8 @@ namespace Pchp.Core.Reflection
             public override bool IsRuntimeProperty => true;
 
             public override string PropertyName => _name.ToString();
+
+            public override Type PropertyType => typeof(PhpValue);
 
             public override PhpValue GetValue(Context ctx, object instance)
             {
@@ -426,6 +432,11 @@ namespace Pchp.Core.Reflection
         /// Gets the PHP property name.
         /// </summary>
         public abstract string PropertyName { get; }
+
+        /// <summary>
+        /// Gets the CLR type of the property.
+        /// </summary>
+        public abstract Type PropertyType { get; }
 
         /// <summary>
         /// Gets value indicating the property cannot change value.

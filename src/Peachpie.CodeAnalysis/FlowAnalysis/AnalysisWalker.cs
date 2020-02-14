@@ -14,7 +14,7 @@ using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
-    public partial class AnalysisWalker<T> : GraphWalker<T>
+    public abstract class AnalysisWalker<TState, TResult> : GraphWalker<TResult>
     {
         #region Nested enum: AnalysisFlags
 
@@ -34,20 +34,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region Fields
 
         /// <summary>
-        /// The worklist to be used to enqueue next blocks.
-        /// </summary>
-        internal Worklist<BoundBlock> Worklist => _worklist;
-        readonly Worklist<BoundBlock> _worklist;
-
-        /// <summary>
-        /// Gets current type context for type masks resolving.
-        /// </summary>
-        internal TypeRefContext TypeCtx => State.TypeRefContext;
-
-        /// <summary>
         /// Current flow state.
         /// </summary>
-        internal FlowState State { get; private protected set; }
+        internal TState State { get; private protected set; }
 
         /// <summary>
         /// Gets reference to current block.
@@ -61,17 +50,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        #region Construction
+        #region State and worklist handling
 
-        /// <summary>
-        /// Creates an instance of <see cref="AnalysisWalker{T}"/> that can analyse a block.
-        /// </summary>
-        /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
-        internal AnalysisWalker(Worklist<BoundBlock> worklist)
-        {
-            Debug.Assert(worklist != null);
-            _worklist = worklist;
-        }
+        protected abstract bool IsStateInitialized(TState state);
+
+        protected abstract bool AreStatesEqual(TState a, TState b);
+
+        protected abstract TState GetState(BoundBlock block);
+
+        protected abstract void SetState(BoundBlock block, TState state);
+
+        protected abstract TState CloneState(TState state);
+
+        protected abstract TState MergeStates(TState a, TState b);
+
+        protected abstract void SetStateUnknown(ref TState state);
+
+        protected abstract void EnqueueBlock(BoundBlock block);
 
         #endregion
 
@@ -92,20 +87,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <param name="state">Locals state in which we are entering the target.</param>
         /// <param name="target">Target block.</param>
         /// <remarks>Only for traversing into blocks within the same routine (same type context).</remarks>
-        private void TraverseToBlock(object edgeLabel, FlowState/*!*/state, BoundBlock/*!*/target)
+        private void TraverseToBlock(object edgeLabel, TState/*!*/state, BoundBlock/*!*/target)
         {
-            Contract.ThrowIfNull(state);    // state should be already set by previous block
+            if (!IsStateInitialized(state))
+                throw new ArgumentException(nameof(state)); // state should be already set by previous block
 
-            var targetState = target.FlowState;
+            var targetState = GetState(target);
             if (targetState != null)
             {
-                Debug.Assert(targetState.FlowContext == state.FlowContext);
-
                 // block was visited already,
                 // merge and check whether state changed
-                state = state.Merge(targetState);   // merge states into new one
+                state = MergeStates(state, targetState);   // merge states into new one
 
-                if (state.Equals(targetState) && !target.ForceRepeatedAnalysis)
+                if (AreStatesEqual(state, targetState) && !target.ForceRepeatedAnalysis)
                 {
                     // state converged, we don't have to analyse the target block again
                     // unless it is specially needed (e.g. ExitBlock)
@@ -115,14 +109,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 // block was not visited yet
-                state = state.Clone();              // copy state into new one
+                state = CloneState(state);              // copy state into new one
             }
 
             // update target block state
-            target.FlowState = state;
+            SetState(target, state);
 
             //
-            _worklist.Enqueue(target);
+            EnqueueBlock(target);
         }
 
         /// <summary>
@@ -131,8 +125,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         protected virtual void VisitCFGBlockInit(BoundBlock/*!*/x)
         {
-            Contract.ThrowIfNull(x.FlowState);   // state should be already set by previous edge
-            State = x.FlowState.Clone();         // TFlowState for the statements in the block
+            var state = GetState(x);
+
+            if (!IsStateInitialized(state))
+                throw new ArgumentException(nameof(x));     // state should be already set by previous edge
+
+            State = CloneState(state);     // TState for the statements in the block
 
             this.CurrentBlock = x;
         }
@@ -148,73 +146,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Accept(x);
         }
 
-        /// <summary>
-        /// Gets value indicating the given type represents a double and nothing else.
-        /// </summary>
-        protected bool IsDoubleOnly(TypeRefMask tmask)
-        {
-            return tmask.IsSingleType && this.TypeCtx.IsDouble(tmask);
-        }
-
-        /// <summary>
-        /// Gets value indicating the given type represents a double and nothing else.
-        /// </summary>
-        protected bool IsDoubleOnly(BoundExpression x) => IsDoubleOnly(x.TypeRefMask);
-
-        /// <summary>
-        /// Gets value indicating the given type represents a long and nothing else.
-        /// </summary>
-        protected bool IsLongOnly(TypeRefMask tmask)
-        {
-            return tmask.IsSingleType && this.TypeCtx.IsLong(tmask);
-        }
-
-        /// <summary>
-        /// Gets value indicating the given type represents a long and nothing else.
-        /// </summary>
-        protected bool IsLongOnly(BoundExpression x) => IsLongOnly(x.TypeRefMask);
-
-        /// <summary>
-        /// Gets value indicating the given type is long or double or both but nothing else.
-        /// </summary>
-        /// <param name="tmask"></param>
-        /// <returns></returns>
-        protected bool IsNumberOnly(TypeRefMask tmask)
-        {
-            if (TypeCtx.IsLong(tmask) || TypeCtx.IsDouble(tmask))
-            {
-                if (tmask.IsSingleType)
-                {
-                    return true;
-                }
-
-                return !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsNumber();
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Gets value indicating the given type represents only class types.
-        /// </summary>
-        protected bool IsClassOnly(TypeRefMask tmask)
-        {
-            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsObject();
-        }
-
-        /// <summary>
-        /// Gets value indicating the given type represents only array types.
-        /// </summary>
-        protected bool IsArrayOnly(TypeRefMask tmask)
-        {
-            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsArray();
-        }
-
-        /// <summary>
-        /// Gets value indicating the given type is long or double or both but nothing else.
-        /// </summary>
-        protected bool IsNumberOnly(BoundExpression x) => IsNumberOnly(x.TypeRefMask);
-
         #endregion
 
         #region Short-Circuit Evaluation
@@ -224,7 +155,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         /// <returns>Value indicating whether branch was used.</returns>
         /// <remarks>
-        /// Because of minimal evaluation there is different FlowState for true and false branches,
+        /// Because of minimal evaluation there is different state for true and false branches,
         /// AND and OR operators have to take this into account.
         /// 
         /// Also some other constructs may have side-effect for known branch,
@@ -273,7 +204,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
-        public sealed override T VisitBinaryExpression(BoundBinaryEx x)
+        public sealed override TResult VisitBinaryExpression(BoundBinaryEx x)
         {
             Visit(x, ConditionBranch.Default);
 
@@ -285,7 +216,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitBinaryExpression(x);
         }
 
-        public sealed override T VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
+        public sealed override TResult VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             VisitGlobalFunctionCall(x, ConditionBranch.Default);
 
@@ -297,7 +228,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitGlobalFunctionCall(x);
         }
 
-        public sealed override T VisitUnaryExpression(BoundUnaryEx x)
+        public sealed override TResult VisitUnaryExpression(BoundUnaryEx x)
         {
             Visit(x, ConditionBranch.Default);
 
@@ -309,7 +240,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitUnaryExpression(x);
         }
 
-        public sealed override T VisitInstanceOf(BoundInstanceOfEx x)
+        public sealed override TResult VisitInstanceOf(BoundInstanceOfEx x)
         {
             Visit(x, ConditionBranch.Default);
 
@@ -321,7 +252,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitInstanceOf(x);
         }
 
-        public sealed override T VisitIsSet(BoundIsSetEx x)
+        public sealed override TResult VisitIsSet(BoundIsSetEx x)
         {
             Visit(x, ConditionBranch.Default);
 
@@ -351,17 +282,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region GraphVisitor Members
 
-        public override T VisitCFG(ControlFlowGraph x)
+        public override TResult VisitCFG(ControlFlowGraph x)
         {
             Contract.ThrowIfNull(x);
-            Debug.Assert(x.Start.FlowState != null, "Start block has to have an initial state set.");
+            Debug.Assert(IsStateInitialized(GetState(x.Start)), "Start block has to have an initial state set.");
 
-            _worklist.Enqueue(x.Start);
+            EnqueueBlock(x.Start);
 
             return default;
         }
 
-        protected override T AcceptEdge(BoundBlock fromBlock, Edge edge)
+        protected override TResult AcceptEdge(BoundBlock fromBlock, Edge edge)
         {
             if ((_flags & AnalysisFlags.IsCanceled) == 0)
             {
@@ -373,7 +304,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public override T VisitCFGBlock(BoundBlock x)
+        public override TResult VisitCFGBlock(BoundBlock x)
         {
             VisitCFGBlockInit(x);
             DefaultVisitBlock(x);   // modifies State, traverses to the edge
@@ -381,49 +312,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override T VisitCFGExitBlock(ExitBlock x)
-        {
-            VisitCFGBlock(x);
-
-            // TODO: EdgeToCallers:
-            PingSubscribers(x);
-
-            return default;
-        }
-
-        protected void PingSubscribers(ExitBlock exit)
-        {
-            if (exit != null)
-            {
-                bool wasNotAnalysed = false;
-                if (State.Routine?.IsReturnAnalysed == false)
-                {
-                    wasNotAnalysed = true;
-                    State.Routine.IsReturnAnalysed = true;
-                }
-
-                // Ping the subscribers either if the return type has changed or
-                // it is the first time the analysis reached the routine exit
-                var rtype = State.GetReturnType();
-                if (rtype != exit._lastReturnTypeMask || wasNotAnalysed)
-                {
-                    exit._lastReturnTypeMask = rtype;
-                    var subscribers = exit.Subscribers;
-                    if (subscribers.Count != 0)
-                    {
-                        lock (subscribers)
-                        {
-                            foreach (var subscriber in subscribers)
-                            {
-                                _worklist.PingReturnUpdate(exit, subscriber);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        public override T VisitCFGCaseBlock(CaseBlock x)
+        public override TResult VisitCFGCaseBlock(CaseBlock x)
         {
             VisitCFGBlockInit(x);
             if (!x.CaseValue.IsOnlyBoundElement) { VisitCFGBlock(x.CaseValue.PreBoundBlockFirst); }
@@ -433,19 +322,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override T VisitCFGCatchBlock(CatchBlock x)
+        public override TResult VisitCFGCatchBlock(CatchBlock x)
         {
             VisitCFGBlockInit(x);
 
-            // add catch control variable to the state
-            x.TypeRef.Accept(this);
-            x.Variable.Access = BoundAccess.Write.WithWrite(x.TypeRef.GetTypeRefMask(TypeCtx));
-            State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue), x.Variable.Access.WriteMask);
-
+            Accept(x.TypeRef);
             Accept(x.Variable);
-
-            //
-            x.Variable.ResultType = (Symbols.TypeSymbol)x.TypeRef.Type;
 
             //
             DefaultVisitBlock(x);
@@ -453,32 +335,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override T VisitCFGSimpleEdge(SimpleEdge x)
+        public override TResult VisitCFGSimpleEdge(SimpleEdge x)
         {
             TraverseToBlock(x, State, x.NextBlock);
 
             return default;
         }
 
-        public override T VisitCFGConditionalEdge(ConditionalEdge x)
+        public override TResult VisitCFGConditionalEdge(ConditionalEdge x)
         {
             // build state for TrueBlock and FalseBlock properly, take minimal evaluation into account
             var state = State;
 
             // true branch
-            State = state.Clone();
+            State = CloneState(state);
             VisitCondition(x.Condition, ConditionBranch.ToTrue);
             TraverseToBlock(x, State, x.TrueTarget);
 
             // false branch
-            State = state.Clone();
+            State = CloneState(state);
             VisitCondition(x.Condition, ConditionBranch.ToFalse);
             TraverseToBlock(x, State, x.FalseTarget);
 
             return default;
         }
 
-        public override T VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
+        public override TResult VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
         {
             Accept(x.Enumeree);
             VisitCFGSimpleEdge(x);
@@ -486,7 +368,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override T VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
+        public override TResult VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
         {
             var state = State;
             // get type information from Enumeree to determine types value variable
@@ -494,7 +376,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (elementType.IsVoid) elementType = TypeRefMask.AnyType;
 
             // Body branch
-            State = state.Clone();
+            State = CloneState(state);
             // set key variable and value variable at current state
 
             var valueVar = x.ValueVariable;
@@ -513,13 +395,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             TraverseToBlock(x, State, x.BodyBlock);
 
             // End branch
-            State = state.Clone();
+            State = CloneState(state);
             TraverseToBlock(x, State, x.NextBlock);
 
             return default;
         }
 
-        public override T VisitCFGSwitchEdge(SwitchEdge x)
+        public override TResult VisitCFGSwitchEdge(SwitchEdge x)
         {
             Accept(x.SwitchValue);
 
@@ -539,7 +421,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override T VisitCFGTryCatchEdge(TryCatchEdge x)
+        public override TResult VisitCFGTryCatchEdge(TryCatchEdge x)
         {
             var state = State;
 
@@ -549,7 +431,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             TraverseToBlock(x, state, x.BodyBlock);
 
             //
-            state.SetAllUnknown(true);  // TODO: traverse from all states in try{} instead of setting variables unknown here
+            SetStateUnknown(ref state);  // TODO: traverse from all states in try{} instead of setting variables unknown here
 
             foreach (var c in x.CatchBlocks)
             {

@@ -107,7 +107,7 @@ namespace Peachpie.Library.XmlDom
             this._systemId = systemId;
         }
 
-        protected override DOMNode CloneObjectInternal(bool deepCopyFields)
+        private protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             if (IsAssociated) return new DOMDocumentType(XmlDocumentType);
             else return new DOMDocumentType(this._qualifiedName, this._publicId, this._systemId);
@@ -117,7 +117,7 @@ namespace Peachpie.Library.XmlDom
 
         #region Hierarchy
 
-        internal override void Associate(XmlDocument document)
+        internal protected override void Associate(XmlDocument document)
         {
             if (!IsAssociated)
             {

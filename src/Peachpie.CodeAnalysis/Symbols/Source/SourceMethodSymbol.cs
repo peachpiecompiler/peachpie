@@ -24,6 +24,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SourceTypeSymbol _type;
         readonly MethodDecl/*!*/_syntax;
 
+        Microsoft.CodeAnalysis.Text.TextSpan NameSpan => _syntax.Name.Span.ToTextSpan();
+
         MethodSymbol _lazyOverridenMethod;
 
         public SourceMethodSymbol(SourceTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
@@ -92,7 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
                 else if (name.IsDestructName)    // __destruct()
                 {
-                    diagnostic.Add(this, _syntax.Name.Span.ToTextSpan(), Errors.ErrorCode.INF_DestructDiscouraged);
+                    diagnostic.Add(this, NameSpan, Errors.ErrorCode.INF_DestructDiscouraged);
 
                     if (_syntax.Signature.FormalParams.Length != 0)
                     {
@@ -237,6 +239,12 @@ namespace Pchp.CodeAnalysis.Symbols
                     diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.HeadingSpan, Devsense.PHP.Errors.Errors.NonAbstractMethodWithoutBody,
                         _type.FullName.ToString(), name.Value));
                 }
+            }
+
+            // overriden method name letter case mismatch:
+            if (OverriddenMethod != null && Name != OverriddenMethod.Name && string.Equals(Name, OverriddenMethod.Name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                diagnostic.Add(this, NameSpan, Errors.ErrorCode.INF_OverrideNameCaseMismatch, Name, OverriddenMethod.Name);
             }
 
             //

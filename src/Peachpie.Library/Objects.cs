@@ -197,19 +197,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-		/// Tests whether <paramref name="obj"/>'s class is derived from a class given by <paramref name="class_name"/>.
-		/// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="obj">The object to test.</param>
-		/// <param name="class_name">The name of the class.</param>
-        /// <returns><B>true</B> if the object <paramref name="obj"/> belongs to <paramref name="class_name"/> class or
-		/// a class which is a subclass of <paramref name="class_name"/>, <B>false</B> otherwise.</returns>
-        public static bool is_a(Context ctx, object obj, string class_name)
-        {
-            return obj != null && Core.Convert.IsInstanceOf(obj, ctx.GetDeclaredType(class_name));  // double check (obj!=null) for performance reasons
-        }
-
-        /// <summary>
 		/// Tests whether <paramref name="value"/>'s class is derived from a class given by <paramref name="class_name"/>.
 		/// </summary>
         /// <param name="ctx">Runtime context.</param>
@@ -218,7 +205,7 @@ namespace Pchp.Library
         /// <param name="allow_string">If this parameter set to FALSE, string class name as object is not allowed. This also prevents from calling autoloader if the class doesn't exist.</param>
         /// <returns><B>true</B> if the object <paramref name="value"/> belongs to <paramref name="class_name"/> class or
 		/// a class which is a subclass of <paramref name="class_name"/>, <B>false</B> otherwise.</returns>
-        public static bool is_a(Context ctx, PhpValue value, string class_name, bool allow_string)
+        public static bool is_a(Context ctx, PhpValue value, string class_name, bool allow_string = false)
         {
             // first load type of {value}
             PhpTypeInfo tvalue = TypeNameOrObjectToType(ctx, value, autoload: true, allowName: allow_string);

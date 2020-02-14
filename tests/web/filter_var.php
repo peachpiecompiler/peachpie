@@ -33,3 +33,14 @@ foreach ($ip_tests as $index => $test) {
 	echo $result ? "{$result}" : "false";
 	echo "\n";
 }
+
+// FILTER_VALIDATE_INT:
+// https://github.com/peachpiecompiler/peachpie/issues/661
+
+echo ",500:", filter_var(500, FILTER_VALIDATE_INT);
+echo ",500.0:", filter_var(500.0, FILTER_VALIDATE_INT);
+echo ",true:", filter_var(true, FILTER_VALIDATE_INT);
+echo ",'500'", filter_var('500', FILTER_VALIDATE_INT);
+echo ",'500.0:'", filter_var("500.0", FILTER_VALIDATE_INT);
+echo ",[]:", filter_var([], FILTER_VALIDATE_INT);
+echo ",null:", filter_var(null, FILTER_VALIDATE_INT);
