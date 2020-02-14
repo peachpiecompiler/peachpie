@@ -911,22 +911,10 @@ namespace Pchp.CodeAnalysis
             foreach (var f in this.SourceSymbolCollection.GetFiles())
             {
                 var tree = f.SyntaxTree;
-                var fname = tree.FilePath;
-
-                if (f.SyntaxTree.IsPharEntry) // embed phar entry
+                if (tree.IsPharEntry || tree.IsPharStub)
                 {
-                    // ok, fname is already a virtual file path of the phar entry
+                    yield return EmbeddedText.FromSource(tree.GetDebugSourceDocumentPath(), tree.GetText());
                 }
-                else if (fname.IsPharFile()) // embed phar stub
-                {
-                    fname = PhpFileUtilities.BuildPharStubFileName(fname); // virtual file name for the phar stub entry
-                }
-                else
-                {
-                    continue; // not embedded into PDB
-                }
-
-                yield return EmbeddedText.FromSource(fname, tree.GetText());
             }
         }
 

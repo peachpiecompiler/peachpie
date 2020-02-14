@@ -9,6 +9,7 @@ using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis.Errors;
+using Pchp.CodeAnalysis.Utilities;
 using Peachpie.CodeAnalysis.Syntax;
 using Peachpie.CodeAnalysis.Utilities;
 
@@ -53,6 +54,18 @@ namespace Pchp.CodeAnalysis
         /// Gets value indicating the file is a PHAR entry.
         /// </summary>
         public bool IsPharEntry => PharStubFile != null;
+
+        /// <summary>
+        /// Whether the code is a phar stub.
+        /// </summary>
+        public bool IsPharStub => FilePath.IsPharFile();
+
+        /// <summary>
+        /// Gets file path for the debug document and embedded text feature.
+        /// In most cases it is equivalent to <see cref="FilePath"/>,
+        /// in synthesized stubs (phar stub) it may be a generated file name.
+        /// </summary>
+        public string GetDebugSourceDocumentPath() => IsPharStub ? PhpFileUtilities.BuildPharStubFileName(FilePath) : FilePath;
 
         public static ImmutableArray<Version> SupportedLanguageVersions { get; } = new Version[]
         {
