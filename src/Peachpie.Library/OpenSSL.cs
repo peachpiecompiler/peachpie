@@ -370,11 +370,21 @@ namespace Pchp.Library
         /// </summary>
         public class X509Resource : PhpResource
         {
-            public X509Certificate2 Certificate { get; }
+            public X509Certificate2 Certificate { get; private set; }
 
             public X509Resource(X509Certificate2 certificate) : base ("OpenSSL X.509")
             {
                 Certificate = certificate;
+            }
+
+            /// <summary>
+            /// Disposes Certificate and sets it to null.
+            /// </summary>
+            public void FreeCertificate()
+            {
+                if (Certificate != null)
+                    Certificate.Dispose();
+                Certificate = null;
             }
         }
 
@@ -541,9 +551,19 @@ namespace Pchp.Library
             return true;
         }
 
+        /// <summary>
+        /// Frees the certificate associated with the specified x509cert resource from memory.
+        /// </summary>
+        public static void openssl_x509_free(PhpResource x509cert )
+        {
+            if (x509cert is X509Resource h && x509cert.IsValid)
+                h.FreeCertificate();
+        }
+
         #endregion
 
         #region OpenSSL key
+
         private const string configArgsFieldType = "private_key_type";
 
         public const int OPENSSL_KEYTYPE_RSA = (int)KeyType.RSA;
@@ -575,20 +595,52 @@ namespace Pchp.Library
                 Type = type;
             }
 
-            public byte[] Sign(byte[] data)
-            {
-                string signed = "";
-                switch (Type)
-                {
-                    case KeyType.RSA:
-                        return ((RSA)Algorithm).SignData(data, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                    case KeyType.DSA:
-                    case KeyType.DH:
-                    case KeyType.EC:
-                        throw new NotImplementedException();
-                }
-                throw new NotImplementedException();
-            }
+            ///// <summary>
+            ///// Exports key in PEM format.
+            ///// </summary>
+            ///// <param name="ctx">Context of the script.</param>
+            ///// <param name="publicKey"> Exports public key if TRUE else private key.</param>
+            ///// <returns>PEM formatted key.</returns>
+            //public string Export(Context ctx, bool publicKey)
+            //{
+            //    RSAParameters parameters = new RSAParameters();
+            //    switch (Type)
+            //    {
+            //        case KeyType.RSA:
+            //            parameters = ((RSA)Algorithm).ExportParameters(false);
+            //            break;
+            //        case KeyType.DSA:
+            //        case KeyType.DH:
+            //        case KeyType.EC:
+            //            throw new NotImplementedException();
+            //    }
+
+            //    using MemoryStream stream = new MemoryStream();
+            //    using (var writer = new PemWriter(stream))
+            //    {
+            //        if (publicKey)
+            //            writer.WritePublicKey(parameters);
+            //        else
+            //            writer.WritePrivateKey(parameters);
+                    
+            //    }
+
+            //    return ctx.StringEncoding.GetString(stream.ToArray());
+            //}
+
+            //public byte[] Sign(byte[] data)
+            //{
+            //    switch (Type)
+            //    {
+            //        case KeyType.RSA:
+            //            return ((RSA)Algorithm).SignData(data, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+            //        case KeyType.DSA:
+            //        case KeyType.DH:
+            //        case KeyType.EC:
+            //            throw new NotImplementedException();
+            //    }
+            //    throw new NotImplementedException();
+            //}
         }
 
         static OpenSSLKeyResource ParseOpenSSLKey(PhpValue mixed)
@@ -599,6 +651,13 @@ namespace Pchp.Library
             }
             else
             {
+                //var path = "a";
+                //using (var stream = File.OpenRead(path))
+                //using (var reader = new PemReader(stream))
+                //{
+                //    var rsaParameters = reader.ReadRsaKey();
+                //    // ...
+                //}
                 // TODO: Other posibilities
                 throw new NotImplementedException();
             }
@@ -644,30 +703,37 @@ namespace Pchp.Library
             return new OpenSSLKeyResource(alg, type);
         }
 
-        public static int openssl_verify(Context ctx, string data , string signature , PhpValue pub_key_id, PhpValue signature_alg)
-        {
-            int defaultSignitureAlg = OPENSSL_ALGO_SHA1;
+        //public static int openssl_verify(Context ctx, string data , string signature , PhpValue pub_key_id, PhpValue signature_alg)
+        //{
+        //    int defaultSignitureAlg = OPENSSL_ALGO_SHA1;
 
-            if (signature_alg.IsInteger())
-            {
-                throw new NotImplementedException();
-            } else if (signature_alg.IsString()) 
-            {
-                throw new NotImplementedException();
-            }
+        //    if (signature_alg.IsInteger())
+        //    {
+        //        throw new NotImplementedException();
+        //    } else if (signature_alg.IsString()) 
+        //    {
+        //        throw new NotImplementedException();
+        //    }
 
-            var resource = ParseOpenSSLKey(pub_key_id);
-            if (resource == null)
-                return -1;
+        //    var resource = ParseOpenSSLKey(pub_key_id);
+        //    if (resource == null)
+        //        return -1;
 
-            return (resource.Sign(Core.Convert.ToBytes(data, ctx)) == Core.Convert.ToBytes(signature, ctx)) ? 1 : 0;
-        }
+        //    // TODO: Compare array byte -> pozor na porovnani referenci
+        //    return (resource.Sign(Core.Convert.ToBytes(data, ctx)) == Core.Convert.ToBytes(signature, ctx)) ? 1 : 0;
+        //}
 
-        public static bool openssl_pkey_export(PhpValue key, ref string pkey, string passphrase = "", PhpArray configargs = null)
-        {
-            // TODO: Implementation
-            throw new NotImplementedException();
-        }
+        //public static bool openssl_pkey_export(PhpValue key, ref string pkey, string passphrase = "", PhpArray configargs = null)
+        //{
+        //    var resource = ParseOpenSSLKey(key);
+        //    if (resource == null)
+        //        return false;
+
+
+
+        //    // TODO: Implementation
+        //    throw new NotImplementedException();
+        //}
        
         
         #endregion
