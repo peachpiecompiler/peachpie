@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.IO;
 using static Pchp.Library.PhpHash;
 using System.Security.Cryptography.X509Certificates;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -395,8 +396,7 @@ namespace Pchp.Library
                 {
                     if (cert.StartsWith(FileSchemePrefix)) // Load from file 
                     {
-                        // TO DO: get absolute path context
-                        return new X509Resource(new X509Certificate2(cert.Remove(0, FileSchemePrefix.Length))); 
+                        return new X509Resource(new X509Certificate2(FileSystemUtils.AbsolutePath(ctx, cert))); 
                     }
                     else // Load from string
                         return new X509Resource(new X509Certificate2(ctx.StringEncoding.GetBytes(cert)));
@@ -457,8 +457,31 @@ namespace Pchp.Library
 
             if (!notext)
             {
-                // TODO: Add Human readable text
-                throw new NotImplementedException();
+                builder.AppendLine("Certificate:");
+                builder.AppendLine("\tData:");
+                builder.AppendLine(String.Format("\t\tVersion: {0} 0x{0:X}",x509.Certificate.Version));
+                builder.AppendLine("\t\tSerial Number:");
+                builder.AppendLine(String.Format("\t\t\t{0}", x509.Certificate.SerialNumber));
+                builder.AppendLine(String.Format("\t\tSigniture Algorithm: {0}", x509.Certificate.SignatureAlgorithm.FriendlyName));
+                builder.AppendLine(String.Format("\t\tIssuer: {0}", x509.Certificate.Issuer));
+                builder.AppendLine("\t\tValidity:");
+                builder.AppendLine(String.Format("\t\t\tNot Before: {0:R}", x509.Certificate.NotBefore));
+                builder.AppendLine(String.Format("\t\t\tNot After : {0:R}", x509.Certificate.NotAfter));
+                builder.AppendLine(String.Format("\t\tSubject: {0}", x509.Certificate.Subject));
+                builder.AppendLine("\t\tSubject Public Key Info:");
+                builder.AppendLine(String.Format("\t\t\tPublic Key Algorithm: {0}", x509.Certificate.PublicKey.Key.KeyExchangeAlgorithm));
+                builder.AppendLine(String.Format("\t\t\t\tRSA Public-Key: ({0} bit)", x509.Certificate.PublicKey.Key.KeySize));
+                // Key Parameters       
+                RSAParameters parameters = x509.Certificate.GetRSAPublicKey().ExportParameters(false);
+                builder.AppendLine("\t\t\t\tModulus:");
+                builder.AppendLine(String.Format("\t\t\t\t\t{0}", BitConverter.ToString(parameters.Modulus).Replace("-",":")));
+                string exponent = BitConverter.ToString(parameters.Exponent).Replace("-", "");
+                builder.AppendLine(String.Format("\t\t\t\tExponent: {0} (0x{1})",System.Convert.ToInt32(exponent, 16), exponent));
+                builder.AppendLine(String.Format("\t\tX509v{0} extensions:", x509.Certificate.Version));
+                // TODO: Extensions
+                builder.AppendLine(String.Format("\t\tSigniture Algorithm: {0}", x509.Certificate.SignatureAlgorithm.FriendlyName));
+                // TODO: Last field of bytes ??
+                builder.AppendLine(String.Format("\t\t\t{0}", BitConverter.ToString(x509.Certificate.RawData).Replace("-", ":")));
             }
 
             builder.AppendLine("-----BEGIN CERTIFICATE-----");
@@ -518,6 +541,101 @@ namespace Pchp.Library
             return true;
         }
 
+            public byte[] Sign(byte[] data)
+            {
+                string signed = "";
+                switch (Type)
+                {
+                    case KeyType.RSA:
+                        return ((RSA)Algorithm).SignData(data, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                    case KeyType.DSA:
+                    case KeyType.DH:
+                    case KeyType.EC:
+                        throw new NotImplementedException();
+                }
+                throw new NotImplementedException();
+            }
+        }
+
+        static OpenSSLKeyResource ParseOpenSSLKey(PhpValue mixed)
+        {
+            if (mixed.AsResource() is OpenSSLKeyResource h && h.IsValid)
+            {
+                return h;
+            }
+            else
+            {
+                // TODO: Other posibilities
+                throw new NotImplementedException();
+            }
+
+            //
+            //PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
+            //return null;
+        }
+
+        public static OpenSSLKeyResource openssl_pkey_new(PhpArray configargs = null)
+        {
+            KeyType type = KeyType.RSA; // By default
+            
+
+            if (configargs != null)
+            {
+                // Important atributes: config, curve_name, encrypt_key_cipher, encrypt_key, private_key_type, private_key_bits
+
+                if (configargs.ContainsKey(configArgsFieldType)) // private_key_type
+                {
+                    if (configargs[configArgsFieldType].IsInteger() &&
+                    Enum.TryParse(configargs[configArgsFieldType].ToInt().ToString(), out KeyType parsedResult))
+                        type = parsedResult;
+                }
+
+                // TODO: Other Atributes
+            }
+
+            AsymmetricAlgorithm alg = null;
+            switch (type)
+            {
+                case KeyType.RSA:
+                    alg = RSA.Create();
+                    break;
+                case KeyType.DSA:
+                    alg = DSA.Create();
+                    break;
+                case KeyType.DH:
+                case KeyType.EC:
+                    throw new NotImplementedException();
+            }
+
+            return new OpenSSLKeyResource(alg, type);
+        }
+
+        public static int openssl_verify(Context ctx, string data , string signature , PhpValue pub_key_id, PhpValue signature_alg)
+        {
+            int defaultSignitureAlg = OPENSSL_ALGO_SHA1;
+
+            if (signature_alg.IsInteger())
+            {
+                throw new NotImplementedException();
+            } else if (signature_alg.IsString()) 
+            {
+                throw new NotImplementedException();
+            }
+
+            var resource = ParseOpenSSLKey(pub_key_id);
+            if (resource == null)
+                return -1;
+
+            return (resource.Sign(Core.Convert.ToBytes(data, ctx)) == Core.Convert.ToBytes(signature, ctx)) ? 1 : 0;
+        }
+
+        public static bool openssl_pkey_export(PhpValue key, ref string pkey, string passphrase = "", PhpArray configargs = null)
+        {
+            // TODO: Implementation
+            throw new NotImplementedException();
+        }
+       
+        
         #endregion
     }
 }
