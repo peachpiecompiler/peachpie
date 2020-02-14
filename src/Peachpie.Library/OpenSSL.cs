@@ -541,6 +541,40 @@ namespace Pchp.Library
             return true;
         }
 
+        #endregion
+
+        #region OpenSSL key
+        private const string configArgsFieldType = "private_key_type";
+
+        public const int OPENSSL_KEYTYPE_RSA = (int)KeyType.RSA;
+        public const int OPENSSL_KEYTYPE_DSA = (int)KeyType.DSA;
+        public const int OPENSSL_KEYTYPE_DH = (int)KeyType.DH;
+        public const int OPENSSL_KEYTYPE_EC = (int)KeyType.EC;
+
+        public const int OPENSSL_ALGO_SHA1 = 0;
+        public const int OPENSSL_ALGO_SHA256 = 0;
+        public const int OPENSSL_ALGO_SHA384 = 0;
+        public const int OPENSSL_ALGO_SHA512 = 0;
+        public const int OPENSSL_ALGO_MD5 = 0;
+        public const int OPENSSL_ALGO_MD4 = 0;
+        // Others methods are not supported
+
+        public enum KeyType { RSA, DSA, DH, EC};
+
+        /// <summary>
+        /// Context of OpenSSL Key
+        /// </summary>
+        public class OpenSSLKeyResource : PhpResource
+        {
+            public AsymmetricAlgorithm Algorithm { get; } = null;
+            KeyType Type;
+
+            public OpenSSLKeyResource(AsymmetricAlgorithm algorithm, KeyType type) : base("OpenSSL key")
+            {
+                Algorithm = algorithm;
+                Type = type;
+            }
+
             public byte[] Sign(byte[] data)
             {
                 string signed = "";
