@@ -1,9 +1,11 @@
 ﻿using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Pchp.Library.Spl
@@ -80,6 +82,16 @@ namespace Pchp.Library.Spl
         const string DefaultIteratorClass = "ArrayIterator";
 
         int _flags;
+
+        /// <summary>
+        /// Lazily initialized array to store values set as properties if <see cref="ARRAY_AS_PROPS"/> is not set.
+        /// </summary>
+        /// <remarks>
+        /// Its presence also enables <see cref="__get(PhpValue)"/> and <see cref="__set(PhpValue, PhpValue)"/>
+        /// to work properly.
+        /// </remarks>
+        [CompilerGenerated]
+        internal PhpArray __peach__runtimeFields;
 
         PhpValue UnderlayingValue
         {
@@ -275,19 +287,18 @@ namespace Pchp.Library.Spl
 
         public virtual void __set(PhpValue prop, PhpValue value)
         {
-            if (_underlayingArray != null)
+            // TODO: Make aliases work (they currently get dealiased before passed here)
+
+            if ((_flags & ARRAY_AS_PROPS) == 0)
             {
-                if ((_flags & ARRAY_AS_PROPS) != 0)
-                {
-                    if (value.IsAlias)
-                        _underlayingArray.SetItemAlias(prop, value.Alias);
-                    else
-                        _underlayingArray.SetItemValue(prop, value.DeepCopy());
-                }
-                else
-                {
-                    // TODO: err
-                }
+                if (__peach__runtimeFields == null)
+                    __peach__runtimeFields = new PhpArray();
+
+                __peach__runtimeFields.SetItemValue(prop, value);
+            }
+            else if (_underlayingArray != null)
+            {
+                _underlayingArray.SetItemValue(prop, value.DeepCopy());
             }
             else if (_underlayingObject != null)
             {
@@ -297,12 +308,21 @@ namespace Pchp.Library.Spl
 
         public virtual PhpValue __get(PhpValue prop)
         {
-            if (_underlayingArray != null)
+            if ((_flags & ARRAY_AS_PROPS) == 0)
             {
-                if ((_flags & ARRAY_AS_PROPS) != 0)
+                if (__peach__runtimeFields != null && __peach__runtimeFields.TryGetValue(prop, out var val))
                 {
-                    return _underlayingArray.GetItemValue(prop);
+                    return val;
                 }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.undefined_property_accessed, this.GetPhpTypeInfo().Name, prop.ToString());
+                    return PhpValue.Null;
+                }
+            }
+            else if (_underlayingArray != null)
+            {
+                return _underlayingArray.GetItemValue(prop);
             }
             else if (_underlayingObject != null)
             {
