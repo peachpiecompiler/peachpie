@@ -310,6 +310,13 @@ namespace Pchp.Library.Spl
         /// </summary>
         protected SplIteratorMode iteratorMode = SplIteratorMode.Keep;
 
+        /// <summary>
+        /// See <see cref="stdClass"/>.
+        /// Allows for storing runtime fields to this object.
+        /// </summary>
+        [System.Runtime.CompilerServices.CompilerGenerated]
+        internal PhpArray __peach__runtimeFields;
+
         public SplDoublyLinkedList(Context ctx)
         {
             _ctx = ctx;
@@ -563,6 +570,39 @@ namespace Pchp.Library.Spl
                 PhpException.Throw(PhpError.Notice,
                     Resources.LibResources.deserialization_failed, e.Message, stream.Position.ToString(), stream.Length.ToString());
             }
+        }
+
+        public virtual PhpArray __serialize()
+        {
+            var elements = new PhpArray(_baseList.Count);
+            foreach (var item in _baseList)
+            {
+                elements.Add(item);
+            }
+
+            var array = new PhpArray(3);
+            array.AddValue((int)iteratorMode);
+            array.AddValue(PhpValue.FromClr(elements));
+            array.AddValue(__peach__runtimeFields ?? PhpArray.NewEmpty());
+
+            return array;
+        }
+
+        public virtual void __unserialize(PhpArray array)
+        {
+            iteratorMode = array.TryGetValue(0, out var flagsVal) && flagsVal.IsLong(out long flags)
+                ? (SplIteratorMode)flags : throw new InvalidDataException();
+
+            var elements = array.TryGetValue(1, out var elementsVal) && elementsVal.IsPhpArray(out var elementsArray)
+                ? elementsArray : throw new InvalidDataException();
+            var e = elements.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                this.push(e.CurrentValue);
+            }
+
+            __peach__runtimeFields = array.TryGetValue(2, out var propsVal) && propsVal.IsPhpArray(out var propsArray)
+                ? propsArray : throw new InvalidDataException();
         }
 
         private void MoveCurrentPointer(bool forwardDirection)

@@ -3,6 +3,7 @@ using Pchp.Core.Reflection;
 using Pchp.Core.Resources;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -240,8 +241,40 @@ namespace Pchp.Library.Spl
 
         #region Serializable
 
-        public virtual PhpString serialize() { throw new NotImplementedException(); }
-        public virtual void unserialize(PhpString serialized) { throw new NotImplementedException(); }
+        public virtual PhpString serialize() => PhpSerialization.serialize(_ctx, default, __serialize());
+
+        public virtual void unserialize(PhpString serialized) =>
+            __unserialize(PhpSerialization.unserialize(_ctx, default, serialized).ToArrayOrThrow());
+
+        public virtual PhpArray __serialize()
+        {
+            // NOTE: _iteratorClass is not preserved through the serialization (at least not in PHP 7.4)
+            var array = new PhpArray(3);
+            array.AddValue(_flags);
+            array.AddValue(PhpValue.FromClr(_underlayingArray ?? _underlayingObject));
+            array.AddValue(__peach__runtimeFields ?? PhpArray.NewEmpty());
+
+            return array;
+        }
+
+        public virtual void __unserialize(PhpArray array)
+        {
+            _flags = array.TryGetValue(0, out var flagsVal) && flagsVal.IsLong(out long flags)
+                ? (int)flags : throw new InvalidDataException();
+
+            if (!array.TryGetValue(1, out var storageVal))
+                throw new InvalidDataException();
+
+            if (storageVal.IsArray)
+                _underlayingArray = storageVal.Array;
+            else if (storageVal.IsObject)
+                _underlayingObject = storageVal.Object;
+            else
+                throw new InvalidDataException();
+
+            __peach__runtimeFields = array.TryGetValue(2, out var propsVal) && propsVal.IsPhpArray(out var propsArray)
+                ? propsArray : throw new InvalidDataException();
+        }
 
         #endregion
 
