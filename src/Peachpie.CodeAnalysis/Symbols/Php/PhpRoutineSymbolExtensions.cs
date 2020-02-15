@@ -325,15 +325,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets PHPDoc assoviated with given source symbol.
         /// </summary>
-        internal static PHPDocBlock TryGetPHPDocBlock(this Symbol symbol)
+        internal static bool TryGetPHPDocBlock(this Symbol symbol, out PHPDocBlock phpdoc)
         {
-            switch (symbol?.OriginalDefinition)
+            phpdoc = symbol?.OriginalDefinition switch
             {
-                case SourceRoutineSymbol routine: return routine.PHPDocBlock;
-                case SourceFieldSymbol field: return field.PHPDocBlock;
-                case SourceTypeSymbol type: return type.Syntax.PHPDoc;
-                default: return null;
-            }
+                SourceRoutineSymbol routine => routine.PHPDocBlock,
+                SourceFieldSymbol field => field.PHPDocBlock,
+                SourceTypeSymbol type => type.Syntax.PHPDoc,
+                _ => null
+            };
+
+            return phpdoc != null;
         }
 
         /// <summary>
@@ -345,10 +347,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             // CONSIDER: not for private/internal symbols ?
 
-            var phpdoc = TryGetPHPDocBlock(symbol);
-            if (phpdoc != null)
+            if (TryGetPHPDocBlock(symbol, out var phpdoc) && symbol.GetContainingFileSymbol() is SourceFileSymbol file)
             {
-                var phpdoctext = phpdoc.ContainingSourceUnit.GetSourceCode(phpdoc.Span);
+                var phpdoctext = file.SyntaxTree.GetText().ToString(phpdoc.Span.ToTextSpan());
 
                 // cleanup the phpdoctext
                 // trim lines:
