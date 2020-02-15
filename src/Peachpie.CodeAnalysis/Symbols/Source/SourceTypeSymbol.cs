@@ -1033,7 +1033,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     yield return new SourceFieldSymbol(this, c.Name.Name.Value,
                         CreateLocation(c.Name.Span),
-                        Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
+                        clist.Modifiers.GetAccessibility(), clist.PHPDoc,
                         PhpPropertyKind.ClassConstant,
                         binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement());
                 }
