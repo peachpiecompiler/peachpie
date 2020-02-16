@@ -144,8 +144,8 @@ namespace Peachpie.Library.PDO
                 //if (sqlValue.GetType() == typeof(float))
                 //    return Pchp.Core.Convert.ToString((float)sqlValue);
 
-                //if (sqlValue.GetType() == typeof(System.DateTime))
-                //    return ConvertDateTime(dataType, (System.DateTime)sqlValue);
+                if (sqlValue.GetType() == typeof(System.DateTime))
+                    return ConvertDateTime(dataType, (System.DateTime)sqlValue);
 
                 //if (sqlValue.GetType() == typeof(long))
                 //    return ((long)sqlValue).ToString();
@@ -176,6 +176,14 @@ namespace Peachpie.Library.PDO
                 //}
 
                 return sqlValue;
+            }
+
+            static string ConvertDateTime(string dataType, System.DateTime value)
+            {
+                if (dataType == "DATE" || dataType == "NEWDATE")
+                    return value.ToString("yyyy-MM-dd");
+                else
+                    return value.ToString("yyyy-MM-dd HH:mm:ss");
             }
         }
 
