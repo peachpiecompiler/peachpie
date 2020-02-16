@@ -33,7 +33,7 @@ namespace Pchp.Library
         public const int OPENSSL_RAW_DATA = (int)Options.OPENSSL_RAW_DATA;
         public const int OPENSSL_ZERO_PADDING = (int)Options.OPENSSL_ZERO_PADDING;
 
-        private static Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher>
+        private static Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher>(StringComparer.OrdinalIgnoreCase)
         {
             {"aes-256-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC,256)},
             {"aes-192-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC, 192)},
@@ -50,7 +50,7 @@ namespace Pchp.Library
         // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1 (standart 2.1))
         };
 
-        private static Dictionary<string, string> CiphersAliases = new Dictionary<string, string>
+        private static Dictionary<string, string> CiphersAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             {"aes128", "aes-128-cbc"},
             {"aes192", "aes-192-cbc"},
@@ -110,8 +110,8 @@ namespace Pchp.Library
             byte[] iVector = new byte[cipher.IVLength];
             if (!iv.IsEmpty)
             {
-                
-                byte[] decodedIV = ((options & Options.OPENSSL_RAW_DATA) != Options.OPENSSL_RAW_DATA) ? 
+
+                byte[] decodedIV = ((options & Options.OPENSSL_RAW_DATA) != Options.OPENSSL_RAW_DATA) ?
                 iv.ToBytes(ctx) : System.Convert.FromBase64String(iv.ToString(ctx));
 
                 if (decodedIV.Length < cipher.IVLength) // Pad zeros
@@ -161,21 +161,22 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string openssl_decrypt(Context ctx, PhpString data, string method, PhpString key, Options options, PhpString iv, string tag = "", string aad = "")
         {
-            method = method.ToLower();
-            if (CiphersAliases.TryGetValue(method, out string methodName))
-                method = methodName;
+            if (CiphersAliases.TryGetValue(method, out var aliasName))
+            {
+                method = aliasName;
+            }
 
-            Cipher cipherMethod;
-            if (!Ciphers.TryGetValue(method, out cipherMethod))
+            if (!Ciphers.TryGetValue(method, out var cipherMethod))
             {
                 // Unknown cipher algorithm.
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
                 return null;
             }
 
-
             if (iv.IsEmpty)
+            {
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_empty_iv);
+            }
 
             try
             {
@@ -221,12 +222,12 @@ namespace Pchp.Library
         /// <returns>Returns the encrypted string on success or FALSE on failure.</returns>
         public static PhpString openssl_encrypt(Context ctx, string data, string method, PhpString key, Options options, PhpString iv, string tag = "", string aad = "", int tag_length = 16)
         {
-            method = method.ToLower();
-            if (CiphersAliases.TryGetValue(method, out string methodName))
-                method = methodName;
+            if (CiphersAliases.TryGetValue(method, out var aliasName))
+            {
+                method = aliasName;
+            }
 
-            Cipher cipherMethod;
-            if (!Ciphers.TryGetValue(method, out cipherMethod))
+            if (!Ciphers.TryGetValue(method, out var cipherMethod))
             {
                 // Unknown cipher algorithm.
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
@@ -234,7 +235,9 @@ namespace Pchp.Library
             }
 
             if (iv.IsEmpty)
+            {
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_empty_iv);
+            }
 
             try
             {
@@ -279,12 +282,12 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int openssl_cipher_iv_length(string method)
         {
-            method = method.ToLower();
-            if (CiphersAliases.TryGetValue(method, out string methodName))
-                method = methodName;
+            if (CiphersAliases.TryGetValue(method, out var aliasName))
+            {
+                method = aliasName;
+            }
 
-            Cipher cipherMethod;
-            if (!Ciphers.TryGetValue(method, out cipherMethod))
+            if (!Ciphers.TryGetValue(method, out var cipherMethod))
             {
                 // Unknown cipher algorithm.
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
@@ -303,10 +306,12 @@ namespace Pchp.Library
         /// <returns>An array of available cipher methods.</returns>
         public static PhpArray openssl_get_cipher_methods(bool aliases = false)
         {
-            PhpArray result = new PhpArray(Ciphers.Keys);
+            var result = new PhpArray(Ciphers.Keys);
 
             if (aliases)
-                result.AddRange(CiphersAliases);
+            {
+                result.AddRange(CiphersAliases.Keys);
+            }
 
             return result;
         }
@@ -314,12 +319,12 @@ namespace Pchp.Library
         #region openssl_digest/get_md_methods
 
         // There are algos, which are implemented in .NET but there are not implemented in Hash.cs
-        private static Dictionary<string, Func<byte[], byte[]>> AditionaHashMethods = new Dictionary<string, Func<byte[], byte[]>>
+        private static Dictionary<string, Func<byte[], byte[]>> AditionaHashMethods = new Dictionary<string, Func<byte[], byte[]>>(StringComparer.OrdinalIgnoreCase)
         {
             {"sha384", (byte[] data) => SHA384Managed.Create().ComputeHash(data)}
         };
 
-        private static Dictionary<string, string> HashAliases = new Dictionary<string, string>
+        private static Dictionary<string, string> HashAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             {"rsa-md4", "md4"},
             {"rsa-md5", "md5"},
@@ -340,9 +345,10 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpString openssl_digest(Context ctx, PhpString data, string method, bool raw_output = false)
         {
-            method = method.ToLower();
-            if (HashAliases.TryGetValue(method, out string methodName))
-                method = methodName;
+            if (HashAliases.TryGetValue(method, out var aliasedname))
+            {
+                method = aliasedname;
+            }
 
             if (HashPhpResource.HashAlgorithms.ContainsKey(method)) // Supported in Hash.cs
             {
@@ -350,15 +356,17 @@ namespace Pchp.Library
             }
             else
             {
-                byte[] hashedBytes = AditionaHashMethods[method]?.Invoke(data.ToBytes(ctx));
-
-                if (hashedBytes == null)  // Unknown cipher algorithm.
+                if (AditionaHashMethods.TryGetValue(method, out var alg))
                 {
+                    var hashedBytes = alg(data.ToBytes(ctx));
+                    return raw_output ? new PhpString(hashedBytes) : StringUtils.BinToHex(hashedBytes, string.Empty);
+                }
+                else
+                {
+                    // Unknown cipher algorithm.
                     PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_hash);
                     return null;
                 }
-                else
-                    return raw_output ? new PhpString(hashedBytes) : StringUtils.BinToHex(hashedBytes, string.Empty);
             }
         }
 
@@ -367,6 +375,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="aliases">Set to TRUE if digest aliases should be included within the returned array.</param>
         /// <returns>An array of available digest methods.</returns>
+        [return: NotNull]
         public static PhpArray openssl_get_md_methods(bool aliases = false)
         {
             var algos = hash_algos();
@@ -374,7 +383,9 @@ namespace Pchp.Library
             algos.AddRange(AditionaHashMethods.Keys);
 
             if (aliases)
-                algos.AddRange(HashAliases);
+            {
+                algos.AddRange(HashAliases.Keys);
+            }
 
             return algos;
         }
@@ -382,6 +393,7 @@ namespace Pchp.Library
         #endregion
 
         #region X.509
+
         private const string FileSchemePrefix = "file://";
 
         /// <summary>
@@ -391,7 +403,7 @@ namespace Pchp.Library
         {
             public X509Certificate2 Certificate { get; private set; }
 
-            public X509Resource(X509Certificate2 certificate) : base ("OpenSSL X.509")
+            public X509Resource(X509Certificate2 certificate) : base("OpenSSL X.509")
             {
                 Certificate = certificate;
             }
@@ -426,7 +438,7 @@ namespace Pchp.Library
                 {
                     if (cert.StartsWith(FileSchemePrefix)) // Load from file 
                     {
-                        return new X509Resource(new X509Certificate2(FileSystemUtils.AbsolutePath(ctx, cert))); 
+                        return new X509Resource(new X509Certificate2(FileSystemUtils.AbsolutePath(ctx, cert)));
                     }
                     else // Load from string
                         return new X509Resource(new X509Certificate2(ctx.StringEncoding.GetBytes(cert)));
@@ -476,7 +488,7 @@ namespace Pchp.Library
                 using (StreamWriter wr = new StreamWriter(outfilename))
                     wr.Write(certificate);
             }
-            catch (IOException) {  return false; }
+            catch (IOException) { return false; }
 
             return true;
         }
@@ -504,7 +516,7 @@ namespace Pchp.Library
                 // Key Parameters       
                 RSAParameters parameters = x509.Certificate.GetRSAPublicKey().ExportParameters(false);
                 builder.Append("\t\t\t\tModulus:\n");
-                builder.AppendFormat("\t\t\t\t\t{0}\n", BitConverter.ToString(parameters.Modulus).Replace("-",":"));
+                builder.AppendFormat("\t\t\t\t\t{0}\n", BitConverter.ToString(parameters.Modulus).Replace("-", ":"));
                 string exponent = BitConverter.ToString(parameters.Exponent).Replace("-", "");
                 builder.AppendFormat("\t\t\t\tExponent: {0} (0x{1})\n", System.Convert.ToInt32(exponent, 16), exponent);
                 builder.AppendFormat("\t\tX509v{0} extensions:\n", x509.Certificate.Version);
@@ -527,8 +539,8 @@ namespace Pchp.Library
             }
 
             if (reminder != encoded.Length - 1)
-                builder.Append(encoded.Substring(reminder, encoded.Length - reminder)); 
-                builder.Append("\n");
+                builder.Append(encoded.Substring(reminder, encoded.Length - reminder));
+            builder.Append("\n");
 
             builder.Append("-----END CERTIFICATE-----\n");
 
@@ -575,32 +587,32 @@ namespace Pchp.Library
         /// <summary>
         /// Frees the certificate associated with the specified x509cert resource from memory.
         /// </summary>
-        public static void openssl_x509_free(PhpResource x509cert )
+        public static void openssl_x509_free(PhpResource x509cert)
         {
-            if (x509cert is X509Resource h && x509cert.IsValid)
+            if (x509cert is X509Resource h)
+            {
                 h.Dispose();
+            }
         }
 
         #endregion
 
         #region OpenSSL key
 
-        private const string configArgsFieldType = "private_key_type";
+        public const int OPENSSL_KEYTYPE_RSA = (int)KeyType.RSA; // 0
+        public const int OPENSSL_KEYTYPE_DSA = (int)KeyType.DSA; // 1
+        public const int OPENSSL_KEYTYPE_DH = (int)KeyType.DH; // 2
+        public const int OPENSSL_KEYTYPE_EC = (int)KeyType.EC; // 3
 
-        public const int OPENSSL_KEYTYPE_RSA = (int)KeyType.RSA;
-        public const int OPENSSL_KEYTYPE_DSA = (int)KeyType.DSA;
-        public const int OPENSSL_KEYTYPE_DH = (int)KeyType.DH;
-        public const int OPENSSL_KEYTYPE_EC = (int)KeyType.EC;
-
-        public const int OPENSSL_ALGO_SHA1 = 0;
-        public const int OPENSSL_ALGO_SHA256 = 0;
-        public const int OPENSSL_ALGO_SHA384 = 0;
-        public const int OPENSSL_ALGO_SHA512 = 0;
-        public const int OPENSSL_ALGO_MD5 = 0;
-        public const int OPENSSL_ALGO_MD4 = 0;
+        public const int OPENSSL_ALGO_SHA1 = 1;
+        public const int OPENSSL_ALGO_MD5 = 2;
+        public const int OPENSSL_ALGO_MD4 = 3;
+        public const int OPENSSL_ALGO_SHA256 = 7;
+        public const int OPENSSL_ALGO_SHA384 = 8;
+        public const int OPENSSL_ALGO_SHA512 = 9;
         // Others methods are not supported
 
-        public enum KeyType { RSA, DSA, DH, EC};
+        public enum KeyType { RSA = 0, DSA = 1, DH = 2, EC = 3 };
 
         /// <summary>
         /// Context of OpenSSL Key
@@ -643,7 +655,7 @@ namespace Pchp.Library
             //            writer.WritePublicKey(parameters);
             //        else
             //            writer.WritePrivateKey(parameters);
-                    
+
             //    }
 
             //    return ctx.StringEncoding.GetString(stream.ToArray());
@@ -691,23 +703,22 @@ namespace Pchp.Library
         public static OpenSSLKeyResource openssl_pkey_new(PhpArray configargs = null)
         {
             KeyType type = KeyType.RSA; // By default
-            
 
-            if (configargs != null)
+            if (configargs != null && configargs.Count != 0)
             {
                 // Important atributes: config, curve_name, encrypt_key_cipher, encrypt_key, private_key_type, private_key_bits
 
-                if (configargs.ContainsKey(configArgsFieldType)) // private_key_type
+                // // private_key_type
+                if (configargs.TryGetValue("private_key_type", out var fieldtypeValue) &&
+                    fieldtypeValue.IsLong(out var fieldtype))
                 {
-                    if (configargs[configArgsFieldType].IsInteger() &&
-                    Enum.TryParse(configargs[configArgsFieldType].ToInt().ToString(), out KeyType parsedResult))
-                        type = parsedResult;
+                    type = (KeyType)fieldtype;
                 }
 
                 // TODO: Other Atributes
             }
 
-            AsymmetricAlgorithm alg = null;
+            AsymmetricAlgorithm alg;
             switch (type)
             {
                 case KeyType.RSA:
@@ -719,6 +730,9 @@ namespace Pchp.Library
                 case KeyType.DH:
                 case KeyType.EC:
                     throw new NotImplementedException();
+
+                default:
+                    throw new ArgumentException($"private_key_type '{type}' unsupported.");
             }
 
             return new OpenSSLKeyResource(alg, type);
@@ -755,8 +769,8 @@ namespace Pchp.Library
         //    // TODO: Implementation
         //    throw new NotImplementedException();
         //}
-       
-        
+
+
         #endregion
     }
 }
