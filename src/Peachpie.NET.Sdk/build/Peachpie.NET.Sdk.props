@@ -17,6 +17,6 @@
   </PropertyGroup>
 
   <!-- current Peachpie SDK version -->
-  <Import Project="$(MSBuildThisFileDirectory)Peachpie.Version.props"/>
+  <Import Project="$(MSBuildThisFileDirectory)Peachpie.Version.props" Condition=" '$(PeachpieVersion)'=='' "/>
 
 </Project>

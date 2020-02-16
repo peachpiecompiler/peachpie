@@ -358,6 +358,46 @@ namespace Pchp.Library.Spl
             }
         }
 
+        public virtual PhpArray __serialize()
+        {
+
+            var flattenedStorage = new PhpArray(storage.Count * 2);
+            int i = 0;
+            var e = storage.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                flattenedStorage[i++] = e.CurrentValue.Array[Keys.Object];
+                flattenedStorage[i++] = e.CurrentValue.Array[Keys.Info];
+            }
+
+            var array = new PhpArray(2);
+            array.AddValue(flattenedStorage);
+            array.AddValue(__peach__runtimeFields ?? PhpArray.NewEmpty());
+
+            return array;
+        }
+
+        public virtual void __unserialize(PhpArray array)
+        {
+            var flattenedStorage = array.TryGetValue(0, out var storageVal) && storageVal.IsPhpArray(out var storageArray)
+                ? storageArray : throw new InvalidDataException();
+
+            var e = flattenedStorage.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                var key = e.CurrentValue.IsObject ? e.CurrentValue.Object : throw new InvalidDataException();
+
+                if (!e.MoveNext())
+                    throw new InvalidDataException();
+                var val = e.CurrentValue;
+
+                Keys.AttachImpl(storage, key, val);
+            }
+
+            __peach__runtimeFields = array.TryGetValue(1, out var propsVal) && propsVal.IsPhpArray(out var propsArray)
+                ? propsArray : throw new InvalidDataException();
+        }
+
         #endregion
     }
 }

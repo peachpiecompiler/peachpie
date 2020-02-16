@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Pchp.Core.Reflection;
 using Pchp.Core.Resources;
 using System.Runtime.CompilerServices;
+using System.IO;
 
 namespace Pchp.Library.Spl
 {
@@ -81,7 +82,7 @@ namespace Pchp.Library.Spl
     /// its getIterator() method manually.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
-    public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterator, Countable
+    public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterator, Countable, Serializable
     {
         #region Constants
 
@@ -450,14 +451,31 @@ namespace Pchp.Library.Spl
 
         #region interface Serializable
 
-        public virtual PhpString serialize()
+        public virtual PhpString serialize() => PhpSerialization.serialize(_ctx, default, __serialize());
+
+        public virtual void unserialize(PhpString data) =>
+            __unserialize(PhpSerialization.unserialize(_ctx, default, data).ToArrayOrThrow());
+
+        public virtual PhpArray __serialize()
         {
-            throw new NotImplementedException();
+            var array = new PhpArray(3);
+            array.AddValue(_flags);
+            array.AddValue(PhpValue.FromClr(storage));
+            array.AddValue(__peach__runtimeFields ?? PhpArray.NewEmpty());
+
+            return array;
         }
 
-        public virtual void unserialize(PhpString data)
+        public virtual void __unserialize(PhpArray array)
         {
-            throw new NotImplementedException();
+            _flags = array.TryGetValue(0, out var flagsVal) && flagsVal.IsLong(out long flags)
+                ? (int)flags : throw new InvalidDataException();
+
+            storage = array.TryGetValue(1, out var storageVal) && (storageVal.IsArray || storageVal.IsObject)
+                ? storageVal.Object : throw new InvalidDataException();
+
+            __peach__runtimeFields = array.TryGetValue(2, out var propsVal) && propsVal.IsPhpArray(out var propsArray)
+                ? propsArray : throw new InvalidDataException();
         }
 
         #endregion
