@@ -1,4 +1,10 @@
 ﻿using System;
+ * What is not implemented and can not be done with base .NET
+ * - openssl_pkey_export .NET standart 2.0 does not support export PEM format of private key (2.1 does)
+ * - Loading Key resource from PEM format because of same reason as above.
+ * - Advanced functionality in methods, like some special properties. 
+ */
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Pchp.Core;
@@ -34,7 +40,7 @@ namespace Pchp.Library
             {"des-ede3-cbc", new Cipher(CipherType.TripleDES, Cipher.IVLengthDES, CipherMode.CBC, Cipher.KeyLengthTripleDES)}
         // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
         // RC2 is ok when there is right length of password, but when it is longer, PHP transforms password in some way, but i can not figure out how.
-        // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1)
+        // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1 (standart 2.1))
         };
 
         private static Dictionary<string, string> CiphersAliases = new Dictionary<string, string>
