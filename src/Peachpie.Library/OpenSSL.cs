@@ -1,4 +1,11 @@
-﻿using System;
+﻿/*
+ * What is almost implemented, but something missing.
+ * - Hash and crypto algorithms. There are supported the most useful algos.
+ * - There are new useful methods and options avaible in .NET standart 2.1.
+ * - Export method in X509 region is almost finished. Parameter notext adds human-readable information to output. 
+ *   There are missing two pieces of info.
+ * What is not implemented and can be almost done with base .NET
+ * - CSR and Key resource. I think that base functionality can be done with .NET
  * What is not implemented and can not be done with base .NET
  * - openssl_pkey_export .NET standart 2.0 does not support export PEM format of private key (2.1 does)
  * - Loading Key resource from PEM format because of same reason as above.
