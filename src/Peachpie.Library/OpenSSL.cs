@@ -97,12 +97,14 @@ namespace Pchp.Library
             byte[] iVector = new byte[cipher.IVLength];
             if (!iv.IsEmpty)
             {
-                byte[] decodedIV = iv.ToBytes(ctx);
+                
+                byte[] decodedIV = ((options & Options.OPENSSL_RAW_DATA) != Options.OPENSSL_RAW_DATA) ? 
+                iv.ToBytes(ctx) : System.Convert.FromBase64String(iv.ToString(ctx));
 
                 if (decodedIV.Length < cipher.IVLength) // Pad zeros
-                    PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.short_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
+                    PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_long_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
                 else if (decodedIV.Length > cipher.IVLength) // Trancuate
-                    PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.long_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
+                    PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_long_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
 
                 Buffer.BlockCopy(decodedIV, 0, iVector, 0, Math.Min(cipher.IVLength, decodedIV.Length));
             }
@@ -146,6 +148,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string openssl_decrypt(Context ctx, PhpString data, string method, PhpString key, Options options, PhpString iv, string tag = "", string aad = "")
         {
+            method = method.ToLower();
             if (CiphersAliases.TryGetValue(method, out string methodName))
                 method = methodName;
 
@@ -153,13 +156,13 @@ namespace Pchp.Library
             if (!Ciphers.TryGetValue(method, out cipherMethod))
             {
                 // Unknown cipher algorithm.
-                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.unknown_cipher);
+                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
                 return null;
             }
 
 
             if (iv.IsEmpty)
-                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.empty_iv_vector);
+                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_empty_iv);
 
             try
             {
@@ -205,6 +208,7 @@ namespace Pchp.Library
         /// <returns>Returns the encrypted string on success or FALSE on failure.</returns>
         public static PhpString openssl_encrypt(Context ctx, string data, string method, PhpString key, Options options, PhpString iv, string tag = "", string aad = "", int tag_length = 16)
         {
+            method = method.ToLower();
             if (CiphersAliases.TryGetValue(method, out string methodName))
                 method = methodName;
 
@@ -212,12 +216,12 @@ namespace Pchp.Library
             if (!Ciphers.TryGetValue(method, out cipherMethod))
             {
                 // Unknown cipher algorithm.
-                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.unknown_cipher);
+                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
                 return null;
             }
 
             if (iv.IsEmpty)
-                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.empty_iv_vector);
+                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_empty_iv);
 
             try
             {
@@ -262,6 +266,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int openssl_cipher_iv_length(string method)
         {
+            method = method.ToLower();
             if (CiphersAliases.TryGetValue(method, out string methodName))
                 method = methodName;
 
@@ -269,7 +274,7 @@ namespace Pchp.Library
             if (!Ciphers.TryGetValue(method, out cipherMethod))
             {
                 // Unknown cipher algorithm.
-                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.unknown_cipher);
+                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
                 return -1;
             }
 
@@ -303,12 +308,12 @@ namespace Pchp.Library
 
         private static Dictionary<string, string> HashAliases = new Dictionary<string, string>
         {
-            {"RSA-MD4", "md4"},
-            {"RSA-MD5", "md5"},
-            {"RSA-SHA1", "sha1"},
-            {"RSA-SHA256", "sha256"},
-            {"RSA-SHA384", "sha384"},
-            {"RSA-SHA512", "sha512"}
+            {"rsa-md4", "md4"},
+            {"rsa-md5", "md5"},
+            {"rsa-sha1", "sha1"},
+            {"rsa-sha256", "sha256"},
+            {"rsa-sha384", "sha384"},
+            {"rsa-sha512", "sha512"}
         };
 
         /// <summary>
@@ -322,6 +327,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpString openssl_digest(Context ctx, PhpString data, string method, bool raw_output = false)
         {
+            method = method.ToLower();
             if (HashAliases.TryGetValue(method, out string methodName))
                 method = methodName;
 
@@ -335,7 +341,7 @@ namespace Pchp.Library
 
                 if (hashedBytes == null)  // Unknown cipher algorithm.
                 {
-                    PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.unknown_hash);
+                    PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_hash);
                     return null;
                 }
                 else
@@ -380,8 +386,9 @@ namespace Pchp.Library
             /// <summary>
             /// Disposes Certificate and sets it to null.
             /// </summary>
-            public void FreeCertificate()
+            protected override void FreeManaged()
             {
+                base.FreeManaged();
                 if (Certificate != null)
                     Certificate.Dispose();
                 Certificate = null;
@@ -413,13 +420,13 @@ namespace Pchp.Library
                 }
                 catch (CryptographicException)
                 {
-                    PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.openssl_X509_cannot_be_coerced);
                     return null;
                 }
             }
 
             //
-            PhpException.Throw(PhpError.Warning, Resources.Resources.X509_cannot_be_coerced);
+            PhpException.Throw(PhpError.Warning, Resources.Resources.openssl_X509_cannot_be_coerced);
             return null;
         }
 
@@ -467,34 +474,33 @@ namespace Pchp.Library
 
             if (!notext)
             {
-                builder.AppendLine("Certificate:");
-                builder.AppendLine("\tData:");
-                builder.AppendLine(String.Format("\t\tVersion: {0} 0x{0:X}",x509.Certificate.Version));
-                builder.AppendLine("\t\tSerial Number:");
-                builder.AppendLine(String.Format("\t\t\t{0}", x509.Certificate.SerialNumber));
-                builder.AppendLine(String.Format("\t\tSigniture Algorithm: {0}", x509.Certificate.SignatureAlgorithm.FriendlyName));
-                builder.AppendLine(String.Format("\t\tIssuer: {0}", x509.Certificate.Issuer));
-                builder.AppendLine("\t\tValidity:");
-                builder.AppendLine(String.Format("\t\t\tNot Before: {0:R}", x509.Certificate.NotBefore));
-                builder.AppendLine(String.Format("\t\t\tNot After : {0:R}", x509.Certificate.NotAfter));
-                builder.AppendLine(String.Format("\t\tSubject: {0}", x509.Certificate.Subject));
-                builder.AppendLine("\t\tSubject Public Key Info:");
-                builder.AppendLine(String.Format("\t\t\tPublic Key Algorithm: {0}", x509.Certificate.PublicKey.Key.KeyExchangeAlgorithm));
-                builder.AppendLine(String.Format("\t\t\t\tRSA Public-Key: ({0} bit)", x509.Certificate.PublicKey.Key.KeySize));
+                builder.Append("Certificate:\n");
+                builder.Append("\tData:\n");
+                builder.AppendFormat("\t\tVersion: {0} 0x{0:X}\n", x509.Certificate.Version);
+                builder.Append("\t\tSerial Number:\n");
+                builder.AppendFormat("\t\t\t{0}\n", x509.Certificate.SerialNumber);
+                builder.AppendFormat("\t\tSigniture Algorithm: {0}\n", x509.Certificate.SignatureAlgorithm.FriendlyName);
+                builder.AppendFormat("\t\tIssuer: {0}\n", x509.Certificate.Issuer);
+                builder.Append("\t\tValidity:\n");
+                builder.AppendFormat("\t\t\tNot Before: {0:R}\n", x509.Certificate.NotBefore);
+                builder.AppendFormat("\t\t\tNot After : {0:R}\n", x509.Certificate.NotAfter);
+                builder.AppendFormat("\t\tSubject: {0}\n", x509.Certificate.Subject);
+                builder.Append("\t\tSubject Public Key Info:\n");
+                builder.AppendFormat("\t\t\tPublic Key Algorithm: {0}\n", x509.Certificate.PublicKey.Key.KeyExchangeAlgorithm);
+                builder.AppendFormat("\t\t\t\tRSA Public-Key: ({0} bit)\n", x509.Certificate.PublicKey.Key.KeySize);
                 // Key Parameters       
                 RSAParameters parameters = x509.Certificate.GetRSAPublicKey().ExportParameters(false);
-                builder.AppendLine("\t\t\t\tModulus:");
-                builder.AppendLine(String.Format("\t\t\t\t\t{0}", BitConverter.ToString(parameters.Modulus).Replace("-",":")));
+                builder.Append("\t\t\t\tModulus:\n");
+                builder.AppendFormat("\t\t\t\t\t{0}\n", BitConverter.ToString(parameters.Modulus).Replace("-",":"));
                 string exponent = BitConverter.ToString(parameters.Exponent).Replace("-", "");
-                builder.AppendLine(String.Format("\t\t\t\tExponent: {0} (0x{1})",System.Convert.ToInt32(exponent, 16), exponent));
-                builder.AppendLine(String.Format("\t\tX509v{0} extensions:", x509.Certificate.Version));
+                builder.AppendFormat("\t\t\t\tExponent: {0} (0x{1})\n", System.Convert.ToInt32(exponent, 16), exponent);
+                builder.AppendFormat("\t\tX509v{0} extensions:\n", x509.Certificate.Version);
                 // TODO: Extensions
-                builder.AppendLine(String.Format("\t\tSigniture Algorithm: {0}", x509.Certificate.SignatureAlgorithm.FriendlyName));
+                builder.AppendFormat("\t\tSigniture Algorithm: {0}\n", x509.Certificate.SignatureAlgorithm.FriendlyName);
                 // TODO: Last field of bytes ??
-                builder.AppendLine(String.Format("\t\t\t{0}", BitConverter.ToString(x509.Certificate.RawData).Replace("-", ":")));
+                builder.AppendFormat("\t\t\t{0}\n", BitConverter.ToString(x509.Certificate.RawData).Replace("-", ":"));
             }
-
-            builder.AppendLine("-----BEGIN CERTIFICATE-----");
+            builder.Append("-----BEGIN CERTIFICATE-----\n");
 
             int alignment = 64;
             string encoded = System.Convert.ToBase64String(x509.Certificate.Export(X509ContentType.Cert));
@@ -502,14 +508,16 @@ namespace Pchp.Library
             int reminder = 0;
             while (reminder < encoded.Length - alignment)
             {
-                builder.AppendLine(encoded.Substring(reminder, alignment));
+                builder.Append(encoded.Substring(reminder, alignment));
+                builder.Append("\n");
                 reminder += alignment;
             }
 
             if (reminder != encoded.Length - 1)
-                builder.AppendLine(encoded.Substring(reminder, encoded.Length - reminder));
+                builder.Append(encoded.Substring(reminder, encoded.Length - reminder)); 
+                builder.Append("\n");
 
-            builder.Append("-----END CERTIFICATE-----");
+            builder.Append("-----END CERTIFICATE-----\n");
 
             return builder.ToString();
         }
@@ -557,7 +565,7 @@ namespace Pchp.Library
         public static void openssl_x509_free(PhpResource x509cert )
         {
             if (x509cert is X509Resource h && x509cert.IsValid)
-                h.FreeCertificate();
+                h.Dispose();
         }
 
         #endregion
