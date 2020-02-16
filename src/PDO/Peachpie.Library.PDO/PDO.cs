@@ -334,6 +334,11 @@ namespace Peachpie.Library.PDO
         internal DbCommand CreateCommand(string statement) => _connection.CreateCommand(statement);
 
         /// <summary>
+        /// Closes pending data reader if any.
+        /// </summary>
+        internal void ClosePendingReader() => _connection.ClosePendingReader();
+
+        /// <summary>
         /// Execute an SQL statement and return the number of affected rows.
         /// </summary>
         /// <param name="statement">The statement.</param>
@@ -342,7 +347,7 @@ namespace Peachpie.Library.PDO
         {
             this.ClearError();
 
-            _connection.ClosePendingReader();
+            this.ClosePendingReader();
 
             using (var dbCommand = this.CreateCommand(statement))
             {
