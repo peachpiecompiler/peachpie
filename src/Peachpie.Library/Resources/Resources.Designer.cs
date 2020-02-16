@@ -547,15 +547,6 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Using an empty Initialization Vector (iv) is potentially insecure and not recommended.
-        /// </summary>
-        public static string empty_iv_vector {
-            get {
-                return ResourceManager.GetString("empty_iv_vector", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Equivalence class cannot be endpoint of range (first endpoint here).
         /// </summary>
         public static string equivalence_class_at_first_endpoint_of_range {
@@ -1096,15 +1087,6 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to IV passed is &apos;{0}&apos; bytes long which is longer than the &apos;{1}&apos; expected by selected cipher, truncating.
-        /// </summary>
-        public static string long_iv {
-            get {
-                return ResourceManager.GetString("long-iv", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Method {0}::{1}() does not exist.
         /// </summary>
         public static string method_does_not_exist {
@@ -1227,6 +1209,60 @@ namespace Pchp.Library.Resources {
         public static string number_of_repetitions_negative {
             get {
                 return ResourceManager.GetString("number_of_repetitions_negative", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Using an empty Initialization Vector (iv) is potentially insecure and not recommended.
+        /// </summary>
+        public static string openssl_empty_iv {
+            get {
+                return ResourceManager.GetString("openssl_empty_iv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IV passed is {0} bytes long which is longer than the {1} expected by selected cipher, truncating.
+        /// </summary>
+        public static string openssl_long_iv {
+            get {
+                return ResourceManager.GetString("openssl_long_iv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IV passed is only {0} bytes long, cipher expects an IV of precisely {1} bytes, padding with \0.
+        /// </summary>
+        public static string openssl_short_iv {
+            get {
+                return ResourceManager.GetString("openssl_short_iv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unknown cipher algorithm.
+        /// </summary>
+        public static string openssl_unknown_cipher {
+            get {
+                return ResourceManager.GetString("openssl_unknown_cipher", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unknown signature algorithm.
+        /// </summary>
+        public static string openssl_unknown_hash {
+            get {
+                return ResourceManager.GetString("openssl_unknown_hash", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Supplied parameter cannot be coerced into an X509 certificate!.
+        /// </summary>
+        public static string openssl_X509_cannot_be_coerced {
+            get {
+                return ResourceManager.GetString("openssl_X509_cannot_be_coerced", resourceCulture);
             }
         }
         
@@ -1447,15 +1483,6 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to IV passed is only &apos;{0}&apos; bytes long, cipher expects an IV of precisely &apos;{1}&apos; bytes, padding with \0.
-        /// </summary>
-        public static string short_iv {
-            get {
-                return ResourceManager.GetString("short_iv", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to {0} should be specified.
         /// </summary>
         public static string should_be_specified {
@@ -1645,15 +1672,6 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Unknown cipher algorithm.
-        /// </summary>
-        public static string unknown_cipher {
-            get {
-                return ResourceManager.GetString("unknown_cipher", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to File type not recognized.
         /// </summary>
         public static string unknown_file_type {
@@ -1668,15 +1686,6 @@ namespace Pchp.Library.Resources {
         public static string unknown_format_code {
             get {
                 return ResourceManager.GetString("unknown_format_code", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Unknown signature algorithm.
-        /// </summary>
-        public static string unknown_hash {
-            get {
-                return ResourceManager.GetString("unknown_hash", resourceCulture);
             }
         }
         
@@ -1794,15 +1803,6 @@ namespace Pchp.Library.Resources {
         public static string wrong_charset {
             get {
                 return ResourceManager.GetString("wrong_charset", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to supplied parameter cannot be coerced into an X509 certificate!.
-        /// </summary>
-        public static string X509_cannot_be_coerced {
-            get {
-                return ResourceManager.GetString("X509_cannot_be_coerced", resourceCulture);
             }
         }
         
