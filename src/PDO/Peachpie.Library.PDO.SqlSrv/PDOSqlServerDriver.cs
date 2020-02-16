@@ -21,6 +21,8 @@ namespace Peachpie.Library.PDO.SqlSrv
         /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)
         {
+            pdo.ClosePendingReader();
+
             using (var com = pdo.CreateCommand("SELECT SCOPE_IDENTITY()"))
             {
                 object value = com.ExecuteScalar();
