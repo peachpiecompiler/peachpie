@@ -1,10 +1,7 @@
 <?php
 namespace spl\ArrayIterator_001;
 
-function test($subj, $flags) {
-  $it = new \ArrayIterator($subj);
-
-  $it->setFlags($flags);
+function test($it) {
   $it->foo = 12;
   $it->baz = 666;
 
@@ -18,6 +15,9 @@ function test($subj, $flags) {
   echo "\n";
 }
 
-test(["foo" => 43, "bar" => 64], \ArrayIterator::ARRAY_AS_PROPS);
-test(["foo" => 42, "bar" => 64], 0);
-test((object)["foo" => 42, "bar" => 64], 0);
+test(new \ArrayIterator(["foo" => 43, "bar" => 64], \ArrayIterator::ARRAY_AS_PROPS));
+test(new \ArrayIterator(["foo" => 42, "bar" => 64]));
+test(new \ArrayIterator((object)["foo" => 42, "bar" => 64]));
+test(new \ArrayObject(["foo" => 43, "bar" => 64], \ArrayObject::ARRAY_AS_PROPS));
+test(new \ArrayObject(["foo" => 43, "bar" => 64]));
+test(new \ArrayObject((object)["foo" => 42, "bar" => 64]));

@@ -1,9 +1,12 @@
 ﻿using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Pchp.Library.Spl
@@ -80,6 +83,16 @@ namespace Pchp.Library.Spl
         const string DefaultIteratorClass = "ArrayIterator";
 
         int _flags;
+
+        /// <summary>
+        /// Lazily initialized array to store values set as properties if <see cref="ARRAY_AS_PROPS"/> is not set.
+        /// </summary>
+        /// <remarks>
+        /// Its presence also enables <see cref="__get(PhpValue)"/> and <see cref="__set(PhpValue, PhpValue)"/>
+        /// to work properly.
+        /// </remarks>
+        [CompilerGenerated]
+        internal PhpArray __peach__runtimeFields;
 
         PhpValue UnderlayingValue
         {
@@ -228,8 +241,40 @@ namespace Pchp.Library.Spl
 
         #region Serializable
 
-        public virtual PhpString serialize() { throw new NotImplementedException(); }
-        public virtual void unserialize(PhpString serialized) { throw new NotImplementedException(); }
+        public virtual PhpString serialize() => PhpSerialization.serialize(_ctx, default, __serialize());
+
+        public virtual void unserialize(PhpString serialized) =>
+            __unserialize(PhpSerialization.unserialize(_ctx, default, serialized).ToArrayOrThrow());
+
+        public virtual PhpArray __serialize()
+        {
+            // NOTE: _iteratorClass is not preserved through the serialization (at least not in PHP 7.4)
+            var array = new PhpArray(3);
+            array.AddValue(_flags);
+            array.AddValue(PhpValue.FromClr(_underlayingArray ?? _underlayingObject));
+            array.AddValue(__peach__runtimeFields ?? PhpArray.NewEmpty());
+
+            return array;
+        }
+
+        public virtual void __unserialize(PhpArray array)
+        {
+            _flags = array.TryGetValue(0, out var flagsVal) && flagsVal.IsLong(out long flags)
+                ? (int)flags : throw new InvalidDataException();
+
+            if (!array.TryGetValue(1, out var storageVal))
+                throw new InvalidDataException();
+
+            if (storageVal.IsArray)
+                _underlayingArray = storageVal.Array;
+            else if (storageVal.IsObject)
+                _underlayingObject = storageVal.Object;
+            else
+                throw new InvalidDataException();
+
+            __peach__runtimeFields = array.TryGetValue(2, out var propsVal) && propsVal.IsPhpArray(out var propsArray)
+                ? propsArray : throw new InvalidDataException();
+        }
 
         #endregion
 
@@ -275,19 +320,18 @@ namespace Pchp.Library.Spl
 
         public virtual void __set(PhpValue prop, PhpValue value)
         {
-            if (_underlayingArray != null)
+            // TODO: Make aliases work (they currently get dealiased before passed here)
+
+            if ((_flags & ARRAY_AS_PROPS) == 0)
             {
-                if ((_flags & ARRAY_AS_PROPS) != 0)
-                {
-                    if (value.IsAlias)
-                        _underlayingArray.SetItemAlias(prop, value.Alias);
-                    else
-                        _underlayingArray.SetItemValue(prop, value.DeepCopy());
-                }
-                else
-                {
-                    // TODO: err
-                }
+                if (__peach__runtimeFields == null)
+                    __peach__runtimeFields = new PhpArray();
+
+                __peach__runtimeFields.SetItemValue(prop, value);
+            }
+            else if (_underlayingArray != null)
+            {
+                _underlayingArray.SetItemValue(prop, value.DeepCopy());
             }
             else if (_underlayingObject != null)
             {
@@ -297,12 +341,21 @@ namespace Pchp.Library.Spl
 
         public virtual PhpValue __get(PhpValue prop)
         {
-            if (_underlayingArray != null)
+            if ((_flags & ARRAY_AS_PROPS) == 0)
             {
-                if ((_flags & ARRAY_AS_PROPS) != 0)
+                if (__peach__runtimeFields != null && __peach__runtimeFields.TryGetValue(prop, out var val))
                 {
-                    return _underlayingArray.GetItemValue(prop);
+                    return val;
                 }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.undefined_property_accessed, this.GetPhpTypeInfo().Name, prop.ToString());
+                    return PhpValue.Null;
+                }
+            }
+            else if (_underlayingArray != null)
+            {
+                return _underlayingArray.GetItemValue(prop);
             }
             else if (_underlayingObject != null)
             {

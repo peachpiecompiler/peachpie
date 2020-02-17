@@ -1019,7 +1019,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     yield return new SourceFieldSymbol(this, f.Name.Value,
                         CreateLocation(f.NameSpan),
-                        flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
+                        flist.Modifiers.GetAccessibility(), flist.PHPDoc,
                         fkind,
                         initializer: (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null,
                         customAttributes: attrs);
@@ -1033,7 +1033,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     yield return new SourceFieldSymbol(this, c.Name.Name.Value,
                         CreateLocation(c.Name.Span),
-                        Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
+                        clist.Modifiers.GetAccessibility(), clist.PHPDoc,
                         PhpPropertyKind.ClassConstant,
                         binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement());
                 }

@@ -144,8 +144,8 @@ namespace Peachpie.Library.PDO
                 //if (sqlValue.GetType() == typeof(float))
                 //    return Pchp.Core.Convert.ToString((float)sqlValue);
 
-                //if (sqlValue.GetType() == typeof(System.DateTime))
-                //    return ConvertDateTime(dataType, (System.DateTime)sqlValue);
+                if (sqlValue.GetType() == typeof(System.DateTime))
+                    return ConvertDateTime(dataType, (System.DateTime)sqlValue);
 
                 //if (sqlValue.GetType() == typeof(long))
                 //    return ((long)sqlValue).ToString();
@@ -176,6 +176,14 @@ namespace Peachpie.Library.PDO
                 //}
 
                 return sqlValue;
+            }
+
+            static string ConvertDateTime(string dataType, System.DateTime value)
+            {
+                if (dataType == "DATE" || dataType == "NEWDATE")
+                    return value.ToString("yyyy-MM-dd");
+                else
+                    return value.ToString("yyyy-MM-dd HH:mm:ss");
             }
         }
 
@@ -326,6 +334,11 @@ namespace Peachpie.Library.PDO
         internal DbCommand CreateCommand(string statement) => _connection.CreateCommand(statement);
 
         /// <summary>
+        /// Closes pending data reader if any.
+        /// </summary>
+        internal void ClosePendingReader() => _connection.ClosePendingReader();
+
+        /// <summary>
         /// Execute an SQL statement and return the number of affected rows.
         /// </summary>
         /// <param name="statement">The statement.</param>
@@ -334,7 +347,7 @@ namespace Peachpie.Library.PDO
         {
             this.ClearError();
 
-            _connection.ClosePendingReader();
+            this.ClosePendingReader();
 
             using (var dbCommand = this.CreateCommand(statement))
             {

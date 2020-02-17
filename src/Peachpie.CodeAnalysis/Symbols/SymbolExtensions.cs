@@ -123,6 +123,19 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool IsPhpTypeName(this PENamedTypeSymbol s) => !s.IsStatic && !GetPhpTypeNameOrNull(s).IsEmpty();
 
         /// <summary>
+        /// Gets file symbol containing given symbol.
+        /// </summary>
+        public static SourceFileSymbol GetContainingFileSymbol(this Symbol s)
+        {
+            return s?.OriginalDefinition switch
+            {
+                SourceRoutineSymbol routine => routine.ContainingFile,
+                SourceTypeSymbol type => type.ContainingFile,
+                _ => s != null ? GetContainingFileSymbol(s.ContainingSymbol) : null,
+            };
+        }
+
+        /// <summary>
         /// Determines PHP type name of an exported PHP type.
         /// Gets default&lt;QualifiedName&gt; if type is not exported PHP type.
         /// </summary>
