@@ -256,7 +256,9 @@ namespace Pchp.Core
 
         public static implicit operator PhpValue(bool value) => Create(value);
         public static implicit operator PhpValue(int value) => Create(value);
+        public static implicit operator PhpValue(uint value) => Create((long)value);
         public static implicit operator PhpValue(long value) => Create(value);
+        public static implicit operator PhpValue(ulong value) => Create(value);
         public static implicit operator PhpValue(double value) => Create(value);
         public static implicit operator PhpValue(PhpNumber value) => Create(value);
         public static implicit operator PhpValue(IntStringKey value) => Create(value);
@@ -852,6 +854,22 @@ namespace Pchp.Core
         public static PhpValue CreateAlias(PhpValue value) => Create(new PhpAlias(value));
 
         public static PhpValue Create(IntStringKey value) => value.IsInteger ? Create(value.Integer) : Create(value.String);
+
+        /// <summary>
+        /// Create <see cref="PhpValue"/> representation of <see cref="ulong"/>.
+        /// The value will be converted either to <see cref="long"/> or juggles to <see cref="double"/> if it's larger than long.
+        /// </summary>
+        public static PhpValue Create(ulong value)
+        {
+            if (value <= long.MaxValue)
+            {
+                return Create((long)value);
+            }
+            else
+            {
+                return Create((double)value);
+            }
+        }
 
         public static PhpValue FromClass(object value)
         {
