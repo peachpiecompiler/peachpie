@@ -1452,28 +1452,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     // resolve the constant if possible,
                     // does not depend on the branch
-                    if (!currenttype.IsRef)
+                    if (!currenttype.IsRef && !currenttype.IsAnyType)
                     {
                         if (positivetype.IsVoid)    // always false
                         {
                             x.ConstantValue = ConstantValueExtensions.AsOptional(false);
                         }
-                        else if (positivetype == currenttype && !currenttype.IsAnyType)   // not void nor null
+                        else if (positivetype == currenttype)   // not void nor null
                         {
                             x.ConstantValue = ConstantValueExtensions.AsOptional(true);
                         }
                     }
 
                     // we can be more specific in true/false branches:
-                    if (branch != ConditionBranch.AnyResult)
+                    if (branch != ConditionBranch.AnyResult && !x.ConstantValue.HasValue)
                     {
                         // update target type in true/false branch:
                         var newtype = (branch == ConditionBranch.ToTrue)
                             ? positivetype
                             : TypeCtx.GetNullTypeMask();
 
-                        // keep the ref flag!
-                        newtype.IsRef = currenttype.IsRef;
+                        // keep the flags
+                        newtype |= currenttype.Flags;
 
                         //
                         State.SetLocalType(handle, newtype);
