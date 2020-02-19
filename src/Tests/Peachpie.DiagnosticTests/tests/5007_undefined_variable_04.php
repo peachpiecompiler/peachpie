@@ -36,7 +36,7 @@ function always_defined_integer() {
     echo /*|integer|*/$alwaysDefined;
   } else {
     echo "unreachable";/*!PHP5011!*/
-    echo /*|null|*/$alwaysDefined;
+    echo /*|integer|*/$alwaysDefined; // since https://github.com/peachpiecompiler/peachpie/issues/675 this variable won't be changed to null
   }
 
   echo $alwaysDefined;
