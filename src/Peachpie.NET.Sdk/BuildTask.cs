@@ -55,6 +55,9 @@ namespace Peachpie.NET.Sdk.Tools
         public bool EmitEntryPoint { get; set; }
 
         /// <summary></summary>
+        public bool GenerateFullPaths { get; set; }
+
+        /// <summary></summary>
         public string EntryPoint { get; set; }
 
         /// <summary></summary>
@@ -124,6 +127,7 @@ namespace Peachpie.NET.Sdk.Tools
                 "/output-name:" + OutputName,
                 "/target:" + (EmitEntryPoint ? "exe" : "library"),
                 "/o:" + Optimization,
+                "/fullpaths:" + GenerateFullPaths.ToString(),
             };
 
             if (HasDebugPlus)
