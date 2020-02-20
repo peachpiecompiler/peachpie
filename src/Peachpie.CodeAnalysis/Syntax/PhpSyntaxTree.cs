@@ -67,62 +67,46 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public string GetDebugSourceDocumentPath() => IsPharStub ? PhpFileUtilities.BuildPharStubFileName(FilePath) : FilePath;
 
-        public static ImmutableArray<Version> SupportedLanguageVersions { get; } = new Version[]
+        /// <summary>
+        /// Map of supported language versions and corresponding <see cref="LanguageFeatures"/> understood by underlying parser.
+        /// </summary>
+        static readonly Dictionary<Version, LanguageFeatures> s_langversions = new Dictionary<Version, LanguageFeatures>()
         {
-            new Version(5, 4),
-            new Version(5, 5),
-            new Version(5, 6),
-            new Version(7, 0),
-            new Version(7, 1),
-            new Version(7, 2),
-            new Version(7, 3),
-            new Version(7, 4),
-        }.ToImmutableArray();
+            { new Version(5, 4), LanguageFeatures.Php54Set },
+            { new Version(5, 5), LanguageFeatures.Php55Set },
+            { new Version(5, 6), LanguageFeatures.Php56Set },
+
+            { new Version(7, 0), LanguageFeatures.Php70Set },
+            { new Version(7, 1), LanguageFeatures.Php71Set },
+            { new Version(7, 2), LanguageFeatures.Php72Set },
+            { new Version(7, 3), LanguageFeatures.Php73Set },
+            { new Version(7, 4), LanguageFeatures.Php74Set },
+        };
+
+        public static Version LatestLanguageVersion => new Version(7, 4); // s_langversions.Keys.Max();
+
+        public static Version DefaultLanguageVersion => LatestLanguageVersion;
+
+        public static IReadOnlyCollection<Version> SupportedLanguageVersions => s_langversions.Keys;
 
         private PhpSyntaxTree(PhpSourceUnit source)
         {
-            _source = source ?? throw ExceptionUtilities.ArgumentNull();
+            _source = source ?? throw ExceptionUtilities.ArgumentNull(nameof(source));
         }
 
         internal override bool SupportsLocations => true;
 
-        static LanguageFeatures DefaultLanguageVersion(ref Version languageVersion)
-        {
-            languageVersion = new Version(7, 4);
-            return LanguageFeatures.Php74Set;
-        }
-
         internal static LanguageFeatures ParseLanguageVersion(ref Version languageVersion)
         {
-            if (languageVersion != null)
-            {
-                if (languageVersion.Major == 5)
-                {
-                    switch (languageVersion.Minor)
-                    {
-                        case 4: return LanguageFeatures.Php54Set;
-                        case 5: return LanguageFeatures.Php55Set;
-                        case 6: return LanguageFeatures.Php56Set;
-                    }
-                }
-                else if (languageVersion.Major == 7)
-                {
-                    switch (languageVersion.Minor)
-                    {
-                        case 0: return LanguageFeatures.Php70Set;
-                        case 1: return LanguageFeatures.Php71Set;
-                        case 2: return LanguageFeatures.Php72Set;
-                        case 3: return LanguageFeatures.Php73Set;
-                        case 4: return LanguageFeatures.Php74Set;
-                    }
-                }
+            languageVersion ??= DefaultLanguageVersion;
 
-                throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(languageVersion);
+            if (s_langversions.TryGetValue(languageVersion, out var features))
+            {
+                return features;
             }
             else
             {
-                // latest
-                return DefaultLanguageVersion(ref languageVersion);
+                throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(languageVersion);
             }
         }
 

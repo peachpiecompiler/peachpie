@@ -374,7 +374,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         }
                         else if (string.Equals(value, "default", StringComparison.OrdinalIgnoreCase) || string.Equals(value, "latest", StringComparison.OrdinalIgnoreCase))
                         {
-                            languageVersion = null; // latest
+                            languageVersion = null; // default
                         }
                         else if (!Version.TryParse(value, out languageVersion))
                         {
