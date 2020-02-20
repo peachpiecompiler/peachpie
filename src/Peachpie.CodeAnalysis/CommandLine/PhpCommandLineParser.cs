@@ -913,11 +913,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                 var eq = pair.IndexOf('=');
                 if (eq < 0)
                 {
-                    defines.Add(pair, string.Empty);
+                    defines[pair] = string.Empty;
                 }
                 else
                 {
-                    defines.Add(pair.Remove(eq), pair.Substring(eq + 1));
+                    defines[pair.Remove(eq)] = pair.Substring(eq + 1);
                 }
             }
         }
