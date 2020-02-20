@@ -37,7 +37,7 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary>
         /// Optimization level.
         /// Can be a boolean value (true/false), an integer specifying the level(0-9), or an optimization name (debug, release).</summary>
-        public string Optimization { get; set; } = true.ToString();
+        public string Optimization { get; set; } = bool.TrueString;
 
         /// <summary></summary>
         public string DebugType { get; set; }
