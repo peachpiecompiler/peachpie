@@ -199,6 +199,7 @@ namespace Peachpie.NET.Sdk.Tools
                 }
             }
 
+#if DEBUG
             //
             // save the arguments as .rsp file for debugging purposes:
             try
@@ -209,6 +210,7 @@ namespace Peachpie.NET.Sdk.Tools
             {
                 this.Log.LogWarningFromException(ex);
             }
+#endif
 
             //
             // run the compiler:
