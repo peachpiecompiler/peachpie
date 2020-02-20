@@ -75,6 +75,8 @@ namespace Pchp.CodeAnalysis
             new Version(7, 0),
             new Version(7, 1),
             new Version(7, 2),
+            new Version(7, 3),
+            new Version(7, 4),
         }.ToImmutableArray();
 
         private PhpSyntaxTree(PhpSourceUnit source)
@@ -86,8 +88,8 @@ namespace Pchp.CodeAnalysis
 
         static LanguageFeatures DefaultLanguageVersion(ref Version languageVersion)
         {
-            languageVersion = new Version(7, 3);
-            return LanguageFeatures.Php73Set;
+            languageVersion = new Version(7, 4);
+            return LanguageFeatures.Php74Set;
         }
 
         internal static LanguageFeatures ParseLanguageVersion(ref Version languageVersion)
@@ -201,13 +203,7 @@ namespace Pchp.CodeAnalysis
 
         public override string FilePath => _source.FilePath;
 
-        public override bool HasCompilationUnitRoot
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override bool HasCompilationUnitRoot => true;
 
         public override int Length => _source.SourceText.Length;
 
