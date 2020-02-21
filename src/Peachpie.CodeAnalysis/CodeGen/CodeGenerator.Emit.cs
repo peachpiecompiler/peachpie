@@ -1543,8 +1543,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // PhpTypeInfo
                 if (staticType != null)
                 {
-                    // LOAD <statictype>
-                    return (TypeSymbol)staticType.EmitLoadTypeInfo(this);
+                    if (staticType.IsSelf() || staticType.IsParent())
+                    {
+                        return EmitLoadStaticPhpTypeInfo();
+                    }
+                    else
+                    {
+                        // LOAD <statictype>
+                        return (TypeSymbol)staticType.EmitLoadTypeInfo(this);
+                    }
                 }
                 else if (selfType != null && selfType.Is_PhpValue() == false && selfType.Is_PhpAlias() == false)
                 {
