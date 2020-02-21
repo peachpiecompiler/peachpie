@@ -47,6 +47,11 @@ namespace Pchp.CodeAnalysis.Symbols
             builder.AddRange(synthesizedDelegates);
             synthesizedDelegates.Free();
 
+            if (_lazySynthesizedTypes != null)
+            {
+                builder.AddRange(_lazySynthesizedTypes);
+            }
+
             return builder.ToImmutableAndFree();
         }
 
@@ -208,6 +213,26 @@ namespace Pchp.CodeAnalysis.Symbols
                         returnsVoid ? Compilation.GetSpecialType(SpecialType.System_Void) : null,
                         parameterCount,
                         byRefParameters))).Delegate;
+        }
+
+        #endregion
+
+        #region Types
+
+        private ConcurrentBag<NamedTypeSymbol> _lazySynthesizedTypes;
+
+        public SynthesizedTypeSymbol SynthesizeType(string name, Accessibility accessibility = Accessibility.Internal)
+        {
+            var type = new SynthesizedTypeSymbol(Compilation, name, null, accessibility);
+
+            if (_lazySynthesizedTypes == null)
+            {
+                Interlocked.CompareExchange(ref _lazySynthesizedTypes, new ConcurrentBag<NamedTypeSymbol>(), null);
+            }
+
+            _lazySynthesizedTypes.Add(type);
+
+            return type;
         }
 
         #endregion

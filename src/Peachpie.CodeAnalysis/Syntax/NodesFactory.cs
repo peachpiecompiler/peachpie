@@ -19,8 +19,6 @@ namespace Peachpie.CodeAnalysis.Syntax
     /// </summary>
     sealed class NodesFactory : BasicNodesFactory
     {
-        readonly IReadOnlyDictionary<string, string> _defines;
-
         /// <summary>
         /// Gets constructed lambda nodes.
         /// </summary>
@@ -200,25 +198,6 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public override LangElement HeredocExpression(Span span, LangElement expression, Tokens quoteStyle, string label) => expression;
 
-        public override LangElement ConstUse(Span span, TranslatedQualifiedName name)
-        {
-            if (name.OriginalName.IsSimpleName)
-            {
-                var namestr = name.OriginalName.Name.Value;
-                if (_defines != null && _defines.Count != 0 && _defines.TryGetValue(namestr, out string value))
-                {
-                    // replace the constant use with literal:
-                    if (long.TryParse(value, out long l)) return new LongIntLiteral(span, l);
-                    if (double.TryParse(value, out double d)) return new DoubleLiteral(span, d);
-                    if (bool.TryParse(value, out bool b)) return new BoolLiteral(span, b);
-                    return new StringLiteral(span, value);
-                }
-            }
-
-            //
-            return base.ConstUse(span, name);
-        }
-
         public override LangElement Call(Span span, Name name, Span nameSpan, CallSignature signature, TypeRef typeRef)
         {
             return base.Call(span, name, nameSpan, WithGenericTypes(signature, nameSpan), typeRef);
@@ -234,10 +213,9 @@ namespace Peachpie.CodeAnalysis.Syntax
             return WithGenericTypes(base.TypeReference(span, className));
         }
 
-        public NodesFactory(SourceUnit sourceUnit, IReadOnlyDictionary<string, string> defines)
+        public NodesFactory(SourceUnit sourceUnit)
             : base(sourceUnit)
         {
-            _defines = defines;
         }
     }
 }
