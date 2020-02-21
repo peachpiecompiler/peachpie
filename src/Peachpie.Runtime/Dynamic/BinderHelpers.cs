@@ -768,9 +768,10 @@ namespace Pchp.Core.Dynamic
 
             //
             // runtime fields & magic methods
+            // only applies to instance fields
             //
 
-            if (type.RuntimeFieldsHolder != null)   // we don't handle magic methods without the runtime fields
+            if (target != null && type.RuntimeFieldsHolder != null)   // we don't handle magic methods without the runtime fields
             {
                 var runtimeflds = Expression.Field(target, type.RuntimeFieldsHolder);   // Template: target->__runtime_fields
                 var fieldkey = Expression.Constant(new IntStringKey(field));            // Template: IntStringKey(field)
