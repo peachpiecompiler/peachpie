@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
             string name,
             Accessibility accessibility,
             ConstantValue constant)
-            :this(containing, type, name, accessibility, true)
+            : this(containing, type, name, accessibility, isStatic: true, isReadOnly: false)
         {
             _const = constant;
         }

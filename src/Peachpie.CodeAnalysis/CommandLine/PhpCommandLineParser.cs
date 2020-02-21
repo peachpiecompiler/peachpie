@@ -730,8 +730,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 kind: SourceCodeKind.Regular,
                 languageVersion: languageVersion,
                 shortOpenTags: shortOpenTags,
-                features: ImmutableDictionary<string, string>.Empty, // features: parsedFeatures
-                defines: defines.ToImmutableDictionary()
+                features: ImmutableDictionary<string, string>.Empty // features: parsedFeatures
             );
 
             var scriptParseOptions = parseOptions.WithKind(SourceCodeKind.Script);
@@ -752,6 +751,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 versionString: versionString,
                 phpdocTypes: phpdocTypes,
                 parseOptions: parseOptions,
+                defines: defines.ToImmutableDictionary(),
                 diagnostics: diagnostics.AsImmutable(),
                 specificDiagnosticOptions: diagnosticOptions,
                 //usings: usings,
@@ -913,7 +913,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 var eq = pair.IndexOf('=');
                 if (eq < 0)
                 {
-                    defines[pair] = string.Empty;
+                    defines[pair] = null;
                 }
                 else
                 {

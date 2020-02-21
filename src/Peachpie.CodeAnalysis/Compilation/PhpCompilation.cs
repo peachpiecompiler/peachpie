@@ -151,7 +151,6 @@ namespace Pchp.CodeAnalysis
             _wellKnownMemberSignatureComparer = new WellKnownMembersSignatureComparer(this);
 
             _options = options;
-            _tables = new SourceSymbolCollection(this);
             _coreTypes = new CoreTypes(this);
             _coreMethods = new CoreMethods(_coreTypes);
             _anonymousTypeManager = new AnonymousTypeManager(this);
@@ -162,6 +161,8 @@ namespace Pchp.CodeAnalysis
             _referenceManager = (reuseReferenceManager && referenceManager != null)
                 ? referenceManager
                 : new ReferenceManager(MakeSourceAssemblySimpleName(), options.AssemblyIdentityComparer, referenceManager?.ObservedMetadata, options.SdkDirectory);
+
+            _tables = new SourceSymbolCollection(this);
         }
 
         /// <summary>
