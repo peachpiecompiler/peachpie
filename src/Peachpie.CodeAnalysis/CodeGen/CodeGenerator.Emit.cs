@@ -691,7 +691,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return EmitCall(ILOpCode.Call, CoreMethods.Dynamic.GetPhpTypeInfo_Object);
                 }
 
-                var lateStaticParameter = Routine.ImplicitParameters.FirstOrDefault(SpecialParameterSymbol.IsLateStaticParameter);
+                var lateStaticParameter = Routine.LateStaticParameter();
                 if (lateStaticParameter != null)
                 {
                     // Template: LOAD @static   // ~ @static parameter passed by caller

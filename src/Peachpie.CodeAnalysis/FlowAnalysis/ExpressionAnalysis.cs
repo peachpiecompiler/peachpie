@@ -1936,6 +1936,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 x.TargetMethod = method;
+
+                // forward late static bound type?
+                // self:: or parent:: forwards late static type to the called method if it uses late static binding
+                if ((x.TypeRef.IsSelf() || x.TypeRef.IsParent()) &&
+                    Routine != null && // only in routine context
+                    (Routine.Flags & RoutineFlags.UsesLateStatic) == 0 && // tiny optimization: check called method only if we didn't set the flag yet
+                    method.HasLateStaticBoundParam())
+                {
+                    Routine.Flags |= RoutineFlags.UsesLateStatic;
+                }
             }
 
             BindRoutineCall(x);
