@@ -267,7 +267,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var f = RoutineFlags.None;
 
-            var ps = routine.Parameters;
+            var ps = /*routine is SourceRoutineSymbol sr ? sr.ImplicitParameters :*/ routine.Parameters;
             foreach (var p in ps)
             {
                 if (p.IsImplicitlyDeclared)
@@ -296,6 +296,63 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return f;
+        }
+
+        /// <summary>
+        /// Determines if the given routine uses late static binding i.e. `static` keyword or it forwards the late static type.
+        /// </summary>
+        internal static bool HasLateStaticBoundParam(this MethodSymbol method)
+        {
+            if (method.IsErrorMethodOrNull() || !method.IsStatic)
+            {
+                return false;
+            }
+
+            if (method is SourceRoutineSymbol sr)
+            {
+                return sr.RequiresLateStaticBoundParam;
+            }
+
+            // PE method
+            var ps = method.Parameters;
+            foreach (var p in ps)
+            {
+                if (p.IsImplicitlyDeclared)
+                {
+                    if (SpecialParameterSymbol.IsLateStaticParameter(p))
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // <static> parameter not there
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the special <c>&lt;static&gt;</c> parameter of given method if any. Otherwise <c>null</c>.
+        /// </summary>
+        internal static ParameterSymbol LateStaticParameter(this MethodSymbol method)
+        {
+            var ps = method is SourceRoutineSymbol sr ? sr.ImplicitParameters : method.Parameters; // in source routines, we can iterate just the implicit parameters and not populating the source parameters
+            foreach (var p in ps)
+            {
+                if (SpecialParameterSymbol.IsLateStaticParameter(p))
+                {
+                    return p;
+                }
+                else if (!p.IsImplicitlyDeclared)
+                {
+                    break;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

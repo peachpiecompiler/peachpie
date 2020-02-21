@@ -60,5 +60,20 @@ namespace Pchp.CodeAnalysis.Semantics
 
             return t;
         }
+
+        /// <summary>
+        /// Gets value indicating the <paramref name="tref"/> represents <c>self</c> keyword.
+        /// </summary>
+        public static bool IsSelf(this IBoundTypeRef tref) => tref is BoundReservedTypeRef reserved && reserved.ReservedType == Devsense.PHP.Syntax.Ast.ReservedTypeRef.ReservedType.self;
+
+        /// <summary>
+        /// Gets value indicating the <paramref name="tref"/> represents <c>parent</c> keyword.
+        /// </summary>
+        public static bool IsParent(this IBoundTypeRef tref) => tref is BoundReservedTypeRef reserved && reserved.ReservedType == Devsense.PHP.Syntax.Ast.ReservedTypeRef.ReservedType.parent;
+
+        /// <summary>
+        /// Gets value indicating the <paramref name="tref"/> represents <c>static</c> keyword.
+        /// </summary>
+        public static bool IsStatic(this IBoundTypeRef tref) => tref is BoundReservedTypeRef reserved && reserved.ReservedType == Devsense.PHP.Syntax.Ast.ReservedTypeRef.ReservedType.@static;
     }
 }
