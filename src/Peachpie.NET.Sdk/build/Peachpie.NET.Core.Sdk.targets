@@ -193,10 +193,9 @@
     </PropertyGroup>
 
     <PropertyGroup>
+      
       <TempOutputDir>%(IntermediateAssembly.RelativeDir)</TempOutputDir>
-      <EmitEntryPoint>false</EmitEntryPoint>
-      <EmitEntryPoint Condition=" '$(OutputType.ToLower())' == 'exe' ">true</EmitEntryPoint>
-
+      <OutputType Condition=" '$(OutputType)' == '' ">library</OutputType>
       <GenerateDocumentationFile Condition=" '$(GenerateDocumentationFile)' == '' and '$(DocumentationFile)' != '' ">true</GenerateDocumentationFile>
       <DocumentationFile Condition=" '$(DocumentationFile)' == '' and '$(GenerateDocumentationFile)' == 'true' ">$(IntermediateOutputPath)$(AssemblyName).xml</DocumentationFile>
 
@@ -232,7 +231,7 @@
                PdbFile="$(PdbFile)"
                DocumentationFile="$(DocumentationFile)"
                Version="$(Version)"
-               EmitEntryPoint="$(EmitEntryPoint)"
+               OutputType="$(OutputType)"
                EntryPoint="$(StartupObject)"
                LangVersion="$(LangVersion)"
                PhpDocTypes="$(PhpDocTypes)"
