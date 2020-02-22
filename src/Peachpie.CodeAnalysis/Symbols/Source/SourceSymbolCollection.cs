@@ -165,7 +165,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (string.IsNullOrEmpty(d.Value))
                 {
-                    value = ConstantValue.Create(true);
+                    value = ConstantValue.True;
                 }
                 else if (string.Equals(d.Value, "null", StringComparison.OrdinalIgnoreCase))
                 {
