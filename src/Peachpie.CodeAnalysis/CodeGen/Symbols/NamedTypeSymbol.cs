@@ -47,18 +47,21 @@ namespace Pchp.CodeAnalysis.Symbols
             /// <summary>
             /// Metched override.
             /// </summary>
-            public MethodSymbol Override { get; set; }
+            public MethodSymbol Override { get; }
 
             /// <summary>
             /// A candidate override which signature does not match exactly the method.
             /// </summary>
-            public MethodSymbol OverrideCandidate { get; set; }
+            public MethodSymbol OverrideCandidate { get; }
 
             public OverrideInfo(MethodSymbol method, MethodSymbol methodoverride = null)
             {
                 Debug.Assert(method != null);
 
                 this.Method = method;
+                this.Override = null;
+                this.OverrideCandidate = null;
+                this.ImplementsInterface = false;
 
                 //
                 // store the override,
@@ -66,20 +69,19 @@ namespace Pchp.CodeAnalysis.Symbols
                 // In case of the candidate, a ghost stub will be generated later.
                 //
 
-                MethodSymbol overridecandidate = null;
-
                 if (methodoverride != null)
                 {
-                    if (!method.SignaturesMatch(methodoverride) || !methodoverride.IsVirtual)
+                    if (methodoverride.IsExplicitInterfaceImplementation(method) ||
+                        (methodoverride.SignaturesMatch(method) && methodoverride.IsVirtual))
                     {
-                        overridecandidate = methodoverride;
-                        methodoverride = null;
+                        // overrides:
+                        this.Override = methodoverride;
+                    }
+                    else
+                    {
+                        this.OverrideCandidate = methodoverride;
                     }
                 }
-
-                this.Override = methodoverride;
-                this.OverrideCandidate = overridecandidate;
-                this.ImplementsInterface = false;
             }
         }
 
@@ -109,8 +111,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // collect this type declared methods including synthesized methods
-            var methods = this.GetMembers().OfType<MethodSymbol>();
-            var methodslookup = methods.Where(OverrideHelper.CanOverride).ToLookup(m => m.RoutineName, StringComparer.OrdinalIgnoreCase);
+            var members = this.GetMembers();
 
             // resolve overrides of inherited members
             for (int i = 0; i < overrides.Count; i++)
@@ -119,7 +120,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (m.HasOverride == false)
                 {
                     // update override info of the inherited member
-                    overrides[i] = new OverrideInfo(m.Method, OverrideHelper.ResolveMethodImplementation(m.Method, methodslookup[m.RoutineName]));
+                    overrides[i] = new OverrideInfo(m.Method, OverrideHelper.ResolveMethodImplementation(m.Method, members));
                 }
                 else
                 {
@@ -164,9 +165,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // add overrideable routines from this type
-            foreach (var m in methods)
+            foreach (var s in members)
             {
-                if (m.IsOverrideable())
+                if (s is MethodSymbol m && m.IsOverrideable())
                 {
                     overrides.Add(new OverrideInfo(m));
                 }
