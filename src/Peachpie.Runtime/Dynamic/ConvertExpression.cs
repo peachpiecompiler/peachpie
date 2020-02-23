@@ -702,6 +702,19 @@ namespace Pchp.Core.Dynamic
             // other types
             if (target.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
 
+            // attempt to cast object:
+            if (!t.IsValueType && ReflectionUtils.IsPhpClassType(target))
+            {
+                if (!t.IsInterface && !target.IsInterface && !target.IsAssignableFrom(t) && !t.IsAssignableFrom(target))
+                {
+                    // no way
+                    return Expression.Constant(ConversionCost.NoConversion);
+                }
+
+                var toclass_T = typeof(CostOf).GetMethod("ToClass", Cache.Types.Object).MakeGenericMethod(target);
+                return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(object)
+            }
+
             // return Expression.Constant(ConversionCost.AttemptConvert);
 
             //
@@ -740,7 +753,7 @@ namespace Pchp.Core.Dynamic
 
                 if (ReflectionUtils.IsPhpClassType(target))
                 {
-                    var toclass_T = typeof(CostOf).GetTypeInfo().GetDeclaredMethod("ToClass").MakeGenericMethod(target);
+                    var toclass_T = typeof(CostOf).GetMethod("ToClass", Cache.Types.PhpValue).MakeGenericMethod(target);
                     return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(arg)
                 }
 
@@ -1111,6 +1124,28 @@ namespace Pchp.Core.Dynamic
 
         public static ConversionCost ToDateTime(PhpValue value) => ToClass<DateTime>(value);    // TODO: DateTime from long or string
 
+        public static ConversionCost ToClass<T>(object value)
+        {
+            if (value == null)
+            {
+                return ConversionCost.DefaultValue;
+            }
+
+            var type = value.GetType();
+            if (type == typeof(T))
+            {
+                return ConversionCost.Pass;
+            }
+            else if (typeof(T).IsAssignableFrom(type))
+            {
+                return ConversionCost.PassCostly;
+            }
+            else
+            {
+                return ConversionCost.NoConversion;
+            }
+        }
+
         public static ConversionCost ToClass<T>(PhpValue value)
         {
             switch (value.TypeCode)
@@ -1119,15 +1154,7 @@ namespace Pchp.Core.Dynamic
                     return ConversionCost.DefaultValue;
 
                 case PhpTypeCode.Object:
-                    if (value.Object is T)
-                    {
-                        return ConversionCost.Pass;
-                    }
-                    else
-                    {
-                        Debug.Assert(!value.IsNull);
-                        return ConversionCost.NoConversion;
-                    }
+                    return ToClass<T>(value.Object);
 
                 case PhpTypeCode.String:
                     if (typeof(T) == typeof(byte[])) // string -> byte[]
