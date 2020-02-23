@@ -298,7 +298,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets the routine name, equivalent to a PHP pseudoconstant <c>__FUNCTION__</c>.
         /// </summary>
-        public virtual string RoutineName => Name;
+        public virtual string RoutineName => Name; // TODO: "Name" struct with correct comparer
 
         /// <summary>
         /// Whether routine represents a global code.

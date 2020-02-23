@@ -151,9 +151,22 @@ namespace Pchp.CodeAnalysis.Symbols
             return bestCandidate;
         }
 
-        public static MethodSymbol ResolveMethodImplementation(this MethodSymbol method, IEnumerable<MethodSymbol> overridecandidates)
+        internal static bool IsExplicitInterfaceImplementation(this MethodSymbol method, MethodSymbol basemethod)
         {
-            if (overridecandidates == null)
+            if (method.DeclaredAccessibility == Accessibility.Private && method.ExplicitInterfaceImplementations.Contains(basemethod))
+            {
+                Debug.Assert(SignaturesMatch(method, basemethod, ignorename: true));
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static MethodSymbol ResolveMethodImplementation(this MethodSymbol method, ImmutableArray<Symbol> overridecandidates)
+        {
+            if (overridecandidates.IsDefaultOrEmpty)
             {
                 return null;
             }
@@ -161,17 +174,32 @@ namespace Pchp.CodeAnalysis.Symbols
             var bestCost = ConversionCost.Error;
             MethodSymbol bestCandidate = null;
 
-            foreach (var c in overridecandidates)
+            foreach (var s in overridecandidates)
             {
-                var cost = OverrideCost(c, method);
-                if (cost < bestCost)
+                var c = s as MethodSymbol;
+                if (c == null)
                 {
-                    bestCost = cost;
-                    bestCandidate = c;
+                    continue; // not a method
+                }
 
-                    if (cost == ConversionCost.Pass)
+                if (c.IsExplicitInterfaceImplementation(method))
+                {
+                    // we've found explicit override
+                    return c;
+                }
+
+                if (c.CanOverride())
+                {
+                    var cost = OverrideCost(c, method);
+                    if (cost < bestCost)
                     {
-                        break;
+                        bestCost = cost;
+                        bestCandidate = c;
+
+                        if (cost == ConversionCost.Pass)
+                        {
+                            break;
+                        }
                     }
                 }
             }
@@ -192,14 +220,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     break;
                 }
 
-                var members = type.GetMembersByPhpName(method.RoutineName).OfType<MethodSymbol>().Where(CanOverride);
-                if (method.ContainingType.IsInterface)
-                {
-                    // check explicit interface override
-                    members = members.Concat(type.GetMembers(method.ContainingType.GetFullName() + "." + method.RoutineName).OfType<MethodSymbol>());
-                }
-
-                var resolved = ResolveMethodImplementation(method, members);
+                var resolved = ResolveMethodImplementation(method, type.GetMembers());
                 if (resolved != null)
                 {
                     return resolved;
@@ -286,6 +307,9 @@ namespace Pchp.CodeAnalysis.Symbols
             return !method.IsStatic && !method.IsSealed && method.DeclaredAccessibility != Accessibility.Private && (method.IsVirtual || method.IsAbstract || method.IsOverride);
         }
 
+        /// <summary>
+        /// Gets value indicating the given method can override another method.
+        /// </summary>
         public static bool CanOverride(this MethodSymbol method)
         {
             return !method.IsStatic && method.DeclaredAccessibility != Accessibility.Private;
@@ -365,11 +389,15 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(basemethod);
 
             //
-            if (string.Equals(method.Name, basemethod.Name, StringComparison.InvariantCultureIgnoreCase) == false ||
-                basemethod.IsOverrideable() == false ||
-                method.CanOverride() == false)
+            if (!string.Equals(method.RoutineName, basemethod.RoutineName, StringComparison.InvariantCultureIgnoreCase))
             {
-                return ConversionCost.NoConversion;
+                return ConversionCost.Error;
+            }
+
+            if (!basemethod.IsOverrideable() ||
+                !method.CanOverride())
+            {
+                return ConversionCost.Error;
             }
 
             //if (method.ReturnType != basemethod.ReturnType)   // the return type is not important for the override cost
@@ -393,7 +421,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Checks whether signatures of two methods match exactly so one can override the second.
         /// </summary>
-        public static bool SignaturesMatch(this MethodSymbol a, MethodSymbol b)
+        public static bool SignaturesMatch(this MethodSymbol a, MethodSymbol b, bool ignorename = false)
         {
             Contract.ThrowIfNull(a);
             Contract.ThrowIfNull(b);
@@ -403,7 +431,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return false;
             }
 
-            if (a.Name != b.Name)
+            if (a.Name != b.Name && !ignorename)
             {
                 return false;
             }
