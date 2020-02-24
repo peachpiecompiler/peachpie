@@ -8,7 +8,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// <summary>
     /// Visitor used to traverse CFG and all its operations with infinite recursion prevention.
     /// </summary>
-    public abstract class GraphExplorer<T> : GraphWalker<T>
+    public abstract class GraphExplorer<TReturn> : GraphWalker<TReturn>
     {
         public int ExploredColor { get; private set; }
 
@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Set <see cref="ExploredColor"/> to a new color from <paramref name="x"/> and perform
         /// the exploration.
         /// </summary>
-        public sealed override T VisitCFG(ControlFlowGraph x)
+        public sealed override TReturn VisitCFG(ControlFlowGraph x)
         {
             ExploredColor = x.NewColor();
             VisitCFGInternal(x);
@@ -43,7 +43,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             base.VisitCFG(x);
         }
 
-        protected sealed override T DefaultVisitBlock(BoundBlock x)
+        protected sealed override TReturn DefaultVisitBlock(BoundBlock x)
         {
             if (x.Tag != ExploredColor)
             {
