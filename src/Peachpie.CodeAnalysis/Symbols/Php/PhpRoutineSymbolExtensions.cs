@@ -314,24 +314,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // PE method
-            var ps = method.Parameters;
-            foreach (var p in ps)
-            {
-                if (p.IsImplicitlyDeclared)
-                {
-                    if (SpecialParameterSymbol.IsLateStaticParameter(p))
-                    {
-                        return true;
-                    }
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            // <static> parameter not there
-            return false;
+            return method.LateStaticParameter() != null;
         }
 
         /// <summary>
@@ -339,7 +322,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal static ParameterSymbol LateStaticParameter(this MethodSymbol method)
         {
-            var ps = method is SourceRoutineSymbol sr ? sr.ImplicitParameters : method.Parameters; // in source routines, we can iterate just the implicit parameters and not populating the source parameters
+            // in source routines, we can iterate just the implicit parameters and not populating the source parameters
+            var ps = method is SourceRoutineSymbol sr ? sr.ImplicitParameters : method.Parameters;
+
             foreach (var p in ps)
             {
                 if (SpecialParameterSymbol.IsLateStaticParameter(p))
