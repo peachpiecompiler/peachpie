@@ -148,11 +148,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (exit != null)
             {
-                bool wasNotAnalysed = false;
-                if (State.Routine?.IsReturnAnalysed == false)
+                var wasNotAnalysed = false;
+
+                if (Routine != null && !Routine.IsReturnAnalysed)
                 {
+                    Routine.IsReturnAnalysed = true;
                     wasNotAnalysed = true;
-                    State.Routine.IsReturnAnalysed = true;
                 }
 
                 // Ping the subscribers either if the return type has changed or
@@ -1936,16 +1937,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 x.TargetMethod = method;
-
-                // forward late static bound type?
-                // self:: or parent:: forwards late static type to the called method if it uses late static binding
-                if ((x.TypeRef.IsSelf() || x.TypeRef.IsParent()) &&
-                    Routine != null && // only in routine context
-                    (Routine.Flags & RoutineFlags.UsesLateStatic) == 0 && // tiny optimization: check called method only if we didn't set the flag yet
-                    method.HasLateStaticBoundParam())
-                {
-                    Routine.Flags |= RoutineFlags.UsesLateStatic;
-                }
             }
 
             BindRoutineCall(x);

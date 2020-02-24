@@ -1,5 +1,5 @@
 <?php
-namespace classes\static_004;
+namespace classes\static_005;
 
 // See https://www.php.net/manual/en/language.oop5.late-static-bindings.php#example-243
 
