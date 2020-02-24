@@ -372,4 +372,7 @@
   <data name="INF_OverrideNameCaseMismatch" xml:space="preserve">
     <value>Overriden function name '{0}' does not match it's parent name '{1}', letter casing mismatch.</value>
   </data>
+  <data name="ERR_NoSourceFile" xml:space="preserve">
+    <value>Source file '{0}' could not be opened -- {1}</value>
+  </data>
 </root>
