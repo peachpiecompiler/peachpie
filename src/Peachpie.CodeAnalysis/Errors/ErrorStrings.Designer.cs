@@ -367,6 +367,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Source file &apos;{0}&apos; could not be opened -- {1}.
+        /// </summary>
+        internal static string ERR_NoSourceFile {
+            get {
+                return ResourceManager.GetString("ERR_NoSourceFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} is currently not supported by PeachPie..
         /// </summary>
         internal static string ERR_NotYetImplemented {
