@@ -945,15 +945,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             var or = lValType | rValType;
 
-            // double + number => double
             if (IsNumberOnly(or))
             {
+                // double + number => double
                 if (IsDoubleOnly(lValType) || IsDoubleOnly(rValType))
                     return TypeCtx.GetDoubleTypeMask();
 
+                // long + long => long
                 if (State.IsLessThanLongMax(TryGetVariableHandle(left)) && IsLongConstant(right, 1)) // LONG + 1, where LONG < long.MaxValue
                     return TypeCtx.GetLongTypeMask();
 
+                return TypeCtx.GetNumberTypeMask();
+            }
+
+            if ((!lValType.IsRef && !lValType.IsAnyType && !TypeCtx.IsArray(lValType)) ||
+                (!rValType.IsRef && !rValType.IsAnyType && !TypeCtx.IsArray(rValType)))
+            {
+                // not array for sure:
                 return TypeCtx.GetNumberTypeMask();
             }
 
