@@ -927,7 +927,7 @@ namespace Pchp.Core.Dynamic
                         BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
 
                     // Template: TryGetField(result) ? isset(result) : (bool)(__isset(key)??NULL)
-                    result = Expression.IfThenElse(
+                    result = Expression.Condition(
                             trygetfield,
                             Expression.Call(Cache.Operators.IsSet_PhpValue, resultvar),
                             ConvertExpression.BindToBool(InvokeHandler(ctx, target, field, __isset, access)));
