@@ -1854,7 +1854,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // symbol might be ErrorSymbol
 
-                x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, false);
+                x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, OverloadsList.InvocationKindFlags.StaticCall);
             }
 
             BindRoutineCall(x);
@@ -1889,7 +1889,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     candidates = Construct(candidates, x);
 
-                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, true);
+                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, OverloadsList.InvocationKindFlags.InstanceCall);
 
                     //
                     if (x.TargetMethod.IsValidMethod() && x.TargetMethod.IsStatic && x.Instance.TypeRefMask.IncludesSubclasses)
@@ -1927,7 +1927,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 candidates = Construct(candidates, x);
 
-                var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, false);
+                var flags = OverloadsList.InvocationKindFlags.StaticCall;
+
+                if (Routine != null && !Routine.IsStatic && (x.TypeRef.IsSelf() || x.TypeRef.IsParent()))
+                {
+                    // self:: or parent:: $this forwarding, prefer both
+                    flags |= OverloadsList.InvocationKindFlags.InstanceCall;
+                }
+
+                var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, flags);
                 if ((method is MissingMethodSymbol || method is InaccessibleMethodSymbol)
                     && type.LookupMember<IMethodSymbol>(Name.SpecialMethodNames.CallStatic.Value) != null)
                 {
@@ -1979,7 +1987,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = type.InstanceConstructors.ToArray();
 
                 //
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, true);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, OverloadsList.InvocationKindFlags.New);
                 x.ResultType = type;
             }
 
