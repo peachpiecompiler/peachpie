@@ -2048,6 +2048,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                         stack = Emit_PhpValue_MakeAlias();
                     }
                 }
+                else
+                {
+                    // routines returning aliased value but
+                    // read by value must dereference:
+                    // BoundCopyValue is not bound
+                    EmitPhpAliasDereference(ref stack);
+                    // TODO: DeepCopy if being assigned ?
+                }
             }
 
             //
