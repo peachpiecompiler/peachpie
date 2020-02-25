@@ -242,6 +242,70 @@ namespace Peachpie.Library.XmlDom
             return false;
         }
 
+        static XmlNode AppendChildElement(XmlNode containing, XmlNode node)
+        {
+            if (containing == null) throw new ArgumentNullException(nameof(containing));
+            if (node == null) throw new ArgumentNullException(nameof(node));
+
+            const string defaultRootName = "html"; // if there are more root elements, move them into single root element
+
+            if (containing.ParentNode == null && node.NodeType != XmlNodeType.Whitespace && node.NodeType != XmlNodeType.Comment)
+            {
+                var xmldoc = containing.GetXmlDocument();
+
+                TryGetNodeOfType(containing.ChildNodes, XmlNodeType.Element, out var existingroot);
+
+                // document element can only contain one Element
+                // ensure root element
+
+                if (existingroot == null)
+                {
+                    var newroot = node;
+
+                    if (node.NodeType == XmlNodeType.Text)
+                    {
+                        // wrap text into default root element
+                        newroot = xmldoc.CreateElement(defaultRootName);
+                        newroot.AppendChild(node);
+                    }
+
+                    containing.AppendChild(newroot);
+                }
+                else if (node.NodeType == XmlNodeType.Element && existingroot.Name == node.Name)
+                {
+                    node = existingroot;
+                }
+                else if (existingroot.Name == defaultRootName)
+                {
+                    existingroot.AppendChild(node);
+                }
+                else if (node.NodeType == XmlNodeType.Element && node.Name == defaultRootName)
+                {
+                    // move existing into node
+                    containing.RemoveChild(existingroot);
+                    containing.AppendChild(node);
+                    node.AppendChild(existingroot);
+                }
+                else
+                {
+                    containing.RemoveChild(existingroot);
+                    var root = xmldoc.CreateElement(defaultRootName);
+
+                    containing.AppendChild(root);
+
+                    root.AppendChild(existingroot);
+                    root.AppendChild(node);
+                }
+            }
+            else
+            {
+                containing.AppendChild(node);
+            }
+
+            //
+            return node;
+        }
+
         static void LoadHtml(this XmlNode containing, HtmlNode node)
         {
             //var dtd = HtmlXmlDtdResolver.DefaultDtd;
@@ -286,18 +350,7 @@ namespace Peachpie.Library.XmlDom
                     name = HtmlDocument.GetXmlName(name, isAttribute: false, preserveXmlNamespaces: true);
 
                     // <element
-                    var element = xmldoc.CreateElement(name);
-
-                    if (containing.ParentNode == null && TryGetNodeOfType(containing.ChildNodes, XmlNodeType.Element, out var existingroot)) // root can only have one child element
-                    {
-                        // !!!
-                        // HACK: nest the element into the existing root
-                        existingroot.AppendChild(element);
-                    }
-                    else
-                    {
-                        containing.AppendChild(element);
-                    }
+                    var element = AppendChildElement(containing, xmldoc.CreateElement(name));
 
                     // attributes
                     foreach (var attr in node.Attributes)
@@ -323,12 +376,12 @@ namespace Peachpie.Library.XmlDom
 
                 case HtmlNodeType.Text:
                     var text = ((HtmlTextNode)node).Text;
-                    if (containing.ParentNode == null) // root
-                    {
-                        if (string.IsNullOrWhiteSpace(text)) break;
-                        throw new NotSupportedException();  // TODO: we can wrap the Text element into something and append
-                    }
-                    containing.AppendChild(xmldoc.CreateTextNode(text));
+
+                    AppendChildElement(
+                        containing,
+                        string.IsNullOrWhiteSpace(text) ? (XmlNode)xmldoc.CreateWhitespace(text) : xmldoc.CreateTextNode(text)
+                    );
+
                     break;
             }
         }
