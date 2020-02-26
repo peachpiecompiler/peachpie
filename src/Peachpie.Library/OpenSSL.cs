@@ -316,6 +316,30 @@ namespace Pchp.Library
             return result;
         }
 
+        // This type is thread safe.
+        private static RNGCryptoServiceProvider randomNumbers = new RNGCryptoServiceProvider();
+
+        /// <summary>
+        /// Generate a pseudo-random string of bytes.
+        /// </summary>
+        /// <param name="length">The length of the desired string of bytes. Must be a positive integer.</param>
+        /// <param name="crypto_strong">If passed into the function, this will hold a boolean value that determines if the algorithm used was "cryptographically strong"</param>
+        /// <returns>Returns the generated string of bytes on success, or FALSE on failure.</returns>
+        public static PhpString openssl_random_pseudo_bytes(int length, ref bool? crypto_strong)
+        {
+            if (length < 1)
+            {
+                crypto_strong = null;
+                return PhpString.Empty;
+            }
+
+            crypto_strong = true;
+            byte[] random = new byte[length];
+            randomNumbers.GetBytes(random);
+
+            return new PhpString(random);
+        }
+
         #region openssl_digest/get_md_methods
 
         // There are algos, which are implemented in .NET but there are not implemented in Hash.cs
