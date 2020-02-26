@@ -189,6 +189,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string keyContainerSetting = null;
             bool publicSign = false;
             bool shortOpenTags = false;
+            bool printFullPaths = false;
             bool resourcesOrModulesSpecified = false;
             DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
             List<string> referencePaths = new List<string>();
@@ -322,7 +323,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         {
                             diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_BadCompilationOptionValue, Location.None, name, value));
                         }
-                        
+
                         continue;
 
                     case "o-":
@@ -373,7 +374,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         }
                         else if (string.Equals(value, "default", StringComparison.OrdinalIgnoreCase) || string.Equals(value, "latest", StringComparison.OrdinalIgnoreCase))
                         {
-                            languageVersion = null; // latest
+                            languageVersion = null; // default
                         }
                         else if (!Version.TryParse(value, out languageVersion))
                         {
@@ -463,7 +464,14 @@ namespace Pchp.CodeAnalysis.CommandLine
                         continue;
 
                     case "shortopentag":
-                        shortOpenTags = string.IsNullOrEmpty(value) || (RemoveQuotesAndSlashes(value).ToLowerInvariant() == "true");
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            shortOpenTags = true;
+                        }
+                        else if (!bool.TryParse(RemoveQuotesAndSlashes(value), out shortOpenTags))
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_BadCompilationOptionValue, Location.None, name, value));
+                        }
                         continue;
 
                     case "shortopentag+":
@@ -490,6 +498,20 @@ namespace Pchp.CodeAnalysis.CommandLine
                         else
                         {
                             mainTypeName = unquoted;
+                        }
+                        continue;
+
+                    case "fullpaths":
+                        if (value != null)
+                        {
+                            if (!bool.TryParse(RemoveQuotesAndSlashes(value), out printFullPaths))
+                            {
+                                diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_BadCompilationOptionValue, Location.None, name, value));
+                            }
+                        }
+                        else
+                        {
+                            printFullPaths = true;
                         }
                         continue;
 
@@ -708,8 +730,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 kind: SourceCodeKind.Regular,
                 languageVersion: languageVersion,
                 shortOpenTags: shortOpenTags,
-                features: ImmutableDictionary<string, string>.Empty, // features: parsedFeatures
-                defines: defines.ToImmutableDictionary()
+                features: ImmutableDictionary<string, string>.Empty // features: parsedFeatures
             );
 
             var scriptParseOptions = parseOptions.WithKind(SourceCodeKind.Script);
@@ -730,6 +751,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 versionString: versionString,
                 phpdocTypes: phpdocTypes,
                 parseOptions: parseOptions,
+                defines: defines.ToImmutableDictionary(),
                 diagnostics: diagnostics.AsImmutable(),
                 specificDiagnosticOptions: diagnosticOptions,
                 //usings: usings,
@@ -809,7 +831,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 EmitOptions = emitOptions,
                 //ScriptArguments = scriptArgs.AsImmutableOrEmpty(),
                 //TouchedFilesPath = touchedFilesPath,
-                //PrintFullPaths = printFullPaths,
+                PrintFullPaths = printFullPaths,
                 //ShouldIncludeErrorEndLocation = errorEndLocation,
                 //PreferredUILang = preferredUILang,
                 //SqmSessionGuid = sqmSessionGuid,
@@ -891,11 +913,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                 var eq = pair.IndexOf('=');
                 if (eq < 0)
                 {
-                    defines.Add(pair, string.Empty);
+                    defines[pair] = null;
                 }
                 else
                 {
-                    defines.Add(pair.Remove(eq), pair.Substring(eq + 1));
+                    defines[pair.Remove(eq)] = pair.Substring(eq + 1);
                 }
             }
         }

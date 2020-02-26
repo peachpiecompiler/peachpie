@@ -101,6 +101,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public new PhpOptimizationLevel OptimizationLevel { get; internal set; }
 
+        /// <summary>
+        /// Set of compile-time defined constants.
+        /// </summary>
+        public ImmutableDictionary<string, string> Defines { get; internal set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -123,7 +128,7 @@ namespace Pchp.CodeAnalysis
             bool checkOverflow = false,
             string cryptoKeyContainer = null,
             string cryptoKeyFile = null,
-            ImmutableArray<byte> cryptoPublicKey = default(ImmutableArray<byte>),
+            ImmutableArray<byte> cryptoPublicKey = default,
             bool? delaySign = null,
             Platform platform = Platform.AnyCpu,
             ReportDiagnostic generalDiagnosticOption = ReportDiagnostic.Default,
@@ -140,8 +145,9 @@ namespace Pchp.CodeAnalysis
             bool publicSign = false,
             PhpDocTypes phpdocTypes = PhpDocTypes.None,
             bool embedSourceMetadata = true,
-            ImmutableArray<Diagnostic> diagnostics = default(ImmutableArray<Diagnostic>),
+            ImmutableArray<Diagnostic> diagnostics = default,
             PhpParseOptions parseOptions = null,
+            ImmutableDictionary<string, string> defines = default,
             bool referencesSupersedeLowerVersions = false)
             : this(outputKind, baseDirectory, sdkDirectory, subDirectory,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
@@ -162,6 +168,7 @@ namespace Pchp.CodeAnalysis
                    phpdocTypes: phpdocTypes,
                    embedSourceMetadata: embedSourceMetadata,
                    diagnostics: diagnostics,
+                   defines: defines,
                    parseOptions: parseOptions,
                    referencesSupersedeLowerVersions: referencesSupersedeLowerVersions)
         {
@@ -203,6 +210,7 @@ namespace Pchp.CodeAnalysis
             bool embedSourceMetadata,
             ImmutableArray<Diagnostic> diagnostics,
             PhpParseOptions parseOptions,
+            ImmutableDictionary<string, string> defines,
             bool referencesSupersedeLowerVersions)
             : base(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel.AsOptimizationLevel(), checkOverflow,
@@ -220,6 +228,7 @@ namespace Pchp.CodeAnalysis
             this.Diagnostics = diagnostics;
             this.VersionString = versionString;
             this.OptimizationLevel = optimizationLevel;
+            this.Defines = defines;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
@@ -257,6 +266,7 @@ namespace Pchp.CodeAnalysis
             embedSourceMetadata: other.EmbedSourceMetadata,
             diagnostics: other.Diagnostics,
             parseOptions: other.ParseOptions,
+            defines: other.Defines,
             referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions)
         {
             EventSources = other.EventSources;
@@ -478,6 +488,16 @@ namespace Pchp.CodeAnalysis
             }
 
             return new PhpCompilationOptions(this) { DebugPlusMode_internal_protected_set = debugPlusMode };
+        }
+
+        public PhpCompilationOptions WithDefines(ImmutableDictionary<string, string> defines)
+        {
+            if (this.Defines == defines)
+            {
+                return this;
+            }
+
+            return new PhpCompilationOptions(this) { Defines = defines };
         }
 
         public new PhpCompilationOptions WithMetadataImportOptions(MetadataImportOptions value)

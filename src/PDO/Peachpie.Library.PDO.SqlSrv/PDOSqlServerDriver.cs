@@ -23,10 +23,28 @@ namespace Peachpie.Library.PDO.SqlSrv
         {
             pdo.ClosePendingReader();
 
-            using (var com = pdo.CreateCommand("SELECT SCOPE_IDENTITY()"))
+            string last_insert_id_query;
+
+            if (string.IsNullOrEmpty(name))
             {
-                object value = com.ExecuteScalar();
-                return value?.ToString();
+                last_insert_id_query = "SELECT @@IDENTITY";
+            }
+            else
+            {
+                // TODO: "SELECT CURRENT_VALUE FROM SYS.SEQUENCES WHERE NAME=%s"
+                throw new NotImplementedException(nameof(name));
+            }
+
+            using (var com = pdo.CreateCommand(last_insert_id_query))
+            {
+                var value = com.ExecuteScalar();
+                if (value == null)
+                {
+                    // TODO: error
+                    return null;
+                }
+
+                return value.ToString();
             }
         }
 

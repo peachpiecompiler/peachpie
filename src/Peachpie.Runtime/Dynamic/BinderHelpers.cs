@@ -768,9 +768,10 @@ namespace Pchp.Core.Dynamic
 
             //
             // runtime fields & magic methods
+            // only applies to instance fields
             //
 
-            if (type.RuntimeFieldsHolder != null)   // we don't handle magic methods without the runtime fields
+            if (target != null && type.RuntimeFieldsHolder != null)   // we don't handle magic methods without the runtime fields
             {
                 var runtimeflds = Expression.Field(target, type.RuntimeFieldsHolder);   // Template: target->__runtime_fields
                 var fieldkey = Expression.Constant(new IntStringKey(field));            // Template: IntStringKey(field)
@@ -925,9 +926,10 @@ namespace Pchp.Core.Dynamic
                         BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__isset, field, null) ??
                         BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
 
-                    // Template: TryGetField(result) || (bool)(__isset(key)??NULL)
-                    result = Expression.OrElse(
+                    // Template: TryGetField(result) ? isset(result) : (bool)(__isset(key)??NULL)
+                    result = Expression.Condition(
                             trygetfield,
+                            Expression.Call(Cache.Operators.IsSet_PhpValue, resultvar),
                             ConvertExpression.BindToBool(InvokeHandler(ctx, target, field, __isset, access)));
                 }
                 else

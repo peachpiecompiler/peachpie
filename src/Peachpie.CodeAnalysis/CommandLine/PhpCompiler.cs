@@ -28,8 +28,8 @@ namespace Pchp.CodeAnalysis.CommandLine
     {
         internal const string ResponseFileName = "php.rsp";
 
-        private readonly DiagnosticFormatter _diagnosticFormatter = new DiagnosticFormatter();
-        private readonly string _tempDirectory;
+        readonly DiagnosticFormatter _diagnosticFormatter;
+        readonly string _tempDirectory;
 
         protected internal new PhpCommandLineArguments Arguments { get { return (PhpCommandLineArguments)base.Arguments; } }
 
@@ -37,6 +37,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             : base(parser, responseFile, args, buildPaths, additionalReferenceDirectories, analyzerLoader)
         {
             _tempDirectory = buildPaths.TempDirectory;
+            _diagnosticFormatter = new CommandLineDiagnosticFormatter(buildPaths.WorkingDirectory, Arguments.PrintFullPaths);
         }
 
         public override DiagnosticFormatter DiagnosticFormatter => _diagnosticFormatter;

@@ -75,6 +75,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         private ulong _mask;
 
         /// <summary>
+        /// Gets the type mask flags part only.
+        /// </summary>
+        public ulong Flags => _mask & FlagsMask;
+
+        /// <summary>
         /// Gets value indicating whether the type represents an any type.
         /// </summary>
         public bool IsAnyType { get { return (_mask & AnyTypeMask) == AnyTypeMask; } }

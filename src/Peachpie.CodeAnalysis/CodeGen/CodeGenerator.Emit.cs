@@ -691,7 +691,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return EmitCall(ILOpCode.Call, CoreMethods.Dynamic.GetPhpTypeInfo_Object);
                 }
 
-                var lateStaticParameter = Routine.ImplicitParameters.FirstOrDefault(SpecialParameterSymbol.IsLateStaticParameter);
+                var lateStaticParameter = Routine.LateStaticParameter();
                 if (lateStaticParameter != null)
                 {
                     // Template: LOAD @static   // ~ @static parameter passed by caller
@@ -1543,8 +1543,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // PhpTypeInfo
                 if (staticType != null)
                 {
-                    // LOAD <statictype>
-                    return (TypeSymbol)staticType.EmitLoadTypeInfo(this);
+                    if (staticType.IsSelf() || staticType.IsParent())
+                    {
+                        return EmitLoadStaticPhpTypeInfo();
+                    }
+                    else
+                    {
+                        // LOAD <statictype>
+                        return (TypeSymbol)staticType.EmitLoadTypeInfo(this);
+                    }
                 }
                 else if (selfType != null && selfType.Is_PhpValue() == false && selfType.Is_PhpAlias() == false)
                 {
@@ -2040,6 +2047,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitConvertToPhpValue(stack, 0);
                         stack = Emit_PhpValue_MakeAlias();
                     }
+                }
+                else
+                {
+                    // routines returning aliased value but
+                    // read by value must dereference:
+                    // BoundCopyValue is not bound
+                    EmitPhpAliasDereference(ref stack);
+                    // TODO: DeepCopy if being assigned ?
                 }
             }
 
