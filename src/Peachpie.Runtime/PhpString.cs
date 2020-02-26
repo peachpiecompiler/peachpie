@@ -270,6 +270,24 @@ namespace Pchp.Core.Text
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The start index is less than zero.</exception>
         public static PhpString Substring(this PhpString str, int startIndex, int length) => str.SubstringInternal(startIndex, length);
+
+        /// <summary>
+        /// Creates a new string with reversed order of characters.
+        /// </summary>
+        public static PhpString Reverse(this PhpString str)
+        {
+            if (str.IsEmpty)
+            {
+                return PhpString.Empty;
+            }
+
+            if (str.ContainsBinaryData)
+            {
+                // TODO: 
+            }
+
+            return str.ToString(Encoding.UTF8/*ignored*/).Reverse();
+        }
     }
 
     #endregion
