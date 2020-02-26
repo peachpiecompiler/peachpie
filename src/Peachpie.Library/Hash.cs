@@ -2209,15 +2209,7 @@ namespace Pchp.Library
         /// <returns>Zero-based indexed array of names of hashing algorithms.</returns>
         public static PhpArray hash_algos()
         {
-            var algos = HashPhpResource.HashAlgorithms;
-            var result = new PhpArray(algos.Count);
-
-            foreach (var name in algos.Keys)
-            {
-                result.Add((PhpValue)name);
-            }
-
-            return result;
+            return new PhpArray(HashPhpResource.HashAlgorithms.Keys);
         }
 
         #endregion
