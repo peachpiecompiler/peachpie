@@ -281,12 +281,7 @@ namespace Pchp.Core.Text
                 return PhpString.Empty;
             }
 
-            if (str.ContainsBinaryData)
-            {
-                // TODO: 
-            }
-
-            return str.ToString(Encoding.UTF8/*ignored*/).Reverse();
+            return str.ReverseInternal();
         }
     }
 
@@ -960,24 +955,88 @@ namespace Pchp.Core
 
             #endregion
 
+            #region Reverse
+
+            internal Blob Reverse()
+            {
+                var result = new Blob();
+
+                var chunks = _chunks;
+                if (chunks is object[] originalchunks)
+                {
+                    var count = _chunksCount;
+                    var reversedchunks = new object[count];
+                    for (int i = 0; i < count; i++)
+                    {
+                        // reverse chunks in reverse order:
+                        reversedchunks[count - i - 1] = ReverseInternal(originalchunks[i]);
+                    }
+
+                    result._chunks = reversedchunks;
+                    result._chunksCount = count;
+                }
+                else
+                {
+                    result._chunks = ReverseInternal(chunks);
+                }
+
+                //
+                result._string = null; // no cached reversed string
+                result._length = _length; // same length as before
+                result._flags = _flags; // same flags as before
+
+                return result;
+            }
+
+            static object ReverseInternal(object chunk)
+            {
+                switch (chunk)
+                {
+                    case string str:
+                        return StringUtils.Reverse(str);
+
+                    case byte[] barr:
+                        return ArrayUtils.Reverse(barr);
+
+                    case Blob b:
+                        return b.Reverse();
+
+                    case char[] carr:
+                        return ArrayUtils.Reverse(carr);
+
+                    case BlobChar[] barr:
+                        return ArrayUtils.Reverse(barr);
+
+                    default:
+                        throw new ArgumentException(chunk.GetType().ToString());
+                }
+            }
+
+            #endregion
+
             #region ToString
 
             public override string ToString() => ToString(Encoding.UTF8);
 
             public string ToString(Encoding encoding)
             {
+                if (_string != null)
+                {
+                    return _string;
+                }
+
                 // TODO: cache the result for current chunks version
 
                 var chunks = _chunks;
                 if (chunks != null)
                 {
-                    return (chunks.GetType() == typeof(object[]))
-                        ? ChunkToString(encoding, (object[])chunks, _chunksCount)
+                    return (chunks is object[] objs)
+                        ? ChunkToString(encoding, objs, _chunksCount)
                         : ChunkToString(encoding, chunks);
                 }
                 else
                 {
-                    return string.Empty;
+                    return (_string = string.Empty);
                 }
             }
 
@@ -1617,6 +1676,31 @@ namespace Pchp.Core
             CopyTo(blob, startIndex, length);
 
             return new PhpString(blob);
+        }
+
+        /// <summary>
+        /// Returns reversed string safe to binary data and unicode characters.
+        /// </summary>
+        internal PhpString ReverseInternal()
+        {
+            if (_data is string str)
+            {
+                return str.Reverse();
+            }
+            else if (_data is Blob b)
+            {
+                if (b.ContainsBinaryData)
+                {
+                    return new PhpString(b.Reverse());
+                }
+                else if (!b.IsEmpty)
+                {
+                    return new PhpString(b.ToString().Reverse());
+                }
+            }
+
+            // 
+            return string.Empty;
         }
 
         /// <summary>

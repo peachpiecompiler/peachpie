@@ -194,6 +194,23 @@ namespace Pchp.Core.Utilities
                 return false;
             }
         }
+
+        /// <summary>
+        /// Creates new array with reversed order of items.
+        /// </summary>
+        public static T[] Reverse<T>(this T[] array)
+        {
+            if (array == null) throw new ArgumentNullException(nameof(array));
+
+            if (array.Length == 0) return Array.Empty<T>();
+
+            var reversed = new T[array.Length];
+
+            Array.Copy(array, reversed, array.Length);
+            Array.Reverse(reversed);
+
+            return reversed;
+        }
     }
 
     /// <summary>
