@@ -567,11 +567,11 @@ namespace Peachpie.Library.Network
             return null;
         }
 
-        static bool TryProcessMethodFromCallable(PhpValue value, ProcessMethod @default, ref ProcessMethod processing)
+        static bool TryProcessMethodFromCallable(PhpValue value, ProcessMethod @default, ref ProcessMethod processing, RuntimeTypeHandle callerCtx)
         {
             if (Operators.IsSet(value))
             {
-                var callable = value.AsCallable();
+                var callable = value.AsCallable(callerCtx);
                 if (callable != null)
                 {
                     processing = new ProcessMethod(callable);
@@ -589,7 +589,7 @@ namespace Peachpie.Library.Network
             return true;
         }
 
-        internal static bool TrySetOption(this CURLResource ch, int option, PhpValue value)
+        internal static bool TrySetOption(this CURLResource ch, int option, PhpValue value, RuntimeTypeHandle callerCtx)
         {
             switch (option)
             {
@@ -638,8 +638,8 @@ namespace Peachpie.Library.Network
                 case CURLOPT_WRITEHEADER: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders);
                 //case CURLOPT_STDERR: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingErr);
 
-                case CURLOPT_HEADERFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders);
-                case CURLOPT_WRITEFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
+                case CURLOPT_HEADERFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders, callerCtx);
+                case CURLOPT_WRITEFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.StdOut, ref ch.ProcessingResponse, callerCtx);
                 //case CURLOPT_READFUNCTION:
                 //case CURLOPT_PROGRESSFUNCTION:
 
