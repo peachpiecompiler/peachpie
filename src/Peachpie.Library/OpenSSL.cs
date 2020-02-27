@@ -111,8 +111,9 @@ namespace Pchp.Library
             if (!iv.IsEmpty)
             {
 
-                byte[] decodedIV = ((options & Options.OPENSSL_RAW_DATA) != Options.OPENSSL_RAW_DATA) ?
-                iv.ToBytes(ctx) : System.Convert.FromBase64String(iv.ToString(ctx));
+                byte[] decodedIV = ((options & Options.OPENSSL_RAW_DATA) != Options.OPENSSL_RAW_DATA)
+                    ? iv.ToBytes(ctx)
+                    : System.Convert.FromBase64String(iv.ToString(ctx));
 
                 if (decodedIV.Length < cipher.IVLength) // Pad zeros
                     PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_long_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
@@ -361,13 +362,12 @@ namespace Pchp.Library
         /// <summary>
         /// Computes a digest hash value for the given data using a given method, and returns a raw or binhex encoded string.
         /// </summary>
-        /// <param name="ctx">Context of the script.</param>
         /// <param name="data">The data.</param>
         /// <param name="method">The digest method to use, e.g. "sha256", see openssl_get_md_methods() for a list of available digest methods.</param>
         /// <param name="raw_output">Setting to TRUE will return as raw output data, otherwise the return value is binhex encoded.</param>
         /// <returns>Returns the digested hash value on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static PhpString openssl_digest(Context ctx, PhpString data, string method, bool raw_output = false)
+        public static PhpString openssl_digest(byte[] data, string method, bool raw_output = false)
         {
             if (HashAliases.TryGetValue(method, out var aliasedname))
             {
@@ -376,20 +376,20 @@ namespace Pchp.Library
 
             if (HashPhpResource.HashAlgorithms.ContainsKey(method)) // Supported in Hash.cs
             {
-                return PhpHash.hash(method, data.ToBytes(ctx), raw_output);
+                return PhpHash.hash(method, data, raw_output);
             }
             else
             {
                 if (AditionaHashMethods.TryGetValue(method, out var alg))
                 {
-                    var hashedBytes = alg(data.ToBytes(ctx));
+                    var hashedBytes = alg(data);
                     return raw_output ? new PhpString(hashedBytes) : StringUtils.BinToHex(hashedBytes, string.Empty);
                 }
                 else
                 {
                     // Unknown cipher algorithm.
                     PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_hash);
-                    return null;
+                    return default; // FALSE
                 }
             }
         }
@@ -586,7 +586,7 @@ namespace Pchp.Library
             if (resource == null)
                 return null;
 
-            return openssl_digest(ctx, new PhpString(resource.Certificate.Export(X509ContentType.Cert)), hash_algorithm, raw_output);
+            return openssl_digest(resource.Certificate.Export(X509ContentType.Cert), hash_algorithm, raw_output);
         }
 
         /// <summary>
@@ -762,7 +762,7 @@ namespace Pchp.Library
             return new OpenSSLKeyResource(alg, type);
         }
 
-        //public static int openssl_verify(Context ctx, string data , string signature , PhpValue pub_key_id, PhpValue signature_alg)
+        //public static int openssl_verify(byte[] data , byte[] signature, PhpValue pub_key_id, PhpValue signature_alg)
         //{
         //    int defaultSignitureAlg = OPENSSL_ALGO_SHA1;
 
@@ -778,8 +778,8 @@ namespace Pchp.Library
         //    if (resource == null)
         //        return -1;
 
-        //    // TODO: Compare array byte -> pozor na porovnani referenci
-        //    return (resource.Sign(Core.Convert.ToBytes(data, ctx)) == Core.Convert.ToBytes(signature, ctx)) ? 1 : 0;
+        //    // TODO: Compare array byte
+        //    return ArrayUtils.Equals(resource.Sign(data), signature) ? 1 : 0;
         //}
 
         //public static bool openssl_pkey_export(PhpValue key, ref string pkey, string passphrase = "", PhpArray configargs = null)
