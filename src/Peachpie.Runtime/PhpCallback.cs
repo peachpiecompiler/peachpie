@@ -482,7 +482,11 @@ namespace Pchp.Core
                 resolved = InvokeError;
             }
 
-            return _lazyResolved;
+            //
+
+            _lazyResolved = resolved;
+
+            return resolved;
         }
 
         /// <summary>
