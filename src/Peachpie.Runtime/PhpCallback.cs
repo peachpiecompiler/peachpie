@@ -50,6 +50,24 @@ namespace Pchp.Core
     /// </summary>
     public abstract class PhpCallback : IPhpCallable
     {
+        [Flags]
+        enum CallbackFlags
+        {
+            Default = 0,
+
+            /// <summary>
+            /// The callback has been marked as invalid.
+            /// </summary>
+            IsInvalid = 1,
+
+            /// <summary>
+            /// When invalid is invoked, exception is thrown.
+            /// </summary>
+            InvalidThrowsException = 2,
+        }
+
+        CallbackFlags _flags = CallbackFlags.Default;
+
         /// <summary>
         /// Resolved routine to be invoked.
         /// </summary>
@@ -61,11 +79,25 @@ namespace Pchp.Core
         public virtual bool IsValid => true;
 
         /// <summary>
+        /// Gets value indicating the callback has been already resolved.
+        /// </summary>
+        public bool IsResolved => _lazyResolved != null;
+
+        /// <summary>
         /// Tries to bind the callback and checks if the callback is valid.
         /// </summary>
         internal bool IsValidBound(Context ctx)
         {
-            return IsValid && Bind(ctx) != InvokeError;
+            if (IsValid)
+            {
+                // ensure the callback is bound
+                Bind(ctx);
+
+                // check flags
+                return (_flags & CallbackFlags.IsInvalid) == 0;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -443,11 +475,14 @@ namespace Pchp.Core
         /// <returns>Instance to the delegate. Cannot be <c>null</c>.</returns>
         private PhpCallable BindNew(Context ctx)
         {
-            var resolved = BindCore(ctx) ?? InvokeError;
+            var resolved = BindCore(ctx);
+            if (resolved == null)
+            {
+                _flags |= CallbackFlags.IsInvalid;
+                resolved = InvokeError;
+            }
 
-            _lazyResolved = resolved;
-
-            return resolved;
+            return _lazyResolved;
         }
 
         /// <summary>
