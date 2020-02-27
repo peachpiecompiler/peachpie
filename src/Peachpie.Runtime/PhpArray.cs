@@ -416,6 +416,9 @@ namespace Pchp.Core
                         PhpException.Throw(PhpError.Warning, ErrResources.incomparable_arrays_compared);
                     }
                     return result;
+
+                case PhpTypeCode.Alias:
+                    return Compare(value.GetValue(), comparer);
             }
 
             //
