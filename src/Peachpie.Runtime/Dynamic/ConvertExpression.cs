@@ -52,6 +52,12 @@ namespace Pchp.Core.Dynamic
             // from (object)null
             if (arg is ConstantExpression c && ReferenceEquals(c.Value, null) && !target.IsValueType)
             {
+                if (target == typeof(PhpAlias))
+                {
+                    // new PhppAlias(PhpValue.Null, 1)
+                    return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
+                }
+
                 // (T)null
                 return Expression.Constant(null, target);
             }
