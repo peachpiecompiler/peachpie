@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -13,7 +15,7 @@ namespace Pchp.Core.Utilities
         /// </summary>
         static string EncodeTopLevelName(string/*!*/name)
         {
-            Debug.Assert(name != null);
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             return name.Replace('.', '_').Replace(' ', '_');
         }
@@ -25,14 +27,18 @@ namespace Pchp.Core.Utilities
             if (key.IsEmpty)
             {
                 result = new PhpArray();
-                array.AddValue(result);
+                array.Add(result);
             }
             else
             {
-                if (!array.TryGetValue(key, out var value) || (result = value.AsArray()) == null)
+                if (array.TryGetValue(key, out var value) && value.IsPhpArray(out var tmp) && tmp != null)
+                {
+                    result = tmp;
+                }
+                else
                 {
                     result = new PhpArray();
-                    array.SetItemValue(key, result);
+                    array[key] = result;
                 }
             }
 
@@ -50,10 +56,11 @@ namespace Pchp.Core.Utilities
         /// <param name="name">A unparsed name of variable.</param>
         /// <param name="value">A value to be added.</param>
         /// <param name="subname">A name of intermediate array inserted before the value.</param>
-        public static void AddVariable(this PhpArray/*!*/ array, string name, string value, string subname = null)
+        public static void AddVariable(this PhpArray/*!*/ array, string name, string value, string? subname = null)
         {
-            Debug.Assert(array != null);
-            Debug.Assert(name != null);
+            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
             Debug.Assert(value != null);
 
             IntStringKey key;

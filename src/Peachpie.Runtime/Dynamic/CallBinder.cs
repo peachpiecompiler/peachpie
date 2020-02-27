@@ -217,7 +217,7 @@ namespace Pchp.Core.Dynamic
             : base(returnType)
         {
             _name = name;
-            _classCtx = classContext.Equals(default(RuntimeTypeHandle)) ? null : Type.GetTypeFromHandle(classContext);
+            _classCtx = classContext.Equals(default) ? null : Type.GetTypeFromHandle(classContext);
         }
 
         protected override MethodBase[] ResolveMethods(CallSiteContext bound)
