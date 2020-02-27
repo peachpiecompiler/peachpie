@@ -681,9 +681,7 @@ namespace Pchp.Library
 
                 if (encoding_mode == (int)ForceConstants.FORCE_GZIP)
                 {
-                    var crc_algo = new PhpHash.HashPhpResource.CRC32();
-                    byte[] crc = crc_algo.ComputeHash(data);
-                    crc_algo.Dispose();
+                    byte[] crc = new PhpHash.HashPhpResource.CRC32().ComputeHash(data);
 
                     output[output_length - 8] = crc[0];
                     output[output_length - 7] = crc[1];

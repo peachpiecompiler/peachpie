@@ -16,6 +16,38 @@ using System.Threading;
 namespace Pchp.Library
 {
     /// <summary>
+    /// Initialized hash context.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("hash")]
+    public class HashContext
+    {
+        /// <summary>
+        /// Actual algorithm.
+        /// </summary>
+        internal PhpHash.HashPhpResource HashAlgorithm { get; }
+
+        /// <summary>
+        /// Internal constructor.
+        /// </summary>
+        /// <param name="hashalg"></param>
+        internal protected HashContext(PhpHash.HashPhpResource hashalg)
+        {
+            HashAlgorithm = hashalg ?? throw new ArgumentNullException(nameof(hashalg));
+
+            // private dummy constructor
+            __construct();
+        }
+
+        /// <summary>
+        /// Private constructor to disallow direct instantiation.
+        /// </summary>
+        private void __construct()
+        {
+
+        }
+    }
+
+    /// <summary>
     /// PHP hash functions support.
     /// </summary>
     [PhpExtension("hash")]
@@ -48,7 +80,7 @@ namespace Pchp.Library
         /// <summary>
         /// The Hashing Context PHP Resource.
         /// </summary>
-        public abstract class HashPhpResource : PhpResource
+        public abstract class HashPhpResource
         {
             #region HashPhpResource base ctor
 
@@ -56,7 +88,6 @@ namespace Pchp.Library
             /// hash_init
             /// </summary>
             protected HashPhpResource()
-                : base("Hash Context")
             {
                 Init();
             }
@@ -2222,25 +2253,28 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        static HashPhpResource ValidateHashResource(PhpResource context)
+        static HashPhpResource ValidateHashResource(HashContext context)
         {
-            var h = context as HashPhpResource;
-            if (h == null)
+            if (context == null)
             {
-                PhpException.InvalidArgumentType(nameof(context), PhpResource.PhpTypeName);
+                PhpException.ArgumentNull(nameof(context));
             }
 
-            return h;
+            return context.HashAlgorithm;
         }
 
         //[return: CastToFalse]
-        public static PhpResource hash_copy(PhpResource context)
+        public static HashContext hash_copy(HashContext context)
         {
-            return ValidateHashResource(context)?.Clone();
+            var alg = ValidateHashResource(context);
+
+            return alg != null
+                ? new HashContext(alg.Clone())
+                : null;
         }
 
         //[return: CastToFalse]
-        public static PhpResource hash_init(string algo, HashInitOptions options = HashInitOptions.HASH_DEFAULT, byte[] key = null)
+        public static HashContext hash_init(string algo, HashInitOptions options = HashInitOptions.HASH_DEFAULT, byte[] key = null)
         {
             if ((options & HashInitOptions.HASH_HMAC) != 0)
             {
@@ -2255,19 +2289,21 @@ namespace Pchp.Library
                 key = null;
             }
 
-            if (!HashPhpResource.HashAlgorithms.TryGetValue(algo, out HashPhpResource.HashAlgFactory algFactory))
+            if (HashPhpResource.HashAlgorithms.TryGetValue(algo, out var algFactory))
+            {
+                //
+                // create the hashing algorithm context
+                //
+                return new HashContext(Initialize(algFactory(), key));
+            }
+            else
             {
                 PhpException.Throw(PhpError.Warning, "Unknown hashing algorithm: " + algo);   // TODO: to resources
                 return null;
             }
-
-            //
-            // create the hashing algorithm context
-            //
-            return hash_init(algFactory(), key);
         }
 
-        static HashPhpResource hash_init(HashPhpResource h, byte[] hmac_key = null)
+        static HashPhpResource Initialize(HashPhpResource h, byte[] hmac_key = null)
         {
             //
             // HMAC
@@ -2309,7 +2345,7 @@ namespace Pchp.Library
             return h;
         }
 
-        public static bool hash_update(PhpResource context, byte[] data)
+        public static bool hash_update(HashContext context, byte[] data)
         {
             var h = ValidateHashResource(context);
             if (h == null)
@@ -2324,7 +2360,7 @@ namespace Pchp.Library
         }
 
         //[return: CastToFalse]
-        public static PhpString hash_final(PhpResource context, bool raw_output = false)
+        public static PhpString hash_final(HashContext context, bool raw_output = false)
         {
             var h = ValidateHashResource(context);
             if (h == null)
@@ -2370,7 +2406,7 @@ namespace Pchp.Library
             return hash;
         }
 
-        public static bool hash_update_file(Context ctx, PhpResource context, string filename, PhpResource stream_context = null)
+        public static bool hash_update_file(Context ctx, HashContext context, string filename, PhpResource stream_context = null)
         {
             // hashing context
             var h = ValidateHashResource(context);
@@ -2399,7 +2435,7 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public static int hash_update_stream(PhpResource context, PhpResource handle, int length = -1)
+        public static int hash_update_stream(HashContext context, PhpResource handle, int length = -1)
         {
             // hashing context
             var h = ValidateHashResource(context);
@@ -2478,7 +2514,7 @@ namespace Pchp.Library
             var h = hash_init(algo);
             if (h == null || !hash_update_file(ctx, h, filename))
             {
-                return default(PhpString);
+                return default; // FALSE
             }
 
             return hash_final(h, raw_output);
@@ -2491,18 +2527,18 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpString hash_hmac(string algo, byte[] data, byte[] key, bool raw_output = false)
         {
-            var h = (HashPhpResource)hash_init(algo, HashInitOptions.HASH_HMAC, key);
-            if (h == null || !h.Update(data))
+            var context = hash_init(algo, HashInitOptions.HASH_HMAC, key);
+            if (context == null || !context.HashAlgorithm.Update(data))
             {
-                return default(PhpString);
+                return default; // FALSE
             }
 
-            return hash_final(h, raw_output);
+            return hash_final(context, raw_output);
         }
 
         static byte[] hash_hmac(HashPhpResource h, byte[] data, byte[] key)
         {
-            hash_init(h, key).Update(data);
+            Initialize(h, key).Update(data);
             return hash_final(h);
         }
 
@@ -2512,7 +2548,7 @@ namespace Pchp.Library
             var h = hash_init(algo, HashInitOptions.HASH_HMAC, key);
             if (h == null || !hash_update_file(ctx, h, filename))
             {
-                return default(PhpString);
+                return default; // FALSE
             }
 
             return hash_final(h, raw_output);
