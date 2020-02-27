@@ -563,7 +563,7 @@ namespace Pchp.Library
                     if (options_arr.TryGetValue("options", out var optionsval) && optionsval.IsPhpArray(out var opts_arr))
                     {
                         // [default]
-                        if (opts_arr.TryGetValue("default", out var defaultval))
+                        if (opts_arr != null && opts_arr.TryGetValue("default", out var defaultval))
                         {
                             @default = defaultval;
                         }

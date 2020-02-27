@@ -21,22 +21,19 @@ namespace Peachpie.Library.XmlDom
         {
             if (qualifiedName == null)
             {
-                prefix = null;
-                localName = null;
+                throw new ArgumentNullException(nameof(qualifiedName));
+            }
+
+            int index = qualifiedName.IndexOf(':');
+            if (index >= 0)
+            {
+                prefix = qualifiedName.Substring(0, index);
+                localName = qualifiedName.Substring(index + 1);
             }
             else
             {
-                int index = qualifiedName.IndexOf(':');
-                if (index >= 0)
-                {
-                    prefix = qualifiedName.Substring(0, index);
-                    localName = qualifiedName.Substring(index + 1);
-                }
-                else
-                {
-                    prefix = String.Empty;
-                    localName = qualifiedName;
-                }
+                prefix = string.Empty;
+                localName = qualifiedName;
             }
         }
 

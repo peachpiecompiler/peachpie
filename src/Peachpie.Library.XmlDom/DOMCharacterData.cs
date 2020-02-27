@@ -164,10 +164,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns &quot;#text&quot;.
         /// </summary>
-        public override string nodeName
-        {
-            get { return "#text"; }
-        }
+        public override string nodeName => "#text";
 
         /// <summary>
         /// Returns or sets the text.
