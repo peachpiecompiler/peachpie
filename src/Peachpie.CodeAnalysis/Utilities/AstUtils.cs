@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis
 {
@@ -246,6 +247,16 @@ namespace Pchp.CodeAnalysis
         {
             return span.IsValid
                 ? new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length)
+                : default;
+        }
+
+        /// <summary>
+        /// Gets text span of given expression.
+        /// </summary>
+        public static Microsoft.CodeAnalysis.Text.TextSpan GetTextSpan(this BoundExpression expression)
+        {
+            return expression != null && expression.PhpSyntax != null
+                ? expression.PhpSyntax.Span.ToTextSpan()
                 : default;
         }
 

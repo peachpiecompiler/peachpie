@@ -682,7 +682,7 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Wrong number of arguments in {0}..
+        ///   Looks up a localized string similar to Call to &apos;{0}()&apos; expects {1} argument(s), {2} given..
         /// </summary>
         internal static string WRN_FormatStringWrongArgCount {
             get {

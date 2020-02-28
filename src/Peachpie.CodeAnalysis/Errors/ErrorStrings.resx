@@ -315,7 +315,8 @@
     <value>Using non-iterable type in foreach: {0}.</value>
   </data>
   <data name="WRN_FormatStringWrongArgCount" xml:space="preserve">
-    <value>Wrong number of arguments in {0}.</value>
+    <value>Call to '{0}()' expects {1} argument(s), {2} given.</value>
+    <comment>Call to printf or sprintf has wrong arguments count according to its format specifiers.</comment>
   </data>
   <data name="WRN_ParentCtorNotCalled" xml:space="preserve">
     <value>Missing the call of parent::__construct from {0}::__construct.</value>
