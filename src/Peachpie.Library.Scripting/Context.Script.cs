@@ -310,6 +310,8 @@ namespace Peachpie.Library.Scripting
 
             return new Script((ctx, locals, @this, self) =>
             {
+                // TODO: throw new \ParseError( ... )
+
                 PhpException.Throw(PhpError.Error, string.Format("The script cannot be compiled due to following errors:\n{0}", errors));
 
                 //
