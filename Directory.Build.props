@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
 
   <PropertyGroup>
 
@@ -22,9 +21,9 @@
     <LangVersion>latest</LangVersion>
 
     <!-- signing -->
-    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)../StrongKeys/core.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
-    
+
     <!-- SourceLink -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>false</EmbedUntrackedSources>
@@ -40,13 +39,10 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/peachpiecompiler/peachpie</RepositoryUrl>
     <PackageProjectUrl>https://github.com/peachpiecompiler/peachpie</PackageProjectUrl>
-    <PackageOutputPath>$(MSBuildThisFileDirectory)../../.nugs</PackageOutputPath>
+    <PackageOutputPath>$(MSBuildThisFileDirectory).nugs</PackageOutputPath>
     <PackageIconUrl>https://github.com/peachpiecompiler/peachpie/raw/master/docs/logos/round-orange-196x196.png</PackageIconUrl>
     <Authors>iolevel,peachpiecompiler</Authors>
     <NoWarn>$(NoWarn),NU5048</NoWarn>
   </PropertyGroup>
 
-  <!-- common targets -->
-  <Import Project="CommonBuild.target" />
-  
 </Project>
