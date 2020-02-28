@@ -12,6 +12,7 @@ using Pchp.CodeAnalysis.Errors;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Peachpie.CodeAnalysis.Utilities;
+using PerlRegex = Peachpie.Library.RegularExpressions;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
@@ -61,16 +62,47 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
         }
 
+        void pcrePatternCheck(string name, BoundExpression patternExpression)
+        {
+            if (patternExpression.ConstantValue.TryConvertToString(out var pattern))
+            {
+                try
+                {
+                    var regex = new PerlRegex.Regex(pattern);
+                }
+                catch (PerlRegex.RegexParseException error)
+                {
+                    _diagnostics.Add(
+                        _routine, patternExpression.GetTextSpan(),
+                        ErrorCode.WRN_PCRE_Pattern_Error, error.Message, error.Offset.HasValue ? error.Offset.Value.ToString() : "unknown");
+                }
+            }
+        }
+
         void CheckGlobalFunctionCall(BoundGlobalFunctionCall call)
         {
             // TODO: regular Roslyn analyzers as part of the referenced assembly
 
-            if (AnalysisFacts.HasSimpleName(call, out string name))
+            if (AnalysisFacts.HasSimpleName(call, out var name) && call.ArgumentsInSourceOrder.Length != 0)
             {
                 if (name.Equals("printf", StringComparison.OrdinalIgnoreCase) ||
                     name.Equals("sprintf", StringComparison.OrdinalIgnoreCase))
                 {
                     printfCheck(name, call.ArgumentsInSourceOrder);
+                }
+                else if (name.StartsWith("preg_", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (name.Equals("preg_filter", StringComparison.OrdinalIgnoreCase) ||
+                        name.Equals("preg_grep", StringComparison.OrdinalIgnoreCase) ||
+                        name.Equals("preg_match_all", StringComparison.OrdinalIgnoreCase) ||
+                        name.Equals("preg_match", StringComparison.OrdinalIgnoreCase) ||
+                        name.Equals("preg_replace_callback", StringComparison.OrdinalIgnoreCase) ||
+                        name.Equals("preg_replace", StringComparison.OrdinalIgnoreCase) ||
+                        name.Equals("preg_split", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // NOTE: `$pattern` is always the 1st argument
+                        pcrePatternCheck(name, call.ArgumentsInSourceOrder[0].Value);
+                    }
                 }
             }
         }

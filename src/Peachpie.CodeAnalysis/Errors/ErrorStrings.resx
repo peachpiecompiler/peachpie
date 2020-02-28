@@ -376,4 +376,7 @@
   <data name="ERR_NoSourceFile" xml:space="preserve">
     <value>Source file '{0}' could not be opened -- {1}</value>
   </data>
+  <data name="WRN_PCRE_Pattern_Error" xml:space="preserve">
+    <value>PCRE pattern parse error: {0} at offset {1}</value>
+  </data>
 </root>

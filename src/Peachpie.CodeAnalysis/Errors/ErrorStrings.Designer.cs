@@ -745,6 +745,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to PCRE pattern parse error: {0} at offset {1}.
+        /// </summary>
+        internal static string WRN_PCRE_Pattern_Error {
+            get {
+                return ResourceManager.GetString("WRN_PCRE_Pattern_Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Using string as the assertion is deprecated.
         /// </summary>
         internal static string WRN_StringAssertionDeprecated {

@@ -200,6 +200,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_ToStringMustReturnString,
         /// <summary>Argument has no value, parameter will be always NULL</summary>
         WRN_ArgumentVoid,
+        /// <summary>PCRE pattern parse error: {0} at offset {1}</summary>
+        WRN_PCRE_Pattern_Error,
 
         //
         // Visible information
