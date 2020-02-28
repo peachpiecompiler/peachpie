@@ -342,28 +342,33 @@ namespace Pchp.Library
         /// <param name="transliterate">Is set to <c>true</c> if <see cref="TranslitEncOption"/> was specified.</param>
         /// <param name="discard_ilseq">Is set to <c>true</c> if <see cref="IgnoreEncOption"/> was specified.</param>
         /// <returns><paramref name="encoding"/> without optional options.</returns>
-        static string ParseOutputEncoding(string/*!*/encoding, out bool transliterate, out bool discard_ilseq)
+        static string ParseOutputEncoding(ReadOnlySpan<char>/*!*/encoding, out bool transliterate, out bool discard_ilseq)
         {
             Debug.Assert(encoding != null);
 
-            if (encoding.EndsWith(TranslitEncOption, StringComparison.Ordinal))
-            {
-                encoding = encoding.Substring(0, encoding.Length - TranslitEncOption.Length);
-                transliterate = true;
-            }
-            else
-                transliterate = false;
+            transliterate = false;
+            discard_ilseq = false;
 
-            if (encoding.EndsWith(IgnoreEncOption, StringComparison.Ordinal))
+            for (; ; )
             {
-                encoding = encoding.Substring(0, encoding.Length - IgnoreEncOption.Length);
-                discard_ilseq = true;
+                if (encoding.EndsWith(TranslitEncOption.AsSpan(), StringComparison.Ordinal))
+                {
+                    encoding = encoding.Slice(0, encoding.Length - TranslitEncOption.Length);
+                    transliterate = true;
+                }
+                else if (encoding.EndsWith(IgnoreEncOption.AsSpan(), StringComparison.Ordinal))
+                {
+                    encoding = encoding.Slice(0, encoding.Length - IgnoreEncOption.Length);
+                    discard_ilseq = true;
+                }
+                else
+                {
+                    break;
+                }
             }
-            else
-                discard_ilseq = false;
 
             //
-            return encoding;
+            return encoding.ToString();
         }
 
         /// <summary>
@@ -615,23 +620,22 @@ namespace Pchp.Library
             // check args
             if (str.IsDefault)
             {
-                PhpException.ArgumentNull("str");
-                return default(PhpString);
+                PhpException.ArgumentNull(nameof(str));
+                return default; // FALSE
             }
             if (out_charset == null)
             {
-                PhpException.ArgumentNull("out_charset");
-                return default(PhpString);
+                PhpException.ArgumentNull(nameof(out_charset));
+                return default; // FALSE
             }
 
             // resolve out_charset
-            bool transliterate, discard_ilseq;
-            out_charset = ParseOutputEncoding(out_charset, out transliterate, out discard_ilseq);
+            out_charset = ParseOutputEncoding(out_charset.AsSpan(), out var transliterate, out var discard_ilseq);
             var out_encoding = ResolveEncoding(ctx, out_charset);
             if (out_encoding == null)
             {
                 PhpException.Throw(PhpError.Notice, Resources.LibResources.wrong_charset, out_charset, in_charset, out_charset);
-                return default(PhpString);
+                return default; // FALSE
             }
 
             // encoding fallback
