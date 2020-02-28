@@ -19,6 +19,7 @@
 
     <DefineConstants Condition=" '$(Configuration)' == 'Debug' ">$(DefineConstants);TRACE</DefineConstants>
     <LangVersion>latest</LangVersion>
+    <GenerateFullPaths>true</GenerateFullPaths>
 
     <!-- signing -->
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
