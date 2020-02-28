@@ -94,7 +94,64 @@ namespace Pchp.Library
 
         #endregion
 
-        #region openssl_encrypt/decrypt
+        #region openssl_error_string
+
+        sealed class ErrorList
+        {
+            /// <summary>
+            /// Stack of error messages.
+            /// </summary>
+            readonly Stack<string> _messages = new Stack<string>();
+
+            public void Push(string message)
+            {
+                _messages.Push(message ?? throw new ArgumentNullException(nameof(message)));
+            }
+
+            public bool TryPop(out string message)
+            {
+                if (_messages.Count != 0)
+                {
+                    message = _messages.Pop();
+                    return true;
+                }
+                else
+                {
+                    message = null;
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Helper method that stores an openssl error message within the current context.
+        /// </summary>
+        private static void HandleError(Context ctx, string message)
+        {
+            ctx.GetStatic<ErrorList>().Push(message);
+            PhpException.Throw(PhpError.E_WARNING, message);
+        }
+
+        /// <summary>
+        /// Gets the last error from the openSSL functions.
+        /// Error messages are queued, so this function should be called multiple times to collect all of the information.
+        /// The last error will be the most recent one.
+        /// </summary>
+        [return: CastToFalse]
+        public static string openssl_error_string(Context ctx)
+        {
+            if (ctx.TryGetStatic<ErrorList>(out var list) && list.TryPop(out var message))
+            {
+                return message;
+            }
+
+            // FALSE: no more errors
+            return null;
+        }
+
+        #endregion
+
+        #region openssl_encrypt, openssl_decrypt
 
         private static SymmetricAlgorithm PrepareCipher(byte[] decodedKey, Cipher cipher, byte[] iv, Options options)
         {
@@ -174,7 +231,7 @@ namespace Pchp.Library
             if (!Ciphers.TryGetValue(method, out var cipherMethod))
             {
                 // Unknown cipher algorithm.
-                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
+                HandleError(ctx, Resources.LibResources.openssl_unknown_cipher);
                 return default; // FALSE
             }
 
@@ -189,7 +246,7 @@ namespace Pchp.Library
             }
             catch (CryptographicException ex)
             {
-                PhpException.Throw(PhpError.E_WARNING, ex.Message);
+                HandleError(ctx, ex.Message);
                 return default; // FALSE
             }
         }
@@ -234,7 +291,7 @@ namespace Pchp.Library
             if (!Ciphers.TryGetValue(method, out var cipherMethod))
             {
                 // Unknown cipher algorithm.
-                PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
+                HandleError(ctx, Resources.LibResources.openssl_unknown_cipher);
                 return default; // FALSE
             }
 
@@ -255,7 +312,7 @@ namespace Pchp.Library
             }
             catch (CryptographicException ex)
             {
-                PhpException.Throw(PhpError.E_WARNING, ex.Message);
+                HandleError(ctx, ex.Message);
                 return default; // FALSE
             }
         }
