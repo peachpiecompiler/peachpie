@@ -30,7 +30,9 @@ namespace Pchp.Library
     public static class OpenSSL
     {
         #region Constants
+
         public const int OPENSSL_RAW_DATA = (int)Options.OPENSSL_RAW_DATA;
+
         public const int OPENSSL_ZERO_PADDING = (int)Options.OPENSSL_ZERO_PADDING;
 
         private static Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher>(StringComparer.OrdinalIgnoreCase)
@@ -94,33 +96,35 @@ namespace Pchp.Library
 
         #region openssl_encrypt/decrypt
 
-        private static SymmetricAlgorithm PrepareCipher(Context ctx, byte[] data, PhpString key, Cipher cipher, PhpString iv, Options options)
+        private static SymmetricAlgorithm PrepareCipher(byte[] decodedKey, Cipher cipher, byte[] iv, Options options)
         {
-            byte[] decodedKey = key.ToBytes(ctx);
-
             // Pad key out to KeyLength in bytes if its too short or trancuate if it is too long
             int KeyLengthInBytes = cipher.KeyLength / 8;
             if (decodedKey.Length < KeyLengthInBytes || decodedKey.Length > KeyLengthInBytes)
             {
                 var resizedKey = new byte[KeyLengthInBytes];
-                Buffer.BlockCopy(decodedKey, 0, resizedKey, 0, Math.Min(key.Length, resizedKey.Length));
+                Buffer.BlockCopy(decodedKey, 0, resizedKey, 0, Math.Min(decodedKey.Length, resizedKey.Length));
                 decodedKey = resizedKey;
             }
 
-            byte[] iVector = new byte[cipher.IVLength];
-            if (!iv.IsEmpty)
+            var iVector = new byte[cipher.IVLength];
+            if (!ArrayUtils.IsNullOrEmpty(iv))
             {
+                var ivLength = iv.Length;
+                if (ivLength != cipher.IVLength)
+                {
+                    if (ivLength < cipher.IVLength) // Pad zeros
+                    {
+                        PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_short_iv, iv.Length.ToString(), cipher.IVLength.ToString());
+                    }
+                    else if (ivLength > cipher.IVLength) // Trancuate
+                    {
+                        PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_long_iv, iv.Length.ToString(), cipher.IVLength.ToString());
+                        ivLength = cipher.IVLength;
+                    }
+                }
 
-                byte[] decodedIV = ((options & Options.OPENSSL_RAW_DATA) != Options.OPENSSL_RAW_DATA)
-                    ? iv.ToBytes(ctx)
-                    : System.Convert.FromBase64String(iv.ToString(ctx));
-
-                if (decodedIV.Length < cipher.IVLength) // Pad zeros
-                    PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_long_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
-                else if (decodedIV.Length > cipher.IVLength) // Trancuate
-                    PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_long_iv, decodedIV.Length.ToString(), cipher.IVLength.ToString());
-
-                Buffer.BlockCopy(decodedIV, 0, iVector, 0, Math.Min(cipher.IVLength, decodedIV.Length));
+                Buffer.BlockCopy(iv, 0, iVector, 0, ivLength);
             }
 
             SymmetricAlgorithm alg = null;
@@ -154,13 +158,13 @@ namespace Pchp.Library
         /// <param name="data">The encrypted message to be decrypted.</param>
         /// <param name="method">The cipher method. For a list of available cipher methods, use openssl_get_cipher_methods().</param>
         /// <param name="key">The key.</param>
-        /// <param name="options">options can be one of OPENSSL_RAW_DATA, OPENSSL_ZERO_PADDING.</param>
+        /// <param name="options">options can be one of <see cref="OPENSSL_RAW_DATA"/>, <see cref="OPENSSL_ZERO_PADDING"/>.</param>
         /// <param name="iv">A non-NULL Initialization Vector.</param>
         /// <param name="tag">The authentication tag in AEAD cipher mode. If it is incorrect, the authentication fails and the function returns FALSE.</param>
         /// <param name="aad">Additional authentication data.</param>
         /// <returns>The decrypted string on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static string openssl_decrypt(Context ctx, PhpString data, string method, PhpString key, Options options, PhpString iv, string tag = "", string aad = "")
+        public static string openssl_decrypt(Context ctx, PhpString data, string method, byte[] key, Options options, byte[] iv, string tag = "", string aad = "")
         {
             if (CiphersAliases.TryGetValue(method, out var aliasName))
             {
@@ -171,10 +175,10 @@ namespace Pchp.Library
             {
                 // Unknown cipher algorithm.
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
-                return null;
+                return default; // FALSE
             }
 
-            if (iv.IsEmpty)
+            if (ArrayUtils.IsNullOrEmpty(iv))
             {
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_empty_iv);
             }
@@ -186,19 +190,17 @@ namespace Pchp.Library
             catch (CryptographicException ex)
             {
                 PhpException.Throw(PhpError.E_WARNING, ex.Message);
-                return "";
+                return default; // FALSE
             }
         }
 
-        private static string Decrypt(Context ctx, PhpString data, PhpString key, Cipher cipher, PhpString iv, Options options)
+        private static string Decrypt(Context ctx, PhpString data, byte[] key, Cipher cipher, byte[] iv, Options options)
         {
-            byte[] encryptedBytes;
-            if ((options & Options.OPENSSL_RAW_DATA) == Options.OPENSSL_RAW_DATA)
-                encryptedBytes = data.ToBytes(ctx);
-            else
-                encryptedBytes = System.Convert.FromBase64String(data.ToString(ctx));
+            byte[] encryptedBytes = (options & Options.OPENSSL_RAW_DATA) != 0
+                ? data.ToBytes(ctx)
+                : System.Convert.FromBase64String(data.ToString(ctx));
 
-            var aesAlg = PrepareCipher(ctx, encryptedBytes, key, cipher, iv, options);
+            var aesAlg = PrepareCipher(key, cipher, iv, options);
             ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
             using MemoryStream msDecrypt = new MemoryStream(encryptedBytes);
@@ -215,13 +217,14 @@ namespace Pchp.Library
         /// <param name="data">The plaintext message data to be encrypted.</param>
         /// <param name="method">The cipher method. For a list of available cipher methods, use openssl_get_cipher_methods().</param>
         /// <param name="key">The key.</param>
-        /// <param name="options">options is a bitwise disjunction of the flags OPENSSL_RAW_DATA and OPENSSL_ZERO_PADDING.</param>
+        /// <param name="options">options is a bitwise disjunction of the flags <see cref="OPENSSL_RAW_DATA"/> and <see cref="OPENSSL_ZERO_PADDING"/>.</param>
         /// <param name="iv">A non-NULL Initialization Vector.</param>
         /// <param name="tag">The authentication tag passed by reference when using AEAD cipher mode (GCM or CCM).</param>
         /// <param name="aad">Additional authentication data.</param>
         /// <param name="tag_length">The length of the authentication tag. Its value can be between 4 and 16 for GCM mode.</param>
         /// <returns>Returns the encrypted string on success or FALSE on failure.</returns>
-        public static PhpString openssl_encrypt(Context ctx, string data, string method, PhpString key, Options options, PhpString iv, string tag = "", string aad = "", int tag_length = 16)
+        [return: CastToFalse]
+        public static PhpString openssl_encrypt(Context ctx, string data, string method, byte[] key, Options options, byte[] iv, string tag = "", string aad = "", int tag_length = 16)
         {
             if (CiphersAliases.TryGetValue(method, out var aliasName))
             {
@@ -232,43 +235,48 @@ namespace Pchp.Library
             {
                 // Unknown cipher algorithm.
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_unknown_cipher);
-                return null;
+                return default; // FALSE
             }
 
-            if (iv.IsEmpty)
+            if (ArrayUtils.IsNullOrEmpty(iv))
             {
                 PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_empty_iv);
             }
 
+            // NS warnings:
+            if (!string.IsNullOrEmpty(tag)) PhpException.ArgumentValueNotSupported(nameof(tag), tag);
+            if (!string.IsNullOrEmpty(aad)) PhpException.ArgumentValueNotSupported(nameof(aad), aad);
+            if (tag_length != 16) PhpException.ArgumentValueNotSupported(nameof(tag_length), tag_length);
+
+            //
             try
             {
-                return Encrypt(ctx, data, key, cipherMethod, iv, options);
+                return Encrypt(data, key, cipherMethod, iv, options);
             }
             catch (CryptographicException ex)
             {
                 PhpException.Throw(PhpError.E_WARNING, ex.Message);
-                return "";
+                return default; // FALSE
             }
         }
 
-        private static PhpString Encrypt(Context ctx, string data, PhpString key, Cipher cipher, PhpString iv, Options options)
+        private static PhpString Encrypt(string data, byte[] key, Cipher cipher, byte[] iv, Options options)
         {
-            byte[] encrypted = null;
-            byte[] dataBytes = ctx.StringEncoding.GetBytes(data);
-
-            var aesAlg = PrepareCipher(ctx, dataBytes, key, cipher, iv, options);
+            var aesAlg = PrepareCipher(key, cipher, iv, options);
             ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
             using MemoryStream msEncrypt = new MemoryStream();
             using CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
 
-            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+            using (var swEncrypt = new StreamWriter(csEncrypt))
+            {
                 swEncrypt.Write(data);
+            }
 
-            encrypted = msEncrypt.ToArray();
+            var encrypted = msEncrypt.ToArray();
 
-            if ((options & Options.OPENSSL_RAW_DATA) == Options.OPENSSL_RAW_DATA)
-                return new PhpString(encrypted);
+            if ((options & Options.OPENSSL_RAW_DATA) != 0)
+                return (PhpString)encrypted;
             else
                 return System.Convert.ToBase64String(encrypted);
         }
