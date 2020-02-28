@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Peachpie.NET.Sdk/1.0.0-dev">
 
-  <Import Project="../build/Targets/Settings.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
