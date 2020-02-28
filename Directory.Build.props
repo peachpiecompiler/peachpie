@@ -17,7 +17,7 @@
     <GenerateNeutralResourcesLanguageAttribute>true</GenerateNeutralResourcesLanguageAttribute>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants Condition=" '$(Configuration)' == 'Debug' ">$(DefineConstants);TRACE</DefineConstants>
     <LangVersion>latest</LangVersion>
 
     <!-- signing -->
