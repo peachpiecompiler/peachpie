@@ -211,6 +211,11 @@ namespace Pchp.Core.Utilities
 
             return reversed;
         }
+
+        /// <summary>
+        /// Gets value indicating the array is null or with no elements.
+        /// </summary>
+        public static bool IsNullOrEmpty<T>(T[] array) => array == null || array.Length == 0;
     }
 
     /// <summary>
