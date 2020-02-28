@@ -35,6 +35,13 @@
 
   </PropertyGroup>
 
+  <!-- packages version -->
+  <PropertyGroup>
+    
+    <PeachpieLibraryRegularExpressionsVersion>1.1.1</PeachpieLibraryRegularExpressionsVersion>
+    
+  </PropertyGroup>
+
   <!-- package -->
   <PropertyGroup>
     <RepositoryType>git</RepositoryType>
