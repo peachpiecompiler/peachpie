@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Semantics;
+using System.Runtime.CompilerServices;
 
 namespace Pchp.Core.Dynamic
 {
@@ -166,7 +167,11 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static bool IsMandatoryParameter(this ParameterInfo p)
         {
-            return !p.HasDefaultValue && !p.IsOptional && !p.IsParamsParameter();
+            return
+                !p.HasDefaultValue && // CLR default value
+                !p.IsOptional && // has [Optional} attribute
+                p.GetCustomAttribute<DefaultValueAttribute>() == null && // has [DefaultValue] attribute
+                !p.IsParamsParameter(); // is params
         }
 
         /// <summary>
@@ -298,6 +303,14 @@ namespace Pchp.Core.Dynamic
             return Expression.Coalesce(
                 variable,
                 Expression.Assign(variable, Expression.New(typeof(PhpArray))));
+        }
+
+        /// <summary>
+        /// Gets expression representing <code>Array&lt;paramref name="element_type"&gt;.Empty()</code>.
+        /// </summary>
+        public static Expression EmptyArray(Type element_type)
+        {
+            return Expression.Call(typeof(Array), "Empty", new[] { element_type });
         }
 
         public static Expression NewPhpArray(Expression[] values, Expression ctx, Type classContext = null)
