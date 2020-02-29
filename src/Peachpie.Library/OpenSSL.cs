@@ -11,6 +11,7 @@
  * - Loading Key resource from PEM format because of same reason as above.
  * - Advanced functionality in methods, like some special properties. 
  */
+//TODO: Waiting for .NetStandart 2.1  to implement the rest of functions.
 using System;
 using System.Collections.Generic;
 using System.Text;
