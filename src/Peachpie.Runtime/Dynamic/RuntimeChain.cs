@@ -417,7 +417,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
     }
 
     [DebuggerDisplay(";")]
-    public struct ChainEnd : IRuntimeChain // void struct
+    public readonly struct ChainEnd : IRuntimeChain // void struct
     {
         RuntimeChainOperation IRuntimeChain.Operation => RuntimeChainOperation.End; // -1
 

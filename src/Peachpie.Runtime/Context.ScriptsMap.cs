@@ -43,7 +43,7 @@ namespace Pchp.Core
         /// </summary>
         [DebuggerDisplay("{Index}: {Path,nq}")]
         [DebuggerNonUserCode]
-        public struct ScriptInfo : IScript
+        public readonly struct ScriptInfo : IScript
         {
             /// <summary>
             /// Undefined script.

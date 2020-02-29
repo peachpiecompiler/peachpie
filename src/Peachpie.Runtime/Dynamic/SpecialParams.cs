@@ -30,12 +30,12 @@ namespace Pchp.Core.Dynamic
     /// Wraps an argument passed to callsite denotating a special meaning of the value.
     /// </summary>
     [DebuggerNonUserCode]
-    public struct ContextParam : ISpecialParamHolder
+    public readonly struct ContextParam : ISpecialParamHolder
     {
         /// <summary>
         /// Runtime context.
         /// </summary>
-        public Context Value;
+        public readonly Context Value;
 
         bool ISpecialParamHolder.IsImplicit => true;
 
@@ -52,12 +52,12 @@ namespace Pchp.Core.Dynamic
     /// Wraps an argument passed to callsite denotating a function or property name.
     /// </summary>
     [DebuggerNonUserCode]
-    public struct NameParam<T> : ISpecialParamHolder
+    public readonly struct NameParam<T> : ISpecialParamHolder
     {
         /// <summary>
         /// The invoked member, <c>callable</c>.
         /// </summary>
-        public T Value;
+        public readonly T Value;
 
         bool ISpecialParamHolder.IsImplicit => true;
 
@@ -87,12 +87,12 @@ namespace Pchp.Core.Dynamic
     /// Wraps an argument passed to callsite denotating target type of a static invocation operation (call, static field, class const).
     /// </summary>
     [DebuggerNonUserCode]
-    public struct TargetTypeParam : ISpecialParamHolder
+    public readonly struct TargetTypeParam : ISpecialParamHolder
     {
         /// <summary>
         /// Target type.
         /// </summary>
-        public PhpTypeInfo Value;
+        public readonly PhpTypeInfo Value;
 
         bool ISpecialParamHolder.IsImplicit => true;
 
@@ -112,12 +112,12 @@ namespace Pchp.Core.Dynamic
     /// Wraps an argument passed to callsite denotating a generic argument.
     /// </summary>
     [DebuggerNonUserCode]
-    public struct GenericParam : ISpecialParamHolder
+    public readonly struct GenericParam : ISpecialParamHolder
     {
         /// <summary>
         /// A generic argument.
         /// </summary>
-        public PhpTypeInfo Value;
+        public readonly PhpTypeInfo Value;
 
         bool ISpecialParamHolder.IsImplicit => true;
 
@@ -134,12 +134,12 @@ namespace Pchp.Core.Dynamic
     /// Wraps an argument passed to callsite denotating a caller type.
     /// </summary>
     [DebuggerNonUserCode]
-    public struct CallerTypeParam : ISpecialParamHolder
+    public readonly struct CallerTypeParam : ISpecialParamHolder
     {
         /// <summary>
         /// Caller type context.
         /// </summary>
-        public RuntimeTypeHandle Value;
+        public readonly RuntimeTypeHandle Value;
 
         bool ISpecialParamHolder.IsImplicit => true;
 
@@ -157,9 +157,9 @@ namespace Pchp.Core.Dynamic
     /// Wraps the argument unpacking.
     /// </summary>
     [DebuggerNonUserCode]
-    public struct UnpackingParam<T> : ISpecialParamHolder
+    public readonly struct UnpackingParam<T> : ISpecialParamHolder
     {
-        public T Value;
+        public readonly T Value;
 
         bool ISpecialParamHolder.IsImplicit => false;
 

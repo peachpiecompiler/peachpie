@@ -18,7 +18,7 @@ namespace Pchp.Core.Text
     /// Used internally.
     /// </summary>
     [DebuggerNonUserCode]
-    internal struct BlobChar
+    internal readonly struct BlobChar
     {
         private readonly short _b;
         private readonly char _ch;

@@ -13,7 +13,7 @@ namespace Peachpie.Library.XmlDom
     {
         #region Nested struct: MapKey
 
-        private protected struct MapKey : IEquatable<MapKey>
+        private protected readonly struct MapKey : IEquatable<MapKey>
         {
             public readonly string NamespaceUri;
             public readonly string/*!*/ LocalName;

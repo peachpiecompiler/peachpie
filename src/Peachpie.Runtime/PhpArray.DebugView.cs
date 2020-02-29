@@ -50,7 +50,7 @@ namespace Pchp.Core
 
         [DebuggerDisplay("{Value}", Name = "{_key}", Type = "{DebugTypeName,nq}")]
         [DebuggerNonUserCode]
-        struct PhpArrayEntryDebugProxy
+        readonly struct PhpArrayEntryDebugProxy
         {
             //[DebuggerBrowsable(DebuggerBrowsableState.Never)]
             //readonly PhpArray _array;

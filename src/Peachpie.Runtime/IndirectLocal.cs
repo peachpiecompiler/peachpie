@@ -13,7 +13,7 @@ namespace Pchp.Core
     /// </summary>
     [DebuggerDisplay("{DisplayString,nq}", Name = "${_name,nq}", Type = "{DebugTypeName,nq}")]
     [DebuggerNonUserCode, DebuggerStepThrough]
-    public struct IndirectLocal
+    public readonly struct IndirectLocal
     {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         readonly OrderedDictionary _locals;

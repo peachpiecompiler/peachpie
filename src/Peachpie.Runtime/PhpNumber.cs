@@ -14,7 +14,7 @@ namespace Pchp.Core
     [DebuggerDisplay("{GetDebuggerValue,nq}", Type = "{GetDebuggerType,nq}")]
     [DebuggerNonUserCode, DebuggerStepThrough]
     [StructLayout(LayoutKind.Explicit)]
-    public struct PhpNumber : IComparable<PhpNumber>, IComparable<long>, IComparable<double>, IEquatable<PhpNumber>, IPhpConvertible
+    public readonly struct PhpNumber : IComparable<PhpNumber>, IComparable<long>, IComparable<double>, IEquatable<PhpNumber>, IPhpConvertible
     {
         #region nested enum: NumberType
 
