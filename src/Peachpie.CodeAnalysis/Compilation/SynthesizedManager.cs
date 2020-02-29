@@ -193,7 +193,7 @@ namespace Pchp.CodeAnalysis.Emit
         {
             return GetOrCreateSynthesizedField(
                     _module.ScriptType,
-                    DeclaringCompilation.CoreTypes.Int32,
+                    DeclaringCompilation.GetSpecialType(SpecialType.System_Int32),
                     "<const>" + cname,
                     Accessibility.Internal, true, false,
                     autoincrement: false);

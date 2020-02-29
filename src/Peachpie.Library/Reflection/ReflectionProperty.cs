@@ -133,7 +133,7 @@ namespace Pchp.Library.Reflection
             return flags;
         }
         public virtual string getName() => name;
-        public virtual PhpValue getValue(Context ctx, object @object) => _pinfo.GetValue(ctx, @object);
+        public virtual PhpValue getValue(Context ctx, object @object = null) => _pinfo.GetValue(ctx, @object);
         public virtual bool isDefault() => !_pinfo.IsRuntimeProperty;
         public virtual bool isPrivate() => _pinfo.IsPrivate;
         public virtual bool isProtected() => _pinfo.IsProtected;

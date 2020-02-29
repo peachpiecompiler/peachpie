@@ -124,6 +124,12 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SymbolsCache<QualifiedName, SourceFunctionSymbol> _functions;
 
         /// <summary>
+        /// Class holding app-static constants defined in compile-time.
+        /// <code>static class &lt;constants&gt; { ... }</code>
+        /// </summary>
+        internal SynthesizedTypeSymbol DefinedConstantsContainer { get; }
+
+        /// <summary>
         /// First script added to the collection.
         /// Used as a default entry script.
         /// </summary>
@@ -138,6 +144,66 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _types = new SymbolsCache<QualifiedName, SourceTypeSymbol>(this, f => f.ContainedTypes, t => t.MakeQualifiedName(), t => !t.IsConditional || t.IsAnonymousType);
             _functions = new SymbolsCache<QualifiedName, SourceFunctionSymbol>(this, f => f.Functions, f => f.QualifiedName, f => !f.IsConditional);
+
+            // class <constants> { ... }
+            PopulateDefinedConstants(
+                this.DefinedConstantsContainer = _compilation.AnonymousTypeManager.SynthesizeType("<constants>", Accessibility.Internal),
+                _compilation.Options.Defines);
+        }
+
+        void PopulateDefinedConstants(SynthesizedTypeSymbol container, ImmutableDictionary<string, string> defines)
+        {
+            if (defines == null || defines.IsEmpty)
+            {
+                return;
+            }
+
+            foreach (var d in defines)
+            {
+                // resolve the value from string
+                ConstantValue value;
+
+                if (string.IsNullOrEmpty(d.Value))
+                {
+                    value = ConstantValue.True;
+                }
+                else if (string.Equals(d.Value, "null", StringComparison.OrdinalIgnoreCase))
+                {
+                    value = ConstantValue.Null;
+                }
+                else if (long.TryParse(d.Value, out var l))
+                {
+                    value = (l >= int.MinValue && l <= int.MaxValue)
+                        ? ConstantValue.Create((int)l)
+                        : ConstantValue.Create(l);
+                }
+                else if (bool.TryParse(d.Value, out var b))
+                {
+                    value = ConstantValue.Create(b);
+                }
+                else if (double.TryParse(d.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                {
+                    value = ConstantValue.Create(f);
+                }
+                else if (d.Value.Length >= 2 && d.Value[0] == '\"' && d.Value[d.Value.Length - 1] == d.Value[0])
+                {
+                    value = ConstantValue.Create(d.Value.Substring(1, d.Value.Length - 2));
+                }
+                else
+                {
+                    value = ConstantValue.Create(d.Value);
+                }
+
+                // TODO: expressions ? app constants can be also static properties
+                // TODO: check name
+
+                var type = _compilation.GetSpecialType(value.IsNull ? SpecialType.System_Object : value.SpecialType);
+
+                //
+                container.AddMember(
+                    new SynthesizedFieldSymbol(container, type, d.Key, Accessibility.Public, constant: value)
+                    );
+            }
         }
 
         public void AddSyntaxTreeRange(IEnumerable<PhpSyntaxTree> trees)
@@ -183,7 +249,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     yieldsInRoutines[containingRoutine].Add(yield);
                 }
 
-                foreach(var yieldsInRoutine in yieldsInRoutines)
+                foreach (var yieldsInRoutine in yieldsInRoutines)
                 {
                     var routine = yieldsInRoutine.Key;
                     var yields = yieldsInRoutine.Value;
@@ -272,7 +338,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var mains = _files.Values.Select(f => (SourceRoutineSymbol)f.MainMethod);
                 var methods = GetTypes().SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
                 var lambdas = GetLambdas();
-                
+
                 //
                 return funcs.Concat(mains).Concat(methods).Concat(lambdas);
             }
@@ -301,7 +367,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-            var result = 
+            var result =
                 (alternatives != null) ? new AmbiguousErrorTypeSymbol(alternatives.AsImmutable())   // ambiguity
                 : first ?? new MissingMetadataTypeSymbol(name.ClrName(), 0, false);
 

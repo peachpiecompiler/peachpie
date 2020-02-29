@@ -16,6 +16,7 @@ namespace Pchp.Core.Dynamic
             public static Type[] Empty => Array.Empty<Type>();
             public static Type[] Int = new Type[] { typeof(int) };
             public static Type[] Long = new Type[] { typeof(long) };
+            public static Type[] UInt64 = new Type[] { typeof(ulong) };
             public static Type[] Double = new Type[] { typeof(double) };
             public static Type[] String = new Type[] { typeof(string) };
             public static Type[] Bool = new Type[] { typeof(bool) };

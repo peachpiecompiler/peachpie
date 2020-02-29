@@ -266,31 +266,23 @@ namespace Pchp.Core.Reflection
         /// </summary>
         static string ResolvePhpTypeName(Type tinfo, PhpTypeAttribute attr)
         {
-            string name;
-
-            switch (attr != null ? attr.TypeNameAs : PhpTypeAttribute.PhpTypeName.Default)
+            string name = (attr != null ? attr.TypeNameAs : PhpTypeAttribute.PhpTypeName.Default) switch
             {
-                case PhpTypeAttribute.PhpTypeName.Default:
-                    // CLR type
-                    name = tinfo.FullName       // full PHP type name instead of CLR type name
-                       .Replace('.', '\\')      // namespace separator
-                       .Replace('+', '\\');     // nested type separator
-                    break;
+                PhpTypeAttribute.PhpTypeName.Default => // CLR type 
+                    tinfo.FullName       // full PHP type name instead of CLR type name
+                    .Replace('.', '\\')      // namespace separator
+                    .Replace('+', '\\')     // nested type separator
+                    ,
 
-                case PhpTypeAttribute.PhpTypeName.NameOnly:
-                    name = tinfo.Name;
-                    break;
-                        
-                case PhpTypeAttribute.PhpTypeName.CustomName:
-                    name = attr.ExplicitTypeName ?? tinfo.Name;
-                    break;
+                PhpTypeAttribute.PhpTypeName.NameOnly => tinfo.Name,
 
-                default:
-                    throw new ArgumentException();
-            }
+                PhpTypeAttribute.PhpTypeName.CustomName =>
+                    attr.ExplicitTypeName ?? tinfo.Name,
 
-            Debug.Assert(name != null);
-            Debug.Assert(name.Length != 0);
+                _ => throw new ArgumentException(),
+            };
+
+            Debug.Assert(!string.IsNullOrEmpty(name));
 
             // remove suffixed indexes if any (after a special metadata character)
             var idx = name.IndexOfAny(s_metadataSeparators);
@@ -299,7 +291,7 @@ namespace Pchp.Core.Reflection
                 name = name.Remove(idx);
             }
 
-            Debug.Assert(ReflectionUtils.IsAllowedPhpName(name));
+            // Debug.Assert(ReflectionUtils.IsAllowedPhpName(name)); // anonymous classes have not allowed name, but it's ok
 
             //
             return name;

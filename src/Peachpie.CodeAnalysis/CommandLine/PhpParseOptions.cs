@@ -24,12 +24,6 @@ namespace Pchp.CodeAnalysis
         ImmutableDictionary<string, string> _features;
 
         /// <summary>
-        /// Set of compile-time defined constants.
-        /// </summary>
-        public ImmutableDictionary<string, string> Defines => _defines;
-        ImmutableDictionary<string, string> _defines;
-
-        /// <summary>
         /// Gets required language version.
         /// <c>null</c> value respects the parser's default which is always the latest version.
         /// </summary>
@@ -65,12 +59,10 @@ namespace Pchp.CodeAnalysis
             SourceCodeKind kind,
             Version languageVersion,
             bool shortOpenTags,
-            ImmutableDictionary<string, string> features,
-            ImmutableDictionary<string, string> defines)
+            ImmutableDictionary<string, string> features)
             : this(documentationMode, kind, languageVersion, shortOpenTags)
         {
             _features = features ?? throw new ArgumentNullException(nameof(features));
-            _defines = defines ?? throw new ArgumentNullException(nameof(features));
         }
 
         private PhpParseOptions(PhpParseOptions other)

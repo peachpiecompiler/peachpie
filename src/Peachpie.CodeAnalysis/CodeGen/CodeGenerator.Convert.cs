@@ -380,7 +380,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (from.SpecialType == SpecialType.System_String)
                 {
-                    EmitLoadToken(this.CallerType, null);
+                    EmitCallerTypeHandle();
                     EmitThisOrNull();
                     EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_String_RuntimeTypeHandle_Object);
                 }
@@ -394,7 +394,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else
                 {
                     EmitConvertToPhpValue(from, fromHint);
-                    EmitLoadToken(this.CallerType, null);
+                    EmitCallerTypeHandle();
                     EmitThisOrNull();
                     EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_PhpValue_RuntimeTypeHandle_Object);
                 }

@@ -39,6 +39,8 @@ namespace Pchp.Library.Spl
         [PhpFieldsOnlyCtor]
         protected Exception()
         {
+            this.code = PhpValue.Null;
+            this.message = PhpValue.Null;
         }
 
         public Exception(string message = "", long code = 0, Throwable previous = null)

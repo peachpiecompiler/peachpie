@@ -37,7 +37,7 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary>
         /// Optimization level.
         /// Can be a boolean value (true/false), an integer specifying the level(0-9), or an optimization name (debug, release).</summary>
-        public string Optimization { get; set; } = true.ToString();
+        public string Optimization { get; set; } = bool.TrueString;
 
         /// <summary></summary>
         public string DebugType { get; set; }
@@ -52,7 +52,10 @@ namespace Peachpie.NET.Sdk.Tools
         public string Version { get; set; }
 
         /// <summary></summary>
-        public bool EmitEntryPoint { get; set; }
+        public string OutputType { get; set; }
+
+        /// <summary></summary>
+        public bool GenerateFullPaths { get; set; }
 
         /// <summary></summary>
         public string EntryPoint { get; set; }
@@ -122,8 +125,9 @@ namespace Peachpie.NET.Sdk.Tools
             var args = new List<string>(1024)
             {
                 "/output-name:" + OutputName,
-                "/target:" + (EmitEntryPoint ? "exe" : "library"),
+                "/target:" + (string.IsNullOrEmpty(OutputType) ? "library" : OutputType),
                 "/o:" + Optimization,
+                "/fullpaths:" + GenerateFullPaths.ToString(),
             };
 
             if (HasDebugPlus)
@@ -195,6 +199,7 @@ namespace Peachpie.NET.Sdk.Tools
                 }
             }
 
+#if DEBUG
             //
             // save the arguments as .rsp file for debugging purposes:
             try
@@ -205,6 +210,7 @@ namespace Peachpie.NET.Sdk.Tools
             {
                 this.Log.LogWarningFromException(ex);
             }
+#endif
 
             //
             // run the compiler:

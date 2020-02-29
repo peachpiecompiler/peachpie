@@ -27,6 +27,7 @@ namespace Peachpie.Library.Network
             Verbose = 2,
             FailOnError = 4,
             FollowLocation = 8,
+            SafeUpload = 16,
         }
 
         #endregion
@@ -111,6 +112,19 @@ namespace Peachpie.Library.Network
             {
                 if (value) _flags |= Flags.FailOnError;
                 else _flags &= ~Flags.FailOnError;
+            }
+        }
+
+        /// <summary>
+        /// <see cref="CURLConstants.CURLOPT_SAFE_UPLOAD"/> option.
+        /// </summary>
+        public bool SafeUpload
+        {
+            get => (_flags & Flags.SafeUpload) != 0;
+            set
+            {
+                if (value) _flags |= Flags.SafeUpload;
+                else _flags &= ~Flags.SafeUpload;
             }
         }
 

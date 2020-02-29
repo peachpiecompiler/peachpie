@@ -516,6 +516,11 @@ namespace Peachpie.Library.Network
         public const int CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE = 5;
         public const int CURLOPT_CONNECT_TO = 10243;
         public const int CURLOPT_TCP_FASTOPEN = 244;
+
+        /// <summary>
+        /// If set to <c>true</c>, `@` is not allowed in for uploading files with <see cref="CURLOPT_POSTFIELDS"/>.
+        /// Since PHP 7, this option is removed and <see cref="CURLFile"/> must be used to upload files.
+        /// </summary>
         public const int CURLOPT_SAFE_UPLOAD = -1;
 
         #endregion
@@ -562,11 +567,11 @@ namespace Peachpie.Library.Network
             return null;
         }
 
-        static bool TryProcessMethodFromCallable(PhpValue value, ProcessMethod @default, ref ProcessMethod processing)
+        static bool TryProcessMethodFromCallable(PhpValue value, ProcessMethod @default, ref ProcessMethod processing, RuntimeTypeHandle callerCtx)
         {
             if (Operators.IsSet(value))
             {
-                var callable = value.AsCallable();
+                var callable = value.AsCallable(callerCtx);
                 if (callable != null)
                 {
                     processing = new ProcessMethod(callable);
@@ -584,7 +589,7 @@ namespace Peachpie.Library.Network
             return true;
         }
 
-        internal static bool TrySetOption(this CURLResource ch, int option, PhpValue value)
+        internal static bool TrySetOption(this CURLResource ch, int option, PhpValue value, RuntimeTypeHandle callerCtx)
         {
             switch (option)
             {
@@ -610,7 +615,7 @@ namespace Peachpie.Library.Network
                         : ProcessMethod.Ignore;
                     break;
                 case CURLOPT_HTTPHEADER: return SetOption<CurlOption_Headers, PhpArray>(ch, value.ToArray().DeepCopy());
-                case CURLOPT_ENCODING: return SetOption<CurlOption_AcceptEncoding, string>(ch, value.ToStringOrNull().EmptyToNull());
+                case CURLOPT_ENCODING: ch.SetOption(new CurlOption_AcceptEncoding { OptionValue = value.ToStringOrNull() }); return true;
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
                 case CURLOPT_COOKIEFILE:
                     ch.CookieContainer ??= new CookieContainer();   // enable the cookie container
@@ -633,8 +638,8 @@ namespace Peachpie.Library.Network
                 case CURLOPT_WRITEHEADER: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders);
                 //case CURLOPT_STDERR: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingErr);
 
-                case CURLOPT_HEADERFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders);
-                case CURLOPT_WRITEFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
+                case CURLOPT_HEADERFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders, callerCtx);
+                case CURLOPT_WRITEFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.StdOut, ref ch.ProcessingResponse, callerCtx);
                 //case CURLOPT_READFUNCTION:
                 //case CURLOPT_PROGRESSFUNCTION:
 
@@ -723,10 +728,20 @@ namespace Peachpie.Library.Network
                 case CURLOPT_FRESH_CONNECT: break; // ignored, let the system decide
                 case CURLOPT_FORBID_REUSE: break; // ignored for now, Dispose() always
 
+                case CURLOPT_SAFE_UPLOAD: ch.SafeUpload = value.ToBoolean(); break;
+
                 //
                 default:
-                    PhpException.ArgumentValueNotSupported(nameof(option), TryGetOptionName(option));
-                    return false;
+                    if (option > 0)
+                    {
+                        PhpException.ArgumentValueNotSupported(nameof(option), TryGetOptionName(option));
+                        return false;
+                    }
+                    else
+                    {
+                        // ignored option
+                        return true;
+                    }
             }
 
             return true;
@@ -943,7 +958,18 @@ namespace Peachpie.Library.Network
 
         public override void Apply(Context ctx, HttpWebRequest request)
         {
-            request.Headers.Set(HttpRequestHeader.AcceptEncoding, this.OptionValue);
+            if (this.OptionValue != null)
+            {
+                if (this.OptionValue.Length != 0)
+                {
+                    request.Headers.Set(HttpRequestHeader.AcceptEncoding, this.OptionValue);
+                }
+            }
+            else
+            {
+                // NULL specifically disables sending accept-encoding header
+                request.Headers.Remove(HttpRequestHeader.AcceptEncoding);
+            }
         }
     }
 

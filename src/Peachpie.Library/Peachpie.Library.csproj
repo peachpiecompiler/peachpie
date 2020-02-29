@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;1574</NoWarn>
@@ -28,7 +27,7 @@
     <PackageReference Include="FluentFTP" Version="28.0.1" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.2" />
     <PackageReference Include="NGettext" Version="0.6.5" />
-    <PackageReference Include="Peachpie.Library.RegularExpressions" Version="1.1.1" />
+    <PackageReference Include="Peachpie.Library.RegularExpressions" Version="$(PeachpieLibraryRegularExpressionsVersion)" />
     <PackageReference Include="System.IO.FileSystem.AccessControl" Version="4.7.0" />
     <PackageReference Include="System.IO.FileSystem.DriveInfo" Version="4.3.1" />
     <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="3.0.0" />

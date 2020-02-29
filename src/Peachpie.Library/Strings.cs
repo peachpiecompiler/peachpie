@@ -600,16 +600,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to be reversed.</param>
         /// <returns>The reversed string or empty string if <paramref name="str"/> is null.</returns>
-        public static string strrev(string str)
-        {
-            if (string.IsNullOrEmpty(str))
-                return string.Empty;
-
-            //
-            var chars = str.ToCharArray();
-            Array.Reverse(chars);
-            return new string(chars);
-        }
+        public static PhpString strrev(PhpString str) => str.Reverse();
 
         /// <summary>
         /// Finds a length of a segment consisting entirely of specified characters.

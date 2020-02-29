@@ -14,15 +14,12 @@ using Pchp.CodeAnalysis.Symbols;
 using Devsense.PHP.Syntax.Ast;
 using Peachpie.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
-using System.Text.RegularExpressions;
 using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     internal partial class DiagnosticWalker<T> : GraphExplorer<T>
     {
-        private static readonly Regex PrintfSpecsRegex = new Regex(@"%(?:(\d)+\$)?[+-]?(?:[ 0]|'.{1})?-?\d*(?:\.\d+)?[bcdeEufFgGosxX]");
-
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
 
@@ -581,7 +578,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             if (x.Name.IsDirect)
             {
                 CheckObsoleteSymbol(x.PhpSyntax, x.TargetMethod, isMemberCall: false);
-                CheckGlobalFunctionUsage(x);
+                CheckGlobalFunctionCall(x);
             }
             else
             {
@@ -948,50 +945,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // in a global function or a class without parent -> error
                     Add(typeRef.PhpSyntax.Span, Devsense.PHP.Errors.FatalErrors.ParentAccessedInParentlessClass);
                 }
-            }
-        }
-
-        private void CheckGlobalFunctionUsage(BoundGlobalFunctionCall call)
-        {
-            if (!AnalysisFacts.HasSimpleName(call, out string name))
-            {
-                return;
-            }
-
-            switch (name)
-            {
-                case "printf":
-                case "sprintf":
-                    // Check that the number of arguments matches the format string
-                    if (!call.ArgumentsInSourceOrder.IsEmpty && call.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out string format))
-                    {
-                        int posSpecCount = 0;
-                        int numSpecMax = 0;
-                        foreach (Match match in PrintfSpecsRegex.Matches(format))
-                        {
-                            var numSpecStr = match.Groups[1].Value;
-                            if (numSpecStr == string.Empty)
-                            {
-                                // %d
-                                posSpecCount++;
-                            }
-                            else
-                            {
-                                // %2$d
-                                int numSpec = int.Parse(numSpecStr);
-                                numSpecMax = Math.Max(numSpec, numSpecMax);
-                            }
-                        }
-
-                        int expectedArgCount = 1 + Math.Max(posSpecCount, numSpecMax);
-
-                        if (call.ArgumentsInSourceOrder.Length != expectedArgCount)
-                        {
-                            // Wrong number of arguments with respect to the format string
-                            _diagnostics.Add(_routine, call.PhpSyntax, ErrorCode.WRN_FormatStringWrongArgCount, name);
-                        }
-                    }
-                    break;
             }
         }
 

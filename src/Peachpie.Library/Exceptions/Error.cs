@@ -110,4 +110,28 @@ namespace Pchp.Library.Spl
         {
         }
     }
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    public class CompileError : Error
+    {
+        [PhpFieldsOnlyCtor]
+        protected CompileError() { }
+
+        public CompileError(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    public class ParseError : CompileError
+    {
+        [PhpFieldsOnlyCtor]
+        protected ParseError() { }
+
+        public ParseError(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
 }

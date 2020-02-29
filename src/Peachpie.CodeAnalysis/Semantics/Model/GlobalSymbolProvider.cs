@@ -60,8 +60,18 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         static IEnumerable<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
         {
-            return GetExtensionLibraries(compilation)
-                .SelectMany(r => r.ExtensionContainers);
+            var libraries = GetExtensionLibraries(compilation).SelectMany(r => r.ExtensionContainers);
+            var synthesized = compilation.SourceSymbolCollection.DefinedConstantsContainer;
+
+            //
+            if (synthesized.GetMembers().IsDefaultOrEmpty)
+            {
+                return libraries;
+            }
+            else
+            {
+                return libraries.Concat(synthesized);
+            }
         }
 
         internal bool IsFunction(MethodSymbol method)

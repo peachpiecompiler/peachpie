@@ -315,7 +315,8 @@
     <value>Using non-iterable type in foreach: {0}.</value>
   </data>
   <data name="WRN_FormatStringWrongArgCount" xml:space="preserve">
-    <value>Wrong number of arguments in {0}.</value>
+    <value>Call to '{0}()' expects {1} argument(s), {2} given.</value>
+    <comment>Call to printf or sprintf has wrong arguments count according to its format specifiers.</comment>
   </data>
   <data name="WRN_ParentCtorNotCalled" xml:space="preserve">
     <value>Missing the call of parent::__construct from {0}::__construct.</value>
@@ -371,5 +372,11 @@
   </data>
   <data name="INF_OverrideNameCaseMismatch" xml:space="preserve">
     <value>Overriden function name '{0}' does not match it's parent name '{1}', letter casing mismatch.</value>
+  </data>
+  <data name="ERR_NoSourceFile" xml:space="preserve">
+    <value>Source file '{0}' could not be opened -- {1}</value>
+  </data>
+  <data name="WRN_PCRE_Pattern_Error" xml:space="preserve">
+    <value>PCRE pattern parse error: {0} at offset {1}</value>
   </data>
 </root>

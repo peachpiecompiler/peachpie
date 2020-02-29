@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
     <TargetFramework>net461</TargetFramework>
     <AssemblyName>peach</AssemblyName>

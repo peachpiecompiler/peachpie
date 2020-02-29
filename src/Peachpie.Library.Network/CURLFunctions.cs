@@ -53,7 +53,12 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Sets an option on the given cURL session handle.
         /// </summary>
-        public static bool curl_setopt(CURLResource ch, int option, PhpValue value) => ch.TrySetOption(option, value);
+        public static bool curl_setopt(
+            [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle callerCtx,
+            CURLResource ch, int option, PhpValue value)
+        {
+            return ch.TrySetOption(option, value, callerCtx);
+        }
 
         /// <summary>
         /// URL encodes the given string.
@@ -106,7 +111,9 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Set multiple options for a cURL transfer.
         /// </summary>
-        public static bool curl_setopt_array(CURLResource ch, PhpArray options)
+        public static bool curl_setopt_array(
+            [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle callerCtx,
+            CURLResource ch, PhpArray options)
         {
             if (ch == null || !ch.IsValid)
             {
@@ -119,9 +126,16 @@ namespace Peachpie.Library.Network
                 var enumerator = options.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    if (!enumerator.CurrentKey.IsInteger ||
-                        !ch.TrySetOption(enumerator.CurrentKey.Integer, enumerator.CurrentValue))
+                    var key = enumerator.CurrentKey;
+
+                    if (key.IsInteger && ch.TrySetOption(key.Integer, enumerator.CurrentValue, callerCtx))
                     {
+                        // ok
+                        continue;
+                    }
+                    else
+                    {
+                        // stop on first fail and return FALSE
                         return false;
                     }
                 }

@@ -197,7 +197,11 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                if (!IsAssociated && GetType() != typeof(DOMNode)) return null;
+                if (!IsAssociated && GetType() != typeof(DOMNode))
+                {
+                    return null;
+                }
+
                 return Create(XmlNode.NextSibling);
             }
         }
@@ -233,13 +237,14 @@ namespace Peachpie.Library.XmlDom
             {
                 if (IsAssociated) return XmlNode.Prefix;
 
-                string prefix, local_name;
-                Utils.ParseQualifiedName(nodeName, out prefix, out local_name);
+                Utils.ParseQualifiedName(nodeName, out var prefix, out _);
 
                 return prefix;
             }
             set
-            { XmlNode.Prefix = value; }
+            {
+                XmlNode.Prefix = value;
+            }
         }
 
         /// <summary>
@@ -249,10 +254,12 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                if (IsAssociated) return XmlNode.LocalName;
+                if (IsAssociated)
+                {
+                    return XmlNode.LocalName;
+                }
 
-                string prefix, local_name;
-                Utils.ParseQualifiedName(nodeName, out prefix, out local_name);
+                Utils.ParseQualifiedName(nodeName, out _, out var local_name);
 
                 return local_name;
             }
@@ -265,7 +272,11 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                if (!IsAssociated && GetType() != typeof(DOMNode)) return null;
+                if (!IsAssociated && GetType() != typeof(DOMNode))
+                {
+                    return null;
+                }
+
                 return XmlNode.BaseURI;
             }
         }

@@ -398,11 +398,12 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
+                case PhpTypeCode.Undefined:
                 case PhpTypeCode.Null:
                     return Count;
 
                 case PhpTypeCode.Object:
-                    return (value.Object == null) ? Count : 1;
+                    return 1;
 
                 case PhpTypeCode.Boolean:
                     return (Count > 0 ? 2 : 1) - (value.Boolean ? 2 : 1);
@@ -416,6 +417,9 @@ namespace Pchp.Core
                         PhpException.Throw(PhpError.Warning, ErrResources.incomparable_arrays_compared);
                     }
                     return result;
+
+                case PhpTypeCode.Alias:
+                    return Compare(value.Alias.Value, comparer);
             }
 
             //

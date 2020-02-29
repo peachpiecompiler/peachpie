@@ -335,7 +335,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
     #region BoundClassTypeRef
 
-    [DebuggerDisplay("BoundClassTypeRef ({_qname})")]
+    [DebuggerDisplay("BoundClassTypeRef ({ToString(),nq})")]
     sealed class BoundClassTypeRef : BoundTypeRef
     {
         public QualifiedName ClassName { get; }

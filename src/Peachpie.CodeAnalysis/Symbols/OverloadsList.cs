@@ -47,6 +47,15 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        [Flags]
+        public enum InvocationKindFlags
+        {
+            InstanceCall = 1,
+            StaticCall = 2,
+
+            New = InstanceCall,
+        }
+
         readonly MethodSymbol _single;
         readonly MethodSymbol[] _methods;
 
@@ -80,7 +89,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// - <see cref="AmbiguousMethodSymbol"/>
         /// - <see cref="InaccessibleMethodSymbol"/>
         /// </returns>
-        public MethodSymbol/*!*/Resolve(TypeRefContext typeCtx, ImmutableArray<BoundArgument> args, VisibilityScope scope, bool isInstanceMethodCall)
+        public MethodSymbol/*!*/Resolve(TypeRefContext typeCtx, ImmutableArray<BoundArgument> args, VisibilityScope scope, InvocationKindFlags flags)
         {
             if (_single != null)
             {
@@ -114,11 +123,12 @@ namespace Pchp.CodeAnalysis.Symbols
             var statics = result.Count(m => m.IsStatic);
             if (statics > 0 && statics < result.Count)
             {
-                if (isInstanceMethodCall)
+                if ((flags & InvocationKindFlags.StaticCall) == 0)
                 {
                     result.RemoveAll(m => m.IsStatic);
                 }
-                else
+                
+                if ((flags & InvocationKindFlags.InstanceCall) == 0)
                 {
                     result.RemoveAll(m => !m.IsStatic);
                 }

@@ -148,11 +148,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (exit != null)
             {
-                bool wasNotAnalysed = false;
-                if (State.Routine?.IsReturnAnalysed == false)
+                var wasNotAnalysed = false;
+
+                if (Routine != null && !Routine.IsReturnAnalysed)
                 {
+                    Routine.IsReturnAnalysed = true;
                     wasNotAnalysed = true;
-                    State.Routine.IsReturnAnalysed = true;
                 }
 
                 // Ping the subscribers either if the return type has changed or
@@ -944,15 +945,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             var or = lValType | rValType;
 
-            // double + number => double
             if (IsNumberOnly(or))
             {
+                // double + number => double
                 if (IsDoubleOnly(lValType) || IsDoubleOnly(rValType))
                     return TypeCtx.GetDoubleTypeMask();
 
+                // long + long => long
                 if (State.IsLessThanLongMax(TryGetVariableHandle(left)) && IsLongConstant(right, 1)) // LONG + 1, where LONG < long.MaxValue
                     return TypeCtx.GetLongTypeMask();
 
+                return TypeCtx.GetNumberTypeMask();
+            }
+
+            if ((!lValType.IsRef && !lValType.IsAnyType && !TypeCtx.IsArray(lValType)) ||
+                (!rValType.IsRef && !rValType.IsAnyType && !TypeCtx.IsArray(rValType)))
+            {
+                // not array for sure:
                 return TypeCtx.GetNumberTypeMask();
             }
 
@@ -1452,28 +1461,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     // resolve the constant if possible,
                     // does not depend on the branch
-                    if (!currenttype.IsRef)
+                    if (!currenttype.IsRef && !currenttype.IsAnyType)
                     {
                         if (positivetype.IsVoid)    // always false
                         {
                             x.ConstantValue = ConstantValueExtensions.AsOptional(false);
                         }
-                        else if (positivetype == currenttype && !currenttype.IsAnyType)   // not void nor null
+                        else if (positivetype == currenttype)   // not void nor null
                         {
                             x.ConstantValue = ConstantValueExtensions.AsOptional(true);
                         }
                     }
 
                     // we can be more specific in true/false branches:
-                    if (branch != ConditionBranch.AnyResult)
+                    if (branch != ConditionBranch.AnyResult && !x.ConstantValue.HasValue)
                     {
                         // update target type in true/false branch:
                         var newtype = (branch == ConditionBranch.ToTrue)
                             ? positivetype
                             : TypeCtx.GetNullTypeMask();
 
-                        // keep the ref flag!
-                        newtype.IsRef = currenttype.IsRef;
+                        // keep the flags
+                        newtype |= currenttype.Flags;
 
                         //
                         State.SetLocalType(handle, newtype);
@@ -1853,7 +1862,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // symbol might be ErrorSymbol
 
-                x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, false);
+                x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, OverloadsList.InvocationKindFlags.StaticCall);
             }
 
             BindRoutineCall(x);
@@ -1888,7 +1897,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     candidates = Construct(candidates, x);
 
-                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, true);
+                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, OverloadsList.InvocationKindFlags.InstanceCall);
 
                     //
                     if (x.TargetMethod.IsValidMethod() && x.TargetMethod.IsStatic && x.Instance.TypeRefMask.IncludesSubclasses)
@@ -1926,7 +1935,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 candidates = Construct(candidates, x);
 
-                var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, false);
+                var flags = OverloadsList.InvocationKindFlags.StaticCall;
+
+                if (Routine != null && !Routine.IsStatic && (x.TypeRef.IsSelf() || x.TypeRef.IsParent()))
+                {
+                    // self:: or parent:: $this forwarding, prefer both
+                    flags |= OverloadsList.InvocationKindFlags.InstanceCall;
+                }
+
+                var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, flags);
                 if ((method is MissingMethodSymbol || method is InaccessibleMethodSymbol)
                     && type.LookupMember<IMethodSymbol>(Name.SpecialMethodNames.CallStatic.Value) != null)
                 {
@@ -1978,7 +1995,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = type.InstanceConstructors.ToArray();
 
                 //
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, true);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, OverloadsList.InvocationKindFlags.New);
                 x.ResultType = type;
             }
 

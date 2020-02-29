@@ -218,6 +218,102 @@ namespace Pchp.CodeAnalysis
             }, allowParallel: ConcurrentBuild);
         }
 
+        #region Nested class: LateStaticCallsLookup
+
+        /// <summary>
+        /// Lookups self:: and parent:: static method calls.
+        /// </summary>
+        class LateStaticCallsLookup : GraphExplorer<bool>
+        {
+            List<MethodSymbol> _lazyStaticCalls;
+
+            public static IList<MethodSymbol> GetSelfStaticCalls(BoundBlock block)
+            {
+                var visitor = new LateStaticCallsLookup();
+                visitor.Accept(block);
+                return (IList<MethodSymbol>)visitor._lazyStaticCalls ?? Array.Empty<MethodSymbol>();
+            }
+
+            public override bool VisitStaticFunctionCall(BoundStaticFunctionCall x)
+            {
+                if (x.TypeRef.IsSelf() || x.TypeRef.IsParent())
+                {
+                    if (_lazyStaticCalls == null) _lazyStaticCalls = new List<MethodSymbol>();
+
+                    if (x.TargetMethod.IsValidMethod() && x.TargetMethod.IsStatic)
+                    {
+                        _lazyStaticCalls.Add(x.TargetMethod);
+                    }
+                    else if (x.TargetMethod is AmbiguousMethodSymbol ambiguous)
+                    {
+                        _lazyStaticCalls.AddRange(ambiguous.Ambiguities.Where(sm => sm.IsStatic));
+                    }
+                }
+
+                return base.VisitStaticFunctionCall(x);
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Walks static methods that don't use late static binding and checks if it should forward the late static type;
+        /// hence it must know the late static as well.
+        /// </summary>
+        void ForwardLateStaticBindings()
+        {
+            var calls = new ConcurrentBag<KeyValuePair<SourceMethodSymbol, MethodSymbol>>();
+
+            // collect self:: or parent:: static calls
+            this.WalkMethods(routine =>
+            {
+                if (routine is SourceMethodSymbol caller && caller.IsStatic && (caller.Flags & RoutineFlags.UsesLateStatic) == 0)
+                {
+                    var cfg = caller.ControlFlowGraph;
+                    if (cfg == null)
+                    {
+                        return;
+                    }
+
+                    // has self:: or parent:: call to a routine?
+                    var selfcalls = LateStaticCallsLookup.GetSelfStaticCalls(cfg.Start);
+                    if (selfcalls.Count == 0)
+                    {
+                        return;
+                    }
+
+                    // routine requires late static type?
+                    if (selfcalls.Any(sm => sm.HasLateStaticBoundParam()))
+                    {
+                        caller.Flags |= RoutineFlags.UsesLateStatic;
+                    }
+                    else
+                    {
+                        foreach (var callee in selfcalls)
+                        {
+                            calls.Add(new KeyValuePair<SourceMethodSymbol, MethodSymbol>(caller, callee));
+                        }
+                    }
+                }
+            }, allowParallel: ConcurrentBuild);
+
+            // process edges between caller and calles until we forward all the late static calls
+            int forwarded;
+            do
+            {
+                forwarded = 0;
+                Parallel.ForEach(calls, edge =>
+                {
+                    if ((edge.Key.Flags & RoutineFlags.UsesLateStatic) == 0 && edge.Value.HasLateStaticBoundParam())
+                    {
+                        edge.Key.Flags |= RoutineFlags.UsesLateStatic;
+                        Interlocked.Increment(ref forwarded);
+                    }
+                });
+
+            } while (forwarded != 0);
+        }
+
         internal void DiagnoseMethods()
         {
             this.WalkMethods(DiagnoseRoutine, allowParallel: true);
@@ -379,21 +475,27 @@ namespace Pchp.CodeAnalysis
             int transformation = 0;
             do
             {
-                // 2. Analyze Operations
-                //   a. type analysis (converge type - mask), resolve symbols
-                //   b. lower semantics, update bound tree, repeat
                 using (compilation.StartMetric("analysis"))
                 {
+                    // 2. Analyze Operations
+                    //   a. type analysis (converge type - mask), resolve symbols
+                    //   b. lower semantics, update bound tree, repeat
                     compiler.AnalyzeMethods();
                 }
 
-                // 3. Resolve operators and types
                 using (compilation.StartMetric("bind types"))
                 {
+                    // 3. Resolve operators and types
                     compiler.BindTypes();
                 }
 
-                // 4. Transform Semantic Trees for Runtime Optimization
+                using (compilation.StartMetric(nameof(ForwardLateStaticBindings)))
+                {
+                    // 4. forward the late static type if needed
+                    compiler.ForwardLateStaticBindings();
+                }
+
+                // 5. Transform Semantic Trees for Runtime Optimization
             } while (
                 transformation++ < compiler.MaxTransformCount   // limit number of lowering cycles
                 && !cancellationToken.IsCancellationRequested   // user canceled ?
@@ -402,9 +504,9 @@ namespace Pchp.CodeAnalysis
             // Track the number of actually performed transformations
             compilation.TrackMetric("transformations", transformation - 1);
 
-            // 4. Collect diagnostics
             using (compilation.StartMetric("diagnostic"))
             {
+                // 6. Collect diagnostics
                 compiler.DiagnoseMethods();
                 compiler.DiagnoseTypes();
                 compiler.DiagnoseFiles();

@@ -1,9 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
     <Description>Peachpie platform dependencies.</Description>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Peachpie.App</AssemblyName>
     <PackageId>Peachpie.App</PackageId>
     <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -12,15 +11,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PDO\Peachpie.Library.PDO\Peachpie.Library.PDO.csproj" />
-    <ProjectReference Include="..\Peachpie.Library.Scripting\Peachpie.Library.Scripting.csproj" />
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
     <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
-    <ProjectReference Include="..\Peachpie.Library.MsSql\Peachpie.Library.MsSql.csproj" />
-    <ProjectReference Include="..\Peachpie.Library.MySql\Peachpie.Library.MySql.csproj" />
-    <ProjectReference Include="..\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj" />
     <ProjectReference Include="..\Peachpie.Library.Network\Peachpie.Library.Network.csproj" />
+    <ProjectReference Include="..\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj" />
     <ProjectReference Include="..\Peachpie.Library.Graphics\Peachpie.Library.Graphics.csproj" />
+    <ProjectReference Include="..\Peachpie.Library.Scripting\Peachpie.Library.Scripting.csproj" />
+    <ProjectReference Include="..\Peachpie.Library.MySql\Peachpie.Library.MySql.csproj" />
+    <ProjectReference Include="..\Peachpie.Library.MsSql\Peachpie.Library.MsSql.csproj" />
+    <ProjectReference Include="..\PDO\Peachpie.Library.PDO\Peachpie.Library.PDO.csproj" />
   </ItemGroup>
 
 </Project>

@@ -298,7 +298,7 @@ namespace Pchp.Library
                     // construct the generic trait class with <object>
                     tinfo = tinfo.Type.MakeGenericType(typeof(object)).GetPhpTypeInfo();
                 }
-                
+
                 var result = new PhpArray();
                 var callerType = Type.GetTypeFromHandle(caller);
 
@@ -370,10 +370,14 @@ namespace Pchp.Library
             }
 
             var instance = classNameOrObject.AsObject();
-            if (instance != null && tinfo.GetRuntimeProperty(propertyName, instance) != null)
+            if (instance != null)
             {
-                // RT property found
-                return true;
+                var rt = tinfo.GetRuntimeFields(instance);
+                if (rt != null && rt.ContainsKey(propertyName))
+                {
+                    // RT property found
+                    return true;
+                }
             }
 
             //

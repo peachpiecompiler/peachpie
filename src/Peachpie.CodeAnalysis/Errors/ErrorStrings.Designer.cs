@@ -367,6 +367,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Source file &apos;{0}&apos; could not be opened -- {1}.
+        /// </summary>
+        internal static string ERR_NoSourceFile {
+            get {
+                return ResourceManager.GetString("ERR_NoSourceFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} is currently not supported by PeachPie..
         /// </summary>
         internal static string ERR_NotYetImplemented {
@@ -673,7 +682,7 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Wrong number of arguments in {0}..
+        ///   Looks up a localized string similar to Call to &apos;{0}()&apos; expects {1} argument(s), {2} given..
         /// </summary>
         internal static string WRN_FormatStringWrongArgCount {
             get {
@@ -732,6 +741,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string WRN_ParentCtorNotCalled {
             get {
                 return ResourceManager.GetString("WRN_ParentCtorNotCalled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to PCRE pattern parse error: {0} at offset {1}.
+        /// </summary>
+        internal static string WRN_PCRE_Pattern_Error {
+            get {
+                return ResourceManager.GetString("WRN_PCRE_Pattern_Error", resourceCulture);
             }
         }
         

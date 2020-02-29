@@ -21,22 +21,19 @@ namespace Peachpie.Library.XmlDom
         {
             if (qualifiedName == null)
             {
-                prefix = null;
-                localName = null;
+                throw new ArgumentNullException(nameof(qualifiedName));
+            }
+
+            int index = qualifiedName.IndexOf(':');
+            if (index >= 0)
+            {
+                prefix = qualifiedName.Substring(0, index);
+                localName = qualifiedName.Substring(index + 1);
             }
             else
             {
-                int index = qualifiedName.IndexOf(':');
-                if (index >= 0)
-                {
-                    prefix = qualifiedName.Substring(0, index);
-                    localName = qualifiedName.Substring(index + 1);
-                }
-                else
-                {
-                    prefix = String.Empty;
-                    localName = qualifiedName;
-                }
+                prefix = string.Empty;
+                localName = qualifiedName;
             }
         }
 
@@ -221,25 +218,98 @@ namespace Peachpie.Library.XmlDom
             LoadHtml(xmldoc, htmldoc.DocumentNode);
         }
 
-        /// <summary>
-        /// Finds first node of given type.
-        /// </summary>
-        static bool TryGetNodeOfType(this XmlNodeList nodes, XmlNodeType nt, out XmlNode? node)
+        static XmlElement EnsureNode(XmlNode root, string elementName, XmlElement? existing = null)
         {
+            if (root == null) throw new ArgumentNullException(nameof(root));
+
+            var nodes = root.ChildNodes;
             if (nodes != null && nodes.Count != 0)
             {
                 foreach (XmlNode child in nodes)
                 {
-                    if (child.NodeType == nt)
+                    if (child.NodeType == XmlNodeType.Element && string.Equals(child.Name, elementName, StringComparison.CurrentCultureIgnoreCase))
                     {
-                        node = child;
-                        return true;
+                        return (XmlElement)child;
                     }
                 }
             }
 
-            node = null;
-            return false;
+            // create node
+            var node = existing ?? root.GetXmlDocument().CreateElement(elementName);
+            root.AppendChild(node);
+            return node;
+        }
+
+        static XmlNode AppendChildElement(XmlNode containing, XmlNode node)
+        {
+            if (containing == null) throw new ArgumentNullException(nameof(containing));
+            if (node == null) throw new ArgumentNullException(nameof(node));
+
+            // if there are more root elements, move them into single root element
+            const string htmlElementName = "html";
+            const string bodyElementName = "body";
+            const string headElementName = "head";
+
+            if (containing.ParentNode == null && node.NodeType != XmlNodeType.Whitespace && node.NodeType != XmlNodeType.Comment)
+            {
+                // nest the element, allow one of following:
+                // - html
+                // - html/head
+                // - html/body
+
+                if (node.NodeType == XmlNodeType.Text)
+                {
+                    // always in html/body
+                    containing = EnsureNode(EnsureNode(containing, htmlElementName), bodyElementName);
+
+                    // text element should be nested in <p>
+                    var p = containing.GetXmlDocument().CreateElement("p");
+                    p.AppendChild(node);
+                    node = p;
+                }
+                else
+                {
+                    // <html>
+                    containing = EnsureNode(containing, htmlElementName);
+
+                    if (string.Equals(node.Name, htmlElementName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // <html>
+                        return containing;
+                    }
+                    else if (string.Equals(node.Name, headElementName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // <head>
+                        return EnsureNode(containing, headElementName, node as XmlElement);
+                    }
+                    else if (string.Equals(node.Name, bodyElementName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // <body>
+                        return EnsureNode(containing, bodyElementName, node as XmlElement);
+                    }
+                    else if (
+                        // element should be nested in <head>
+                        DocumentTypeUtils.IsHeadElement(node.Name) &&
+                        // unless there is already <body>
+                        containing.ChildNodes.OfType<XmlElement>().FirstOrDefault(
+                            x => string.Equals(x.Name, bodyElementName, StringComparison.OrdinalIgnoreCase)) == null)
+                    {
+                        // nest the element in <head> implicitly
+                        containing = EnsureNode(containing, headElementName);
+                    }
+                    else
+                    {
+                        // nest the element in <body> implicitly
+                        containing = EnsureNode(containing, bodyElementName);
+                    }
+                }
+            }
+
+            //
+            containing.AppendChild(node);
+
+            //
+            return node;
         }
 
         static void LoadHtml(this XmlNode containing, HtmlNode node)
@@ -286,18 +356,7 @@ namespace Peachpie.Library.XmlDom
                     name = HtmlDocument.GetXmlName(name, isAttribute: false, preserveXmlNamespaces: true);
 
                     // <element
-                    var element = xmldoc.CreateElement(name);
-
-                    if (containing.ParentNode == null && TryGetNodeOfType(containing.ChildNodes, XmlNodeType.Element, out var existingroot)) // root can only have one child element
-                    {
-                        // !!!
-                        // HACK: nest the element into the existing root
-                        existingroot.AppendChild(element);
-                    }
-                    else
-                    {
-                        containing.AppendChild(element);
-                    }
+                    var element = AppendChildElement(containing, xmldoc.CreateElement(name));
 
                     // attributes
                     foreach (var attr in node.Attributes)
@@ -323,12 +382,12 @@ namespace Peachpie.Library.XmlDom
 
                 case HtmlNodeType.Text:
                     var text = ((HtmlTextNode)node).Text;
-                    if (containing.ParentNode == null) // root
-                    {
-                        if (string.IsNullOrWhiteSpace(text)) break;
-                        throw new NotSupportedException();  // TODO: we can wrap the Text element into something and append
-                    }
-                    containing.AppendChild(xmldoc.CreateTextNode(text));
+
+                    AppendChildElement(
+                        containing,
+                        string.IsNullOrWhiteSpace(text) ? (XmlNode)xmldoc.CreateWhitespace(text) : xmldoc.CreateTextNode(text)
+                    );
+
                     break;
             }
         }
@@ -395,6 +454,16 @@ namespace Peachpie.Library.XmlDom
             //
             return token.Length != 0; // token found and valid (not '>')
         }
+
+        readonly static HashSet<string> s_headtags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "meta", "title", "style", "base", "link", "script", "noscript",
+        };
+
+        /// <summary>
+        /// Gets value indicating the element should be nested in <c>html/head</c> node.
+        /// </summary>
+        public static bool IsHeadElement(string element) => element != null && s_headtags.Contains(element);
 
         /// <summary>
         /// Parses the DOCTYPE comment if possible.
