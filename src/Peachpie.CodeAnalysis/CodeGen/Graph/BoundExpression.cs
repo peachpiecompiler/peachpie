@@ -800,7 +800,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             object trueLbl = new object();
             object endLbl = new object();
-            
+
             // <stack> = <left_var> = Left
             var left_var = cg.GetTemporaryLocal(left_type);
             cg.Builder.EmitOpCode(ILOpCode.Dup);
@@ -2616,9 +2616,15 @@ namespace Pchp.CodeAnalysis.Semantics
                 // the method can be called directly
                 return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, (BoundTypeRef)LateStaticTypeRef);
             }
-
-            //
-            return EmitDynamicCall(cg);
+            else if (TargetMethod is MagicCallMethodSymbol magic && !this.HasArgumentsUnpacking)
+            {
+                return EmitMagicCall(cg, magic.OriginalMethodName, magic.RealMethod, (BoundTypeRef)LateStaticTypeRef);
+            }
+            else
+            {
+                //
+                return EmitDynamicCall(cg);
+            }
         }
 
         internal virtual void EmitBeforeCall(CodeGenerator cg)
@@ -2634,7 +2640,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return EmitCallsiteCall(cg);
         }
 
-        internal virtual TypeSymbol EmitDirectCall(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
+        internal TypeSymbol EmitDirectCall(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
         {
             // TODO: in case of a global user routine -> emit check the function is declared
             // <ctx>.AssertFunctionDeclared
@@ -2645,6 +2651,39 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return (this.ResultType = cg.EmitMethodAccess(stacktype, method, Access));
+        }
+
+        internal TypeSymbol EmitMagicCall(CodeGenerator cg, string originalMethodName, MethodSymbol method, BoundTypeRef staticType = null)
+        {
+            // call to __callStatic() or __call()
+            Debug.Assert(
+                string.Equals(method.Name, Name.SpecialMethodNames.Call.Value, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(method.Name, Name.SpecialMethodNames.CallStatic.Value, StringComparison.OrdinalIgnoreCase));
+
+            if (this.HasArgumentsUnpacking)
+            {
+                throw cg.NotImplementedException("__callStatic() with Arguments Unpacking", this);
+            }
+
+            // TODO: method is CLR method with params or more than 2 arguments => bind arguments normally (don't pack them into phparray)
+
+            var realArguments = ImmutableArray.Create(
+                // $name: string
+                BoundArgument.Create(new BoundLiteral(originalMethodName).WithAccess(BoundAccess.Read)),
+                // $arguments: PhpArray
+                BoundArgument.Create(
+                    new BoundArrayEx(
+                        _arguments.Select(
+                            arg => new KeyValuePair<BoundExpression, BoundExpression>(null, arg.Value)
+                        ).ToImmutableArray())
+                    .WithAccess(BoundAccess.Read))
+                );
+
+            //
+            var opcode = (method.IsVirtual || IsVirtualCall) ? ILOpCode.Callvirt : ILOpCode.Call;
+
+            //
+            return cg.EmitCall(opcode, method, this.Instance, realArguments, staticType);
         }
 
         protected virtual bool IsVirtualCall => true;

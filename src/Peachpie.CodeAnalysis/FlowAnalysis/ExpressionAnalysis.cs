@@ -1930,7 +1930,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (x.Name.IsDirect && type.IsValidType())
             {
                 // TODO: resolve all candidates, visibility, static methods or instance on self/parent/static
-                var candidates = type.LookupMethods(x.Name.NameValue.Name.Value);
+                var candidates = type.LookupMethods(x.Name.ToStringOrThrow());
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
                 candidates = Construct(candidates, x);
@@ -1948,15 +1948,43 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // method is missing or inaccessible:
                 if (method is ErrorMethodSymbol errmethod && (errmethod.ErrorKind == ErrorMethodKind.Inaccessible || errmethod.ErrorKind == ErrorMethodKind.Missing))
                 {
-                    // __callStatic() is called in both case of inaccessible and missing methods:
-                    var callstatic = type.LookupMethods(Name.SpecialMethodNames.CallStatic.Value);
-                    if (callstatic.Length != 0)
+                    // NOTE: magic methods __call or __callStatic are called in both cases - the target method is inaccessible or missing
+
+                    var isviable = true; // can we safely resolve the method?
+                    var call = Array.Empty<MethodSymbol>();
+
+                    // __call() might be used, if we have a reference to $this:
+                    if (Routine != null && !Routine.IsStatic)
+                    {
+                        // there is $this variable:
+                        if (TypeCtx.ThisType == null || TypeCtx.ThisType.IsOfType(type) || type.IsOfType(TypeCtx.ThisType))
+                        {
+                            // try to use __call() first:
+                            call = type.LookupMethods(Name.SpecialMethodNames.Call.Value);
+
+                            //
+                            if (TypeCtx.ThisType == null && call.Length != 0)
+                            {
+                                // $this is resolved dynamically in runtime and
+                                // we don't know if we can use __call() here
+                                isviable = false;
+                            }
+                        }
+                    }
+
+                    if (call.Length == 0)
+                    {
+                        // __callStatic()
+                        call = type.LookupMethods(Name.SpecialMethodNames.CallStatic.Value);
+                    }
+
+                    if (call.Length != 0)
                     {
                         // NOTE: PHP ignores visibility of __callStatic
-                        callstatic = Construct(callstatic, x);
+                        call = Construct(call, x);
 
-                        method = callstatic.Length == 1
-                            ? new MagicCallMethodSymbol(callstatic[0])
+                        method = call.Length == 1 && isviable
+                            ? new MagicCallMethodSymbol(x.Name.ToStringOrThrow(), call[0])
                             : null; // nullify the symbol so it will be called dynamically and resolved in rutime
                     }
                 }

@@ -155,6 +155,8 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         public MethodSymbol RealMethod { get; }
 
+        public string OriginalMethodName { get; }
+
         public override ErrorMethodKind ErrorKind => ErrorMethodKind.MagicCall;
 
         public override string Name => RealMethod.Name;
@@ -181,8 +183,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSealed => true;
 
-        public MagicCallMethodSymbol(MethodSymbol realSymbol)
+        public MagicCallMethodSymbol(string originalMethodName, MethodSymbol realSymbol)
         {
+            OriginalMethodName = originalMethodName ?? throw new ArgumentNullException(nameof(originalMethodName));
             RealMethod = realSymbol ?? throw new ArgumentNullException(nameof(realSymbol));
         }
     }

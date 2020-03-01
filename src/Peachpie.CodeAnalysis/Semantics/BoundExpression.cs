@@ -462,6 +462,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public bool IsDirect => _nameExpression == null;
 
+        /// <summary>
+        /// Gets <see cref="NameValue"/> as string if the name is known.
+        /// Otherwise (when <see cref="NameExpression"/> is used instead), throws <see cref="InvalidOperationException"/> exception.
+        /// </summary>
+        public string ToStringOrThrow() => NameExpression == null ? NameValue.ToString() : throw new InvalidOperationException();
+
+        public override string ToString() => NameExpression != null ? $"{{{NameExpression}}}" : NameValue.ToString();
+
         public override OperationKind Kind => OperationKind.None;
 
         public Ast.LangElement PhpSyntax { get; set; }
@@ -1943,9 +1951,9 @@ namespace Pchp.CodeAnalysis.Semantics
         public ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> Items { get => _items; internal set => _items = value; }
         ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> _items;
 
-        public BoundArrayEx(IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> items)
+        public BoundArrayEx(ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> items)
         {
-            _items = items.ToImmutableArray();
+            _items = items;
         }
 
         public BoundArrayEx Update(ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> items)
