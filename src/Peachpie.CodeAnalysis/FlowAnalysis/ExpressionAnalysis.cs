@@ -142,7 +142,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets current visibility scope.
         /// </summary>
-        protected OverloadsList.VisibilityScope VisibilityScope => OverloadsList.VisibilityScope.Create(TypeCtx.SelfType, Routine);
+        protected OverloadsList.VisibilityScope VisibilityScope => new OverloadsList.VisibilityScope(TypeCtx.SelfType, Routine);
 
         protected void PingSubscribers(ExitBlock exit)
         {
@@ -1944,12 +1944,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, flags);
-                if ((method is MissingMethodSymbol || method is InaccessibleMethodSymbol)
-                    && type.LookupMember<IMethodSymbol>(Name.SpecialMethodNames.CallStatic.Value) != null)
+
+                // method is missing or inaccessible:
+                if (method is ErrorMethodSymbol errmethod && (errmethod.ErrorKind == ErrorMethodKind.Inaccessible || errmethod.ErrorKind == ErrorMethodKind.Missing))
                 {
-                    // __callStatic at runtime solves both inaccessible and missing method problems
-                    // TODO: remember and emit call to __callstatic directly (CallStaticMethodSymbol?)
-                    method = null;
+                    // __callStatic() is called in both case of inaccessible and missing methods:
+                    var callstatic = type.LookupMethods(Name.SpecialMethodNames.CallStatic.Value);
+                    if (callstatic.Length != 0)
+                    {
+                        // NOTE: PHP ignores visibility of __callStatic
+                        callstatic = Construct(callstatic, x);
+
+                        method = callstatic.Length == 1
+                            ? new MagicCallMethodSymbol(callstatic[0])
+                            : null; // nullify the symbol so it will be called dynamically and resolved in rutime
+                    }
                 }
 
                 x.TargetMethod = method;
@@ -1960,6 +1969,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
+        // helper
         MethodSymbol[] Construct(MethodSymbol[] methods, BoundRoutineCall bound)
         {
             if (bound.TypeArguments.IsDefaultOrEmpty)

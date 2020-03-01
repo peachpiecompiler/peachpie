@@ -20,30 +20,27 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Defines the scope of members visibility.
         /// Used to resolve visibility of called methods and accessed properties.
         /// </summary>
-        public struct VisibilityScope
+        public readonly struct VisibilityScope
         {
             /// <summary>
             /// The type scope if resolved.
             /// Can be <c>null</c> when outside of class or when scope is unknown in compile-time.
             /// </summary>
-            public NamedTypeSymbol Scope;
+            public readonly NamedTypeSymbol Scope;
 
             /// <summary>
             /// Whether the scope can change.
             /// In result visibility of private and protected members may change in runtime. 
             /// </summary>
-            public bool ScopeIsDynamic;
+            public readonly bool ScopeIsDynamic;
 
             /// <summary>
             /// Builds the visibility scope.
             /// </summary>
-            public static VisibilityScope Create(NamedTypeSymbol self, SourceRoutineSymbol routine)
+            public VisibilityScope(NamedTypeSymbol self, SourceRoutineSymbol routine)
             {
-                return new VisibilityScope()
-                {
-                    Scope = self,
-                    ScopeIsDynamic = self.IsTraitType() || routine is SourceLambdaSymbol || (routine?.IsGlobalScope == true),
-                };
+                Scope = self;
+                ScopeIsDynamic = self.IsTraitType() || routine is SourceLambdaSymbol || (routine?.IsGlobalScope == true);
             }
         }
 
