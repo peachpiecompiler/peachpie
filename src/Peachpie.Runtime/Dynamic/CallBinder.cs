@@ -358,7 +358,14 @@ namespace Pchp.Core.Dynamic
                 type = bound.CurrentTargetInstance.GetPhpTypeInfo();
             }
 
-            var call = BinderHelpers.FindMagicMethod(type, (bound.TargetInstance == null) ? TypeMethods.MagicMethods.__callstatic : TypeMethods.MagicMethods.__call);
+            // try to find __call() first if we have $this
+            var call = (bound.TargetInstance != null) ? BinderHelpers.FindMagicMethod(type, TypeMethods.MagicMethods.__call) : null;
+            if (call == null)
+            {
+                // look for __callStatic()
+                call = BinderHelpers.FindMagicMethod(type, TypeMethods.MagicMethods.__callstatic);
+            }
+
             if (call != null)
             {
                 Expression[] call_args;
