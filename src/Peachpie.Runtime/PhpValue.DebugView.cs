@@ -26,14 +26,12 @@ namespace Pchp.Core
 
         sealed class PhpValueDebugView
         {
-            readonly PhpValue _value;
-
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public object DebugValue => _value.ToClr();
+            public object DebugValue { get; }
 
             public PhpValueDebugView(PhpValue value)
             {
-                _value = value.IsDefault ? Void : value;
+                DebugValue = value.IsDefault ? null : value.ToClr();
             }
         }
     }
