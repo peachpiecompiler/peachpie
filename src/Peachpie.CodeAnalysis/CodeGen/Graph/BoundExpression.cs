@@ -2960,9 +2960,9 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Single()
                         .Construct(_typeref.Type);
 
-                    cg.EmitLoadContext();                       // Context
-                    cg.EmitCallerTypeHandle();           // RuntimeTypeHandle
-                    cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
+                    cg.EmitLoadContext();               // Context
+                    cg.EmitCallerTypeHandle();          // RuntimeTypeHandle
+                    cg.Emit_ArgumentsIntoArray(_arguments, default);  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create_t);
                 }
@@ -2977,10 +2977,10 @@ namespace Pchp.CodeAnalysis.Semantics
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single();
 
-                    cg.EmitLoadContext();                       // Context
-                    cg.EmitCallerTypeHandle();           // RuntimeTypeHandle
-                    _typeref.EmitLoadTypeInfo(cg, true);        // PhpTypeInfo
-                    cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
+                    cg.EmitLoadContext();               // Context
+                    cg.EmitCallerTypeHandle();          // RuntimeTypeHandle
+                    _typeref.EmitLoadTypeInfo(cg, true);// PhpTypeInfo
+                    cg.Emit_ArgumentsIntoArray(_arguments, default);  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create);
                 }
