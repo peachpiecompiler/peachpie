@@ -130,7 +130,7 @@ namespace Pchp.Library.Streams
                 case StreamOpenMode.WriteText: modeStr = "wt"; break;
                 default: throw new ArgumentException();
             }
-            
+
             return Open(ctx, path, modeStr, StreamOpenOptions.Empty, StreamContext.Default);
         }
 
@@ -2388,8 +2388,8 @@ namespace Pchp.Library.Streams
         public virtual StatStruct Stat()
         {
             return (this.Wrapper != null)
-            ? this.Wrapper.Stat(OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true)
-            : StreamWrapper.StatUnsupported();
+                ? this.Wrapper.Stat(OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true)
+                : StreamWrapper.StatUnsupported();
         }
 
         #endregion
