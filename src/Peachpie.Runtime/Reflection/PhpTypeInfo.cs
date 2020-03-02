@@ -269,9 +269,9 @@ namespace Pchp.Core.Reflection
             string name = (attr != null ? attr.TypeNameAs : PhpTypeAttribute.PhpTypeName.Default) switch
             {
                 PhpTypeAttribute.PhpTypeName.Default => // CLR type 
-                    tinfo.FullName       // full PHP type name instead of CLR type name
-                    .Replace('.', '\\')      // namespace separator
-                    .Replace('+', '\\')     // nested type separator
+                    tinfo.FullName      // full PHP type name instead of CLR type name
+                    .Replace('.', '\\') // namespace separator
+                    .Replace('+', '\\') // nested type separator
                     ,
 
                 PhpTypeAttribute.PhpTypeName.NameOnly => tinfo.Name,
