@@ -2653,6 +2653,42 @@ namespace Pchp.CodeAnalysis.Semantics
             return (this.ResultType = cg.EmitMethodAccess(stacktype, method, Access));
         }
 
+        /// <summary>
+        /// Determines if the target magic method will be called using standard calling convention.
+        /// </summary>
+        static bool IsClrMagicCall(MethodSymbol method)
+        {
+            if (method.ContainingType.IsPhpType())
+            {
+                // defined in PHP source, use PHP calling convention
+                return false;
+            }
+
+            var parameters = method.Parameters;
+            if (parameters.Last().IsParams)
+            {
+                return true;
+            }
+
+            //var nimplicit = parameters.TakeWhile(p => p.IsImplicitlyDeclared).Count();
+
+            //var actualparameters = parameters.Length - nimplicit;
+            //if (actualparameters != 2)
+            //{
+            //    return true;
+            //}
+
+            //if (!parameters.Last().Type.Is_PhpArray() &&
+            //    !parameters.Last().Type.Is_PhpValue())
+            //{
+            //    return true;
+            //}
+
+            // regular PHP semantic:
+            // __call(name, PhpArray arguments)
+            return false;
+        }
+
         internal TypeSymbol EmitMagicCall(CodeGenerator cg, string originalMethodName, MethodSymbol method, BoundTypeRef staticType = null)
         {
             // call to __callStatic() or __call()
@@ -2665,19 +2701,31 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw cg.NotImplementedException("__callStatic() with Arguments Unpacking", this);
             }
 
-            // TODO: method is CLR method with params or more than 2 arguments => bind arguments normally (don't pack them into phparray)
+            ImmutableArray<BoundArgument> realArguments;
 
-            var realArguments = ImmutableArray.Create(
-                // $name: string
-                BoundArgument.Create(new BoundLiteral(originalMethodName).WithAccess(BoundAccess.Read)),
-                // $arguments: PhpArray
-                BoundArgument.Create(
-                    new BoundArrayEx(
-                        _arguments.Select(
-                            arg => new KeyValuePair<BoundExpression, BoundExpression>(null, arg.Value)
-                        ).ToImmutableArray())
-                    .WithAccess(BoundAccess.Read))
-                );
+            var boundname = BoundArgument.Create(new BoundLiteral(originalMethodName).WithAccess(BoundAccess.Read));
+
+            if (IsClrMagicCall(method))
+            {
+                // method is CLR method with params => don't pack arguments into phparray and call method normally
+                // first argument is the method name:
+                realArguments = _arguments.Insert(0, boundname);
+            }
+            else
+            {
+                // PHP behavior
+                realArguments = ImmutableArray.Create(
+                    // $name: string
+                    boundname,
+                    // $arguments: PhpArray
+                    BoundArgument.Create(
+                        new BoundArrayEx(
+                            _arguments.Select(
+                                arg => new KeyValuePair<BoundExpression, BoundExpression>(null, arg.Value)
+                            ).ToImmutableArray())
+                        .WithAccess(BoundAccess.Read))
+                    );
+            }
 
             //
             var opcode = (method.IsVirtual || IsVirtualCall) ? ILOpCode.Callvirt : ILOpCode.Call;
