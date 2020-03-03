@@ -17,9 +17,9 @@
     <GenerateNeutralResourcesLanguageAttribute>true</GenerateNeutralResourcesLanguageAttribute>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
-    <DefineConstants Condition=" '$(Configuration)' == 'Debug' ">$(DefineConstants);TRACE</DefineConstants>
     <LangVersion>latest</LangVersion>
     <GenerateFullPaths>true</GenerateFullPaths>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
 
     <!-- signing -->
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
