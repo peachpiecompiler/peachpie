@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else if (IsLoop) // perf
             {
-                cg.Builder.DefineHiddenSequencePoint();
+                cg.EmitHiddenSequencePoint();
                 cg.Builder.EmitBranch(ILOpCode.Br, condition);
 
                 // {
@@ -71,9 +71,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // }
 
                 // if (Condition)
-                cg.EmitSequencePoint(this.Condition.PhpSyntax);
+                cg.EmitHiddenSequencePoint(); 
                 cg.Builder.MarkLabel(condition);
+                
+                cg.EmitSequencePoint(this.Condition.PhpSyntax);
                 cg.EmitConvert(condition, cg.CoreTypes.Boolean);
+
                 cg.Builder.EmitBranch(isnegation ? ILOpCode.Brfalse : ILOpCode.Brtrue, TrueTarget);
             }
             else
@@ -81,6 +84,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // if (Condition)
                 cg.EmitSequencePoint(this.Condition.PhpSyntax);
                 cg.EmitConvert(condition, cg.CoreTypes.Boolean);
+
                 cg.Builder.EmitBranch(isnegation ? ILOpCode.Brtrue : ILOpCode.Brfalse, FalseTarget);
 
                 // {
@@ -356,7 +360,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(_moveNextMethod.IsStatic == false);
 
             // leaving scope of `foreach` body
-
+            
             EmitReleaseRef(cg);
 
             if (_enumeratorLoc.Type.IsValueType)
@@ -689,7 +693,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var lblBody = new object();
 
             //
-            cg.Builder.DefineHiddenSequencePoint();
+            cg.EmitHiddenSequencePoint();
             cg.Builder.EmitBranch(ILOpCode.Br, lblMoveNext);
             cg.Builder.MarkLabel(lblBody);
 
@@ -701,10 +705,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // }
 
             // if (enumerator.MoveNext())
-            cg.EmitSequencePoint(_moveSpan);
+            cg.EmitHiddenSequencePoint();
             cg.Builder.MarkLabel(lblMoveNext);
             this.EnumereeEdge.EmitIteratorNext(cg); // Iterator.next() : void (only if we are enumerating the Iterator directly)
+
+            cg.EmitHiddenSequencePoint();
             cg.Builder.MarkLabel(this.EnumereeEdge._lbl_MoveNext);
+            
+            cg.EmitSequencePoint(MoveNextSpan);
             this.EnumereeEdge.EmitMoveNext(cg); // bool
             cg.Builder.EmitBranch(ILOpCode.Brtrue, lblBody);
 

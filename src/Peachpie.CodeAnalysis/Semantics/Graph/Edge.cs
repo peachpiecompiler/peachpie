@@ -399,8 +399,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Span of the move expression to emit sequence point of <c>MoveNext</c> operation.
         /// </summary>
-        readonly TextSpan _moveSpan;
-        public TextSpan MoveSpan => _moveSpan;
+        public TextSpan MoveNextSpan => _moveNextSpan;
+        readonly TextSpan _moveNextSpan;
 
         /// <summary>
         /// Content of the foreach.
@@ -442,7 +442,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _enumereeEdge = enumereeEdge;
             _keyVariable = keyVar;
             _valueVariable = valueVar;
-            _moveSpan = moveSpan;
+            _moveNextSpan = moveSpan;
 
             Connect(source);
         }
@@ -458,12 +458,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _enumereeEdge = enumereeEdge;
             _keyVariable = keyVar;
             _valueVariable = valueVar;
-            _moveSpan = moveSpan;
+            _moveNextSpan = moveSpan;
         }
 
         public ForeachMoveNextEdge Update(BoundBlock body, BoundBlock end, ForeachEnumereeEdge enumereeEdge, BoundReferenceExpression keyVar, BoundReferenceExpression/*!*/valueVar, TextSpan moveSpan)
         {
-            if (body == _body && end == _end && enumereeEdge == _enumereeEdge && keyVar == _keyVariable && valueVar == _valueVariable && moveSpan == _moveSpan)
+            if (body == _body && end == _end && enumereeEdge == _enumereeEdge && keyVar == _keyVariable && valueVar == _valueVariable && moveSpan == _moveNextSpan)
             {
                 return this;
             }

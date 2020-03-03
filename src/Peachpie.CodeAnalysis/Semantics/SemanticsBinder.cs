@@ -315,7 +315,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundStatement BindEcho(AST.EchoStmt stmt, ImmutableArray<BoundArgument> args)
         {
-            return new BoundExpressionStatement(new BoundEcho(args).WithSyntax(stmt));
+            return new BoundExpressionStatement(
+                new BoundEcho(args)
+                .WithAccess(BoundAccess.None)
+                .WithSyntax(stmt));
         }
 
         BoundStatement BindUnsetStmt(AST.UnsetStmt stmt)

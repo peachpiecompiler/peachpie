@@ -602,6 +602,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             return EmitCall(ILOpCode.Call, (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Type__GetTypeFromHandle));
         }
 
+        internal void EmitHiddenSequencePoint()
+        {
+            if (EmitPdbSequencePoints)
+            {
+                _il.DefineHiddenSequencePoint();
+            }
+        }
+
         internal void EmitSequencePoint(LangElement element)
         {
             if (element != null)
@@ -611,7 +619,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
         internal void EmitSequencePoint(Span span)
         {
-            if (_emitPdbSequencePoints && span.IsValid && !span.IsEmpty)
+            if (EmitPdbSequencePoints && span.IsValid && !span.IsEmpty)
             {
                 EmitSequencePoint(span.ToTextSpan());
             }
@@ -619,7 +627,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitSequencePoint(Microsoft.CodeAnalysis.Text.TextSpan span)
         {
-            if (_emitPdbSequencePoints && span.Length > 0)
+            if (EmitPdbSequencePoints && span.Length > 0)
             {
                 _il.DefineSequencePoint(ContainingFile.SyntaxTree, span);
                 _il.EmitOpCode(ILOpCode.Nop);
