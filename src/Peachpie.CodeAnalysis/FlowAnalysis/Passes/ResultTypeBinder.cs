@@ -73,7 +73,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 if (access.TargetType != null)
                 {
-                    expression.BoundConversion = DeclaringCompilation.Conversions.ClassifyConversion(type, access.TargetType, checkexplicit: false);
+                    expression.BoundConversion = DeclaringCompilation.Conversions.ClassifyConversion(type, access.TargetType, ConversionKind.Implicit);
                     // TODO: check in diagnostics the conversion exists
                     type = access.TargetType;
                 }

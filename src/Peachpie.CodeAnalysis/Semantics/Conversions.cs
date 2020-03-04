@@ -11,6 +11,41 @@ using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
+    /// <summary>
+    /// Possible conversion operation.
+    /// </summary>
+    [Flags]
+    internal enum ConversionKind
+    {
+        /// <summary>
+        /// A numeric conversion only.
+        /// </summary>
+        Numeric = 1,
+
+        /// <summary>
+        /// Cast the CLR object reference.
+        /// </summary>
+        Reference = 2,
+
+        /// <summary>
+        /// Strict type conversion.
+        /// Throws an exception if type does not match and numeric conversion does not exist.
+        /// </summary>
+        Strict = 4 | Numeric | Reference,
+
+        /// <summary>
+        /// Implicit conversion.
+        /// Produces a default value and a warning if conversion is not successful.
+        /// </summary>
+        Implicit = 8 | Numeric | Reference,
+
+        /// <summary>
+        /// Explicit casting.
+        /// Always quiet conversion if conversion is possible.
+        /// </summary>
+        Explicit = 16 | Numeric | Reference,
+    }
+
     sealed class Conversions
     {
         readonly PhpCompilation _compilation;
@@ -181,7 +216,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                                 if (target != null && method.ReturnType != target)
                                 {
-                                    var conv = ClassifyConversion(method.ReturnType, target, checkimplicit: false, checkexplicit: false);
+                                    var conv = ClassifyConversion(method.ReturnType, target, ConversionKind.Numeric | ConversionKind.Reference);
                                     if (conv.Exists)    // TODO: chain the conversion, sum the cost
                                     {
                                         cost += ConvCost(conv, method.ReturnType, target);
@@ -207,7 +242,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                     {
                                         if (isbyref) continue; // cannot convert addr
 
-                                        var conv = ClassifyConversion(receiver, pstype, checkexplicit: false, checkimplicit: false);
+                                        var conv = ClassifyConversion(receiver, pstype, ConversionKind.Numeric | ConversionKind.Reference);
                                         if (conv.Exists)   // TODO: chain the conversion
                                         {
                                             cost += ConvCost(conv, receiver, pstype);
@@ -233,7 +268,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                     if (ps.Length <= pconsumed) continue;
                                     if (ps[pconsumed].Type != operand)
                                     {
-                                        var conv = ClassifyConversion(operand, ps[pconsumed].Type, checkexplicit: false);
+                                        var conv = ClassifyConversion(operand, ps[pconsumed].Type, ConversionKind.Implicit);
                                         if (conv.Exists)    // TODO: chain the conversion
                                         {
                                             cost += ConvCost(conv, operand, ps[pconsumed].Type);
@@ -398,70 +433,81 @@ namespace Pchp.CodeAnalysis.Semantics
             return null;
         }
 
-        public CommonConversion ClassifyConversion(TypeSymbol from, TypeSymbol to, bool checkimplicit = true, bool checkexplicit = true)
+        public CommonConversion ClassifyConversion(TypeSymbol from, TypeSymbol to, ConversionKind kinds)
         {
             if (from == to)
             {
                 return IdentityConversion;
             }
 
-            if (from.IsReferenceType && to.IsReferenceType && from.IsOfType(to))
-            {
-                // (PHP) string, resource, array, alias -> object: NoConversion
-
-                if (to.SpecialType != SpecialType.System_Object || !IsSpecialReferenceType(from))
-                {
-                    return ReferenceConversion;
-                }
-            }
-
-            if (to.SpecialType == SpecialType.System_Object && (from.IsInterfaceType() || (from.IsReferenceType && from.IsTypeParameter())))
-            {
-                return ReferenceConversion;
-            }
-
             // implicit conversions handled by 'EmitConversion':
-
             if (to.SpecialType == SpecialType.System_Void)
             {
                 return IdentityConversion;
             }
 
-            // resolve conversion operator method:
-
-            var conv = ClassifyNumericConversion(from, to);
-            if (!conv.Exists)
+            // object cast possible implicitly:
+            if ((kinds & ConversionKind.Reference) == ConversionKind.Reference)
             {
-                // TODO: cache result
-
-                var op = checkimplicit
-                    ? TryWellKnownImplicitConversion(from, to) ?? ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to)
-                    : null;
-
-                if (op != null)
+                if (from.IsReferenceType && to.IsReferenceType && from.IsOfType(to))
                 {
-                    conv = new CommonConversion(true, false, false, false, true, op);
+                    // (PHP) string, resource, array, alias -> object: NoConversion
+
+                    if (to.SpecialType != SpecialType.System_Object || !IsSpecialReferenceType(from))
+                    {
+                        return ReferenceConversion;
+                    }
                 }
-                else if (checkexplicit)
-                {
-                    op = ResolveOperator(from, false, ExplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to);
 
-                    if (op != null)
-                    {
-                        conv = new CommonConversion(true, false, false, false, false, op);
-                    }
-                    // explicit reference conversion (reference type -> reference type)
-                    else if (
-                        from.IsReferenceType && to.IsReferenceType &&
-                        !IsSpecialReferenceType(from) && !IsSpecialReferenceType(to) &&
-                        !from.IsArray() && !to.IsArray())
-                    {
-                        conv = ExplicitReferenceConversion;
-                    }
+                if (to.SpecialType == SpecialType.System_Object && (from.IsInterfaceType() || (from.IsReferenceType && from.IsTypeParameter())))
+                {
+                    return ReferenceConversion;
                 }
             }
 
-            return conv;
+            // resolve conversion operator method:
+            if ((kinds & ConversionKind.Numeric) == ConversionKind.Numeric)
+            {
+                var conv = ClassifyNumericConversion(from, to);
+                if (conv.Exists)
+                {
+                    return conv;
+                }
+            }
+
+            // strict:
+            // TODO: strict conversion operator
+
+            // implicit
+            if ((kinds & ConversionKind.Implicit) == ConversionKind.Implicit)
+            {
+                var op = TryWellKnownImplicitConversion(from, to) ?? ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to);
+                if (op != null)
+                {
+                    return new CommonConversion(true, false, false, false, true, op);
+                }
+            }
+
+            // explicit:
+            if ((kinds & ConversionKind.Explicit) == ConversionKind.Explicit)
+            {
+                var op = ResolveOperator(from, false, ExplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to);
+                if (op != null)
+                {
+                    return new CommonConversion(true, false, false, false, false, op);
+                }
+                // explicit reference conversion (reference type -> reference type)
+                else if (
+                    from.IsReferenceType && to.IsReferenceType &&
+                    !IsSpecialReferenceType(from) && !IsSpecialReferenceType(to) &&
+                    !from.IsArray() && !to.IsArray())
+                {
+                    return ExplicitReferenceConversion;
+                }
+            }
+
+            //
+            return NoConversion;
         }
     }
 }
