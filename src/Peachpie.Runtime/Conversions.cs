@@ -69,6 +69,7 @@ namespace Pchp.Core
     #region Convert
 
     [DebuggerNonUserCode]
+    //[DebuggerStepperBoundary]
     public static class Convert
     {
         #region ToString, ToBytes
@@ -468,35 +469,11 @@ namespace Pchp.Core
 
         #endregion
 
-        #region ToInt, ToLong, ToDouble, ToLongOrThrow
+        #region ToInt, ToLong, ToDouble
 
         public static long ToLong(string value) => StringToLongInteger(value);
 
         public static double ToDouble(string value) => StringToDouble(value);
-
-        /// <summary>
-        /// Implicit conversion to <see cref="long"/>.
-        /// Throws <c>TypeError</c> in case the implicit conversion cannot be done.
-        /// </summary>
-        public static long ToLongOrThrow(string value)
-        {
-            if (value != null)
-            {
-                var info = IsNumber(value, value.Length, 0, out _, out _, out var longValue, out _);
-                if ((info & NumberInfo.IsNumber) != 0)
-                {
-                    //if ((info & NumberInfo.IsNumber) == 0)
-                    //{
-                    //    // Notice: A non well formed numeric value encountered
-                    //    // TODO: PhpException
-                    //}
-
-                    return longValue;
-                }
-            }
-
-            throw PhpException.TypeErrorException();
-        }
 
         //public static int ToInt(this IPhpArray value) => value.Count;
 
@@ -982,7 +959,7 @@ namespace Pchp.Core
                 p++;
             }
 
-            Done:
+        Done:
 
             // an exponent ends with 'e', 'E', '-', or '+':
             if (state == 4 || state == 5)
@@ -1289,6 +1266,62 @@ namespace Pchp.Core
         }
 
         #endregion
+    }
+
+    #endregion
+
+    #region StrictConvert
+
+    /// <summary>
+    /// Strict type conversion operations.
+    /// Throws an exception if type does not match and numeric conversion does not exist.
+    /// </summary>
+    [DebuggerNonUserCode]
+    //[DebuggerStepperBoundary]
+    public static class StrictConvert
+    {
+        public static long ToLong(string value)
+        {
+            if (value != null && (Convert.IsNumber(value, value.Length, 0, out _, out _, out var longValue, out _) & Convert.NumberInfo.IsNumber) != 0)
+            {
+                // Notice: A non well formed numeric value encountered
+                return longValue;
+            }
+
+            // TypeError: must be of the type int, null given
+            throw PhpException.TypeErrorException();
+        }
+
+        public static long ToLong(PhpString value) => ToLong(value.ToString());
+
+        public static long ToLong(PhpAlias alias) => ToLong(alias.Value);
+
+        public static long ToLong(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Long: return value.Long;
+
+                case PhpTypeCode.Double: return (long)value.Double;
+
+                case PhpTypeCode.Boolean: return value.Boolean ? 1L : 0L;
+
+                case PhpTypeCode.String: return ToLong(value.String);
+
+                case PhpTypeCode.MutableString: return ToLong(value.MutableStringBlob.ToString());
+
+                //case PhpTypeCode.Object:
+                //    return (value.Object is IPhpConvertible convertible)
+                //        ? convertible.ToLong()
+                //        : throw PhpException.TypeErrorException(string.Format(Resources.ErrResources.object_could_not_be_converted, value.Object.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
+
+                case PhpTypeCode.Alias: return ToLong(value.Alias.Value);
+
+                default:
+                    // TypeError: must be of the type int, null given
+                    throw PhpException.TypeErrorException();
+            }
+        }
     }
 
     #endregion

@@ -37,7 +37,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo IsSet_PhpValue = new Func<PhpValue, bool>(Core.Operators.IsSet).Method;
 
             public static MethodInfo ToString_Double_Context = new Func<double, Context, string>(Core.Convert.ToString).Method;
-            public static MethodInfo ToLongOrThrow_String = new Func<string, long>(Core.Convert.ToLongOrThrow).Method;
+            public static MethodInfo ToLongOrThrow_String = new Func<string, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo ToDouble_String = new Func<string, double>(Core.Convert.StringToDouble).Method;
             public static MethodInfo ToPhpString_PhpValue_Context = new Func<PhpValue, Context, Core.PhpString>(Core.Convert.ToPhpString).Method;
             public static MethodInfo ToPhpNumber_String = new Func<string, PhpNumber>(Core.Convert.ToNumber).Method;
@@ -54,7 +54,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_EnsureAlias = Types.PhpValue.GetMethod("EnsureAlias", Types.Empty);
             public static MethodInfo EnsureAlias_PhpValueRef = typeof(Core.Operators).GetMethod("EnsureAlias", Types.PhpValue.MakeByRefType());
             public static MethodInfo PhpValue_GetArrayAccess = Types.PhpValue.GetMethod("GetArrayAccess", Types.Empty);
-            public static MethodInfo PhpValue_ToLongOrThrow = Types.PhpValue.GetMethod("ToLongOrThrow", Types.Empty);
+            public static MethodInfo PhpValue_ToLongOrThrow = new Func<PhpValue, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo PhpValue_ToClass = Types.PhpValue.GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpValue_ToArray = Types.PhpValue.GetMethod("ToArray", Types.Empty);
             /// <summary>Get the underlaying PhpArray, or <c>null</c>. Throws in case of a scalar or object.</summary>
@@ -122,7 +122,7 @@ namespace Pchp.Core.Dynamic
             public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetProperty("IsDefault");
             public static MethodInfo ToBoolean = Types.PhpString[0].GetMethod("ToBoolean");
             public static MethodInfo ToDouble = Types.PhpString[0].GetMethod("ToDouble");
-            public static MethodInfo ToLongOrThrow = Types.PhpString[0].GetMethod("ToLongOrThrow");
+            public static MethodInfo ToLongOrThrow = new Func<Core.PhpString, long>(Core.StrictConvert.ToLong).Method;
         }
 
         public static class IntStringKey

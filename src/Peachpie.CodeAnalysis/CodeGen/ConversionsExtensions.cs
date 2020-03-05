@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Peachpie.CodeAnalysis.Utilities;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -15,12 +16,25 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         // TODO: EmitImplicitConversion(BoundExpression from, ...) // allows to use receiver by ref in case of a value type (PhpValue)
 
-        public static bool TryEmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false)
+        /// <summary>
+        /// Resolves the conversion operator and emits the conversion, expecting <paramref name="from"/> on STACK.
+        /// </summary>
+        /// <param name="cg">Code generator.</param>
+        /// <param name="from">Type on stack.</param>
+        /// <param name="to">Type that will be on stack after the successful operation.</param>
+        /// <param name="checked">Whether the numeric conversion is checked.</param>
+        /// <param name="strict"><c>True</c> to emit strict conversion if possible.</param>
+        /// <returns>Whether operation was emitted.</returns>
+        public static bool TryEmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false, bool strict = false)
         {
             if (from != to)
             {
-                var conv = cg.DeclaringCompilation.ClassifyCommonConversion(from, to);
-                if (conv.IsImplicit || conv.IsNumeric)
+                var conv = cg.DeclaringCompilation.Conversions.ClassifyConversion(
+                    from, to, strict
+                        ? ConversionKind.Strict | ConversionKind.Implicit
+                        : ConversionKind.Implicit);
+
+                if (conv.Exists)
                 {
                     EmitConversion(cg, conv, from, to, @checked: @checked);
                 }
@@ -34,9 +48,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             return true;
         }
 
-        public static void EmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false)
+        public static void EmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false, bool strict = false)
         {
-            if (!TryEmitImplicitConversion(cg, from, to, @checked))
+            if (!TryEmitImplicitConversion(cg, from, to, @checked, strict))
             {
                 throw cg.NotImplementedException($"Cannot implicitly convert '{from}' to '{to}'");
             }

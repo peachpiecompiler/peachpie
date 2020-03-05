@@ -133,8 +133,6 @@ namespace Pchp.Core
 
         public object AsObject() => Value.AsObject();
 
-        public long ToLongOrThrow() => Value.ToLongOrThrow();
-
         public PhpNumber ToNumber() => Convert.ToNumber(Value);
 
         public PhpString ToPhpString(Context ctx) => Value.ToPhpString(ctx);

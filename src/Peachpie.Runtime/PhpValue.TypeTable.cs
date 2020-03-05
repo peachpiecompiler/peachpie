@@ -42,7 +42,6 @@ namespace Pchp.Core
             /// <summary>Implicit conversion to string, preserves <c>null</c>, throws if conversion is not possible.</summary>
             public virtual string AsString(ref PhpValue me, Context ctx) => ToString(ref me, ctx);
             public abstract long ToLong(ref PhpValue me);
-            public virtual long ToLongOrThrow(ref PhpValue me) => throw PhpException.TypeErrorException();
             public abstract double ToDouble(ref PhpValue me);
             public abstract bool ToBoolean(ref PhpValue me);
             public abstract Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number);
@@ -238,7 +237,6 @@ namespace Pchp.Core
             public override string ToString(ref PhpValue me, Context ctx) => me.Long.ToString();
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Long.ToString();
             public override long ToLong(ref PhpValue me) => me.Long;
-            public override long ToLongOrThrow(ref PhpValue me) => me.Long;
             public override double ToDouble(ref PhpValue me) => (double)me.Long;
             public override bool ToBoolean(ref PhpValue me) => me.Long != 0;
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number)
@@ -268,7 +266,6 @@ namespace Pchp.Core
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
             public override long ToLong(ref PhpValue me) => (long)me.Double;
-            public override long ToLongOrThrow(ref PhpValue me) => ToLong(ref me);
             public override double ToDouble(ref PhpValue me) => me.Double;
             public override bool ToBoolean(ref PhpValue me) => me.Double != 0;
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number)
@@ -298,7 +295,6 @@ namespace Pchp.Core
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
             public override long ToLong(ref PhpValue me) => me.Boolean ? 1L : 0L;
-            public override long ToLongOrThrow(ref PhpValue me) => ToLong(ref me);
             public override double ToDouble(ref PhpValue me) => me.Boolean ? 1.0 : 0.0;
             public override bool ToBoolean(ref PhpValue me) => me.Boolean;
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number)
@@ -346,7 +342,6 @@ namespace Pchp.Core
             public override string ToString(ref PhpValue me, Context ctx) => me.String;
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.String;
             public override long ToLong(ref PhpValue me) => Convert.StringToLongInteger(me.String);
-            public override long ToLongOrThrow(ref PhpValue me) => Convert.ToLongOrThrow(me.String);
             public override double ToDouble(ref PhpValue me) => Convert.StringToDouble(me.String);
             public override bool ToBoolean(ref PhpValue me) => Convert.ToBoolean(me.String);
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => Convert.ToNumber(me.String, out number);
@@ -403,7 +398,6 @@ namespace Pchp.Core
             public override string ToString(ref PhpValue me, Context ctx) => me.MutableString.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.MutableString.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.MutableString.ToLong();
-            public override long ToLongOrThrow(ref PhpValue me) => Convert.ToLongOrThrow(me.MutableString.ToString());
             public override double ToDouble(ref PhpValue me) => me.MutableString.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.MutableString.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.MutableString.ToNumber(out number);
@@ -472,19 +466,8 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, me.Object.GetType().Name, PhpVariable.TypeNameInt));
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, me.Object.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
                     return 1L;
-                }
-            }
-            public override long ToLongOrThrow(ref PhpValue me)
-            {
-                if (me.Object is IPhpConvertible)
-                {
-                    return ((IPhpConvertible)me.Object).ToLong();
-                }
-                else
-                {
-                    throw PhpException.TypeErrorException(string.Format(Resources.ErrResources.object_could_not_be_converted, me.Object.GetType().Name, PhpVariable.TypeNameInt));
                 }
             }
             public override double ToDouble(ref PhpValue me)
@@ -631,7 +614,6 @@ namespace Pchp.Core
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => ((IPhpConvertible)me.Array).ToStringOrThrow(ctx);   // TODO: explicit or implicit?
             public override string AsString(ref PhpValue me, Context ctx) => ((IPhpConvertible)me.Array).ToStringOrThrow(ctx);          // TODO: explicit or implicit?
             public override long ToLong(ref PhpValue me) => ((IPhpConvertible)me.Array).ToLong();       // TODO: explicit or implicit?
-            public override long ToLongOrThrow(ref PhpValue me) => throw PhpException.TypeErrorException();
             public override double ToDouble(ref PhpValue me) => ((IPhpConvertible)me.Array).ToDouble(); // TODO: explicit or implicit?
             public override bool ToBoolean(ref PhpValue me) => ((IPhpConvertible)me.Array).ToBoolean(); // TODO: explicit or implicit?
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => ((IPhpConvertible)me.Array).ToNumber(out number); // TODO: explicit or implicit?
@@ -690,7 +672,6 @@ namespace Pchp.Core
             public override string ToString(ref PhpValue me, Context ctx) => me.Alias.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Alias.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.Alias.ToLong();
-            public override long ToLongOrThrow(ref PhpValue me) => me.Alias.Value.ToLongOrThrow();
             public override double ToDouble(ref PhpValue me) => me.Alias.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Alias.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Alias.ToNumber(out number);

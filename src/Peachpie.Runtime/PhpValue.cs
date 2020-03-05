@@ -307,13 +307,6 @@ namespace Pchp.Core
         public int ToInt() => (int)this;
 
         /// <summary>
-        /// Implicit conversion to <see cref="long"/>.
-        /// Throws <c>TypeError</c> in case the implicit conversion cannot be done.
-        /// </summary>
-        /// <returns></returns>
-        public long ToLongOrThrow() => _type.ToLongOrThrow(ref this);
-
-        /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
         /// </summary>
         public object AsObject() => _type.AsObject(ref this);

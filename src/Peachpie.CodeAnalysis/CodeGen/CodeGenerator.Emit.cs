@@ -2441,12 +2441,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (targetp.RefKind == RefKind.None)
             {
-                EmitConvert(expr, targetp.Type); // load argument
+                EmitConvert(expr, targetp.Type, conversion: ConversionKind.Strict); // load argument
             }
             else
             {
-                var refexpr = expr as BoundReferenceExpression;
-                if (refexpr != null)
+                if (expr is BoundReferenceExpression refexpr)
                 {
                     var place = refexpr.Place();
                     if (place != null && place.HasAddress && place.Type == targetp.Type)

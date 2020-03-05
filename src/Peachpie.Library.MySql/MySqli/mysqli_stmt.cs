@@ -245,7 +245,7 @@ namespace Peachpie.Library.MySql.MySqli
                         switch (_bound_params_type[i])
                         {
                             case BoundType.Integer:
-                                boxed = variable.ToLongOrThrow();
+                                boxed = variable.ToLong();
                                 break;
                             case BoundType.Double:
                                 boxed = variable.ToDouble();

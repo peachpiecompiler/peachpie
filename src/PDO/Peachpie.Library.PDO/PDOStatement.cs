@@ -64,7 +64,7 @@ namespace Peachpie.Library.PDO
                             break;
 
                         case PARAM.PARAM_INT:
-                            p.Value = Variable.ToLongOrThrow();
+                            p.Value = Variable.ToLong();
                             p.DbType = DbType.Int64;
                             break;
 
@@ -788,7 +788,7 @@ namespace Peachpie.Library.PDO
                     return value.ToBoolean();
 
                 case PARAM.PARAM_INT:
-                    return value.ToLongOrThrow();
+                    return value.ToLong();
 
                 case PARAM.PARAM_STR:
                     return value.IsUnicodeString(out var str) ? str : value.IsBinaryString(out var bin) ? bin : value.ToString();

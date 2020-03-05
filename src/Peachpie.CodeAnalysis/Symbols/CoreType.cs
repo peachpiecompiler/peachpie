@@ -139,7 +139,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpMemberVisibilityAttributeName = "PhpMemberVisibilityAttribute";
 
         public readonly CoreType
-            Context, Operators, Convert, Comparison, StrictComparison, PhpException,
+            Context, Operators, Convert, StrictConvert, Comparison, StrictComparison, PhpException,
             ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
@@ -189,6 +189,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Comparison = Create("Comparison");
             StrictComparison = Create("StrictComparison");
             Convert = Create("Convert");
+            StrictConvert = Create("StrictConvert");
             PhpException = Create("PhpException");
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create(PhpTraitAttributeName);

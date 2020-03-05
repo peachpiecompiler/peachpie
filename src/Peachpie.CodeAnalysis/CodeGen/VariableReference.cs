@@ -1508,7 +1508,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 stack = cg.EmitLoadDefault(type, 0);
             }
 
-            cg.EmitConvert(stack, 0, type);
+            cg.EmitConvert(stack, 0, type, conversion: ConversionKind.Strict);
             cg.EmitCall(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, setter);
         }
 

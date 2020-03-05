@@ -1807,12 +1807,6 @@ namespace Pchp.Core
                         ? encoding.GetBytes(str)
                         : ArrayUtils.EmptyBytes;
 
-        /// <summary>
-        /// Implicit conversion to <see cref="long"/>.
-        /// Throws <c>TypeError</c> in case the implicit conversion cannot be done.
-        /// </summary>
-        public long ToLongOrThrow() => Convert.ToLongOrThrow(ToString());
-
         public PhpNumber ToNumber()
         {
             double d;

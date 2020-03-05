@@ -31,7 +31,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Strict type conversion.
         /// Throws an exception if type does not match and numeric conversion does not exist.
         /// </summary>
-        Strict = 4 | Numeric | Reference,
+        Strict = 4 | Implicit | Numeric | Reference,
 
         /// <summary>
         /// Implicit conversion.
@@ -325,7 +325,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Byte:
                 case SpecialType.System_SByte:
                 case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt", "ToInt", "ToLong" };
-                case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "ToLongOrThrow" };
+                case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "ToLong" };
                 case SpecialType.System_Single:
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsDouble", "ToDouble" };
                 case SpecialType.System_Decimal: return new[] { WellKnownMemberNames.ImplicitConversionName, "ToDecimal" };
@@ -476,7 +476,14 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             // strict:
-            // TODO: strict conversion operator
+            if ((kinds & ConversionKind.Strict) == ConversionKind.Strict)
+            {
+                var op = ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { _compilation.CoreTypes.StrictConvert.Symbol }, target: to);
+                if (op != null)
+                {
+                    return new CommonConversion(true, false, false, false, true, op);
+                }
+            }
 
             // implicit
             if ((kinds & ConversionKind.Implicit) == ConversionKind.Implicit)
