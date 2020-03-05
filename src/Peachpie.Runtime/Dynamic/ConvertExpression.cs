@@ -935,7 +935,6 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.Boolean:
                     return ConversionCost.Pass;
 
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Double:
                 case PhpTypeCode.MutableString:
@@ -968,7 +967,6 @@ namespace Pchp.Core.Dynamic
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                     return ConversionCost.Pass;
 
@@ -989,7 +987,6 @@ namespace Pchp.Core.Dynamic
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Boolean:
                 case PhpTypeCode.Double:
@@ -1014,7 +1011,6 @@ namespace Pchp.Core.Dynamic
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                     return ConversionCost.ImplicitCast;
 
@@ -1050,7 +1046,6 @@ namespace Pchp.Core.Dynamic
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Boolean:
                 case PhpTypeCode.Double:
@@ -1079,7 +1074,6 @@ namespace Pchp.Core.Dynamic
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Boolean:
                     return ConversionCost.ImplicitCast;
@@ -1103,7 +1097,6 @@ namespace Pchp.Core.Dynamic
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Double:
                     return ConversionCost.Pass;
@@ -1127,7 +1120,6 @@ namespace Pchp.Core.Dynamic
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Double:
                 case PhpTypeCode.Boolean:

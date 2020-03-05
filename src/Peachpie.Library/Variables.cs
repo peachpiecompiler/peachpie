@@ -541,7 +541,6 @@ namespace Pchp.Library
         {
             switch (variable.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Double:
                     return true;

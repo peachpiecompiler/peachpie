@@ -25,7 +25,7 @@ namespace Pchp.Core
             public static readonly DoubleTable DoubleTable = new DoubleTable();
             public static readonly BoolTable BoolTable = new BoolTable();
             public static readonly StringTable StringTable = new StringTable();
-            public static readonly TypeTable MutableStringTable = new MutableStringTable();
+            public static readonly MutableStringTable MutableStringTable = new MutableStringTable();
             public static readonly ClassTable ClassTable = new ClassTable();
             public static readonly ArrayTable ArrayTable = new ArrayTable();
             public static readonly AliasTable AliasTable = new AliasTable();
@@ -219,13 +219,6 @@ namespace Pchp.Core
             public override void Output(ref PhpValue me, Context ctx) { }
             public override string DisplayString(ref PhpValue me) => "null";    // lowercased `null` as it is shown for other CLR null references
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptNull();
-        }
-
-        [DebuggerNonUserCode, DebuggerStepThrough]
-        sealed class VoidTable : NullTable
-        {
-            public override PhpTypeCode Type => PhpTypeCode.Undefined;
-            //public override string DisplayString(ref PhpValue me) => null;
         }
 
         [DebuggerNonUserCode, DebuggerStepThrough]

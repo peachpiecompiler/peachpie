@@ -74,8 +74,7 @@ namespace Pchp.Core
                 case PhpTypeCode.MutableString: return Ceq(sx, y.MutableString.ToString());
                 case PhpTypeCode.Object: return CompareStringToObject(sx, y.Object) == 0;
                 case PhpTypeCode.Alias: return Ceq(sx, y.Alias.Value);
-                case PhpTypeCode.Null:
-                case PhpTypeCode.Undefined: return sx.Length == 0;
+                case PhpTypeCode.Null: return sx.Length == 0;
             }
 
             throw new NotImplementedException($"compare(String, {y.TypeCode})");
@@ -110,10 +109,9 @@ namespace Pchp.Core
                 case PhpTypeCode.MutableString: return -Compare(y.MutableString.ToString(), lx);
                 case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.Alias: return Compare(lx, y.Alias.Value);
-                case PhpTypeCode.Null:
-                case PhpTypeCode.Undefined: return (lx == 0) ? 0 : 1;
+                case PhpTypeCode.Null: return (lx == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
-                    if (y.Object == null) goto case PhpTypeCode.Null;
+                    Debug.Assert(y.Object != null);
 
                     // Notice: Object of class {0} could not be converted to int
                     PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetTypeName(y), PhpVariable.TypeNameInt));
@@ -134,8 +132,7 @@ namespace Pchp.Core
                 case PhpTypeCode.MutableString: return -Compare(y.MutableString.ToString(), dx);
                 case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.Alias: return Compare(dx, y.Alias.Value);
-                case PhpTypeCode.Null:
-                case PhpTypeCode.Undefined: return (dx == 0.0) ? 0 : 1;
+                case PhpTypeCode.Null: return (dx == 0.0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     if (y.Object == null) goto case PhpTypeCode.Null;
                     // Notice: Object of class {0} could not be converted to int
@@ -164,8 +161,7 @@ namespace Pchp.Core
                     if (y.Object == null) goto case PhpTypeCode.Null;
                     else return CompareStringToObject(sx, y.Object);
                 case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
-                case PhpTypeCode.Null:
-                case PhpTypeCode.Undefined: return (sx.Length == 0) ? 0 : 1;
+                case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
             }
 
             throw new NotImplementedException($"compare(String, {y.TypeCode})");
@@ -198,7 +194,6 @@ namespace Pchp.Core
 
             switch (y.TypeCode)
             {
-                case PhpTypeCode.Undefined:
                 case PhpTypeCode.Null: return 1;
                 case PhpTypeCode.Boolean: return y.Boolean ? 0 : 1;
                 case PhpTypeCode.Alias: return Compare(x, y.Alias.Value);
@@ -324,10 +319,8 @@ namespace Pchp.Core
                 case PhpTypeCode.MutableString: return y.MutableString.Length == 0 ? 0 : -1;
                 case PhpTypeCode.PhpArray: return -y.Array.Count;
                 case PhpTypeCode.Alias: return CompareNull(y.Alias.Value);
-                case PhpTypeCode.Undefined:
                 case PhpTypeCode.Null: return 0;
-                case PhpTypeCode.Object:
-                    return (y.Object == null) ? 0 : -1;
+                case PhpTypeCode.Object: return -1;
             }
 
             throw new NotImplementedException($"compare(null, {y.TypeCode})");

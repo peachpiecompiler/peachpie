@@ -160,8 +160,6 @@ namespace Pchp.Core
             {
                 case PhpTypeCode.Long: return PhpValue.Create(~x.Long);
 
-                case PhpTypeCode.Int32: return PhpValue.Create(~x.ToLong());
-
                 case PhpTypeCode.Alias: return BitNot(ref x.Alias.Value);
 
                 case PhpTypeCode.String:

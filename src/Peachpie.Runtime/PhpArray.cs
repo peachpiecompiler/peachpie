@@ -398,7 +398,6 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Undefined:
                 case PhpTypeCode.Null:
                     return Count;
 

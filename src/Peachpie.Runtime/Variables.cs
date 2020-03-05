@@ -363,7 +363,6 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long: return TypeNameInteger;
                 case PhpTypeCode.Double: return TypeNameDouble;
                 case PhpTypeCode.Boolean: return TypeNameBoolean;
@@ -372,10 +371,11 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias: return GetTypeName(value.Alias.Value);
                 case PhpTypeCode.PhpArray: return PhpArray.PhpTypeName;
                 case PhpTypeCode.Object:
-                    if (value.Object is PhpResource) return PhpResource.PhpTypeName;
-                    return TypeNameObject;
+                    if (value.Object is PhpResource)
+                        return PhpResource.PhpTypeName;
+                    else
+                        return TypeNameObject;
                 case PhpTypeCode.Null: return TypeNameNull;
-                case PhpTypeCode.Undefined: return TypeNameVoid;
             }
 
             throw new ArgumentException();
@@ -446,7 +446,6 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                     return true;
 
@@ -661,13 +660,12 @@ namespace Pchp.Core
                 case PhpTypeCode.Long:
                     l = value.Long;
                     return true;
-                case PhpTypeCode.Int32:
-                    l = value.ToLong();
-                    return true;
+
                 case PhpTypeCode.Alias:
                     return IsLong(value.Alias.Value, out l);
+
                 default:
-                    l = default(long);
+                    l = default;
                     return false;
             }
         }

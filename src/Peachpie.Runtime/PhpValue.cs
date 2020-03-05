@@ -143,7 +143,6 @@ namespace Pchp.Core
                 switch (TypeCode)
                 {
                     case PhpTypeCode.Boolean:
-                    case PhpTypeCode.Int32:
                     case PhpTypeCode.Long:
                     case PhpTypeCode.Double:
                     case PhpTypeCode.String:
@@ -541,14 +540,12 @@ namespace Pchp.Core
             {
                 case PhpTypeCode.Boolean: return Boolean;
                 case PhpTypeCode.Double: return Double;
-                case PhpTypeCode.Int32: return (int)Long;
                 case PhpTypeCode.Long: return Long;
                 case PhpTypeCode.PhpArray:
                 case PhpTypeCode.String:
                 case PhpTypeCode.Object: return Object;
                 case PhpTypeCode.MutableString: return MutableStringBlob.ToString();
                 case PhpTypeCode.Alias: return Alias.Value.ToClr();
-                case PhpTypeCode.Undefined:
                 case PhpTypeCode.Null: return null;
                 default:
                     throw new ArgumentException();
@@ -739,7 +736,8 @@ namespace Pchp.Core
         /// <summary>
         /// Singleton of PhpValue representing <c>void</c>.
         /// </summary>
-        public static readonly PhpValue Void = new PhpValue(new VoidTable());
+        //[Obsolete("Use PhpValue.Null instead.")]
+        public static readonly PhpValue Void = new PhpValue(TypeTable.NullTable);
 
         /// <summary>
         /// Singleton of PhpValue representing <c>null</c>.

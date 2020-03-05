@@ -60,7 +60,6 @@ namespace Pchp.Core
                     return ProcessStatus(ctx, ref status.Alias.Value);
 
                 case PhpTypeCode.Long:
-                case PhpTypeCode.Int32:
                     return (int)status.ToLong();
 
                 default:
