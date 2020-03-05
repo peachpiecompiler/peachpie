@@ -407,10 +407,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (t.ContainingAssembly?.IsPeachpieCorLibrary == true)
                 {
-                    // TODO: constants
-                    if (t.Name == "PhpAlias" ||
-                        t.Name == "PhpResource" ||
-                        t.Name == "PhpArray")
+                    if (t.Is_PhpAlias() ||
+                        t.Is_PhpArray() ||
+                        t.Is_PhpResource())
                     {
                         return true;
                     }
