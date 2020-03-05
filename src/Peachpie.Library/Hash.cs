@@ -2709,7 +2709,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region password_hash, password_verify, password_needs_rehash
+        #region password_hash, password_verify, password_needs_rehash, password_get_info
 
         /// <summary>
         /// Since PHP 7.4, the <c>PASSWORD_*</c> constants were changed to nullable strings, but the functions still support the original ints.

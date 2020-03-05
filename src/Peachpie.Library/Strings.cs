@@ -769,7 +769,7 @@ namespace Pchp.Library
                 throw new ArgumentException();
             }
 
-            return ImplodeInternal(ctx, PhpValue.Void, pieces);
+            return ImplodeInternal(ctx, PhpValue.Null, pieces);
         }
 
         /// <summary>

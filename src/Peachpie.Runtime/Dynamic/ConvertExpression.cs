@@ -510,7 +510,7 @@ namespace Pchp.Core.Dynamic
 
             if (source.GetTypeInfo().IsValueType)
             {
-                if (source == typeof(void)) return VoidAsConstant(expr, PhpValue.Void, Cache.Types.PhpValue);
+                if (source == typeof(void)) return VoidAsConstant(expr, PhpValue.Null, Cache.Types.PhpValue);
                 if (source == typeof(uint)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), Expression.Convert(expr, typeof(long)));
                 if (source == typeof(ulong)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.UInt64), expr);
 

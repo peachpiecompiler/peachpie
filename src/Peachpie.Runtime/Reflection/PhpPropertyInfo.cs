@@ -349,7 +349,7 @@ namespace Pchp.Core.Reflection
                 else
                 {
                     PhpException.UndefinedProperty(ContainingType.Name, _name.ToString());
-                    return PhpValue.Void;
+                    return PhpValue.Null;
                 }
             }
 

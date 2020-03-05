@@ -581,7 +581,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string ini_get(Context ctx, string option)
         {
-            var result = StandardPhpOptions.TryGetSet(ctx, ctx.Configuration, option, PhpValue.Void, StandardPhpOptions.IniAction.Get, out var error);
+            var result = StandardPhpOptions.TryGetSet(ctx, ctx.Configuration, option, PhpValue.Null, StandardPhpOptions.IniAction.Get, out var error);
             if (error)
             {
                 return null;

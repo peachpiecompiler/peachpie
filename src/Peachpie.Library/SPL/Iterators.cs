@@ -677,12 +677,12 @@ namespace Pchp.Library.Spl
 
         public virtual PhpValue key()
         {
-            return (_enumerator != null && _valid) ? _enumerator.CurrentKey : PhpValue.Void;
+            return (_enumerator != null && _valid) ? _enumerator.CurrentKey : PhpValue.Null;
         }
 
         public virtual PhpValue current()
         {
-            return (_enumerator != null && _valid) ? _enumerator.CurrentValue : PhpValue.Void;
+            return (_enumerator != null && _valid) ? _enumerator.CurrentValue : PhpValue.Null;
         }
 
         public PhpValue __call(Context ctx, string name, PhpArray arguments) => this.CallOnInner(ctx, name, arguments);
@@ -1024,12 +1024,12 @@ namespace Pchp.Library.Spl
 
         public override PhpValue current()
         {
-            return isValidImpl() ? _index.Value.current() : PhpValue.Void;
+            return isValidImpl() ? _index.Value.current() : PhpValue.Null;
         }
 
         public override PhpValue key()
         {
-            return isValidImpl() ? _index.Value.key() : PhpValue.Void;
+            return isValidImpl() ? _index.Value.key() : PhpValue.Null;
         }
 
         public override bool valid() => isValidImpl();

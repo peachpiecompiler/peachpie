@@ -1228,7 +1228,7 @@ namespace Pchp.Library
             }
             else
             {
-                ex = PhpValue.Void;
+                ex = PhpValue.Null;
             }
 
             enumerator.Dispose();

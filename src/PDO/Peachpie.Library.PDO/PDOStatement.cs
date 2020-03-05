@@ -706,7 +706,7 @@ namespace Peachpie.Library.PDO
                     var value = PhpValue.FromClr(oa[i]);
                     ref var bucket = ref arr.GetItemRef(new IntStringKey(names[i]));
 
-                    if (bucket.IsSet)
+                    if (Operators.IsSet(bucket))
                     {
                         var nested = bucket.AsArray();
                         if (nested != null)

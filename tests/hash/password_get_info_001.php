@@ -15,9 +15,9 @@ $options = [
     'salt' => $salt,
 ];
 
-$hashBCrypt = @password_hash($password,PASSWORD_DEFAULT,$options);
-$hashArgon2ID = @password_hash( $password, PASSWORD_ARGON2ID, $options);
-$hashArgon2I= @password_hash( $password, PASSWORD_ARGON2I, $options);
+$hashBCrypt = @\password_hash($password, \PASSWORD_DEFAULT,$options);
+$hashArgon2ID = @\password_hash( $password, \PASSWORD_ARGON2ID, $options);
+$hashArgon2I= @\password_hash( $password, \PASSWORD_ARGON2I, $options);
 
 print_r(password_get_info(NULL));
 print_r(password_get_info("UnknownAlgorithm"));

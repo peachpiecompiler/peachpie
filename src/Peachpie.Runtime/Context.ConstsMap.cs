@@ -251,14 +251,14 @@ namespace Pchp.Core
             /// <returns>True if slot was set, otherwise false.</returns>
             static bool SetValue(ref PhpValue slot, PhpValue value)
             {
-                if (slot.IsSet)
-                {
-                    return false;
-                }
-                else
+                if (slot.IsDefault)
                 {
                     slot = value;
                     return true;
+                }
+                else
+                {
+                    return false;
                 }
             }
 
@@ -306,15 +306,15 @@ namespace Pchp.Core
                 if (idx > 0)
                 {
                     // user constant
-                    if (ArrayUtils.TryGetItem(_valuesCtx, idx - 1, out value) && value.IsSet)
+                    if (ArrayUtils.TryGetItem(_valuesCtx, idx - 1, out value))
                     {
-                        return true;
+                        return !value.IsDefault;
                     }
                 }
                 else // if (idx < 0)
                 {
                     // app constant
-                    if (ArrayUtils.TryGetItem(s_valuesApp, -idx - 1, out var data) && data.Data.IsSet)
+                    if (ArrayUtils.TryGetItem(s_valuesApp, -idx - 1, out var data) && !data.Data.IsDefault)
                     {
                         value = data.GetValue(_ctx);
                         return true;

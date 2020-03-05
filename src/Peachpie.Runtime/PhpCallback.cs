@@ -153,7 +153,7 @@ namespace Pchp.Core
             protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
             {
                 PhpException.UndefinedFunctionCalled(_function);
-                return PhpValue.Void;
+                return PhpValue.Null;
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as FunctionCallback);
@@ -212,7 +212,7 @@ namespace Pchp.Core
             protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
             {
                 PhpException.UndefinedMethodCalled(_class, _method);
-                return PhpValue.Void;
+                return PhpValue.Null;
             }
 
             PhpTypeInfo ResolveType(Context ctx) => ctx.ResolveType(_class, _callerCtx, true);
@@ -323,7 +323,7 @@ namespace Pchp.Core
                     throw PhpException.ClassNotFoundException(_obj.ToString(ctx));
                 }
 
-                return PhpValue.Void;
+                return PhpValue.Null;
             }
 
             void ResolveType(Context ctx, out PhpTypeInfo tinfo, out object target)

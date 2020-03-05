@@ -707,7 +707,7 @@ namespace Pchp.Core
             {
                 if (!quiet) throw new ArgumentException();
 
-                return new PhpAlias(PhpValue.Void);
+                return new PhpAlias(PhpValue.Null);
             }
         }
 
@@ -975,7 +975,7 @@ namespace Pchp.Core
 
             //
             PhpException.UndefinedProperty(type.Name, propertyName);
-            return PhpValue.Void;
+            return PhpValue.Null;
         }
 
         #endregion
@@ -1285,7 +1285,7 @@ namespace Pchp.Core
 
                 public void Dispose()
                 {
-                    _key = _value = PhpValue.Void;
+                    _key = _value = PhpValue.Null;
                     (Enumerator as IDisposable)?.Dispose();
                 }
 

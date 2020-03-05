@@ -163,7 +163,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
             else
             {
                 PhpException.VariableMisusedAsObject(value, false);
-                return PhpValue.Void;
+                return PhpValue.Null;
             }
         }
 

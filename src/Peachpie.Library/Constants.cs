@@ -34,7 +34,7 @@ namespace Pchp.Library
         /// <param name="callerCtx">Current class scope.</param>
         /// <param name="this">Current <c>$this</c> value. Used to resolve <c>static::</c>.</param>
         /// <param name="name">The name of the constant. Might be a class constant.</param>
-        /// <param name="value">The constant value or <see cref="PhpValue.Void"/> if constant was not resolved.</param>
+        /// <param name="value">The constant value or <see cref="PhpValue.Null"/> if constant was not resolved.</param>
         /// <returns>Whether the constant was resolved.</returns>
         /// <exception cref="Exception">(Error) if <c>static::</c> used out of the class scope.</exception>
         static bool TryGetConstant(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle callerCtx, object @this, string name, out PhpValue value)
@@ -87,7 +87,7 @@ namespace Pchp.Library
             }
 
             //
-            value = PhpValue.Void;
+            value = PhpValue.Null;
             return false;
         }
 

@@ -533,7 +533,7 @@ namespace Pchp.Core
                         PhpException.Throw(PhpError.Warning, Resources.ErrResources.illegal_offset_type);
                     }
 
-                    return PhpValue.Void;
+                    return PhpValue.Null;
                 }
 
                 //
@@ -543,7 +543,7 @@ namespace Pchp.Core
                 }
 
                 //
-                return PhpValue.Void;
+                return PhpValue.Null;
             }
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet)
             {

@@ -220,7 +220,7 @@ namespace Peachpie.Library.Network
                 case CURLConstants.CURLINFO_TOTAL_TIME:
                     return r.TotalTime.TotalSeconds;
                 case CURLConstants.CURLINFO_PRIVATE:
-                    return r.Private.IsSet ? r.Private.DeepCopy() : PhpValue.False;
+                    return Operators.IsSet(r.Private) ? r.Private.DeepCopy() : PhpValue.False;
                 case CURLConstants.CURLINFO_COOKIELIST:
                     return ((ch.CookieContainer != null && ch.Result != null) ? CreateCookiePhpArray(ch.Result.Cookies) : PhpArray.Empty);
                 case CURLConstants.CURLINFO_HEADER_SIZE:
@@ -709,7 +709,7 @@ namespace Peachpie.Library.Network
         /// </summary>
         public static PhpValue curl_multi_getcontent(CURLResource ch)
         {
-            if (ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN && ch.Result != null && ch.Result.ExecValue.IsSet)
+            if (ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN && ch.Result != null && Operators.IsSet(ch.Result.ExecValue))
             {
                 return ch.Result.ExecValue;
             }

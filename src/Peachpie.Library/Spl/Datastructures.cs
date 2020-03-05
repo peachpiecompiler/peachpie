@@ -46,12 +46,6 @@ namespace Pchp.Library.Spl
             }
 
             _array = newarray;
-
-            // mark new elements as not set
-            for (int i = oldsize; i < _array.Length; i++)
-            {
-                _array[i] = PhpValue.Void;
-            }
         }
 
         protected bool IsValidInternal()
@@ -153,7 +147,7 @@ namespace Pchp.Library.Spl
 
             for (int i = 0; i < _array.Length; i++)
             {
-                result[i] = _array[i];
+                result[i] = _array[i].IsDefault ? PhpValue.Null : _array[i];
             }
 
             return result;
@@ -206,7 +200,19 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Returns the current element (value).
         /// </summary>
-        public PhpValue current() { return IsValidInternal() ? _array[_position] : PhpValue.Void; }
+        public PhpValue current()
+        {
+            if (IsValidInternal())
+            {
+                var value = _array[_position];
+                if (value.IsDefault == false)
+                {
+                    return value;
+                }
+            }
+
+            return PhpValue.Null;
+        }
 
         #endregion
 
@@ -219,7 +225,9 @@ namespace Pchp.Library.Spl
         {
             var i = offset.ToLong();
             IndexCheckHelper(i);
-            return _array[i];
+
+            var value = _array[i];
+            return value.IsDefault ? PhpValue.Null : value;
         }
 
         /// <summary>
@@ -229,13 +237,14 @@ namespace Pchp.Library.Spl
         {
             var i = offset.ToLong();
             IndexCheckHelper(i);
+
             _array[i] = value;
         }
 
         /// <summary>
         /// Unsets an offset.
         /// </summary>
-        public void offsetUnset(PhpValue offset) => offsetSet(offset, PhpValue.Void);
+        public void offsetUnset(PhpValue offset) => offsetSet(offset, default);
 
         /// <summary>
         /// Whether an offset exists.
@@ -244,7 +253,7 @@ namespace Pchp.Library.Spl
         public bool offsetExists(PhpValue offset)
         {
             var i = offset.ToLong();
-            return i >= 0 && _array != null && i < _array.Length && _array[i].IsSet;
+            return i >= 0 && _array != null && i < _array.Length && !_array[i].IsDefault;
         }
 
         #endregion

@@ -363,7 +363,7 @@ namespace Pchp.Library.Spl
             }
 
             // TODO: err
-            return PhpValue.Void;
+            return PhpValue.Null;
         }
 
         public string getIteratorClass() => _iteratorClass ?? DefaultIteratorClass;

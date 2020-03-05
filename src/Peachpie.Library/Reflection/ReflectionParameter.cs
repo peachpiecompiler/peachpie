@@ -67,7 +67,7 @@ namespace Pchp.Library.Reflection
 
             _allowsNull |= allowsNull;
             
-            if (!_defaultValue.IsSet && !defaultValue.IsDefault)
+            if (_defaultValue.IsDefault && !defaultValue.IsDefault)
             {
                 _defaultValue = defaultValue;
             }
@@ -93,7 +93,7 @@ namespace Pchp.Library.Reflection
         {
             if (_defaultValue.IsDefault)
             {
-                _defaultValue = PhpValue.Void; // set something in here so the parameter will be treated as options
+                _defaultValue = PhpValue.Void; // set something in here so the parameter will be treated as optional
                 Debug.Assert(!_defaultValue.IsDefault);
             }
         }
@@ -198,7 +198,7 @@ namespace Pchp.Library.Reflection
 
         public bool isCallable() => _type == typeof(IPhpCallable);
 
-        public bool isDefaultValueAvailable() => _defaultValue.IsSet; // not default && not void
+        public bool isDefaultValueAvailable() => !_defaultValue.IsDefault; // value is initialized
 
         public bool isDefaultValueConstant() => false; // we don't know
 
@@ -215,6 +215,6 @@ namespace Pchp.Library.Reflection
         private protected static bool hasTypeInternal(Type t) => t != null && t != typeof(PhpValue) && t != typeof(PhpAlias) && t != typeof(PhpValue[]) && t != typeof(PhpAlias[]);
 
         private protected string _debugTypeName => string.Empty; // TODO: " {typename}{or NULL}"
-        private protected string _debugDefaultValue => _defaultValue.IsSet ? $" = {_defaultValue.DisplayString}" : string.Empty;
+        private protected string _debugDefaultValue => _defaultValue.IsDefault ? string.Empty : $" = {_defaultValue.DisplayString}";
     }
 }

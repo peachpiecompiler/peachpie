@@ -97,22 +97,22 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
         }
 
         //
-        return new Closure(ctx, callable, null, default(RuntimeTypeHandle), null, PhpArray.Empty, PhpArray.Empty);
+        return new Closure(ctx, callable, null, default, null, PhpArray.Empty, PhpArray.Empty);
     }
 
     /// <summary>
     /// Duplicates the closure with a new bound object and class scope.
     /// </summary>
-    public Closure bindTo(object newthis, PhpValue newscope = default(PhpValue))
+    public Closure bindTo(object newthis, PhpValue newscope = default)
     {
         // create new Closure with updated '$this' and `scope`
 
         return new Closure(_ctx, _callable, newthis, ResolveNewScope(newthis, newscope), null/*static is replaced with mew scope*/, parameter, @static);
     }
 
-    internal RuntimeTypeHandle ResolveNewScope(object newthis, PhpValue newscope = default(PhpValue))
+    internal RuntimeTypeHandle ResolveNewScope(object newthis, PhpValue newscope = default)
     {
-        if (newscope.IsSet)
+        if (!newscope.IsDefault)
         {
             // Operators.TypeNameOrObjectToType(newscope) + handle "static"
 
