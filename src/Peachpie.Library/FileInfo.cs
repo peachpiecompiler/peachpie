@@ -77,7 +77,17 @@ namespace Pchp.Library
         /// Detect MIME Content-type for a file.
         /// </summary>
         [return: CastToFalse]
-        public static string mime_content_type(Context ctx, string filename) => new finfo(ctx).file(filename);
+        public static string mime_content_type(Context ctx, string filename)
+        {
+            if (string.IsNullOrEmpty(filename))
+            {
+                PhpException.ArgumentNull(nameof(filename));
+                return null; // FALSE
+            }
+            
+            //
+            return new finfo(ctx).file(filename);
+        }
     }
 
     /// <summary>
@@ -399,7 +409,7 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public virtual string file(string file_name = null, int options = PhpFileInfo.FILEINFO_NONE, PhpResource context = null)
+        public virtual string file(string file_name, int options = PhpFileInfo.FILEINFO_NONE, PhpResource context = null)
         {
             byte[] bytes;
 

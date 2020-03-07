@@ -38,7 +38,7 @@ namespace Pchp.Core
             /// <param name="name">A unparsed name of variable.</param>
             /// <param name="value">A value to be added.</param>
             /// <param name="subname">A name of intermediate array inserted before the value.</param>
-            public static void AddVariable(PhpArray/*!*/ array, string name, string value, string subname = null)
+            public static void AddVariable(PhpArray/*!*/ array, string name, PhpValue value, string subname = null)
             {
                 NameValueCollectionUtils.AddVariable(array, name, value, subname);
             }
@@ -58,6 +58,60 @@ namespace Pchp.Core
                 {
                     dst.SetItemValue(e.CurrentKey, e.CurrentValue.DeepCopy());
                 }
+            }
+
+            /// <summary>
+            /// Adds a form file to the <c>$_FILES</c> array.
+            /// </summary>
+            /// <param name="files">The $_FILES array.</param>
+            /// <param name="field_name">Form field name.</param>
+            /// <param name="file_name">Original file name, without the directory name.</param>
+            /// <param name="type">Content type.</param>
+            /// <param name="tmp_name">Local full file path where is the uploaded file temporarily stored.</param>
+            /// <param name="error">Error code number.</param>
+            /// <param name="file_length">Uploaded file size in bytes.</param>
+            public static void AddFormFile(PhpArray/*!*/ files, string field_name, string file_name, string type, string tmp_name, int error, long file_length)
+            {
+                // field_name
+                // field_name[]
+                // field_name[key]
+
+                var left = field_name.IndexOf('[');
+                if (left > 0 && left < field_name.Length - 1)
+                {
+                    var right = field_name.IndexOf(']', left + 1);
+                    if (right > 0)
+                    {
+                        // keyed file entry:
+
+                        // the variable name is a key to the "array", dots are replaced by underscores in top-level name:
+                        var field_name_key = new IntStringKey(NameValueCollectionUtils.EncodeTopLevelName(field_name.Substring(0, left)));
+                        var file_entry = NameValueCollectionUtils.EnsureItemArray(files, field_name_key);
+
+                        // file entry key,
+                        // can be a string, empty or a number
+                        var key = Convert.StringToArrayKey(field_name.Substring(left + 1, right - left - 1));
+
+                        NameValueCollectionUtils.EnsureItemArray(file_entry, "name", key, file_name);
+                        NameValueCollectionUtils.EnsureItemArray(file_entry, "type", key, type);
+                        NameValueCollectionUtils.EnsureItemArray(file_entry, "tmp_name", key, tmp_name);
+                        NameValueCollectionUtils.EnsureItemArray(file_entry, "error", key, error);
+                        NameValueCollectionUtils.EnsureItemArray(file_entry, "size", key, file_length);
+
+                        //
+                        return;
+                    }
+                }
+
+                // not keyed:
+                AddVariable(files, field_name, new PhpArray(5)
+                {
+                    { "name", file_name },
+                    { "type", type },
+                    { "tmp_name", tmp_name },
+                    { "error", error },
+                    { "size", file_length },
+                });
             }
 
             /// <summary>
