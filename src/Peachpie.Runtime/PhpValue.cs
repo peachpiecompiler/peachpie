@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Dynamic;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -91,12 +93,17 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating whether the value is a <c>NULL</c> or undefined.
         /// </summary>
-        public bool IsNull => _type.IsNull(ref this);
+        public bool IsNull => TypeCode switch
+        {
+            PhpTypeCode.Null => true,
+            PhpTypeCode.Alias => Alias.Value.TypeCode == PhpTypeCode.Null,
+            _ => false,
+        };
 
         /// <summary>
         /// Gets value indicating whether the value is considered to be empty.
         /// </summary>
-        public bool IsEmpty => _type.IsEmpty(ref this);
+        public bool IsEmpty => ToBoolean() == false;
 
         /// <summary>
         /// The structure was not initialized.
@@ -144,9 +151,6 @@ namespace Pchp.Core
                     case PhpTypeCode.MutableString:
                     case PhpTypeCode.Null:
                         return true;
-
-                    case PhpTypeCode.Object:
-                        return this.Object == null; // Note: will be handled by PhpTypeCode.Null
 
                     case PhpTypeCode.Alias:
                         return Alias.Value.IsScalar;
@@ -228,21 +232,168 @@ namespace Pchp.Core
         /// </summary>
         public PhpTypeCode TypeCode => _type.Type;
 
-        public object ToClass() => _type.ToClass(ref this);
+        /// <summary>
+        /// Explicit conversion to <see cref="bool"/>.
+        /// </summary>
+        public bool ToBoolean() => TypeCode switch
+        {
+            PhpTypeCode.Null => false,
+            PhpTypeCode.Boolean => Boolean,
+            PhpTypeCode.Long => Long != 0,
+            PhpTypeCode.Double => Double != .0,
+            PhpTypeCode.PhpArray => Array.Count != 0,
+            PhpTypeCode.String => Convert.ToBoolean(String),
+            PhpTypeCode.MutableString => MutableStringBlob.ToBoolean(),
+            PhpTypeCode.Object => Convert.ToBoolean(Object),
+            PhpTypeCode.Alias => Alias.Value.ToBoolean(),
+            _ => false,
+        };
 
-        public long ToLong() => _type.ToLong(ref this);
+        /// <summary>
+        /// Explicit conversion to <see cref="long"/>.
+        /// </summary>
+        public long ToLong() => TypeCode switch
+        {
+            PhpTypeCode.Null => 0,
+            PhpTypeCode.Boolean => Boolean ? 1L : 0L,
+            PhpTypeCode.Long => Long,
+            PhpTypeCode.Double => (long)Double,
+            PhpTypeCode.PhpArray => (long)Array.Count,
+            PhpTypeCode.String => Convert.StringToLongInteger(String),
+            PhpTypeCode.MutableString => MutableString.ToLong(),
+            PhpTypeCode.Object => Convert.ToLong(Object),
+            PhpTypeCode.Alias => Alias.Value.ToLong(),
+            _ => throw InvalidTypeCodeException(),
+        };
 
-        public double ToDouble() => _type.ToDouble(ref this);
+        /// <summary>
+        /// Explicit conversion to <see cref="double"/>.
+        /// </summary>
+        public double ToDouble() => TypeCode switch
+        {
+            PhpTypeCode.Null => 0.0,
+            PhpTypeCode.Boolean => Boolean ? 1.0 : 0.0,
+            PhpTypeCode.Long => (double)Long,
+            PhpTypeCode.Double => Double,
+            PhpTypeCode.PhpArray => (double)Array.Count,
+            PhpTypeCode.String => Convert.StringToDouble(String),
+            PhpTypeCode.MutableString => MutableString.ToDouble(),
+            PhpTypeCode.Object => Convert.ToDouble(Object),
+            PhpTypeCode.Alias => Alias.Value.ToDouble(),
+            _ => throw InvalidTypeCodeException(),
+        };
 
-        public decimal ToDecimal() => (decimal)_type.ToDouble(ref this);    // TODO: more precision when converting from string 
+        public decimal ToDecimal() => (decimal)ToDouble();    // TODO: more precision when converting from string 
 
-        public bool ToBoolean() => _type.ToBoolean(ref this);
+        public object ToClass()
+        {
+            switch (TypeCode)
+            {
+                case PhpTypeCode.Null:
+                    return new stdClass();
 
-        public Convert.NumberInfo ToNumber(out PhpNumber number) => _type.ToNumber(ref this, out number);
+                case PhpTypeCode.Boolean:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Double:
+                case PhpTypeCode.String:
+                case PhpTypeCode.MutableString:
+                    return new stdClass(this);
 
-        public string ToString(Context ctx) => _type.ToString(ref this, ctx);
+                case PhpTypeCode.PhpArray:
+                    return Array.ToObject();
 
-        public string ToStringOrThrow(Context ctx) => _type.ToStringOrThrow(ref this, ctx);
+                case PhpTypeCode.Object:
+                    return (Object is IPhpConvertible conv) ? conv.ToClass() : Object;
+
+                case PhpTypeCode.Alias:
+                    return Alias.Value.ToClass();
+
+                default:
+                    throw InvalidTypeCodeException();
+            }
+        }
+
+        public Convert.NumberInfo ToNumber(out PhpNumber number)
+        {
+            switch (TypeCode)
+            {
+                case PhpTypeCode.Null:
+                    number = PhpNumber.Create(0L);
+                    return Convert.NumberInfo.LongInteger;
+
+                case PhpTypeCode.Boolean:
+                    number = PhpNumber.Create(Boolean ? 1L : 0L);
+                    return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
+
+                case PhpTypeCode.Long:
+                    number = PhpNumber.Create(Long);
+                    return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
+
+                case PhpTypeCode.Double:
+                    number = PhpNumber.Create(Double);
+                    return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
+
+                case PhpTypeCode.String:
+                    return Convert.ToNumber(String, out number);
+
+                case PhpTypeCode.MutableString:
+                    return MutableString.ToNumber(out number);
+
+                case PhpTypeCode.PhpArray:
+                    return ((IPhpConvertible)Array).ToNumber(out number);
+
+                case PhpTypeCode.Object:
+                    return Convert.ToNumber(Object, out number);
+
+                case PhpTypeCode.Alias:
+                    return Alias.Value.ToNumber(out number);
+
+                default:
+                    throw InvalidTypeCodeException();
+            }
+        }
+
+        public string ToString(Context ctx) => TypeCode switch
+        {
+            PhpTypeCode.Null => string.Empty,
+            PhpTypeCode.Boolean => Convert.ToString(Boolean),
+            PhpTypeCode.Long => Long.ToString(),
+            PhpTypeCode.Double => Convert.ToString(Double, ctx),
+            PhpTypeCode.PhpArray => (string)Array,
+            PhpTypeCode.String => String,
+            PhpTypeCode.MutableString => MutableStringBlob.ToString(),
+            PhpTypeCode.Object => Convert.ToString(Object, ctx),
+            PhpTypeCode.Alias => Alias.Value.ToString(ctx),
+            _ => throw InvalidTypeCodeException(),
+        };
+
+        public string ToStringOrThrow(Context ctx) => TypeCode switch
+        {
+            PhpTypeCode.Null => string.Empty,
+            PhpTypeCode.Boolean => Convert.ToString(Boolean),
+            PhpTypeCode.Long => Long.ToString(),
+            PhpTypeCode.Double => Convert.ToString(Double, ctx),
+            PhpTypeCode.PhpArray => (string)Array,
+            PhpTypeCode.String => String,
+            PhpTypeCode.MutableString => MutableStringBlob.ToString(ctx.StringEncoding),
+            PhpTypeCode.Object => Convert.ToStringOrThrow(Object, ctx),
+            PhpTypeCode.Alias => Alias.Value.ToStringOrThrow(ctx),
+            _ => throw InvalidTypeCodeException(),
+        };
+
+        string ToStringUtf8() => TypeCode switch
+        {
+            PhpTypeCode.Null => string.Empty,
+            PhpTypeCode.Boolean => Convert.ToString(Boolean),
+            PhpTypeCode.Long => Long.ToString(),
+            PhpTypeCode.Double => Convert.ToString(Double),
+            PhpTypeCode.PhpArray => (string)Array,
+            PhpTypeCode.String => String,
+            PhpTypeCode.MutableString => MutableStringBlob.ToString(Encoding.UTF8),
+            PhpTypeCode.Object => Object.ToString(),
+            PhpTypeCode.Alias => Alias.Value.ToStringUtf8(),
+            _ => throw InvalidTypeCodeException(),
+        };
 
         #endregion
 
@@ -275,8 +426,7 @@ namespace Pchp.Core
 
         public static explicit operator PhpNumber(PhpValue value)
         {
-            PhpNumber result;
-            if ((value.ToNumber(out result) & Convert.NumberInfo.Unconvertible) != 0)
+            if ((value.ToNumber(out var result) & Convert.NumberInfo.Unconvertible) == 0)
             {
                 // TODO: ErrCode
                 throw new InvalidCastException();
@@ -293,23 +443,34 @@ namespace Pchp.Core
         /// Implicit conversion to string,
         /// preserves <c>null</c>,
         /// throws if conversion is not possible.</summary>
-        public string AsString(Context ctx) => _type.AsString(ref this, ctx);
+        public string AsString(Context ctx) => TypeCode switch
+        {
+            PhpTypeCode.Null => null,
+            PhpTypeCode.Alias => Alias.Value.AsString(ctx),
+            _ => ToStringOrThrow(ctx),
+        };
 
         /// <summary>
         /// Conversion to <see cref="int"/>.
         /// </summary>
-        public int ToInt() => (int)this;
+        public int ToInt() => checked((int)ToLong());
 
         /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
         /// </summary>
-        public object AsObject() => _type.AsObject(ref this);
+        public object AsObject() => TypeCode switch
+        {
+            PhpTypeCode.Object => Object,
+            PhpTypeCode.Alias => Alias.Value.AsObject(),
+            _ => null,
+        };
 
         /// <summary>
-        /// Casts the value to object instance.
+        /// Explicit cast to object.
         /// Non-object values are wrapped to <see cref="stdClass"/>.
         /// </summary>
-        public object ToObject() => _type.ToClass(ref this);
+        /// <remarks>Alias to <see cref="ToClass"/></remarks>
+        public object ToObject() => ToClass();
 
         /// <summary>
         /// Converts value to <see cref="PhpArray"/>.
@@ -322,7 +483,19 @@ namespace Pchp.Core
         /// 
         /// This method cannot return a <c>null</c> reference.
         /// </summary>
-        public PhpArray/*!*/ToArray() => _type.ToArray(ref this);
+        public PhpArray/*!*/ToArray() => TypeCode switch
+        {
+            PhpTypeCode.Null => PhpArray.NewEmpty(),
+            PhpTypeCode.Boolean => PhpArray.New(this),
+            PhpTypeCode.Long => PhpArray.New(this),
+            PhpTypeCode.Double => PhpArray.New(this),
+            PhpTypeCode.PhpArray => Array.AsWritable(),
+            PhpTypeCode.String => PhpArray.New(this),
+            PhpTypeCode.MutableString => MutableString.ToArray(),
+            PhpTypeCode.Object => Convert.ClassToArray(Object),
+            PhpTypeCode.Alias => Alias.Value.ToArray(),
+            _ => throw InvalidTypeCodeException(),
+        };
 
         /// <summary>
         /// Wraps the value into <see cref="PhpAlias"/>,
@@ -408,7 +581,46 @@ namespace Pchp.Core
 
         public override int GetHashCode() => _obj.@object != null ? _obj.@object.GetHashCode() : (int)_value.@long;
 
-        public bool TryToIntStringKey(out IntStringKey key) => _type.TryToIntStringKey(ref this, out key);
+        public bool TryToIntStringKey(out IntStringKey key)
+        {
+            switch (TypeCode)
+            {
+                case PhpTypeCode.Null:
+                    key = IntStringKey.EmptyStringKey;
+                    return true;
+
+                case PhpTypeCode.Boolean:
+                    key = new IntStringKey(Boolean ? 1 : 0);
+                    return true;
+
+                case PhpTypeCode.Long:
+                    key = new IntStringKey(checked((int)Long));
+                    return true;
+
+                case PhpTypeCode.Double:
+                    key = new IntStringKey((int)Double);
+                    return true;
+
+                case PhpTypeCode.String:
+                    key = Convert.StringToArrayKey(String);
+                    return true;
+
+                case PhpTypeCode.MutableString:
+                    key = Convert.StringToArrayKey(MutableStringBlob.ToString());
+                    return true;
+
+                case PhpTypeCode.PhpArray:
+                case PhpTypeCode.Object:
+                    key = default;
+                    return false;
+
+                case PhpTypeCode.Alias:
+                    return Alias.Value.TryToIntStringKey(out key);
+
+                default:
+                    throw InvalidTypeCodeException();
+            }
+        }
 
         public IntStringKey ToIntStringKey()
         {
@@ -424,7 +636,13 @@ namespace Pchp.Core
         /// <summary>
         /// Gets enumerator object used within foreach statement.
         /// </summary>
-        public IPhpEnumerator GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller) => _type.GetForeachEnumerator(ref this, aliasedValues, caller);
+        public IPhpEnumerator GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller) => TypeCode switch
+        {
+            PhpTypeCode.PhpArray => Array.GetForeachEnumerator(aliasedValues),
+            PhpTypeCode.Object => Operators.GetForeachEnumerator(Object, aliasedValues, caller),
+            PhpTypeCode.Alias => Alias.Value.GetForeachEnumerator(aliasedValues, caller),
+            _ => Operators.GetEmptyForeachEnumerator(),
+        };
 
         /// <summary>
         /// Compares two value operands.
@@ -434,32 +652,118 @@ namespace Pchp.Core
         /// Zero for equality,
         /// negative value for <c>this</c> &lt; <paramref name="right"/>,
         /// position value for <c>this</c> &gt; <paramref name="right"/>.</returns>
-        public int Compare(PhpValue right) => _type.Compare(ref this, right);
+        public int Compare(PhpValue right) => TypeCode switch
+        {
+            PhpTypeCode.Null => Comparison.CompareNull(right),
+            PhpTypeCode.Boolean => Comparison.Compare(Boolean, right),
+            PhpTypeCode.Long => Comparison.Compare(Long, right),
+            PhpTypeCode.Double => Comparison.Compare(Double, right),
+            PhpTypeCode.PhpArray => Array.Compare(right),
+            PhpTypeCode.String => Comparison.Compare(String, right),
+            PhpTypeCode.MutableString => Comparison.Compare(MutableStringBlob.ToString(), right),
+            PhpTypeCode.Object => Comparison.Compare(Object, right),
+            PhpTypeCode.Alias => Alias.Value.Compare(right),
+            _ => throw InvalidTypeCodeException(),
+        };
 
         /// <summary>
         /// Performs strict comparison.
         /// </summary>
         /// <param name="right">The right operand.</param>
         /// <returns>The value determining operands are strictly equal.</returns>
-        public bool StrictEquals(PhpValue right) => _type.StrictEquals(ref this, right);
+        public bool StrictEquals(PhpValue right) => TypeCode switch
+        {
+            // TODO: compare TypeCode, then dereference eventually and then switch
 
-        /// <summary>
-        /// Passes the value as strictly typed <c>array</c>.
-        /// 
-        /// Gets the underlaying <see cref="PhpArray"/> or throws an exception.
-        /// The <c>NULL</c> is returned as it is.        /// 
-        /// Anything else than <c>NULL</c> or <see cref="PhpArray"/> causes an exception.
-        /// </summary>
-        /// <returns><see cref="PhpArray"/> instance or a<c>null</c> reference.</returns>
-        /// <exception cref="Exception">(PHP's TypeError) Value is neither <see cref="PhpArray"/> or <c>null</c>.</exception>
-        public PhpArray ToArrayOrThrow() => _type.ArrayOrThrow(ref this);
+            PhpTypeCode.Null => right.IsNull,
+            PhpTypeCode.Boolean => right.IsBoolean(out var b) && b == Boolean,
+            PhpTypeCode.Long => right.IsLong(out var l) && l == Long,
+            PhpTypeCode.Double => right.IsDouble(out var d) && d == Double,
+            PhpTypeCode.PhpArray => Array.StrictCompareEq(right.AsArray()),
+            PhpTypeCode.String => right.IsString(out var s) && s == String,
+            PhpTypeCode.MutableString => right.IsString(out var s) && s.Length == MutableStringBlob.Length && s == MutableStringBlob.ToString(),
+            PhpTypeCode.Object => right.AsObject() == Object,
+            PhpTypeCode.Alias => Alias.Value.StrictEquals(right),
+            _ => throw InvalidTypeCodeException(),
+        };
 
         /// <summary>
         /// Gets callable wrapper for the object dynamic invocation.
         /// </summary>
-        public IPhpCallable AsCallable(RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle), object callerObj = null) => _type.AsCallable(ref this, callerCtx, callerObj);
+        public IPhpCallable AsCallable(RuntimeTypeHandle callerCtx = default, object callerObj = null) => TypeCode switch
+        {
+            PhpTypeCode.PhpArray => Convert.AsCallable(Array, callerCtx, callerObj),
+            PhpTypeCode.String => PhpCallback.Create(String, callerCtx, callerObj),
+            PhpTypeCode.MutableString => PhpCallback.Create(MutableStringBlob.ToString(), callerCtx, callerObj),
+            PhpTypeCode.Object => Convert.ClassAsCallable(Object, callerCtx, callerObj),
+            PhpTypeCode.Alias => Alias.Value.AsCallable(callerCtx, callerObj),
+            _ => PhpCallback.CreateInvalid(),
+        };
 
-        public object EnsureObject() => _type.EnsureObject(ref this);
+        /// <summary>
+        /// Ensures the value is a class object.
+        /// In case it isn't, creates stdClass according to PHP semantics.
+        /// In case current value is empty, replaces current value with newly created stdClass.
+        /// </summary>
+        /// <returns>Non-null object.</returns>
+        public object EnsureObject()
+        {
+            object result;
+
+            switch (TypeCode)
+            {
+                case PhpTypeCode.Null:
+                    // TODO: Err: Warning: Creating default object from empty value
+                    this = FromClass(result = new stdClass());
+                    break;
+
+                case PhpTypeCode.Boolean:
+                    result = new stdClass();   // empty class
+
+                    // me is changed if me.Boolean == FALSE
+                    if (Boolean == false) this = FromClass(result);
+                    break;
+
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Double:
+                    // this is not changed
+                    result = new stdClass(this);
+                    break;
+
+                case PhpTypeCode.PhpArray:
+                    // me is not modified
+                    result = Array.ToObject();
+                    break;
+
+                case PhpTypeCode.String:
+                    result = new stdClass(this);
+
+                    // me is changed if value is empty
+                    if (String.Length == 0) this = FromClass(result);
+                    break;
+
+                case PhpTypeCode.MutableString:
+                    result = new stdClass(this);
+
+                    // me is changed if value is empty
+                    if (MutableStringBlob.IsEmpty) this = FromClass(result);
+                    break;
+
+                case PhpTypeCode.Object:
+                    result = Object;
+                    break;
+
+                case PhpTypeCode.Alias:
+                    result = Alias.Value.EnsureObject();
+                    break;
+
+                default:
+                    throw InvalidTypeCodeException();
+            }
+
+            //
+            return result;
+        }
 
         /// <summary>
         /// Converts underlaying value into <see cref="IPhpArray"/>.
@@ -468,7 +772,37 @@ namespace Pchp.Core
         /// <remarks>Used for L-Values accessed as arrays (<code>$lvalue[] = rvalue</code>).</remarks>
         public IPhpArray EnsureArray() => _type.EnsureArray(ref this);
 
-        public PhpAlias EnsureAlias() => _type.EnsureAlias(ref this);
+        /// <summary>
+        /// Ensures the value as an alias.
+        /// In case it isn't, the value is aliased.
+        /// </summary>
+        /// <returns>Non-null alias of the value.</returns>
+        public PhpAlias EnsureAlias()
+        {
+            switch (TypeCode)
+            {
+                case PhpTypeCode.PhpArray:
+                    // ensure array is lazily copied
+                    Array.EnsureWritable();
+                    break;
+
+                case PhpTypeCode.MutableString:
+                    // ensure blob is lazily copied
+                    if (MutableStringBlob.IsShared)
+                    {
+                        _obj.blob = MutableStringBlob.ReleaseOne();
+                    }
+                    break;
+
+                case PhpTypeCode.Alias:
+                    return Alias.AddRef();
+            }
+
+            // create alias to the value:
+            var alias = new PhpAlias(this, 1);
+            this = Create(alias); // !!!
+            return alias;
+        }
 
         /// <summary>
         /// Gets <see cref="IPhpArray"/> instance providing access to the value with array operators.
@@ -484,9 +818,9 @@ namespace Pchp.Core
 
         /// <summary>
         /// Accesses the value as an array and gets item at given index.
-        /// Gets <c>void</c> value in case the key is not found.
+        /// Gets <c>NULL</c> value in case the key is not found.
         /// </summary>
-        public PhpValue GetArrayItem(PhpValue index, bool quiet = false) => _type.GetArrayItem(ref this, index, quiet);
+        public PhpValue GetArrayItem(PhpValue index, bool quiet = false) => Operators.GetItemValue(this, index, quiet);
 
         /// <summary>
         /// Accesses the value as an array and ensures the item at given index as alias.
@@ -496,10 +830,39 @@ namespace Pchp.Core
         /// <summary>
         /// Creates a deep copy of PHP value.
         /// In case of scalars, the shallow copy is returned.
-        /// In case of classes or aliases, the same reference is returned.
+        /// In case of classes, the same reference is returned.
         /// In case of array or string, its copy is returned.
+        /// In case of aliased value, the same alias is returned.
         /// </summary>
-        public PhpValue DeepCopy() => _type.DeepCopy(ref this);
+        public PhpValue DeepCopy()
+        {
+            switch (TypeCode)
+            {
+                case PhpTypeCode.Null:
+                case PhpTypeCode.Boolean:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Double:
+                    return this;
+
+                case PhpTypeCode.PhpArray:
+                    return Array.DeepCopy();
+
+                case PhpTypeCode.String:
+                    return this;
+
+                case PhpTypeCode.MutableString:
+                    return new PhpValue(MutableStringBlob.AddRef());
+
+                case PhpTypeCode.Object:
+                    return this;
+
+                case PhpTypeCode.Alias:
+                    return Alias.DeepCopy();
+
+                default:
+                    throw InvalidTypeCodeException();
+            }
+        }
 
         /// <summary>
         /// Deep copies the value in-place.
@@ -510,8 +873,18 @@ namespace Pchp.Core
         {
             if (_type != null)
             {
-                // make copy if applicable
-                _type.PassValue(ref this);
+                switch (TypeCode)
+                {
+                    case PhpTypeCode.MutableString:
+                        MutableStringBlob.AddRef();    // ~ DeepCopy
+                        break;
+                    case PhpTypeCode.PhpArray:
+                        _obj.@object = Array.DeepCopy();
+                        break;
+                    case PhpTypeCode.Alias:
+                        this = Alias.Value.DeepCopy();  // !!!
+                        break;
+                }
             }
             else
             {
@@ -524,7 +897,20 @@ namespace Pchp.Core
         /// Outputs current value to <see cref="Context"/>.
         /// Handles byte (8bit) strings and allows for chunked text to be streamed without costly concatenation.
         /// </summary>
-        public void Output(Context ctx) => _type.Output(ref this, ctx);
+        public void Output(Context ctx)
+        {
+            switch (this.TypeCode)
+            {
+                case PhpTypeCode.Boolean: ctx.Echo(Boolean); break;
+                case PhpTypeCode.Long: ctx.Echo(Long); break;
+                case PhpTypeCode.Double: ctx.Echo(Double); break;
+                case PhpTypeCode.PhpArray: ctx.Echo((string)Array); break;
+                case PhpTypeCode.String: ctx.Echo(String); break;
+                case PhpTypeCode.MutableString: MutableStringBlob.Output(ctx); break;
+                case PhpTypeCode.Object: ctx.Echo(Convert.ToStringOrThrow(Object, ctx)); break;
+                case PhpTypeCode.Alias: Alias.Value.Output(ctx); break;
+            }
+        }
 
         /// <summary>
         /// Gets underlaying value or object as <see cref="System.Object"/>.
@@ -533,17 +919,17 @@ namespace Pchp.Core
         {
             switch (this.TypeCode)
             {
+                case PhpTypeCode.Null: return null;
                 case PhpTypeCode.Boolean: return Boolean;
-                case PhpTypeCode.Double: return Double;
                 case PhpTypeCode.Long: return Long;
+                case PhpTypeCode.Double: return Double;
                 case PhpTypeCode.PhpArray:
                 case PhpTypeCode.String:
                 case PhpTypeCode.Object: return Object;
                 case PhpTypeCode.MutableString: return MutableStringBlob.ToString();
                 case PhpTypeCode.Alias: return Alias.Value.ToClr();
-                case PhpTypeCode.Null: return null;
                 default:
-                    throw new ArgumentException();
+                    throw InvalidTypeCodeException();
             }
         }
 
@@ -585,7 +971,22 @@ namespace Pchp.Core
         /// <summary>
         /// Calls corresponding <c>Accept</c> method on visitor.
         /// </summary>
-        public void Accept(PhpVariableVisitor visitor) => _type.Accept(ref this, visitor);
+        public void Accept(PhpVariableVisitor visitor)
+        {
+            switch (TypeCode)
+            {
+                case PhpTypeCode.Null: visitor.AcceptNull(); break;
+                case PhpTypeCode.Boolean: visitor.Accept(Boolean); break;
+                case PhpTypeCode.Long: visitor.Accept(Long); break;
+                case PhpTypeCode.Double: visitor.Accept(Double); break;
+                case PhpTypeCode.PhpArray: visitor.Accept(Array); break;
+                case PhpTypeCode.String: visitor.Accept(String); break;
+                case PhpTypeCode.MutableString: visitor.Accept(MutableString); break;
+                case PhpTypeCode.Object: visitor.AcceptObject(Object); break;
+                case PhpTypeCode.Alias: visitor.Accept(Alias); break;
+                default: throw InvalidTypeCodeException();
+            }
+        }
 
         /// <summary>
         /// Gets value converted to string using default configuration options.
@@ -593,7 +994,7 @@ namespace Pchp.Core
         public override string ToString()
         {
             Debug.WriteLine("Use ToString(Context) instead!");
-            return _type.ToStringQuiet(ref this);
+            return ToStringUtf8();
         }
 
         /// <summary>
@@ -640,7 +1041,7 @@ namespace Pchp.Core
             }
             else if (ReferenceEquals(_type, TypeTable.MutableStringTable))
             {
-                str = _obj.blob.ToString(Encoding.UTF8);
+                str = _obj.blob.ToString();
                 return true;
             }
             else if (IsAlias)
@@ -714,9 +1115,12 @@ namespace Pchp.Core
             }
             else
             {
-                return (MutableStringBlob = new PhpString.Blob(_type.ToStringQuiet(ref this)));
+                return (MutableStringBlob = new PhpString.Blob(ToStringUtf8()));
             }
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Exception InvalidTypeCodeException() => new InvalidOperationException();
 
         #endregion
 

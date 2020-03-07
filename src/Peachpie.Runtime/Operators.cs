@@ -714,7 +714,86 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
-        public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet = false) => value.GetArrayItem(index, quiet);
+        public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet = false)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String:
+                    var item = Operators.GetItemValue(value.String, index, quiet);
+                    if (quiet && string.IsNullOrEmpty(item))
+                    {
+                        return PhpValue.Null;
+                    }
+                    return item;
+
+                case PhpTypeCode.MutableString:
+                    return ((IPhpArray)value.MutableStringBlob).GetItemValue(index); // quiet);
+
+                case PhpTypeCode.PhpArray:
+                    return value.Array.GetItemValue(index); // , quiet);
+
+                case PhpTypeCode.Object:
+                    return Operators.GetItemValue(value.Object, index, quiet);
+
+                case PhpTypeCode.Alias:
+                    return value.Alias.Value.GetArrayItem(index, quiet);
+
+                default:
+                    return PhpValue.Null;
+            }
+        }
+
+        /// <summary>
+        /// Implements <c>[]</c> operator on <see cref="PhpValue"/>.
+        /// </summary>
+        public static PhpValue GetItemValue(object obj, PhpValue index, bool quiet = false)
+        {
+            // IPhpArray.GetItemValue
+            if (obj is IPhpArray arr)
+            {
+                return arr.GetItemValue(index); // , quiet);
+            }
+
+            // ArrayAccess.offsetGet()
+            if (obj is ArrayAccess arracces)
+            {
+                return arracces.offsetGet(index);
+            }
+
+            // IList[]
+            if (obj is IList list)
+            {
+                var key = index.ToIntStringKey();
+                if (key.IsInteger)
+                {
+                    if (key.Integer >= 0 && key.Integer < list.Count)
+                    {
+                        return PhpValue.FromClr(list[index.ToIntStringKey().Integer]);
+                    }
+                    else if (!quiet)
+                    {
+                        PhpException.Throw(PhpError.Error, Resources.ErrResources.undefined_offset, key.Integer.ToString());
+                    }
+                }
+                else if (!quiet)
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.ErrResources.illegal_offset_type);
+                }
+
+                return PhpValue.Null;
+            }
+
+            //
+            if (!quiet)
+            {
+                PhpException.Throw(
+                    PhpError.Error,
+                    Resources.ErrResources.object_used_as_array, obj != null ? obj.GetPhpTypeInfo().Name : PhpVariable.TypeNameNull);
+            }
+
+            //
+            return PhpValue.Null;
+        }
 
         public static bool TryGetItemValue(this PhpArray value, string index, out PhpValue item)
         {

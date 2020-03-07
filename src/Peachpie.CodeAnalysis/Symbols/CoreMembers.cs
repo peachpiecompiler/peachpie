@@ -296,6 +296,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToChar_String = ct.Convert.Method("ToChar", ct.String);
                 ToNumber_PhpValue = ct.Convert.Method("ToNumber", ct.PhpValue);
                 ToNumber_String = ct.Convert.Method("ToNumber", ct.String);
+                ToArrayOrThrow_PhpValue = ct.StrictConvert.Method("ToArray", ct.PhpValue);
 
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
                 AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
@@ -424,7 +425,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToChar_String,
-                ToNumber_PhpValue, ToNumber_String,
+                ToNumber_PhpValue, ToNumber_String, ToArrayOrThrow_PhpValue,
                 AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, GetArrayAccess_PhpValue, ToPhpString_PhpValue_Context, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue_RuntimeTypeHandle_Object, AsCallable_String_RuntimeTypeHandle_Object,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
@@ -503,8 +504,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToArray = ct.PhpValue.Method("ToArray");
                 AsObject = ct.PhpValue.Method("AsObject");
                 AsString_Context = ct.PhpValue.Method("AsString", ct.Context);
-                ToArrayOrThrow = ct.PhpValue.Method("ToArrayOrThrow");
-
+                
                 Long = ct.PhpValue.Property("Long");
                 Double = ct.PhpValue.Property("Double");
                 Boolean = ct.PhpValue.Property("Boolean");
@@ -535,7 +535,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, GetArrayAccess, ToArray,
                 AsObject, AsString_Context,
-                DeepCopy, GetValue, PassValue, ToArrayOrThrow,
+                DeepCopy, GetValue, PassValue,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String, Eq_String_PhpValue,
                 Ineq_PhpValue_PhpValue, Ineq_PhpValue_String, Ineq_String_PhpValue,
                 Create_Boolean, Create_Long, Create_Int, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
