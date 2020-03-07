@@ -77,7 +77,7 @@ namespace Pchp.Library
         /// Detect MIME Content-type for a file.
         /// </summary>
         [return: CastToFalse]
-        public static string mime_content_type(Context ctx, string filename) => new finfo(ctx).file(filename);
+        public static string mime_content_type(Context ctx, string filename) => string.IsNullOrEmpty(filename) ? null : new finfo(ctx).file(filename);
     }
 
     /// <summary>
