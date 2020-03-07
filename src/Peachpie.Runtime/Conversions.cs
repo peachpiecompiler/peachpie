@@ -408,6 +408,33 @@ namespace Pchp.Core
         public static IPhpCallable AsCallable(string value, RuntimeTypeHandle callerCtx, object callerObj) => PhpCallback.Create(value, callerCtx, callerObj);
 
         /// <summary>
+        /// Creates a callable object from string value.
+        /// </summary>
+        public static IPhpCallable AsCallable(PhpArray array, RuntimeTypeHandle callerCtx, object callerObj)
+        {
+            if (array.Count == 2)
+            {
+                if (array.TryGetValue(0, out var obj) &&
+                    array.TryGetValue(1, out var method))
+                {
+                    // [ class => object|string, methodname => string ]
+                    return PhpCallback.Create(obj, method, callerCtx, callerObj);
+                }
+            }
+
+            // invalid
+            return PhpCallback.CreateInvalid();
+        }
+
+        public static IPhpCallable ClassAsCallable(object obj, RuntimeTypeHandle callerCtx, object callerObj)
+        {
+            if (obj is IPhpCallable callable) return callable;  // classes with __invoke() magic method implements IPhpCallable
+            if (obj is Delegate d) return RoutineInfo.CreateUserRoutine(d.GetMethodInfo().Name, d);
+
+            return PhpCallback.CreateInvalid();
+        }
+
+        /// <summary>
         /// Resolves whether given instance <paramref name="obj"/> is of given type <paramref name="tinfo"/>.
         /// </summary>
         /// <param name="obj">Value to be checked.</param>
@@ -429,11 +456,23 @@ namespace Pchp.Core
 
         public static NumberInfo ToNumber(string str, out PhpNumber number)
         {
-            long l;
-            double d;
-            var info = StringToNumber(str, out l, out d);
+            var info = StringToNumber(str, out var l, out var d);
             number = ((info & NumberInfo.Double) != 0) ? PhpNumber.Create(d) : PhpNumber.Create(l);
             return info;
+        }
+
+        public static NumberInfo ToNumber(object obj, out PhpNumber number)
+        {
+            if (obj is IPhpConvertible convertible)
+            {
+                return convertible.ToNumber(out number);
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
+                number = PhpNumber.Create(1L);
+                return Convert.NumberInfo.LongInteger;
+            }
         }
 
         /// <summary>
@@ -473,7 +512,33 @@ namespace Pchp.Core
 
         public static long ToLong(string value) => StringToLongInteger(value);
 
+        public static long ToLong(object obj)
+        {
+            if (obj is IPhpConvertible convertible)
+            {
+                return convertible.ToLong();
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
+                return 1L;
+            }
+        }
+
         public static double ToDouble(string value) => StringToDouble(value);
+
+        public static double ToDouble(object obj)
+        {
+            if (obj is IPhpConvertible convertible)
+            {
+                return convertible.ToDouble();
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameDouble));
+                return 1.0;
+            }
+        }
 
         //public static int ToInt(this IPhpArray value) => value.Count;
 
@@ -1322,6 +1387,13 @@ namespace Pchp.Core
                     throw PhpException.TypeErrorException();
             }
         }
+
+        public static PhpArray ToArray(PhpValue value) => value.TypeCode switch
+        {
+            PhpTypeCode.PhpArray => value.Array,
+            PhpTypeCode.Alias => ToArray(value.Alias.Value),
+            _ => throw PhpException.TypeErrorException(),
+        };
     }
 
     #endregion

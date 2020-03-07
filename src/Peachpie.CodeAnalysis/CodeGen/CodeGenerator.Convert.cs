@@ -297,8 +297,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (from == CoreTypes.PhpAlias)
             {
                 // Template: <PhpAlias>.Value.GetArray()
-                this.Emit_PhpAlias_GetValueAddr();
-                return this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArrayOrThrow);
+                this.Emit_PhpAlias_GetValue();
+                return this.EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArrayOrThrow_PhpValue);
             }
 
             if ((from.SpecialType != SpecialType.None && from.SpecialType != SpecialType.System_Object) ||
@@ -318,8 +318,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // Template: ((PhpValue)<from>).GetArray()
                 EmitConvert(from, 0, CoreTypes.PhpValue);
-                EmitPhpValueAddr();
-                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArrayOrThrow);
+                return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArrayOrThrow_PhpValue);
             }
         }
 

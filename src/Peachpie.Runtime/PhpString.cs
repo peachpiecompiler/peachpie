@@ -1596,17 +1596,7 @@ namespace Pchp.Core
 
         public long ToLong() => Convert.ToLong(ToString());
 
-        public Convert.NumberInfo ToNumber(out PhpNumber number)
-        {
-            double d;
-            long l;
-            var info = Convert.StringToNumber(ToString(), out l, out d);
-            number = (info & Convert.NumberInfo.Double) != 0
-                ? PhpNumber.Create(d)
-                : PhpNumber.Create(l);
-
-            return info;
-        }
+        public Convert.NumberInfo ToNumber(out PhpNumber number) => Convert.ToNumber(ToString(), out number);
 
         public string ToString(Context ctx) => ToString(ctx.StringEncoding);
 
