@@ -1242,8 +1242,14 @@ namespace Peachpie.Library.Graphics
         {
             return imagesave(ctx, im, to, (img, stream) =>
             {
+                // use the source's encoder:
+                var encoder = img.GetConfiguration().ImageFormatsManager.FindEncoder(GifFormat.Instance) as GifEncoder;
+
+                // or use default encoding options
+                encoder ??= new GifEncoder(); // TODO: ColorTableMode from alocated colors count?
+
                 img.Mutate(o => o.BackgroundColor(Rgba32.Transparent));
-                img.SaveAsGif(stream);
+                img.SaveAsGif(stream, encoder);
             });
         }
 
