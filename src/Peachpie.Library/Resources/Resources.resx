@@ -708,4 +708,7 @@
   <data name="openssl_X509_cannot_be_coerced" xml:space="preserve">
     <value>Supplied parameter cannot be coerced into an X509 certificate!</value>
   </data>
+  <data name="openssl_cannot_set_iv_length" xml:space="preserve">
+    <value>Key length cannot be set for the cipher method</value>
+  </data>
 </root>

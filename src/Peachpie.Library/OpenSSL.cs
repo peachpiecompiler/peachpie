@@ -36,6 +36,8 @@ namespace Pchp.Library
 
         public const int OPENSSL_ZERO_PADDING = (int)Options.OPENSSL_ZERO_PADDING;
 
+        public const int OPENSSL_DONT_ZERO_PAD_KEY = (int)Options.OPENSSL_DONT_ZERO_PAD_KEY;
+
         private static Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher>(StringComparer.OrdinalIgnoreCase)
         {
             {"aes-256-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC,256)},
@@ -89,7 +91,12 @@ namespace Pchp.Library
         }
 
         [Flags]
-        public enum Options { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2 };
+        public enum Options
+        {
+            OPENSSL_RAW_DATA = 1,
+            OPENSSL_ZERO_PADDING = 2,
+            OPENSSL_DONT_ZERO_PAD_KEY = 4,
+        };
 
         private enum CipherType { AES, DES, TripleDES };
 
@@ -173,6 +180,12 @@ namespace Pchp.Library
                 {
                     if (ivLength < cipher.IVLength) // Pad zeros
                     {
+                        if ((options & Options.OPENSSL_DONT_ZERO_PAD_KEY) != 0 /* && !EVP_CIPHER_CTX_set_key_length(ivLength)*/)
+                        {
+                            // Warning: Key length cannot be set for the cipher method
+                            throw new CryptographicException(Resources.LibResources.openssl_cannot_set_iv_length);
+                        }
+
                         PhpException.Throw(PhpError.E_WARNING, Resources.LibResources.openssl_short_iv, iv.Length.ToString(), cipher.IVLength.ToString());
                     }
                     else if (ivLength > cipher.IVLength) // Trancuate

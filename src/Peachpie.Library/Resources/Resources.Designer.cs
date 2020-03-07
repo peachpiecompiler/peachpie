@@ -1213,6 +1213,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Key length cannot be set for the cipher method.
+        /// </summary>
+        public static string openssl_cannot_set_iv_length {
+            get {
+                return ResourceManager.GetString("openssl_cannot_set_iv_length", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Using an empty Initialization Vector (iv) is potentially insecure and not recommended.
         /// </summary>
         public static string openssl_empty_iv {
