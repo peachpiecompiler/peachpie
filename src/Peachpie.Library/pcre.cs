@@ -509,10 +509,10 @@ namespace Pchp.Library
                 {
                     AddGroupNameToResult(regex, matches, i, (ms, groupName) =>
                     {
-                        ms[groupName] = (PhpValue)new PhpArray();
+                        ms[groupName] = new PhpArray();
                     });
 
-                    matches[i] = (PhpValue)new PhpArray();
+                    matches[i] = new PhpArray();
                 }
             }
             else
@@ -764,12 +764,20 @@ namespace Pchp.Library
 
                     AddGroupNameToResult(r, matches, i, (ms, groupName) =>
                     {
-                        if (j == 0) ms[groupName] = (PhpValue)new PhpArray();
-                        ((PhpArray)ms[groupName])[j] = arr;
+                        if (!ms.TryGetValue(groupName, out var groupValue) || !groupValue.IsPhpArray(out var group))
+                        {
+                            ms[groupName] = group = new PhpArray();
+                        }
+
+                        group[j] = arr; // TODO: DeepCopy ?
                     });
 
-                    if (j == 0) matches[i] = (PhpValue)new PhpArray();
-                    ((PhpArray)matches[i])[j] = arr;
+                    if (!matches.TryGetValue(i, out var groupValue) || !groupValue.IsPhpArray(out var group))
+                    {
+                        matches[i] = group = new PhpArray();
+                    }
+
+                    group[j] = arr;
                 }
 
                 j++;
@@ -810,7 +818,7 @@ namespace Pchp.Library
                     pa[j] = arr;
                 }
 
-                matches[i] = (PhpValue)pa;
+                matches[i] = pa;
                 i++;
                 m = m.NextMatch();
             }
