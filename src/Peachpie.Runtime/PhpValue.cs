@@ -434,7 +434,7 @@ namespace Pchp.Core
 
         public static explicit operator PhpNumber(PhpValue value)
         {
-            if ((value.ToNumber(out var result) & Convert.NumberInfo.Unconvertible) == 0)
+            if ((value.ToNumber(out var result) & Convert.NumberInfo.Unconvertible) != 0)
             {
                 // TODO: ErrCode
                 throw new InvalidCastException();
