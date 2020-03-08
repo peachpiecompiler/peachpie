@@ -1598,11 +1598,6 @@ namespace Pchp.Library.Spl
             var key = base.key();
             var val = base.current();
 
-            if (key.IsDefault || val.IsDefault)
-            {
-                return false;
-            }
-
             _currentKey = key;
             _currentVal = val;
 
@@ -1612,14 +1607,14 @@ namespace Pchp.Library.Spl
             switch (_mode)
             {
                 case MATCH:
-                    result = (PCRE.preg_match(_ctx, _regex, subject) > 0);
+                    result = (PCRE.preg_match(_regex, subject) > 0);
                     break;
                 case GET_MATCH:
-                    result = (PCRE.preg_match(_ctx, _regex, subject, out matches, _pregFlags) > 0);
+                    result = (PCRE.preg_match(_regex, subject, out matches, _pregFlags) > 0);
                     _currentVal = matches;
                     break;
                 case ALL_MATCHES:
-                    result = (PCRE.preg_match_all(_ctx, _regex, subject, out matches, _pregFlags) > 0);
+                    result = (PCRE.preg_match_all(_regex, subject, out matches, _pregFlags) > 0);
                     _currentVal = matches;
                     break;
                 case SPLIT:

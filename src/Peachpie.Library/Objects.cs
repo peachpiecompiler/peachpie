@@ -100,7 +100,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string get_class([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]string tctx, PhpValue obj)
         {
-            if (obj.IsDefault || obj.IsNull)
+            if (obj.IsNull)
             {
                 return tctx;
             }

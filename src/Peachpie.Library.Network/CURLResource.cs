@@ -135,7 +135,7 @@ namespace Peachpie.Library.Network
         /// This parameter can either be passed as a urlencoded string like 'para1=val1&amp;para2=val2&amp;...' or as an array with the field name as key and field data as value.
         /// If value is an array, the Content-Type header will be set to multipart/form-data.
         /// </summary>
-        public PhpValue PostFields { get; set; } = PhpValue.Void;
+        public PhpValue PostFields { get; set; } = default;
 
         /// <summary>
         /// The value of the Cookie header.
@@ -216,7 +216,7 @@ namespace Peachpie.Library.Network
             this.ProcessingHeaders = ProcessMethod.Ignore;
             this.ProcessingResponse = ProcessMethod.StdOut;
             this.ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
-            this.PostFields = PhpValue.Void;
+            this.PostFields = default;
             this.VerboseOutput = null;
 
             this._options.Clear();

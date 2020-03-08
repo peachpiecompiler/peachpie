@@ -644,7 +644,7 @@ namespace Pchp.Core.Dynamic
 
         public static Expression BindDefault(Type t)
         {
-            if (t == typeof(PhpValue)) return Expression.Field(null, Cache.Properties.PhpValue_Void);
+            if (t == typeof(PhpValue)) return Expression.Field(null, Cache.Properties.PhpValue_Null);
             if (t == typeof(PhpNumber)) return Expression.Field(null, Cache.Properties.PhpNumber_Default);
 
             return Expression.Default(t);

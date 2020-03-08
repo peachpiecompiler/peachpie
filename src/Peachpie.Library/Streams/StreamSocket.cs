@@ -422,10 +422,10 @@ namespace Pchp.Library.Streams
                             options.TryGetValue("allow_self_signed", out var assvalue);
                             options.TryGetValue("cafile", out var cafilevalue);
 
-                            Debug.WriteLineIf(!vpvalue.IsDefault && !vpvalue, "ssl: verify_peer not supported");
-                            Debug.WriteLineIf(!vpnvalue.IsDefault && (bool)vpnvalue, "ssl: verify_peer_name not supported");
-                            Debug.WriteLineIf(!assvalue.IsDefault && !assvalue, "ssl: allow_self_signed not supported");
-                            Debug.WriteLineIf(!cafilevalue.IsDefault, "ssl: cafile not supported");
+                            Debug.WriteLineIf(Operators.IsSet(vpvalue) && !vpvalue, "ssl: verify_peer not supported");
+                            Debug.WriteLineIf(Operators.IsSet(vpnvalue) && (bool)vpnvalue, "ssl: verify_peer_name not supported");
+                            Debug.WriteLineIf(Operators.IsSet(assvalue) && !assvalue, "ssl: allow_self_signed not supported");
+                            Debug.WriteLineIf(Operators.IsSet(cafilevalue), "ssl: cafile not supported");
                         }
 
                         var sslstream = new SslStream(new NetworkStream(socket, System.IO.FileAccess.ReadWrite, true), false,

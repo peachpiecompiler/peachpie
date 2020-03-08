@@ -192,15 +192,11 @@ namespace Peachpie.Runtime.Tests
 
             array.Reverse();
 
-            KeyValuePair<IntStringKey, PhpValue> last = new KeyValuePair<IntStringKey, PhpValue>();
+            var last = new KeyValuePair<IntStringKey, PhpValue>(int.MaxValue, default);
 
             foreach (var pair in array)
             {
-                if (last.Value.IsDefault == false)
-                {
-                    Assert.IsTrue(last.Key.Integer > pair.Key.Integer);
-                }
-
+                Assert.IsTrue(last.Key.Integer > pair.Key.Integer);
                 Assert.AreEqual(pair.Value.String, pair.Key.Integer.ToString("x4"));
 
                 last = pair;
@@ -245,15 +241,11 @@ namespace Peachpie.Runtime.Tests
 
             Assert.AreEqual(count - 3, array.Count);
 
-            KeyValuePair<IntStringKey, PhpValue> last = new KeyValuePair<IntStringKey, PhpValue>();
+            var last = new KeyValuePair<IntStringKey, PhpValue>(0, default);
 
             foreach (var pair in array)
             {
-                if (last.Value.IsDefault == false)
-                {
-                    Assert.IsTrue(last.Key.Integer < pair.Key.Integer);
-                }
-
+                Assert.IsTrue(last.Key.Integer < pair.Key.Integer);
                 Assert.AreEqual(pair.Value.String, pair.Key.Integer.ToString());
 
                 last = pair;

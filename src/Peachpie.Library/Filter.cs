@@ -757,7 +757,7 @@ namespace Pchp.Library
                         if (options_arr != null &&
                             options_arr.TryGetValue("regexp", out var regexpval))
                         {
-                            if (PCRE.preg_match(ctx, regexpval.ToString(ctx), variable.ToString(ctx)) > 0)
+                            if (PCRE.preg_match(regexpval.ToString(ctx), variable.ToString(ctx)) > 0)
                             {
                                 return variable;
                             }

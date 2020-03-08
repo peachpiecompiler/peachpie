@@ -78,12 +78,38 @@ namespace Pchp.Core
         /// <summary>
         /// Creates a new instance of <see cref="PhpArray"/> initialized with all values from <see cref="System.Array"/>.
         /// </summary>
+        /// <param name="values">Array of values.</param>
+        public PhpArray(PhpValue[] values)
+            : base(values.Length)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                table.Add(values[i]);
+            }
+        }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="PhpArray"/> initialized with all values from <see cref="System.Array"/>.
+        /// </summary>
+        /// <param name="values">Array of values.</param>
+        public PhpArray(PhpValue?[] values)
+            : base(values.Length)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                table.Add(values[i].GetValueOrDefault(PhpValue.Null));
+            }
+        }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="PhpArray"/> initialized with all values from <see cref="System.Array"/>.
+        /// </summary>
         public PhpArray(string[] values)
             : base(values.Length)
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Add(values[i]);
+                table.Add(values[i]);
             }
         }
 

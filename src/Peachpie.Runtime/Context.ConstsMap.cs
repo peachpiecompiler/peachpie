@@ -60,23 +60,32 @@ namespace Pchp.Core
             /// <summary>
             /// The constant value or value getter Func&lt;PhpValue&gt;.
             /// </summary>
-            public PhpValue Data;
+            public PhpValue? Data;
+
+            /// <summary>
+            /// Gets a value indicating the constant has been initialized.
+            /// </summary>
+            public bool HasValue => Data.HasValue;
 
             /// <summary>
             /// Resolves the constant value.
             /// </summary>
             public PhpValue GetValue(Context ctx)
             {
-                if (Data.Object is Delegate)
+                var value = Data.GetValueOrDefault();
+
+                if (value.Object is Delegate)
                 {
-                    return
-                        Data.Object is Func<PhpValue> func ? func() :
-                        Data.Object is Func<Context, PhpValue> func2 ? func2(ctx) :
-                        throw null;
+                    return value.Object switch
+                    {
+                        Func<PhpValue> func => func(),
+                        Func<Context, PhpValue> func2 => func2(ctx),
+                        _ => throw null,
+                    };
                 }
                 else
                 {
-                    return Data;
+                    return value;
                 }
             }
 
@@ -96,10 +105,24 @@ namespace Pchp.Core
         [DebuggerDisplay("{Name,nq}, Value={Value}")]
         public struct ConstantInfo
         {
+            internal enum ConstantState
+            {
+                Uninitialized = 0,
+                AppConstant = 1,
+                UserConstant = 2,
+            }
+
+            internal ConstantState _flags;
+
+            public bool IsSet => _flags != ConstantState.Uninitialized;
+
             public string Name { get; set; }
+
             public string ExtensionName { get; set; }
+
             public PhpValue Value { get; set; }
-            public bool IsUser { get; set; }
+
+            public bool IsUser => _flags == ConstantState.UserConstant;
         }
 
         #endregion
@@ -129,7 +152,7 @@ namespace Pchp.Core
             /// <summary>
             /// Maps constant ID to its actual value in current context.
             /// </summary>
-            PhpValue[]/*!*/_valuesCtx;
+            PhpValue?[]/*!*/_valuesCtx;
 
             /// <summary>
             /// Runtime context.
@@ -144,7 +167,7 @@ namespace Pchp.Core
             ConstsMap(Context ctx)
             {
                 _ctx = ctx;
-                _valuesCtx = Array.Empty<PhpValue>();
+                _valuesCtx = Array.Empty<PhpValue?>();
             }
 
             static void EnsureArray<T>(ref T[] arr, int size)
@@ -249,16 +272,16 @@ namespace Pchp.Core
             /// <param name="slot">Constant slot to be set.</param>
             /// <param name="value">Value to be set.</param>
             /// <returns>True if slot was set, otherwise false.</returns>
-            static bool SetValue(ref PhpValue slot, PhpValue value)
+            static bool SetValue(ref PhpValue? slot, PhpValue value)
             {
-                if (slot.IsDefault)
+                if (slot.HasValue)
                 {
-                    slot = value;
-                    return true;
+                    return false;
                 }
                 else
                 {
-                    return false;
+                    slot = value;
+                    return true;
                 }
             }
 
@@ -306,24 +329,24 @@ namespace Pchp.Core
                 if (idx > 0)
                 {
                     // user constant
-                    if (ArrayUtils.TryGetItem(_valuesCtx, idx - 1, out value))
+                    if (ArrayUtils.TryGetItem(_valuesCtx, idx - 1, out var slot) && slot.HasValue)
                     {
-                        return !value.IsDefault;
+                        value = slot.GetValueOrDefault();
+                        return true;
                     }
                 }
                 else // if (idx < 0)
                 {
                     // app constant
-                    if (ArrayUtils.TryGetItem(s_valuesApp, -idx - 1, out var data) && !data.Data.IsDefault)
+                    if (ArrayUtils.TryGetItem(s_valuesApp, -idx - 1, out var data) && data.HasValue)
                     {
                         value = data.GetValue(_ctx);
                         return true;
                     }
-
-                    value = default;
                 }
 
                 // undefined
+                value = default;
                 return false;
             }
 
@@ -350,12 +373,12 @@ namespace Pchp.Core
                     for (int i = 0; i < valuesApp.Length; i++)
                     {
                         ref var data = ref valuesApp[i];
-                        if (!data.Data.IsDefault)
+                        if (data.HasValue)
                         {
                             ref var item = ref listApp[i];
                             item.Value = data.GetValue(_ctx);
                             item.ExtensionName = data.ExtensionName;
-                            //item.IsUser = false;
+                            item._flags = ConstantInfo.ConstantState.AppConstant;
                         }
                     }
 
@@ -363,11 +386,11 @@ namespace Pchp.Core
                     for (int i = 0; i < valuesCtx.Length; i++)
                     {
                         var value = valuesCtx[i];
-                        if (!value.IsDefault)
+                        if (value.HasValue)
                         {
                             ref var item = ref listCtx[i];
-                            item.Value = value;
-                            item.IsUser = true;
+                            item.Value = value.GetValueOrDefault();
+                            item._flags = ConstantInfo.ConstantState.UserConstant;
                         }
                     }
 
@@ -393,7 +416,7 @@ namespace Pchp.Core
 
                 //
                 return listApp.Concat(listCtx)
-                    .Where(info => !info.Value.IsDefault)
+                    .Where(info => info.IsSet)
                     .GetEnumerator();
             }
 
