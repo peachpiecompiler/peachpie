@@ -103,35 +103,35 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     /// <summary>
     /// Duplicates the closure with a new bound object and class scope.
     /// </summary>
-    public Closure bindTo(object newthis, PhpValue newscope = default)
+    public Closure bindTo(object newthis, PhpValue? newscope = default)
     {
         // create new Closure with updated '$this' and `scope`
 
         return new Closure(_ctx, _callable, newthis, ResolveNewScope(newthis, newscope), null/*static is replaced with mew scope*/, parameter, @static);
     }
 
-    internal RuntimeTypeHandle ResolveNewScope(object newthis, PhpValue newscope = default)
+    internal RuntimeTypeHandle ResolveNewScope(object newthis, PhpValue? newscope = default)
     {
-        if (!newscope.IsDefault)
+        if (newscope.HasValue)
         {
             // Operators.TypeNameOrObjectToType(newscope) + handle "static"
 
             object obj;
             string str;
 
-            if ((obj = (newscope.AsObject())) != null)
+            if ((obj = (newscope.Value.AsObject())) != null)
             {
                 return obj.GetType().TypeHandle;
             }
-            else if ((str = PhpVariable.AsString(newscope)) != null)
+            else if ((str = PhpVariable.AsString(newscope.Value)) != null)
             {
                 return "static".Equals(str, StringComparison.OrdinalIgnoreCase)
                     ? _scope
                     : _ctx.GetDeclaredTypeOrThrow(str, true).TypeHandle;
             }
-            else if (newscope.IsNull)
+            else if (newscope.Value.IsNull)
             {
-                return default(RuntimeTypeHandle);
+                return default;
             }
             else
             {

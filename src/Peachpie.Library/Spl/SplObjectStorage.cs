@@ -28,7 +28,7 @@ namespace Pchp.Library.Spl
                 storage[MakeKey(@object)] = (PhpValue)new PhpArray(2)
                 {
                     { Object, PhpValue.FromClass(@object) },
-                    { Info, data.IsDefault ? PhpValue.Null : data },
+                    { Info, data },
                 };
             }
         }

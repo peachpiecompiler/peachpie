@@ -178,7 +178,7 @@ namespace Pchp.Core
             /// <summary>
             /// The value has been deleted - is not initialized.
             /// </summary>
-            public bool IsDeleted => Value.IsDefault;
+            public bool IsDeleted => Value.IsInvalid;
         }
 
         /// <summary>Minimal internal table capacity. Must be power of 2.</summary>
@@ -621,12 +621,12 @@ namespace Pchp.Core
             var i = FindIndex(key);
             if (i >= 0)
             {
-                value = _data[i].Value; // PERF: double array lookup
+                value = _data[i].Value; // TODO // PERF: double array lookup
                 return true;
             }
             else
             {
-                value = default; // we might return TValue.Null as well but then we cannot check it for value.IsDefault
+                value = default; // NULL
                 return false;
             }
         }
@@ -823,7 +823,7 @@ namespace Pchp.Core
                 {
                     ref var bucket = ref this._data[i];
                     bucket.Key = default;
-                    bucket.Value = default;
+                    bucket.Value = TValue.CreateInvalid();
 
                     if (i == _dataUsed - 1)
                     {
@@ -855,7 +855,7 @@ namespace Pchp.Core
                     if (key.Equals(bucket.Key))
                     {
                         bucket.Key = default;
-                        bucket.Value = default;
+                        bucket.Value = TValue.CreateInvalid();
 
                         if (i == _dataUsed - 1)
                         {
@@ -937,7 +937,7 @@ namespace Pchp.Core
 
                 Array.Copy(this._data, 0, this._data, 1, this._dataUsed); // faster
                 //this.arData.AsMemory(0, this._dataUsed).CopyTo(this.arData.AsMemory(1, this._dataUsed)); // slower
-                this._data[0].Value = default;
+                this._data[0].Value = TValue.CreateInvalid();
                 Debug.Assert(this._data[0].IsDeleted);
 
                 this._dataUsed++;
@@ -1369,7 +1369,7 @@ namespace Pchp.Core
                     }
                     else if (cmp < 0 ^ op == SetOperations.Difference) // cmp == 0 && difference || cmp < 0 && intersect
                     {
-                        resultData[result_i].Value = default;
+                        resultData[result_i].Value = TValue.CreateInvalid();
                         Debug.Assert(resultData[result_i].IsDeleted);
 
                         result._dataDeleted++;
@@ -1385,7 +1385,8 @@ namespace Pchp.Core
                 {
                     while (result_i < result._dataUsed)
                     {
-                        resultData[result_i].Value = default;
+                        resultData[result_i].Value = TValue.CreateInvalid();
+                        Debug.Assert(resultData[result_i].IsDeleted);
                         result._dataDeleted++;
                         result_i++;
                     }
@@ -1804,7 +1805,10 @@ namespace Pchp.Core
 
                 do
                 {
-                    if (++i >= array._dataUsed) return false;
+                    if (++i >= array._dataUsed)
+                    {
+                        return false;
+                    }
                 } while (array._data[i].IsDeleted);
 
                 return true;

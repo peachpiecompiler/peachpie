@@ -363,22 +363,17 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
+                case PhpTypeCode.Null: return TypeNameNull;
+                case PhpTypeCode.Boolean: return TypeNameBoolean;
                 case PhpTypeCode.Long: return TypeNameInteger;
                 case PhpTypeCode.Double: return TypeNameDouble;
-                case PhpTypeCode.Boolean: return TypeNameBoolean;
+                case PhpTypeCode.PhpArray: return PhpArray.PhpTypeName;
                 case PhpTypeCode.String:
                 case PhpTypeCode.MutableString: return TypeNameString;
+                case PhpTypeCode.Object: return value.Object is PhpResource ? PhpResource.PhpTypeName : TypeNameObject;
                 case PhpTypeCode.Alias: return GetTypeName(value.Alias.Value);
-                case PhpTypeCode.PhpArray: return PhpArray.PhpTypeName;
-                case PhpTypeCode.Object:
-                    if (value.Object is PhpResource)
-                        return PhpResource.PhpTypeName;
-                    else
-                        return TypeNameObject;
-                case PhpTypeCode.Null: return TypeNameNull;
+                default: throw new ArgumentException();
             }
-
-            throw new ArgumentException();
         }
 
         #endregion

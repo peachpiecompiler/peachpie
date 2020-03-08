@@ -398,7 +398,7 @@ namespace Peachpie.Library.PDO
 
             if (fetch_style == PDO.PDO_FETCH.FETCH_COLUMN)
             {
-                if (!fetch_argument.IsDefault && fetch_argument.IsLong(out var l))
+                if (fetch_argument.IsLong(out var l))
                 {
                     _fetch_column = (int)l;
                 }

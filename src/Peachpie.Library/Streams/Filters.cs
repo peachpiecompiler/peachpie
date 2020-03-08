@@ -470,7 +470,7 @@ namespace Pchp.Library.Streams
                     if (instance != null)
                     {
                         instance.filtername = filter;
-                        instance.@params = parameters.IsDefault ? PhpValue.Null : parameters.DeepCopy();
+                        instance.@params = parameters.DeepCopy();
                     }
 
                     return true;

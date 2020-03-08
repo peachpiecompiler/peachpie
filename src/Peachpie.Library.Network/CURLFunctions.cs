@@ -437,8 +437,7 @@ namespace Peachpie.Library.Network
         {
             byte[] bytes;
 
-            var arr = ch.PostFields.AsArray();
-            if (arr != null)
+            if (ch.PostFields.IsPhpArray(out var arr) && arr != null)
             {
                 string boundary = "----------" + DateTime.UtcNow.Ticks.ToString();
                 string contentType = "multipart/form-data; boundary=" + boundary;

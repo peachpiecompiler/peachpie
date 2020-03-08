@@ -196,6 +196,23 @@ namespace Pchp.Core.Utilities
         }
 
         /// <summary>
+        /// Safely returns item from array.
+        /// </summary>
+        public static bool TryGetItem<T>(T[] array, long idx, out T value)
+        {
+            if (idx >= 0 && idx < array.LongLength)
+            {
+                value = array[idx];
+                return true;
+            }
+            else
+            {
+                value = default;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Creates new array with reversed order of items.
         /// </summary>
         public static T[] Reverse<T>(this T[] array)

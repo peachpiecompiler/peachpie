@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,13 +11,15 @@ namespace Pchp.Library.Spl
 {
     #region SplFixedArray
 
+    // TODO: properly convert /index/ to integer, throw RuntimeException in case the index is not integer
+
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFixedArray : ArrayAccess, Iterator, Countable
     {
         /// <summary>
         /// Internal array storage. <c>null</c> reference if the size is <c>0</c>.
         /// </summary>
-        private PhpValue[] _array = null;
+        private PhpValue?[] _array = null;
 
         /// <summary>
         /// Iterator position in the array.
@@ -25,7 +28,7 @@ namespace Pchp.Library.Spl
 
         #region Helper methods
 
-        protected void ReallocArray(long newsize)
+        internal protected void ReallocArray(long newsize)
         {
             Debug.Assert(newsize >= 0);
 
@@ -37,8 +40,7 @@ namespace Pchp.Library.Spl
             }
 
             // resize the array
-            var newarray = new PhpValue[newsize];
-            var oldsize = (_array != null) ? _array.Length : 0;
+            var newarray = new PhpValue?[newsize];
 
             if (_array != null)
             {
@@ -48,17 +50,17 @@ namespace Pchp.Library.Spl
             _array = newarray;
         }
 
-        protected bool IsValidInternal()
+        internal protected bool IsValidInternal()
         {
             return (_position >= 0 && _array != null && _position < _array.Length);
         }
 
-        protected long SizeInternal()
+        internal protected long SizeInternal()
         {
             return (_array != null) ? _array.Length : 0;
         }
 
-        protected void IndexCheckHelper(long index)
+        internal protected void IndexCheckHelper(long index)
         {
             if (index < 0 || _array == null || index >= _array.Length)
             {
@@ -143,14 +145,7 @@ namespace Pchp.Library.Spl
         {
             if (_array == null) return PhpArray.NewEmpty();
 
-            var result = new PhpArray(_array.Length);
-
-            for (int i = 0; i < _array.Length; i++)
-            {
-                result[i] = _array[i].IsDefault ? PhpValue.Null : _array[i];
-            }
-
-            return result;
+            return new PhpArray(_array);
         }
 
         public virtual long getSize() => count();
@@ -202,16 +197,8 @@ namespace Pchp.Library.Spl
         /// </summary>
         public PhpValue current()
         {
-            if (IsValidInternal())
-            {
-                var value = _array[_position];
-                if (value.IsDefault == false)
-                {
-                    return value;
-                }
-            }
-
-            return PhpValue.Null;
+            ArrayUtils.TryGetItem(_array, _position, out var item);
+            return item.GetValueOrDefault();
         }
 
         #endregion
@@ -226,8 +213,7 @@ namespace Pchp.Library.Spl
             var i = offset.ToLong();
             IndexCheckHelper(i);
 
-            var value = _array[i];
-            return value.IsDefault ? PhpValue.Null : value;
+            return _array[i].GetValueOrDefault();
         }
 
         /// <summary>
@@ -253,7 +239,9 @@ namespace Pchp.Library.Spl
         public bool offsetExists(PhpValue offset)
         {
             var i = offset.ToLong();
-            return i >= 0 && _array != null && i < _array.Length && !_array[i].IsDefault;
+
+            var array = _array;
+            return array != null && i >= 0 && i < array.Length && array[i].HasValue;
         }
 
         #endregion

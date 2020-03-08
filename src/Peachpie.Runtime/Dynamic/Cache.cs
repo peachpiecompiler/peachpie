@@ -103,14 +103,12 @@ namespace Pchp.Core.Dynamic
         {
             public static readonly PropertyInfo PhpValue_Object = Types.PhpValue.GetProperty("Object");
             public static readonly PropertyInfo PhpValue_IsAlias = Types.PhpValue.GetProperty("IsAlias");
-            public static readonly FieldInfo PhpValue_Void = Types.PhpValue.GetField("Void");
             public static readonly FieldInfo PhpValue_Null = Types.PhpValue.GetField("Null");
             public static readonly FieldInfo PhpValue_False = Types.PhpValue.GetField("False");
             public static readonly FieldInfo PhpValue_True = Types.PhpValue.GetField("True");
             public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetField("Default");
             public static readonly PropertyInfo PhpValue_IsNull = Types.PhpValue.GetProperty("IsNull");
             public static readonly PropertyInfo PhpValue_IsFalse = Types.PhpValue.GetProperty("IsFalse");
-            public static readonly PropertyInfo PhpValue_IsDefault = Types.PhpValue.GetProperty("IsDefault");
         }
 
         public static class PhpString

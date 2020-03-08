@@ -38,7 +38,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets php type name of the value.
         /// </summary>
-        internal string DebugTypeName => IsDefault ? UndefinedTypeName : PhpVariable.GetTypeName(this);
+        internal string DebugTypeName => PhpVariable.GetTypeName(this);
 
         sealed class PhpValueDebugView
         {
@@ -47,7 +47,7 @@ namespace Pchp.Core
 
             public PhpValueDebugView(PhpValue value)
             {
-                DebugValue = value.IsDefault ? null : value.ToClr();
+                DebugValue = value.ToClr();
             }
         }
     }
