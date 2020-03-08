@@ -2254,13 +2254,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 default:
                     // uninitialized:
-                    if (t == CoreTypes.PhpString)
+                    if (t == CoreTypes.PhpString ||
+                        t == CoreTypes.PhpValue)
                     {
                         Debug.Assert(t.IsValueType);
                         break;
                     }
 
-                    // PhpValue, PhpNumber, PhpAlias:
+                    // PhpNumber, PhpAlias:
                     if (t.IsValueType || t == CoreTypes.PhpAlias)
                     {
                         // fld = default(T)
