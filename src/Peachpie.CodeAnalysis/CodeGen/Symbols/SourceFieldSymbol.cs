@@ -24,24 +24,37 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void IPhpPropertySymbol.EmitInit(CodeGenerator cg)
         {
+            // skip initialization if we can use default
+            if (this.Initializer == null &&
+                this.OverridenDefinition == null &&
+                !this.Type.Is_PhpAlias())
+            {
+                // does not have to be explicitly initialized
+                // default is ok
+                return;
+            }
+
+            // 
             cg.TypeRefContext = EnsureTypeRefContext();
 
             //
-
             var fldplace = new FieldPlace(IsStatic ? null : new ArgPlace(ContainingType, 0), this, cg.Module);
+
+            // fld = <initializer>
+            fldplace.EmitStorePrepare(cg.Builder);
 
             if (this.Initializer != null)
             {
-                // fld = <initializer>
-                fldplace.EmitStorePrepare(cg.Builder);
-                cg.EmitConvert(this.Initializer, this.Type);
-                fldplace.EmitStore(cg.Builder);
+                // INITIALIZER
+                cg.EmitConvert(this.Initializer, fldplace.Type);
             }
             else
             {
-                // fld = default(type)
-                cg.EmitInitializePlace(fldplace);
+                // default
+                cg.EmitLoadDefault(fldplace.Type);
             }
+
+            fldplace.EmitStore(cg.Builder);
 
             //
             cg.TypeRefContext = null;
