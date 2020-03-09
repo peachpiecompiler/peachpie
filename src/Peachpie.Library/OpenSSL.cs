@@ -529,13 +529,11 @@ namespace Pchp.Library
         /// </summary>
         static X509Resource ParseX509Certificate(Context ctx, PhpValue mixed)
         {
-            string cert;
-
             if (mixed.AsResource() is X509Resource h && h.IsValid)
             {
                 return h;
             }
-            else if ((cert = mixed.AsString(ctx)) != null)
+            else if (mixed.IsString(out var cert))
             {
                 try
                 {

@@ -353,7 +353,10 @@ namespace Peachpie.Library.XmlDom
                     // initialize the manager with prefixes/URIs from the document
                     foreach (var pair in GetNodeNamespaces(XmlElement, true))
                     {
-                        _namespaceManager.AddNamespace(pair.Key.String, pair.Value.ToStringOrThrow(_ctx));
+                        if (pair.Value.IsString(out var uri)) // always
+                        {
+                            _namespaceManager.AddNamespace(pair.Key.String, uri);
+                        }
                     }
                 }
                 return _namespaceManager;
@@ -632,8 +635,6 @@ namespace Peachpie.Library.XmlDom
         #region Internal overrides: Conversions, Dump, and Cloning
 
         string IPhpConvertible.ToString(Context ctx) => ToString();
-
-        string IPhpConvertible.ToStringOrThrow(Context ctx) => ToString();
 
         /// <summary>
         /// String representation of the XML element.
@@ -935,7 +936,7 @@ namespace Peachpie.Library.XmlDom
                 return false;
             }
 
-            child.InnerText = value.ToStringOrThrow(_ctx);
+            child.InnerText = StrictConvert.ToString(value, _ctx);
             return true;
         }
 
@@ -1425,7 +1426,7 @@ namespace Peachpie.Library.XmlDom
                     else
                     {
                         // there may be duplicates
-                        result[prefix] = (PhpValue)iterator.Current.Value;
+                        result[prefix] = iterator.Current.Value;
                     }
                 }
             }
@@ -1433,7 +1434,7 @@ namespace Peachpie.Library.XmlDom
             // the default ns should be at the beginning of the array
             if (default_ns != null)
             {
-                result.Prepend(string.Empty, (PhpValue)default_ns);
+                result.Prepend(string.Empty, default_ns);
             }
 
             return result;
@@ -1642,7 +1643,7 @@ namespace Peachpie.Library.XmlDom
                     }
                     else
                     {
-                        var value_str = value.ToStringOrThrow(_ctx);
+                        var value_str = StrictConvert.ToString(value, _ctx);
                         if (key.IsInteger)
                         {
                             if (iterationType == IterationType.AttributeList)

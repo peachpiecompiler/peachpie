@@ -322,7 +322,7 @@ namespace Peachpie.Library.MySql.MySqli
                     switch (pair.option)
                     {
                         case Constants.MYSQLI_OPT_CONNECT_TIMEOUT: connection_string.ConnectionTimeout = (uint)pair.value.ToLong(); break;
-                        case Constants.MYSQLI_SERVER_PUBLIC_KEY: connection_string.ServerRsaPublicKeyFile = pair.value.ToStringOrThrow(ctx); break;
+                        case Constants.MYSQLI_SERVER_PUBLIC_KEY: connection_string.ServerRsaPublicKeyFile = StrictConvert.ToString(pair.value, ctx); break;
                         case Constants.MYSQLI_OPT_SSL_VERIFY_SERVER_CERT: if (pair.value) { connection_string.SslMode = MySqlSslMode.VerifyCA; } break;
                         case Constants.MYSQLI_CACertificateFile: connection_string.SslCa = Path.Combine(ctx.WorkingDirectory, pair.value.String); break;
                         case Constants.MYSQLI_CertificateFile: connection_string.CertificateFile = Path.Combine(ctx.WorkingDirectory, pair.value.String); break;

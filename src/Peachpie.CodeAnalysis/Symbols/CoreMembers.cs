@@ -503,7 +503,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetValue = ct.PhpValue.Method("GetValue");
                 ToArray = ct.PhpValue.Method("ToArray");
                 AsObject = ct.PhpValue.Method("AsObject");
-                AsString_Context = ct.PhpValue.Method("AsString", ct.Context);
                 
                 Long = ct.PhpValue.Property("Long");
                 Double = ct.PhpValue.Property("Double");
@@ -534,7 +533,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToString_Context, ToClass, ToArray,
-                AsObject, AsString_Context,
+                AsObject,
                 DeepCopy, GetValue,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String, Eq_String_PhpValue,
                 Ineq_PhpValue_PhpValue, Ineq_PhpValue_String, Ineq_String_PhpValue,
@@ -716,14 +715,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 var t = ct.IPhpConvertible;
 
                 ToString_Context = t.Method("ToString", ct.Context);
-                ToStringOrThrow_Context = t.Method("ToStringOrThrow", ct.Context);
                 ToNumber = t.Method("ToNumber");
                 ToClass = t.Method("ToClass");
                 ToArray = t.Method("ToArray");
             }
 
             public readonly CoreMethod
-                ToString_Context, ToStringOrThrow_Context, ToNumber, ToClass, ToArray;
+                ToString_Context, ToNumber, ToClass, ToArray;
         }
 
         public struct PhpStringHolder

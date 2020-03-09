@@ -370,19 +370,7 @@ namespace Pchp.Core
             _ => throw InvalidTypeCodeException(),
         };
 
-        public string ToStringOrThrow(Context ctx) => TypeCode switch
-        {
-            PhpTypeCode.Null => string.Empty,
-            PhpTypeCode.Boolean => Convert.ToString(Boolean),
-            PhpTypeCode.Long => Long.ToString(),
-            PhpTypeCode.Double => Convert.ToString(Double, ctx),
-            PhpTypeCode.PhpArray => (string)Array,
-            PhpTypeCode.String => String,
-            PhpTypeCode.MutableString => MutableStringBlob.ToString(ctx.StringEncoding),
-            PhpTypeCode.Object => Convert.ToStringOrThrow(Object, ctx),
-            PhpTypeCode.Alias => Alias.Value.ToStringOrThrow(ctx),
-            _ => throw InvalidTypeCodeException(),
-        };
+        public string ToStringOrThrow(Context ctx) => ToString(ctx);
 
         internal string ToStringUtf8() => TypeCode switch
         {
@@ -446,12 +434,7 @@ namespace Pchp.Core
         /// Implicit conversion to string,
         /// preserves <c>null</c>,
         /// throws if conversion is not possible.</summary>
-        public string AsString(Context ctx) => TypeCode switch
-        {
-            PhpTypeCode.Null => null,
-            PhpTypeCode.Alias => Alias.Value.AsString(ctx),
-            _ => ToStringOrThrow(ctx),
-        };
+        public string AsString(Context ctx) => TypeCode == PhpTypeCode.Null ? null : ToString(ctx);
 
         /// <summary>
         /// Conversion to <see cref="int"/>.
@@ -927,7 +910,7 @@ namespace Pchp.Core
                 case PhpTypeCode.PhpArray: ctx.Echo((string)Array); break;
                 case PhpTypeCode.String: ctx.Echo(String); break;
                 case PhpTypeCode.MutableString: MutableStringBlob.Output(ctx); break;
-                case PhpTypeCode.Object: ctx.Echo(Convert.ToStringOrThrow(Object, ctx)); break;
+                case PhpTypeCode.Object: ctx.Echo(Convert.ToString(Object, ctx)); break;
                 case PhpTypeCode.Alias: Alias.Value.Output(ctx); break;
             }
         }

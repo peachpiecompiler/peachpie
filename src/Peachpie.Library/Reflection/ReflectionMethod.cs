@@ -79,9 +79,13 @@ namespace Pchp.Library.Reflection
                 _tinfo = ReflectionUtils.ResolvePhpTypeInfo(ctx, @class);
                 _routine = _tinfo.RuntimeMethods[name] ?? throw new ReflectionException(string.Format(Resources.Resources.method_does_not_exist, _tinfo.Name, name));
             }
+            else if (@class.IsString(out var class_method))
+            {
+                __construct(ctx, class_method);
+            }
             else
             {
-                __construct(ctx, @class.AsString(ctx));
+                throw new ReflectionException(string.Format("Invalid method name '{0}'", @class.ToString(ctx)));
             }
 
             // get the real declaring type from routine:
@@ -106,7 +110,7 @@ namespace Pchp.Library.Reflection
                 }
             }
 
-            throw new ReflectionException();
+            throw new ReflectionException("Invalid method name");
         }
 
         #endregion

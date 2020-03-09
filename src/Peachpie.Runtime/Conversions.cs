@@ -49,11 +49,6 @@ namespace Pchp.Core
         string ToString(Context ctx);
 
         /// <summary>
-		/// Converts instance to its string representation according to PHP conversion algorithm.
-		/// </summary>
-		string ToStringOrThrow(Context ctx);
-
-        /// <summary>
         /// In case of a non class object, boxes value to an object.
         /// </summary>
         object ToClass();
@@ -99,14 +94,12 @@ namespace Pchp.Core
         /// </summary>
         public static string ToString(double value, Context ctx) => value.ToString("G", ctx.NumberFormat);
 
-        public static string ToString(object value, Context ctx) => ToStringOrThrow(value, ctx);
-
-        public static string ToString(IPhpConvertible value, Context ctx) => value.ToStringOrThrow(ctx);
+        public static string ToString(IPhpConvertible value, Context ctx) => value.ToString(ctx);
 
         /// <summary>
         /// Converts class instance to a string.
         /// </summary>
-        public static string ToStringOrThrow(object value, Context ctx)
+        public static string ToString(object value, Context ctx)
         {
             if (value is IPhpConvertible conv)   // TODO: should be sufficient to call just ToString(), implementations of IPhpConvertible override ToString always
             {
@@ -1394,6 +1387,39 @@ namespace Pchp.Core
             PhpTypeCode.Alias => ToArray(value.Alias.Value),
             _ => throw PhpException.TypeErrorException(),
         };
+
+        /// <summary>
+        /// Gets value as a string or throws <c>TypeError</c> exception.
+        /// </summary>
+        public static string ToString(PhpValue value, Context ctx) => value.TypeCode switch
+        {
+            PhpTypeCode.Null => null, // TODO: support nullable conversion, target parameter can be either `string` or `string?`
+            PhpTypeCode.Boolean => Convert.ToString(value.Boolean),
+            PhpTypeCode.Long => value.Long.ToString(),
+            PhpTypeCode.Double => Convert.ToString(value.Double, ctx),
+            PhpTypeCode.String => value.String,
+            PhpTypeCode.MutableString => value.MutableStringBlob.ToString(ctx.StringEncoding),
+            PhpTypeCode.Object => Convert.ToString(value.Object, ctx),
+            PhpTypeCode.Alias => ToString(value.Alias.Value, ctx),
+            _ => throw PhpException.TypeErrorException(),
+        };
+
+        public static string ToString(object obj, Context ctx)
+        {
+            if (obj == null)
+            {
+                throw PhpException.TypeErrorException();
+            }
+
+            return Convert.ToString(obj, ctx);
+        }
+
+        /// <summary>
+        /// Unconvertible.
+        /// Throws <c>TypeError</c> exception.
+        /// </summary>
+        // [FatalError]
+        public static string ToString(PhpArray _) => throw PhpException.TypeErrorException();
     }
 
     #endregion
