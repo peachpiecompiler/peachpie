@@ -526,13 +526,13 @@ namespace Pchp.Core
 
         public static bool operator !=(PhpValue left, string right) => right != left;
 
-        public static PhpValue operator ~(PhpValue x) => Operators.BitNot(ref x);
+        public static PhpValue operator ~(PhpValue x) => Operators.BitNot(in x);
 
-        public static PhpValue operator &(PhpValue left, PhpValue right) => Operators.BitAnd(ref left, ref right);
+        public static PhpValue operator &(PhpValue left, PhpValue right) => Operators.BitAnd(in left, in right);
 
-        public static PhpValue operator |(PhpValue left, PhpValue right) => Operators.BitOr(ref left, ref right);
+        public static PhpValue operator |(PhpValue left, PhpValue right) => Operators.BitOr(in left, in right);
 
-        public static PhpValue operator ^(PhpValue left, PhpValue right) => Operators.BitXor(ref left, ref right);
+        public static PhpValue operator ^(PhpValue left, PhpValue right) => Operators.BitXor(in left, in right);
 
         /// <summary>
         /// Division of <paramref name="left"/> and <paramref name="right"/> according to PHP semantics.
@@ -540,7 +540,7 @@ namespace Pchp.Core
         /// <param name="left">Left operand.</param>
         /// <param name="right">Right operand.</param>
         /// <returns>Quotient of <paramref name="left"/> and <paramref name="right"/>.</returns>
-        public static PhpNumber operator /(PhpValue left, PhpValue right) => Operators.Div(ref left, ref right);
+        public static PhpNumber operator /(PhpValue left, PhpValue right) => Operators.Div(in left, in right);
 
         public static PhpNumber operator *(PhpValue left, PhpValue right) => PhpNumber.Multiply(left, right);
 

@@ -24,7 +24,7 @@ namespace Pchp.Core
         /// <summary>
         /// Performs bitwise and operation.
         /// </summary>
-        internal static PhpValue BitAnd(ref PhpValue x, ref PhpValue y)
+        internal static PhpValue BitAnd(in PhpValue x, in PhpValue y)
         {
             var bx = x.ToBytesOrNull();
             if (bx != null)
@@ -43,7 +43,7 @@ namespace Pchp.Core
         /// <summary>
         /// Performs bitwise or operation.
         /// </summary>
-        internal static PhpValue BitOr(ref PhpValue x, ref PhpValue y)
+        internal static PhpValue BitOr(in PhpValue x, in PhpValue y)
         {
             var bx = x.ToBytesOrNull();
             if (bx != null)
@@ -62,7 +62,7 @@ namespace Pchp.Core
         /// <summary>
         /// Performs exclusive or operation.
         /// </summary>
-        internal static PhpValue BitXor(ref PhpValue x, ref PhpValue y)
+        internal static PhpValue BitXor(in PhpValue x, in PhpValue y)
         {
             var bx = x.ToBytesOrNull();
             if (bx != null)
@@ -154,13 +154,13 @@ namespace Pchp.Core
         /// <summary>
         /// Performs bitwise negation.
         /// </summary>
-        internal static PhpValue BitNot(ref PhpValue x)
+        internal static PhpValue BitNot(in PhpValue x)
         {
             switch (x.TypeCode)
             {
                 case PhpTypeCode.Long: return PhpValue.Create(~x.Long);
 
-                case PhpTypeCode.Alias: return BitNot(ref x.Alias.Value);
+                case PhpTypeCode.Alias: return BitNot(in x.Alias.Value);
 
                 case PhpTypeCode.String:
                 case PhpTypeCode.MutableString:
@@ -185,7 +185,7 @@ namespace Pchp.Core
         /// <remarks>The division operator ("/") returns a float value unless the two operands are integers
         /// (or strings that get converted to integers) and the numbers are evenly divisible,
         /// in which case an integer value will be returned.</remarks>
-        internal static PhpNumber Div(ref PhpValue x, ref PhpValue y)
+        internal static PhpNumber Div(in PhpValue x, in PhpValue y)
         {
             var info = x.ToNumber(out var nx) | y.ToNumber(out var ny);
 
