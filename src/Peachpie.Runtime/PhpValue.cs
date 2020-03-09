@@ -364,7 +364,7 @@ namespace Pchp.Core
             PhpTypeCode.Double => Convert.ToString(Double, ctx),
             PhpTypeCode.PhpArray => (string)Array,
             PhpTypeCode.String => String,
-            PhpTypeCode.MutableString => MutableStringBlob.ToString(),
+            PhpTypeCode.MutableString => MutableStringBlob.ToString(ctx.StringEncoding),
             PhpTypeCode.Object => Convert.ToString(Object, ctx),
             PhpTypeCode.Alias => Alias.Value.ToString(ctx),
             _ => throw InvalidTypeCodeException(),
