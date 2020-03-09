@@ -836,19 +836,19 @@ namespace Pchp.Core
         public PhpAlias EnsureItemAlias(IntStringKey key)
         {
             this.EnsureWritable();
-            return table.EnsureValue(key).EnsureAlias();
+            return PhpValue.EnsureAlias(ref table.EnsureValue(key));
         }
 
         public object EnsureItemObject(IntStringKey key)
         {
             this.EnsureWritable();
-            return table.EnsureValue(key).EnsureObject();
+            return PhpValue.EnsureObject(ref table.EnsureValue(key));
         }
 
         public IPhpArray EnsureItemArray(IntStringKey key)
         {
             this.EnsureWritable();
-            return table.EnsureValue(key).EnsureArray();
+            return PhpValue.EnsureArray(ref table.EnsureValue(key));
         }
 
         public void RemoveKey(IntStringKey key) => this.Remove(key);

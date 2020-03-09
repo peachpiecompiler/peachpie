@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     // EnsureAlias(ref PhpValue)
                     place.EmitLoadAddress(cg.Builder);
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias).Expect(cg.CoreTypes.PhpAlias);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureAlias_PhpValueRef).Expect(cg.CoreTypes.PhpAlias);
                 }
 
                 throw cg.NotImplementedException($"EnsureAlias for {type}.");
@@ -142,9 +142,9 @@ namespace Pchp.CodeAnalysis.Semantics
                         throw cg.NotImplementedException("unreachable: variable does not have an address");
                     }
 
-                    // (ref PhpValue).EnsureObject() : object
+                    // EnsureObject(ref PhpValue) : object
                     place.EmitLoadAddress(cg.Builder);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject).Expect(SpecialType.System_Object);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureObject_PhpValueRef).Expect(SpecialType.System_Object);
 
                     //if (_thint.IsSingleType && cg.IsClassOnly(_thint))
                     //{
@@ -212,7 +212,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         // <place>.EnsureArray() : IPhpArray
                         place.EmitLoadAddress(cg.Builder);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray).Expect(cg.CoreTypes.IPhpArray);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpValueRef).Expect(cg.CoreTypes.IPhpArray);
                     }
                 }
                 else if (type == cg.CoreTypes.PhpString)
@@ -970,9 +970,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (_place.Type == cg.CoreTypes.PhpValue)
                 {
                     // dereference & copy
-                    // (ref <param>).PassValue()
+                    // PassValue( ref <param> )
                     _place.EmitLoadAddress(cg.Builder);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValue);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.PassValue_PhpValueRef);
                 }
                 else
                 {

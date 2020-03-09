@@ -34,7 +34,7 @@ namespace Pchp.Core
         /// Gets underlaying value as <see cref="PhpAlias"/>.
         /// Modifies the underlaying table.
         /// </summary>
-        public PhpAlias EnsureAlias() => EnsureValueRef().EnsureAlias();
+        public PhpAlias EnsureAlias() => PhpValue.EnsureAlias(ref EnsureValueRef());
 
         /// <summary>
         /// Gets the underlaying value or <c>NULL</c> if value does not exist.

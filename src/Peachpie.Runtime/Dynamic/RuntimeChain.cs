@@ -83,11 +83,11 @@ namespace Pchp.Core.Dynamic.RuntimeChain
                     break;
 
                 case RuntimeChainOperation.Property:
-                    value = PhpValue.FromClass(value.EnsureObject());
+                    value = PhpValue.FromClass(PhpValue.EnsureObject(ref value));
                     break;
 
                 case RuntimeChainOperation.ArrayItem:
-                    value = PhpValue.Create(value.EnsureArray());
+                    value = PhpValue.Create(PhpValue.EnsureArray(ref value));
                     break;
 
                 default:
@@ -169,7 +169,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
 
         public PhpAlias GetAlias(ref PhpValue value, Context ctx, Type classContext)
         {
-            var receiver = value.EnsureObject();
+            var receiver = PhpValue.EnsureObject(ref value);
             var t = receiver.GetPhpTypeInfo();
 
             PhpValue tmp;
@@ -348,7 +348,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
 
         public PhpAlias GetAlias(ref PhpValue value, Context ctx, Type classContext)
         {
-            var arr = value.EnsureArray();
+            var arr = PhpValue.EnsureArray(ref value);
             PhpValue tmp;
 
             switch (Next.Operation)
@@ -400,7 +400,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
             var result = PhpValue.Null;
             var alias = Next.GetAlias(ref result, ctx, classContext);
 
-            value.EnsureArray().AddValue(result);
+            PhpValue.EnsureArray(ref value).AddValue(result);
 
             return alias;
         }
@@ -421,7 +421,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
     {
         RuntimeChainOperation IRuntimeChain.Operation => RuntimeChainOperation.End; // -1
 
-        public PhpAlias GetAlias(ref PhpValue value, Context ctx, Type classContext) => value.EnsureAlias();
+        public PhpAlias GetAlias(ref PhpValue value, Context ctx, Type classContext) => PhpValue.EnsureAlias(ref value);
 
         public PhpValue GetValue(PhpValue value, Context ctx, Type classContext) => value;
 

@@ -260,15 +260,44 @@ namespace Pchp.Core
         public static IPhpArray EnsureArray(ref IPhpArray arr) => arr ?? (arr = new PhpArray());
 
         /// <summary>
-        /// Ensures given ref to <see cref="PhpValue"/> as <see cref="PhpAlias"/>.
-        /// </summary>
-        public static PhpAlias EnsureAlias(ref PhpValue valueref) => valueref.EnsureAlias();
-
-        /// <summary>
         /// Ensures the value is <see cref="PhpString"/> and gets mutable access to the value (non-shared).
         /// </summary>
         /// <returns>Object on which edit operations can be performed. Cannot be <c>null</c>.</returns>
-        public static PhpString.Blob EnsureWritableString(ref PhpValue valueref) => valueref.EnsureWritableString();
+        public static PhpString.Blob EnsureWritableString(ref PhpValue value)
+        {
+            PhpString.Blob blob;
+
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.MutableString:
+                    if ((blob = value.MutableStringBlob).IsShared)
+                    {
+                        value = new PhpValue(blob = value.MutableStringBlob.ReleaseOne());
+                    }
+                    break;
+
+                case PhpTypeCode.Null:
+                    blob = new PhpString.Blob();
+                    value = new PhpValue(blob);
+                    break;
+
+                case PhpTypeCode.String:
+                    blob = new PhpString.Blob(value.String);
+                    value = new PhpValue(blob);
+                    break;
+
+                case PhpTypeCode.Alias:
+                    blob = EnsureWritableString(ref value.Alias.Value);
+                    break;
+
+                default:
+                    blob = new PhpString.Blob(value.ToStringUtf8());
+                    value = new PhpValue(blob);
+                    break;
+            }
+
+            return blob;
+        }
 
         #endregion
 
@@ -319,17 +348,20 @@ namespace Pchp.Core
 
             public PhpAlias EnsureItemAlias(IntStringKey key)
             {
-                return _array.offsetGet(PhpValue.Create(key)).EnsureAlias();
+                var item = _array.offsetGet(key);
+                return PhpValue.EnsureAlias(ref item);
             }
 
             public IPhpArray EnsureItemArray(IntStringKey key)
             {
-                return _array.offsetGet(PhpValue.Create(key)).EnsureArray();
+                var item = _array.offsetGet(key);
+                return PhpValue.EnsureArray(ref item);
             }
 
             public object EnsureItemObject(IntStringKey key)
             {
-                return _array.offsetGet(PhpValue.Create(key)).EnsureObject();
+                var item = _array.offsetGet(key);
+                return PhpValue.EnsureObject(ref item);
             }
 
             public PhpValue GetItemValue(IntStringKey key) => _array.offsetGet(PhpValue.Create(key));
@@ -368,11 +400,23 @@ namespace Pchp.Core
                 _array.Add(ToObject(value));
             }
 
-            public PhpAlias EnsureItemAlias(IntStringKey key) => GetItemValue(key).EnsureAlias();
+            public PhpAlias EnsureItemAlias(IntStringKey key)
+            {
+                var item = GetItemValue(key);
+                return PhpValue.EnsureAlias(ref item);
+            }
 
-            public IPhpArray EnsureItemArray(IntStringKey key) => GetItemValue(key).EnsureArray();
+            public IPhpArray EnsureItemArray(IntStringKey key)
+            {
+                var item = GetItemValue(key);
+                return PhpValue.EnsureArray(ref item);
+            }
 
-            public object EnsureItemObject(IntStringKey key) => GetItemValue(key).EnsureObject();
+            public object EnsureItemObject(IntStringKey key)
+            {
+                var item = GetItemValue(key);
+                return PhpValue.EnsureObject(ref item);
+            }
 
             public PhpValue GetItemValue(IntStringKey key)
             {
@@ -431,11 +475,23 @@ namespace Pchp.Core
 
             public void AddValue(PhpValue value) => throw new NotSupportedException();
 
-            public PhpAlias EnsureItemAlias(IntStringKey key) => GetItemValue(key).EnsureAlias();
+            public PhpAlias EnsureItemAlias(IntStringKey key)
+            {
+                var item = GetItemValue(key);
+                return PhpValue.EnsureAlias(ref item);
+            }
 
-            public IPhpArray EnsureItemArray(IntStringKey key) => GetItemValue(key).EnsureArray();
+            public IPhpArray EnsureItemArray(IntStringKey key)
+            {
+                var item = GetItemValue(key);
+                return PhpValue.EnsureArray(ref item);
+            }
 
-            public object EnsureItemObject(IntStringKey key) => GetItemValue(key).EnsureObject();
+            public object EnsureItemObject(IntStringKey key)
+            {
+                var item = GetItemValue(key);
+                return PhpValue.EnsureObject(ref item);
+            }
 
             public PhpValue GetItemValue(IntStringKey key) => GetItemValue((PhpValue)key);
 
@@ -511,7 +567,21 @@ namespace Pchp.Core
             throw new ArgumentException(nameof(obj));
         }
 
-        public static IPhpArray GetArrayAccess(PhpValue value) => value.GetArrayAccess();
+        /// <summary>
+        /// Gets <see cref="IPhpArray"/> instance providing access to the value with array operators.
+        /// Returns <c>null</c> if underlaying value does provide array access.
+        /// </summary>
+        public static IPhpArray GetArrayAccess(ref PhpValue value) => value.TypeCode switch
+        {
+            // TODO // CONSIDER: what is this?
+
+            PhpTypeCode.PhpArray => value.Array,
+            PhpTypeCode.String => PhpValue.EnsureArray(ref value),
+            PhpTypeCode.MutableString => value.MutableStringBlob,
+            PhpTypeCode.Object => EnsureArray(value.Object),
+            PhpTypeCode.Alias => GetArrayAccess(ref value.Alias.Value),
+            _ => null,
+        };
 
         /// <summary>
         /// Gets <see cref="IPhpArray"/> to be used as R-value of <c>list</c> expression.
@@ -845,9 +915,58 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
+        /// 
         /// </summary>
-        public static PhpAlias EnsureItemAlias(PhpValue value, PhpValue index, bool quiet = false) => value.EnsureItemAlias(index, quiet);
+        public static PhpAlias EnsureItemAlias_Old(PhpValue value, PhpValue index, bool quiet = false)
+        {
+            Debug.WriteLineIf(value.IsNull, "NULL value won't be changed to array!");
+
+            return EnsureItemAlias(ref value, index, quiet);
+        }
+
+        /// <summary>
+        /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
+        /// Ensures the value is an array and item at given <paramref name="index"/> is an alias.
+        /// </summary>
+        public static PhpAlias EnsureItemAlias(ref PhpValue value, PhpValue index, bool quiet = false)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Null:
+                    // TODO: Err: Warning: Creating default object from empty value
+                    var arr = new PhpArray();
+                    value = PhpValue.Create(arr);
+                    return arr.EnsureItemAlias(index, quiet);
+
+                case PhpTypeCode.PhpArray:
+                    return value.Array.EnsureItemAlias(index, quiet);
+
+                case PhpTypeCode.String:
+                    throw new NotImplementedException();
+
+                case PhpTypeCode.MutableString:
+                    throw new NotImplementedException();
+
+                case PhpTypeCode.Object:
+                    if (value.Object is IPhpArray array)
+                    {
+                        return EnsureItemAlias(array, index, quiet);
+                    }
+
+                    if (!quiet) // NOTE: PHP does not report this error (?)
+                    {
+                        PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, value.Object.GetPhpTypeInfo().Name);
+                    }
+
+                    break;
+
+                case PhpTypeCode.Alias:
+                    return EnsureItemAlias(ref value.Alias.Value, index, quiet);
+            }
+
+            // TODO: Warning
+            return new PhpAlias(PhpValue.Null);
+        }
 
         public static bool offsetExists(this PhpArray value, long index) =>
             value != null &&
@@ -1152,7 +1271,14 @@ namespace Pchp.Core
 
             public PhpValue CurrentValue => _iterator.current().DeepCopy();
 
-            public PhpAlias CurrentValueAliased => _iterator.current().EnsureAlias();
+            public PhpAlias CurrentValueAliased
+            {
+                get
+                {
+                    var value = _iterator.current();
+                    return PhpValue.EnsureAlias(ref value);
+                }
+            }
 
             object IEnumerator.Current => Current;
 
@@ -1225,7 +1351,14 @@ namespace Pchp.Core
 
             public PhpValue CurrentValue => _enumerator.Current.Value.GetValue().DeepCopy();
 
-            public PhpAlias CurrentValueAliased => _enumerator.Current.Value.EnsureAlias();
+            public PhpAlias CurrentValueAliased
+            {
+                get
+                {
+                    var value = _enumerator.Current.Value;
+                    return PhpValue.EnsureAlias(ref value);
+                }
+            }
 
             object IEnumerator.Current => _enumerator.Current;
 
@@ -1574,6 +1707,30 @@ namespace Pchp.Core
         /// Gets copy of given value.
         /// </summary>
         public static PhpValue DeepCopy(PhpValue value) => value.DeepCopy();
+
+        /// <summary>
+        /// Deep copies the value in-place.
+        /// Called when this has been passed by value and inplace dereferencing and copying is necessary.
+        /// </summary>
+        [DebuggerNonUserCode, DebuggerStepThrough]
+        public static void PassValue(ref PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.MutableString:
+                    // lazy copy
+                    value.MutableStringBlob.AddRef();
+                    break;
+                case PhpTypeCode.PhpArray:
+                    // lazy copy
+                    value = new PhpValue(value.Array.DeepCopy());
+                    break;
+                case PhpTypeCode.Alias:
+                    // dereference & lazy copy
+                    value = value.Alias.Value.DeepCopy();
+                    break;
+            }
+        }
 
         /// <summary>
         /// Performs <c>clone</c> operation on given object.

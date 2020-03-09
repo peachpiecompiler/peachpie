@@ -453,19 +453,31 @@ namespace Pchp.Core.Reflection
         /// Ensures the property value to be <see cref="PhpAlias"/>.
         /// </summary>
         /// <exception cref="NotSupportedException">In case the type of the property doesn't allow.</exception>
-        public virtual PhpAlias EnsureAlias(Context ctx, object instance) => GetValue(ctx, instance).EnsureAlias();
+        public virtual PhpAlias EnsureAlias(Context ctx, object instance)
+        {
+            var value = GetValue(ctx, instance);
+            return PhpValue.EnsureAlias(ref value);
+        }
 
         /// <summary>
         /// Ensures the property value to be instance of <see cref="object"/>.
         /// </summary>
         /// <exception cref="NotSupportedException">In case the type of the property doesn't allow.</exception>
-        public virtual object EnsureObject(Context ctx, object instance) => GetValue(ctx, instance).EnsureObject();
+        public virtual object EnsureObject(Context ctx, object instance)
+        {
+            var value = GetValue(ctx, instance);
+            return PhpValue.EnsureObject(ref value);
+        }
 
         /// <summary>
         /// Ensures the property value to be an <c>array</c>.
         /// </summary>
         /// <exception cref="NotSupportedException">In case the type of the property doesn't allow.</exception>
-        public virtual IPhpArray EnsureArray(Context ctx, object instance) => GetValue(ctx, instance).EnsureArray();
+        public virtual IPhpArray EnsureArray(Context ctx, object instance)
+        {
+            var value = GetValue(ctx, instance);
+            return PhpValue.EnsureArray(ref value);
+        }
 
         /// <summary>
         /// Sets new value.

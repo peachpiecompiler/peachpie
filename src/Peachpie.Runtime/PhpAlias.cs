@@ -76,13 +76,13 @@ namespace Pchp.Core
         /// Ensures the underlying value is an object and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public object EnsureObject() => Value.EnsureObject();
+        public object EnsureObject() => PhpValue.EnsureObject(ref Value);
 
         /// <summary>
         /// Ensures the underlying value is an array and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public IPhpArray EnsureArray() => Value.EnsureArray();
+        public IPhpArray EnsureArray() => PhpValue.EnsureArray(ref Value);
 
         /// <summary>
         /// Performs deep copy of the value.
