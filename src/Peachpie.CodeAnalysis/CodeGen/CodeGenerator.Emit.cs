@@ -1773,7 +1773,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // {args}[i].EnsureAlias()
                             _il.EmitOpCode(ILOpCode.Ldelema);               // ref args[i]
                             EmitSymbolToken(arg_type.ElementType, null);    // PhpValue
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.EnsureAlias);
+                            EmitCall(ILOpCode.Call, CoreMethods.Operators.EnsureAlias_PhpValueRef);
                         }
                         else
                         {
@@ -2011,13 +2011,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // <stack>.Value.GetArrayAccess()
                         Emit_PhpAlias_GetValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArrayAccess);
+                        return EmitCall(ILOpCode.Call, CoreMethods.Operators.GetArrayAccess_PhpValueRef);
                     }
                     if (stack == CoreTypes.PhpValue)
                     {
                         // <stack>.GetArrayAccess()
                         EmitPhpValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArrayAccess);
+                        return EmitCall(ILOpCode.Call, CoreMethods.Operators.GetArrayAccess_PhpValueRef);
                     }
                     if (stack.IsReferenceType)
                     {

@@ -20,7 +20,7 @@ namespace Pchp.Core
     /// Note, <c>default(PhpValue)</c> does not represent a valid state of the object.
     /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct PhpValue : IPhpConvertible, IEquatable<PhpValue> // <T>
+    public readonly partial struct PhpValue : IPhpConvertible, IEquatable<PhpValue> // <T>
     {
         #region Nested struct: ValueField
 
@@ -75,7 +75,7 @@ namespace Pchp.Core
         /// <summary>
         /// The value type.
         /// </summary>
-        PhpTypeCode _type;  // CONSIDER: encode future flags into the int value
+        readonly PhpTypeCode _type;  // CONSIDER: encode future flags into the int value
 
         /// <summary>
         /// A value type container.
@@ -85,7 +85,7 @@ namespace Pchp.Core
         /// <summary>
         /// A reference type container.
         /// </summary>
-        ObjectField _obj;
+        readonly ObjectField _obj;
 
         #endregion
 
@@ -202,11 +202,6 @@ namespace Pchp.Core
             {
                 Debug.Assert(_obj.@object is PhpString.Blob);
                 return _obj.blob;
-            }
-            set
-            {
-                _obj.@object = value ?? throw new ArgumentNullException();
-                _type = PhpTypeCode.MutableString;
             }
         }
 
@@ -389,7 +384,7 @@ namespace Pchp.Core
             _ => throw InvalidTypeCodeException(),
         };
 
-        string ToStringUtf8() => TypeCode switch
+        internal string ToStringUtf8() => TypeCode switch
         {
             PhpTypeCode.Null => string.Empty,
             PhpTypeCode.Boolean => Convert.ToString(Boolean),
@@ -714,55 +709,55 @@ namespace Pchp.Core
         /// In case current value is empty, replaces current value with newly created stdClass.
         /// </summary>
         /// <returns>Non-null object.</returns>
-        public object EnsureObject()
+        public static object EnsureObject(ref PhpValue value)
         {
             object result;
 
-            switch (TypeCode)
+            switch (value.TypeCode)
             {
                 case PhpTypeCode.Null:
                     // TODO: Err: Warning: Creating default object from empty value
-                    this = FromClass(result = new stdClass());
+                    value = FromClass(result = new stdClass());
                     break;
 
                 case PhpTypeCode.Boolean:
                     result = new stdClass();   // empty class
 
                     // me is changed if me.Boolean == FALSE
-                    if (Boolean == false) this = FromClass(result);
+                    if (value.Boolean == false) value = FromClass(result);
                     break;
 
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Double:
                     // this is not changed
-                    result = new stdClass(this);
+                    result = new stdClass(value);
                     break;
 
                 case PhpTypeCode.PhpArray:
                     // me is not modified
-                    result = Array.ToObject();
+                    result = value.Array.ToObject();
                     break;
 
                 case PhpTypeCode.String:
-                    result = new stdClass(this);
+                    result = new stdClass(value);
 
                     // me is changed if value is empty
-                    if (String.Length == 0) this = FromClass(result);
+                    if (value.String.Length == 0) value = FromClass(result);
                     break;
 
                 case PhpTypeCode.MutableString:
-                    result = new stdClass(this);
+                    result = new stdClass(value);
 
                     // me is changed if value is empty
-                    if (MutableStringBlob.IsEmpty) this = FromClass(result);
+                    if (value.MutableStringBlob.IsEmpty) value = FromClass(result);
                     break;
 
                 case PhpTypeCode.Object:
-                    result = Object;
+                    result = value.Object;
                     break;
 
                 case PhpTypeCode.Alias:
-                    result = Alias.Value.EnsureObject();
+                    result = EnsureObject(ref value.Alias.Value);
                     break;
 
                 default:
@@ -780,22 +775,22 @@ namespace Pchp.Core
         /// </summary>
         /// <returns>PHP array instance. Canot be <c>null</c>.</returns>
         /// <remarks>Used for L-Values accessed as arrays (<code>$lvalue[] = rvalue</code>).</remarks>
-        public IPhpArray EnsureArray()
+        public static IPhpArray EnsureArray(ref PhpValue value)
         {
             PhpArray tmp;
 
-            switch (TypeCode)
+            switch (value.TypeCode)
             {
                 case PhpTypeCode.Null:
                     // TODO: Err: Warning: Creating default object from empty value
-                    this = Create(tmp = new PhpArray());
+                    value = Create(tmp = new PhpArray());
                     return tmp;
 
                 case PhpTypeCode.Boolean:
                     tmp = new PhpArray();   // empty class
 
                     // me is changed if me.Boolean == FALSE
-                    if (Boolean == false) this = Create(tmp);
+                    if (value.Boolean == false) value = Create(tmp);
                     return tmp;
 
                 case PhpTypeCode.Long:
@@ -804,32 +799,33 @@ namespace Pchp.Core
                     return new PhpArray();
 
                 case PhpTypeCode.PhpArray:
-                    return Array;
+                    return value.Array;
 
                 case PhpTypeCode.String:
                     // upgrade to mutable string
-                    var str = new PhpString(String);
+                    var str = new PhpString(value.String);
                     // ensure its internal blob
                     var arr = str.EnsureWritable();
 
                     // copy back new value
-                    this = Create(str);
+                    value = Create(str);
                     return arr;
 
                 case PhpTypeCode.MutableString:
                     // ensure blob is lazily copied
-                    if (MutableStringBlob.IsShared)
+                    if (value.MutableStringBlob.IsShared)
                     {
-                        _obj.blob = MutableStringBlob.ReleaseOne();
+                        value = new PhpValue(value.MutableStringBlob.ReleaseOne());
                     }
+
                     //
-                    return MutableStringBlob;
+                    return value.MutableStringBlob;
 
                 case PhpTypeCode.Object:
-                    return Operators.EnsureArray(Object);
+                    return Operators.EnsureArray(value.Object);
 
                 case PhpTypeCode.Alias:
-                    return Alias.Value.EnsureArray();
+                    return EnsureArray(ref value.Alias.Value);
 
                 default:
                     throw InvalidTypeCodeException();
@@ -837,93 +833,36 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Ensures the value is an array and item at given <paramref name="index"/> is an alias.
-        /// </summary>
-        public PhpAlias EnsureItemAlias(PhpValue index, bool quiet = false)
-        {
-            switch (TypeCode)
-            {
-                case PhpTypeCode.Null:
-                    // TODO: Err: Warning: Creating default object from empty value
-                    var arr = new PhpArray();
-                    this = Create(arr);
-                    return arr.EnsureItemAlias(index, quiet);
-
-                case PhpTypeCode.PhpArray:
-                    return Array.EnsureItemAlias(index, quiet);
-
-                case PhpTypeCode.String:
-                    throw new NotImplementedException();
-
-                case PhpTypeCode.MutableString:
-                    throw new NotImplementedException();
-
-                case PhpTypeCode.Object:
-                    if (Object is IPhpArray array)
-                    {
-                        return Operators.EnsureItemAlias(array, index, quiet);
-                    }
-
-                    if (!quiet) // NOTE: PHP does not report this error (?)
-                    {
-                        PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, Object.GetPhpTypeInfo().Name);
-                    }
-
-                    break;
-
-                case PhpTypeCode.Alias:
-                    return Alias.Value.EnsureItemAlias(index, quiet);
-            }
-
-            // TODO: Warning
-            return new PhpAlias(Null);
-        }
-
-        /// <summary>
         /// Ensures the value as an alias.
         /// In case it isn't, the value is aliased.
         /// </summary>
         /// <returns>Non-null alias of the value.</returns>
-        public PhpAlias EnsureAlias()
+        public static PhpAlias EnsureAlias(ref PhpValue value)
         {
-            switch (TypeCode)
+            switch (value.TypeCode)
             {
                 case PhpTypeCode.PhpArray:
                     // ensure array is lazily copied
-                    Array.EnsureWritable();
+                    value.Array.EnsureWritable();
                     break;
 
                 case PhpTypeCode.MutableString:
                     // ensure blob is lazily copied
-                    if (MutableStringBlob.IsShared)
+                    if (value.MutableStringBlob.IsShared)
                     {
-                        _obj.blob = MutableStringBlob.ReleaseOne();
+                        value = new PhpValue(value.MutableStringBlob.ReleaseOne());
                     }
                     break;
 
                 case PhpTypeCode.Alias:
-                    return Alias.AddRef();
+                    return value.Alias.AddRef();
             }
 
             // create alias to the value:
-            var alias = new PhpAlias(this, 1);
-            this = Create(alias); // !!!
+            var alias = new PhpAlias(value, 1);
+            value = Create(alias);
             return alias;
         }
-
-        /// <summary>
-        /// Gets <see cref="IPhpArray"/> instance providing access to the value with array operators.
-        /// Returns <c>null</c> if underlaying value does provide array access.
-        /// </summary>
-        public IPhpArray GetArrayAccess() => TypeCode switch
-        {
-            PhpTypeCode.PhpArray => Array,
-            PhpTypeCode.String => EnsureArray(),
-            PhpTypeCode.MutableString => MutableStringBlob,
-            PhpTypeCode.Object => Operators.EnsureArray(Object),
-            PhpTypeCode.Alias => Alias.Value.GetArrayAccess(),
-            _ => null,
-        };
 
         /// <summary>
         /// Dereferences in case of an alias.
@@ -971,30 +910,6 @@ namespace Pchp.Core
 
                 default:
                     throw InvalidTypeCodeException();
-            }
-        }
-
-        /// <summary>
-        /// Deep copies the value in-place.
-        /// Called when this has been passed by value and inplace dereferencing and copying is necessary.
-        /// </summary>
-        [DebuggerNonUserCode, DebuggerStepThrough]
-        public void PassValue()
-        {
-            switch (TypeCode)
-            {
-                case PhpTypeCode.MutableString:
-                    // lazy copy
-                    MutableStringBlob.AddRef();
-                    break;
-                case PhpTypeCode.PhpArray:
-                    // lazy copy
-                    _obj.@object = Array.DeepCopy();
-                    break;
-                case PhpTypeCode.Alias:
-                    // dereference & lazy copy
-                    this = Alias.Value.DeepCopy();  // !!!
-                    break;
             }
         }
 
@@ -1047,7 +962,6 @@ namespace Pchp.Core
         public object ToClr(Type type)
         {
             if (type == typeof(PhpValue)) return this;
-            if (type == typeof(PhpAlias)) return this.EnsureAlias();
 
             if (type == typeof(long)) return (long)this;
             if (type == typeof(int)) return (int)(long)this;
@@ -1062,6 +976,11 @@ namespace Pchp.Core
             if (this.Object != null && type.IsAssignableFrom(this.Object.GetType()))
             {
                 return this.Object;
+            }
+
+            if (type == typeof(PhpAlias) && IsAlias)
+            {
+                return Alias;
             }
 
             //if (type.IsNullable_T(out var nullable_t))
@@ -1192,31 +1111,6 @@ namespace Pchp.Core
             };
         }
 
-        /// <summary>
-        /// Converts current value to <see cref="PhpString"/> and gets mutable access to the value.
-        /// </summary>
-        /// <returns>Object on which edit operations can be performed. Cannot be <c>null</c>.</returns>
-        internal PhpString.Blob EnsureWritableString()
-        {
-            switch (TypeCode)
-            {
-                case PhpTypeCode.MutableString:
-                    if (MutableStringBlob.IsShared)
-                    {
-                        MutableStringBlob = MutableStringBlob.ReleaseOne();
-                    }
-                    return MutableStringBlob;
-                case PhpTypeCode.Null:
-                    return (MutableStringBlob = new PhpString.Blob());
-                case PhpTypeCode.String:
-                    return (MutableStringBlob = new PhpString.Blob(String));
-                case PhpTypeCode.Alias:
-                    return Alias.Value.EnsureWritableString();
-                default:
-                    return (MutableStringBlob = new PhpString.Blob(ToStringUtf8()));
-            }
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         static Exception InvalidTypeCodeException() => new InvalidOperationException();
 
@@ -1271,7 +1165,7 @@ namespace Pchp.Core
             _obj.@object = obj;
         }
 
-        private PhpValue(PhpString.Blob blob) : this(PhpTypeCode.MutableString)
+        internal PhpValue(PhpString.Blob blob) : this(PhpTypeCode.MutableString)
         {
             Debug.Assert(blob != null);
             _obj.blob = blob;
@@ -1283,7 +1177,7 @@ namespace Pchp.Core
             _obj.@string = value;
         }
 
-        private PhpValue(PhpArray array) : this(PhpTypeCode.PhpArray)
+        internal PhpValue(PhpArray array) : this(PhpTypeCode.PhpArray)
         {
             Debug.Assert(array != null);
             _obj.array = array;

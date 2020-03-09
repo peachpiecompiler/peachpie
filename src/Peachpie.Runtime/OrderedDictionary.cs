@@ -1768,7 +1768,10 @@ namespace Pchp.Core
             /// </summary>
             public ref TValue CurrentValue => ref Bucket.Value;
 
-            public PhpAlias CurrentValueAliased => Bucket.Value.EnsureAlias();
+            /// <summary>
+            /// Ensures the current entry is wrapped in alias and gets its reference.
+            /// </summary>
+            public PhpAlias CurrentValueAliased => PhpValue.EnsureAlias(ref Bucket.Value);
 
             /// <summary>
             /// Move to the next item.

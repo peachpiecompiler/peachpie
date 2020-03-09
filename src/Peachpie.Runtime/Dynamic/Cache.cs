@@ -49,11 +49,9 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpAlias_EnsureObject = Types.PhpAlias[0].GetMethod("EnsureObject", Types.Empty);
             public static MethodInfo PhpAlias_EnsureArray = Types.PhpAlias[0].GetMethod("EnsureArray", Types.Empty);
 
-            public static MethodInfo PhpValue_EnsureObject = Types.PhpValue.GetMethod("EnsureObject", Types.Empty);
-            public static MethodInfo PhpValue_EnsureArray = Types.PhpValue.GetMethod("EnsureArray", Types.Empty);
-            public static MethodInfo PhpValue_EnsureAlias = Types.PhpValue.GetMethod("EnsureAlias", Types.Empty);
-            public static MethodInfo EnsureAlias_PhpValueRef = typeof(Core.Operators).GetMethod("EnsureAlias", Types.PhpValue.MakeByRefType());
-            public static MethodInfo PhpValue_GetArrayAccess = Types.PhpValue.GetMethod("GetArrayAccess", Types.Empty);
+            public static MethodInfo EnsureObject_PhpValueRef = Types.PhpValue.GetMethod("EnsureObject", Types.PhpValue.MakeByRefType());
+            public static MethodInfo EnsureArray_PhpValueRef = Types.PhpValue.GetMethod("EnsureArray", Types.PhpValue.MakeByRefType());
+            public static MethodInfo EnsureAlias_PhpValueRef = Types.PhpValue.GetMethod("EnsureAlias", Types.PhpValue.MakeByRefType());
             public static MethodInfo PhpValue_ToLongOrThrow = new Func<PhpValue, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo PhpValue_ToClass = Types.PhpValue.GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpValue_ToArray = Types.PhpValue.GetMethod("ToArray", Types.Empty);

@@ -2809,21 +2809,15 @@ namespace Pchp.Library
                 return initialValue;
             }
 
-            PhpValue[] args = new PhpValue[] { initialValue.DeepCopy(), PhpValue.Null };
+            var args = new PhpValue[] { initialValue.DeepCopy(), PhpValue.Null };
 
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
             {
-                var item = iterator.CurrentValue;
-
-                args[1] = item.IsAlias ? item : PhpValue.Create(item.EnsureAlias());
+                args[1] = iterator.CurrentValueAliased;
                 args[0] = function.Invoke(ctx, args);
 
-                // updates an item if it wasn't alias
-                if (!item.IsAlias)
-                {
-                    iterator.CurrentValue = args[1].Alias.Value;
-                }
+                // CONSIDER: dereference the item if it wasn't alias before the operation
             }
 
             // dereferences the last returned value:

@@ -4440,6 +4440,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 else if (Access.IsReadRef)
                 {
                     Debug.WriteLine("TODO: we need reference to PhpValue so we can modify its content! This is not compatible with behavior of = &$null[0].");
+
                     // PhpValue.GetItemRef(index, bool)
                     cg.Builder.EmitBoolConstant(Access.IsQuiet);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_PhpValue_PhpValue_Bool);
@@ -4464,7 +4465,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     Debug.Assert(t == cg.CoreTypes.PhpValue);
                     // Template: (ref PhpValue).EnsureArray()
                     cg.EmitPhpValueAddr();
-                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray);
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpValueRef);
                 }
 
                 return t;
@@ -4554,7 +4555,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (tArray == cg.CoreTypes.PhpValue)
                 {
-                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetArrayAccess_PhpValue)
+                    Debug.WriteLine("TODO: we need reference to PhpValue so we can modify its content! Won't work with $string[] = ...");
+                    
+                    cg.EmitPhpValueAddr();
+
+                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetArrayAccess_PhpValueRef)
                         .Expect(cg.CoreTypes.IPhpArray);
 
                     // Template: <STACK> ?? (IPhpArray)PhpArray.Empty

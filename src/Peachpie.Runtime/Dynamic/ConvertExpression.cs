@@ -106,7 +106,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpAlias))
             {
                 //Debug.Assert(arg.Type.IsByRef && arg.Type == typeof(PhpValue), "Variable should be PhpValue and passed by ref so things will work out!");
-                if (arg.Type == typeof(PhpValue)) return Expression.Call(arg, Cache.Operators.PhpValue_EnsureAlias);
+                if (arg.Type == typeof(PhpValue)) return Expression.Call(Cache.Operators.EnsureAlias_PhpValueRef, arg);
                 return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
             }
 

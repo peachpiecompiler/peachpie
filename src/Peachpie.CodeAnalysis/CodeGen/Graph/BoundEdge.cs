@@ -391,7 +391,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 {
                     // .EnsureAlias()
                     cg.EmitPhpValueAddr();
-                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias);
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureAlias_PhpValueRef);
                 }
                 else
                 {

@@ -467,7 +467,7 @@ namespace Pchp.Core.Dynamic
                 else if (expr.Type == typeof(PhpValue))
                 {
                     // ((PhpValue)fld).EnsureObject()
-                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureObject);
+                    expr = Expression.Call(Cache.Operators.EnsureObject_PhpValueRef, expr);
                 }
                 else
                 {
@@ -485,7 +485,7 @@ namespace Pchp.Core.Dynamic
                 else if (expr.Type == typeof(PhpValue))
                 {
                     // ((PhpValue)fld).EnsureArray()
-                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureArray);
+                    expr = Expression.Call(Cache.Operators.EnsureArray_PhpValueRef, expr);
                 }
                 else if (expr.Type == typeof(PhpArray))
                 {
@@ -507,7 +507,7 @@ namespace Pchp.Core.Dynamic
                 else if (expr.Type == typeof(PhpValue))
                 {
                     // ((PhpValue)fld).EnsureAlias()
-                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureAlias);
+                    expr = Expression.Call(Cache.Operators.EnsureAlias_PhpValueRef, expr);
                 }
                 else
                 {
