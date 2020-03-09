@@ -677,6 +677,9 @@ namespace Pchp.Core
             {
                 switch (value.TypeCode)
                 {
+                    case PhpTypeCode.Null:
+                        break;
+
                     case PhpTypeCode.String:
                         Add(value.String);
                         break;
@@ -690,7 +693,7 @@ namespace Pchp.Core
                         break;
 
                     default:
-                        Add(value.ToStringOrThrow(ctx));
+                        Add(StrictConvert.ToString(value, ctx));
                         break;
                 }
             }
@@ -1599,8 +1602,6 @@ namespace Pchp.Core
         public Convert.NumberInfo ToNumber(out PhpNumber number) => Convert.ToNumber(ToString(), out number);
 
         public string ToString(Context ctx) => ToString(ctx.StringEncoding);
-
-        public string ToStringOrThrow(Context ctx) => ToString(ctx.StringEncoding);
 
         public object ToClass() => new stdClass(AsPhpValue(this));
 

@@ -399,8 +399,6 @@ namespace Pchp.Core
 
         string IPhpConvertible.ToString(Context ctx) => (string)this;
 
-        string IPhpConvertible.ToStringOrThrow(Context ctx) => (string)this;
-
         /// <summary>
         /// Creates <see cref="stdClass"/> with runtime instance fields copied from entries of this array.
         /// </summary>

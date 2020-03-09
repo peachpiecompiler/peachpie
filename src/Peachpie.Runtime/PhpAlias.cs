@@ -107,8 +107,6 @@ namespace Pchp.Core
 
         public string ToString(Context ctx) => Value.ToString(ctx);
 
-        public string ToStringOrThrow(Context ctx) => Value.ToStringOrThrow(ctx);
-
         public object ToClass() => Value.ToClass();
 
         public PhpArray ToArray() => Value.ToArray();

@@ -199,8 +199,6 @@ namespace Pchp.Core
 
         string IPhpConvertible.ToString(Context ctx) => ToString();
 
-        string IPhpConvertible.ToStringOrThrow(Context ctx) => ToString();
-
         object IPhpConvertible.ToClass() => new stdClass(PhpValue.FromClass(this));
 
         PhpArray IPhpConvertible.ToArray() => PhpArray.New(PhpValue.FromClass(this));

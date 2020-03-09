@@ -1363,8 +1363,6 @@ namespace Pchp.Core
             return IsLong ? _long.ToString() : Convert.ToString(_double, ctx);
         }
 
-        public string ToStringOrThrow(Context ctx) => ToString(ctx);
-
         public object ToClass() => ToObject();
 
         public PhpArray ToArray() => PhpArray.New(ToPhpValue());
