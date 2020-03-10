@@ -302,7 +302,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(varplace != null);
 
             // $x = <tmp>
-            varplace.EmitStore(cg, tmploc, BoundAccess.Write);
+            varplace.EmitStore(cg, tmploc, catchBlock.Variable.TargetAccess());
 
             //
             cg.ReturnTemporaryLocal(tmploc);
@@ -434,12 +434,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // PhpArray enumerator or Iterator
 
                 cg.EmitSequencePoint(valueVar.PhpSyntax);
-                valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.Access);
+                valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.TargetAccess());
 
                 if (keyVar != null)
                 {
                     cg.EmitSequencePoint(keyVar.PhpSyntax);
-                    keyVar.BindPlace(cg).EmitStore(cg, () => VariableReferenceExtensions.EmitLoadValue(cg, _currentKey, _enumeratorLoc), keyVar.Access);
+                    keyVar.BindPlace(cg).EmitStore(cg, () => VariableReferenceExtensions.EmitLoadValue(cg, _currentKey, _enumeratorLoc), keyVar.TargetAccess());
                 }
             }
             else
@@ -466,13 +466,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                     // value = tmp.Item2;
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
-                    valueVar.BindPlace(cg).EmitStore(cg, item2place, valueVar.Access);
+                    valueVar.BindPlace(cg).EmitStore(cg, item2place, valueVar.TargetAccess());
 
                     // key = tmp.Item1;
                     if (keyVar != null)
                     {
                         cg.EmitSequencePoint(keyVar.PhpSyntax);
-                        keyVar.BindPlace(cg).EmitStore(cg, item1place, keyVar.Access);
+                        keyVar.BindPlace(cg).EmitStore(cg, item1place, keyVar.TargetAccess());
                     }
 
                     //
@@ -482,7 +482,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 else
                 {
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
-                    valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.Access);
+                    valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.TargetAccess());
 
                     if (keyVar != null)
                     {

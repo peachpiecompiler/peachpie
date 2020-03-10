@@ -2518,7 +2518,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Template: <vars[i]> = <tmp>[i]
 
             var boundtarget = target.Value.BindPlace(cg);
-            var lhs = boundtarget.EmitStorePreamble(cg, target.Value.Access);
+            var lhs = boundtarget.EmitStorePreamble(cg, target.Value.TargetAccess());
 
             // LOAD IPhpArray.GetItemValue(IntStringKey{i})
             arrplace.EmitLoad(cg.Builder);
@@ -3472,7 +3472,7 @@ namespace Pchp.CodeAnalysis.Semantics
             LocalDefinition tmp = null;
 
             // <target> = <value>
-            var lhs = target_place.EmitStorePreamble(cg, Target.Access);
+            var lhs = target_place.EmitStorePreamble(cg, Target.TargetAccess());
 
             var t_value = target_place.Type;
             if (t_value != null &&
@@ -3626,7 +3626,7 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 // Template: PhpString.AsWritable( ((PhpString)target) ) : Blob
-                lhs = target_place.EmitStorePreamble(cg, BoundAccess.Write);
+                lhs = target_place.EmitStorePreamble(cg, target.TargetAccess());
                 cg.EmitConvertToPhpString(target_place.EmitLoadValue(cg, ref lhs, target.Access), 0);
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.AsWritable_PhpString) // Blob
                     .Expect(cg.CoreTypes.PhpString_Blob);
@@ -3716,7 +3716,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(target_place.Type == null || target_place.Type.SpecialType != SpecialType.System_Void);
 
             // <target> = <target> X <value>
-            var lhs = target_place.EmitStorePreamble(cg, Target.Access);
+            var lhs = target_place.EmitStorePreamble(cg, Target.TargetAccess());
             var xtype = target_place.EmitLoadValue(cg, ref lhs, Target.Access);
 
             TypeSymbol result_type;
@@ -3823,7 +3823,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(target_place != null);
 
             // prepare target for store operation
-            var lhs = target_place.EmitStorePreamble(cg, Target.Access);
+            var lhs = target_place.EmitStorePreamble(cg, Target.TargetAccess());
 
             // load target value
             var target_load_type = target_place.EmitLoadValue(cg, ref lhs, Target.Access);
@@ -4556,7 +4556,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (tArray == cg.CoreTypes.PhpValue)
                 {
                     Debug.WriteLine("TODO: we need reference to PhpValue so we can modify its content! Won't work with $string[] = ...");
-                    
+
                     cg.EmitPhpValueAddr();
 
                     tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetArrayAccess_PhpValueRef)

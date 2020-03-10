@@ -33,5 +33,25 @@ namespace Pchp.CodeAnalysis.Semantics
                 return false;
             }
         }
+
+        /// <summary>
+        /// Gets the <see cref="BoundAccess"/> for writing operation.
+        /// </summary>
+        public static BoundAccess TargetAccess(this BoundReferenceExpression target)
+        {
+            var access = target.Access;
+
+            Debug.Assert(access.IsWrite | access.IsUnset);
+
+            // IsNotRef:
+            if (target is BoundVariableRef varref)
+            {
+                var mightBeRef = varref.BeforeTypeRef.IsRef || !varref.Name.IsDirect;
+                access = access.WithRefFlag(mightBeRef);
+            }
+            
+            //
+            return access;
+        }
     }
 }
