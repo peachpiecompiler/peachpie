@@ -150,6 +150,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 _flowContext = flowContext;
             }
 
+            /// <summary>
+            /// Adds the value to lazily initialized set.
+            /// </summary>
+            static void Add<TCollection, TValue>(ref TCollection set, TValue value) where
+                TCollection : ICollection<TValue>, new()
+            {
+                Debug.Assert(value != null);
+
+                set ??= new TCollection();
+                set.Add(value);
+            }
+
             public static HashSet<BoundCopyValue> TryGetUnnecessaryCopies(SourceRoutineSymbol routine)
             {
                 var cfg = routine.ControlFlowGraph;
@@ -167,10 +179,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 {
                     if (!analysis._neededCopies.Get(kvp.Value))
                     {
-                        if (result == null)
-                            result = new HashSet<BoundCopyValue>();
-
-                        result.Add(kvp.Key);
+                        Add(ref result, kvp.Key);
                     }
                 }
 
@@ -319,7 +328,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                             // TODO: Mark only those that can be referenced
                             MarkAllKnownAssignments();
                         }
-                    } 
+                    }
                 }
 
                 return default;
@@ -328,12 +337,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             public override VoidStruct VisitReturn(BoundReturnStatement x)
             {
                 if (x.Returned is BoundCopyValue copy && copy.Expression is BoundVariableRef varRef &&
-                    varRef.Name.IsDirect && !varRef.Name.NameValue.IsAutoGlobal)
+                 //   !varRef.TypeRefMask.IsRef && // BoundCopyValue is used to dereference the alias
+                    !varRef.Name.NameValue.IsAutoGlobal &&
+                    varRef.Name.IsDirect)
                 {
-                    if (_lazyReturnCopies == null)
-                        _lazyReturnCopies = new HashSet<BoundCopyValue>();
-
-                    _lazyReturnCopies.Add(copy);
+                    Add(ref _lazyReturnCopies, copy);
                 }
 
                 return base.VisitReturn(x);
@@ -357,15 +365,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         // a copying we removed earlier
                         if ((State.GetValue(varindex) & ~_neededCopies) != 0)
                         {
-                            if (cannotRemove == null)
-                                cannotRemove = new List<BoundCopyValue>();
-
-                            cannotRemove.Add(returnCopy);
+                            Add(ref cannotRemove, returnCopy);
                         }
                     }
 
                     if (cannotRemove != null)
+                    {
                         _lazyReturnCopies.ExceptWith(cannotRemove);
+                    }
                 }
 
                 return default;
