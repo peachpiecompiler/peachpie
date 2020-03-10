@@ -663,10 +663,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Accept(x.Name.NameExpression);
 
                 // bind variable place
-                if (x.Variable == null)
-                {
-                    x.Variable = new LocalVariableReference(VariableKind.LocalVariable, Routine, null, x.Name);
-                }
+                x.Variable ??= new LocalVariableReference(VariableKind.LocalVariable, Routine, null, x.Name);
 
                 // update state
                 if (x.Access.IsRead)
