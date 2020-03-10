@@ -337,7 +337,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             public override VoidStruct VisitReturn(BoundReturnStatement x)
             {
                 if (x.Returned is BoundCopyValue copy && copy.Expression is BoundVariableRef varRef &&
-                 //   !varRef.TypeRefMask.IsRef && // BoundCopyValue is used to dereference the alias
+                    !varRef.TypeRefMask.IsRef && // BoundCopyValue is used to dereference the alias
                     !varRef.Name.NameValue.IsAutoGlobal &&
                     varRef.Name.IsDirect)
                 {
