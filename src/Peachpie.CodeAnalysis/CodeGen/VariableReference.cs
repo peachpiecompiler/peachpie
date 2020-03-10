@@ -275,13 +275,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="place">Target place to be assigned to.</param>
         /// <param name="cg">Ref to <see cref="CodeGenerator"/>.</param>
         /// <param name="access">The place's access.</param>
-        /// <param name="mightBeAliased">Whether the place's value might be <c>PhpAlias</c>. Assignment has to be treated differently.</param>
         /// <returns></returns>
-        public static LhsStack EmitStorePreamble(this IPlace place, CodeGenerator cg, BoundAccess access, bool mightBeAliased)
+        public static LhsStack EmitStorePreamble(this IPlace place, CodeGenerator cg, BoundAccess access)
         {
             var type = place.Type;
 
-            if (mightBeAliased && type == cg.CoreTypes.PhpValue && place.HasAddress && !access.IsWriteRef && !access.IsUnset)
+            if (!access.IsNotRef && type == cg.CoreTypes.PhpValue && place.HasAddress && !access.IsWriteRef && !access.IsUnset)
             {
                 // might be ref ? emit address and use SetValue() operator
                 place.EmitLoadAddress(cg.Builder);
@@ -296,7 +295,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                place.EmitStorePrepare(cg.Builder); // TODO: return LhsStack
+                place.EmitStorePrepare(cg.Builder); // TODO: LhsStack
 
                 return default;
             }
@@ -621,31 +620,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual bool HasAddress => true;
 
-        /// <summary>
-        /// Gets value indicating the value can refer to <c>PhpAlias</c>.
-        /// </summary>
-        private bool MightBeAliased
-        {
-            get
-            {
-                if (IsOptimized && BoundName.IsDirect)
-                {
-                    // make use of type analysis,
-                    // whether the variable can contain a ref (PhpAlias):
-                    var ctx = Routine.ControlFlowGraph.FlowContext;
-                    var type = ctx.GetVarType(BoundName.NameValue);
-
-                    if (!type.IsRef)
-                    {
-                        return false;
-                    }
-                }
-
-                //
-                return true;
-            }
-        }
-
         public virtual IPlace Place { get; protected set; }
 
         public LocalVariableReference(VariableKind kind, SourceRoutineSymbol routine, Symbol symbol, BoundVariableName name)
@@ -721,7 +695,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (Place != null)
             {
-                return Place.EmitStorePreamble(cg, access, mightBeAliased: MightBeAliased);
+                return Place.EmitStorePreamble(cg, access);
             }
             else
             {
@@ -1394,7 +1368,11 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             LhsStack lhs = default;
 
-            return VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver) + new FieldPlace_Raw(Field, cg.Module).EmitStorePreamble(cg, access, mightBeAliased: true);
+            var fieldplace = new FieldPlace_Raw(Field, cg.Module);
+
+            return
+                VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver) +
+                fieldplace.EmitStorePreamble(cg, access);
         }
 
         public void EmitStore(CodeGenerator cg, ref LhsStack lhs, TypeSymbol stack, BoundAccess access)
@@ -1742,7 +1720,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public LhsStack EmitStorePreamble(CodeGenerator cg, BoundAccess access)
         {
-            return Place.EmitStorePreamble(cg, access, mightBeAliased: true);
+            return Place.EmitStorePreamble(cg, access);
         }
 
         public void EmitStore(CodeGenerator cg, ref LhsStack lhs, TypeSymbol stack, BoundAccess access)
