@@ -237,6 +237,11 @@ namespace Pchp.Library
                 var arr = ((stdClass)obj).GetRuntimeFields();
                 return (arr != null) ? arr.DeepCopy() : PhpArray.NewEmpty();
             }
+            else if (obj is PhpResource || obj is __PHP_Incomplete_Class)
+            {
+                PhpException.InvalidArgument(nameof(obj));
+                return null;
+            }
             else
             {
                 var result = PhpArray.NewEmpty();
