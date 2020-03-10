@@ -89,12 +89,10 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                bool nullable = cg.Routine.SyntaxReturnType != null && cg.Routine.SyntaxReturnType.IsNullable();
-
                 cg.EmitConvert(this.Returned, rtype);
 
-                // check for null, if return type is not nullable
-                if (cg.IsDebug && !nullable)
+                // TODO: check for null, if return type is not nullable
+                if (cg.Routine.SyntaxReturnType != null && cg.Routine.SyntaxReturnType.IsNullable() == false)
                 {
                     //// Template: Debug.Assert( <STACK> != null )
                     //cg.Builder.EmitOpCode(ILOpCode.Dup);
