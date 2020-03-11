@@ -423,6 +423,28 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
         }
 
+        static bool IsAPairValue(TypeSymbol type, out Symbol key, out Symbol value)
+        {
+            key = value = default;
+            
+            if (type.IsValueType)
+            {
+                if (type.Name == "ValueTuple" && ((NamedTypeSymbol)type).Arity == 2)
+                {
+                    key = type.GetMembers("Item1").Single();
+                    value = type.GetMembers("Item2").Single();
+                }
+                else if (type.Name == "KeyValuePair" && ((NamedTypeSymbol)type).Arity == 2)
+                {
+                    key = type.GetMembers("Key").Single();
+                    value = type.GetMembers("Value").Single();
+                }
+            }
+
+            //
+            return key != null && value != null; ;
+        }
+
         internal void EmitGetCurrent(CodeGenerator cg, BoundReferenceExpression valueVar, BoundReferenceExpression keyVar)
         {
             Debug.Assert(_enumeratorLoc.IsValid);
@@ -444,35 +466,47 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                Debug.Assert(_current != null);
+                if (_current == null)
+                {
+                    throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(_current);
+                }
 
                 var valuetype = _current.ReturnType;
-
-                // ValueTuple (key, value)
-                // TODO: KeyValuePair<key, value> // the same
-                if (valuetype.Name == "ValueTuple" && valuetype.IsValueType && ((NamedTypeSymbol)valuetype).Arity == 2)
+                
+                // ValueTuple<T1, T2> (Item1, Item2)
+                // KeyValuePair<TKey, TValue> (Key, Value)
+                if (IsAPairValue(valuetype, out var skey, out var svalue))
                 {
                     // tmp = current;
                     var tmp = cg.GetTemporaryLocal(valuetype);
                     VariableReferenceExtensions.EmitLoadValue(cg, _current, _enumeratorLoc);
                     cg.Builder.EmitLocalStore(tmp);
 
-                    // TODO: ValueTuple Helper
-                    var item1 = valuetype.GetMembers("Item1").Single() as FieldSymbol;
-                    var item2 = valuetype.GetMembers("Item2").Single() as FieldSymbol;
+                    var tmploc = new LocalPlace(tmp);
 
-                    var item1place = new FieldPlace(new LocalPlace(tmp), item1, cg.Module);
-                    var item2place = new FieldPlace(new LocalPlace(tmp), item2, cg.Module);
+                    var keyplace = skey switch
+                    {
+                        FieldSymbol fld => (IPlace)new FieldPlace(tmploc, fld, cg.Module),
+                        PropertySymbol prop => new PropertyPlace(tmploc, prop, cg.Module),
+                        _ => throw Roslyn.Utilities.ExceptionUtilities.Unreachable,
+                    };
+
+                    var valueplace = svalue switch
+                    {
+                        FieldSymbol fld => (IPlace)new FieldPlace(tmploc, fld, cg.Module),
+                        PropertySymbol prop => new PropertyPlace(tmploc, prop, cg.Module),
+                        _ => throw Roslyn.Utilities.ExceptionUtilities.Unreachable,
+                    };
 
                     // value = tmp.Item2;
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
-                    valueVar.BindPlace(cg).EmitStore(cg, item2place, valueVar.TargetAccess());
+                    valueVar.BindPlace(cg).EmitStore(cg, valueplace, valueVar.TargetAccess());
 
                     // key = tmp.Item1;
                     if (keyVar != null)
                     {
                         cg.EmitSequencePoint(keyVar.PhpSyntax);
-                        keyVar.BindPlace(cg).EmitStore(cg, item1place, keyVar.TargetAccess());
+                        keyVar.BindPlace(cg).EmitStore(cg, keyplace, keyVar.TargetAccess());
                     }
 
                     //
