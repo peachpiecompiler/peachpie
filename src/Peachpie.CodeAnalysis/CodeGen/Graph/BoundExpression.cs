@@ -2507,7 +2507,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("GetListAccess", cg.CoreTypes.PhpValue));
         }
 
-        static void EmitItemAssign(CodeGenerator cg, KeyValuePair<BoundExpression, BoundReferenceExpression> item, int index, IPlace arrplace)
+        static void EmitItemAssign(CodeGenerator cg, KeyValuePair<BoundExpression, BoundReferenceExpression> item, long index, IPlace arrplace)
         {
             var target = item;
             if (target.Value == null)

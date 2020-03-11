@@ -580,11 +580,11 @@ namespace Pchp.Core
                     return true;
 
                 case PhpTypeCode.Long:
-                    key = new IntStringKey(checked((int)Long));
+                    key = new IntStringKey(Long);
                     return true;
 
                 case PhpTypeCode.Double:
-                    key = new IntStringKey((int)Double);
+                    key = new IntStringKey((long)Double);
                     return true;
 
                 case PhpTypeCode.String:

@@ -77,7 +77,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpArray_Remove = typeof(PhpHashtable).GetMethod("Remove", typeof(Core.IntStringKey)); // PhpHashtable.Remove(IntStringKey) returns bool
             public static MethodInfo PhpArray_TryGetValue = typeof(PhpArray).GetMethod("TryGetValue", typeof(Core.IntStringKey), Types.PhpValue.MakeByRefType());
             public static MethodInfo PhpArray_ContainsKey = typeof(PhpArray).GetMethod("ContainsKey", typeof(Core.IntStringKey));
-            
+
             public static MethodInfo ToBoolean_PhpArray = typeof(PhpArray).GetOpExplicit(typeof(bool));
             public static MethodInfo ToBoolean_PhpValue = typeof(PhpValue).GetOpImplicit(typeof(bool));
             public static MethodInfo ToBoolean_PhpNumber = typeof(PhpNumber).GetOpImplicit(typeof(bool));
@@ -124,7 +124,7 @@ namespace Pchp.Core.Dynamic
         public static class IntStringKey
         {
             public static ConstructorInfo ctor_String = typeof(Core.IntStringKey).GetCtor(Types.String);
-            public static ConstructorInfo ctor_Int = typeof(Core.IntStringKey).GetCtor(Types.Int);
+            public static ConstructorInfo ctor_Long = typeof(Core.IntStringKey).GetCtor(Types.Long);
         }
 
         public static class PhpAlias
@@ -161,17 +161,18 @@ namespace Pchp.Core.Dynamic
         public static MethodInfo GetMethod(this Type type, string name, params Type[] ptypes)
         {
             var result = type.GetRuntimeMethod(name, ptypes);
-            if (result == null)
+            if (result != null)
             {
-                foreach (var m in type.GetTypeInfo().GetDeclaredMethods(name))  // non public methods
+                return result;
+            }
+            
+            foreach (var m in type.GetTypeInfo().GetDeclaredMethods(name))  // non public methods
                 {
                     if (ParamsMatch(m.GetParameters(), ptypes))
                         return m;
                 }
-            }
 
-            Debug.Assert(result != null);
-            return result;
+            throw new InvalidOperationException($"{type.Name}.{name}({string.Join<Type>(", ", ptypes)}) was not resolved.");
         }
 
         static MethodInfo GetOpImplicit(this Type type, Type resultType) =>
@@ -179,7 +180,7 @@ namespace Pchp.Core.Dynamic
 
         static MethodInfo GetOpExplicit(this Type type, Type resultType) =>
             GetOpMethod(type, "op_Explicit", resultType);
-        
+
         static MethodInfo GetOpMethod(Type type, string opname, Type resultType)
         {
             var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public);
@@ -191,7 +192,7 @@ namespace Pchp.Core.Dynamic
                 }
             }
 
-            throw new InvalidOperationException();
+            throw new InvalidOperationException($"{resultType.Name} {type.Name}.{opname} was not resolved.");
         }
 
         static bool ParamsMatch(ParameterInfo[] ps, Type[] ptypes)
@@ -219,7 +220,7 @@ namespace Pchp.Core.Dynamic
                 }
             }
 
-            throw new ArgumentException();
+            throw new InvalidOperationException($"{type.Name}..ctor({string.Join<Type>(", ", ptypes)}) was not resolved.");
         }
     }
 }

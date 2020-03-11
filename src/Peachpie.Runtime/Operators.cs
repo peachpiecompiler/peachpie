@@ -420,40 +420,56 @@ namespace Pchp.Core
 
             public PhpValue GetItemValue(IntStringKey key)
             {
-                if (key.IsInteger)
-                    return PhpValue.FromClr(_array[key.Integer]);
+                if (key.IsInteger && Utilities.NumberUtils.IsInt32(key.Integer))
+                {
+                    return PhpValue.FromClr(_array[unchecked((int)key.Integer)]);
+                }
                 else
+                {
                     throw new ArgumentException(nameof(key));
+                }
             }
 
             public PhpValue GetItemValue(PhpValue index) => GetItemValue(index.ToIntStringKey());
 
             public void RemoveKey(IntStringKey key)
             {
-                if (key.IsInteger)
-                    _array.RemoveAt(key.Integer);
+                if (key.IsInteger && Utilities.NumberUtils.IsInt32(key.Integer))
+                {
+                    _array.RemoveAt(unchecked((int)key.Integer));
+                }
                 else
+                {
                     throw new ArgumentException(nameof(key));
+                }
             }
 
             public void RemoveKey(PhpValue index) => RemoveKey(index.ToIntStringKey());
 
             public void SetItemAlias(IntStringKey key, PhpAlias alias)
             {
-                if (key.IsInteger)
-                    _array[key.Integer] = ToObject(alias.Value);
+                if (key.IsInteger && Utilities.NumberUtils.IsInt32(key.Integer))
+                {
+                    _array[unchecked((int)key.Integer)] = ToObject(alias.Value);
+                }
                 else
+                {
                     throw new ArgumentException(nameof(key));
+                }
             }
 
             public void SetItemAlias(PhpValue index, PhpAlias alias) => SetItemAlias(index.ToIntStringKey(), alias);
 
             public void SetItemValue(IntStringKey key, PhpValue value)
             {
-                if (key.IsInteger)
-                    _array[key.Integer] = ToObject(value);
+                if (key.IsInteger && Utilities.NumberUtils.IsInt32(key.Integer))
+                {
+                    _array[unchecked((int)key.Integer)] = ToObject(value);
+                }
                 else
+                {
                     throw new ArgumentException(nameof(key));
+                }
             }
 
             public void SetItemValue(PhpValue index, PhpValue value) => SetItemValue(index.ToIntStringKey(), value);
@@ -610,11 +626,11 @@ namespace Pchp.Core
         /// <param name="value">String to be accessed as array.</param>
         /// <param name="index">Index.</param>
         /// <returns>Character on index or empty string if index is our of range.</returns>
-        public static string GetItemValue(string value, int index)
+        public static string GetItemValue(string value, long index)
         {
             return (value != null && index >= 0 && index < value.Length)
-                ? value[index].ToString()
-                : string.Empty;
+                ? value[unchecked((int)index)].ToString()
+                : string.Empty; // TODO: quiet ?
         }
 
         /// <summary>
@@ -622,9 +638,9 @@ namespace Pchp.Core
         /// </summary>
         public static string GetItemValue(string value, IntStringKey key)
         {
-            int index = key.IsInteger
+            var index = key.IsInteger
                 ? key.Integer
-                : (int)Convert.StringToLongInteger(key.String);
+                : Convert.StringToLongInteger(key.String);
 
             return GetItemValue(value, index);
         }
@@ -634,12 +650,12 @@ namespace Pchp.Core
         /// </summary>
         public static string GetItemValueOrNull(string value, IntStringKey key)
         {
-            int index = key.IsInteger
+            var index = key.IsInteger
                 ? key.Integer
-                : (int)Convert.StringToLongInteger(key.String);
+                : Convert.StringToLongInteger(key.String);
 
             return (value != null && index >= 0 && index < value.Length)
-                ? value[index].ToString()
+                ? value[unchecked((int)index)].ToString()
                 : null;
         }
 
@@ -648,9 +664,9 @@ namespace Pchp.Core
         /// </summary>
         public static string GetItemValue(string value, PhpValue index, bool quiet)
         {
-            if (Convert.TryToIntStringKey(index, out var key))
+            if (value != null && Convert.TryToIntStringKey(index, out var key))
             {
-                int i;
+                long i;
 
                 if (key.IsInteger)
                 {
@@ -660,12 +676,12 @@ namespace Pchp.Core
                 {
                     if (quiet) return null;
 
-                    i = (int)Convert.StringToLongInteger(key.String);
+                    i = Convert.StringToLongInteger(key.String);
                 }
 
-                if (value != null && i >= 0 && i < value.Length)
+                if (i >= 0 && i < value.Length)
                 {
-                    return value[i].ToString();
+                    return value[(int)i].ToString();
                 }
             }
 
@@ -838,7 +854,7 @@ namespace Pchp.Core
                 {
                     if (key.Integer >= 0 && key.Integer < list.Count)
                     {
-                        return PhpValue.FromClr(list[index.ToIntStringKey().Integer]);
+                        return PhpValue.FromClr(list[(int)key.Integer]);
                     }
                     else if (!quiet)
                     {

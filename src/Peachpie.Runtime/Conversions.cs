@@ -473,9 +473,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpNumber ToNumber(string str)
         {
-            long l;
-            double d;
-            var info = StringToNumber(str, out l, out d);
+            var info = StringToNumber(str, out var l, out var d);
             return ((info & NumberInfo.Double) != 0) ? PhpNumber.Create(d) : PhpNumber.Create(l);
         }
 
@@ -546,17 +544,10 @@ namespace Pchp.Core
         /// <summary>
         /// Converts given value to an array key.
         /// </summary>
-        public static IntStringKey ToIntStringKey(PhpValue value)
-        {
-            if (value.TryToIntStringKey(out IntStringKey key))
-            {
-                return key;
-            }
-            else
-            {
-                throw new ArgumentException();
-            }
-        }
+        /// <exception cref="ArgumentException">The value cannot be converted to <see cref="IntStringKey"/>.</exception>
+        public static IntStringKey ToIntStringKey(PhpValue value) => value.TryToIntStringKey(out var key)
+            ? key
+            : throw new ArgumentException();
 
         /// <summary>
         /// Tries conversion to an array key.
@@ -607,7 +598,7 @@ namespace Pchp.Core
             Debug.Assert(index < str.Length, "str == {" + str + "}");
 
             // simple <int> parser:
-            long result = (int)str[index] - '0';
+            long result = (str[index] - '0');
             Debug.Assert(result != 0, "str == {" + str + "}");
 
             if (result < 0 || result > 9)   // not a number
@@ -615,15 +606,19 @@ namespace Pchp.Core
 
             while (++index < str.Length)
             {
-                int c = (int)str[index] - '0';
+                int c = str[index] - '0';
                 if (c >= 0 && c <= 9)
                 {
                     // update <result>
+                    var previous = result;
                     result = unchecked(c + result * 10);
 
-                    // <int> range check
-                    if (Utilities.NumberUtils.IsInt32(result))
-                        continue;   // still in <int> range
+                    // overflow check
+                    if (previous <= result)
+                    {
+                        // did not overflow
+                        continue;
+                    }
                 }
 
                 //
@@ -632,13 +627,17 @@ namespace Pchp.Core
 
             if (sign)
             {
-                result = -result;
-                if (!Utilities.NumberUtils.IsInt32(result))
+                result = unchecked(-result);
+
+                if (result > 0)
+                {
+                    // overflow
                     return new IntStringKey(str);
+                }
             }
 
             // <int> parsed properly:
-            return new IntStringKey(unchecked((int)result));
+            return new IntStringKey(result);
         }
 
         #endregion

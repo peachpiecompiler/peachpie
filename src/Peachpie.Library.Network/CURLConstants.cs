@@ -589,7 +589,7 @@ namespace Peachpie.Library.Network
             return true;
         }
 
-        internal static bool TrySetOption(this CURLResource ch, int option, PhpValue value, RuntimeTypeHandle callerCtx)
+        internal static bool TrySetOption(this CURLResource ch, long option, PhpValue value, RuntimeTypeHandle callerCtx)
         {
             switch (option)
             {
@@ -750,15 +750,18 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Lookups the constant name (CURLOPT_*) with given value.
         /// </summary>
-        static string TryGetOptionName(int optionValue)
+        static string TryGetOptionName(long optionValue)
         {
-            var field = typeof(CURLConstants).GetFields()
-                .Where(f => f.Name.StartsWith("CURLOPT_", StringComparison.Ordinal))
-                .First(f =>
-                {
-                    var fval = f.GetRawConstantValue();
-                    return (fval is int i && i == optionValue);
-                });
+            var field = typeof(CURLConstants)
+                .GetFields()
+                .FirstOrDefault(f =>
+                    f.Name.StartsWith("CURLOPT_", StringComparison.Ordinal) &&
+                    f.GetRawConstantValue() switch
+                    {
+                        int i => i == optionValue,
+                        long l => l == optionValue,
+                        _ => false,
+                    });
 
             return field != null ? field.Name : optionValue.ToString();
         }

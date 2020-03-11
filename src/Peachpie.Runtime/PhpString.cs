@@ -1362,8 +1362,8 @@ namespace Pchp.Core
             /// </summary>
             PhpValue IPhpArray.GetItemValue(IntStringKey key)
             {
-                int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
-                return (index >= 0 && index < this.Length) ? this[index].AsValue() : PhpValue.Create(string.Empty);
+                var index = key.IsInteger ? key.Integer : Convert.StringToLongInteger(key.String);
+                return (index >= 0 && index < this.Length) ? this[(int)index].AsValue() : PhpValue.Create(string.Empty);
             }
 
             PhpValue IPhpArray.GetItemValue(PhpValue index)
@@ -1378,7 +1378,7 @@ namespace Pchp.Core
 
             void IPhpArray.SetItemValue(PhpValue index, PhpValue value)
             {
-                if (index.TryToIntStringKey(out IntStringKey key))
+                if (index.TryToIntStringKey(out var key))
                 {
                     ((IPhpArray)this).SetItemValue(key, value);
                 }
@@ -1393,8 +1393,15 @@ namespace Pchp.Core
             /// </summary>
             void IPhpArray.SetItemValue(IntStringKey key, PhpValue value)
             {
-                int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
-                this[index] = value;
+                var index = key.IsInteger ? key.Integer : Convert.StringToLongInteger(key.String);
+                if (NumberUtils.IsInt32(index))
+                {
+                    this[(int)index] = value;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
             }
 
             /// <summary>
