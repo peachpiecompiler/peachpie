@@ -149,7 +149,7 @@ namespace Peachpie.Runtime.Tests
 
             array.Shuffle(new Random());
 
-            var set = new HashSet<int>();
+            var set = new HashSet<long>();
 
             foreach (var pair in array)
             {
@@ -207,7 +207,7 @@ namespace Peachpie.Runtime.Tests
         {
             public int Compare(KeyValuePair<IntStringKey, PhpValue> x, KeyValuePair<IntStringKey, PhpValue> y)
             {
-                return x.Key.Integer - y.Key.Integer;
+                return x.Key.Integer.CompareTo(y.Key.Integer);
             }
         }
 

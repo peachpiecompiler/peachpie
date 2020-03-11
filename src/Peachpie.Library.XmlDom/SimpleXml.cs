@@ -1443,7 +1443,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the <paramref name="index"/>th sibling with the same local name and namespace URI or <B>null</B>.
         /// </summary>
-        private XmlElement GetSiblingForIndex(int index)
+        private XmlElement GetSiblingForIndex(long index)
         {
             if (index <= 0) return XmlElement;
 
@@ -1464,7 +1464,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the <param name="index"/>th attribute with the current namespace URI or<B>null</B>.
         /// </summary>
-        private XmlAttribute GetAttributeForIndex(int index)
+        private XmlAttribute GetAttributeForIndex(long index)
         {
             foreach (XmlAttribute attr in XmlElement.Attributes)
             {
