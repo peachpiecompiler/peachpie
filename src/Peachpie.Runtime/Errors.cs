@@ -227,6 +227,22 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Outputs warning: Illegal offset type.
+        /// </summary>
+        public static void IllegalOffsetType()
+        {
+            Throw(PhpError.Warning, ErrResources.illegal_offset_type);
+        }
+
+        /// <summary>
+        /// Outputs error: Undefined offset ({0}).
+        /// </summary>
+        public static void UndefinedOffset(IntStringKey key)
+        {
+            Throw(PhpError.Error, string.Format(ErrResources.undefined_offset, key.ToString()));
+        }
+
+        /// <summary>
         /// Argument type mismatch error.
         /// </summary>
         public static void ThrowIfArgumentNull(object value, int arg)

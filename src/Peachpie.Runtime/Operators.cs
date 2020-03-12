@@ -664,7 +664,7 @@ namespace Pchp.Core
         /// </summary>
         public static string GetItemValue(string value, PhpValue index, bool quiet)
         {
-            if (value != null && Convert.TryToIntStringKey(index, out var key))
+            if (value != null && index.TryToIntStringKey(out var key))
             {
                 long i;
 
@@ -693,7 +693,7 @@ namespace Pchp.Core
             }
             else
             {
-                PhpException.InvalidArgument(nameof(index));
+                PhpException.Throw(PhpError.Error, Resources.ErrResources.illegal_string_offset, index.ToString());
                 return string.Empty;
             }
         }
@@ -704,26 +704,28 @@ namespace Pchp.Core
         /// </summary>
         public static long GetItemOrdValue(PhpValue value, long index)
         {
-            if (value.TypeCode == PhpTypeCode.String)
+            switch (value.TypeCode)
             {
-                return GetItemOrdValue(value.String, index);
-            }
-            else if (value.IsMutableString(out var phpString))
-            {
-                return GetItemOrdValue(phpString, index);
-            }
-            else
-            {
-                var item = value.GetArrayItem(index);
-                if (item.IsMutableString(out var itemPhpString))
-                {
-                    return itemPhpString.IsEmpty ? 0 : itemPhpString[0];
-                }
-                else
-                {
-                    var str = item.ToString();
-                    return string.IsNullOrEmpty(str) ? 0 : str[0];
-                }
+                case PhpTypeCode.String:
+                    return GetItemOrdValue(value.String, index);
+
+                case PhpTypeCode.MutableString:
+                    return GetItemOrdValue(value.MutableString, index);
+
+                case PhpTypeCode.Alias:
+                    return GetItemOrdValue(value.Alias.Value, index);
+
+                default:
+                    var item = value.GetArrayItem(index);
+                    if (item.IsMutableString(out var itemPhpString))
+                    {
+                        return itemPhpString.IsEmpty ? 0 : itemPhpString[0];
+                    }
+                    else
+                    {
+                        var str = item.ToStringUtf8();
+                        return string.IsNullOrEmpty(str) ? 0 : str[0];
+                    }
             }
         }
 
@@ -733,13 +735,13 @@ namespace Pchp.Core
         /// </summary>
         public static long GetItemOrdValue(string value, long index)
         {
-            int i = (int)index;
-            if (value != null && i >= 0 && i < value.Length)
+            if (value != null && index >= 0 && index < value.Length)
             {
-                return value[i];
+                return value[(int)index];
             }
 
-            PhpException.InvalidArgument(nameof(index));
+            //
+            PhpException.Throw(PhpError.Error, Resources.ErrResources.illegal_string_offset, index.ToString());
             return 0;
         }
 
@@ -749,49 +751,51 @@ namespace Pchp.Core
         /// </summary>
         public static long GetItemOrdValue(PhpString value, long index)
         {
-            int i = (int)index;
-            if (!value.IsDefault && i >= 0 && i < value.Length)
+            if (index >= 0 && index < value.Length)
             {
-                return value[i];
+                return value[(int)index];
             }
 
-            PhpException.InvalidArgument(nameof(index));
+            PhpException.Throw(PhpError.Error, Resources.ErrResources.illegal_string_offset, index.ToString());
             return 0;
         }
 
         public static object EnsureItemObject(this IPhpArray array, PhpValue index)
         {
-            if (Convert.TryToIntStringKey(index, out IntStringKey key))
+            if (index.TryToIntStringKey(out var key))
             {
                 return array.EnsureItemObject(key);
             }
             else
             {
-                throw new ArgumentException();
+                throw PhpException.TypeErrorException(Resources.ErrResources.illegal_offset_type);
             }
         }
 
         public static IPhpArray EnsureItemArray(this IPhpArray array, PhpValue index)
         {
-            if (Convert.TryToIntStringKey(index, out IntStringKey key))
+            if (index.TryToIntStringKey(out var key))
             {
                 return array.EnsureItemArray(key);
             }
             else
             {
-                throw new ArgumentException();
+                throw PhpException.TypeErrorException(Resources.ErrResources.illegal_offset_type);
             }
         }
 
         public static PhpAlias EnsureItemAlias(this IPhpArray array, PhpValue index, bool quiet)
         {
-            if (Convert.TryToIntStringKey(index, out IntStringKey key))
+            if (index.TryToIntStringKey(out var key))
             {
                 return array.EnsureItemAlias(key);
             }
             else
             {
-                if (!quiet) throw new ArgumentException();
+                if (!quiet)
+                {
+                    PhpException.IllegalOffsetType();
+                }
 
                 return new PhpAlias(PhpValue.Null);
             }
@@ -849,8 +853,7 @@ namespace Pchp.Core
             // IList[]
             if (obj is IList list)
             {
-                var key = index.ToIntStringKey();
-                if (key.IsInteger)
+                if (index.TryToIntStringKey(out var key) && key.IsInteger)
                 {
                     if (key.Integer >= 0 && key.Integer < list.Count)
                     {
@@ -858,12 +861,12 @@ namespace Pchp.Core
                     }
                     else if (!quiet)
                     {
-                        PhpException.Throw(PhpError.Error, Resources.ErrResources.undefined_offset, key.Integer.ToString());
+                        PhpException.UndefinedOffset(key);
                     }
                 }
                 else if (!quiet)
                 {
-                    PhpException.Throw(PhpError.Warning, Resources.ErrResources.illegal_offset_type);
+                    PhpException.IllegalOffsetType();
                 }
 
                 return PhpValue.Null;

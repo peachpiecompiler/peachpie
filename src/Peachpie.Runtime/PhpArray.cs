@@ -789,7 +789,8 @@ namespace Pchp.Core
             }
             else
             {
-                throw new ArgumentException(nameof(index));
+                PhpException.IllegalOffsetType();
+                return PhpValue.Null;
             }
         }
 
@@ -807,7 +808,7 @@ namespace Pchp.Core
             }
             else
             {
-                throw new ArgumentException(nameof(index));
+                PhpException.IllegalOffsetType();
             }
         }
 
