@@ -403,21 +403,33 @@ namespace Pchp.Library
         /// Generate a pseudo-random string of bytes.
         /// </summary>
         /// <param name="length">The length of the desired string of bytes. Must be a positive integer.</param>
-        /// <param name="crypto_strong">If passed into the function, this will hold a boolean value that determines if the algorithm used was "cryptographically strong"</param>
         /// <returns>Returns the generated string of bytes on success, or FALSE on failure.</returns>
-        public static PhpString openssl_random_pseudo_bytes(int length, ref bool? crypto_strong)
+        [return: CastToFalse]
+        public static PhpString openssl_random_pseudo_bytes(int length)
         {
             if (length < 1)
             {
-                crypto_strong = null;
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.arg_negative_or_zero, nameof(length));
                 return PhpString.Empty;
             }
 
-            crypto_strong = true;
-            byte[] random = new byte[length];
+            var random = new byte[length];
             randomNumbers.GetBytes(random);
-
             return new PhpString(random);
+        }
+
+        /// <summary>
+        /// Generate a pseudo-random string of bytes.
+        /// </summary>
+        /// <param name="length">The length of the desired string of bytes. Must be a positive integer.</param>
+        /// <param name="crypto_strong">Will be set to a boolean value that determines if the algorithm used was "cryptographically strong"</param>
+        /// <returns>Returns the generated string of bytes on success, or FALSE on failure.</returns>
+        [return: CastToFalse]
+        public static PhpString openssl_random_pseudo_bytes(int length, out bool crypto_strong)
+        {
+            crypto_strong = true;
+
+            return openssl_random_pseudo_bytes(length);
         }
 
         #region openssl_digest/get_md_methods
