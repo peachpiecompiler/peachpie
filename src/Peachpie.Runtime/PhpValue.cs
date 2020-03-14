@@ -580,11 +580,11 @@ namespace Pchp.Core
                     return true;
 
                 case PhpTypeCode.Long:
-                    key = new IntStringKey(checked((int)Long));
+                    key = new IntStringKey(Long);
                     return true;
 
                 case PhpTypeCode.Double:
-                    key = new IntStringKey((int)Double);
+                    key = new IntStringKey((long)Double);
                     return true;
 
                 case PhpTypeCode.String:
@@ -615,7 +615,7 @@ namespace Pchp.Core
                 return iskey;
             }
 
-            PhpException.Throw(PhpError.Warning, Resources.ErrResources.illegal_offset_type);
+            PhpException.IllegalOffsetType();
             return IntStringKey.EmptyStringKey;
         }
 
@@ -1068,7 +1068,7 @@ namespace Pchp.Core
             switch (TypeCode)
             {
                 case PhpTypeCode.MutableString:
-                    str = new PhpString(_obj.blob);
+                    str = MutableString;
                     return true;
 
                 case PhpTypeCode.Alias:

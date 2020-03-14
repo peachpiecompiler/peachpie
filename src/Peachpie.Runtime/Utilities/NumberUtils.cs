@@ -16,8 +16,7 @@ namespace Pchp.Core.Utilities
         /// </summary>
         public static bool IsInt32(long l)
         {
-            int i = unchecked((int)l);
-            return (i == l);
+            return l == unchecked((int)l);
         }
 
         /// <summary>Calculates the quotient of two 32-bit signed integers and also returns the remainder in an output parameter.</summary>

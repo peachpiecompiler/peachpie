@@ -467,6 +467,8 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             _typeArguments = typeArguments;
         }
 
+        public override bool IsObject => true;
+
         public override ImmutableArray<IBoundTypeRef> TypeArguments => _typeArguments.CastArray<IBoundTypeRef>();
 
         public override ITypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)

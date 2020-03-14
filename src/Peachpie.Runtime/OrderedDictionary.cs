@@ -44,19 +44,19 @@ namespace Pchp.Core
 
             public bool Equals(IntStringKey x, IntStringKey y) => x._ikey == y._ikey && x._skey == y._skey;
 
-            public int GetHashCode(IntStringKey x) => x._ikey;
+            public int GetHashCode(IntStringKey x) => (int)x._ikey;
         }
 
         /// <summary>
         /// Max value of <see cref="Integer"/>.
         /// </summary>
-        internal const int MaxKeyValue = int.MaxValue; // TODO: change this and "Integer" to long64
+        internal const long MaxKeyValue = long.MaxValue;
 
         /// <summary>
         /// Integer value iff <see cref="IsString"/> return <B>false</B>.
         /// </summary>
-        public int Integer => _ikey;
-        readonly int _ikey; // Holds string hashcode if skey != null
+        public long Integer => _ikey;
+        readonly long _ikey; // Holds string hashcode if skey != null
 
         /// <summary>
         /// String value iff <see cref="IsString"/> return <B>true</B>.
@@ -75,7 +75,7 @@ namespace Pchp.Core
         /// </summary>
         public bool IsEmpty => Equals(EmptyStringKey);
 
-        public IntStringKey(int key)
+        public IntStringKey(long key)
         {
             _ikey = key;
             _skey = null;
@@ -103,7 +103,7 @@ namespace Pchp.Core
         {
             if (key is string str) return new IntStringKey(str);
             if (key is int i) return new IntStringKey(i);
-            
+
             throw new ArgumentException();
         }
 
@@ -111,7 +111,7 @@ namespace Pchp.Core
 
         public bool IsInteger => ReferenceEquals(_skey, null);
 
-        public override int GetHashCode() => _ikey;
+        public override int GetHashCode() => unchecked((int)_ikey);
 
         public bool Equals(IntStringKey other) => _ikey == other._ikey && _skey == other._skey;
 
@@ -124,7 +124,7 @@ namespace Pchp.Core
             if (IsInteger)
             {
                 if (other.IsInteger)
-                    return _ikey - other._ikey;
+                    return _ikey.CompareTo(other._ikey);
                 else
                     return string.CompareOrdinal(_ikey.ToString(), other._skey);
             }
@@ -195,7 +195,7 @@ namespace Pchp.Core
         int _dataDeleted;       // number of deleted elements within (0.._dataUsed] => Count = _dataUsed - _dataDeleted
         uint _size;             // physical size of the table (power of 2, minimum 8)
         //int nInternalPointer;   // intrinsic enumerator pointer
-        int _nextFreeKey;       // the next integer key that will be used when inserting an element. It is one larger than the largest integer key that was ever used in this hashtable.
+        long _nextFreeKey;      // the next integer key that will be used when inserting an element. It is one larger than the largest integer key that was ever used in this hashtable.
 
         /// <summary>
         /// Additional references sharing this object.
@@ -228,9 +228,9 @@ namespace Pchp.Core
             return mask;
         }
 
-        int _get_max_int_key()
+        long _get_max_int_key()
         {
-            int max = -1;
+            long max = -1;
             var data = this._data;
             for (int i = 0; i < this._dataUsed; i++)
             {
@@ -404,7 +404,7 @@ namespace Pchp.Core
             _rehash();
         }
 
-        private int _index(IntStringKey key) => (int)_mask & key.Integer;
+        private int _index(IntStringKey key) => unchecked((int)_mask & (int)key.Integer);
 
         [Conditional("DEBUG")]
         private void _debug_check()
@@ -575,16 +575,16 @@ namespace Pchp.Core
             if (IsPacked)
             {
                 // packed array
-
-                index = key.Integer;
-
-                if (index < 0 || index >= _dataUsed || key.IsString)
+                // NOTE: packed array cannot be larger than Int32.MaxValue
+                
+                if (key.IsInteger && key.Integer >= 0 && key.Integer < _dataUsed)
                 {
-                    index = _invalidIndex;
+                    Debug.Assert(!_data[key.Integer].IsDeleted);
+                    index = (int)key.Integer;
                 }
                 else
                 {
-                    Debug.Assert(!_data[index].IsDeleted);
+                    index = _invalidIndex;
                 }
             }
             else
@@ -717,7 +717,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value for <see cref="_nextFreeKey"/>.
         /// </summary>
-        static int _getNextFreeKey(int key) => key < IntStringKey.MaxKeyValue ? key + 1 : IntStringKey.MaxKeyValue;
+        static long _getNextFreeKey(long key) => key < IntStringKey.MaxKeyValue ? key + 1 : IntStringKey.MaxKeyValue;
 
         /// <summary>
         /// Adds value to the end of collection with newly assigned numeric key.
@@ -770,7 +770,7 @@ namespace Pchp.Core
             bucket.Key = key;
             bucket.Value = value;
 
-            this._dataUsed = i + 1;
+            this._dataUsed = i + 1; // TODO: Overflow check
 
             // hash table
 

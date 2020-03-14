@@ -440,8 +440,8 @@ namespace Pchp.Core.Dynamic
         {
             var source = expr.Type;
 
-            if (source == typeof(int)) return Expression.New(Cache.IntStringKey.ctor_Int, expr);
-            if (source == typeof(long)) return Expression.New(Cache.IntStringKey.ctor_Int, Expression.Convert(expr, Cache.Types.Int[0]));
+            if (source == typeof(int)) return Expression.New(Cache.IntStringKey.ctor_Long, Expression.Convert(expr, Cache.Types.Long[0]));
+            if (source == typeof(long)) return Expression.New(Cache.IntStringKey.ctor_Long, expr);
             if (source == typeof(string)) return Expression.New(Cache.IntStringKey.ctor_String, expr);
 
             // following conversions may throw an exception

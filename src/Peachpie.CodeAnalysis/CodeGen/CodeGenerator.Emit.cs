@@ -2802,16 +2802,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             return t;
         }
 
-        public void EmitIntStringKey(int key)
+        public void EmitIntStringKey(long key)
         {
-            _il.EmitIntConstant(key);
-            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
+            _il.EmitLongConstant(key);
+            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_long);
         }
 
         public void EmitIntStringKey(string key)
         {
             // try convert string to integer as it is in PHP:
-            if (TryConvertToIntKey(key, out int ikey))
+            if (TryConvertToIntKey(key, out var ikey))
             {
                 EmitIntStringKey(ikey);
             }
@@ -2836,7 +2836,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        static bool TryConvertToIntKey(string key, out int ikey)
+        static bool TryConvertToIntKey(string key, out long ikey)
         {
             ikey = default;
 
@@ -2858,7 +2858,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
 
-            return int.TryParse(key, out ikey);
+            return long.TryParse(key, out ikey);
         }
 
         public void EmitIntStringKey(BoundExpression expr)
@@ -2878,7 +2878,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (constant.Value is long l)
                 {
-                    EmitIntStringKey((int)l);
+                    EmitIntStringKey(l);
                 }
                 else if (constant.Value is int i)
                 {
@@ -2886,7 +2886,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (constant.Value is double d)
                 {
-                    EmitIntStringKey((int)d);
+                    EmitIntStringKey((long)d);
                 }
                 else if (constant.Value is bool b)
                 {
