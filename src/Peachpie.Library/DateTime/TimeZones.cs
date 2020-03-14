@@ -69,6 +69,35 @@ namespace Pchp.Library.DateTime
             /// </summary>
             public readonly bool IsAlias;
 
+            /// <summary>
+            /// Gets value indicating the given abbreviation can be used for this timezone.
+            /// </summary>
+            public bool HasAbbreviation(string abbr)
+            {
+                if (!string.IsNullOrEmpty(abbr) && Abbreviation != null)
+                {
+                    // Abbreviation.Split(new[] { ',' }).Contains(abbr, StringComparer.OrdinalIgnoreCase);
+
+                    int index = 0;
+                    while ((index = Abbreviation.IndexOf(abbr, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+                    {
+                        int end = index + abbr.Length;
+                        if (index == 0 || Abbreviation[index - 1] == ',')
+                        {
+                            if (end == Abbreviation.Length || Abbreviation[end] == ',')
+                            {
+                                return true;
+                            }
+                        }
+
+                        // 
+                        index++;
+                    }
+                }
+
+                return false;
+            }
+
             internal TimeZoneInfoItem(string/*!*/phpName, TimeZoneInfo/*!*/info, string abbreviation, bool isAlias)
             {
                 // TODO: alter the ID with php-like name
@@ -510,7 +539,7 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region timezone_identifiers_list, timezone_version_get, timezone_abbreviations_list 
+        #region timezone_identifiers_list, timezone_version_get, timezone_abbreviations_list, timezone_name_from_abbr
 
         static readonly Dictionary<string, int> s_what = new Dictionary<string, int>(10, StringComparer.OrdinalIgnoreCase)
         {
@@ -596,6 +625,7 @@ namespace Pchp.Library.DateTime
         /// Returns associative array containing dst, offset and the timezone name.
         /// Alias to <see cref="DateTimeZone.listAbbreviations"/>.
         /// </summary>
+        [return: NotNull]
         public static PhpArray timezone_abbreviations_list()
         {
             var timezones = PhpTimeZone.s_lazyTimeZones.Value;
@@ -614,14 +644,90 @@ namespace Pchp.Library.DateTime
                             tzs = new PhpArray();
 
                         tzs.Array.Add(new PhpArray(3)
-                    {
-                        {"dst", tz.Info.SupportsDaylightSavingTime },
-                        {"offset", (long)tz.Info.BaseUtcOffset.TotalSeconds },
-                        {"timezone_id", tz.PhpName },
-                    });
+                        {
+                            {"dst", tz.Info.SupportsDaylightSavingTime },
+                            {"offset", (long)tz.Info.BaseUtcOffset.TotalSeconds },
+                            {"timezone_id", tz.PhpName },
+                        });
 
                         result[abbr] = tzs;
                     }
+                }
+            }
+
+            //
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the timezone name from abbreviation.
+        /// </summary>
+        [return: CastToFalse]
+        public static string timezone_name_from_abbr(string abbr, int gmtOffset = -1, int isdst = -1)
+        {
+            var timezones = PhpTimeZone.s_lazyTimeZones.Value;
+            string result = null;   // candidate
+
+            if (string.IsNullOrEmpty(abbr) && gmtOffset == -1)
+            {
+                // not specified
+                return null; // FALSE
+            }
+
+            //
+            for (int i = 0; i < timezones.Length; i++)
+            {
+                var tz = timezones[i];
+
+                if (tz.IsAlias)
+                {
+                    continue;
+                }
+
+                // if {abbr} is specified => {abbrs} must contain it, otherwise do not check this timezone
+                var matchesabbr = tz.HasAbbreviation(abbr);
+
+                // offset is ignored
+                if (gmtOffset == -1)
+                {
+                    if (matchesabbr)
+                    {
+                        result = tz.PhpName;
+                        break;
+                    }
+
+                    continue;
+                }
+
+                // resolve dst delta (if needed)
+                TimeSpan dstdelta;
+                if (isdst >= 0) // dst taken into account
+                {
+                    dstdelta = tz.Info.SupportsDaylightSavingTime
+                        ? tz.Info.GetAdjustmentRules().Select(r => r.DaylightDelta).FirstOrDefault(r => r.Ticks != 0)
+                        : default;
+
+                    if (dstdelta.Ticks == 0)
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    dstdelta = default;
+                }
+
+                // offset must match
+                var matchesoffset = (tz.Info.BaseUtcOffset + dstdelta).TotalSeconds == gmtOffset;
+
+                if (matchesoffset)
+                {
+                    if (matchesabbr || string.IsNullOrEmpty(abbr))
+                        return tz.PhpName;
+
+                    // offset matches but not the abbreviation
+                    // in case nothing else is found use this as the result
+                    result ??= tz.PhpName;
                 }
             }
 
