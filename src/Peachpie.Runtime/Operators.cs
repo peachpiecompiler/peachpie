@@ -693,7 +693,7 @@ namespace Pchp.Core
             }
             else
             {
-                PhpException.Throw(PhpError.Error, Resources.ErrResources.illegal_string_offset, index.ToString());
+                PhpException.Throw(PhpError.Warning, Resources.ErrResources.illegal_string_offset, index.ToString());
                 return string.Empty;
             }
         }
@@ -741,7 +741,7 @@ namespace Pchp.Core
             }
 
             //
-            PhpException.Throw(PhpError.Error, Resources.ErrResources.illegal_string_offset, index.ToString());
+            PhpException.Throw(PhpError.Warning, Resources.ErrResources.illegal_string_offset, index.ToString());
             return 0;
         }
 
@@ -756,7 +756,7 @@ namespace Pchp.Core
                 return value[(int)index];
             }
 
-            PhpException.Throw(PhpError.Error, Resources.ErrResources.illegal_string_offset, index.ToString());
+            PhpException.Throw(PhpError.Warning, Resources.ErrResources.illegal_string_offset, index.ToString());
             return 0;
         }
 
