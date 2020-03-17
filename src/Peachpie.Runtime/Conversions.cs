@@ -1382,9 +1382,9 @@ namespace Pchp.Core
 
         public static PhpArray ToArray(PhpValue value) => value.TypeCode switch
         {
+            PhpTypeCode.Null => null,
             PhpTypeCode.PhpArray => value.Array,
             PhpTypeCode.Alias => ToArray(value.Alias.Value),
-            PhpTypeCode.Null => null,
             _ => throw PhpException.TypeErrorException(),
         };
 
