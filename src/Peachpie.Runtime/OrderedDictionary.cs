@@ -102,6 +102,7 @@ namespace Pchp.Core
         internal static IntStringKey FromObject(object key)
         {
             if (key is string str) return new IntStringKey(str);
+            if (key is long l) return new IntStringKey(l);
             if (key is int i) return new IntStringKey(i);
 
             throw new ArgumentException();
