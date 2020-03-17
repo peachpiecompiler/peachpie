@@ -1384,6 +1384,7 @@ namespace Pchp.Core
         {
             PhpTypeCode.PhpArray => value.Array,
             PhpTypeCode.Alias => ToArray(value.Alias.Value),
+            PhpTypeCode.Null => null,
             _ => throw PhpException.TypeErrorException(),
         };
 
