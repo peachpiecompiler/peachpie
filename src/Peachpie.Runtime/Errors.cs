@@ -446,6 +446,15 @@ namespace Pchp.Core
             Throw(PhpError.Error, ErrResources.self_used_out_of_class);
             throw new ArgumentException(ErrResources.self_used_out_of_class);
         }
+
+        /// <summary>
+        /// Internal warning when new element cannot be added to array because there are no more free keys.
+        /// </summary>
+        internal static void NextArrayKeyUnavailable()
+        {
+            // Warning: Cannot add element to the array as the next element is already occupied
+            Throw(PhpError.Warning, ErrResources.next_array_key_unavailable);
+        }
     }
 
     #endregion

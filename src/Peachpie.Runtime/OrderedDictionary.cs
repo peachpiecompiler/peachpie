@@ -196,7 +196,7 @@ namespace Pchp.Core
         int _dataDeleted;       // number of deleted elements within (0.._dataUsed] => Count = _dataUsed - _dataDeleted
         uint _size;             // physical size of the table (power of 2, minimum 8)
         //int nInternalPointer;   // intrinsic enumerator pointer
-        long _nextFreeKey;      // the next integer key that will be used when inserting an element. It is one larger than the largest integer key that was ever used in this hashtable.
+        long _maxIntKey;        // the maximum used integer key, used for adding elements at the end of collection. Always greater or equal to -1.
 
         /// <summary>
         /// Additional references sharing this object.
@@ -269,7 +269,7 @@ namespace Pchp.Core
             _dataDeleted = from._dataDeleted;
             _size = from._size;
             //nInternalPointer = from.nInternalPointer;
-            _nextFreeKey = from._nextFreeKey;
+            _maxIntKey = from._maxIntKey;
         }
 
         internal OrderedDictionary/*!*/AddRef()
@@ -342,7 +342,7 @@ namespace Pchp.Core
             _dataDeleted = 0;
             _size = size;
             //nInternalPointer = _invalidIndex;
-            _nextFreeKey = 0;
+            _maxIntKey = -1;
         }
 
         private void _resize(uint size)
@@ -577,7 +577,7 @@ namespace Pchp.Core
             {
                 // packed array
                 // NOTE: packed array cannot be larger than Int32.MaxValue
-                
+
                 if (key.IsInteger && key.Integer >= 0 && key.Integer < _dataUsed)
                 {
                     Debug.Assert(!_data[key.Integer].IsDeleted);
@@ -716,23 +716,25 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Gets value for <see cref="_nextFreeKey"/>.
-        /// </summary>
-        static long _getNextFreeKey(long key) => key < IntStringKey.MaxKeyValue ? key + 1 : IntStringKey.MaxKeyValue;
-
-        /// <summary>
         /// Adds value to the end of collection with newly assigned numeric key.
         /// </summary>
         public void Add(TValue value)
         {
-            Add_NoCheck(new IntStringKey(_nextFreeKey), value);
-            _nextFreeKey = _getNextFreeKey(_nextFreeKey);
+            var key = _maxIntKey;
+            if (key < IntStringKey.MaxKeyValue)
+            {
+                Add_NoCheck(new IntStringKey(_maxIntKey = key + 1), value);
+            }
+            else
+            {
+                PhpException.NextArrayKeyUnavailable();
+            }
         }
 
         /// <summary>
         /// Adds item at the end of collection.
         /// Does not check the <paramref name="key"/> exists already!
-        /// Updates <see cref="_nextFreeKey"/> if necessary.
+        /// Updates <see cref="_maxIntKey"/> if necessary.
         /// </summary>
         /// <param name="key">Item key.</param>
         /// <param name="value">Item value.</param>
@@ -740,9 +742,9 @@ namespace Pchp.Core
         {
             ref var bucket = ref Add_NoCheck(key, value);
 
-            if (key.IsInteger && key.Integer >= _nextFreeKey)
+            if (key.IsInteger && key.Integer > _maxIntKey)
             {
-                _nextFreeKey = _getNextFreeKey(key.Integer);
+                _maxIntKey = key.Integer;
             }
 
             return ref bucket.Value;
@@ -751,7 +753,7 @@ namespace Pchp.Core
         /// <summary>
         /// Adds item at the end of collection.
         /// Does not check the <paramref name="key"/> exists already!
-        /// Does not update <see cref="_nextFreeKey"/>.
+        /// Does not update <see cref="_maxIntKey"/>.
         /// </summary>
         /// <param name="key">Item key.</param>
         /// <param name="value">Item value.</param>
@@ -894,9 +896,13 @@ namespace Pchp.Core
                 enumerator.DeleteCurrent();
 
                 // array_pop decrements the next free index if it removed the last record before it
-                if (value.Key.IsInteger && value.Key.Integer == _nextFreeKey - 1)
+                if (value.Key.IsInteger)
                 {
-                    _nextFreeKey--;
+                    var intkey = value.Key.Integer;
+                    if (intkey == _maxIntKey && intkey >= 0)
+                    {
+                        _maxIntKey--;
+                    }
                 }
 
                 return true;
@@ -1267,7 +1273,7 @@ namespace Pchp.Core
 
                 table._dataUsed = count;
                 table._dataDeleted = 0;
-                table._nextFreeKey = ikey;
+                table._maxIntKey = ikey - 1;
 
                 if (ikey == count)
                 {
@@ -1410,7 +1416,7 @@ namespace Pchp.Core
                 }
 
                 // nNextFreeElement
-                result._nextFreeKey = result._get_max_int_key() + 1;
+                result._maxIntKey = result._get_max_int_key();
 
                 // restore the order
                 Array.Sort(resultIndexes, resultData, 0, result._dataUsed);
@@ -1454,7 +1460,7 @@ namespace Pchp.Core
 
             if (key > 0) // only if there were any keys
             {
-                this._nextFreeKey = key;
+                this._maxIntKey = key - 1;
                 this._rehash();
             }
         }
@@ -1487,7 +1493,7 @@ namespace Pchp.Core
             //
             if (key > startIndex) // only if there were any integer keys
             {
-                this._nextFreeKey = key;
+                this._maxIntKey = key - 1;
 
                 if (_hash == null) this._createhash();
                 else this._rehash();
@@ -1560,7 +1566,7 @@ namespace Pchp.Core
                 }
             }
 
-            replaced._nextFreeKey = rkey;
+            replaced._maxIntKey = rkey - 1;
 
             // adds new elements at newtarget:
             if (replacementValues != null && replacementValues.Count != 0)
@@ -1587,7 +1593,7 @@ namespace Pchp.Core
 
             //
 
-            newself._nextFreeKey = ikey;
+            newself._maxIntKey = ikey - 1;
             newself._dataUsed = n;
             newself._dataDeleted = 0;
             newself._createhash();
@@ -1599,7 +1605,7 @@ namespace Pchp.Core
             _hash = newself._hash;
             _dataUsed = newself._dataUsed;
             _dataDeleted = newself._dataDeleted; // 0
-            _nextFreeKey = newself._nextFreeKey; // ikey
+            _maxIntKey = newself._maxIntKey; // ikey - 1
 
             _debug_check();
 
