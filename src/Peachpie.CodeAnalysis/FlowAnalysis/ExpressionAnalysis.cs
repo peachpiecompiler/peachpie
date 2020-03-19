@@ -1924,9 +1924,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             var type = (TypeSymbol)x.TypeRef.Type;
 
-            if (x.Name.IsDirect && type.IsValidType())
+            if (x.Name.NameExpression != null)
             {
-                // TODO: resolve all candidates, visibility, static methods or instance on self/parent/static
+                // indirect method call -> not resolvable
+            }
+            else if (type.IsValidType())
+            {
                 var candidates = type.LookupMethods(x.Name.ToStringOrThrow());
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
@@ -1987,6 +1990,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 x.TargetMethod = method;
+            }
+            else if (x.TypeRef.IsSelf() && Routine != null && Routine.ContainingType.IsTraitType())
+            {
+                // self:: within trait type
+                // resolve possible code path
+                // we need this at least to determine possible late static type binding
+
+                var candidates = Construct(Routine.ContainingType.LookupMethods(x.Name.ToStringOrThrow()), x);
+                if (candidates.Length != 0)
+                {
+                    // accessibility not have to be checked here
+                    x.TargetMethod = new AmbiguousMethodSymbol(candidates.AsImmutable(), overloadable: true);
+                }
             }
 
             BindRoutineCall(x);

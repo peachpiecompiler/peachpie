@@ -144,7 +144,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
-            Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
+            Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_LateStaticTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
             RuntimeChain_ChainEnd, RuntimeChain_Value_T, RuntimeChain_Property_T, RuntimeChain_ArrayItem_T, RuntimeChain_ArrayNewItem_T,
             PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
@@ -217,6 +217,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             Dynamic_NameParam_T = Create("Dynamic.NameParam`1");
             Dynamic_TargetTypeParam = Create("Dynamic.TargetTypeParam");
+            Dynamic_LateStaticTypeParam = Create("Dynamic.LateStaticTypeParam");
             Dynamic_CallerTypeParam = Create("Dynamic.CallerTypeParam");
             Dynamic_UnpackingParam_T = Create("Dynamic.UnpackingParam`1");
 

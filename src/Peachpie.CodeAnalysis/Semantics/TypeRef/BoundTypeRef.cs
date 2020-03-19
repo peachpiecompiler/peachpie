@@ -157,12 +157,12 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public override ITypeSymbol ResolveTypeSymbol(PhpCompilation compilation)
         {
-            if (this.ResolvedType.IsValidType())
+            if (this.ResolvedType != null)
             {
                 return this.ResolvedType;
             }
 
-            if (_self == null || _self.IsTraitType())
+            if (_self == null || _self.IsTrait)
             {
                 // no self, parent, static resolvable in compile-time:
                 return new MissingMetadataTypeSymbol(ToString(), 0, false);

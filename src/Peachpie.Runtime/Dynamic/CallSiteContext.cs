@@ -170,6 +170,11 @@ namespace Pchp.Core.Dynamic
         public Expression TargetInstance { get; set; }
 
         /// <summary>
+        /// Optional. Late static bound type, results in <see cref="PhpTypeInfo"/>.
+        /// </summary>
+        public Expression LateStaticType { get; set; }
+
+        /// <summary>
         /// Current target instance or <c>null</c>.
         /// </summary>
         public object CurrentTargetInstance { get; set; }

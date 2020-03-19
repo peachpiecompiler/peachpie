@@ -2809,6 +2809,7 @@ namespace Pchp.CodeAnalysis.Semantics
             callsite.EmitLoadCallsite();                // callsite
             callsite.EmitTargetInstance(EmitTarget);    // [target]
             callsite.EmitTargetTypeParam(RoutineTypeRef);// [target_type] : PhpTypeInfo
+            callsite.EmitLateStaticTypeParam(LateStaticTypeRef);    // [late_static] : PhpTypeInfo
             callsite.EmitNameParam(RoutineNameExpr);    // [name] : string
             callsite.EmitLoadContext();                 // ctx : Context
 

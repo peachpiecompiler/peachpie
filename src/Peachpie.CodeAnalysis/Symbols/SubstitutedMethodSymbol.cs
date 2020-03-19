@@ -479,13 +479,17 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
+                if (!_lazyParameters.IsDefault && _lazyParameters.Length != originalDefinition.ParameterCount)
+                {
+                    // parameters has changed during analysis,
+                    // reset this as well
+                    // IMPORTANT: we must not change it when emit started already
+                    _lazyParameters = default;
+                }
+
                 if (_lazyParameters.IsDefault)
                 {
-                    ImmutableInterlocked.InterlockedCompareExchange(ref _lazyParameters, SubstituteParameters(), default(ImmutableArray<ParameterSymbol>));
-                }
-                else
-                {
-                    Debug.Assert(_lazyParameters.Length == this.ParameterCount, "parameters of substitued method have changed!");
+                    ImmutableInterlocked.InterlockedCompareExchange(ref _lazyParameters, SubstituteParameters(), default);
                 }
 
                 return _lazyParameters;

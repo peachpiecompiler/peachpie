@@ -308,7 +308,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return false;
             }
 
-            if (method is SourceRoutineSymbol sr)
+            if (method.OriginalDefinition is SourceRoutineSymbol sr)
             {
                 return sr.RequiresLateStaticBoundParam;
             }

@@ -109,6 +109,28 @@ namespace Pchp.Core.Dynamic
     }
 
     /// <summary>
+    /// Wraps an argument passed to callsite denotating late static type of a method call through self:: or parent::.
+    /// </summary>
+    [DebuggerNonUserCode]
+    public readonly struct LateStaticTypeParam : ISpecialParamHolder
+    {
+        /// <summary>
+        /// Target type.
+        /// </summary>
+        public readonly PhpTypeInfo Value;
+
+        bool ISpecialParamHolder.IsImplicit => true;
+
+        void ISpecialParamHolder.Process(CallSiteContext info, Expression valueExpr)
+        {
+            info.LateStaticType = valueExpr;
+        }
+
+        /// <summary>Initializes the structure.</summary>
+        public LateStaticTypeParam(PhpTypeInfo value) => Value = value;
+    }
+
+    /// <summary>
     /// Wraps an argument passed to callsite denotating a generic argument.
     /// </summary>
     [DebuggerNonUserCode]
