@@ -403,9 +403,9 @@ namespace Pchp.Library
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="filename">The path to the file to add.</param>
         /// <param name="localname">If supplied, this is the local name inside the ZIP archive that will override the filename.</param>
-        /// <param name="start">This parameter is not used.</param>
-        /// <param name="length">This parameter is not used.</param>
-        /// <returns></returns>
+        /// <param name="start">For partial copy, start position.</param>
+        /// <param name="length">For partial copy, length to be copied, if 0 or -1 the whole file (starting from <paramref name="start"/>) is used.</param>
+        /// <returns>TRUE on success or FALSE on failure.</returns>
         public bool addFile(Context ctx, string filename, string localname = null, int start = 0, int length = 0)
         {
             if (!CheckInitialized())
@@ -422,7 +422,27 @@ namespace Pchp.Library
                 using (var entryStream = entry.Open())
                 using (PhpStream handle = PhpStream.Open(ctx, filename, "r", StreamOpenOptions.Empty))
                 {
-                    handle.RawStream.CopyTo(entryStream);
+                    if (start != 0)
+                    {
+                        handle.Seek(start, SeekOrigin.Begin);
+                    }
+
+                    if (length == 0 || length == -1)
+                    {
+                        handle.RawStream.CopyTo(entryStream);
+                    }
+                    else
+                    {
+                        // We need to copy the contents manually if the length was specified
+                        var buffer = new byte[Math.Min(length, PhpStream.DefaultBufferSize)];
+                        int copied = 0;
+                        while (copied < length)
+                        {
+                            int lastCopied = handle.RawStream.Read(buffer, 0, Math.Min(buffer.Length, length - copied));
+                            entryStream.Write(buffer, 0, lastCopied);
+                            copied += lastCopied;
+                        }
+                    }
                 }
 
                 return true;
