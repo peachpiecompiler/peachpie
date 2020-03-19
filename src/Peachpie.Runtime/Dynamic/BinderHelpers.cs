@@ -1040,7 +1040,7 @@ namespace Pchp.Core.Dynamic
             }
         }
 
-        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args, bool isStaticCallSyntax, PhpTypeInfo lateStaticType)
+        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args, bool isStaticCallSyntax, object lateStaticType)
         {
             Debug.Assert(method is MethodInfo || method is ConstructorInfo);
 
@@ -1104,10 +1104,18 @@ namespace Pchp.Core.Dynamic
                     {
                         if (lateStaticType != null)
                         {
-                            // Template: PhpTypeInfoExtension.GetPhpTypeInfo<lateStaticType>()
-                            boundargs[i] = Expression.Call(
-                                null,
-                                typeof(PhpTypeInfoExtension).GetMethod("GetPhpTypeInfo", Cache.Types.Empty).MakeGenericMethod(lateStaticType.Type.AsType()));
+                            boundargs[i] = lateStaticType switch
+                            {
+                                // Template: PhpTypeInfoExtension.GetPhpTypeInfo<lateStaticType>()
+                                PhpTypeInfo phpt => Expression.Call(null,
+                                    typeof(PhpTypeInfoExtension).GetMethod("GetPhpTypeInfo", Cache.Types.Empty).MakeGenericMethod(phpt.Type)),
+
+                                // Template: (PhpTypeInfo)$arg2.Value
+                                Expression expr => expr,
+
+                                // unk
+                                _ => throw new ArgumentException(),
+                            }; 
                         }
                         else
                         {

@@ -891,7 +891,7 @@ namespace Pchp.Core.Dynamic
             return CombineCosts(expr_costs);
         }
 
-        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression argsarray, bool isStaticCallSyntax, PhpTypeInfo lateStaticType = null)
+        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression argsarray, bool isStaticCallSyntax, object lateStaticType = null)
         {
             for (; ; )
             {
@@ -903,7 +903,7 @@ namespace Pchp.Core.Dynamic
             }
         }
 
-        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression[] args, bool isStaticCallSyntax, PhpTypeInfo lateStaticType = null, Type classContext = null)
+        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression[] args, bool isStaticCallSyntax, object lateStaticType = null, Type classContext = null)
         {
             for (; ; )
             {
@@ -989,7 +989,7 @@ namespace Pchp.Core.Dynamic
         /// <param name="isStaticCallSyntax">Whether the call is in form of a static method call (TYPE::METHOD()).</param>
         /// <param name="lateStaticType">Optional type used to statically invoke the method (late static type).</param>
         /// <returns>Expression representing overload call with resolution or <c>null</c> in case binding should be restarted with updated array of <paramref name="methods"/>.</returns>
-        static Expression BindOverloadCall(Type treturn, Expression target, ref MethodBase[] methods, Expression ctx, ArgumentsBinder args, bool isStaticCallSyntax, PhpTypeInfo lateStaticType = null)
+        static Expression BindOverloadCall(Type treturn, Expression target, ref MethodBase[] methods, Expression ctx, ArgumentsBinder args, bool isStaticCallSyntax, object lateStaticType = null)
         {
             if (methods == null || args == null)
                 throw new ArgumentNullException();
