@@ -437,8 +437,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <summary>Template: new LateStaticTypeParam(PhpTypeInfo)</summary>
             public TypeSymbol EmitLateStaticTypeParam(IBoundTypeRef tref)
             {
-                if (tref != null && _cg.Routine.IsStatic && (tref.IsSelf() || tref.IsParent()))
+                if (tref != null && (tref.IsSelf() || tref.IsParent()) &&
+                    _cg.Routine != null &&
+                    _cg.Routine.IsStatic &&
+                    _cg.Routine.HasLateStaticBoundParam())
                 {
+                    // pass current <static> to the callsite:
                     return EmitWrapParam(_cg.CoreTypes.Dynamic_LateStaticTypeParam, _cg.EmitLoadStaticPhpTypeInfo());
                 }
 
