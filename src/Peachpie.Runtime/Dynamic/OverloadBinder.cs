@@ -322,8 +322,7 @@ namespace Pchp.Core.Dynamic
                 var key = new TmpVarKey() { Priority = 100, ArgIndex = expectedargs, Prefix = "istoomany" };
 
                 // lookup cache
-                TmpVarValue value;
-                if (!_tmpvars.TryGetValue(key, out value))
+                if (!_tmpvars.TryGetValue(key, out var value))
                 {
                     // bind cost expression
                     value = new TmpVarValue();
@@ -473,8 +472,7 @@ namespace Pchp.Core.Dynamic
                     // cache the argument value
 
                     var key = new TmpVarKey() { Priority = 0 /*first*/, ArgIndex = srcarg, Prefix = "arg" };
-                    TmpVarValue value;
-                    if (!_tmpvars.TryGetValue(key, out value))
+                    if (!_tmpvars.TryGetValue(key, out var value))
                     {
                         value = new TmpVarValue();
 
@@ -507,8 +505,7 @@ namespace Pchp.Core.Dynamic
 
                             //
                             var key2 = new TmpVarKey() { Priority = 1 /*after key*/, ArgIndex = srcarg, Prefix = "default(" + defaultValueStr + ")" };
-                            TmpVarValue value2;
-                            if (!_tmpvars.TryGetValue(key2, out value2))
+                            if (!_tmpvars.TryGetValue(key2, out var value2))
                             {
                                 value2 = new TmpVarValue();
 
@@ -641,6 +638,11 @@ namespace Pchp.Core.Dynamic
                 /// </summary>
                 readonly Type _classContext;
 
+                /// <summary>
+                /// Lazily initialized variable with arguments count.
+                /// </summary>
+                ConstantExpression _lazyArgc = null;
+
                 public ArgsBinder(Expression ctx, Expression[] args, Type classContext)
                     : base(ctx)
                 {
@@ -650,17 +652,22 @@ namespace Pchp.Core.Dynamic
 
                 public override Expression BindArgsCount()
                 {
-                    int count = 0;
-                    foreach (var x in _args)
+                    if (_lazyArgc == null)
                     {
-                        if (!BinderHelpers.IsRuntimeChain(x.Type))
+                        int count = 0;
+                        foreach (var x in _args)
                         {
-                            count++;
+                            if (!BinderHelpers.IsRuntimeChain(x.Type))
+                            {
+                                count++;
+                            }
                         }
+
+                        //
+                        _lazyArgc = Expression.Constant(count, typeof(int));
                     }
 
-                    //
-                    return Expression.Constant(count, typeof(int));
+                    return _lazyArgc;
                 }
 
                 int MapToArgsIndex(int srcarg)
