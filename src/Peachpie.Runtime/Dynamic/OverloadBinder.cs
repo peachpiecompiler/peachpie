@@ -290,14 +290,13 @@ namespace Pchp.Core.Dynamic
                 var key = new TmpVarKey() { Priority = 100, ArgIndex = srcarg, TargetTypeOpt = ptype, Prefix = "costOf" + (ismandatory ? "" : "Opt") };
 
                 // lookup cache
-                TmpVarValue value;
-                if (!_tmpvars.TryGetValue(key, out value))
+                if (!_tmpvars.TryGetValue(key, out var value))
                 {
                     // bind cost expression
                     value = new TmpVarValue();
 
                     var expr_cost = ignorecost ? Expression.Constant(ConversionCost.Pass) : ConvertExpression.BindCost(BindArgument(srcarg), ptype);
-                    if (expr_cost is ConstantExpression)
+                    if (expr_cost is ConstantExpression && BindArgsCount() is ConstantExpression)
                     {
                         value.Expression = expr_cost;
                     }
