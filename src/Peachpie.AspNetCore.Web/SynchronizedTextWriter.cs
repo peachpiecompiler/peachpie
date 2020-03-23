@@ -49,12 +49,14 @@ namespace Peachpie.AspNetCore.Web
             Debug.Assert(buffer != null);
             Debug.Assert(count <= buffer.Length);
 
-            HttpResponse.Body.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, count)); // NOTE: buffer is copied by the underlaying pipe
+            HttpResponse.Body.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, count)).GetAwaiter().GetResult();
         }
 
         public override void Write(string value)
         {
-            HttpResponse.WriteAsync(value, Encoding);   // NOTE: string is being encoded directly to the output stream
+            // TODO
+
+            HttpResponse.WriteAsync(value, Encoding).GetAwaiter().GetResult();
         }
 
         public override void Write(char[] chars, int index, int count)
