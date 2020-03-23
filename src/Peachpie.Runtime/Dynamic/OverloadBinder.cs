@@ -1171,7 +1171,7 @@ namespace Pchp.Core.Dynamic
                     // Template: test = !x.IsDefault
                     test = Expression.Not(Expression.Property(assign, Cache.PhpString.IsDefault));
                 }
-                else if (expr.Type.GetTypeInfo().IsValueType == false)  // reference type
+                else if (expr.Type.IsValueType == false)  // reference type
                 {
                     // Template: test = x != null
                     test = Expression.ReferenceNotEqual(assign, Expression.Constant(null, assign.Type));
