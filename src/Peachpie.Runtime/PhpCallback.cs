@@ -271,6 +271,19 @@ namespace Pchp.Core
                     }
 
                     var routine = (PhpMethodInfo)tinfo.GetVisibleMethod(_method, _callerCtx);
+
+                    // [$b, "A::foo"] or [$this, "parent::foo"]
+                    int colIndex;
+                    if (routine == null && (colIndex = _method.IndexOf("::", StringComparison.Ordinal)) > 0)
+                    {
+                        var methodTypeInfo = ctx.ResolveType(_method.Substring(0, colIndex), _callerCtx, true);
+                        if (methodTypeInfo != null && methodTypeInfo.Type.IsAssignableFrom(tinfo.Type))
+                        {
+                            tinfo = methodTypeInfo;
+                            routine = (PhpMethodInfo)methodTypeInfo.GetVisibleMethod(_method.Substring(colIndex + 2), _callerCtx);
+                        }
+                    }
+
                     if (routine != null)
                     {
                         if (target != null)
