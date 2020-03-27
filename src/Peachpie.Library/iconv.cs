@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Utilities;
@@ -695,5 +697,138 @@ namespace Pchp.Library
         }
 
         //ob_iconv_handler — Convert character encoding as output buffer handler
+
+        /// <summary>
+        /// rfc2047, allows for the encoded-text to be multilined with leading white-spaces.
+        /// </summary>
+        readonly static Lazy<Regex> s_mime_header_regex = new Lazy<Regex>(() => new Regex(@"=\?[\w-]+\?[QB]\?([^\s\?]+([\r\n]+[ \t]*)?)+\?=", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline));
+
+        readonly static char[] s_whitespaces = new[] { ' ', '\t', '\n', '\r' };
+
+        /// <summary>
+        /// Strip a headers and decode values.
+        /// </summary>
+        static IEnumerable<string> decode_headers(string encoded)
+        {
+            int headerstart = 0;// current header start
+            Match match = null; // next match
+
+            for (int i = 0; i < encoded.Length; i++)
+            {
+                var nl = StringUtils.IsNewLine(encoded, i);
+                if (nl != 0 && i + nl < encoded.Length && char.IsWhiteSpace(encoded[i + nl]))
+                {
+                    // line continues with an indented text
+                    // trim leading whitespaces and replace with a single space
+                    int end = i + nl + 1;
+                    do { end++; } while (end < encoded.Length && char.IsWhiteSpace(encoded, end));
+
+                    encoded = encoded.Remove(i) + " " + encoded.Substring(end); // TODO: we can do it later in `yield`, with a smaller portion of text
+
+                    //
+                    i--;
+                    continue;
+                }
+
+                if (nl != 0 || i == encoded.Length - 1)
+                {
+                    // end of line,
+                    // decode values within
+                    for (int startindex = headerstart; ;)
+                    {
+                        match ??= s_mime_header_regex.Value.Match(encoded, startindex);
+
+                        if (!match.Success || match.Index > i)
+                            break; // this match will be used in the next header
+
+                        // the value can be split into more lines,
+                        // make it singleline
+                        var value = match.Value.RemoveAny(s_whitespaces);
+                        var attachment = System.Net.Mail.Attachment.CreateAttachmentFromString("", value);
+                        var decoded_value = attachment.Name;
+
+                        // replace with decoded value
+                        encoded = encoded.Remove(match.Index) + decoded_value + encoded.Substring(match.Index + match.Length);
+
+                        //
+                        startindex = match.Index + decoded_value.Length;
+                        i += decoded_value.Length - match.Length;
+
+                        //
+                        match = null;
+                    }
+
+                    // submit header line:
+                    yield return encoded.Substring(headerstart, i - headerstart);
+
+                    //
+                    i += nl;
+                    headerstart = i;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decodes a MIME header field.
+        /// </summary>
+        public static string iconv_mime_decode(string encoded_header, int mode = 0, string charset = null /*= ini_get("iconv.internal_encoding")*/ )
+        {
+            if (encoded_header == null)
+            {
+                return string.Empty;
+            }
+
+            return decode_headers(encoded_header).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Decodes multiple MIME header fields at once.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray iconv_mime_decode_headers(string encoded_headers, int mode = 0, string charset = null)
+        {
+            if (encoded_headers == null)
+            {
+                return null;
+            }
+
+            var result = new PhpArray();
+
+            foreach (var header in decode_headers(encoded_headers))
+            {
+                var col = header.IndexOf(':');
+                if (col >= 0)
+                {
+                    var header_name = Core.Convert.StringToArrayKey(header.Remove(col));
+
+                    // trim leading value whitespaces
+                    do { col++; } while (col < header.Length && char.IsWhiteSpace(header, col));
+
+                    var header_value = header.Substring(col);
+
+                    if (result.TryGetValue(header_name, out var existing))
+                    {
+                        if (existing.IsPhpArray(out var subarray))
+                        {
+                            subarray.Add(header_value);
+                        }
+                        else
+                        {
+                            result[header_name] = new PhpArray(2)
+                            {
+                                existing,
+                                header_value,
+                            };
+                        }
+                    }
+                    else
+                    {
+                        result[header_name] = header_value;
+                    }
+                }
+            }
+
+            return result;
+        }
     }
 }

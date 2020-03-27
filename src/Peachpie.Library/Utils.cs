@@ -291,6 +291,65 @@ namespace Pchp.Library
 
             return parser.Parse() ? parser.Result : throw new FormatException();
         }
+
+        /// <summary>
+        /// Gets newline character sequence length at given position.
+        /// If there is no newline sequence, <c>0</c> is returned.
+        /// </summary>
+        public static int IsNewLine(string text, int index)
+        {
+            if (text != null && index < text.Length)
+            {
+                return text[index] switch
+                {
+                    '\n' => (index + 1 < text.Length && text[index + 1] == '\r') ? 2 : 1,
+                    '\r' => (index + 1 < text.Length && text[index + 1] == '\n') ? 2 : 1,
+                    '\u2028' => 1, // Unicode Line Separator
+                    _ => 0,
+                };
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Removes all occurances of characters.
+        /// </summary>
+        public static string RemoveAny(this string text, params char[] anyOf)
+        {
+            if (string.IsNullOrEmpty(text) || anyOf.Length == 0)
+            {
+                return text;
+            }
+
+            int startIndex = 0;
+            StringBuilder tmp = null;
+
+            for (; ; )
+            {
+                var idx = text.IndexOfAny(anyOf, startIndex);
+                if (idx < 0)
+                {
+                    break;
+                }
+
+                // lazily create string builder and append text without found characters:
+                tmp ??= StringBuilderUtilities.Pool.Get();
+                tmp.Append(text, startIndex, idx - startIndex);
+
+                startIndex = idx + 1;
+            }
+
+            if (tmp != null)
+            {
+                tmp.Append(text, startIndex, text.Length - startIndex);
+
+                return StringBuilderUtilities.GetStringAndReturn(tmp);
+            }
+
+            //
+            return text;
+        }
     }
 
     internal static class ArrayExtensions
