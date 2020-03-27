@@ -830,5 +830,182 @@ namespace Pchp.Library
 
             return result;
         }
+
+        /// <summary>
+        /// Composes a MIME header field.
+        /// </summary>
+        public static string iconv_mime_encode(string field_name, string field_value, PhpArray preferences = null)
+        {
+            // process parameters:
+
+            const char Base64Scheme = 'B';
+            const char QuotedPrintableScheme = 'Q';
+
+            char scheme = Base64Scheme;  // B, Q
+            //string input_charset = null;
+            //string output_charset = null;
+            int line_length = 76;
+            string line_break_chars = "\r\n";
+            var encoding = Encoding.UTF8;
+
+            if (preferences != null)
+            {
+                if (preferences.TryGetValue("line-break-chars", out var val) && val.IsString(out var str))
+                {
+                    line_break_chars = str;
+                }
+
+                if (preferences.TryGetValue("scheme", out val))
+                {
+                    // PHP ignores any invalid value
+                    if (val.IsString(out str) && str.Length >= 1)
+                    {
+                        scheme = char.ToUpperInvariant(str[0]);
+                    }
+                }
+
+                if (preferences.TryGetValue("line-length", out val) && val.IsLong(out var l))
+                {
+                    line_length = (int)l;
+                }
+            }
+
+            //
+            // internal System.Net.Mime.MimeBasePart.EncodeHeaderValue(field_value, Encoding.UTF8, scheme == 'B', line_length);
+            //
+
+            string header = $"=?{encoding.HeaderName.ToUpperInvariant()}?{scheme}?";
+            string footer = "?=";
+
+            //
+            var result = StringBuilderUtilities.Pool.Get();
+
+            result.Append(field_name);
+            result.Append(':');
+            result.Append(' ');
+
+            result.Append(header);
+
+            if (line_length < result.Length)
+            {
+                // adjust max line length,
+                // cannot be smaller then preamble
+                line_length = result.Length;
+            }
+
+            var bytes = encoding.GetBytes(field_value);
+            //string encoded;
+
+            Func<byte[], int, int, int> count_func; // how many bytes will be consumed
+            //Func<ReadOnlySpan<byte>, string> encode_func;
+            Func<byte[], int, int, string> encode_func; // encodes bytes into string
+
+            if (scheme == QuotedPrintableScheme)
+            {
+                count_func = (_bytes, _from, _maxchars) => QuotedPrintableCount(_bytes, _from, _maxchars);
+                encode_func = (_bytes, _from, _count) => QuotedPrintableEncode(_bytes, _from, _count);
+            }
+            else
+            {
+                // 3 bytes are encoded as 4 chars
+                count_func = (_bytes, _from, _maxchars) => _maxchars * 3 / 4;
+                encode_func = (_bytes, _from, _count) => System.Convert.ToBase64String(_bytes, _from, _count);
+            }
+
+            int bytes_from = 0;
+            int line_remaining = line_length - result.Length;
+
+            for (; bytes_from < bytes.Length;)
+            {
+                var remaining = line_remaining - footer.Length - line_break_chars.Length; // how many chars we can output
+                var bytes_count = Math.Min(bytes.Length - bytes_from, count_func(bytes, bytes_from, remaining));
+                var encoded = encode_func(bytes, bytes_from, bytes_count);
+
+                result.Append(encoded);
+
+                bytes_from += bytes_count;
+
+                if (bytes_from < bytes.Length)
+                {
+                    // NEW LINE
+                    result.Append(footer);
+                    result.Append(line_break_chars);
+                    result.Append(' ');
+                    result.Append(header);
+
+                    line_remaining = line_length - 1 - header.Length;
+                }
+            }
+
+            result.Append(footer);
+
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
+        }
+
+        /// <summary>
+        /// Counts bytes to be encoded in order to get <paramref name="maxchars"/> characters.
+        /// </summary>
+        static int QuotedPrintableCount(byte[] bytes, int from, int maxchars)
+        {
+            int chars = 0;
+
+            for (int i = from; i < bytes.Length; i++)
+            {
+                if (chars == maxchars)
+                {
+                    return i - from;
+                }
+                else if (chars > maxchars)
+                {
+                    return i - from - 1;
+                }
+
+                var b = bytes[i];
+
+                if (b > 0x20 && b < 0x80)
+                {
+                    chars++;
+                }
+                else
+                {
+                    // =XX
+                    chars += 3;
+                }
+            }
+
+            //
+            return bytes.Length - from;
+        }
+
+        /// <summary>
+        /// Encode bytes as quoted-printable string.
+        /// </summary>
+        static string QuotedPrintableEncode(byte[] bytes, int from, int count)
+        {
+            var result = StringBuilderUtilities.Pool.Get();
+
+            for (int i = from; i < bytes.Length && count > 0; i++, count--)
+            {
+                var b = bytes[i];
+
+                if (b > 0x20 && b < 0x80)
+                {
+                    //
+                    result.Append((char)b);
+                }
+                else
+                {
+                    // =XX
+                    const string digits = "0123456789ABCDEF";
+                    result.Append('=');
+                    result.Append(digits[(b >> 4) & 0x0f]);
+                    result.Append(digits[(b) & 0x0f]);
+                }
+            }
+
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
+        }
     }
 }
