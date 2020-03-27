@@ -618,7 +618,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="sb">String builder instance.</param>
         /// <returns><paramref name="sb"/> string.</returns>
-        internal static string GetStringAndReturn(StringBuilder sb)
+        public static string GetStringAndReturn(StringBuilder sb)
         {
             Debug.Assert(sb != null);
             var value = sb.ToString();
