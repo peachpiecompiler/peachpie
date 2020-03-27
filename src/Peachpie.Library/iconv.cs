@@ -744,22 +744,32 @@ namespace Pchp.Library
                         // the value can be split into more lines,
                         // make it singleline
                         var value = match.Value.RemoveAny(s_whitespaces);
-                        var attachment = System.Net.Mail.Attachment.CreateAttachmentFromString("", value);
-                        var decoded_value = attachment.Name;
+
+                        // decode the value
+                        var decoded_value = System.Net.Mail.Attachment.CreateAttachmentFromString("", value).Name;
+
+                        // trims whitespaces between matches (startindex..match.Index)
+                        var replaceFrom = encoded.AsSpan(startindex, match.Index - startindex).IsWhiteSpace()
+                            ? startindex
+                            : match.Index;
 
                         // replace with decoded value
-                        encoded = encoded.Remove(match.Index) + decoded_value + encoded.Substring(match.Index + match.Length);
+                        encoded = encoded.Remove(replaceFrom) + decoded_value + encoded.Substring(match.Index + match.Length);
 
                         //
-                        startindex = match.Index + decoded_value.Length;
-                        i += decoded_value.Length - match.Length;
+                        startindex = replaceFrom + decoded_value.Length;
+                        i += decoded_value.Length - match.Length + replaceFrom - match.Index;
 
                         //
                         match = null;
                     }
 
+                    // trim whitespaces from end of the value:
+                    int end = i;
+                    while (end > headerstart && char.IsWhiteSpace(encoded[end - 1])) end--;
+
                     // submit header line:
-                    yield return encoded.Substring(headerstart, i - headerstart);
+                    yield return encoded.Substring(headerstart, end - headerstart);
 
                     //
                     i += nl;
