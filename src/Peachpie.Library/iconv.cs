@@ -696,7 +696,16 @@ namespace Pchp.Library
             }
         }
 
-        //ob_iconv_handler — Convert character encoding as output buffer handler
+        ///// <summary>
+        ///// Convert character encoding as output buffer handler.
+        ///// </summary>
+        ///// <param name="contents"></param>
+        ///// <param name="status">Bitmask of PHP_OUTPUT_HANDLER_* constants.</param>
+        ///// <returns></returns>
+        //public static PhpString ob_iconv_handler(PhpString contents , int status )
+        //{
+
+        //}
 
         /// <summary>
         /// rfc2047, allows for the encoded-text to be multilined with leading white-spaces.
