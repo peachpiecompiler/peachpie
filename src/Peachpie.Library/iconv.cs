@@ -720,7 +720,7 @@ namespace Pchp.Library
                 {
                     // line continues with an indented text
                     // trim leading whitespaces and replace with a single space
-                    int end = i + nl + 1;
+                    int end = i + nl;
                     do { end++; } while (end < encoded.Length && char.IsWhiteSpace(encoded, end));
 
                     encoded = encoded.Remove(i) + " " + encoded.Substring(end); // TODO: we can do it later in `yield`, with a smaller portion of text
