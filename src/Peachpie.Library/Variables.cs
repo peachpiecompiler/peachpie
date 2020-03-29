@@ -549,6 +549,9 @@ namespace Pchp.Library
                 case PhpTypeCode.MutableString:
                     return (variable.ToNumber(out _) & Core.Convert.NumberInfo.IsNumber) != 0;
 
+                case PhpTypeCode.Alias:
+                    return is_numeric(variable.Alias.Value);
+
                 default:
                     return false;
             }
