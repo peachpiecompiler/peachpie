@@ -21,5 +21,7 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build ./src/Peachpie.NET.Sdk/ -c Release --no-restore -p:VersionSuffix=ghaction${{github.run_number}}
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
+    - name: Peachpie.Runtime.Tests
+      run: dotnet test ./src/Tests/Peachpie.Runtime.Tests --verbosity normal
+    - name: Peachpie.DiagnosticTests
+      run: dotnet test ./src/Tests/Peachpie.DiagnosticTests --verbosity normal
