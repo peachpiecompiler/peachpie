@@ -20,6 +20,6 @@ jobs:
     - name: Install dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build -c Release --no-restore -p:VersionSuffix=ghaction${{github.run_number}}
+      run: dotnet build ./src/Peachpie.NET.Sdk/ -c Release --no-restore -p:VersionSuffix=ghaction${{github.run_number}}
     - name: Test
       run: dotnet test --no-restore --verbosity normal
