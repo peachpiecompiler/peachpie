@@ -379,4 +379,7 @@
   <data name="WRN_PCRE_Pattern_Error" xml:space="preserve">
     <value>PCRE pattern parse error: {0} at offset {1}</value>
   </data>
+  <data name="ERR_PdbWritingFailed" xml:space="preserve">
+    <value>Failure writing debug information: {0}</value>
+  </data>
 </root>
