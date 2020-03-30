@@ -17,11 +17,14 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.200
-    - name: Install dependencies
+    - name: Restore
       run: dotnet restore
-    - name: Build
-      run: dotnet build ./src/Peachpie.NET.Sdk/ -c Release --no-restore -p:VersionSuffix=ghaction${{github.run_number}}
     - name: Peachpie.Runtime.Tests
       run: dotnet test ./src/Tests/Peachpie.Runtime.Tests --verbosity normal
     - name: Peachpie.DiagnosticTests
       run: dotnet test ./src/Tests/Peachpie.DiagnosticTests --verbosity normal
+    - name: Peachpie.ScriptTests
+      run: dotnet test ./src/Tests/Peachpie.ScriptTests --verbosity normal
+    - name: Build
+      run: dotnet build ./src/Peachpie.NET.Sdk/ -c Release --no-restore -p:VersionSuffix=ghaction${{github.run_number}}
+    
