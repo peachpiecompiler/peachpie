@@ -16,6 +16,7 @@
 
   <!-- well-known non-compile items -->
   <ItemGroup>
+    <Compile Include="**/*.phar;**/*.php" Exclude="obj/**;bin/**;.*/**" Condition=" '$(EnableDefaultPeachpieCompileItems)'=='true' " />
     <Compile Remove="**/.phpstorm.meta.php/**;**/.phpstorm.meta.php" />
   </ItemGroup>
 
