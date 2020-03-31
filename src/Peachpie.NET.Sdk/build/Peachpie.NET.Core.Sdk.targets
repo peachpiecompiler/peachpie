@@ -14,9 +14,8 @@
   <UsingTask AssemblyFile="$(PeachpieToolFullPath)" TaskName="Peachpie.NET.Sdk.Tools.BuildTask" />
   <UsingTask AssemblyFile="$(PeachpieToolFullPath)" TaskName="Peachpie.NET.Sdk.Tools.ComposerTask" />
 
-  <!-- default Compile and None -->
+  <!-- well-known non-compile items -->
   <ItemGroup>
-    <Compile Include="**/*.phar;**/*.php" Exclude="obj/**;bin/**" Condition=" '$(EnableDefaultPeachpieCompileItems)'=='true' " />
     <Compile Remove="**/.phpstorm.meta.php/**;**/.phpstorm.meta.php" />
   </ItemGroup>
 
