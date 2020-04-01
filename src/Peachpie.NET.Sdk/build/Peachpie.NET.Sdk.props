@@ -18,7 +18,7 @@
 
   <!-- default Compile and None items -->
   <ItemGroup>
-    <None Include="**/*" Remove="obj/**;bin/**;.*/**;*.msbuildproj;*.msbuildproj.user;*.sln;" />
+    <None Include="**/*" Exclude="obj/**;bin/**;.*/**;*.msbuildproj;*.msbuildproj.user;*.sln;" />
     <!--Content Include="" /-->
   </ItemGroup>
 
