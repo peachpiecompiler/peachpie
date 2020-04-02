@@ -295,7 +295,10 @@ namespace Pchp.Library
                     return null;
                 }
 
-                // 3. read
+                // 3. set session cookie
+                TrySetCookie(webctx, warnIfHeadersSent: true);
+
+                // 4. read
                 var str = _handler.read(GetSessionId(webctx));
                 if (str.IsEmpty)
                 {
@@ -308,7 +311,7 @@ namespace Pchp.Library
 
             public override bool Persist(IHttpPhpContext webctx, PhpArray session)
             {
-                webctx.AddCookie(GetSessionName(webctx), _lazyid, null); // TODO: lifespan
+                TrySetCookie(webctx, warnIfHeadersSent: false);
 
                 //
                 var handler = GetSerializeHandler((Context)webctx);
@@ -325,7 +328,7 @@ namespace Pchp.Library
             {
                 if (!_isnewsession)
                 {
-                    webctx.AddCookie(GetSessionName(webctx), string.Empty, DateTimeOffset.UtcNow);
+                    TryUnsetCookie(webctx);
                 }
 
                 // destroy
@@ -397,6 +400,26 @@ namespace Pchp.Library
 
                 _lazyname = name;
                 return true;
+            }
+
+            private void TrySetCookie(IHttpPhpContext webctx, bool warnIfHeadersSent)
+            {
+                if (!webctx.HeadersSent)
+                {
+                    webctx.AddCookie(GetSessionName(webctx), GetSessionId(webctx), null); // TODO: lifespan
+                }
+                else if (warnIfHeadersSent)
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.headers_has_been_sent);
+                }
+            }
+
+            private void TryUnsetCookie(IHttpPhpContext webctx)
+            {
+                if (!webctx.HeadersSent)
+                {
+                    webctx.AddCookie(GetSessionName(webctx), null, null);
+                }
             }
         }
 
