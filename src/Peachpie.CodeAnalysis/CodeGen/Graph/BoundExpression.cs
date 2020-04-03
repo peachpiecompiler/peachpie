@@ -2731,7 +2731,9 @@ namespace Pchp.CodeAnalysis.Semantics
             var opcode = (method.IsVirtual || IsVirtualCall) ? ILOpCode.Callvirt : ILOpCode.Call;
 
             //
-            return cg.EmitCall(opcode, method, this.Instance, realArguments, staticType);
+            var stackType = cg.EmitCall(opcode, method, this.Instance, realArguments, staticType);
+
+            return cg.EmitMethodAccess(stackType, method, Access);
         }
 
         protected virtual bool IsVirtualCall => true;
