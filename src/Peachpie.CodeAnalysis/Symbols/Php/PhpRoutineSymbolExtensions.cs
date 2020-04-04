@@ -205,7 +205,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 //
                 var phpparam = new PhpParam(
                     index++,
-                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.IsNotNull()),
+                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull),
                     p.RefKind != RefKind.None,
                     p.IsParams,
                     isPhpRw: p.GetPhpRwAttribute() != null,
