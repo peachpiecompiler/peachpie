@@ -89,39 +89,44 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly PhpCompilation _compilation;
 
         /// <summary>
+        /// Root namespace for Peachpie Runtime types.
+        /// </summary>
+        public const string PeachpieRuntimeNamespace = "Pchp.Core";
+
+        /// <summary>
         /// Name of attribute class representing an extension library.
         /// </summary>
-        public const string PhpExtensionAttributeFullName = "Pchp.Core.PhpExtensionAttribute";
+        public const string PhpExtensionAttributeFullName = PeachpieRuntimeNamespace + ".PhpExtensionAttribute";
 
         /// <summary>
         /// Name of attribute <c>PhpRwAttribute</c> class.
         /// </summary>
-        public const string PhpRwAttributeFullName = "Pchp.Core.PhpRwAttribute";
+        public const string PhpRwAttributeFullName = PeachpieRuntimeNamespace + ".PhpRwAttribute";
 
         /// <summary>
         /// Name of attribute class representing a PHP type descriptor.
         /// </summary>
-        public const string PhpTypeAttributeFullName = "Pchp.Core.PhpTypeAttribute";
+        public const string PhpTypeAttributeFullName = PeachpieRuntimeNamespace + ".PhpTypeAttribute";
 
         /// <summary>
         /// Name of attribute class representing a script type.
         /// </summary>
-        public const string PhpScriptAttributeFullName = "Pchp.Core.ScriptAttribute";
+        public const string PhpScriptAttributeFullName = PeachpieRuntimeNamespace + ".ScriptAttribute";
 
         /// <summary>
         /// Name of attribute class representing a PHAR archive script type.
         /// </summary>
-        public const string PharAttributeFullName = "Pchp.Core.PharAttribute";
+        public const string PharAttributeFullName = PeachpieRuntimeNamespace + ".PharAttribute";
 
         /// <summary>
         /// Name of attribute class representing target PHP language specification.
         /// </summary>
-        public const string TargetPhpLanguageAttributeFullName = "Pchp.Core.TargetPhpLanguageAttribute";
+        public const string TargetPhpLanguageAttributeFullName = PeachpieRuntimeNamespace + ".TargetPhpLanguageAttribute";
 
         /// <summary>
         /// Full name of Context+DllLoader&lt;&gt;.
         /// </summary>
-        public const string Context_DllLoader_T = "Pchp.Core.Context+DllLoader`1";
+        public const string Context_DllLoader_T = PeachpieRuntimeNamespace + ".Context+DllLoader`1";
 
         /// <summary>
         /// Name of attribute class annotating trait declaration.
@@ -246,7 +251,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Dictionary<TypeSymbol, CoreType> _typetable = new Dictionary<TypeSymbol, CoreType>();
         //readonly Dictionary<SpecialType, CoreType> _specialTypes = new Dictionary<SpecialType, CoreType>();
 
-        CoreType Create(string name) => CreateFromFullName("Pchp.Core." + name);
+        CoreType Create(string name) => CreateFromFullName(PeachpieRuntimeNamespace + "." + name);
 
         CoreType Create(SpecialType type) => CreateFromFullName(SpecialTypes.GetMetadataName(type));
 
