@@ -79,6 +79,29 @@ namespace Peachpie.CodeAnalysis.Symbols
             return default;
         }
 
+        /// <summary>
+        /// Looks for <c>Peachpie.Runtime</c>'s <c>DefaultValueAttribute</c>.
+        /// </summary>
+        public static bool HasDefaultValueAttributeData(EntityHandle token, PEModuleSymbol containingModule)
+        {
+            try
+            {
+                var metadataReader = containingModule.Module.MetadataReader;
+                foreach (var attr in metadataReader.GetCustomAttributes(token))
+                {
+                    if (containingModule.Module.IsTargetAttribute(attr, CoreTypes.PeachpieRuntimeNamespace, "DefaultValueAttribute", out _))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (BadImageFormatException)
+            { }
+
+            //
+            return false;
+        }
+
         public static bool HasNotNullAttribute(EntityHandle token, PEModuleSymbol containingModule)
         {
             // TODO: C# 8.0 NotNull

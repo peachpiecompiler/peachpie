@@ -109,19 +109,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </remarks>
         internal abstract ConstantValue ExplicitDefaultConstantValue { get; }
 
-        internal virtual AttributeData DefaultValueAttribute
-        {
-            get
-            {
-                //if (OriginalSymbolDefinition != this)
-                //{
-                //    return ((ParameterSymbol)OriginalSymbolDefinition).DefaultValueAttribute;
-                //}
-
-                return this.GetAttribute("Pchp.Core.DefaultValueAttribute");
-            }
-        }
-
         /// <summary>
         /// Returns data decoded from Obsolete attribute or null if there is no Obsolete attribute.
         /// This property returns ObsoleteAttributeData.Uninitialized if attribute arguments haven't been decoded yet.
