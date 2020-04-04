@@ -99,11 +99,6 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpExtensionAttributeFullName = PeachpieRuntimeNamespace + ".PhpExtensionAttribute";
 
         /// <summary>
-        /// Name of attribute <c>PhpRwAttribute</c> class.
-        /// </summary>
-        public const string PhpRwAttributeFullName = PeachpieRuntimeNamespace + ".PhpRwAttribute";
-
-        /// <summary>
         /// Name of attribute class representing a PHP type descriptor.
         /// </summary>
         public const string PhpTypeAttributeFullName = PeachpieRuntimeNamespace + ".PhpTypeAttribute";

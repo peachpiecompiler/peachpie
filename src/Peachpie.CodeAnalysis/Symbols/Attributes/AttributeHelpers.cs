@@ -18,6 +18,8 @@ namespace Peachpie.CodeAnalysis.Symbols
 
         public static readonly AttributeDescription NotNullAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "NotNullAttribute", new[] { s_signature_HasThis_Void });
 
+        public static readonly AttributeDescription PhpRwAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "PhpRwAttribute", new[] { s_signature_HasThis_Void });
+
         public static readonly AttributeDescription CastToFalse = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "CastToFalse", new[] { s_signature_HasThis_Void });
 
         public static readonly AttributeDescription ImportValueAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "ImportValueAttribute", new[] { s_signature_HasThis_Void_Int });
@@ -83,6 +85,11 @@ namespace Peachpie.CodeAnalysis.Symbols
             // TODO: C# 8.0 NotNull
 
             return containingModule != null && PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, NotNullAttribute).HasValue;
+        }
+
+        public static bool HasPhpRwAttribute(EntityHandle token, PEModuleSymbol containingModule)
+        {
+            return containingModule != null && PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, PhpRwAttribute).HasValue;
         }
     }
 

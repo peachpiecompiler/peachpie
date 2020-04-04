@@ -137,6 +137,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool HasNotNull => underlyingParameter.HasNotNull;
 
+        public override bool IsPhpRw => underlyingParameter.IsPhpRw;
+
         //internal override MarshalPseudoCustomAttributeData MarshallingInformation
         //{
         //    get { return underlyingParameter.MarshallingInformation; }

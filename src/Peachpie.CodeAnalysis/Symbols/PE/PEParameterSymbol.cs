@@ -35,6 +35,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IsCallerLineNumber = 0x1 << 6,
             IsCallerMemberName = 0x1 << 7,
             NotNull = 0x1 << 8,
+            PhpRw = 0x1 << 9,
         }
 
         #endregion
@@ -52,14 +53,14 @@ namespace Pchp.CodeAnalysis.Symbols
             // n = hasNameInMetadata. 1 bit.
 
             private const int WellKnownAttributeDataOffset = 0;
-            private const int WellKnownAttributeCompletionFlagOffset = 9;
-            private const int RefKindOffset = 18;
+            private const int WellKnownAttributeCompletionFlagOffset = 10;
+            private const int RefKindOffset = 20;
 
             private const int RefKindMask = 0x3;
             private const int WellKnownAttributeDataMask = 0xFF;
             private const int WellKnownAttributeCompletionFlagMask = WellKnownAttributeDataMask;
 
-            private const int HasNameInMetadataBit = 0x1 << 20;
+            private const int HasNameInMetadataBit = 0x1 << 22;
 
             private const int AllWellKnownAttributesCompleteNoData = WellKnownAttributeCompletionFlagMask << WellKnownAttributeCompletionFlagOffset;
 
@@ -424,6 +425,20 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (!_packedFlags.TryGetWellKnownAttribute(flag, out var value))
                 {
                     value = _packedFlags.SetWellKnownAttribute(flag, AttributeHelpers.HasNotNullAttribute(Handle, (PEModuleSymbol)ContainingModule));
+                }
+                return value;
+            }
+        }
+
+        public override bool IsPhpRw
+        {
+            get
+            {
+                const WellKnownAttributeFlags flag = WellKnownAttributeFlags.PhpRw;
+
+                if (!_packedFlags.TryGetWellKnownAttribute(flag, out var value))
+                {
+                    value = _packedFlags.SetWellKnownAttribute(flag, AttributeHelpers.HasPhpRwAttribute(Handle, (PEModuleSymbol)ContainingModule));
                 }
                 return value;
             }

@@ -61,6 +61,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual bool HasNotNull => false;
 
+        public virtual bool IsPhpRw => false;
+
         /// <summary>
         /// Gets the ordinal position of the parameter. The first parameter has ordinal zero.
         /// The "'this' parameter has ordinal -1.

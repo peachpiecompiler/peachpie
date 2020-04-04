@@ -209,7 +209,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull),
                     p.RefKind != RefKind.None,
                     p.IsParams,
-                    isPhpRw: p.GetPhpRwAttribute() != null,
+                    isPhpRw: p.IsPhpRw,
                     defaultValue: p.Initializer);
 
                 if (result == null)

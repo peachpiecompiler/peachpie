@@ -238,8 +238,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static AttributeData GetPhpExtensionAttribute(this Symbol symbol) => GetAttribute(symbol, CoreTypes.PhpExtensionAttributeFullName);
 
-        public static AttributeData GetPhpRwAttribute(this ParameterSymbol symbol) => GetAttribute(symbol, CoreTypes.PhpRwAttributeFullName);
-
         public static AttributeData GetPhpScriptAttribute(this TypeSymbol symbol) => GetAttribute(symbol, CoreTypes.PhpScriptAttributeFullName);
 
         /// <summary>
