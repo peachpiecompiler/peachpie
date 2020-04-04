@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Peachpie.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -131,6 +132,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get { return underlyingParameter.CustomModifiers; }
         }
+
+        internal override ImportValueAttributeData ImportValueAttributeData => underlyingParameter.ImportValueAttributeData;
 
         public override bool HasNotNull => underlyingParameter.HasNotNull;
 

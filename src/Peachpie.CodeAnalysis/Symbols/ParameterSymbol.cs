@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Semantics;
+using Peachpie.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -127,6 +128,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get { return null; }
         }
+
+        internal virtual ImportValueAttributeData ImportValueAttributeData => default;
 
         /// <summary>
         /// Helper method that checks whether this parameter can be passed to anothers method parameter.

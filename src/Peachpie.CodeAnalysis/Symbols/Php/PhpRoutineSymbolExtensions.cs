@@ -3,6 +3,7 @@ using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Peachpie.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -272,20 +273,17 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (p.IsImplicitlyDeclared)
                 {
-                    if (SpecialParameterSymbol.IsImportValueParameter(p, out var spec))
+                    switch (((ParameterSymbol)p).ImportValueAttributeData.Value)
                     {
-                        switch (spec)
-                        {
-                            case SpecialParameterSymbol.ValueSpec.CallerArgs:
-                                f |= RoutineFlags.UsesArgs;
-                                break;
-                            case SpecialParameterSymbol.ValueSpec.Locals:
-                                f |= RoutineFlags.UsesLocals;
-                                break;
-                            case SpecialParameterSymbol.ValueSpec.CallerStaticClass:
-                                f |= RoutineFlags.UsesLateStatic;
-                                break;
-                        }
+                        case ImportValueAttributeData.ValueSpec.CallerArgs:
+                            f |= RoutineFlags.UsesArgs;
+                            break;
+                        case ImportValueAttributeData.ValueSpec.Locals:
+                            f |= RoutineFlags.UsesLocals;
+                            break;
+                        case ImportValueAttributeData.ValueSpec.CallerStaticClass:
+                            f |= RoutineFlags.UsesLateStatic;
+                            break;
                     }
                 }
                 else

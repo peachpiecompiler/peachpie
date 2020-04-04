@@ -118,6 +118,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private ImmutableArray<AttributeData> _lazyCustomAttributes;
         private ConstantValue _lazyDefaultValue = ConstantValue.Unset;
         private ThreeState _lazyIsParams;
+        private ImportValueAttributeData _lazyImportValueAttributeData;
 
         /// <summary>
         /// Attributes filtered out from m_lazyCustomAttributes, ParamArray, etc.
@@ -424,6 +425,26 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     value = _packedFlags.SetWellKnownAttribute(flag, AttributeHelpers.HasNotNullAttribute(Handle, (PEModuleSymbol)ContainingModule));
                 }
+                return value;
+            }
+        }
+
+        internal override ImportValueAttributeData ImportValueAttributeData
+        {
+            get
+            {
+                var value = _lazyImportValueAttributeData;
+                if (value.IsDefault)
+                {
+                    value = AttributeHelpers.HasImportValueAttribute(Handle, (PEModuleSymbol)ContainingModule);
+                    if (value.IsDefault)
+                    {
+                        value = ImportValueAttributeData.Invalid;
+                    }
+
+                    _lazyImportValueAttributeData = value;
+                }
+
                 return value;
             }
         }

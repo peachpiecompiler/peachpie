@@ -11,6 +11,7 @@ using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Errors;
+using Peachpie.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
@@ -1505,25 +1506,25 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 switch (value)
                 {
-                    case SpecialParameterSymbol.ValueSpec.CallerScript:
+                    case ImportValueAttributeData.ValueSpec.CallerScript:
                         Debug.Assert(ContainingFile != null);
                         Debug.Assert(p.Type == CoreTypes.RuntimeTypeHandle);
                         return EmitLoadToken(ContainingFile, null);    // RuntimeTypeHandle
 
-                    case SpecialParameterSymbol.ValueSpec.CallerArgs:
+                    case ImportValueAttributeData.ValueSpec.CallerArgs:
                         Debug.Assert(p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpValue()); // PhpValue[]
                         return Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
 
-                    case SpecialParameterSymbol.ValueSpec.Locals:
+                    case ImportValueAttributeData.ValueSpec.Locals:
                         Debug.Assert(p.Type.Is_PhpArray());
                         if (!HasUnoptimizedLocals) throw new InvalidOperationException();
                         return LocalsPlaceOpt.EmitLoad(Builder).Expect(CoreTypes.PhpArray);    // PhpArray
 
-                    case SpecialParameterSymbol.ValueSpec.This:
+                    case ImportValueAttributeData.ValueSpec.This:
                         Debug.Assert(p.Type.IsObjectType());
                         return this.EmitPhpThisOrNull();           // object
 
-                    case SpecialParameterSymbol.ValueSpec.CallerStaticClass:
+                    case ImportValueAttributeData.ValueSpec.CallerStaticClass:
                         // current "static"
                         if (p.Type == CoreTypes.PhpTypeInfo)
                         {
@@ -1531,7 +1532,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
                         throw ExceptionUtilities.UnexpectedValue(p.Type);
 
-                    case SpecialParameterSymbol.ValueSpec.CallerClass:
+                    case ImportValueAttributeData.ValueSpec.CallerClass:
                         // current class context (self)
                         // note, can be obtain dynamically (global code, closure)
                         return EmitLoadCurrentClassContext(p.Type);
