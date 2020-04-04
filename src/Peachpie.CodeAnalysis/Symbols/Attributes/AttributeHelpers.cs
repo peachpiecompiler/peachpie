@@ -12,8 +12,6 @@ namespace Peachpie.CodeAnalysis.Symbols
     {
         private static readonly byte[] s_signature_HasThis_Void = new byte[] { (byte)SignatureAttributes.Instance, 0, (byte)SignatureTypeCode.Void };
 
-        private static readonly byte[] s_signature_HasThis_Void_Int = new byte[] { (byte)SignatureAttributes.Instance, 1, (byte)SignatureTypeCode.Void, (byte)SignatureTypeCode.Int32 };
-
         public static readonly AttributeDescription PhpTraitAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, CoreTypes.PhpTraitAttributeName, new[] { s_signature_HasThis_Void });
 
         public static readonly AttributeDescription NotNullAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "NotNullAttribute", new[] { s_signature_HasThis_Void });
@@ -21,8 +19,6 @@ namespace Peachpie.CodeAnalysis.Symbols
         public static readonly AttributeDescription PhpRwAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "PhpRwAttribute", new[] { s_signature_HasThis_Void });
 
         public static readonly AttributeDescription CastToFalse = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "CastToFalse", new[] { s_signature_HasThis_Void });
-
-        public static readonly AttributeDescription ImportValueAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "ImportValueAttribute", new[] { s_signature_HasThis_Void_Int });
 
         public static bool HasPhpTraitAttribute(EntityHandle token, PEModuleSymbol containingModule)
         {
@@ -66,13 +62,16 @@ namespace Peachpie.CodeAnalysis.Symbols
         public static ImportValueAttributeData HasImportValueAttribute(EntityHandle token, PEModuleSymbol containingModule)
         {
             var metadataReader = containingModule.Module.MetadataReader;
-            var attr = PEModule.FindTargetAttribute(metadataReader, token, ImportValueAttribute);
-            if (attr.HasValue)
+            foreach (var attr in metadataReader.GetCustomAttributes(token))
             {
-                if (ReadCustomAttributeValue(attr.Handle, containingModule.Module, out var valuespec))
+                if (containingModule.Module.IsTargetAttribute(attr, CoreTypes.PeachpieRuntimeNamespace, "ImportValueAttribute", out _))
                 {
-                    Debug.Assert(valuespec != 0);
-                    return new ImportValueAttributeData { Value = (ImportValueAttributeData.ValueSpec)valuespec };
+                    // [ImportValue(Int32)]
+                    if (ReadCustomAttributeValue(attr, containingModule.Module, out var valuespec))
+                    {
+                        Debug.Assert(valuespec != 0);
+                        return new ImportValueAttributeData { Value = (ImportValueAttributeData.ValueSpec)valuespec };
+                    }
                 }
             }
 
