@@ -132,6 +132,8 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return underlyingParameter.CustomModifiers; }
         }
 
+        public override bool HasNotNull => underlyingParameter.HasNotNull;
+
         //internal override MarshalPseudoCustomAttributeData MarshallingInformation
         //{
         //    get { return underlyingParameter.MarshallingInformation; }

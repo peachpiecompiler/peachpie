@@ -148,7 +148,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     var callableMask = ctx.GetCallableTypeMask();
                     callableMask.IsRef = ps.Syntax.PassedByRef;
-                    if (!ps.IsNotNull)
+                    if (!ps.HasNotNull)
                         callableMask |= ctx.GetNullTypeMask();
 
                     return callableMask;
@@ -160,7 +160,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // create the type mask from the CLR type symbol
-            var mask = TypeRefFactory.CreateMask(ctx, t, notNull: (symbol as Symbol).HasNotNullAttribute());
+            var mask = TypeRefFactory.CreateMask(ctx, t, notNull: (symbol as Symbol).IsNotNull());
 
             if (symbol is IPhpRoutineSymbol phpr)
             {
@@ -205,7 +205,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 //
                 var phpparam = new PhpParam(
                     index++,
-                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNullAttribute()),
+                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.IsNotNull()),
                     p.RefKind != RefKind.None,
                     p.IsParams,
                     isPhpRw: p.GetPhpRwAttribute() != null,

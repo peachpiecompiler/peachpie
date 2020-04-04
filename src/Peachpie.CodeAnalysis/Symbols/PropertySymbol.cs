@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents a property or indexer.
     /// </summary>
-    internal abstract partial class PropertySymbol : Symbol, IPropertySymbol
+    internal abstract partial class PropertySymbol : Symbol, IPropertySymbol // TODO: IPhpValue and IPhpValue.HasNotNull
     {
         /// <summary>
         /// As a performance optimization, cache parameter types and refkinds - overload resolution uses them a lot.

@@ -13,6 +13,8 @@ namespace Peachpie.CodeAnalysis.Symbols
 
         public static readonly AttributeDescription PhpTraitAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, CoreTypes.PhpTraitAttributeName, new[] { s_signature_HasThis_Void });
 
+        public static readonly AttributeDescription NotNullAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "NotNullAttribute", new[] { s_signature_HasThis_Void });
+
         public static readonly AttributeDescription CastToFalse = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "CastToFalse", new[] { s_signature_HasThis_Void });
 
         public static bool HasPhpTraitAttribute(EntityHandle token, PEModuleSymbol containingModule)
@@ -22,7 +24,14 @@ namespace Peachpie.CodeAnalysis.Symbols
 
         public static bool HasCastToFalse(EntityHandle token, PEModuleSymbol containingModule)
         {
-            return PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, CastToFalse).HasValue;
+            return containingModule != null && PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, CastToFalse).HasValue;
+        }
+
+        public static bool HasNotNullAttribute(EntityHandle token, PEModuleSymbol containingModule)
+        {
+            // TODO: C# 8.0 NotNull
+
+            return containingModule != null && PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, NotNullAttribute).HasValue;
         }
     }
 }

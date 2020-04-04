@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.PooledObjects;
+using Peachpie.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IsCallerFilePath = 0x1 << 5,
             IsCallerLineNumber = 0x1 << 6,
             IsCallerMemberName = 0x1 << 7,
+            NotNull = 0x1 << 8,
         }
 
         #endregion
@@ -50,14 +52,14 @@ namespace Pchp.CodeAnalysis.Symbols
             // n = hasNameInMetadata. 1 bit.
 
             private const int WellKnownAttributeDataOffset = 0;
-            private const int WellKnownAttributeCompletionFlagOffset = 8;
-            private const int RefKindOffset = 16;
+            private const int WellKnownAttributeCompletionFlagOffset = 9;
+            private const int RefKindOffset = 18;
 
             private const int RefKindMask = 0x3;
             private const int WellKnownAttributeDataMask = 0xFF;
             private const int WellKnownAttributeCompletionFlagMask = WellKnownAttributeDataMask;
 
-            private const int HasNameInMetadataBit = 0x1 << 18;
+            private const int HasNameInMetadataBit = 0x1 << 20;
 
             private const int AllWellKnownAttributesCompleteNoData = WellKnownAttributeCompletionFlagMask << WellKnownAttributeCompletionFlagOffset;
 
@@ -411,6 +413,20 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override bool IsOptional => (_flags & ParameterAttributes.Optional) != 0;
+
+        public override bool HasNotNull
+        {
+            get
+            {
+                const WellKnownAttributeFlags flag = WellKnownAttributeFlags.NotNull;
+
+                if (!_packedFlags.TryGetWellKnownAttribute(flag, out var value))
+                {
+                    value = _packedFlags.SetWellKnownAttribute(flag, AttributeHelpers.HasNotNullAttribute(Handle, (PEModuleSymbol)ContainingModule));
+                }
+                return value;
+            }
+        }
 
         //internal override bool IsIDispatchConstant
         //{

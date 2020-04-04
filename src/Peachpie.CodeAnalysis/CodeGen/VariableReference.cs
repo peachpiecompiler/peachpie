@@ -816,7 +816,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // TODO: check iterable, type if not resolved in ct
 
             // check NotNull
-            if (srcparam.IsNotNull)
+            if (srcparam.HasNotNull)
             {
                 if ((valueplace.Type.IsReferenceType /*|| valueplace.Type.Is_PhpValue()*/) && valueplace.Type != cg.CoreTypes.PhpAlias)
                 {
@@ -849,7 +849,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitLoadContext();
                 cg.EmitCallerTypeHandle();
                 cg.EmitConvertToPhpValue(valueplace.EmitLoad(cg.Builder), default);     // To handle conversion from PhpAlias when the parameter is by ref
-                cg.Builder.EmitBoolConstant(!srcparam.IsNotNull);
+                cg.Builder.EmitBoolConstant(!srcparam.HasNotNull);
                 cg.Builder.EmitIntConstant(srcparam.ParameterIndex + 1);
                 cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ThrowIfArgumentNotCallable_Context_RuntimeTypeHandle_PhpValue_Bool_int));
             }
@@ -921,7 +921,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (_param.CopyOnPass)
                     {
                         // make copy of given value
-                        return cg.EmitDeepCopy(t, nullcheck: !_param.IsNotNull);
+                        return cg.EmitDeepCopy(t, nullcheck: !_param.HasNotNull);
                     }
                     else
                     {
@@ -954,7 +954,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     // copy
                     // <param> = DeepCopy(<param>)
-                    cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_param.IsNotNull);
+                    cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_param.HasNotNull);
 
                     _place.EmitStore(cg.Builder);
                 }

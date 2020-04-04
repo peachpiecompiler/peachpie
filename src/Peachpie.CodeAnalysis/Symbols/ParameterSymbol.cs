@@ -58,6 +58,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsExtern => false;
 
+        public virtual bool HasNotNull => false;
+
         /// <summary>
         /// Gets the ordinal position of the parameter. The first parameter has ordinal zero.
         /// The "'this' parameter has ordinal -1.

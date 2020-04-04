@@ -14,14 +14,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         public static readonly Func<Symbol, bool> s_IsReachable = new Func<Symbol, bool>(t => !t.IsUnreachable);
 
-        public static readonly Func<AttributeData, bool> s_IsNotNullAttribute = new Func<AttributeData, bool>(IsNotNullAttribute);
-
         public static IEnumerable<T> WhereReachable<T>(this IEnumerable<T> symbols) where T : Symbol => symbols.Where<T>(s_IsReachable);
-
-        static bool IsNotNullAttribute(AttributeData attr)
-        {
-            return attr.AttributeClass.MetadataName == "NotNullAttribute" && ((AssemblySymbol)attr.AttributeClass.ContainingAssembly).IsPeachpieCorLibrary;
-        }
 
         /// <summary>
         /// Returns a constructed named type symbol if 'type' is generic, otherwise just returns 'type'
@@ -81,40 +74,16 @@ namespace Pchp.CodeAnalysis.Symbols
         /// - field symbol cannot be NULL (has [NotNullAttribute])
         /// - property cannot be NULL (has [NotNullAttribute])
         /// </summary>
-        public static bool HasNotNullAttribute(this Symbol symbol)
+        public static bool IsNotNull(this Symbol symbol)
         {
-            ImmutableArray<AttributeData> attrs;
-
-            if (symbol is MethodSymbol m)
+            if (symbol is IPhpValue value) // method return value, parameter, field, property
             {
-                if (m is SourceRoutineSymbol routine)
-                {
-                    return !routine.ReturnsNull;
-                }
-
-                if (m.CastToFalse)
-                {
-                    // [return: CastToFalse] implicitly denotates method as [NotNull]
-                    return true;
-                }
-
-                attrs = m.GetReturnTypeAttributes();
-
-                // TODO: determine the method cannot return NULL
-                // - is a value type
-                // - its source is analysed and it cannot result in NULL
-                // - it has another NotNullAttribute (compiler generated, not just from Peachpie.Runtime)
+                return value.HasNotNull;
             }
-            else if (symbol is SourceParameterSymbol sp)
+            else
             {
-                return sp.IsNotNull;
+                return false;
             }
-            else if (symbol != null)
-            {
-                attrs = symbol.GetAttributes();
-            }
-
-            return !attrs.IsDefaultOrEmpty && attrs.Any(s_IsNotNullAttribute);
         }
 
         /// <summary>

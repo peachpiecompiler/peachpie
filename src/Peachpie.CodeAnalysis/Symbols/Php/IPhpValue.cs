@@ -16,5 +16,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Optional. Gets the initializer.
         /// </summary>
         BoundExpression Initializer { get; }
+
+        /// <summary>
+        /// Gets flag indicating the value cannot be <c>NULL</c>.
+        /// </summary>
+        bool HasNotNull { get; }
     }
 }

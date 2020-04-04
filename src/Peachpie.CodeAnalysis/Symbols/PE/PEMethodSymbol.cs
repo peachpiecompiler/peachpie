@@ -411,6 +411,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override bool HasNotNull => Signature.ReturnParam.HasNotNull || CastToFalse;
+
         public override bool IsExtern => HasFlag(MethodAttributes.PinvokeImpl);
 
         internal override bool IsExternal => IsExtern || (ImplementationAttributes & MethodImplAttributes.Runtime) != 0;

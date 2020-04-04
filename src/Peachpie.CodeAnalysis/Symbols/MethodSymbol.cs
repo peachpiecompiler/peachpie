@@ -277,6 +277,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual bool CastToFalse => false;
 
+        public virtual bool HasNotNull => false;
+
         /// <summary>
         /// For source routines, gets their control flow graph.
         /// Can be <c>null</c> for routines from PE or synthesized routines.

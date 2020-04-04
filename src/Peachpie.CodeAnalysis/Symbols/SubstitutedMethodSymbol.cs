@@ -456,6 +456,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool CastToFalse => originalDefinition.CastToFalse;
 
+        public override bool HasNotNull => originalDefinition.HasNotNull;
+
         public sealed override TypeSymbol ReturnType
         {
             get

@@ -317,6 +317,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool CastToFalse => false;  // source routines never cast special values to FALSE
 
+        public override bool HasNotNull => !ReturnsNull;
+
         public override MethodKind MethodKind
         {
             get
