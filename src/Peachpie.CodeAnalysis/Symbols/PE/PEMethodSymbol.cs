@@ -29,9 +29,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public readonly SignatureHeader Header;
             public readonly ImmutableArray<ParameterSymbol> Parameters;
-            public readonly ParameterSymbol ReturnParam;
+            public readonly PEParameterSymbol ReturnParam;
 
-            public SignatureData(SignatureHeader header, ImmutableArray<ParameterSymbol> parameters, ParameterSymbol returnParam)
+            public SignatureData(SignatureHeader header, ImmutableArray<ParameterSymbol> parameters, PEParameterSymbol returnParam)
             {
                 this.Header = header;
                 this.Parameters = parameters;
@@ -82,6 +82,9 @@ namespace Pchp.CodeAnalysis.Symbols
             private const int IsConditionalPopulatedBit = 0x1 << 14;
             private const int IsOverriddenOrHiddenMembersPopulatedBit = 0x1 << 15;
 
+            private const int IsCastToFalsePopulatedBit = 0x1 << 16;
+            private const int IsCastToFalseBit = 0x1 << 17;
+
             private int _bits;
 
             public MethodKind MethodKind
@@ -109,10 +112,19 @@ namespace Pchp.CodeAnalysis.Symbols
             public bool IsUseSiteDiagnosticPopulated => (_bits & IsUseSiteDiagnosticPopulatedBit) != 0;
             public bool IsConditionalPopulated => (_bits & IsConditionalPopulatedBit) != 0;
             public bool IsOverriddenOrHiddenMembersPopulated => (_bits & IsOverriddenOrHiddenMembersPopulatedBit) != 0;
+            public bool IsCastToFalse => (_bits & IsCastToFalseBit) != 0;
+            public bool IsCastToFalseIsPopulated => (_bits & IsCastToFalsePopulatedBit) != 0;
 
             private static bool BitsAreUnsetOrSame(int bits, int mask)
             {
                 return (bits & mask) == 0 || (bits & mask) == mask;
+            }
+
+            public void InitializeIsCastToFalse(bool isCastToFalse)
+            {
+                int bitsToSet = (isCastToFalse ? IsCastToFalseBit : 0) | IsCastToFalsePopulatedBit;
+                Debug.Assert(BitsAreUnsetOrSame(_bits, bitsToSet));
+                ThreadSafeFlagOperations.Set(ref _bits, bitsToSet);
             }
 
             public void InitializeIsExtensionMethod(bool isExtensionMethod)
@@ -384,6 +396,20 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override ImmutableArray<AttributeData> GetReturnTypeAttributes() => Signature.ReturnParam.GetAttributes();
+
+        public override bool CastToFalse
+        {
+            get
+            {
+                if (!_packedFlags.IsCastToFalseIsPopulated)
+                {
+                    // applies only if return type is int, long, double or a reference type
+                    var returnparam = Signature.ReturnParam;
+                    _packedFlags.InitializeIsCastToFalse(AttributeHelpers.HasCastToFalse(returnparam.Handle, (PEModuleSymbol)returnparam.ContainingModule));
+                }
+                return _packedFlags.IsCastToFalse;
+            }
+        }
 
         public override bool IsExtern => HasFlag(MethodAttributes.PinvokeImpl);
 
