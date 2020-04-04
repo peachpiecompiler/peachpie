@@ -1993,8 +1993,7 @@ namespace Pchp.Library.Streams
         /// <returns>The handle cast to PhpStream.</returns>
         public static PhpStream GetValid(PhpResource handle)
         {
-            var result = handle as PhpStream;
-            if (result != null && result.IsValid)
+            if (handle is PhpStream result && result.IsValid)
             {
                 return result;
             }
