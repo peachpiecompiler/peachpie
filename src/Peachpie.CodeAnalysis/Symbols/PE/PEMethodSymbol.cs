@@ -84,6 +84,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             private const int IsCastToFalsePopulatedBit = 0x1 << 16;
             private const int IsCastToFalseBit = 0x1 << 17;
+            private const int IsPhpHiddenPopulatedBit = 0x1 << 18;
+            private const int IsPhpHiddenBit = 0x1 << 19;
 
             private int _bits;
 
@@ -114,6 +116,8 @@ namespace Pchp.CodeAnalysis.Symbols
             public bool IsOverriddenOrHiddenMembersPopulated => (_bits & IsOverriddenOrHiddenMembersPopulatedBit) != 0;
             public bool IsCastToFalse => (_bits & IsCastToFalseBit) != 0;
             public bool IsCastToFalseIsPopulated => (_bits & IsCastToFalsePopulatedBit) != 0;
+            public bool IsPhpHidden => (_bits & IsPhpHiddenBit) != 0;
+            public bool IsPhpHiddenIsPopulated => (_bits & IsPhpHiddenPopulatedBit) != 0;
 
             private static bool BitsAreUnsetOrSame(int bits, int mask)
             {
@@ -123,6 +127,13 @@ namespace Pchp.CodeAnalysis.Symbols
             public void InitializeIsCastToFalse(bool isCastToFalse)
             {
                 int bitsToSet = (isCastToFalse ? IsCastToFalseBit : 0) | IsCastToFalsePopulatedBit;
+                Debug.Assert(BitsAreUnsetOrSame(_bits, bitsToSet));
+                ThreadSafeFlagOperations.Set(ref _bits, bitsToSet);
+            }
+
+            public void InitializeIsPhpHidden(bool isPhpHidden)
+            {
+                int bitsToSet = (isPhpHidden ? IsPhpHiddenBit : 0) | IsPhpHiddenPopulatedBit;
                 Debug.Assert(BitsAreUnsetOrSame(_bits, bitsToSet));
                 ThreadSafeFlagOperations.Set(ref _bits, bitsToSet);
             }
@@ -412,6 +423,18 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override bool HasNotNull => Signature.ReturnParam.HasNotNull || CastToFalse;
+
+        public override bool IsPhpHidden
+        {
+            get
+            {
+                if (!_packedFlags.IsPhpHiddenIsPopulated)
+                {
+                    _packedFlags.InitializeIsPhpHidden(AttributeHelpers.HasPhpHiddenAttribute(Handle, (PEModuleSymbol)ContainingModule));
+                }
+                return _packedFlags.IsPhpHidden;
+            }
+        }
 
         public override bool IsExtern => HasFlag(MethodAttributes.PinvokeImpl);
 

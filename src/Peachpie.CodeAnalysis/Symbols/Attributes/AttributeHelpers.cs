@@ -18,6 +18,8 @@ namespace Peachpie.CodeAnalysis.Symbols
 
         public static readonly AttributeDescription PhpRwAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "PhpRwAttribute", new[] { s_signature_HasThis_Void });
 
+        public static readonly AttributeDescription PhpHiddenAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "PhpHiddenAttribute", new[] { s_signature_HasThis_Void });
+
         public static readonly AttributeDescription CastToFalse = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "CastToFalse", new[] { s_signature_HasThis_Void });
 
         public static bool HasPhpTraitAttribute(EntityHandle token, PEModuleSymbol containingModule)
@@ -28,6 +30,11 @@ namespace Peachpie.CodeAnalysis.Symbols
         public static bool HasCastToFalse(EntityHandle token, PEModuleSymbol containingModule)
         {
             return containingModule != null && PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, CastToFalse).HasValue;
+        }
+
+        public static bool HasPhpHiddenAttribute(EntityHandle token, PEModuleSymbol containingModule)
+        {
+            return containingModule != null && PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, PhpHiddenAttribute).HasValue;
         }
 
         static bool ReadCustomAttributeValue(CustomAttributeHandle handle, PEModule module, out int value)

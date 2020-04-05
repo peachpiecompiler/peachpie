@@ -360,7 +360,7 @@ namespace Pchp.CodeAnalysis.Symbols
             MethodSymbol defaultctor)
             : base(containingType, accessibility, defaultctor, null)
         {
-            IsPhpHidden = true; // from the PHP context, do not use this Context-less .ctor, we have the Context instance and we want to pass it properly
+            IsPhpHiddenInternal = true; // from the PHP context, do not use this Context-less .ctor, we have the Context instance and we want to pass it properly
         }
 
         protected override IEnumerable<ParameterSymbol> CreateParameters(IEnumerable<ParameterSymbol> baseparams)

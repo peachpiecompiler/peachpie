@@ -27,14 +27,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static bool IsPhpHidden(this Symbol s, PhpCompilation compilation = null)
         {
-            if (s is SynthesizedMethodSymbol smethod)
+            if (s is MethodSymbol m)
             {
-                return smethod.IsPhpHidden;
-            }
-
-            if (s is SourceRoutineSymbol)
-            {
-                return false;
+                return m.IsPhpHidden;
             }
 
             var attrs = s.GetAttributes();
