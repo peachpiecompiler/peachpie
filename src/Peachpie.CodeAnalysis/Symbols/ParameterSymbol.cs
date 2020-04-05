@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Semantics;
+using Peachpie.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -58,6 +59,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsExtern => false;
 
+        public virtual bool HasNotNull => false;
+
+        public virtual bool IsPhpRw => false;
+
         /// <summary>
         /// Gets the ordinal position of the parameter. The first parameter has ordinal zero.
         /// The "'this' parameter has ordinal -1.
@@ -104,19 +109,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </remarks>
         internal abstract ConstantValue ExplicitDefaultConstantValue { get; }
 
-        internal virtual AttributeData DefaultValueAttribute
-        {
-            get
-            {
-                //if (OriginalSymbolDefinition != this)
-                //{
-                //    return ((ParameterSymbol)OriginalSymbolDefinition).DefaultValueAttribute;
-                //}
-
-                return this.GetAttribute("Pchp.Core.DefaultValueAttribute");
-            }
-        }
-
         /// <summary>
         /// Returns data decoded from Obsolete attribute or null if there is no Obsolete attribute.
         /// This property returns ObsoleteAttributeData.Uninitialized if attribute arguments haven't been decoded yet.
@@ -125,6 +117,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get { return null; }
         }
+
+        internal virtual ImportValueAttributeData ImportValueAttributeData => default;
 
         /// <summary>
         /// Helper method that checks whether this parameter can be passed to anothers method parameter.

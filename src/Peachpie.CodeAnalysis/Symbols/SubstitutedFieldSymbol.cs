@@ -40,6 +40,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void IPhpPropertySymbol.EmitInit(CodeGenerator cg) { throw new NotSupportedException(); }
 
+        public override bool HasNotNull => OriginalDefinition.HasNotNull;
+
         #endregion
 
         NamedTypeSymbol _containingType;

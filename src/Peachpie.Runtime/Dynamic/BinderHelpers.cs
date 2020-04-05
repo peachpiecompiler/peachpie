@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Semantics;
+using System.Runtime.CompilerServices;
 
 namespace Pchp.Core.Dynamic
 {
@@ -166,7 +167,11 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static bool IsMandatoryParameter(this ParameterInfo p)
         {
-            return !p.HasDefaultValue && !p.IsOptional && !p.IsParamsParameter();
+            return
+                !p.HasDefaultValue && // CLR default value
+                !p.IsOptional && // has [Optional} attribute
+                p.GetCustomAttribute<DefaultValueAttribute>() == null && // has [DefaultValue] attribute
+                !p.IsParamsParameter(); // is params
         }
 
         /// <summary>
@@ -298,6 +303,14 @@ namespace Pchp.Core.Dynamic
             return Expression.Coalesce(
                 variable,
                 Expression.Assign(variable, Expression.New(typeof(PhpArray))));
+        }
+
+        /// <summary>
+        /// Gets expression representing <code>Array&lt;paramref name="element_type"&gt;.Empty()</code>.
+        /// </summary>
+        public static Expression EmptyArray(Type element_type)
+        {
+            return Expression.Call(typeof(Array), "Empty", new[] { element_type });
         }
 
         public static Expression NewPhpArray(Expression[] values, Expression ctx, Type classContext = null)
@@ -454,7 +467,7 @@ namespace Pchp.Core.Dynamic
                 else if (expr.Type == typeof(PhpValue))
                 {
                     // ((PhpValue)fld).EnsureObject()
-                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureObject);
+                    expr = Expression.Call(Cache.Operators.EnsureObject_PhpValueRef, expr);
                 }
                 else
                 {
@@ -472,7 +485,7 @@ namespace Pchp.Core.Dynamic
                 else if (expr.Type == typeof(PhpValue))
                 {
                     // ((PhpValue)fld).EnsureArray()
-                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureArray);
+                    expr = Expression.Call(Cache.Operators.EnsureArray_PhpValueRef, expr);
                 }
                 else if (expr.Type == typeof(PhpArray))
                 {
@@ -494,7 +507,7 @@ namespace Pchp.Core.Dynamic
                 else if (expr.Type == typeof(PhpValue))
                 {
                     // ((PhpValue)fld).EnsureAlias()
-                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureAlias);
+                    expr = Expression.Call(Cache.Operators.EnsureAlias_PhpValueRef, expr);
                 }
                 else
                 {
@@ -1027,7 +1040,7 @@ namespace Pchp.Core.Dynamic
             }
         }
 
-        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args, bool isStaticCallSyntax, PhpTypeInfo lateStaticType)
+        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args, bool isStaticCallSyntax, object lateStaticType)
         {
             Debug.Assert(method is MethodInfo || method is ConstructorInfo);
 
@@ -1091,10 +1104,18 @@ namespace Pchp.Core.Dynamic
                     {
                         if (lateStaticType != null)
                         {
-                            // Template: PhpTypeInfoExtension.GetPhpTypeInfo<lateStaticType>()
-                            boundargs[i] = Expression.Call(
-                                null,
-                                typeof(PhpTypeInfoExtension).GetMethod("GetPhpTypeInfo", Cache.Types.Empty).MakeGenericMethod(lateStaticType.Type.AsType()));
+                            boundargs[i] = lateStaticType switch
+                            {
+                                // Template: PhpTypeInfoExtension.GetPhpTypeInfo<lateStaticType>()
+                                PhpTypeInfo phpt => Expression.Call(null,
+                                    typeof(PhpTypeInfoExtension).GetMethod("GetPhpTypeInfo", Cache.Types.Empty).MakeGenericMethod(phpt.Type)),
+
+                                // Template: (PhpTypeInfo)$arg2.Value
+                                Expression expr => expr,
+
+                                // unk
+                                _ => throw new ArgumentException(),
+                            }; 
                         }
                         else
                         {

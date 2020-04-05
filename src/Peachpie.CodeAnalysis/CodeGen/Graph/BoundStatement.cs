@@ -27,14 +27,9 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
-            if (cg.EmitPdbSequencePoints)
+            if (cg.EmitPdbSequencePoints && !_span.IsEmpty)
             {
-                var span = _span;
-
-                if (!span.IsEmpty)
-                {
-                    cg.EmitSequencePoint(_span);
-                }
+                cg.EmitSequencePoint(_span);
             }
         }
     }
@@ -47,6 +42,12 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 cg.EmitSequencePoint(this.PhpSyntax);
                 cg.EmitPop(Expression.Emit(cg));
+                
+                //
+                if (cg.EmitPdbSequencePoints)
+                {
+                    cg.Builder.EmitOpCode(ILOpCode.Nop);
+                }
             }
         }
     }
@@ -88,12 +89,10 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                bool nullable = cg.Routine.SyntaxReturnType != null && cg.Routine.SyntaxReturnType.IsNullable();
-
                 cg.EmitConvert(this.Returned, rtype);
 
-                // check for null, if return type is not nullable
-                if (cg.IsDebug && !nullable)
+                // TODO: check for null, if return type is not nullable
+                if (cg.Routine.SyntaxReturnType != null && cg.Routine.SyntaxReturnType.IsNullable() == false)
                 {
                     //// Template: Debug.Assert( <STACK> != null )
                     //cg.Builder.EmitOpCode(ILOpCode.Dup);
@@ -188,7 +187,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var local = this.Declaration.Variable; // .BindPlace(cg.Builder, BoundAccess.Write.WithWriteRef(TypeRefMask.AnyType), 0);
             var access = BoundAccess.Write.WithWriteRef(default);
             var lhs = local.EmitStorePreamble(cg, access);
-            
+
             cg.EmitLoadContext();   // <ctx>
             cg.EmitCall(ILOpCode.Callvirt, getmethod);  // .GetStatic<H>()
             cg.Builder.EmitOpCode(ILOpCode.Ldfld);  // .value

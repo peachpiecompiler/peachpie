@@ -37,7 +37,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo IsSet_PhpValue = new Func<PhpValue, bool>(Core.Operators.IsSet).Method;
 
             public static MethodInfo ToString_Double_Context = new Func<double, Context, string>(Core.Convert.ToString).Method;
-            public static MethodInfo ToLongOrThrow_String = new Func<string, long>(Core.Convert.ToLongOrThrow).Method;
+            public static MethodInfo ToLongOrThrow_String = new Func<string, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo ToDouble_String = new Func<string, double>(Core.Convert.StringToDouble).Method;
             public static MethodInfo ToPhpString_PhpValue_Context = new Func<PhpValue, Context, Core.PhpString>(Core.Convert.ToPhpString).Method;
             public static MethodInfo ToPhpNumber_String = new Func<string, PhpNumber>(Core.Convert.ToNumber).Method;
@@ -49,16 +49,14 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpAlias_EnsureObject = Types.PhpAlias[0].GetMethod("EnsureObject", Types.Empty);
             public static MethodInfo PhpAlias_EnsureArray = Types.PhpAlias[0].GetMethod("EnsureArray", Types.Empty);
 
-            public static MethodInfo PhpValue_EnsureObject = Types.PhpValue.GetMethod("EnsureObject", Types.Empty);
-            public static MethodInfo PhpValue_EnsureArray = Types.PhpValue.GetMethod("EnsureArray", Types.Empty);
-            public static MethodInfo PhpValue_EnsureAlias = Types.PhpValue.GetMethod("EnsureAlias", Types.Empty);
-            public static MethodInfo EnsureAlias_PhpValueRef = typeof(Core.Operators).GetMethod("EnsureAlias", Types.PhpValue.MakeByRefType());
-            public static MethodInfo PhpValue_GetArrayAccess = Types.PhpValue.GetMethod("GetArrayAccess", Types.Empty);
-            public static MethodInfo PhpValue_ToLongOrThrow = Types.PhpValue.GetMethod("ToLongOrThrow", Types.Empty);
+            public static MethodInfo EnsureObject_PhpValueRef = Types.PhpValue.GetMethod("EnsureObject", Types.PhpValue.MakeByRefType());
+            public static MethodInfo EnsureArray_PhpValueRef = Types.PhpValue.GetMethod("EnsureArray", Types.PhpValue.MakeByRefType());
+            public static MethodInfo EnsureAlias_PhpValueRef = Types.PhpValue.GetMethod("EnsureAlias", Types.PhpValue.MakeByRefType());
+            public static MethodInfo PhpValue_ToLongOrThrow = new Func<PhpValue, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo PhpValue_ToClass = Types.PhpValue.GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpValue_ToArray = Types.PhpValue.GetMethod("ToArray", Types.Empty);
             /// <summary>Get the underlaying PhpArray, or <c>null</c>. Throws in case of a scalar or object.</summary>
-            public static MethodInfo PhpValue_ToArrayOrThrow = Types.PhpValue.GetMethod("ToArrayOrThrow", Types.Empty);
+            public static MethodInfo PhpValue_ToArrayOrThrow = new Func<PhpValue, PhpArray>(StrictConvert.ToArray).Method;
             public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle_Object = Types.PhpValue.GetMethod("AsCallable", typeof(RuntimeTypeHandle), typeof(object));
             public static MethodInfo PhpValue_AsObject = Types.PhpValue.GetMethod("AsObject", Types.Empty);
             public static MethodInfo PhpValue_AsString_Context = Types.PhpValue.GetMethod("AsString", typeof(Context));
@@ -79,7 +77,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpArray_Remove = typeof(PhpHashtable).GetMethod("Remove", typeof(Core.IntStringKey)); // PhpHashtable.Remove(IntStringKey) returns bool
             public static MethodInfo PhpArray_TryGetValue = typeof(PhpArray).GetMethod("TryGetValue", typeof(Core.IntStringKey), Types.PhpValue.MakeByRefType());
             public static MethodInfo PhpArray_ContainsKey = typeof(PhpArray).GetMethod("ContainsKey", typeof(Core.IntStringKey));
-            
+
             public static MethodInfo ToBoolean_PhpArray = typeof(PhpArray).GetOpExplicit(typeof(bool));
             public static MethodInfo ToBoolean_PhpValue = typeof(PhpValue).GetOpImplicit(typeof(bool));
             public static MethodInfo ToBoolean_PhpNumber = typeof(PhpNumber).GetOpImplicit(typeof(bool));
@@ -103,14 +101,12 @@ namespace Pchp.Core.Dynamic
         {
             public static readonly PropertyInfo PhpValue_Object = Types.PhpValue.GetProperty("Object");
             public static readonly PropertyInfo PhpValue_IsAlias = Types.PhpValue.GetProperty("IsAlias");
-            public static readonly FieldInfo PhpValue_Void = Types.PhpValue.GetField("Void");
             public static readonly FieldInfo PhpValue_Null = Types.PhpValue.GetField("Null");
             public static readonly FieldInfo PhpValue_False = Types.PhpValue.GetField("False");
             public static readonly FieldInfo PhpValue_True = Types.PhpValue.GetField("True");
             public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetField("Default");
             public static readonly PropertyInfo PhpValue_IsNull = Types.PhpValue.GetProperty("IsNull");
             public static readonly PropertyInfo PhpValue_IsFalse = Types.PhpValue.GetProperty("IsFalse");
-            public static readonly PropertyInfo PhpValue_IsDefault = Types.PhpValue.GetProperty("IsDefault");
         }
 
         public static class PhpString
@@ -122,13 +118,13 @@ namespace Pchp.Core.Dynamic
             public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetProperty("IsDefault");
             public static MethodInfo ToBoolean = Types.PhpString[0].GetMethod("ToBoolean");
             public static MethodInfo ToDouble = Types.PhpString[0].GetMethod("ToDouble");
-            public static MethodInfo ToLongOrThrow = Types.PhpString[0].GetMethod("ToLongOrThrow");
+            public static MethodInfo ToLongOrThrow = new Func<Core.PhpString, long>(Core.StrictConvert.ToLong).Method;
         }
 
         public static class IntStringKey
         {
             public static ConstructorInfo ctor_String = typeof(Core.IntStringKey).GetCtor(Types.String);
-            public static ConstructorInfo ctor_Int = typeof(Core.IntStringKey).GetCtor(Types.Int);
+            public static ConstructorInfo ctor_Long = typeof(Core.IntStringKey).GetCtor(Types.Long);
         }
 
         public static class PhpAlias
@@ -165,17 +161,18 @@ namespace Pchp.Core.Dynamic
         public static MethodInfo GetMethod(this Type type, string name, params Type[] ptypes)
         {
             var result = type.GetRuntimeMethod(name, ptypes);
-            if (result == null)
+            if (result != null)
             {
-                foreach (var m in type.GetTypeInfo().GetDeclaredMethods(name))  // non public methods
+                return result;
+            }
+            
+            foreach (var m in type.GetTypeInfo().GetDeclaredMethods(name))  // non public methods
                 {
                     if (ParamsMatch(m.GetParameters(), ptypes))
                         return m;
                 }
-            }
 
-            Debug.Assert(result != null);
-            return result;
+            throw new InvalidOperationException($"{type.Name}.{name}({string.Join<Type>(", ", ptypes)}) was not resolved.");
         }
 
         static MethodInfo GetOpImplicit(this Type type, Type resultType) =>
@@ -183,7 +180,7 @@ namespace Pchp.Core.Dynamic
 
         static MethodInfo GetOpExplicit(this Type type, Type resultType) =>
             GetOpMethod(type, "op_Explicit", resultType);
-        
+
         static MethodInfo GetOpMethod(Type type, string opname, Type resultType)
         {
             var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public);
@@ -195,7 +192,7 @@ namespace Pchp.Core.Dynamic
                 }
             }
 
-            throw new InvalidOperationException();
+            throw new InvalidOperationException($"{resultType.Name} {type.Name}.{opname} was not resolved.");
         }
 
         static bool ParamsMatch(ParameterInfo[] ps, Type[] ptypes)
@@ -223,7 +220,7 @@ namespace Pchp.Core.Dynamic
                 }
             }
 
-            throw new ArgumentException();
+            throw new InvalidOperationException($"{type.Name}..ctor({string.Join<Type>(", ", ptypes)}) was not resolved.");
         }
     }
 }

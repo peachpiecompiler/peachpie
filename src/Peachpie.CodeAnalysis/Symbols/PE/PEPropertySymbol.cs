@@ -379,6 +379,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public BoundExpression Initializer => null;
 
+        /// <summary>
+        /// Value indicating the field has [NotNull] metadata.
+        /// </summary>
+        public bool HasNotNull => false;
+
         public override ImmutableArray<ParameterSymbol> Parameters
         {
             get { return _parameters; }

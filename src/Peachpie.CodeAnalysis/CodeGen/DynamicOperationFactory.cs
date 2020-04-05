@@ -434,6 +434,22 @@ namespace Pchp.CodeAnalysis.CodeGen
             public TypeSymbol EmitTargetTypeParam(IBoundTypeRef tref)
                 => tref != null ? EmitWrapParam(_cg.CoreTypes.Dynamic_TargetTypeParam, tref.EmitLoadTypeInfo(_cg, true)) : null;
 
+            /// <summary>Template: new LateStaticTypeParam(PhpTypeInfo)</summary>
+            public TypeSymbol EmitLateStaticTypeParam(IBoundTypeRef tref)
+            {
+                if (tref != null && (tref.IsSelf() || tref.IsParent()) &&
+                    _cg.Routine != null &&
+                    _cg.Routine.IsStatic &&
+                    _cg.Routine.HasLateStaticBoundParam())
+                {
+                    // pass current <static> to the callsite:
+                    return EmitWrapParam(_cg.CoreTypes.Dynamic_LateStaticTypeParam, _cg.EmitLoadStaticPhpTypeInfo());
+                }
+
+                // not needed
+                return null;
+            }
+
             /// <summary>Template: new NameParam{T}(STACK)</summary>
             public TypeSymbol EmitNameParam(BoundExpression expr)
             {

@@ -64,7 +64,7 @@ namespace Peachpie.Library.PDO
                             break;
 
                         case PARAM.PARAM_INT:
-                            p.Value = Variable.ToLongOrThrow();
+                            p.Value = Variable.ToLong();
                             p.DbType = DbType.Int64;
                             break;
 
@@ -398,7 +398,7 @@ namespace Peachpie.Library.PDO
 
             if (fetch_style == PDO.PDO_FETCH.FETCH_COLUMN)
             {
-                if (!fetch_argument.IsDefault && fetch_argument.IsLong(out var l))
+                if (fetch_argument.IsLong(out var l))
                 {
                     _fetch_column = (int)l;
                 }
@@ -706,7 +706,7 @@ namespace Peachpie.Library.PDO
                     var value = PhpValue.FromClr(oa[i]);
                     ref var bucket = ref arr.GetItemRef(new IntStringKey(names[i]));
 
-                    if (bucket.IsSet)
+                    if (Operators.IsSet(bucket))
                     {
                         var nested = bucket.AsArray();
                         if (nested != null)
@@ -788,7 +788,7 @@ namespace Peachpie.Library.PDO
                     return value.ToBoolean();
 
                 case PARAM.PARAM_INT:
-                    return value.ToLongOrThrow();
+                    return value.ToLong();
 
                 case PARAM.PARAM_STR:
                     return value.IsUnicodeString(out var str) ? str : value.IsBinaryString(out var bin) ? bin : value.ToString();

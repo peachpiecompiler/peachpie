@@ -62,6 +62,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         Isset = (1 << 8) | ReadQuiet | Read,
 
+        /// <summary>
+        /// A flag denotating a value that is not aliased.
+        /// This is a hint for code generators.
+        /// </summary>
+        IsNotRef = 1 << 9,
+
         // NOTE: WriteAndReadRef has to be constructed by semantic binder as bound expression with Write and another bound expression with ReadRef
         // NOTE: ReadAndWriteAndReadRef has to be constructed by semantic binder as bound expression with Read|Write and another bound expression with ReadRef
 
@@ -81,5 +87,6 @@ namespace Pchp.CodeAnalysis.Semantics
         public static bool Write(this AccessMask flags) => (flags & AccessMask.Write) != 0;
         public static bool Unset(this AccessMask flags) => (flags & AccessMask.Unset) == AccessMask.Unset;
         public static bool Isset(this AccessMask flags) => (flags & AccessMask.Isset) == AccessMask.Isset;
+        public static bool IsNotRef(this AccessMask flags) => (flags & AccessMask.IsNotRef) != 0;
     }
 }

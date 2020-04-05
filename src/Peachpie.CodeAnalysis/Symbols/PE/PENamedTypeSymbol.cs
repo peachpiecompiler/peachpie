@@ -15,6 +15,7 @@ using System.Threading;
 using Devsense.PHP.Syntax;
 using System.Globalization;
 using Pchp.CodeAnalysis.DocumentationComments;
+using Peachpie.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -114,6 +115,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public IMethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
 
+        public abstract bool IsTrait { get; }
+
         #endregion
 
         #region IPhpScriptTypeSymbol // applies when [PhpScriptAttributes] and <Main> method are declared
@@ -187,6 +190,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
+            public override bool IsTrait => false; // trait is always a generic class
+
             internal override bool MangleName
             {
                 get
@@ -219,6 +224,20 @@ namespace Pchp.CodeAnalysis.Symbols
             private readonly ushort _arity;
             private readonly bool _mangleName;
             private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
+            private byte _istraitflag;
+
+            public override bool IsTrait
+            {
+                get
+                {
+                    if (_istraitflag == 0)
+                    {
+                        _istraitflag = AttributeHelpers.HasPhpTraitAttribute(Handle, ContainingPEModule) ? (byte)1 : (byte)2;
+                    }
+
+                    return _istraitflag == 1;
+                }
+            }
 
             internal PENamedTypeSymbolGeneric(
                     PEModuleSymbol moduleSymbol,
@@ -874,8 +893,6 @@ namespace Pchp.CodeAnalysis.Symbols
         //}
 
         internal sealed override bool IsInterface => _flags.IsInterface();
-
-        public bool IsTrait => this.GetAttributes().Any(attr => attr.AttributeClass.Name == "PhpTraitAttribute");
 
         ImmutableArray<NamedTypeSymbol> MakeAcyclicInterfaces()
         {

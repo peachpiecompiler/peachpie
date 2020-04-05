@@ -18,7 +18,7 @@ namespace Pchp.Core.Text
     /// Used internally.
     /// </summary>
     [DebuggerNonUserCode]
-    internal struct BlobChar
+    internal readonly struct BlobChar
     {
         private readonly short _b;
         private readonly char _ch;
@@ -677,6 +677,9 @@ namespace Pchp.Core
             {
                 switch (value.TypeCode)
                 {
+                    case PhpTypeCode.Null:
+                        break;
+
                     case PhpTypeCode.String:
                         Add(value.String);
                         break;
@@ -690,7 +693,7 @@ namespace Pchp.Core
                         break;
 
                     default:
-                        Add(value.ToStringOrThrow(ctx));
+                        Add(StrictConvert.ToString(value, ctx));
                         break;
                 }
             }
@@ -1359,8 +1362,8 @@ namespace Pchp.Core
             /// </summary>
             PhpValue IPhpArray.GetItemValue(IntStringKey key)
             {
-                int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
-                return (index >= 0 && index < this.Length) ? this[index].AsValue() : PhpValue.Create(string.Empty);
+                var index = key.IsInteger ? key.Integer : Convert.StringToLongInteger(key.String);
+                return (index >= 0 && index < this.Length) ? this[(int)index].AsValue() : PhpValue.Create(string.Empty);
             }
 
             PhpValue IPhpArray.GetItemValue(PhpValue index)
@@ -1375,7 +1378,7 @@ namespace Pchp.Core
 
             void IPhpArray.SetItemValue(PhpValue index, PhpValue value)
             {
-                if (index.TryToIntStringKey(out IntStringKey key))
+                if (index.TryToIntStringKey(out var key))
                 {
                     ((IPhpArray)this).SetItemValue(key, value);
                 }
@@ -1390,8 +1393,15 @@ namespace Pchp.Core
             /// </summary>
             void IPhpArray.SetItemValue(IntStringKey key, PhpValue value)
             {
-                int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
-                this[index] = value;
+                var index = key.IsInteger ? key.Integer : Convert.StringToLongInteger(key.String);
+                if (NumberUtils.IsInt32(index))
+                {
+                    this[(int)index] = value;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
             }
 
             /// <summary>
@@ -1596,21 +1606,9 @@ namespace Pchp.Core
 
         public long ToLong() => Convert.ToLong(ToString());
 
-        public Convert.NumberInfo ToNumber(out PhpNumber number)
-        {
-            double d;
-            long l;
-            var info = Convert.StringToNumber(ToString(), out l, out d);
-            number = (info & Convert.NumberInfo.Double) != 0
-                ? PhpNumber.Create(d)
-                : PhpNumber.Create(l);
-
-            return info;
-        }
+        public Convert.NumberInfo ToNumber(out PhpNumber number) => Convert.ToNumber(ToString(), out number);
 
         public string ToString(Context ctx) => ToString(ctx.StringEncoding);
-
-        public string ToStringOrThrow(Context ctx) => ToString(ctx.StringEncoding);
 
         public object ToClass() => new stdClass(AsPhpValue(this));
 
@@ -1806,12 +1804,6 @@ namespace Pchp.Core
                     : _data is string str && str.Length != 0
                         ? encoding.GetBytes(str)
                         : ArrayUtils.EmptyBytes;
-
-        /// <summary>
-        /// Implicit conversion to <see cref="long"/>.
-        /// Throws <c>TypeError</c> in case the implicit conversion cannot be done.
-        /// </summary>
-        public long ToLongOrThrow() => Convert.ToLongOrThrow(ToString());
 
         public PhpNumber ToNumber()
         {

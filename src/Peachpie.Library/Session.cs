@@ -308,8 +308,6 @@ namespace Pchp.Library
 
             public override bool Persist(IHttpPhpContext webctx, PhpArray session)
             {
-                webctx.AddCookie(GetSessionName(webctx), _lazyid, null); // TODO: lifespan
-
                 //
                 var handler = GetSerializeHandler((Context)webctx);
 
@@ -350,6 +348,8 @@ namespace Pchp.Library
                         {
                             _lazyid = session_create_id();
                         }
+
+                        webctx.AddCookie(GetSessionName(webctx), _lazyid, null); // TODO: lifespan
                     }
                     else
                     {

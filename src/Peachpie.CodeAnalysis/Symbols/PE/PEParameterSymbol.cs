@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.PooledObjects;
+using Peachpie.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,8 @@ namespace Pchp.CodeAnalysis.Symbols
             IsCallerFilePath = 0x1 << 5,
             IsCallerLineNumber = 0x1 << 6,
             IsCallerMemberName = 0x1 << 7,
+            NotNull = 0x1 << 8,
+            PhpRw = 0x1 << 9,
         }
 
         #endregion
@@ -50,14 +53,15 @@ namespace Pchp.CodeAnalysis.Symbols
             // n = hasNameInMetadata. 1 bit.
 
             private const int WellKnownAttributeDataOffset = 0;
-            private const int WellKnownAttributeCompletionFlagOffset = 8;
-            private const int RefKindOffset = 16;
+            private const int WellKnownAttributeCompletionFlagOffset = 10;
+            private const int RefKindOffset = 20;
 
             private const int RefKindMask = 0x3;
-            private const int WellKnownAttributeDataMask = 0xFF;
+            private const int WellKnownAttributeDataMask = (0x1 << WellKnownAttributeCompletionFlagOffset) - 1;
             private const int WellKnownAttributeCompletionFlagMask = WellKnownAttributeDataMask;
 
-            private const int HasNameInMetadataBit = 0x1 << 18;
+            private const int HasNameInMetadataBit = 0x1 << 22;
+            private const int HasDefaultValueFieldPopulatedBit = 0x1 << 23;
 
             private const int AllWellKnownAttributesCompleteNoData = WellKnownAttributeCompletionFlagMask << WellKnownAttributeCompletionFlagOffset;
 
@@ -71,6 +75,16 @@ namespace Pchp.CodeAnalysis.Symbols
             public bool HasNameInMetadata
             {
                 get { return (_bits & HasNameInMetadataBit) != 0; }
+            }
+
+            public bool HasDefaultValueFieldPopulated
+            {
+                get { return (_bits & HasDefaultValueFieldPopulatedBit) != 0; }
+            }
+
+            public void SetDefaultValueFieldPopulated()
+            {
+                ThreadSafeFlagOperations.Set(ref _bits, HasDefaultValueFieldPopulatedBit);
             }
 
             public PackedFlags(RefKind refKind, bool attributesAreComplete, bool hasNameInMetadata)
@@ -116,6 +130,8 @@ namespace Pchp.CodeAnalysis.Symbols
         private ImmutableArray<AttributeData> _lazyCustomAttributes;
         private ConstantValue _lazyDefaultValue = ConstantValue.Unset;
         private ThreeState _lazyIsParams;
+        private ImportValueAttributeData _lazyImportValueAttributeData;
+        private FieldSymbol _lazyDefaultValueField; // field used to load a default value of the optional parameter
 
         /// <summary>
         /// Attributes filtered out from m_lazyCustomAttributes, ParamArray, etc.
@@ -412,6 +428,54 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsOptional => (_flags & ParameterAttributes.Optional) != 0;
 
+        public override bool HasNotNull
+        {
+            get
+            {
+                const WellKnownAttributeFlags flag = WellKnownAttributeFlags.NotNull;
+
+                if (!_packedFlags.TryGetWellKnownAttribute(flag, out var value))
+                {
+                    value = _packedFlags.SetWellKnownAttribute(flag, AttributeHelpers.HasNotNullAttribute(Handle, (PEModuleSymbol)ContainingModule));
+                }
+                return value;
+            }
+        }
+
+        public override bool IsPhpRw
+        {
+            get
+            {
+                const WellKnownAttributeFlags flag = WellKnownAttributeFlags.PhpRw;
+
+                if (!_packedFlags.TryGetWellKnownAttribute(flag, out var value))
+                {
+                    value = _packedFlags.SetWellKnownAttribute(flag, AttributeHelpers.HasPhpRwAttribute(Handle, (PEModuleSymbol)ContainingModule));
+                }
+                return value;
+            }
+        }
+
+        internal override ImportValueAttributeData ImportValueAttributeData
+        {
+            get
+            {
+                var value = _lazyImportValueAttributeData;
+                if (value.IsDefault)
+                {
+                    value = AttributeHelpers.HasImportValueAttribute(Handle, (PEModuleSymbol)ContainingModule);
+                    if (value.IsDefault)
+                    {
+                        value = ImportValueAttributeData.Invalid;
+                    }
+
+                    _lazyImportValueAttributeData = value;
+                }
+
+                return value;
+            }
+        }
+
         //internal override bool IsIDispatchConstant
         //{
         //    get
@@ -657,20 +721,30 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var attr = DefaultValueAttribute;
-                if (attr != null)
-                {
-                    // [DefaultValueAttribute( FieldName ) { ExplicitType }]
-                    var fldname = (string)attr.ConstructorArguments[0].Value;
-                    var container = attr.NamedArguments.SingleOrDefault(pair => pair.Key == "ExplicitType").Value.Value as ITypeSymbol
-                        ?? ContainingType;
+                var field = _lazyDefaultValueField;
 
-                    var field = container.GetMembers(fldname).OfType<FieldSymbol>().Single();
-                    Debug.Assert(field.IsStatic);
-                    return field;
+                if (!_packedFlags.HasDefaultValueFieldPopulated)
+                {
+                    if (AttributeHelpers.HasDefaultValueAttributeData(Handle, (PEModuleSymbol)ContainingModule))
+                    {
+                        var attr = GetAttributes().FirstOrDefault(attr => attr.AttributeClass.Name == "DefaultValueAttribute");
+                        if (attr != null)
+                        {
+                            // [DefaultValueAttribute( FieldName ) { ExplicitType }]
+                            var fldname = (string)attr.ConstructorArguments[0].Value;
+                            var container = attr.NamedArguments.SingleOrDefault(pair => pair.Key == "ExplicitType").Value.Value as ITypeSymbol
+                                ?? ContainingType;
+
+                            field = container.GetMembers(fldname).OfType<FieldSymbol>().Single();
+                            Debug.Assert(field.IsStatic);
+                            _lazyDefaultValueField = field;
+                        }
+                    }
+
+                    _packedFlags.SetDefaultValueFieldPopulated();
                 }
 
-                return null;
+                return field;
             }
         }
 

@@ -702,7 +702,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public CommonConversion ClassifyExplicitConversion(ITypeSymbol source, ITypeSymbol destination)
         {
-            var conv = Conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination, checkimplicit: false);
+            var conv = Conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination, ConversionKind.Explicit);
             if (conv.Exists == false)
             {
                 // try regular implicit conversion instead
@@ -714,7 +714,7 @@ namespace Pchp.CodeAnalysis
 
         public override CommonConversion ClassifyCommonConversion(ITypeSymbol source, ITypeSymbol destination)
         {
-            return Conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination);
+            return Conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination, ConversionKind.Implicit | ConversionKind.Explicit);
         }
 
         internal override IConvertibleConversion ClassifyConvertibleConversion(IOperation source, ITypeSymbol destination, out Optional<object> constantValue)

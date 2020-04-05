@@ -55,8 +55,8 @@ namespace Pchp.Core
         protected virtual void AssertFailed(PhpValue action = default)
         {
             // exception to be thrown
-            var userexception = action.IsSet ? action.AsObject() as Exception : null;
-            var usermessage = action.IsSet ? action.AsString() : null;
+            var userexception = action.AsObject() as Exception;
+            var usermessage = action.AsString();
 
             var exception = userexception ?? PhpException.AssertionErrorException(usermessage ?? string.Empty);
 

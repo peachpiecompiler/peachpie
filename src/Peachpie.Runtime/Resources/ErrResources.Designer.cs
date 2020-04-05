@@ -2844,6 +2844,16 @@ namespace Pchp.Core.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot add element to the array as the next element is already occupied
+        ///Cannot add element to the array as the next element is already occupied.
+        /// </summary>
+        public static string next_array_key_unavailable {
+            get {
+                return ResourceManager.GetString("next_array_key_unavailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Class &apos;{0}&apos; has no constructor defined - using default constructor and ignoring arguments.
         /// </summary>
         public static string no_ctor_defined {

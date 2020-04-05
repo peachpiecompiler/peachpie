@@ -422,26 +422,25 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public static int preg_match_all(Context ctx, string pattern, string subject)
+        public static int preg_match_all(string pattern, string subject)
         {
-            PhpArray matches;
-            return preg_match_all(ctx, pattern, subject, out matches);
+            return preg_match_all(pattern, subject, out _);
         }
 
         /// <summary>
         /// Perform a global regular expression match.
         /// </summary>
         [return: CastToFalse]
-        public static int preg_match_all(Context ctx, string pattern, string subject, out PhpArray matches, int flags = PREG_PATTERN_ORDER, int offset = 0)
+        public static int preg_match_all(string pattern, string subject, out PhpArray matches, int flags = PREG_PATTERN_ORDER, int offset = 0)
         {
-            return Match(ctx, pattern, subject, out matches, flags, offset, true);
+            return Match(pattern, subject, out matches, flags, offset, true);
         }
 
         /// <summary>
         /// Perform a regular expression match.
         /// </summary>
         [return: CastToFalse]
-        public static int preg_match(Context ctx, string pattern, string subject)
+        public static int preg_match(string pattern, string subject)
         {
             return TryParseRegexp(pattern, out var regex) && regex.Match(subject ?? string.Empty).Success ? 1 : 0;
         }
@@ -450,15 +449,15 @@ namespace Pchp.Library
         /// Perform a regular expression match.
         /// </summary>
         [return: CastToFalse]
-        public static int preg_match(Context ctx, string pattern, string subject, out PhpArray matches, int flags = 0, long offset = 0)
+        public static int preg_match(string pattern, string subject, out PhpArray matches, int flags = 0, long offset = 0)
         {
-            return Match(ctx, pattern, subject, out matches, flags, offset, false);
+            return Match(pattern, subject, out matches, flags, offset, false);
         }
 
         /// <summary>
         /// Perform a regular expression match.
         /// </summary>
-        static int Match(Context ctx, string pattern, string subject, out PhpArray matches, int flags, long offset, bool matchAll)
+        static int Match(string pattern, string subject, out PhpArray matches, int flags, long offset, bool matchAll)
         {
             if (!TryParseRegexp(pattern, out var regex))
             {
@@ -509,10 +508,10 @@ namespace Pchp.Library
                 {
                     AddGroupNameToResult(regex, matches, i, (ms, groupName) =>
                     {
-                        ms[groupName] = (PhpValue)new PhpArray();
+                        ms[groupName] = new PhpArray();
                     });
 
-                    matches[i] = (PhpValue)new PhpArray();
+                    matches[i] = new PhpArray();
                 }
             }
             else
@@ -764,12 +763,20 @@ namespace Pchp.Library
 
                     AddGroupNameToResult(r, matches, i, (ms, groupName) =>
                     {
-                        if (j == 0) ms[groupName] = (PhpValue)new PhpArray();
-                        ((PhpArray)ms[groupName])[j] = arr;
+                        if (!ms.TryGetValue(groupName, out var groupValue) || !groupValue.IsPhpArray(out var group))
+                        {
+                            ms[groupName] = group = new PhpArray();
+                        }
+
+                        group[j] = arr; // TODO: DeepCopy ?
                     });
 
-                    if (j == 0) matches[i] = (PhpValue)new PhpArray();
-                    ((PhpArray)matches[i])[j] = arr;
+                    if (!matches.TryGetValue(i, out var groupValue) || !groupValue.IsPhpArray(out var group))
+                    {
+                        matches[i] = group = new PhpArray();
+                    }
+
+                    group[j] = arr;
                 }
 
                 j++;
@@ -810,7 +817,7 @@ namespace Pchp.Library
                     pa[j] = arr;
                 }
 
-                matches[i] = (PhpValue)pa;
+                matches[i] = pa;
                 i++;
                 m = m.NextMatch();
             }

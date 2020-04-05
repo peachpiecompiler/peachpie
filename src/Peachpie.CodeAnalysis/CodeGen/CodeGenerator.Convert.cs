@@ -297,8 +297,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (from == CoreTypes.PhpAlias)
             {
                 // Template: <PhpAlias>.Value.GetArray()
-                this.Emit_PhpAlias_GetValueAddr();
-                return this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArrayOrThrow);
+                this.Emit_PhpAlias_GetValue();
+                return this.EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArrayOrThrow_PhpValue);
             }
 
             if ((from.SpecialType != SpecialType.None && from.SpecialType != SpecialType.System_Object) ||
@@ -318,8 +318,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // Template: ((PhpValue)<from>).GetArray()
                 EmitConvert(from, 0, CoreTypes.PhpValue);
-                EmitPhpValueAddr();
-                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArrayOrThrow);
+                return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArrayOrThrow_PhpValue);
             }
         }
 
@@ -534,7 +533,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits expression and converts it to required type.
         /// </summary>
-        public void EmitConvert(BoundExpression expr, TypeSymbol to)
+        public void EmitConvert(BoundExpression expr, TypeSymbol to, ConversionKind conversion = ConversionKind.Implicit)
         {
             Debug.Assert(expr != null);
             Debug.Assert(to != null);
@@ -561,6 +560,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // constants
                 if (expr.ConstantValue.HasValue && to != null)
                 {
+                    // TODO: ConversionKind.Strict ?
                     EmitConvert(EmitLoadConstant(expr.ConstantValue.Value, to), 0, to);
                     return;
                 }
@@ -580,7 +580,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // avoiding of load of full value
                 if (place != null && place.HasAddress && place.Type != null && place.Type.IsValueType)
                 {
-                    var conv = DeclaringCompilation.ClassifyCommonConversion(place.Type, to);
+                    var conv = DeclaringCompilation.Conversions.ClassifyConversion(place.Type, to, conversion);
                     if (conv.Exists && conv.IsUserDefined && !conv.MethodSymbol.IsStatic)
                     {
                         // (ADDR expr).Method()
@@ -591,7 +591,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            EmitConvert(expr.Emit(this), expr.TypeRefMask, to);
+            EmitConvert(expr.Emit(this), expr.TypeRefMask, to, conversion);
         }
 
         /// <summary>
@@ -600,7 +600,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <param name="from">Type of value on top of evaluation stack.</param>
         /// <param name="fromHint">Type hint in case of a multityple type choices (like PhpValue or PhpNumber or PhpAlias).</param>
         /// <param name="to">Target CLR type.</param>
-        public void EmitConvert(TypeSymbol from, TypeRefMask fromHint, TypeSymbol to)
+        /// <param name="conversion">Conversion semantic.</param>
+        public void EmitConvert(TypeSymbol from, TypeRefMask fromHint, TypeSymbol to, ConversionKind conversion = ConversionKind.Implicit)
         {
             Contract.ThrowIfNull(from);
             Contract.ThrowIfNull(to);
@@ -626,48 +627,56 @@ namespace Pchp.CodeAnalysis.CodeGen
             //
             from = EmitSpecialize(from, fromHint);
 
-            if (!this.TryEmitImplicitConversion(from, to))
+            if (from != to)
             {
-                // specialized conversions:
-                if (to == CoreTypes.PhpValue)
+                var conv = DeclaringCompilation.Conversions.ClassifyConversion(from, to, conversion);
+                if (conv.Exists)
                 {
-                    EmitConvertToPhpValue(from, fromHint);
-                }
-                else if (to == CoreTypes.PhpString)
-                {
-                    // -> PhpString
-                    EmitConvertToPhpString(from, fromHint);
-                }
-                else if (to == CoreTypes.PhpAlias)
-                {
-                    EmitConvertToPhpValue(from, fromHint);
-                    Emit_PhpValue_MakeAlias();
-                }
-                else if (to.IsReferenceType)
-                {
-                    if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.PhpHashtable)
-                    {
-                        // -> PhpArray
-                        // TODO: try unwrap "value.Object as T"
-                        EmitConvertToPhpArray(from, fromHint);
-                    }
-                    else
-                    {
-                        // -> Object, PhpResource
-                        EmitConvertToClass(from, fromHint, to);
-                    }
-                }
-                else if (to.IsNullableType(out var ttype))
-                {
-                    EmitConvertToNullable_T(from, fromHint, to, ttype);
-                }
-                else if (to.SpecialType == SpecialType.System_DateTime)
-                {
-                    EmitConvertToDateTime(from);
+                    ConversionsExtensions.EmitConversion(this, conv, from, to, @checked: false);
                 }
                 else
                 {
-                    throw this.NotImplementedException($"Conversion from '{from}' to '{to}'");
+                    // specialized conversions:
+                    if (to == CoreTypes.PhpValue)
+                    {
+                        EmitConvertToPhpValue(from, fromHint);
+                    }
+                    else if (to == CoreTypes.PhpString)
+                    {
+                        // -> PhpString
+                        EmitConvertToPhpString(from, fromHint);
+                    }
+                    else if (to == CoreTypes.PhpAlias)
+                    {
+                        EmitConvertToPhpValue(from, fromHint);
+                        Emit_PhpValue_MakeAlias();
+                    }
+                    else if (to.IsReferenceType)
+                    {
+                        if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.PhpHashtable)
+                        {
+                            // -> PhpArray
+                            // TODO: try unwrap "value.Object as T"
+                            EmitConvertToPhpArray(from, fromHint);
+                        }
+                        else
+                        {
+                            // -> Object, PhpResource
+                            EmitConvertToClass(from, fromHint, to);
+                        }
+                    }
+                    else if (to.IsNullableType(out var ttype))
+                    {
+                        EmitConvertToNullable_T(from, fromHint, to, ttype);
+                    }
+                    else if (to.SpecialType == SpecialType.System_DateTime)
+                    {
+                        EmitConvertToDateTime(from);
+                    }
+                    else
+                    {
+                        throw this.NotImplementedException($"Conversion from '{from}' to '{to}'");
+                    }
                 }
             }
         }

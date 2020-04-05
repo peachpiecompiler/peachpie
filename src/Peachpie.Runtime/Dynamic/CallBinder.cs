@@ -82,12 +82,16 @@ namespace Pchp.Core.Dynamic
         {
             var bound = CreateContext().ProcessArgs(target, args, HasTarget);
 
+
             Expression invocation;
 
             //
             var methods = ResolveMethods(bound);
             if (methods != null && methods.Length != 0)
             {
+                // late static bound type, 'static' if available, otherwise the target type
+                var lateStaticTypeArg = (object)bound.LateStaticType ?? bound.TargetType;
+
                 if (bound.HasArgumentUnpacking)
                 {
                     var args_var = Expression.Variable(typeof(PhpValue[]), "args_array");
@@ -99,12 +103,12 @@ namespace Pchp.Core.Dynamic
 
                     invocation = Expression.Block(new[] { args_var },
                             Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments, bound.Context, bound.ClassContext)),
-                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, bound.IsStaticSyntax, lateStaticType: bound.TargetType)
+                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, bound.IsStaticSyntax, lateStaticType: lateStaticTypeArg)
                         );
                 }
                 else
                 {
-                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, bound.IsStaticSyntax, lateStaticType: bound.TargetType, classContext: bound.ClassContext);
+                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, bound.IsStaticSyntax, lateStaticType: lateStaticTypeArg, classContext: bound.ClassContext);
                 }
             }
             else
@@ -358,7 +362,14 @@ namespace Pchp.Core.Dynamic
                 type = bound.CurrentTargetInstance.GetPhpTypeInfo();
             }
 
-            var call = BinderHelpers.FindMagicMethod(type, (bound.TargetInstance == null) ? TypeMethods.MagicMethods.__callstatic : TypeMethods.MagicMethods.__call);
+            // try to find __call() first if we have $this
+            var call = (bound.TargetInstance != null) ? BinderHelpers.FindMagicMethod(type, TypeMethods.MagicMethods.__call) : null;
+            if (call == null)
+            {
+                // look for __callStatic()
+                call = BinderHelpers.FindMagicMethod(type, TypeMethods.MagicMethods.__callstatic);
+            }
+
             if (call != null)
             {
                 Expression[] call_args;

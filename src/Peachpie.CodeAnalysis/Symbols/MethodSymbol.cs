@@ -275,19 +275,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #region IPhpRoutineSymbol
 
-        public virtual bool CastToFalse
-        {
-            get
-            {
-                // applies only if return type is int, long, double or a reference type
-                return this.GetReturnTypeAttributes().Any(IsCastToFalse);
-            }
-        }
+        public virtual bool CastToFalse => false;
 
-        static bool IsCastToFalse(AttributeData attr)
-        {
-            return attr.AttributeClass.MetadataName == "CastToFalse" && ((AssemblySymbol)attr.AttributeClass.ContainingAssembly).IsPeachpieCorLibrary;
-        }
+        public virtual bool HasNotNull => false;
 
         /// <summary>
         /// For source routines, gets their control flow graph.

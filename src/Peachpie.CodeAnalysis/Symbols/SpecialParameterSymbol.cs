@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Diagnostics;
 using Devsense.PHP.Syntax;
+using Peachpie.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -72,54 +73,6 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Value to be imported.
-        /// From `Pchp.Core.ImportValueAttribute+ValueSpec`.
-        /// </summary>
-        public enum ValueSpec
-        {
-            /// <summary>
-            /// Not used.
-            /// </summary>
-            Error = 0,
-
-            /// <summary>
-            /// Current class context.
-            /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <c>PhpTypeInfo</c> or <see cref="string"/>.
-            /// </summary>
-            CallerClass,
-
-            /// <summary>
-            /// Current late static bound class (<c>static</c>).
-            /// The parameter must be of type <c>PhpTypeInfo</c>.
-            /// </summary>
-            CallerStaticClass,
-
-            /// <summary>
-            /// Calue of <c>$this</c> variable or <c>null</c> if variable is not defined.
-            /// The parameter must be of type <see cref="object"/>.
-            /// </summary>
-            This,
-
-            /// <summary>
-            /// Provides a reference to the array of local PHP variables.
-            /// The parameter must be of type <c>PhpArray</c>.
-            /// </summary>
-            Locals,
-
-            /// <summary>
-            /// Provides callers parameters.
-            /// The parameter must be of type array of <c>PhpTypeInfo</c>.
-            /// </summary>
-            CallerArgs,
-
-            /// <summary>
-            /// Provides reference to the current script container.
-            /// The parameter must be of type <see cref="RuntimeTypeHandle"/>.
-            /// </summary>
-            CallerScript,
-        }
-
-        /// <summary>
         /// Determines whether given parameter is treated as a special Context parameter
         /// which is always first and of type <c>Pchp.Core.Context</c>.
         /// </summary>
@@ -134,35 +87,21 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Determines whether given parameter is treated as a special implicitly provided, by the compiler or the runtime.
         /// </summary>
-        public static bool IsImportValueParameter(IParameterSymbol p) => IsImportValueParameter(p, out _);
+        public static bool IsImportValueParameter(ParameterSymbol p) => p.ImportValueAttributeData.IsValid;
 
         /// <summary>
         /// Determines whether given parameter is treated as a special implicitly provided, by the compiler or the runtime.
         /// </summary>
-        public static bool IsImportValueParameter(IParameterSymbol p, out ValueSpec valueEnum)
+        public static bool IsImportValueParameter(ParameterSymbol p, out ImportValueAttributeData.ValueSpec valueEnum)
         {
-            if (p != null)
-            {
-                var attr = ((ParameterSymbol)p).GetAttribute("Pchp.Core.ImportValueAttribute");
-                if (attr != null)
-                {
-                    var args = attr.ConstructorArguments;
-                    if (args.Length == 1 && args[0].Value is int enumvalue)
-                    {
-                        valueEnum = (ValueSpec)enumvalue;
-                        return true;
-                    }
-                }
-            }
-
-            //
-            valueEnum = default;
-            return false;
+            var data = p.ImportValueAttributeData;
+            valueEnum = data.Value;
+            return data.IsValid;
         }
 
         public static bool IsDummyFieldsOnlyCtorParameter(IParameterSymbol p) => p.Type.Name == "DummyFieldsOnlyCtor";
 
-        public static bool IsCallerClassParameter(IParameterSymbol p) => IsImportValueParameter(p, out var spec) && spec == ValueSpec.CallerClass;
+        public static bool IsCallerClassParameter(ParameterSymbol p) => p.ImportValueAttributeData.Value == ImportValueAttributeData.ValueSpec.CallerClass;
 
         /// <summary>
         /// Determines whether given parameter is a special lately static bound parameter.

@@ -244,7 +244,7 @@ namespace Pchp.Library.Spl
         public virtual PhpString serialize() => PhpSerialization.serialize(_ctx, default, __serialize());
 
         public virtual void unserialize(PhpString serialized) =>
-            __unserialize(PhpSerialization.unserialize(_ctx, default, serialized).ToArrayOrThrow());
+            __unserialize(StrictConvert.ToArray(PhpSerialization.unserialize(_ctx, default, serialized)));
 
         public virtual PhpArray __serialize()
         {
@@ -363,7 +363,7 @@ namespace Pchp.Library.Spl
             }
 
             // TODO: err
-            return PhpValue.Void;
+            return PhpValue.Null;
         }
 
         public string getIteratorClass() => _iteratorClass ?? DefaultIteratorClass;

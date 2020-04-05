@@ -85,6 +85,36 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
+    /// Thrown when an error occurs while performing mathematical operations.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    public class ArithmeticError : Error
+    {
+        [PhpFieldsOnlyCtor]
+        protected ArithmeticError() { }
+
+        public ArithmeticError(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Thrown when an attempt is made to divide a number by zero.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    public class DivisionByZeroError : ArithmeticError
+    {
+        [PhpFieldsOnlyCtor]
+        protected DivisionByZeroError() { }
+
+        public DivisionByZeroError(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
+
+    /// <summary>
     /// Thrown when <c>assert()</c> fails.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("standard")]

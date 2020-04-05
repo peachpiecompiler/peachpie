@@ -28,7 +28,7 @@ namespace Pchp.Library.Spl
                 storage[MakeKey(@object)] = (PhpValue)new PhpArray(2)
                 {
                     { Object, PhpValue.FromClass(@object) },
-                    { Info, data.IsSet ? data : PhpValue.Null },
+                    { Info, data },
                 };
             }
         }
@@ -323,7 +323,7 @@ namespace Pchp.Library.Spl
                     else
                     {
                         // backward compatibility with data created with old PHP SplObjectStorage
-                        data = PhpValue.Void;
+                        data = PhpValue.Null;
                         stream.Seek(-1, SeekOrigin.Current);    // back to `;`
                     }
 

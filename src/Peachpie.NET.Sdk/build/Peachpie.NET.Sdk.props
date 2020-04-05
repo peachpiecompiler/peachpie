@@ -7,7 +7,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 
     <!-- PeachpieToolFullPath pointing to the task dll -->
-    <PeachpieToolFullPath>$(MSBuildThisFileDirectory)../tools/Peachpie.NET.Sdk.dll</PeachpieToolFullPath>
+    <PeachpieToolFullPath Condition=" '$(PeachpieToolFullPath)'=='' ">$(MSBuildThisFileDirectory)../tools/Peachpie.NET.Sdk.dll</PeachpieToolFullPath>
     
     <!-- project guid used by dotnet sln add -->
     <!--TODO DefaultProjectTypeGuid Condition=" '$(DefaultProjectTypeGuid)' == '' ">{F2A71F9B-5D33-465A-A702-920D77279786}</DefaultProjectTypeGuid -->
@@ -15,6 +15,12 @@
     <!-- imported by common targets -->
     <LanguageTargets>$(MSBuildThisFileDirectory)Peachpie.NET.Current.Sdk.targets</LanguageTargets>
   </PropertyGroup>
+
+  <!-- default Compile and None items -->
+  <ItemGroup>
+    <None Include="**/*" Exclude="obj/**;bin/**;.*/**;*.msbuildproj;*.msbuildproj.user;*.sln;" />
+    <!--Content Include="" /-->
+  </ItemGroup>
 
   <!-- current Peachpie SDK version -->
   <Import Project="$(MSBuildThisFileDirectory)Peachpie.Version.props" Condition=" '$(PeachpieVersion)'=='' "/>

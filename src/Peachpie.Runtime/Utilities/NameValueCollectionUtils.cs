@@ -13,14 +13,14 @@ namespace Pchp.Core.Utilities
         /// <summary>
         /// Fixes top level variable name to not contain spaces and dots (as it is in PHP);
         /// </summary>
-        static string EncodeTopLevelName(string/*!*/name)
+        public static string EncodeTopLevelName(string/*!*/name)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
             return name.Replace('.', '_').Replace(' ', '_');
         }
 
-        static PhpArray EnsureItemArray(PhpArray array, IntStringKey key)
+        public static PhpArray EnsureItemArray(PhpArray array, IntStringKey key)
         {
             PhpArray result;
 
@@ -47,6 +47,25 @@ namespace Pchp.Core.Utilities
             return result;
         }
 
+        public static void EnsureItemArray(PhpArray array, IntStringKey item, IntStringKey key, PhpValue value)
+        {
+            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (item.IsEmpty) throw new ArgumentException(nameof(item));
+
+            // array[item]: array(key => value)
+
+            var itemarr = (PhpArray)array.EnsureItemArray(item);
+
+            if (key.IsEmpty)
+            {
+                itemarr.Add(value);
+            }
+            else
+            {
+                itemarr[key] = value;
+            }
+        }
+
         /// <summary>
         /// Adds a variable to auto-global array.
         /// Duplicit entries are collected into a sub-array item.
@@ -56,7 +75,7 @@ namespace Pchp.Core.Utilities
         /// <param name="name">A unparsed name of variable.</param>
         /// <param name="value">A value to be added.</param>
         /// <param name="subname">A name of intermediate array inserted before the value.</param>
-        public static void AddVariable(this PhpArray/*!*/ array, string name, string value, string? subname = null)
+        public static void AddVariable(this PhpArray/*!*/ array, string name, PhpValue value, string? subname = null)
         {
             if (array == null) throw new ArgumentNullException(nameof(array));
             if (name == null) throw new ArgumentNullException(nameof(name));
@@ -93,7 +112,10 @@ namespace Pchp.Core.Utilities
 
                     // breaks if ']' is not followed by '[':
                     left = right + 1;
-                    if (left == name.Length || name[left] != '[') break;
+                    if (left == name.Length || name[left] != '[')
+                    {
+                        break;
+                    }
 
                     // the next right brace:
                     right = name.IndexOf(']', left + 1);
@@ -101,11 +123,11 @@ namespace Pchp.Core.Utilities
 
                 if (key.Equals(IntStringKey.EmptyStringKey))
                 {
-                    array.AddValue(PhpValue.Create(value));
+                    array.AddValue(value);
                 }
                 else
                 {
-                    array.SetItemValue(key, PhpValue.Create(value));
+                    array.SetItemValue(key, value);
                 }
             }
             else
@@ -116,11 +138,11 @@ namespace Pchp.Core.Utilities
                 // inserts a subname on the next level:
                 if (subname != null)
                 {
-                    EnsureItemArray(array, key).SetItemValue(Convert.StringToArrayKey(subname), PhpValue.Create(value));
+                    EnsureItemArray(array, key).SetItemValue(Convert.StringToArrayKey(subname), value);
                 }
                 else
                 {
-                    array.SetItemValue(key, PhpValue.Create(value));
+                    array.SetItemValue(key, value);
                 }
             }
         }

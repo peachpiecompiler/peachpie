@@ -130,7 +130,7 @@ namespace Pchp.Library.Streams
                 case StreamOpenMode.WriteText: modeStr = "wt"; break;
                 default: throw new ArgumentException();
             }
-            
+
             return Open(ctx, path, modeStr, StreamOpenOptions.Empty, StreamContext.Default);
         }
 
@@ -1993,8 +1993,7 @@ namespace Pchp.Library.Streams
         /// <returns>The handle cast to PhpStream.</returns>
         public static PhpStream GetValid(PhpResource handle)
         {
-            var result = handle as PhpStream;
-            if (result != null && result.IsValid)
+            if (handle is PhpStream result && result.IsValid)
             {
                 return result;
             }
@@ -2388,8 +2387,8 @@ namespace Pchp.Library.Streams
         public virtual StatStruct Stat()
         {
             return (this.Wrapper != null)
-            ? this.Wrapper.Stat(OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true)
-            : StreamWrapper.StatUnsupported();
+                ? this.Wrapper.Stat(OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true)
+                : StreamWrapper.StatUnsupported();
         }
 
         #endregion

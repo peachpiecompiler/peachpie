@@ -157,12 +157,12 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public override ITypeSymbol ResolveTypeSymbol(PhpCompilation compilation)
         {
-            if (this.ResolvedType.IsValidType())
+            if (this.ResolvedType != null)
             {
                 return this.ResolvedType;
             }
 
-            if (_self == null || _self.IsTraitType())
+            if (_self == null || _self.IsTrait)
             {
                 // no self, parent, static resolvable in compile-time:
                 return new MissingMetadataTypeSymbol(ToString(), 0, false);
@@ -466,6 +466,8 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             _targetType = targetType ?? throw ExceptionUtilities.ArgumentNull(nameof(targetType));
             _typeArguments = typeArguments;
         }
+
+        public override bool IsObject => true;
 
         public override ImmutableArray<IBoundTypeRef> TypeArguments => _typeArguments.CastArray<IBoundTypeRef>();
 

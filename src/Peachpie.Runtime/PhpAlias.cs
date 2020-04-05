@@ -76,13 +76,13 @@ namespace Pchp.Core
         /// Ensures the underlying value is an object and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public object EnsureObject() => Value.EnsureObject();
+        public object EnsureObject() => PhpValue.EnsureObject(ref Value);
 
         /// <summary>
         /// Ensures the underlying value is an array and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public IPhpArray EnsureArray() => Value.EnsureArray();
+        public IPhpArray EnsureArray() => PhpValue.EnsureArray(ref Value);
 
         /// <summary>
         /// Performs deep copy of the value.
@@ -107,8 +107,6 @@ namespace Pchp.Core
 
         public string ToString(Context ctx) => Value.ToString(ctx);
 
-        public string ToStringOrThrow(Context ctx) => Value.ToStringOrThrow(ctx);
-
         public object ToClass() => Value.ToClass();
 
         public PhpArray ToArray() => Value.ToArray();
@@ -132,8 +130,6 @@ namespace Pchp.Core
         public object ToObject() => ToClass();
 
         public object AsObject() => Value.AsObject();
-
-        public long ToLongOrThrow() => Value.ToLongOrThrow();
 
         public PhpNumber ToNumber() => Convert.ToNumber(Value);
 

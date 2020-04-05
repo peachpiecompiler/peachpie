@@ -454,7 +454,7 @@ namespace Pchp.Library.Spl
         public virtual PhpString serialize() => PhpSerialization.serialize(_ctx, default, __serialize());
 
         public virtual void unserialize(PhpString data) =>
-            __unserialize(PhpSerialization.unserialize(_ctx, default, data).ToArrayOrThrow());
+            __unserialize(StrictConvert.ToArray(PhpSerialization.unserialize(_ctx, default, data)));
 
         public virtual PhpArray __serialize()
         {
@@ -677,12 +677,12 @@ namespace Pchp.Library.Spl
 
         public virtual PhpValue key()
         {
-            return (_enumerator != null && _valid) ? _enumerator.CurrentKey : PhpValue.Void;
+            return (_enumerator != null && _valid) ? _enumerator.CurrentKey : PhpValue.Null;
         }
 
         public virtual PhpValue current()
         {
-            return (_enumerator != null && _valid) ? _enumerator.CurrentValue : PhpValue.Void;
+            return (_enumerator != null && _valid) ? _enumerator.CurrentValue : PhpValue.Null;
         }
 
         public PhpValue __call(Context ctx, string name, PhpArray arguments) => this.CallOnInner(ctx, name, arguments);
@@ -1024,12 +1024,12 @@ namespace Pchp.Library.Spl
 
         public override PhpValue current()
         {
-            return isValidImpl() ? _index.Value.current() : PhpValue.Void;
+            return isValidImpl() ? _index.Value.current() : PhpValue.Null;
         }
 
         public override PhpValue key()
         {
-            return isValidImpl() ? _index.Value.key() : PhpValue.Void;
+            return isValidImpl() ? _index.Value.key() : PhpValue.Null;
         }
 
         public override bool valid() => isValidImpl();
@@ -1501,7 +1501,7 @@ namespace Pchp.Library.Spl
 
         #region Fields and properties
 
-        protected private Context _ctx;
+        readonly protected Context _ctx;
 
         private PhpValue _currentVal;
         private PhpValue _currentKey;
@@ -1513,7 +1513,7 @@ namespace Pchp.Library.Spl
 
         public string replacement;
 
-        private bool IsKeyUsed => (_flags & USE_KEY) != 0;
+        private protected bool IsKeyUsed => (_flags & USE_KEY) != 0;
 
         #endregion
 
@@ -1598,11 +1598,6 @@ namespace Pchp.Library.Spl
             var key = base.key();
             var val = base.current();
 
-            if (key.IsDefault || val.IsDefault)
-            {
-                return false;
-            }
-
             _currentKey = key;
             _currentVal = val;
 
@@ -1612,14 +1607,14 @@ namespace Pchp.Library.Spl
             switch (_mode)
             {
                 case MATCH:
-                    result = (PCRE.preg_match(_ctx, _regex, subject) > 0);
+                    result = (PCRE.preg_match(_regex, subject) > 0);
                     break;
                 case GET_MATCH:
-                    result = (PCRE.preg_match(_ctx, _regex, subject, out matches, _pregFlags) > 0);
+                    result = (PCRE.preg_match(_regex, subject, out matches, _pregFlags) > 0);
                     _currentVal = matches;
                     break;
                 case ALL_MATCHES:
-                    result = (PCRE.preg_match_all(_ctx, _regex, subject, out matches, _pregFlags) > 0);
+                    result = (PCRE.preg_match_all(_regex, subject, out matches, _pregFlags) > 0);
                     _currentVal = matches;
                     break;
                 case SPLIT:
@@ -1628,8 +1623,7 @@ namespace Pchp.Library.Spl
                     _currentVal = matches;
                     break;
                 case REPLACE:
-                    long replaceCount = 0;
-                    var replaceResult = PCRE.preg_replace(_ctx, _regex, replacement, subject, -1, out replaceCount);
+                    var replaceResult = PCRE.preg_replace(_ctx, _regex, replacement, subject, -1, out var replaceCount);
 
                     if (replaceResult.IsNull || replaceCount == 0)
                     {

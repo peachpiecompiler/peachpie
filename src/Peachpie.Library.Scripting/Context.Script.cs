@@ -315,7 +315,7 @@ namespace Peachpie.Library.Scripting
                 PhpException.Throw(PhpError.Error, string.Format("The script cannot be compiled due to following errors:\n{0}", errors));
 
                 //
-                return PhpValue.Void;
+                return PhpValue.False;
             });
         }
 

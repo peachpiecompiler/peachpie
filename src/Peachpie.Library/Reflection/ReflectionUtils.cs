@@ -153,7 +153,7 @@ namespace Pchp.Library.Reflection
                     var allowsNull = p.IsNullable();
                     var isVariadic = pi == ps.Length - 1 && p.GetCustomAttribute<ParamArrayAttribute>() != null;
 
-                    PhpValue defaultValue;
+                    PhpValue? defaultValue;
                     DefaultValueAttribute defaultValueAttr;
 
                     if (p.HasDefaultValue)
@@ -174,9 +174,10 @@ namespace Pchp.Library.Reflection
                     {
                         if (mi != 0) // we are adding and optional parameter!
                         {
-                            if (defaultValue.IsDefault) // optional parameter has not specified default value, set void so it is treated as optional
+                            if (!defaultValue.HasValue)
                             {
-                                defaultValue = PhpValue.Void;
+                                // optional parameter has not specified default value, set void so it is treated as optional
+                                defaultValue = PhpValue.Null;
                             }
                         }
 

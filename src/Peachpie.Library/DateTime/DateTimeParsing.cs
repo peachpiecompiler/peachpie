@@ -317,6 +317,7 @@ namespace Pchp.Library.DateTime
             if (have_zone > 0)
             {
                 result = result.AddMinutes(-z);
+                result = TimeZoneInfo.ConvertTimeToUtc(result, TimeZoneInfo.Utc); // Just mark that it's in UTC already
             }
             else
             {
@@ -334,6 +335,8 @@ namespace Pchp.Library.DateTime
 
                 result = TimeZoneInfo.ConvertTime(result, zone, TimeZoneInfo.Utc);// zone.ToUniversalTime(result);
             }
+
+            Debug.Assert(result.Kind == DateTimeKind.Utc);
 
             //
             return result;

@@ -26,8 +26,8 @@ namespace Pchp.Library.DateTime
             public const string RFC1123 = DateTimeFunctions.DATE_RFC1123;// @"D, d M Y H:i:s O";
             public const string RFC2822 = DateTimeFunctions.DATE_RFC2822;// @"D, d M Y H:i:s O";
             public const string RFC3339 = DateTimeFunctions.DATE_RFC3339;// @"Y-m-d\TH:i:sP";
-            public const string DATE_RFC7231 = DateTimeFunctions.DATE_RFC7231;// @"D, d M Y H:i:s \G\M\T";
-            public const string DATE_RFC3339_EXTENDED = DateTimeFunctions.DATE_RFC3339_EXTENDED;// @"Y-m-d\TH:i:s.vP";
+            public const string RFC7231 = DateTimeFunctions.DATE_RFC7231;// @"D, d M Y H:i:s \G\M\T";
+            public const string RFC3339_EXTENDED = DateTimeFunctions.DATE_RFC3339_EXTENDED;// @"Y-m-d\TH:i:s.vP";
             public const string RSS = DateTimeFunctions.DATE_RSS;// @"D, d M Y H:i:s O";
             public const string W3C = DateTimeFunctions.DATE_W3C;// @"Y-m-d\TH:i:sP";
 

@@ -3,6 +3,7 @@ using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Peachpie.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -148,7 +149,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     var callableMask = ctx.GetCallableTypeMask();
                     callableMask.IsRef = ps.Syntax.PassedByRef;
-                    if (!ps.IsNotNull)
+                    if (!ps.HasNotNull)
                         callableMask |= ctx.GetNullTypeMask();
 
                     return callableMask;
@@ -160,7 +161,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // create the type mask from the CLR type symbol
-            var mask = TypeRefFactory.CreateMask(ctx, t, notNull: (symbol as Symbol).HasNotNullAttribute());
+            var mask = TypeRefFactory.CreateMask(ctx, t, notNull: (symbol as Symbol).IsNotNull());
 
             if (symbol is IPhpRoutineSymbol phpr)
             {
@@ -205,10 +206,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 //
                 var phpparam = new PhpParam(
                     index++,
-                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNullAttribute()),
+                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull),
                     p.RefKind != RefKind.None,
                     p.IsParams,
-                    isPhpRw: p.GetPhpRwAttribute() != null,
+                    isPhpRw: p.IsPhpRw,
                     defaultValue: p.Initializer);
 
                 if (result == null)
@@ -272,20 +273,17 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (p.IsImplicitlyDeclared)
                 {
-                    if (SpecialParameterSymbol.IsImportValueParameter(p, out var spec))
+                    switch (((ParameterSymbol)p).ImportValueAttributeData.Value)
                     {
-                        switch (spec)
-                        {
-                            case SpecialParameterSymbol.ValueSpec.CallerArgs:
-                                f |= RoutineFlags.UsesArgs;
-                                break;
-                            case SpecialParameterSymbol.ValueSpec.Locals:
-                                f |= RoutineFlags.UsesLocals;
-                                break;
-                            case SpecialParameterSymbol.ValueSpec.CallerStaticClass:
-                                f |= RoutineFlags.UsesLateStatic;
-                                break;
-                        }
+                        case ImportValueAttributeData.ValueSpec.CallerArgs:
+                            f |= RoutineFlags.UsesArgs;
+                            break;
+                        case ImportValueAttributeData.ValueSpec.Locals:
+                            f |= RoutineFlags.UsesLocals;
+                            break;
+                        case ImportValueAttributeData.ValueSpec.CallerStaticClass:
+                            f |= RoutineFlags.UsesLateStatic;
+                            break;
                     }
                 }
                 else
@@ -308,7 +306,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return false;
             }
 
-            if (method is SourceRoutineSymbol sr)
+            if (method.OriginalDefinition is SourceRoutineSymbol sr)
             {
                 return sr.RequiresLateStaticBoundParam;
             }

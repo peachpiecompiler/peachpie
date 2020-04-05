@@ -916,6 +916,8 @@ namespace Pchp.Library.Streams
         {
             Debug.Assert(path != null);
 
+            // TODO: no cache here
+
             // Note: path is already absolute w/o the scheme, the permissions have already been checked.
             return PhpPath.HandleFileSystemInfo(StatStruct.Invalid, path, (p) =>
             {

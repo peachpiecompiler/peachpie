@@ -142,7 +142,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets current visibility scope.
         /// </summary>
-        protected OverloadsList.VisibilityScope VisibilityScope => OverloadsList.VisibilityScope.Create(TypeCtx.SelfType, Routine);
+        protected OverloadsList.VisibilityScope VisibilityScope => new OverloadsList.VisibilityScope(TypeCtx.SelfType, Routine);
 
         protected void PingSubscribers(ExitBlock exit)
         {
@@ -663,10 +663,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Accept(x.Name.NameExpression);
 
                 // bind variable place
-                if (x.Variable == null)
-                {
-                    x.Variable = new LocalVariableReference(VariableKind.LocalVariable, Routine, null, x.Name);
-                }
+                x.Variable ??= new LocalVariableReference(VariableKind.LocalVariable, Routine, null, x.Name);
 
                 // update state
                 if (x.Access.IsRead)
@@ -1927,10 +1924,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             var type = (TypeSymbol)x.TypeRef.Type;
 
-            if (x.Name.IsDirect && type.IsValidType())
+            if (x.Name.NameExpression != null)
             {
-                // TODO: resolve all candidates, visibility, static methods or instance on self/parent/static
-                var candidates = type.LookupMethods(x.Name.NameValue.Name.Value);
+                // indirect method call -> not resolvable
+            }
+            else if (type.IsValidType())
+            {
+                var candidates = type.LookupMethods(x.Name.ToStringOrThrow());
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
                 candidates = Construct(candidates, x);
@@ -1944,15 +1944,65 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, flags);
-                if ((method is MissingMethodSymbol || method is InaccessibleMethodSymbol)
-                    && type.LookupMember<IMethodSymbol>(Name.SpecialMethodNames.CallStatic.Value) != null)
+
+                // method is missing or inaccessible:
+                if (method is ErrorMethodSymbol errmethod && (errmethod.ErrorKind == ErrorMethodKind.Inaccessible || errmethod.ErrorKind == ErrorMethodKind.Missing))
                 {
-                    // __callStatic at runtime solves both inaccessible and missing method problems
-                    // TODO: remember and emit call to __callstatic directly (CallStaticMethodSymbol?)
-                    method = null;
+                    // NOTE: magic methods __call or __callStatic are called in both cases - the target method is inaccessible or missing
+
+                    var isviable = true; // can we safely resolve the method?
+                    var call = Array.Empty<MethodSymbol>();
+
+                    // __call() might be used, if we have a reference to $this:
+                    if (Routine != null && !Routine.IsStatic)
+                    {
+                        // there is $this variable:
+                        if (TypeCtx.ThisType == null || TypeCtx.ThisType.IsOfType(type) || type.IsOfType(TypeCtx.ThisType))
+                        {
+                            // try to use __call() first:
+                            call = type.LookupMethods(Name.SpecialMethodNames.Call.Value);
+
+                            //
+                            if (TypeCtx.ThisType == null && call.Length != 0)
+                            {
+                                // $this is resolved dynamically in runtime and
+                                // we don't know if we can use __call() here
+                                isviable = false;
+                            }
+                        }
+                    }
+
+                    if (call.Length == 0)
+                    {
+                        // __callStatic()
+                        call = type.LookupMethods(Name.SpecialMethodNames.CallStatic.Value);
+                    }
+
+                    if (call.Length != 0)
+                    {
+                        // NOTE: PHP ignores visibility of __callStatic
+                        call = Construct(call, x);
+
+                        method = call.Length == 1 && isviable
+                            ? new MagicCallMethodSymbol(x.Name.ToStringOrThrow(), call[0])
+                            : null; // nullify the symbol so it will be called dynamically and resolved in rutime
+                    }
                 }
 
                 x.TargetMethod = method;
+            }
+            else if (x.TypeRef.IsSelf() && Routine != null && Routine.ContainingType.IsTraitType())
+            {
+                // self:: within trait type
+                // resolve possible code path
+                // we need this at least to determine possible late static type binding
+
+                var candidates = Construct(Routine.ContainingType.LookupMethods(x.Name.ToStringOrThrow()), x);
+                if (candidates.Length != 0)
+                {
+                    // accessibility not have to be checked here
+                    x.TargetMethod = new AmbiguousMethodSymbol(candidates.AsImmutable(), overloadable: true);
+                }
             }
 
             BindRoutineCall(x);
@@ -1960,6 +2010,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
+        // helper
         MethodSymbol[] Construct(MethodSymbol[] methods, BoundRoutineCall bound)
         {
             if (bound.TypeArguments.IsDefaultOrEmpty)

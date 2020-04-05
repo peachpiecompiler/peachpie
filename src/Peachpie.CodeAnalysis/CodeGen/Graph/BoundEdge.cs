@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else if (IsLoop) // perf
             {
-                cg.Builder.DefineHiddenSequencePoint();
+                cg.EmitHiddenSequencePoint();
                 cg.Builder.EmitBranch(ILOpCode.Br, condition);
 
                 // {
@@ -71,9 +71,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // }
 
                 // if (Condition)
-                cg.EmitSequencePoint(this.Condition.PhpSyntax);
+                cg.EmitHiddenSequencePoint(); 
                 cg.Builder.MarkLabel(condition);
+                
+                cg.EmitSequencePoint(this.Condition.PhpSyntax);
                 cg.EmitConvert(condition, cg.CoreTypes.Boolean);
+
                 cg.Builder.EmitBranch(isnegation ? ILOpCode.Brfalse : ILOpCode.Brtrue, TrueTarget);
             }
             else
@@ -81,6 +84,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // if (Condition)
                 cg.EmitSequencePoint(this.Condition.PhpSyntax);
                 cg.EmitConvert(condition, cg.CoreTypes.Boolean);
+
                 cg.Builder.EmitBranch(isnegation ? ILOpCode.Brtrue : ILOpCode.Brfalse, FalseTarget);
 
                 // {
@@ -298,7 +302,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(varplace != null);
 
             // $x = <tmp>
-            varplace.EmitStore(cg, tmploc, BoundAccess.Write);
+            varplace.EmitStore(cg, tmploc, catchBlock.Variable.TargetAccess());
 
             //
             cg.ReturnTemporaryLocal(tmploc);
@@ -356,7 +360,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(_moveNextMethod.IsStatic == false);
 
             // leaving scope of `foreach` body
-
+            
             EmitReleaseRef(cg);
 
             if (_enumeratorLoc.Type.IsValueType)
@@ -387,7 +391,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 {
                     // .EnsureAlias()
                     cg.EmitPhpValueAddr();
-                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias);
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureAlias_PhpValueRef);
                 }
                 else
                 {
@@ -419,6 +423,28 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
         }
 
+        static bool IsAPairValue(TypeSymbol type, out Symbol key, out Symbol value)
+        {
+            key = value = default;
+            
+            if (type.IsValueType)
+            {
+                if (type.Name == "ValueTuple" && ((NamedTypeSymbol)type).Arity == 2)
+                {
+                    key = type.GetMembers("Item1").Single();
+                    value = type.GetMembers("Item2").Single();
+                }
+                else if (type.Name == "KeyValuePair" && ((NamedTypeSymbol)type).Arity == 2)
+                {
+                    key = type.GetMembers("Key").Single();
+                    value = type.GetMembers("Value").Single();
+                }
+            }
+
+            //
+            return key != null && value != null; ;
+        }
+
         internal void EmitGetCurrent(CodeGenerator cg, BoundReferenceExpression valueVar, BoundReferenceExpression keyVar)
         {
             Debug.Assert(_enumeratorLoc.IsValid);
@@ -430,45 +456,57 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // PhpArray enumerator or Iterator
 
                 cg.EmitSequencePoint(valueVar.PhpSyntax);
-                valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.Access);
+                valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.TargetAccess());
 
                 if (keyVar != null)
                 {
                     cg.EmitSequencePoint(keyVar.PhpSyntax);
-                    keyVar.BindPlace(cg).EmitStore(cg, () => VariableReferenceExtensions.EmitLoadValue(cg, _currentKey, _enumeratorLoc), keyVar.Access);
+                    keyVar.BindPlace(cg).EmitStore(cg, () => VariableReferenceExtensions.EmitLoadValue(cg, _currentKey, _enumeratorLoc), keyVar.TargetAccess());
                 }
             }
             else
             {
-                Debug.Assert(_current != null);
+                if (_current == null)
+                {
+                    throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(_current);
+                }
 
                 var valuetype = _current.ReturnType;
-
-                // ValueTuple (key, value)
-                // TODO: KeyValuePair<key, value> // the same
-                if (valuetype.Name == "ValueTuple" && valuetype.IsValueType && ((NamedTypeSymbol)valuetype).Arity == 2)
+                
+                // ValueTuple<T1, T2> (Item1, Item2)
+                // KeyValuePair<TKey, TValue> (Key, Value)
+                if (IsAPairValue(valuetype, out var skey, out var svalue))
                 {
                     // tmp = current;
                     var tmp = cg.GetTemporaryLocal(valuetype);
                     VariableReferenceExtensions.EmitLoadValue(cg, _current, _enumeratorLoc);
                     cg.Builder.EmitLocalStore(tmp);
 
-                    // TODO: ValueTuple Helper
-                    var item1 = valuetype.GetMembers("Item1").Single() as FieldSymbol;
-                    var item2 = valuetype.GetMembers("Item2").Single() as FieldSymbol;
+                    var tmploc = new LocalPlace(tmp);
 
-                    var item1place = new FieldPlace(new LocalPlace(tmp), item1, cg.Module);
-                    var item2place = new FieldPlace(new LocalPlace(tmp), item2, cg.Module);
+                    var keyplace = skey switch
+                    {
+                        FieldSymbol fld => (IPlace)new FieldPlace(tmploc, fld, cg.Module),
+                        PropertySymbol prop => new PropertyPlace(tmploc, prop, cg.Module),
+                        _ => throw Roslyn.Utilities.ExceptionUtilities.Unreachable,
+                    };
+
+                    var valueplace = svalue switch
+                    {
+                        FieldSymbol fld => (IPlace)new FieldPlace(tmploc, fld, cg.Module),
+                        PropertySymbol prop => new PropertyPlace(tmploc, prop, cg.Module),
+                        _ => throw Roslyn.Utilities.ExceptionUtilities.Unreachable,
+                    };
 
                     // value = tmp.Item2;
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
-                    valueVar.BindPlace(cg).EmitStore(cg, item2place, valueVar.Access);
+                    valueVar.BindPlace(cg).EmitStore(cg, valueplace, valueVar.TargetAccess());
 
                     // key = tmp.Item1;
                     if (keyVar != null)
                     {
                         cg.EmitSequencePoint(keyVar.PhpSyntax);
-                        keyVar.BindPlace(cg).EmitStore(cg, item1place, keyVar.Access);
+                        keyVar.BindPlace(cg).EmitStore(cg, keyplace, keyVar.TargetAccess());
                     }
 
                     //
@@ -478,7 +516,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 else
                 {
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
-                    valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.Access);
+                    valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.TargetAccess());
 
                     if (keyVar != null)
                     {
@@ -689,7 +727,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var lblBody = new object();
 
             //
-            cg.Builder.DefineHiddenSequencePoint();
+            cg.EmitHiddenSequencePoint();
             cg.Builder.EmitBranch(ILOpCode.Br, lblMoveNext);
             cg.Builder.MarkLabel(lblBody);
 
@@ -701,10 +739,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // }
 
             // if (enumerator.MoveNext())
-            cg.EmitSequencePoint(_moveSpan);
+            cg.EmitHiddenSequencePoint();
             cg.Builder.MarkLabel(lblMoveNext);
             this.EnumereeEdge.EmitIteratorNext(cg); // Iterator.next() : void (only if we are enumerating the Iterator directly)
+
+            cg.EmitHiddenSequencePoint();
             cg.Builder.MarkLabel(this.EnumereeEdge._lbl_MoveNext);
+            
+            cg.EmitSequencePoint(MoveNextSpan);
             this.EnumereeEdge.EmitMoveNext(cg); // bool
             cg.Builder.EmitBranch(ILOpCode.Brtrue, lblBody);
 

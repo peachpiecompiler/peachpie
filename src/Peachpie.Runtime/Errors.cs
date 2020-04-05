@@ -227,6 +227,22 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Outputs warning: Illegal offset type.
+        /// </summary>
+        public static void IllegalOffsetType()
+        {
+            Throw(PhpError.Warning, ErrResources.illegal_offset_type);
+        }
+
+        /// <summary>
+        /// Outputs error: Undefined offset ({0}).
+        /// </summary>
+        public static void UndefinedOffset(IntStringKey key)
+        {
+            Throw(PhpError.Error, string.Format(ErrResources.undefined_offset, key.ToString()));
+        }
+
+        /// <summary>
         /// Argument type mismatch error.
         /// </summary>
         public static void ThrowIfArgumentNull(object value, int arg)
@@ -429,6 +445,15 @@ namespace Pchp.Core
         {
             Throw(PhpError.Error, ErrResources.self_used_out_of_class);
             throw new ArgumentException(ErrResources.self_used_out_of_class);
+        }
+
+        /// <summary>
+        /// Internal warning when new element cannot be added to array because there are no more free keys.
+        /// </summary>
+        internal static void NextArrayKeyUnavailable()
+        {
+            // Warning: Cannot add element to the array as the next element is already occupied
+            Throw(PhpError.Warning, ErrResources.next_array_key_unavailable);
         }
     }
 

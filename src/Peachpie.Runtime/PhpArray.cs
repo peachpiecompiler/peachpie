@@ -78,12 +78,38 @@ namespace Pchp.Core
         /// <summary>
         /// Creates a new instance of <see cref="PhpArray"/> initialized with all values from <see cref="System.Array"/>.
         /// </summary>
+        /// <param name="values">Array of values.</param>
+        public PhpArray(PhpValue[] values)
+            : base(values.Length)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                table.Add(values[i]);
+            }
+        }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="PhpArray"/> initialized with all values from <see cref="System.Array"/>.
+        /// </summary>
+        /// <param name="values">Array of values.</param>
+        public PhpArray(PhpValue?[] values)
+            : base(values.Length)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                table.Add(values[i].GetValueOrDefault(PhpValue.Null));
+            }
+        }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="PhpArray"/> initialized with all values from <see cref="System.Array"/>.
+        /// </summary>
         public PhpArray(string[] values)
             : base(values.Length)
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Add(values[i]);
+                table.Add(values[i]);
             }
         }
 
@@ -303,7 +329,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="name">Key, respecting <c>[subkey]</c> notation.</param>
         /// <param name="value">The value.</param>
-        /// <remarks>See <see cref="NameValueCollectionUtils.AddVariable(PhpArray, string, string, string)"/> for details.</remarks>
+        /// <remarks>See <see cref="NameValueCollectionUtils.AddVariable(PhpArray, string, PhpValue, string)"/> for details.</remarks>
         public void AddVariable(string name, string value) => NameValueCollectionUtils.AddVariable(this, name, value);
 
         /// <summary>
@@ -373,8 +399,6 @@ namespace Pchp.Core
 
         string IPhpConvertible.ToString(Context ctx) => (string)this;
 
-        string IPhpConvertible.ToStringOrThrow(Context ctx) => (string)this;
-
         /// <summary>
         /// Creates <see cref="stdClass"/> with runtime instance fields copied from entries of this array.
         /// </summary>
@@ -398,7 +422,6 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.Undefined:
                 case PhpTypeCode.Null:
                     return Count;
 
@@ -766,7 +789,8 @@ namespace Pchp.Core
             }
             else
             {
-                throw new ArgumentException(nameof(index));
+                PhpException.IllegalOffsetType();
+                return PhpValue.Null;
             }
         }
 
@@ -784,7 +808,7 @@ namespace Pchp.Core
             }
             else
             {
-                throw new ArgumentException(nameof(index));
+                PhpException.IllegalOffsetType();
             }
         }
 
@@ -811,19 +835,19 @@ namespace Pchp.Core
         public PhpAlias EnsureItemAlias(IntStringKey key)
         {
             this.EnsureWritable();
-            return table.EnsureValue(key).EnsureAlias();
+            return PhpValue.EnsureAlias(ref table.EnsureValue(key));
         }
 
         public object EnsureItemObject(IntStringKey key)
         {
             this.EnsureWritable();
-            return table.EnsureValue(key).EnsureObject();
+            return PhpValue.EnsureObject(ref table.EnsureValue(key));
         }
 
         public IPhpArray EnsureItemArray(IntStringKey key)
         {
             this.EnsureWritable();
-            return table.EnsureValue(key).EnsureArray();
+            return PhpValue.EnsureArray(ref table.EnsureValue(key));
         }
 
         public void RemoveKey(IntStringKey key) => this.Remove(key);

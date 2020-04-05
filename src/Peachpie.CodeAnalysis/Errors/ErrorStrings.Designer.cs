@@ -403,6 +403,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failure writing debug information: {0}.
+        /// </summary>
+        internal static string ERR_PdbWritingFailed {
+            get {
+                return ResourceManager.GetString("ERR_PdbWritingFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to An error occurred while writing the output file: {0}..
         /// </summary>
         internal static string ERR_PeWritingFailure {

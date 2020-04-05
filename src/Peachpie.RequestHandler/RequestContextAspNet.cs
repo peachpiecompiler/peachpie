@@ -578,14 +578,10 @@ namespace Peachpie.RequestHandler
                     }
 
                     //
-                    files[name] = (PhpValue)new PhpArray(5)
-                    {
-                        { "name", file_name },
-                        { "type",type },
-                        { "tmp_name",file_path },
-                        { "error", error },
-                        { "size", file.ContentLength },
-                    };
+                    Superglobals.AddFormFile(
+                        files, name,
+                        file_name, type, file_path, error, file.ContentLength
+                    );
                 }
             }
             else

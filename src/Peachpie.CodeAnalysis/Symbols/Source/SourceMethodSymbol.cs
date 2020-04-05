@@ -261,17 +261,16 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var modifiers = _syntax.Modifiers;
-
-                var visibility = modifiers & PhpMemberAttributes.VisibilityMask;
-                if (visibility == PhpMemberAttributes.Private && _syntax.Name.Name.IsConstructName)
+                var accessibility = _syntax.Modifiers.GetAccessibility();                
+                if (accessibility == Accessibility.Private && _syntax.Name.Name.IsConstructName)
                 {
                     // workaround for `private` __construct()
-                    // we have to be able to call __construct even from derived class
-                    modifiers = PhpMemberAttributes.Protected | (modifiers & ~PhpMemberAttributes.VisibilityMask);
+                    // we have to be able to call __construct even from a derived class
+                    accessibility = Accessibility.Protected;
                 }
 
-                return modifiers.GetAccessibility();
+                //
+                return accessibility;
             }
         }
 

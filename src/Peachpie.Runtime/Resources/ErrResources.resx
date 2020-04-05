@@ -1637,4 +1637,7 @@ Additional information:
   <data name="argument_not_callable" xml:space="preserve">
     <value>Argument {0} must be callable, {1} given</value>
   </data>
+  <data name="next_array_key_unavailable" xml:space="preserve">
+    <value>Cannot add element to the array as the next element is already occupied</value>
+  </data>
 </root>

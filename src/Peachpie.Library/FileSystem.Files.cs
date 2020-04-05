@@ -167,12 +167,18 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="handle"></param>
         /// <returns></returns>
+        [return: CastToFalse]
         public static PhpArray fstat(PhpResource handle)
         {
-            // Note: no cache here.
-            PhpStream stream = PhpStream.GetValid(handle);
-            if (stream == null) return null;
-            return BuildStatArray(stream.Stat());
+            var stream = PhpStream.GetValid(handle);
+            if (stream != null)
+            {
+                return BuildStatArray(stream.Stat());
+            }
+            else
+            {
+                return null; // FALSE
+            }
         }
 
         /// <summary>
@@ -194,6 +200,8 @@ namespace Pchp.Library
         /// </remarks>
         public static void clearstatcache(bool clear_realpath_cache = false, string filename = null)
         {
+            // TODO: clear cache here
+
             //if (!string.IsNullOrEmpty(filename) && !clear_realpath_cache)
             //{
             //    // TODO: throw warning

@@ -188,7 +188,8 @@ namespace Pchp.Core.Reflection
                 method.GetCustomAttribute<DebuggerHiddenAttribute>() != null ||
                 method.GetCustomAttribute<PhpHiddenAttribute>() != null ||
                 method.GetCustomAttribute<CompilerGeneratedAttribute>() != null ||
-                tinfo.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null)
+                tinfo.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null ||
+                tinfo.GetCustomAttribute<CompilerGeneratedAttribute>() != null)
             {
                 return false;
             }

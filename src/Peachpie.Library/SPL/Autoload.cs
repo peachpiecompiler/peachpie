@@ -107,7 +107,7 @@ namespace Pchp.Library.Spl
             protected override PhpCallable BindCore(Context ctx) => (_ctx, args) =>
             {
                 spl_autoload(_ctx, args[0].ToStringOrThrow(_ctx));
-                return PhpValue.Void;
+                return PhpValue.Null;
             };
         }
 

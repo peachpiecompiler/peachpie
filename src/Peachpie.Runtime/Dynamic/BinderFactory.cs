@@ -18,11 +18,11 @@ namespace Pchp.Core.Dynamic
         /// <summary>
         /// Cache key of a binder instance.
         /// </summary>
-        struct BinderKey
+        readonly struct BinderKey
         {
-            public int _type;
-            public string _name, _name2;
-            public RuntimeTypeHandle _h1, _h2, _h3;
+            public readonly int _type;
+            public readonly string _name, _name2;
+            public readonly RuntimeTypeHandle _h1, _h2, _h3;
 
             public BinderKey(int type, string name, string name2 = null, RuntimeTypeHandle h1 = default, RuntimeTypeHandle h2 = default, RuntimeTypeHandle h3 = default)
             {

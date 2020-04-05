@@ -17,9 +17,9 @@
     <GenerateNeutralResourcesLanguageAttribute>true</GenerateNeutralResourcesLanguageAttribute>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
-    <DefineConstants Condition=" '$(Configuration)' == 'Debug' ">$(DefineConstants);TRACE</DefineConstants>
     <LangVersion>latest</LangVersion>
     <GenerateFullPaths>true</GenerateFullPaths>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
 
     <!-- signing -->
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
@@ -38,7 +38,7 @@
   <!-- packages version -->
   <PropertyGroup>
     
-    <PeachpieLibraryRegularExpressionsVersion>1.1.1</PeachpieLibraryRegularExpressionsVersion>
+    <PeachpieLibraryRegularExpressionsVersion>1.2.0</PeachpieLibraryRegularExpressionsVersion>
     
   </PropertyGroup>
 

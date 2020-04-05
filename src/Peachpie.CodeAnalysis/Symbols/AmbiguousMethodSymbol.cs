@@ -16,6 +16,11 @@ namespace Pchp.CodeAnalysis.Symbols
         Ambiguous,
         Inaccessible,
         Missing,
+
+        /// <summary>
+        /// Method is actually a call to a magic method <c>__callStatic</c> or <c>__call</c>.
+        /// </summary>
+        MagicCall,
     }
 
     public interface IErrorMethodSymbol : IMethodSymbol
@@ -143,6 +148,45 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public InaccessibleMethodSymbol(ImmutableArray<MethodSymbol> ambiguities) : base(ambiguities, false)
         {
+        }
+    }
+
+    internal sealed class MagicCallMethodSymbol : ErrorMethodSymbol
+    {
+        public MethodSymbol RealMethod { get; }
+
+        public string OriginalMethodName { get; }
+
+        public override ErrorMethodKind ErrorKind => ErrorMethodKind.MagicCall;
+
+        public override string Name => RealMethod.Name;
+
+        public override MethodKind MethodKind => MethodKind.Ordinary;
+
+        public override bool ReturnsVoid => RealMethod.ReturnsVoid;
+
+        public override TypeSymbol ReturnType => RealMethod.ReturnType;
+
+        public override Symbol ContainingSymbol => RealMethod.ContainingSymbol;
+
+        public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences => RealMethod.DeclaringSyntaxReferences;
+
+        public override Accessibility DeclaredAccessibility => RealMethod.DeclaredAccessibility;
+
+        public override bool IsStatic => RealMethod.IsStatic;
+
+        public override bool IsVirtual => false;
+
+        public override bool IsOverride => false;
+
+        public override bool IsAbstract => false;
+
+        public override bool IsSealed => true;
+
+        public MagicCallMethodSymbol(string originalMethodName, MethodSymbol realSymbol)
+        {
+            OriginalMethodName = originalMethodName ?? throw new ArgumentNullException(nameof(originalMethodName));
+            RealMethod = realSymbol ?? throw new ArgumentNullException(nameof(realSymbol));
         }
     }
 

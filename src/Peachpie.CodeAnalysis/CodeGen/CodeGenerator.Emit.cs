@@ -11,6 +11,7 @@ using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Errors;
+using Peachpie.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
@@ -602,6 +603,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             return EmitCall(ILOpCode.Call, (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Type__GetTypeFromHandle));
         }
 
+        internal void EmitHiddenSequencePoint()
+        {
+            if (EmitPdbSequencePoints)
+            {
+                _il.DefineHiddenSequencePoint();
+            }
+        }
+
         internal void EmitSequencePoint(LangElement element)
         {
             if (element != null)
@@ -611,7 +620,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
         internal void EmitSequencePoint(Span span)
         {
-            if (_emitPdbSequencePoints && span.IsValid && !span.IsEmpty)
+            if (EmitPdbSequencePoints && span.IsValid && !span.IsEmpty)
             {
                 EmitSequencePoint(span.ToTextSpan());
             }
@@ -619,7 +628,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitSequencePoint(Microsoft.CodeAnalysis.Text.TextSpan span)
         {
-            if (_emitPdbSequencePoints && span.Length > 0)
+            if (EmitPdbSequencePoints && span.Length > 0)
             {
                 _il.DefineSequencePoint(ContainingFile.SyntaxTree, span);
                 _il.EmitOpCode(ILOpCode.Nop);
@@ -1497,25 +1506,25 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 switch (value)
                 {
-                    case SpecialParameterSymbol.ValueSpec.CallerScript:
+                    case ImportValueAttributeData.ValueSpec.CallerScript:
                         Debug.Assert(ContainingFile != null);
                         Debug.Assert(p.Type == CoreTypes.RuntimeTypeHandle);
                         return EmitLoadToken(ContainingFile, null);    // RuntimeTypeHandle
 
-                    case SpecialParameterSymbol.ValueSpec.CallerArgs:
+                    case ImportValueAttributeData.ValueSpec.CallerArgs:
                         Debug.Assert(p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpValue()); // PhpValue[]
                         return Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
 
-                    case SpecialParameterSymbol.ValueSpec.Locals:
+                    case ImportValueAttributeData.ValueSpec.Locals:
                         Debug.Assert(p.Type.Is_PhpArray());
                         if (!HasUnoptimizedLocals) throw new InvalidOperationException();
                         return LocalsPlaceOpt.EmitLoad(Builder).Expect(CoreTypes.PhpArray);    // PhpArray
 
-                    case SpecialParameterSymbol.ValueSpec.This:
+                    case ImportValueAttributeData.ValueSpec.This:
                         Debug.Assert(p.Type.IsObjectType());
                         return this.EmitPhpThisOrNull();           // object
 
-                    case SpecialParameterSymbol.ValueSpec.CallerStaticClass:
+                    case ImportValueAttributeData.ValueSpec.CallerStaticClass:
                         // current "static"
                         if (p.Type == CoreTypes.PhpTypeInfo)
                         {
@@ -1523,7 +1532,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
                         throw ExceptionUtilities.UnexpectedValue(p.Type);
 
-                    case SpecialParameterSymbol.ValueSpec.CallerClass:
+                    case ImportValueAttributeData.ValueSpec.CallerClass:
                         // current class context (self)
                         // note, can be obtain dynamically (global code, closure)
                         return EmitLoadCurrentClassContext(p.Type);
@@ -1765,7 +1774,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // {args}[i].EnsureAlias()
                             _il.EmitOpCode(ILOpCode.Ldelema);               // ref args[i]
                             EmitSymbolToken(arg_type.ElementType, null);    // PhpValue
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.EnsureAlias);
+                            EmitCall(ILOpCode.Call, CoreMethods.Operators.EnsureAlias_PhpValueRef);
                         }
                         else
                         {
@@ -2003,13 +2012,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // <stack>.Value.GetArrayAccess()
                         Emit_PhpAlias_GetValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArrayAccess);
+                        return EmitCall(ILOpCode.Call, CoreMethods.Operators.GetArrayAccess_PhpValueRef);
                     }
                     if (stack == CoreTypes.PhpValue)
                     {
                         // <stack>.GetArrayAccess()
                         EmitPhpValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArrayAccess);
+                        return EmitCall(ILOpCode.Call, CoreMethods.Operators.GetArrayAccess_PhpValueRef);
                     }
                     if (stack.IsReferenceType)
                     {
@@ -2246,13 +2255,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 default:
                     // uninitialized:
-                    if (t == CoreTypes.PhpString)
+                    if (t == CoreTypes.PhpString ||
+                        t == CoreTypes.PhpValue)
                     {
                         Debug.Assert(t.IsValueType);
                         break;
                     }
 
-                    // PhpValue, PhpNumber, PhpAlias:
+                    // PhpNumber, PhpAlias:
                     if (t.IsValueType || t == CoreTypes.PhpAlias)
                     {
                         // fld = default(T)
@@ -2433,12 +2443,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (targetp.RefKind == RefKind.None)
             {
-                EmitConvert(expr, targetp.Type); // load argument
+                EmitConvert(expr, targetp.Type, conversion: ConversionKind.Strict); // load argument
             }
             else
             {
-                var refexpr = expr as BoundReferenceExpression;
-                if (refexpr != null)
+                if (expr is BoundReferenceExpression refexpr)
                 {
                     var place = refexpr.Place();
                     if (place != null && place.HasAddress && place.Type == targetp.Type)
@@ -2794,16 +2803,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             return t;
         }
 
-        public void EmitIntStringKey(int key)
+        public void EmitIntStringKey(long key)
         {
-            _il.EmitIntConstant(key);
-            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
+            _il.EmitLongConstant(key);
+            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_long);
         }
 
         public void EmitIntStringKey(string key)
         {
             // try convert string to integer as it is in PHP:
-            if (TryConvertToIntKey(key, out int ikey))
+            if (TryConvertToIntKey(key, out var ikey))
             {
                 EmitIntStringKey(ikey);
             }
@@ -2828,7 +2837,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        static bool TryConvertToIntKey(string key, out int ikey)
+        static bool TryConvertToIntKey(string key, out long ikey)
         {
             ikey = default;
 
@@ -2850,7 +2859,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
 
-            return int.TryParse(key, out ikey);
+            return long.TryParse(key, out ikey);
         }
 
         public void EmitIntStringKey(BoundExpression expr)
@@ -2870,7 +2879,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (constant.Value is long l)
                 {
-                    EmitIntStringKey((int)l);
+                    EmitIntStringKey(l);
                 }
                 else if (constant.Value is int i)
                 {
@@ -2878,7 +2887,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (constant.Value is double d)
                 {
-                    EmitIntStringKey((int)d);
+                    EmitIntStringKey((long)d);
                 }
                 else if (constant.Value is bool b)
                 {

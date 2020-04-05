@@ -484,7 +484,7 @@ namespace Peachpie.Library.PDO
         {
             // TODO: lookup driver_options for `ATTR_STATEMENT_CLASS` instead ?
 
-            if (TryGetAttribute(PDO_ATTR.ATTR_STATEMENT_CLASS, out var classattr) && classattr.IsSet && classattr.IsPhpArray(out var classarr))
+            if (TryGetAttribute(PDO_ATTR.ATTR_STATEMENT_CLASS, out var classattr) && Operators.IsSet(classattr) && classattr.IsPhpArray(out var classarr))
             {
                 if (classarr[0].IsString(out var classname))
                 {

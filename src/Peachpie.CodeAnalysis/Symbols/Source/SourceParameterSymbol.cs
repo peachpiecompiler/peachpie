@@ -164,7 +164,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Gets value indicating that if the parameters type is a reference type,
         /// it is not allowed to pass a null value.
         /// </summary>
-        public bool IsNotNull
+        public override bool HasNotNull
         {
             get
             {
@@ -304,7 +304,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // [NotNull]
-            if (IsNotNull && Type.IsReferenceType)
+            if (HasNotNull && Type.IsReferenceType)
             {
                 yield return DeclaringCompilation.CreateNotNullAttribute();
             }

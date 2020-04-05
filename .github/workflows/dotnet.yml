@@ -1,0 +1,30 @@
+name: .NET Core
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.200
+    - name: Restore
+      run: dotnet restore
+    - name: Peachpie.Runtime.Tests
+      run: dotnet test ./src/Tests/Peachpie.Runtime.Tests --verbosity normal
+    - name: Peachpie.DiagnosticTests
+      run: dotnet test ./src/Tests/Peachpie.DiagnosticTests --verbosity normal
+#    - name: Peachpie.ScriptTests
+#      run: dotnet test ./src/Tests/Peachpie.ScriptTests --verbosity normal
+    - name: Build
+      run: dotnet build ./src/Peachpie.NET.Sdk/ -c Release --no-restore -p:VersionSuffix=ghaction${{github.run_number}}
+    

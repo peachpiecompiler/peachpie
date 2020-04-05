@@ -1076,5 +1076,29 @@ namespace Pchp.Library.Streams
         }
 
         #endregion
+
+        #region stream_isatty
+
+        /// <summary>
+        /// Determines if <paramref name="stream"/> refers to a valid terminal type device.
+        /// </summary>
+        /// <param name="stream">Stream resource. If <c>null</c> or not a stream resource, warning is thrown and function returns <c>false</c>.</param>
+        public static bool stream_isatty(PhpResource stream)
+        {
+            var valid = PhpStream.GetValid(stream);
+            if (valid != null)
+            {
+                switch (valid.OpenedPath)
+                {
+                    case "php://stdin": return !Console.IsInputRedirected; // -10
+                    case "php://stdout":return !Console.IsOutputRedirected;// -11
+                    case "php://stderr":return !Console.IsErrorRedirected; // -12
+                }
+            }
+
+            return false;
+        }
+
+        #endregion
     }
 }

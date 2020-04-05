@@ -576,7 +576,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var moveEdge = new ForeachMoveNextEdge(
                 move, body, end, enumereeEdge,
                 keyVar, valueVar,
-                Span.FromBounds(x.Enumeree.Span.End + 1, (x.KeyVariable ?? x.ValueVariable).Span.Start - 1).ToTextSpan() /*"as" between enumeree and variables*/);
+                x.GetMoveNextSpan());
             // while (enumerator.MoveNext()) {
             //   var value = enumerator.Current.Value
             //   var key = enumerator.Current.Key

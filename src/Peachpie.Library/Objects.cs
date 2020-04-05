@@ -100,24 +100,23 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string get_class([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]string tctx, PhpValue obj)
         {
-            if (obj.IsSet)
+            if (obj.IsNull)
             {
-                if (obj.IsObject)
-                {
-                    return obj.Object.GetPhpTypeInfo().Name;
-                }
-                else if (obj.IsAlias)
-                {
-                    return get_class(tctx, obj.Alias.Value);
-                }
-                else
-                {
-                    // TODO: E_WARNING
-                    throw new ArgumentException(nameof(obj));
-                }
+                return tctx;
             }
-
-            return tctx;
+            else if (obj.IsObject)
+            {
+                return obj.Object.GetPhpTypeInfo().Name;
+            }
+            else if (obj.IsAlias)
+            {
+                return get_class(tctx, obj.Alias.Value);
+            }
+            else
+            {
+                // TODO: E_WARNING
+                throw new ArgumentException(nameof(obj));
+            }
         }
 
         /// <summary>
@@ -238,6 +237,11 @@ namespace Pchp.Library
                 var arr = ((stdClass)obj).GetRuntimeFields();
                 return (arr != null) ? arr.DeepCopy() : PhpArray.NewEmpty();
             }
+            else if (obj is PhpResource || obj is __PHP_Incomplete_Class)
+            {
+                PhpException.InvalidArgument(nameof(obj));
+                return null;
+            }
             else
             {
                 var result = PhpArray.NewEmpty();
@@ -315,7 +319,7 @@ namespace Pchp.Library
                             ? prop.GetValue(ctx, null)
                             : (instanceOpt != null)
                                 ? prop.GetValue(ctx, instanceOpt)
-                                : PhpValue.Void;
+                                : PhpValue.Null;
 
                         //
                         result[prop.PropertyName] = value.DeepCopy();

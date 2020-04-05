@@ -120,7 +120,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 {
                                     var cvalue = fld.GetConstantValue(false);
                                     call.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
-                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, fld.Type, notNull: fld.HasNotNullAttribute());
+                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, fld.Type, notNull: fld.IsNotNull());
                                 }
 
                                 return;
@@ -133,7 +133,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 }
                                 else // name == "constant"
                                 {
-                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, prop.Type, notNull: prop.HasNotNullAttribute());
+                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, prop.Type, notNull: prop.IsNotNull());
                                 }
                             }
                         }

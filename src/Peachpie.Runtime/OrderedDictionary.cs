@@ -44,19 +44,19 @@ namespace Pchp.Core
 
             public bool Equals(IntStringKey x, IntStringKey y) => x._ikey == y._ikey && x._skey == y._skey;
 
-            public int GetHashCode(IntStringKey x) => x._ikey;
+            public int GetHashCode(IntStringKey x) => (int)x._ikey;
         }
 
         /// <summary>
         /// Max value of <see cref="Integer"/>.
         /// </summary>
-        internal const int MaxKeyValue = int.MaxValue; // TODO: change this and "Integer" to long64
+        internal const long MaxKeyValue = long.MaxValue;
 
         /// <summary>
         /// Integer value iff <see cref="IsString"/> return <B>false</B>.
         /// </summary>
-        public int Integer => _ikey;
-        readonly int _ikey; // Holds string hashcode if skey != null
+        public long Integer => _ikey;
+        readonly long _ikey; // Holds string hashcode if skey != null
 
         /// <summary>
         /// String value iff <see cref="IsString"/> return <B>true</B>.
@@ -75,7 +75,7 @@ namespace Pchp.Core
         /// </summary>
         public bool IsEmpty => Equals(EmptyStringKey);
 
-        public IntStringKey(int key)
+        public IntStringKey(long key)
         {
             _ikey = key;
             _skey = null;
@@ -102,8 +102,9 @@ namespace Pchp.Core
         internal static IntStringKey FromObject(object key)
         {
             if (key is string str) return new IntStringKey(str);
+            if (key is long l) return new IntStringKey(l);
             if (key is int i) return new IntStringKey(i);
-            
+
             throw new ArgumentException();
         }
 
@@ -111,7 +112,7 @@ namespace Pchp.Core
 
         public bool IsInteger => ReferenceEquals(_skey, null);
 
-        public override int GetHashCode() => _ikey;
+        public override int GetHashCode() => unchecked((int)_ikey);
 
         public bool Equals(IntStringKey other) => _ikey == other._ikey && _skey == other._skey;
 
@@ -124,7 +125,7 @@ namespace Pchp.Core
             if (IsInteger)
             {
                 if (other.IsInteger)
-                    return _ikey - other._ikey;
+                    return _ikey.CompareTo(other._ikey);
                 else
                     return string.CompareOrdinal(_ikey.ToString(), other._skey);
             }
@@ -178,7 +179,7 @@ namespace Pchp.Core
             /// <summary>
             /// The value has been deleted - is not initialized.
             /// </summary>
-            public bool IsDeleted => Value.IsDefault;
+            public bool IsDeleted => Value.IsInvalid;
         }
 
         /// <summary>Minimal internal table capacity. Must be power of 2.</summary>
@@ -195,7 +196,7 @@ namespace Pchp.Core
         int _dataDeleted;       // number of deleted elements within (0.._dataUsed] => Count = _dataUsed - _dataDeleted
         uint _size;             // physical size of the table (power of 2, minimum 8)
         //int nInternalPointer;   // intrinsic enumerator pointer
-        int _nextFreeKey;       // the next integer key that will be used when inserting an element. It is one larger than the largest integer key that was ever used in this hashtable.
+        long _maxIntKey;        // the maximum used integer key, used for adding elements at the end of collection. Always greater or equal to -1.
 
         /// <summary>
         /// Additional references sharing this object.
@@ -228,9 +229,9 @@ namespace Pchp.Core
             return mask;
         }
 
-        int _get_max_int_key()
+        long _get_max_int_key()
         {
-            int max = -1;
+            long max = -1;
             var data = this._data;
             for (int i = 0; i < this._dataUsed; i++)
             {
@@ -268,7 +269,7 @@ namespace Pchp.Core
             _dataDeleted = from._dataDeleted;
             _size = from._size;
             //nInternalPointer = from.nInternalPointer;
-            _nextFreeKey = from._nextFreeKey;
+            _maxIntKey = from._maxIntKey;
         }
 
         internal OrderedDictionary/*!*/AddRef()
@@ -341,7 +342,7 @@ namespace Pchp.Core
             _dataDeleted = 0;
             _size = size;
             //nInternalPointer = _invalidIndex;
-            _nextFreeKey = 0;
+            _maxIntKey = -1;
         }
 
         private void _resize(uint size)
@@ -404,7 +405,7 @@ namespace Pchp.Core
             _rehash();
         }
 
-        private int _index(IntStringKey key) => (int)_mask & key.Integer;
+        private int _index(IntStringKey key) => unchecked((int)_mask & (int)key.Integer);
 
         [Conditional("DEBUG")]
         private void _debug_check()
@@ -431,7 +432,7 @@ namespace Pchp.Core
             get
             {
                 int i = FindIndex(key);
-                return (i >= 0) ? _data[i].Value : TValue.Void; // PERF: double array lookup
+                return (i >= 0) ? _data[i].Value : TValue.Null; // PERF: double array lookup
             }
             set
             {
@@ -575,16 +576,16 @@ namespace Pchp.Core
             if (IsPacked)
             {
                 // packed array
+                // NOTE: packed array cannot be larger than Int32.MaxValue
 
-                index = key.Integer;
-
-                if (index < 0 || index >= _dataUsed || key.IsString)
+                if (key.IsInteger && key.Integer >= 0 && key.Integer < _dataUsed)
                 {
-                    index = _invalidIndex;
+                    Debug.Assert(!_data[key.Integer].IsDeleted);
+                    index = (int)key.Integer;
                 }
                 else
                 {
-                    Debug.Assert(!_data[index].IsDeleted);
+                    index = _invalidIndex;
                 }
             }
             else
@@ -621,12 +622,12 @@ namespace Pchp.Core
             var i = FindIndex(key);
             if (i >= 0)
             {
-                value = _data[i].Value; // PERF: double array lookup
+                value = _data[i].Value; // TODO // PERF: double array lookup
                 return true;
             }
             else
             {
-                value = default; // we might return TValue.Null as well but then we cannot check it for value.IsDefault
+                value = default; // NULL
                 return false;
             }
         }
@@ -715,23 +716,25 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Gets value for <see cref="_nextFreeKey"/>.
-        /// </summary>
-        static int _getNextFreeKey(int key) => key < IntStringKey.MaxKeyValue ? key + 1 : IntStringKey.MaxKeyValue;
-
-        /// <summary>
         /// Adds value to the end of collection with newly assigned numeric key.
         /// </summary>
         public void Add(TValue value)
         {
-            Add_NoCheck(new IntStringKey(_nextFreeKey), value);
-            _nextFreeKey = _getNextFreeKey(_nextFreeKey);
+            var key = _maxIntKey;
+            if (key < IntStringKey.MaxKeyValue)
+            {
+                Add_NoCheck(new IntStringKey(_maxIntKey = key + 1), value);
+            }
+            else
+            {
+                PhpException.NextArrayKeyUnavailable();
+            }
         }
 
         /// <summary>
         /// Adds item at the end of collection.
         /// Does not check the <paramref name="key"/> exists already!
-        /// Updates <see cref="_nextFreeKey"/> if necessary.
+        /// Updates <see cref="_maxIntKey"/> if necessary.
         /// </summary>
         /// <param name="key">Item key.</param>
         /// <param name="value">Item value.</param>
@@ -739,9 +742,9 @@ namespace Pchp.Core
         {
             ref var bucket = ref Add_NoCheck(key, value);
 
-            if (key.IsInteger && key.Integer >= _nextFreeKey)
+            if (key.IsInteger && key.Integer > _maxIntKey)
             {
-                _nextFreeKey = _getNextFreeKey(key.Integer);
+                _maxIntKey = key.Integer;
             }
 
             return ref bucket.Value;
@@ -750,7 +753,7 @@ namespace Pchp.Core
         /// <summary>
         /// Adds item at the end of collection.
         /// Does not check the <paramref name="key"/> exists already!
-        /// Does not update <see cref="_nextFreeKey"/>.
+        /// Does not update <see cref="_maxIntKey"/>.
         /// </summary>
         /// <param name="key">Item key.</param>
         /// <param name="value">Item value.</param>
@@ -770,7 +773,7 @@ namespace Pchp.Core
             bucket.Key = key;
             bucket.Value = value;
 
-            this._dataUsed = i + 1;
+            this._dataUsed = i + 1; // TODO: Overflow check
 
             // hash table
 
@@ -823,7 +826,7 @@ namespace Pchp.Core
                 {
                     ref var bucket = ref this._data[i];
                     bucket.Key = default;
-                    bucket.Value = default;
+                    bucket.Value = TValue.CreateInvalid();
 
                     if (i == _dataUsed - 1)
                     {
@@ -855,7 +858,7 @@ namespace Pchp.Core
                     if (key.Equals(bucket.Key))
                     {
                         bucket.Key = default;
-                        bucket.Value = default;
+                        bucket.Value = TValue.CreateInvalid();
 
                         if (i == _dataUsed - 1)
                         {
@@ -893,9 +896,13 @@ namespace Pchp.Core
                 enumerator.DeleteCurrent();
 
                 // array_pop decrements the next free index if it removed the last record before it
-                if (value.Key.IsInteger && value.Key.Integer == _nextFreeKey - 1)
+                if (value.Key.IsInteger)
                 {
-                    _nextFreeKey--;
+                    var intkey = value.Key.Integer;
+                    if (intkey == _maxIntKey && intkey >= 0)
+                    {
+                        _maxIntKey--;
+                    }
                 }
 
                 return true;
@@ -937,7 +944,7 @@ namespace Pchp.Core
 
                 Array.Copy(this._data, 0, this._data, 1, this._dataUsed); // faster
                 //this.arData.AsMemory(0, this._dataUsed).CopyTo(this.arData.AsMemory(1, this._dataUsed)); // slower
-                this._data[0].Value = default;
+                this._data[0].Value = TValue.CreateInvalid();
                 Debug.Assert(this._data[0].IsDeleted);
 
                 this._dataUsed++;
@@ -1266,7 +1273,7 @@ namespace Pchp.Core
 
                 table._dataUsed = count;
                 table._dataDeleted = 0;
-                table._nextFreeKey = ikey;
+                table._maxIntKey = ikey - 1;
 
                 if (ikey == count)
                 {
@@ -1369,7 +1376,7 @@ namespace Pchp.Core
                     }
                     else if (cmp < 0 ^ op == SetOperations.Difference) // cmp == 0 && difference || cmp < 0 && intersect
                     {
-                        resultData[result_i].Value = default;
+                        resultData[result_i].Value = TValue.CreateInvalid();
                         Debug.Assert(resultData[result_i].IsDeleted);
 
                         result._dataDeleted++;
@@ -1385,7 +1392,8 @@ namespace Pchp.Core
                 {
                     while (result_i < result._dataUsed)
                     {
-                        resultData[result_i].Value = default;
+                        resultData[result_i].Value = TValue.CreateInvalid();
+                        Debug.Assert(resultData[result_i].IsDeleted);
                         result._dataDeleted++;
                         result_i++;
                     }
@@ -1408,7 +1416,7 @@ namespace Pchp.Core
                 }
 
                 // nNextFreeElement
-                result._nextFreeKey = result._get_max_int_key() + 1;
+                result._maxIntKey = result._get_max_int_key();
 
                 // restore the order
                 Array.Sort(resultIndexes, resultData, 0, result._dataUsed);
@@ -1452,7 +1460,7 @@ namespace Pchp.Core
 
             if (key > 0) // only if there were any keys
             {
-                this._nextFreeKey = key;
+                this._maxIntKey = key - 1;
                 this._rehash();
             }
         }
@@ -1485,7 +1493,7 @@ namespace Pchp.Core
             //
             if (key > startIndex) // only if there were any integer keys
             {
-                this._nextFreeKey = key;
+                this._maxIntKey = key - 1;
 
                 if (_hash == null) this._createhash();
                 else this._rehash();
@@ -1558,7 +1566,7 @@ namespace Pchp.Core
                 }
             }
 
-            replaced._nextFreeKey = rkey;
+            replaced._maxIntKey = rkey - 1;
 
             // adds new elements at newtarget:
             if (replacementValues != null && replacementValues.Count != 0)
@@ -1585,7 +1593,7 @@ namespace Pchp.Core
 
             //
 
-            newself._nextFreeKey = ikey;
+            newself._maxIntKey = ikey - 1;
             newself._dataUsed = n;
             newself._dataDeleted = 0;
             newself._createhash();
@@ -1597,7 +1605,7 @@ namespace Pchp.Core
             _hash = newself._hash;
             _dataUsed = newself._dataUsed;
             _dataDeleted = newself._dataDeleted; // 0
-            _nextFreeKey = newself._nextFreeKey; // ikey
+            _maxIntKey = newself._maxIntKey; // ikey - 1
 
             _debug_check();
 
@@ -1767,7 +1775,10 @@ namespace Pchp.Core
             /// </summary>
             public ref TValue CurrentValue => ref Bucket.Value;
 
-            public PhpAlias CurrentValueAliased => Bucket.Value.EnsureAlias();
+            /// <summary>
+            /// Ensures the current entry is wrapped in alias and gets its reference.
+            /// </summary>
+            public PhpAlias CurrentValueAliased => PhpValue.EnsureAlias(ref Bucket.Value);
 
             /// <summary>
             /// Move to the next item.
@@ -1804,7 +1815,10 @@ namespace Pchp.Core
 
                 do
                 {
-                    if (++i >= array._dataUsed) return false;
+                    if (++i >= array._dataUsed)
+                    {
+                        return false;
+                    }
                 } while (array._data[i].IsDeleted);
 
                 return true;

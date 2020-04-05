@@ -11,11 +11,6 @@
     <TemplateLanguage Condition="'$(TemplateLanguage)' == ''">PeachPie</TemplateLanguage>
   </PropertyGroup>
 
-  <!-- items in solution hierarchy -->
-  <ItemGroup>
-    <None Include="**/*" Exclude="obj/**;bin/**;.*/**;*.msbuildproj;*.sln" />
-  </ItemGroup>
-
   <!-- Schemas -->
   <ItemGroup>
     <PropertyPageSchema Include="$(MSBuildThisFileDirectory)PeachPie.ProjectItemsSchema.xaml;"/>

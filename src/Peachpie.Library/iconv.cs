@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Utilities;
@@ -694,6 +696,335 @@ namespace Pchp.Library
             }
         }
 
-        //ob_iconv_handler — Convert character encoding as output buffer handler
+        ///// <summary>
+        ///// Convert character encoding as output buffer handler.
+        ///// </summary>
+        ///// <param name="contents"></param>
+        ///// <param name="status">Bitmask of PHP_OUTPUT_HANDLER_* constants.</param>
+        ///// <returns></returns>
+        //public static PhpString ob_iconv_handler(PhpString contents , int status )
+        //{
+
+        //}
+
+        /// <summary>
+        /// rfc2047, allows for the encoded-text to be multilined with leading white-spaces.
+        /// </summary>
+        readonly static Lazy<Regex> s_mime_header_regex = new Lazy<Regex>(() => new Regex(@"=\?[\w-]+\?[QB]\?([^\s\?]+([\r\n]+[ \t]*)?)+\?=", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline));
+
+        readonly static char[] s_whitespaces = new[] { ' ', '\t', '\n', '\r' };
+
+        /// <summary>
+        /// Strip a headers and decode values.
+        /// </summary>
+        static IEnumerable<string> decode_headers(string encoded)
+        {
+            int headerstart = 0;// current header start
+            Match match = null; // next match
+
+            for (int i = 0; i < encoded.Length; i++)
+            {
+                var nl = StringUtils.IsNewLine(encoded, i);
+                if (nl != 0 && i + nl < encoded.Length && char.IsWhiteSpace(encoded[i + nl]))
+                {
+                    // line continues with an indented text
+                    // trim leading whitespaces and replace with a single space
+                    int end = i + nl;
+                    do { end++; } while (end < encoded.Length && char.IsWhiteSpace(encoded, end));
+
+                    encoded = encoded.Remove(i) + " " + encoded.Substring(end); // TODO: we can do it later in `yield`, with a smaller portion of text
+
+                    //
+                    i--;
+                    continue;
+                }
+
+                if (nl != 0 || i == encoded.Length - 1)
+                {
+                    // end of line,
+                    // decode values within
+                    for (int startindex = headerstart; ;)
+                    {
+                        match ??= s_mime_header_regex.Value.Match(encoded, startindex);
+
+                        if (!match.Success || match.Index > i)
+                            break; // this match will be used in the next header
+
+                        // the value can be split into more lines,
+                        // make it singleline
+                        var value = match.Value.RemoveAny(s_whitespaces);
+
+                        // decode the value
+                        var decoded_value = System.Net.Mail.Attachment.CreateAttachmentFromString("", value).Name;
+
+                        // trims whitespaces between matches (startindex..match.Index)
+                        var replaceFrom = encoded.AsSpan(startindex, match.Index - startindex).IsWhiteSpace()
+                            ? startindex
+                            : match.Index;
+
+                        // replace with decoded value
+                        encoded = encoded.Remove(replaceFrom) + decoded_value + encoded.Substring(match.Index + match.Length);
+
+                        //
+                        startindex = replaceFrom + decoded_value.Length;
+                        i += decoded_value.Length - match.Length + replaceFrom - match.Index;
+
+                        //
+                        match = null;
+                    }
+
+                    // trim whitespaces from end of the value:
+                    int end = i;
+                    while (end > headerstart && char.IsWhiteSpace(encoded[end - 1])) end--;
+
+                    // submit header line:
+                    yield return encoded.Substring(headerstart, end - headerstart);
+
+                    //
+                    i += nl;
+                    headerstart = i;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decodes a MIME header field.
+        /// </summary>
+        public static string iconv_mime_decode(string encoded_header, int mode = 0, string charset = null /*= ini_get("iconv.internal_encoding")*/ )
+        {
+            if (encoded_header == null)
+            {
+                return string.Empty;
+            }
+
+            return decode_headers(encoded_header).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Decodes multiple MIME header fields at once.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray iconv_mime_decode_headers(string encoded_headers, int mode = 0, string charset = null)
+        {
+            if (encoded_headers == null)
+            {
+                return null;
+            }
+
+            var result = new PhpArray();
+
+            foreach (var header in decode_headers(encoded_headers))
+            {
+                var col = header.IndexOf(':');
+                if (col >= 0)
+                {
+                    var header_name = Core.Convert.StringToArrayKey(header.Remove(col));
+
+                    // trim leading value whitespaces
+                    do { col++; } while (col < header.Length && char.IsWhiteSpace(header, col));
+
+                    var header_value = header.Substring(col);
+
+                    if (result.TryGetValue(header_name, out var existing))
+                    {
+                        if (existing.IsPhpArray(out var subarray))
+                        {
+                            subarray.Add(header_value);
+                        }
+                        else
+                        {
+                            result[header_name] = new PhpArray(2)
+                            {
+                                existing,
+                                header_value,
+                            };
+                        }
+                    }
+                    else
+                    {
+                        result[header_name] = header_value;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Composes a MIME header field.
+        /// </summary>
+        public static string iconv_mime_encode(string field_name, string field_value, PhpArray preferences = null)
+        {
+            // process parameters:
+
+            const char Base64Scheme = 'B';
+            const char QuotedPrintableScheme = 'Q';
+
+            char scheme = Base64Scheme;  // B, Q
+            //string input_charset = null;
+            //string output_charset = null;
+            int line_length = 76;
+            string line_break_chars = "\r\n";
+            var encoding = Encoding.UTF8;
+
+            if (preferences != null)
+            {
+                if (preferences.TryGetValue("line-break-chars", out var val) && val.IsString(out var str))
+                {
+                    line_break_chars = str;
+                }
+
+                if (preferences.TryGetValue("scheme", out val))
+                {
+                    // PHP ignores any invalid value
+                    if (val.IsString(out str) && str.Length >= 1)
+                    {
+                        scheme = char.ToUpperInvariant(str[0]);
+                    }
+                }
+
+                if (preferences.TryGetValue("line-length", out val) && val.IsLong(out var l))
+                {
+                    line_length = (int)l;
+                }
+            }
+
+            //
+            // internal System.Net.Mime.MimeBasePart.EncodeHeaderValue(field_value, Encoding.UTF8, scheme == 'B', line_length);
+            //
+
+            string header = $"=?{encoding.HeaderName.ToUpperInvariant()}?{scheme}?";
+            string footer = "?=";
+
+            //
+            var result = StringBuilderUtilities.Pool.Get();
+
+            result.Append(field_name);
+            result.Append(':');
+            result.Append(' ');
+
+            result.Append(header);
+
+            if (line_length < result.Length)
+            {
+                // adjust max line length,
+                // cannot be smaller then preamble
+                line_length = result.Length;
+            }
+
+            var bytes = encoding.GetBytes(field_value);
+            //string encoded;
+
+            Func<byte[], int, int, int> count_func; // how many bytes will be consumed
+            //Func<ReadOnlySpan<byte>, string> encode_func;
+            Func<byte[], int, int, string> encode_func; // encodes bytes into string
+
+            if (scheme == QuotedPrintableScheme)
+            {
+                count_func = (_bytes, _from, _maxchars) => QuotedPrintableCount(_bytes, _from, _maxchars);
+                encode_func = (_bytes, _from, _count) => QuotedPrintableEncode(_bytes, _from, _count);
+            }
+            else
+            {
+                // 3 bytes are encoded as 4 chars
+                count_func = (_bytes, _from, _maxchars) => _maxchars * 3 / 4;
+                encode_func = (_bytes, _from, _count) => System.Convert.ToBase64String(_bytes, _from, _count);
+            }
+
+            int bytes_from = 0;
+            int line_remaining = line_length - result.Length;
+
+            for (; bytes_from < bytes.Length;)
+            {
+                var remaining = line_remaining - footer.Length - line_break_chars.Length; // how many chars we can output
+                var bytes_count = Math.Min(bytes.Length - bytes_from, count_func(bytes, bytes_from, remaining));
+                var encoded = encode_func(bytes, bytes_from, bytes_count);
+
+                result.Append(encoded);
+
+                bytes_from += bytes_count;
+
+                if (bytes_from < bytes.Length)
+                {
+                    // NEW LINE
+                    result.Append(footer);
+                    result.Append(line_break_chars);
+                    result.Append(' ');
+                    result.Append(header);
+
+                    line_remaining = line_length - 1 - header.Length;
+                }
+            }
+
+            result.Append(footer);
+
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
+        }
+
+        /// <summary>
+        /// Counts bytes to be encoded in order to get <paramref name="maxchars"/> characters.
+        /// </summary>
+        static int QuotedPrintableCount(byte[] bytes, int from, int maxchars)
+        {
+            int chars = 0;
+
+            for (int i = from; i < bytes.Length; i++)
+            {
+                if (chars == maxchars)
+                {
+                    return i - from;
+                }
+                else if (chars > maxchars)
+                {
+                    return i - from - 1;
+                }
+
+                var b = bytes[i];
+
+                if (b > 0x20 && b < 0x80)
+                {
+                    chars++;
+                }
+                else
+                {
+                    // =XX
+                    chars += 3;
+                }
+            }
+
+            //
+            return bytes.Length - from;
+        }
+
+        /// <summary>
+        /// Encode bytes as quoted-printable string.
+        /// </summary>
+        static string QuotedPrintableEncode(byte[] bytes, int from, int count)
+        {
+            var result = StringBuilderUtilities.Pool.Get();
+
+            for (int i = from; i < bytes.Length && count > 0; i++, count--)
+            {
+                var b = bytes[i];
+
+                if (b > 0x20 && b < 0x80)
+                {
+                    //
+                    result.Append((char)b);
+                }
+                else
+                {
+                    // =XX
+                    const string digits = "0123456789ABCDEF";
+                    result.Append('=');
+                    result.Append(digits[(b >> 4) & 0x0f]);
+                    result.Append(digits[(b) & 0x0f]);
+                }
+            }
+
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
+        }
     }
 }

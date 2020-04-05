@@ -800,7 +800,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             object trueLbl = new object();
             object endLbl = new object();
-            
+
             // <stack> = <left_var> = Left
             var left_var = cg.GetTemporaryLocal(left_type);
             cg.Builder.EmitOpCode(ILOpCode.Dup);
@@ -2507,7 +2507,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("GetListAccess", cg.CoreTypes.PhpValue));
         }
 
-        static void EmitItemAssign(CodeGenerator cg, KeyValuePair<BoundExpression, BoundReferenceExpression> item, int index, IPlace arrplace)
+        static void EmitItemAssign(CodeGenerator cg, KeyValuePair<BoundExpression, BoundReferenceExpression> item, long index, IPlace arrplace)
         {
             var target = item;
             if (target.Value == null)
@@ -2518,7 +2518,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Template: <vars[i]> = <tmp>[i]
 
             var boundtarget = target.Value.BindPlace(cg);
-            var lhs = boundtarget.EmitStorePreamble(cg, target.Value.Access);
+            var lhs = boundtarget.EmitStorePreamble(cg, target.Value.TargetAccess());
 
             // LOAD IPhpArray.GetItemValue(IntStringKey{i})
             arrplace.EmitLoad(cg.Builder);
@@ -2616,9 +2616,15 @@ namespace Pchp.CodeAnalysis.Semantics
                 // the method can be called directly
                 return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, (BoundTypeRef)LateStaticTypeRef);
             }
-
-            //
-            return EmitDynamicCall(cg);
+            else if (TargetMethod is MagicCallMethodSymbol magic && !this.HasArgumentsUnpacking)
+            {
+                return EmitMagicCall(cg, magic.OriginalMethodName, magic.RealMethod, (BoundTypeRef)LateStaticTypeRef);
+            }
+            else
+            {
+                //
+                return EmitDynamicCall(cg);
+            }
         }
 
         internal virtual void EmitBeforeCall(CodeGenerator cg)
@@ -2634,7 +2640,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return EmitCallsiteCall(cg);
         }
 
-        internal virtual TypeSymbol EmitDirectCall(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
+        internal TypeSymbol EmitDirectCall(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
         {
             // TODO: in case of a global user routine -> emit check the function is declared
             // <ctx>.AssertFunctionDeclared
@@ -2645,6 +2651,89 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return (this.ResultType = cg.EmitMethodAccess(stacktype, method, Access));
+        }
+
+        /// <summary>
+        /// Determines if the target magic method will be called using standard calling convention.
+        /// </summary>
+        static bool IsClrMagicCall(MethodSymbol method)
+        {
+            if (method.ContainingType.IsPhpType())
+            {
+                // defined in PHP source, use PHP calling convention
+                return false;
+            }
+
+            var parameters = method.Parameters;
+            if (parameters.Last().IsParams)
+            {
+                return true;
+            }
+
+            //var nimplicit = parameters.TakeWhile(p => p.IsImplicitlyDeclared).Count();
+
+            //var actualparameters = parameters.Length - nimplicit;
+            //if (actualparameters != 2)
+            //{
+            //    return true;
+            //}
+
+            //if (!parameters.Last().Type.Is_PhpArray() &&
+            //    !parameters.Last().Type.Is_PhpValue())
+            //{
+            //    return true;
+            //}
+
+            // regular PHP semantic:
+            // __call(name, PhpArray arguments)
+            return false;
+        }
+
+        internal TypeSymbol EmitMagicCall(CodeGenerator cg, string originalMethodName, MethodSymbol method, BoundTypeRef staticType = null)
+        {
+            // call to __callStatic() or __call()
+            Debug.Assert(
+                string.Equals(method.Name, Name.SpecialMethodNames.Call.Value, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(method.Name, Name.SpecialMethodNames.CallStatic.Value, StringComparison.OrdinalIgnoreCase));
+
+            if (this.HasArgumentsUnpacking)
+            {
+                throw cg.NotImplementedException("__callStatic() with Arguments Unpacking", this);
+            }
+
+            ImmutableArray<BoundArgument> realArguments;
+
+            var boundname = BoundArgument.Create(new BoundLiteral(originalMethodName).WithAccess(BoundAccess.Read));
+
+            if (IsClrMagicCall(method))
+            {
+                // method is CLR method with params => don't pack arguments into phparray and call method normally
+                // first argument is the method name:
+                realArguments = _arguments.Insert(0, boundname);
+            }
+            else
+            {
+                // PHP behavior
+                realArguments = ImmutableArray.Create(
+                    // $name: string
+                    boundname,
+                    // $arguments: PhpArray
+                    BoundArgument.Create(
+                        new BoundArrayEx(
+                            _arguments.Select(
+                                arg => new KeyValuePair<BoundExpression, BoundExpression>(null, arg.Value)
+                            ).ToImmutableArray())
+                        .WithAccess(BoundAccess.Read))
+                    );
+            }
+
+            //
+            var opcode = (method.IsVirtual || IsVirtualCall) ? ILOpCode.Callvirt : ILOpCode.Call;
+
+            //
+            var stackType = cg.EmitCall(opcode, method, this.Instance, realArguments, staticType);
+
+            return cg.EmitMethodAccess(stackType, method, Access);
         }
 
         protected virtual bool IsVirtualCall => true;
@@ -2722,6 +2811,7 @@ namespace Pchp.CodeAnalysis.Semantics
             callsite.EmitLoadCallsite();                // callsite
             callsite.EmitTargetInstance(EmitTarget);    // [target]
             callsite.EmitTargetTypeParam(RoutineTypeRef);// [target_type] : PhpTypeInfo
+            callsite.EmitLateStaticTypeParam(LateStaticTypeRef);    // [late_static] : PhpTypeInfo
             callsite.EmitNameParam(RoutineNameExpr);    // [name] : string
             callsite.EmitLoadContext();                 // ctx : Context
 
@@ -2921,9 +3011,9 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Single()
                         .Construct(_typeref.Type);
 
-                    cg.EmitLoadContext();                       // Context
-                    cg.EmitCallerTypeHandle();           // RuntimeTypeHandle
-                    cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
+                    cg.EmitLoadContext();               // Context
+                    cg.EmitCallerTypeHandle();          // RuntimeTypeHandle
+                    cg.Emit_ArgumentsIntoArray(_arguments, default);  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create_t);
                 }
@@ -2938,10 +3028,10 @@ namespace Pchp.CodeAnalysis.Semantics
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single();
 
-                    cg.EmitLoadContext();                       // Context
-                    cg.EmitCallerTypeHandle();           // RuntimeTypeHandle
-                    _typeref.EmitLoadTypeInfo(cg, true);        // PhpTypeInfo
-                    cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
+                    cg.EmitLoadContext();               // Context
+                    cg.EmitCallerTypeHandle();          // RuntimeTypeHandle
+                    _typeref.EmitLoadTypeInfo(cg, true);// PhpTypeInfo
+                    cg.Emit_ArgumentsIntoArray(_arguments, default);  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create);
                 }
@@ -3385,7 +3475,7 @@ namespace Pchp.CodeAnalysis.Semantics
             LocalDefinition tmp = null;
 
             // <target> = <value>
-            var lhs = target_place.EmitStorePreamble(cg, Target.Access);
+            var lhs = target_place.EmitStorePreamble(cg, Target.TargetAccess());
 
             var t_value = target_place.Type;
             if (t_value != null &&
@@ -3539,7 +3629,7 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 // Template: PhpString.AsWritable( ((PhpString)target) ) : Blob
-                lhs = target_place.EmitStorePreamble(cg, BoundAccess.Write);
+                lhs = target_place.EmitStorePreamble(cg, target.TargetAccess());
                 cg.EmitConvertToPhpString(target_place.EmitLoadValue(cg, ref lhs, target.Access), 0);
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.AsWritable_PhpString) // Blob
                     .Expect(cg.CoreTypes.PhpString_Blob);
@@ -3629,7 +3719,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(target_place.Type == null || target_place.Type.SpecialType != SpecialType.System_Void);
 
             // <target> = <target> X <value>
-            var lhs = target_place.EmitStorePreamble(cg, Target.Access);
+            var lhs = target_place.EmitStorePreamble(cg, Target.TargetAccess());
             var xtype = target_place.EmitLoadValue(cg, ref lhs, Target.Access);
 
             TypeSymbol result_type;
@@ -3736,7 +3826,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(target_place != null);
 
             // prepare target for store operation
-            var lhs = target_place.EmitStorePreamble(cg, Target.Access);
+            var lhs = target_place.EmitStorePreamble(cg, Target.TargetAccess());
 
             // load target value
             var target_load_type = target_place.EmitLoadValue(cg, ref lhs, Target.Access);
@@ -4353,6 +4443,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 else if (Access.IsReadRef)
                 {
                     Debug.WriteLine("TODO: we need reference to PhpValue so we can modify its content! This is not compatible with behavior of = &$null[0].");
+
                     // PhpValue.GetItemRef(index, bool)
                     cg.Builder.EmitBoolConstant(Access.IsQuiet);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_PhpValue_PhpValue_Bool);
@@ -4377,7 +4468,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     Debug.Assert(t == cg.CoreTypes.PhpValue);
                     // Template: (ref PhpValue).EnsureArray()
                     cg.EmitPhpValueAddr();
-                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray);
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpValueRef);
                 }
 
                 return t;
@@ -4467,7 +4558,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (tArray == cg.CoreTypes.PhpValue)
                 {
-                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetArrayAccess_PhpValue)
+                    Debug.WriteLine("TODO: we need reference to PhpValue so we can modify its content! Won't work with $string[] = ...");
+
+                    cg.EmitPhpValueAddr();
+
+                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetArrayAccess_PhpValueRef)
                         .Expect(cg.CoreTypes.IPhpArray);
 
                     // Template: <STACK> ?? (IPhpArray)PhpArray.Empty

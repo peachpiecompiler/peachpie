@@ -65,6 +65,13 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool IsIsSet => (_flags & AccessMask.Isset) == AccessMask.Isset;
 
         /// <summary>
+        /// A flag denotating a value that is not aliased.
+        /// In case of read access, it denotates the source value.
+        /// In case of write access, it denotates the assignment target.
+        /// </summary>
+        public bool IsNotRef => _flags.IsNotRef();
+
+        /// <summary>
         /// Gets type of value to be written.
         /// </summary>
         public TypeRefMask WriteMask => _writeTypeMask;
@@ -184,6 +191,18 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundAccess WithEnsureArray()
         {
             return new BoundAccess(_flags | AccessMask.EnsureArray, _targetType, _writeTypeMask);
+        }
+
+        /// <summary>
+        /// Creates <see cref="BoundAccess"/> value with specified <see cref="IsNotRef"/> flag.
+        /// </summary>
+        /// <param name="mightBeRef">Whether the value might be a reference (aliased) value.</param>
+        /// <returns>New access.</returns>
+        public BoundAccess WithRefFlag(bool mightBeRef)
+        {
+            var newflags = mightBeRef ? (_flags & ~AccessMask.IsNotRef) : (_flags | AccessMask.IsNotRef);
+
+            return new BoundAccess(newflags, _targetType, _writeTypeMask);
         }
 
         /// <summary>
@@ -461,6 +480,14 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public bool IsDirect => _nameExpression == null;
+
+        /// <summary>
+        /// Gets <see cref="NameValue"/> as string if the name is known.
+        /// Otherwise (when <see cref="NameExpression"/> is used instead), throws <see cref="InvalidOperationException"/> exception.
+        /// </summary>
+        public string ToStringOrThrow() => NameExpression == null ? NameValue.ToString() : throw new InvalidOperationException();
+
+        public override string ToString() => NameExpression != null ? $"{{{NameExpression}}}" : NameValue.ToString();
 
         public override OperationKind Kind => OperationKind.None;
 
@@ -1555,11 +1582,9 @@ namespace Pchp.CodeAnalysis.Semantics
     [DebuggerDisplay("{DebugView,nq}")]
     public partial class BoundVariableName : BoundOperation, IPhpOperation
     {
-        public VariableName NameValue => _nameValue;
-        readonly VariableName _nameValue;
+        public VariableName NameValue { get; }
 
-        public BoundExpression NameExpression => _nameExpression;
-        readonly BoundExpression _nameExpression;
+        public BoundExpression NameExpression { get; }
 
         public static bool operator ==(BoundVariableName lname, BoundVariableName rname)
         {
@@ -1576,17 +1601,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override bool Equals(object obj) => obj is BoundVariableName bname && this == bname;
 
-        public override int GetHashCode() => _nameValue.GetHashCode() ^ (_nameExpression != null ? _nameExpression.GetHashCode() : 0);
+        public override int GetHashCode() => NameValue.GetHashCode() ^ (NameExpression != null ? NameExpression.GetHashCode() : 0);
 
         string DebugView
         {
             get
             {
-                return IsDirect ? _nameValue.ToString() : "{indirect}";
+                return IsDirect ? NameValue.ToString() : "{indirect}";
             }
         }
 
-        public bool IsDirect => _nameExpression == null;
+        public bool IsDirect => NameExpression == null;
 
         public override OperationKind Kind => OperationKind.None;
 
@@ -1610,13 +1635,13 @@ namespace Pchp.CodeAnalysis.Semantics
         private BoundVariableName(VariableName name, BoundExpression nameExpr)
         {
             Debug.Assert(name.IsEmpty() != (nameExpr == null));
-            _nameValue = name;
-            _nameExpression = nameExpr;
+            NameValue = name;
+            NameExpression = nameExpr;
         }
 
         public BoundVariableName Update(VariableName name, BoundExpression nameExpr)
         {
-            if (name.NameEquals(_nameValue) && nameExpr == _nameExpression)
+            if (name.NameEquals(NameValue) && nameExpr == NameExpression)
             {
                 return this;
             }
@@ -1943,9 +1968,9 @@ namespace Pchp.CodeAnalysis.Semantics
         public ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> Items { get => _items; internal set => _items = value; }
         ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> _items;
 
-        public BoundArrayEx(IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> items)
+        public BoundArrayEx(ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> items)
         {
-            _items = items.ToImmutableArray();
+            _items = items;
         }
 
         public BoundArrayEx Update(ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> items)

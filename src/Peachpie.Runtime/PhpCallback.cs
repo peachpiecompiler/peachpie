@@ -153,7 +153,7 @@ namespace Pchp.Core
             protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
             {
                 PhpException.UndefinedFunctionCalled(_function);
-                return PhpValue.Void;
+                return PhpValue.Null;
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as FunctionCallback);
@@ -212,7 +212,7 @@ namespace Pchp.Core
             protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
             {
                 PhpException.UndefinedMethodCalled(_class, _method);
-                return PhpValue.Void;
+                return PhpValue.Null;
             }
 
             PhpTypeInfo ResolveType(Context ctx) => ctx.ResolveType(_class, _callerCtx, true);
@@ -271,6 +271,19 @@ namespace Pchp.Core
                     }
 
                     var routine = (PhpMethodInfo)tinfo.GetVisibleMethod(_method, _callerCtx);
+
+                    // [$b, "A::foo"] or [$this, "parent::foo"]
+                    int colIndex;
+                    if (routine == null && (colIndex = _method.IndexOf("::", StringComparison.Ordinal)) > 0)
+                    {
+                        var methodTypeInfo = ctx.ResolveType(_method.Substring(0, colIndex), _callerCtx, true);
+                        if (methodTypeInfo != null && methodTypeInfo.Type.IsAssignableFrom(tinfo.Type))
+                        {
+                            tinfo = methodTypeInfo;
+                            routine = (PhpMethodInfo)methodTypeInfo.GetVisibleMethod(_method.Substring(colIndex + 2), _callerCtx);
+                        }
+                    }
+
                     if (routine != null)
                     {
                         if (target != null)
@@ -323,7 +336,7 @@ namespace Pchp.Core
                     throw PhpException.ClassNotFoundException(_obj.ToString(ctx));
                 }
 
-                return PhpValue.Void;
+                return PhpValue.Null;
             }
 
             void ResolveType(Context ctx, out PhpTypeInfo tinfo, out object target)

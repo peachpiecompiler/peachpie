@@ -348,5 +348,31 @@ namespace Pchp.CodeAnalysis
                 return new Microsoft.CodeAnalysis.Text.TextSpan(clauseStart, clauseLength);
             }
         }
+
+        /// <summary>
+        /// Gets the span of "as" keyword in between enumeree and variables.
+        /// </summary>
+        public static Microsoft.CodeAnalysis.Text.TextSpan GetMoveNextSpan(this ForeachStmt stmt)
+        {
+            Debug.Assert(stmt != null);
+
+            // foreach(enumeree as key => value)
+            // foreach(enumeree as value)
+
+            var enumeree = stmt.Enumeree.Span;
+            if (enumeree.IsValid)
+            {
+                // key => value
+                // value
+                var variable = (stmt.KeyVariable ?? stmt.ValueVariable).Span;
+                if (variable.IsValid)
+                {
+                    return Span.FromBounds(enumeree.End + 1, variable.Start - 1).ToTextSpan();
+                }
+            }
+
+            // spans are not available
+            return default;
+        }
     }
 }

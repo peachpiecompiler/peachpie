@@ -132,7 +132,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Target blocks.
         /// </summary>
         public override IEnumerable<BoundBlock> Targets => new BoundBlock[] { _target };
-        
+
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
@@ -146,7 +146,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     public partial class LeaveEdge : SimpleEdge
     {
         internal LeaveEdge(BoundBlock source, BoundBlock target)
-            :base(source, target)
+            : base(source, target)
         {
         }
 
@@ -261,7 +261,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Try block.
         /// </summary>
         public BoundBlock BodyBlock => _body;
-        
+
         internal TryCatchEdge(BoundBlock source, BoundBlock body, ImmutableArray<CatchBlock> catchBlocks, BoundBlock finallyBlock, BoundBlock endBlock)
             : base(source)
         {
@@ -394,19 +394,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("ForeachMoveNextEdge")]
     public sealed partial class ForeachMoveNextEdge : Edge
     {
-        readonly BoundBlock _body, _end;
+        readonly BoundBlock _end;
 
         /// <summary>
         /// Span of the move expression to emit sequence point of <c>MoveNext</c> operation.
         /// </summary>
-        readonly TextSpan _moveSpan;
-        public TextSpan MoveSpan => _moveSpan;
+        public TextSpan MoveNextSpan { get; }
 
         /// <summary>
         /// Content of the foreach.
         /// </summary>
-        public BoundBlock BodyBlock => _body;
-        
+        public BoundBlock BodyBlock { get; }
+
         /// <summary>
         /// Block after the foreach.
         /// </summary>
@@ -415,20 +414,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Reference to the edge defining the enumeree.
         /// </summary>
-        public ForeachEnumereeEdge EnumereeEdge => _enumereeEdge;
-        readonly ForeachEnumereeEdge _enumereeEdge;
+        public ForeachEnumereeEdge EnumereeEdge { get; }
 
         /// <summary>
         /// Variable to store key in (can be null).
         /// </summary>
-        public BoundReferenceExpression KeyVariable { get { return _keyVariable; } }
-        readonly BoundReferenceExpression _keyVariable;
+        public BoundReferenceExpression KeyVariable { get; }
 
         /// <summary>
         /// Variable to store value in
         /// </summary>
-        public BoundReferenceExpression ValueVariable { get { return _valueVariable; } }
-        readonly BoundReferenceExpression _valueVariable;
+        public BoundReferenceExpression ValueVariable { get; }
 
         internal ForeachMoveNextEdge(BoundBlock/*!*/source, BoundBlock/*!*/body, BoundBlock/*!*/end, ForeachEnumereeEdge/*!*/enumereeEdge, BoundReferenceExpression keyVar, BoundReferenceExpression/*!*/valueVar, TextSpan moveSpan)
             : base(source)
@@ -437,12 +433,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Contract.ThrowIfNull(end);
             Contract.ThrowIfNull(enumereeEdge);
 
-            _body = body;
+            this.BodyBlock = body;
             _end = end;
-            _enumereeEdge = enumereeEdge;
-            _keyVariable = keyVar;
-            _valueVariable = valueVar;
-            _moveSpan = moveSpan;
+
+            this.EnumereeEdge = enumereeEdge;
+            this.KeyVariable = keyVar;
+            this.ValueVariable = valueVar;
+            this.MoveNextSpan = moveSpan;
 
             Connect(source);
         }
@@ -453,17 +450,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Contract.ThrowIfNull(end);
             Contract.ThrowIfNull(enumereeEdge);
 
-            _body = body;
+            this.BodyBlock = body;
             _end = end;
-            _enumereeEdge = enumereeEdge;
-            _keyVariable = keyVar;
-            _valueVariable = valueVar;
-            _moveSpan = moveSpan;
+            this.EnumereeEdge = enumereeEdge;
+            this.KeyVariable = keyVar;
+            this.ValueVariable = valueVar;
+            this.MoveNextSpan = moveSpan;
         }
 
         public ForeachMoveNextEdge Update(BoundBlock body, BoundBlock end, ForeachEnumereeEdge enumereeEdge, BoundReferenceExpression keyVar, BoundReferenceExpression/*!*/valueVar, TextSpan moveSpan)
         {
-            if (body == _body && end == _end && enumereeEdge == _enumereeEdge && keyVar == _keyVariable && valueVar == _valueVariable && moveSpan == _moveSpan)
+            if (body == BodyBlock && end == _end && enumereeEdge == EnumereeEdge && keyVar == KeyVariable && valueVar == ValueVariable && moveSpan == MoveNextSpan)
             {
                 return this;
             }
@@ -475,7 +472,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override IEnumerable<BoundBlock> Targets
         {
-            get { return new BoundBlock[] { _body, _end }; }
+            get { return new BoundBlock[] { BodyBlock, _end }; }
         }
 
         /// <summary>

@@ -22,10 +22,20 @@ namespace Pchp.CodeAnalysis.Symbols
             this.ForwardedCall = traitmethod;
         }
 
+        //protected override Symbol OriginalSymbolDefinition => ForwardedCall;
+
         public override ImmutableArray<ParameterSymbol> Parameters
         {
             get
             {
+                if (!_parameters.IsDefault && _parameters.Length != ForwardedCall.Parameters.Length)
+                {
+                    // parameters has changed during analysis,
+                    // reset this as well
+                    // IMPORTANT: we must not change it when emit started already
+                    _parameters = default;
+                }
+
                 if (_parameters.IsDefault)
                 {
                     ImmutableInterlocked.InterlockedInitialize(ref _parameters, SynthesizedParameterSymbol.Create(this, ForwardedCall.Parameters));

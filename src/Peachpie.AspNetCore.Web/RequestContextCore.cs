@@ -543,14 +543,10 @@ namespace Peachpie.AspNetCore.Web
                     }
 
                     //
-                    files[file.Name] = (PhpValue)new PhpArray(5)
-                    {
-                        { "name", file_name },
-                        { "type",type },
-                        { "tmp_name",file_path },
-                        { "error", error },
-                        { "size", file.Length },
-                    };
+                    Superglobals.AddFormFile(
+                        files, file.Name,
+                        file_name, type, file_path, error, file.Length
+                    );
                 }
             }
             else

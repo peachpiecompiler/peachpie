@@ -315,7 +315,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundStatement BindEcho(AST.EchoStmt stmt, ImmutableArray<BoundArgument> args)
         {
-            return new BoundExpressionStatement(new BoundEcho(args).WithSyntax(stmt));
+            return new BoundExpressionStatement(
+                new BoundEcho(args)
+                .WithAccess(BoundAccess.None)
+                .WithSyntax(stmt));
         }
 
         BoundStatement BindUnsetStmt(AST.UnsetStmt stmt)
@@ -827,7 +830,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(access.IsRead || access.IsReadRef || access.IsNone);
 
-            return new BoundNewEx(BindTypeRef(x.ClassNameRef), BindArguments(x.CallSignature.Parameters))
+            return new BoundNewEx(BindTypeRef(x.ClassNameRef, objectTypeInfoSemantic: true), BindArguments(x.CallSignature.Parameters))
                 .WithAccess(access);
         }
 
@@ -859,7 +862,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        protected IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items, bool islist = false)
+        protected ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items, bool islist = false)
         {
             // trim trailing empty items
             int count = items.Length;
@@ -868,6 +871,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 count--;
             }
 
+            if (count == 0)
+            {
+                return ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>>.Empty;
+            }
+
+            var builder = ImmutableArray.CreateBuilder<KeyValuePair<BoundExpression, BoundExpression>>(count);
+
             for (int i = 0; i < count; i++)
             {
                 var x = items[i];
@@ -875,7 +885,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     // list() may contain empty items
                     Debug.Assert(islist);
-                    yield return default;
+                    builder.Add(default);
                 }
                 else
                 {
@@ -907,9 +917,12 @@ namespace Pchp.CodeAnalysis.Semantics
                         }
                     }
 
-                    yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
+                    builder.Add(new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue));
                 }
             }
+
+            //
+            return builder.MoveToImmutable();
         }
 
         protected BoundExpression BindItemUse(AST.ItemUse x, BoundAccess access)
