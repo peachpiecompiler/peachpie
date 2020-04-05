@@ -1962,6 +1962,44 @@ namespace Peachpie.Library.Graphics
         #endregion
 
         #endregion
+
+        #region imageflip
+
+        public const int IMG_FLIP_HORIZONTAL = 1;
+        public const int IMG_FLIP_VERTICAL = 2;
+        public const int IMG_FLIP_BOTH = 3;
+
+        /// <summary>
+        /// Flips an image using a given mode
+        /// </summary>
+        /// <param name="image">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
+        /// <param name="mode">Flip mode, this can be one of the IMG_FLIP_* constants:</param>
+        /// <returns></returns>
+        public static bool imageflip(PhpResource image , int mode)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img == null)
+                return false;
+
+            switch (mode)
+            {
+                case IMG_FLIP_HORIZONTAL:
+                    img.Image.Mutate(o => o.Flip(FlipMode.Horizontal));
+                    break;
+                case IMG_FLIP_VERTICAL:
+                    img.Image.Mutate(o => o.Flip(FlipMode.Vertical));
+                    break;
+                case IMG_FLIP_BOTH:
+                    img.Image.Mutate(o => o.Flip(FlipMode.Horizontal));
+                    img.Image.Mutate(o => o.Flip(FlipMode.Vertical));
+                    break;
+                default:
+                    return false;
+            }
+
+            return true;
+        }
+        #endregion
     }
 
 }
