@@ -206,8 +206,11 @@ namespace Pchp.Library.Streams
                 case 'r':
                     // flags = 0;
                     // fileMode is already set to Open
-                    fileAccess = FileAccess.Read;
+                    fileAccess = (mode.Length > 1 && mode[1] == 'w')
+                        ? FileAccess.ReadWrite  // rw
+                        : FileAccess.Read;      // r
                     //accessOptions |= findFile;
+
                     break;
 
                 case 'w':

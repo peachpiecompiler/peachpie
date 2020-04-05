@@ -279,8 +279,8 @@ namespace Pchp.Library.Streams
 
             public bool GetImplementedFilter(Context ctx, string name, bool instantiate, out PhpFilter instance, PhpValue parameters)
             {
-
                 instance = null;
+
                 for (int i = 0; i < _filters.Count; i++)
                 {
                     var pair = _filters[i];
@@ -409,43 +409,47 @@ namespace Pchp.Library.Streams
         /// <param name="filter">What filter.</param>
         /// <param name="where">What position in the chains.</param>
         /// <param name="parameters">Additional parameters for the filter.</param>
-        /// <returns>True if successful.</returns>
-        public static bool AddToStream(Context ctx, PhpStream stream, string filter, FilterChainOptions where, PhpValue parameters)
+        /// <returns>Filters that have been added.</returns>
+        public static (PhpFilter readFilter, PhpFilter writeFilter) AddToStream(Context ctx, PhpStream stream, string filter, FilterChainOptions where, PhpValue parameters)
         {
-            PhpFilter readFilter, writeFilter;
-
             if ((stream.Options & StreamAccessOptions.Read) == 0) where &= ~FilterChainOptions.Read;
             if ((stream.Options & StreamAccessOptions.Write) == 0) where &= ~FilterChainOptions.Write;
 
-            if ((where & FilterChainOptions.Read) > 0)
+            PhpFilter readFilter = null, writeFilter = null;
+
+            if ((where & FilterChainOptions.Read) != 0)
             {
-                if (!GetFilter(ctx, filter, true, out readFilter, parameters))
+                if (GetFilter(ctx, filter, true, out readFilter, parameters))
                 {
-                    //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_filter_name", filter));
+                    stream.AddFilter(readFilter, where);
+                    readFilter.OnCreate();
+                    // Add to chain, (filters buffers too).
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.invalid_filter_name, filter);
                     //return false;
                     throw new ArgumentException(nameof(filter));
                 }
-
-                stream.AddFilter(readFilter, where);
-                readFilter.OnCreate();
-                // Add to chain, (filters buffers too).
             }
 
-            if ((where & FilterChainOptions.Write) > 0)
+            if ((where & FilterChainOptions.Write) != 0)
             {
-                if (!GetFilter(ctx, filter, true, out writeFilter, parameters))
+                if (GetFilter(ctx, filter, true, out writeFilter, parameters))
                 {
-                    //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_filter_name", filter));
+                    stream.AddFilter(writeFilter, where);
+                    writeFilter.OnCreate();
+                    // Add to chain.
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.invalid_filter_name, filter);
                     //return false;
                     throw new ArgumentException(nameof(filter));
                 }
-
-                stream.AddFilter(writeFilter, where);
-                writeFilter.OnCreate();
-                // Add to chain.
             }
 
-            return true;
+            return (readFilter, writeFilter);
         }
 
         #endregion
