@@ -71,6 +71,11 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public int length => _map.Count;
 
+        /// <summary>
+        /// The number of nodes in the map.
+        /// </summary>
+        public int count() => _map.Count;
+
         #endregion
 
         #region Construction
