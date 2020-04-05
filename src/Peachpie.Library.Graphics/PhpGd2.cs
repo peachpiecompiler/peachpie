@@ -1962,7 +1962,7 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imageflip
+        #region imageflip, imagecrop
 
         public const int IMG_FLIP_HORIZONTAL = 1;
         public const int IMG_FLIP_VERTICAL = 2;
@@ -1973,7 +1973,7 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         /// <param name="image">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
         /// <param name="mode">Flip mode, this can be one of the IMG_FLIP_* constants:</param>
-        /// <returns></returns>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public static bool imageflip(PhpResource image , int mode)
         {
             var img = PhpGdImageResource.ValidImage(image);
@@ -1997,6 +1997,45 @@ namespace Peachpie.Library.Graphics
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Crops an image to the given rectangular area and returns the resulting image. The given image is not modified.
+        /// </summary>
+        /// <param name="image">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
+        /// <param name="rect">The cropping rectangle as array with keys x, y, width and height.</param>
+        /// <returns>Return cropped image resource on success or FALSE on failure.</returns>
+        [return:CastToFalse]
+        public static PhpResource imagecrop(PhpResource image, PhpArray rect)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img == null)
+                return null;
+
+            if (!rect.ContainsKey("x") || !rect.ContainsKey("y") || !rect.ContainsKey("width") || !rect.ContainsKey("height"))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.missing_params);
+                return null;
+            }
+
+            if (!rect["x"].IsInteger() || !rect["y"].IsInteger() || !rect["width"].IsInteger() || !rect["height"].IsInteger())
+            {
+                PhpException.Throw(PhpError.Warning, Resources.wrong_type);
+                return null;
+            }
+
+            Rectangle rectangle = new Rectangle(rect["x"].ToInt(), rect["y"].ToInt(), rect["width"].ToInt(), rect["height"].ToInt());
+
+            // Makes bigger image and then crops it. 
+            if (rectangle.X + rectangle.Width > img.Image.Width || rectangle.Y + rectangle.Height > img.Image.Height)
+            {  
+                var resized = new PhpGdImageResource(new Image<Rgba32>(
+                    Math.Max(rectangle.X + rectangle.Width, img.Image.Width), Math.Max(rectangle.Y + rectangle.Height, img.Image.Height)), img.Format);
+                resized.Image.Mutate(o => o.DrawImage(img.Image, 1).Crop(rectangle));
+                return resized;
+            }
+
+            return new PhpGdImageResource(img.Image.Clone(o => o.Crop(rectangle)), img.Format);
         }
         #endregion
     }
