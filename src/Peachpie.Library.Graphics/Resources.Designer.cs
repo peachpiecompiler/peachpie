@@ -175,5 +175,27 @@ namespace Peachpie.Library.Graphics {
                 return ResourceManager.GetString("unable_to_open_file", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///    Looks up a localized string similar to Missing params.
+        /// </summary>
+        public static string missing_params
+        {
+            get
+            {
+                return ResourceManager.GetString("missing_params", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///    Looks up a localized string similar to Wrong type;.
+        /// </summary>
+        public static string wrong_type
+        {
+            get
+            {
+                return ResourceManager.GetString("wrong_type", resourceCulture);
+            }
+        }
     }
 }

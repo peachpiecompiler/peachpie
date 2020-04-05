@@ -1962,11 +1962,15 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imageflip, imagecrop
+        #region imageflip, imagecrop, imagescale, imageaffine
 
         public const int IMG_FLIP_HORIZONTAL = 1;
         public const int IMG_FLIP_VERTICAL = 2;
         public const int IMG_FLIP_BOTH = 3;
+        public const int IMG_NEAREST_NEIGHBOUR = 16;
+        public const int IMG_BILINEAR_FIXED = 3;
+        public const int IMG_BICUBIC = 4;
+        public const int IMG_BICUBIC_FIXED = 5;
 
         /// <summary>
         /// Flips an image using a given mode
@@ -2037,6 +2041,51 @@ namespace Peachpie.Library.Graphics
 
             return new PhpGdImageResource(img.Image.Clone(o => o.Crop(rectangle)), img.Format);
         }
+
+        /// <summary>
+        /// Scale an image using the given new width and height
+        /// </summary>
+        /// <param name="image">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
+        /// <param name="new_width">The width to scale the image to.</param>
+        /// <param name="new_height">The height to scale the image to.If omitted or negative, the aspect ratio will be preserved.</param>
+        /// <param name="mode"></param>
+        /// <returns>Return the scaled image resource on success or FALSE on failure.</returns>
+        [return:CastToFalse]
+        public static PhpResource imagescale(PhpResource image, int new_width, int new_height = -1, int mode = IMG_BILINEAR_FIXED)
+        {
+            // TODO: Description mode
+            // TODO: modes fixed
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img == null)
+                return null;
+
+            if (new_height < 0 && new_width < 0)
+                return null;
+
+            new_height = new_height < 0 ? (img.Image.Height / img.Image.Width) * new_width : new_height;
+            new_width = new_width < 0 ? (img.Image.Width / img.Image.Height) * new_height : new_width;
+
+            IResampler res = null;
+            switch (mode)
+            {
+                case IMG_NEAREST_NEIGHBOUR:
+                    res = new NearestNeighborResampler();
+                    break;
+                case IMG_BICUBIC:
+                    res = new BicubicResampler();
+                    break;
+                case IMG_BILINEAR_FIXED:
+                    res = new TriangleResampler();
+                    break;
+                case IMG_BICUBIC_FIXED:
+                    throw new NotSupportedException();
+                default:
+                    return null;
+            }  
+
+            return new PhpGdImageResource(img.Image.Clone(o => o.Resize(new_width, new_height, res)), img.Format);
+        }
+
         #endregion
     }
 
