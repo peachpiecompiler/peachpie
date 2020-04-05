@@ -90,6 +90,11 @@ namespace Peachpie.Library.XmlDom
         public const int XML_ATTRIBUTE_NOTATION = (int)AttributeType.Notation;
 
         /// <summary>
+        /// Error code not part of the DOM specification. Meant for PHP errors.
+        /// </summary>
+        public const int DOM_PHP_ERR = (int)ExceptionCode.PhpError;
+
+        /// <summary>
         /// Index or size is negative, or greater than the allowed value. 
         /// </summary>
         public const int DOM_INDEX_SIZE_ERR = (int)ExceptionCode.IndexOutOfBounds;
