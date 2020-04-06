@@ -55,8 +55,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 ;
 
             Debug.Assert(DeclaredAccessibility == accessibility);
-            Debug.Assert(IsStatic == isStatic);
-            Debug.Assert(IsReadOnly == isReadOnly);
         }
 
         public SynthesizedFieldSymbol(
