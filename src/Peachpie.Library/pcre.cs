@@ -82,8 +82,13 @@ namespace Pchp.Library
         public const int PREG_BAD_UTF8_OFFSET_ERROR = 5;
         public const int PREG_JIT_STACKLIMIT_ERROR = 6;
 
+        public const int PCRE_VERSION_MAJOR = 10;
+        public const int PCRE_VERSION_MINOR = 33;
+
         /// <summary>PCRE version and release date</summary>
-        public const string PCRE_VERSION = "8.4 .NET";
+        public static string PCRE_VERSION => $"{PCRE_VERSION_MAJOR}.{PCRE_VERSION_MINOR} .NET";
+
+        public const bool PCRE_JIT_SUPPORT = true;
 
         #endregion
 
