@@ -280,6 +280,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual bool CastToFalse => false;
 
+        public virtual bool IsInitFieldsOnly => false;
+
         public virtual bool HasNotNull => false;
 
         /// <summary>

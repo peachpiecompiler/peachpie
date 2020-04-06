@@ -89,7 +89,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly int _sourceParamsCount;
 
-        public bool IsInitFieldsOnly { get; internal set; }
+        public override bool IsInitFieldsOnly => IsInitFieldsOnlyPrivate;
+
+        bool IsInitFieldsOnlyPrivate;
 
         protected SynthesizedPhpCtorSymbol(SourceTypeSymbol containingType, Accessibility accessibility,
             MethodSymbol basector, MethodSymbol __construct, int paramsLimit = int.MaxValue)
@@ -200,7 +202,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var fieldsinitctor = new SynthesizedPhpCtorSymbol(type, Accessibility.ProtectedOrInternal, basector, null)
                 {
-                    IsInitFieldsOnly = true,
+                    IsInitFieldsOnlyPrivate = true,
                     IsEditorBrowsableHidden = true,
                 };
                 ctors.Add(fieldsinitctor);

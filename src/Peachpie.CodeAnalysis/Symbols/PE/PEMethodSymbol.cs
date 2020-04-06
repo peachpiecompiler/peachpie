@@ -86,6 +86,8 @@ namespace Pchp.CodeAnalysis.Symbols
             private const int IsCastToFalseBit = 0x1 << 17;
             private const int IsPhpHiddenPopulatedBit = 0x1 << 18;
             private const int IsPhpHiddenBit = 0x1 << 19;
+            private const int IsPhpFieldsOnlyCtorPopulatedBit = 0x1 << 20;
+            private const int IsPhpFieldsOnlyCtorBit = 0x1 << 21;
 
             private int _bits;
 
@@ -118,6 +120,8 @@ namespace Pchp.CodeAnalysis.Symbols
             public bool IsCastToFalseIsPopulated => (_bits & IsCastToFalsePopulatedBit) != 0;
             public bool IsPhpHidden => (_bits & IsPhpHiddenBit) != 0;
             public bool IsPhpHiddenIsPopulated => (_bits & IsPhpHiddenPopulatedBit) != 0;
+            public bool IsFieldsOnlyCtor => (_bits & IsPhpFieldsOnlyCtorBit) != 0;
+            public bool IsFieldsOnlyCtorIsPopulated => (_bits & IsPhpFieldsOnlyCtorPopulatedBit) != 0;
 
             private static bool BitsAreUnsetOrSame(int bits, int mask)
             {
@@ -134,6 +138,13 @@ namespace Pchp.CodeAnalysis.Symbols
             public void InitializeIsPhpHidden(bool isPhpHidden)
             {
                 int bitsToSet = (isPhpHidden ? IsPhpHiddenBit : 0) | IsPhpHiddenPopulatedBit;
+                Debug.Assert(BitsAreUnsetOrSame(_bits, bitsToSet));
+                ThreadSafeFlagOperations.Set(ref _bits, bitsToSet);
+            }
+
+            public void InitializeIsFieldsOnlyCtor(bool isFieldsOnlyCtor)
+            {
+                int bitsToSet = (isFieldsOnlyCtor ? IsPhpFieldsOnlyCtorBit : 0) | IsPhpFieldsOnlyCtorPopulatedBit;
                 Debug.Assert(BitsAreUnsetOrSame(_bits, bitsToSet));
                 ThreadSafeFlagOperations.Set(ref _bits, bitsToSet);
             }
@@ -204,6 +215,7 @@ namespace Pchp.CodeAnalysis.Symbols
             //public ImmutableArray<string> _lazyConditionalAttributeSymbols;
             public ObsoleteAttributeData _lazyObsoleteAttributeData = ObsoleteAttributeData.Uninitialized;
             //public DiagnosticInfo _lazyUseSiteDiagnostic;
+            public KeyValuePair<CultureInfo, string> _lazyDocComment;
         }
 
         /// <summary>
@@ -229,8 +241,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private SignatureData _lazySignature;
         private ImmutableArray<MethodSymbol> _lazyExplicitMethodImplementations;
         private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
-        private KeyValuePair<CultureInfo, string> _lazyDocComment;
-
+        
         /// <summary>
         /// A single field to hold optional auxiliary data.
         /// In many scenarios it is possible to avoid allocating this, thus saving total space in <see cref="PEModuleSymbol"/>.
@@ -423,6 +434,24 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override bool HasNotNull => Signature.ReturnParam.HasNotNull || CastToFalse;
+
+        public override bool IsInitFieldsOnly
+        {
+            get
+            {
+                if (!_packedFlags.IsFieldsOnlyCtorIsPopulated)
+                {
+                    var isFieldsInitOnly =
+                        MethodKind == MethodKind.Constructor &&
+                        IsStatic == false &&
+                        (DeclaredAccessibility == Accessibility.ProtectedOrInternal || DeclaredAccessibility == Accessibility.Protected) &&
+                        AttributeHelpers.HasPhpFieldsOnlyCtorAttribute(Handle, (PEModuleSymbol)ContainingModule);
+
+                    _packedFlags.InitializeIsFieldsOnlyCtor(isFieldsInitOnly);
+                }
+                return _packedFlags.IsFieldsOnlyCtor;
+            }
+        }
 
         public override bool IsPhpHidden
         {
@@ -961,9 +990,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
+        public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default)
         {
-            return PEDocumentationCommentUtils.GetDocumentationComment(this, _containingType.ContainingPEModule, preferredCulture, cancellationToken, ref _lazyDocComment);
+            return PEDocumentationCommentUtils.GetDocumentationComment(this, _containingType.ContainingPEModule, preferredCulture, cancellationToken, ref AccessUncommonFields()._lazyDocComment);
         }
     }
 }

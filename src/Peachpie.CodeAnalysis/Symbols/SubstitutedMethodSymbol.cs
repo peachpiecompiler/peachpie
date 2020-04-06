@@ -458,6 +458,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool HasNotNull => originalDefinition.HasNotNull;
 
+        public override bool IsInitFieldsOnly => originalDefinition.IsInitFieldsOnly;
+
         public override bool IsPhpHidden => originalDefinition.IsPhpHidden;
 
         public sealed override TypeSymbol ReturnType
