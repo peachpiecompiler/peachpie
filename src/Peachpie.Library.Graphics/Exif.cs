@@ -272,8 +272,6 @@ namespace Peachpie.Library.Graphics
             {
                 return null;
             }
-
-            var exiftags = typeof(ExifTag).GetProperties();
         }
 
         /// <summary>
