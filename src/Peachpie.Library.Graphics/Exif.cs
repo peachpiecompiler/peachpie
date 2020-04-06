@@ -7,6 +7,9 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using SixLabors.ImageSharp.PixelFormats;
+using System.Collections.Generic;
+using System.Threading;
+using System.Diagnostics;
 
 namespace Peachpie.Library.Graphics
 {
@@ -117,7 +120,7 @@ namespace Peachpie.Library.Graphics
                 {
                     foreach (var item in image.Metadata.ExifProfile.Values)
                     {
-                        array.Add(item.Tag.ToString(), ExifValueToPhpValue(item.Value));
+                        array.Add(item.Tag.ToString(), ExifValueToPhpValue(item.GetValue()));
                     }
                 }
             }
@@ -249,14 +252,62 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static string exif_tagname(int index)
         {
-            var tag = (ExifTag)index;
-
-            if (Enum.IsDefined(typeof(ExifTag), tag))
+            if (index < 0 || index > ushort.MaxValue)
             {
-                return tag.ToString();
+                return null;
             }
 
-            return null;
+            // var tag = (ExifTagValue)index; // INTERNAL
+            //if (Enum.IsDefined(typeof(ExifTag), tag))
+            //{
+            //    return tag.ToString();
+            //}
+            //return null;
+
+            if (GetExifTagMap().TryGetValue((ushort)index, out var name))
+            {
+                return name;
+            }
+            else
+            {
+                return null;
+            }
+
+            var exiftags = typeof(ExifTag).GetProperties();
+        }
+
+        /// <summary>
+        /// Lazily initialized immutable set of known exif tags.
+        /// </summary>
+        static Dictionary<ushort, string> s_exifmap;
+
+        static Dictionary<ushort, string> GetExifTagMap()
+        {
+            Dictionary<ushort, string> BuildMap()
+            {
+                var map = new Dictionary<ushort, string>(256); // ~249
+
+                var props = typeof(ExifTag).GetProperties();
+                foreach (var p in props)
+                {
+                    if (p.GetMethod.IsStatic && p.GetValue(null) is ExifTag exiftag)
+                    {
+                        map[(ushort)exiftag] = exiftag.ToString();
+                    }
+                }
+
+                Debug.Assert(map.Count <= 256, "perf: initialize {map} with bigger capacity please");
+
+                return map;
+            }
+
+            var map = s_exifmap;
+            if (map == null)
+            {
+                Interlocked.CompareExchange(ref s_exifmap, map = BuildMap(), null);
+            }
+
+            return map;
         }
 
         #endregion

@@ -3,20 +3,20 @@ using System.Collections.Generic;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.Primitives;
+using SixLabors.ImageSharp.Processing.Processors;
 
 namespace Peachpie.Library.Graphics
 {
     internal class FloodFillProcessor<TPixel> : ImageProcessor<TPixel>
-        where TPixel : struct, IPixel<TPixel>
+        where TPixel : unmanaged, IPixel<TPixel>
     {
         private readonly Point _startPoint;
         private readonly TPixel _fillColor;
         private readonly bool _toBorder;
         private readonly TPixel _borderColor;
 
-        public FloodFillProcessor(FloodFillProcessor definition, Image<TPixel> source, Rectangle sourceRectangle)
-            : base(source, sourceRectangle)
+        public FloodFillProcessor(Configuration configuration, FloodFillProcessor definition, Image<TPixel> source, Rectangle sourceRectangle)
+            : base(configuration, source, sourceRectangle)
         {
             _startPoint = definition.StartPoint;
             _fillColor = definition.FillColor.ToPixel<TPixel>();
