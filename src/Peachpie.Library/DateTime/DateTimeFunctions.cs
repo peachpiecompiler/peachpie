@@ -212,6 +212,28 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
+        #region
+
+        /// <summary>
+        /// Alias to <see cref="DateTime.setTime"/>.
+        /// </summary>
+        public static DateTime date_time_set(DateTime @object, int hour, int minute, int second)
+            => @object.setTime(hour, minute, second);
+
+        /// <summary>
+        /// Alias to <see cref="DateTime.setDate"/>.
+        /// </summary>
+        public static DateTime date_date_set(DateTime @object, int year, int month, int day)
+            => @object.setDate(year, month, day);
+
+        /// <summary>
+        /// Alias to <see cref="DateTime.setISODate"/>.
+        /// </summary>
+        public static DateTime date_isodate_set(DateTime @object, int year, int week, int day = 1)
+            => @object.setISODate(year, week, day);
+
+        #endregion
+
         #region date_get_last_errors
 
         /// <summary>Returns the warnings and errors.</summary>
