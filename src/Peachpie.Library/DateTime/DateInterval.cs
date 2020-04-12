@@ -174,6 +174,7 @@ namespace Pchp.Library.DateTime
             return new DateInterval(scanner.Time, negative: false);
         }
 
+        [return: NotNull]
         public virtual string format(string format)
         {
             if (string.IsNullOrEmpty(format))

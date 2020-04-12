@@ -715,12 +715,18 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region date_interval_create_from_date_string
+        #region date_interval_create_from_date_string, date_interval_format
 
         /// <summary>
         /// Alias of <see cref="DateInterval.createFromDateString(string)"/>.
         /// </summary>
         public static DateInterval date_interval_create_from_date_string(string time) => DateInterval.createFromDateString(time);
+
+        /// <summary>
+        /// Alias to <see cref="DateInterval.format"/>.
+        /// </summary>
+        [return: NotNull]
+        public static string date_interval_format(DateInterval @object, string format) => @object.format(format);
 
         #endregion
 
