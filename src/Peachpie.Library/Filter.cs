@@ -294,6 +294,11 @@ namespace Pchp.Library
             HOSTNAME = 1048576, // yes the same as IPV4
 
             /// <summary>
+            /// Accepts Unicode characters in the local part in "validate_email" filter.
+            /// </summary>
+            EMAIL_UNICODE = 1048576, // same as HOSTNAME
+
+            /// <summary>
             /// Allow only IPv6 address in "validate_ip" filter.
             /// </summary>
             IPV6 = 2097152,
@@ -399,6 +404,11 @@ namespace Pchp.Library
         /// (they must start with an alphanumberic character and contain only alphanumerics or hyphens).
         /// </summary>
         public const int FILTER_FLAG_HOSTNAME = (int)FilterFlag.HOSTNAME;
+
+        /// <summary>
+        /// Accepts Unicode characters in the local part in "validate_email" filter.
+        /// </summary>
+        public const int FILTER_FLAG_EMAIL_UNICODE = (int)FilterFlag.EMAIL_UNICODE;
 
         /// <summary>
         /// Allow only IPv4 address in "validate_ip" filter.
@@ -794,10 +804,17 @@ namespace Pchp.Library
 
         private static class RegexUtilities
         {
-            private static readonly Regex ValidEmailRegex = new Regex(
-                    @"^(?("")(""[^""]+?""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
-                    @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-\w]*[0-9a-z]*\.)+[a-z0-9]{2,17}))$",
-                    RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            //static readonly Lazy<Regex> ValidEmailRegex = new Lazy<Regex>(() => new Regex(
+            //        @"^(?("")(""[^""]+?""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
+            //        @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-\w]*[0-9a-z]*\.)+[a-z0-9]{2,17}))$",
+            //        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+            //    System.Threading.LazyThreadSafetyMode.None);
+
+            //static readonly Lazy<Regex> ValidEmailUnicodeRegex = new Lazy<Regex>(() => new Regex(
+            //        @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=(?:[0-9a-z]|[^\x20-\x7E]))@))" +
+            //        @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-\w]*[0-9a-z]*\.)+[a-z0-9][\-a-z0-9]{0,22}[a-z0-9]))$",
+            //        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+            //    System.Threading.LazyThreadSafetyMode.None);
 
             public static bool IsValidEmail(string strIn)
             {
@@ -805,22 +822,35 @@ namespace Pchp.Library
                 {
                     return false;
                 }
-
+                
                 // Use IdnMapping class to convert Unicode domain names.
                 try
                 {
-                    strIn = Regex.Replace(strIn, @"(@)(.+)$", DomainMapper);
+                    strIn = Regex.Replace(strIn, @"(@)(.+)$", match => DomainMapper(match));
                 }
                 catch (ArgumentException)
                 {
                     return false;
                 }
 
-                // Return true if strIn is in valid e-mail format.
-                return ValidEmailRegex.IsMatch(strIn);
+                // use MailAddress parser:
+                try
+                {
+                    var addr = new System.Net.Mail.MailAddress(strIn);
+                    var valid = addr.Address == strIn;
+
+                    return valid;
+                }
+                catch
+                {
+                    return false;
+                }
+
+                //// Return true if strIn is in valid e-mail format.
+                //return ValidEmailRegex.Value.IsMatch(strIn);
             }
 
-            private static string DomainMapper(Match match)
+            static string DomainMapper(Match match)
             {
                 string domainName = match.Groups[2].Value;
 
