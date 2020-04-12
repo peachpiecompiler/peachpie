@@ -19,5 +19,20 @@
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
     <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
   
 </Project>
