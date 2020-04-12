@@ -2087,6 +2087,96 @@ namespace Peachpie.Library.Graphics
             return new PhpGdImageResource(img.Image.Clone(o => o.Resize(new_width, new_height, res)), img.Format);
         }
 
+        /// <summary>
+        /// Return an image containing the affine transformed src image, using an optional clipping area
+        /// </summary>
+        /// <param name="image">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
+        /// <param name="affine">Array with keys 0 to 5.</param>
+        /// <param name="clip">Array with keys "x", "y", "width" and "height".</param>
+        /// <returns>Return affined image resource on success or FALSE on failure.</returns>
+        [return:CastToFalse]
+        public static PhpResource imageaffine(PhpResource image, PhpArray affine, PhpArray clip = null)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img == null)
+                return null;
+
+            // Check Arguments
+            if (!affine.TryGetItemValue("0", out PhpValue n_1) | !affine.TryGetItemValue("1", out PhpValue n_2) | 
+                !affine.TryGetItemValue("2", out PhpValue n_3) | !affine.TryGetItemValue("3", out PhpValue n_4) | 
+                !affine.TryGetItemValue("4", out PhpValue n_5) | !affine.TryGetItemValue("5", out PhpValue n_6))
+            {
+                PhpException.Throw(PhpError.Warning, "Wrong type of one or more parameters");
+                return null;
+            }
+
+            if (!n_1.IsDouble() || !n_2.IsDouble() || !n_3.IsDouble() || 
+                !n_4.IsDouble() || !n_5.IsDouble() || !n_6.IsDouble())
+            {
+                PhpException.Throw(PhpError.Warning, "Affine array must have six elements");
+                return null;
+            }
+
+            Matrix3x2 affineMatrix = new Matrix3x2((float)n_1.ToDouble(), (float)n_2.ToDouble(), (float)n_3.ToDouble(),
+                                                   (float)n_4.ToDouble(), (float)n_5.ToDouble(), (float)n_6.ToDouble());
+
+            Rectangle sourceBox = new Rectangle(0, 0, img.Image.Width, img.Image.Height);
+
+            if (clip != null) // Check Arguments if clip exists
+            {
+                if (!clip.TryGetItemValue("x", out PhpValue xValue) | !clip.TryGetItemValue("y", out PhpValue yValue) | 
+                    !clip.TryGetItemValue("width", out PhpValue widthValue) |
+                    !clip.TryGetItemValue("height", out PhpValue heightValue))
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.missing_params);
+                        return null;
+                    }
+
+                if (!xValue.IsInteger() || !yValue.IsInteger() || !widthValue.IsInteger() || !heightValue.IsInteger())
+                    {
+                        PhpException.Throw(PhpError.Warning, "Wrong type of one or more parameters");
+                        return null;
+                    }
+                else
+                {
+                    sourceBox.X = xValue.ToInt();
+                    sourceBox.Y = yValue.ToInt();
+                    sourceBox.Width = widthValue.ToInt();
+                    sourceBox.Height = heightValue.ToInt();
+                }
+            }
+
+            // Calculate translation
+            PointF[] extent = new PointF[4] { new PointF(0, 0), new PointF(img.Image.Width, 0),
+                    new PointF(img.Image.Width, img.Image.Height), new PointF(0, img.Image.Height) };
+
+            for (int i = 0; i < extent.Length; i++)
+                extent[i] = ApplyAffineToPointF(extent[i], affineMatrix);
+
+            PointF min = extent[0];
+            for(int i = 1; i < 4; i++) {
+                if (min.X > extent[i].X)
+                    min.X = extent[i].X;
+                if (min.Y > extent[i].Y)
+                    min.Y = extent[i].Y;
+            }
+
+            var translationMatrix = new Matrix3x2(1, 0, 0, 1, -min.X, -min.Y);
+
+            AffineTransformBuilder builder = 
+                new AffineTransformBuilder().AppendMatrix(affineMatrix).AppendMatrix(translationMatrix);
+
+            var transformed = img.Image.Clone(o => o.Transform(sourceBox, builder,new TriangleResampler()));
+
+            return new PhpGdImageResource(transformed,img.Format);
+        }
+
+        private static PointF ApplyAffineToPointF(PointF point, Matrix3x2 affine)
+        {
+            var x = point.X;
+            var y = point.Y;
+            return new PointF(x * affine.M11 + y * affine.M21 + affine.M31, x * affine.M12 + y * affine.M22 + affine.M32);
+        }
         #endregion
     }
 
