@@ -29,10 +29,17 @@ namespace Pchp.Library
         /// <returns>True if the function succeeded.</returns>
         public static bool cli_set_process_title(string title)
         {
-            // ? Console.Title = title;
+            try
+            {
+                Console.Title = title;
 
-            PhpException.FunctionNotSupported(nameof(cli_set_process_title));
-            return false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+                return false;
+            }
         }
 
         /// <summary>
@@ -41,10 +48,17 @@ namespace Pchp.Library
         /// <returns>The process title or <c>null</c> in case of error.</returns>
         public static string cli_get_process_title()
         {
-            // ? Console.Title or Process.GetCurrentProcess().MainWindowTitle
 
-            PhpException.FunctionNotSupported(nameof(cli_get_process_title));
-            return null; // returns null on error
+            try
+            {
+                // Process.GetCurrentProcess().MainWindowTitle ?
+                return Console.Title;
+            }
+            catch (Exception ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+                return null;
+            }
         }
     }
 }

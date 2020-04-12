@@ -49,26 +49,5 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             return stack;
         }
-
-        /// <summary>
-        /// Determines if given method is a special compiler generated constructor that only initializes fields.
-        /// </summary>
-        internal static bool IsFieldsOnlyConstructor(this MethodSymbol m)
-        {
-            // [PhpFieldsOnlyCtorAttribute] protected or internal .ctor(...)
-            if (m != null && m.MethodKind == MethodKind.Constructor && !m.IsStatic &&
-                (m.DeclaredAccessibility == Accessibility.ProtectedOrInternal || m.DeclaredAccessibility == Accessibility.Protected))
-            {
-                if (m is SynthesizedPhpCtorSymbol sctor)
-                {
-                    return sctor.IsInitFieldsOnly;
-                }
-
-                var attrs = m.GetAttributes();
-                return !attrs.IsEmpty && attrs.Any(attr => attr.AttributeClass.MetadataName == CoreTypes.PhpFieldsOnlyCtorAttributeName);
-            }
-
-            return false;
-        }
     }
 }

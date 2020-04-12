@@ -226,8 +226,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 m.DeclaredAccessibility != Accessibility.ProtectedAndInternal && // C# 7.2 "private protected"
                 m.DeclaredAccessibility != Accessibility.Internal && // "internal"
                 (scope.ScopeIsDynamic || m.IsAccessible(scope.Scope)) &&  // method is accessible (or might be in runtime)
-                !m.IsFieldsOnlyConstructor() &&    // method is not a special .ctor which is not accessible from user's code
-                !m.IsPhpHidden() // ignore [PhpHidden] methods !!!
+                !m.IsInitFieldsOnly &&    // method is not a special .ctor which is not accessible from user's code
+                !m.IsPhpHidden() // ignore [PhpHidden] methods
                 );
         }
     }

@@ -1502,22 +1502,20 @@ namespace Pchp.Library.Streams
         public void AddFilter(IFilter filter, FilterChainOptions where)
         {
             Debug.Assert((where & FilterChainOptions.ReadWrite) != FilterChainOptions.ReadWrite);
-            List<IFilter> list = null;
+            List<IFilter> list;
 
             // Which chain.
-            if ((where & FilterChainOptions.Read) > 0)
+            if ((where & FilterChainOptions.Read) != 0)
             {
-                if (readFilters == null) readFilters = new List<IFilter>();
-                list = readFilters;
+                list = readFilters ??= new List<IFilter>();
             }
             else
             {
-                if (writeFilters == null) writeFilters = new List<IFilter>();
-                list = writeFilters;
+                list = writeFilters ??= new List<IFilter>();
             }
 
             // Position in the chain.
-            if ((where & FilterChainOptions.Tail) > 0)
+            if ((where & FilterChainOptions.Tail) != 0)
             {
                 list.Add(filter);
                 if ((list == readFilters) && (ReadBufferLength > 0))
@@ -1539,19 +1537,34 @@ namespace Pchp.Library.Streams
         }
 
         /// <summary>
+        /// Removes a filter from the filter chains.
+        /// </summary>
+        public bool RemoveFilter(IFilter filter, FilterChainOptions where)
+        {
+            var list = (where & FilterChainOptions.Read) != 0 ? readFilters : writeFilters;
+            return list != null && list.Remove(filter);
+        }
+
+        /// <summary>
         /// Get enumerator of chained read/write filters.
         /// </summary>
         public IEnumerable<PhpFilter> StreamFilters
         {
             get
             {
+                var result = Enumerable.Empty<PhpFilter>();
+
                 if (readFilters != null)
-                    foreach (PhpFilter f in readFilters)
-                        yield return f;
+                {
+                    result = result.Concat(readFilters.Cast<PhpFilter>());
+                }
 
                 if (writeFilters != null)
-                    foreach (PhpFilter f in writeFilters)
-                        yield return f;
+                {
+                    result = result.Concat(writeFilters.Cast<PhpFilter>());
+                }
+
+                return result;
             }
         }
 

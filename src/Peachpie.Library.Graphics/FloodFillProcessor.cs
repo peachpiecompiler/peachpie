@@ -1,7 +1,6 @@
 ﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing.Processors;
-using SixLabors.Primitives;
 
 namespace Peachpie.Library.Graphics
 {
@@ -30,8 +29,10 @@ namespace Peachpie.Library.Graphics
 
         public Color BorderColor { get; }
 
-        public IImageProcessor<TPixel> CreatePixelSpecificProcessor<TPixel>(Image<TPixel> source, Rectangle sourceRectangle)
-            where TPixel : struct, IPixel<TPixel>
-            => new FloodFillProcessor<TPixel>(this, source, sourceRectangle);
+        public IImageProcessor<TPixel> CreatePixelSpecificProcessor<TPixel>(Configuration configuration, Image<TPixel> source, Rectangle sourceRectangle)
+            where TPixel : unmanaged, IPixel<TPixel>
+        {
+            return new FloodFillProcessor<TPixel>(configuration, this, source, sourceRectangle);
+        }
     }
 }

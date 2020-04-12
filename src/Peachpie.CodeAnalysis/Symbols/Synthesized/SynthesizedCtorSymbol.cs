@@ -89,7 +89,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly int _sourceParamsCount;
 
-        public bool IsInitFieldsOnly { get; internal set; }
+        public override bool IsInitFieldsOnly => IsInitFieldsOnlyPrivate;
+
+        bool IsInitFieldsOnlyPrivate;
 
         protected SynthesizedPhpCtorSymbol(SourceTypeSymbol containingType, Accessibility accessibility,
             MethodSymbol basector, MethodSymbol __construct, int paramsLimit = int.MaxValue)
@@ -200,7 +202,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var fieldsinitctor = new SynthesizedPhpCtorSymbol(type, Accessibility.ProtectedOrInternal, basector, null)
                 {
-                    IsInitFieldsOnly = true,
+                    IsInitFieldsOnlyPrivate = true,
                     IsEditorBrowsableHidden = true,
                 };
                 ctors.Add(fieldsinitctor);
@@ -360,7 +362,7 @@ namespace Pchp.CodeAnalysis.Symbols
             MethodSymbol defaultctor)
             : base(containingType, accessibility, defaultctor, null)
         {
-            IsPhpHidden = true; // from the PHP context, do not use this Context-less .ctor, we have the Context instance and we want to pass it properly
+            IsPhpHiddenInternal = true; // from the PHP context, do not use this Context-less .ctor, we have the Context instance and we want to pass it properly
         }
 
         protected override IEnumerable<ParameterSymbol> CreateParameters(IEnumerable<ParameterSymbol> baseparams)

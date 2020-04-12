@@ -21,6 +21,12 @@ namespace Pchp.CodeAnalysis.Symbols
         bool CastToFalse { get; }
 
         /// <summary>
+        /// Gets value indicating the .ctor only initializes fields, and does not call __construct.
+        /// Applicable only to instance constructors.
+        /// </summary>
+        bool IsInitFieldsOnly { get; }
+
+        /// <summary>
         /// For source routines, gets their control flow graph.
         /// Can be <c>null</c> for routines from PE.
         /// </summary>

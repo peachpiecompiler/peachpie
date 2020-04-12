@@ -8,17 +8,16 @@ using Pchp.Library.Streams;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
+using SixLabors.ImageSharp.Drawing;
+using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Primitives;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Processing.Processors.Transforms;
-using SixLabors.Primitives;
-using SixLabors.Shapes;
 
 namespace Peachpie.Library.Graphics
 {
@@ -363,7 +362,7 @@ namespace Peachpie.Library.Graphics
                     .Crop(new Rectangle(src_x, src_y, src_w, src_h))
                     .Resize(dst_w, dst_h, resampler)))
             {
-                dst_img.Image.Mutate(o => o.DrawImage(cropped, new Point(dst_x, dst_y), GraphicsOptions.Default));
+                dst_img.Image.Mutate(o => o.DrawImage(cropped, new Point(dst_x, dst_y), new GraphicsOptions { /* GraphicsOptions */ }));
             }
 
             return true;
@@ -381,7 +380,7 @@ namespace Peachpie.Library.Graphics
         {
             var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), BmpFormat.Instance);
 
-            img.Image.Mutate(o => o.BackgroundColor(Rgba32.White));
+            img.Image.Mutate(o => o.BackgroundColor(Color.White));
             img.AlphaBlending = true;
 
             return img;
@@ -395,7 +394,7 @@ namespace Peachpie.Library.Graphics
         {
             var img = imagecreatecommon(x_size, y_size, new PngConfigurationModule(), PngFormat.Instance);
 
-            img.Image.Mutate(o => o.BackgroundColor(Rgba32.Black));
+            img.Image.Mutate(o => o.BackgroundColor(Color.Black));
             img.AlphaBlending = true;
 
             return img;
@@ -669,7 +668,7 @@ namespace Peachpie.Library.Graphics
         }
 
         static Rgba32 FromRGB(long color) => new Rgba32((uint)color | 0xff000000u);
-        static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? new Rgba32((uint)color) : Rgba32.Transparent;
+        static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? new Rgba32((uint)color) : (Rgba32)Color.Transparent;
 
         private static int PHPColorToPHPAlpha(int color) => FromRGBA(color).A;
         private static int PHPColorToRed(int color) => FromRGBA(color).R;
@@ -1248,7 +1247,7 @@ namespace Peachpie.Library.Graphics
                 // or use default encoding options
                 encoder ??= new GifEncoder(); // TODO: ColorTableMode from alocated colors count?
 
-                img.Mutate(o => o.BackgroundColor(Rgba32.Transparent));
+                img.Mutate(o => o.BackgroundColor(Color.Transparent));
                 img.SaveAsGif(stream, encoder);
             });
         }
@@ -1586,11 +1585,11 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Returns the pixel size of a character in the specified font.
         /// </summary>
-        static SizeF imagefontsize(int fontInd)
+        static FontRectangle imagefontsize(int fontInd)
         {
             if (fontInd <= 0)
             {
-                return SizeF.Empty;
+                return FontRectangle.Empty;
             }
 
             var arr = _imagefontsize;
@@ -1624,7 +1623,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Cached pixel sizes of a built-in font character.
         /// </summary>
-        static SizeF[] _imagefontsize;
+        static FontRectangle[] _imagefontsize;
 
         #endregion
 

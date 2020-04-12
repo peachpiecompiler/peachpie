@@ -63,7 +63,7 @@ namespace Pchp.Library
                 Client = client;
                 Autoseek = true;
                 TokenSource = new CancellationTokenSource();
-                
+
             }
 
             public FtpClient Client { get; }
@@ -72,17 +72,22 @@ namespace Pchp.Library
 
             public bool Autoseek { get; set; }
 
-            public Task<bool> PendingOperationTask { get; set; }
-            
+            /// <summary>
+            /// Pending operation.
+            /// When assigning, check the task is supported in <see cref="TasksGetInfo"/>.
+            /// </summary>
+            public Task PendingOperationTask { get; set; }
+
             public CancellationTokenSource TokenSource { get; private set; }
 
             public void PrepareForPendingOperation(int mode)
             {
                 Client.DownloadDataType = (mode == FTP_ASCII) ? FtpDataType.ASCII : FtpDataType.Binary;
 
+                var task = PendingOperationTask;
+
                 // Cancel current function and start new
-                if (PendingOperationTask != null
-                    && !PendingOperationTask.IsCompleted && !PendingOperationTask.IsCanceled && !PendingOperationTask.IsFaulted)
+                if (task != null && !task.IsCompleted) // not faulted, not cancelled, not ran to finish
                 {
                     // CancellationTokenSource cannot be reset and cancelled again
                     TokenSource.Cancel();
@@ -90,12 +95,12 @@ namespace Pchp.Library
                     try
                     {
                         // Wait for task is canceled in other to dispose TokenSource
-                        PendingOperationTask.Wait();
+                        task.Wait();
                     }
                     catch (TaskCanceledException)
                     {
                     }
-                    catch(AggregateException ex) when (ex.InnerException is TaskCanceledException)
+                    catch (AggregateException ex) when (ex.InnerException is TaskCanceledException)
                     {
                     }
 
@@ -111,9 +116,7 @@ namespace Pchp.Library
 
             protected override void FreeManaged()
             {
-                if (TokenSource != null)
-                    TokenSource.Dispose();
-
+                TokenSource?.Dispose();
                 Client.Dispose();
                 base.FreeManaged();
             }
@@ -352,13 +355,15 @@ namespace Pchp.Library
         public static string ftp_mkdir(PhpResource ftp_stream, string directory)
         {
             var resource = ValidateFtpResource(ftp_stream);
-            if (resource == null)
-                return null;
-
-            if (FtpCommand(directory, resource.Client.CreateDirectory))
+            
+            if (resource != null && FtpCommand(directory, path => resource.Client.CreateDirectory(path)))
+            {
                 return directory;
+            }
             else
+            {
                 return null;
+            }
         }
 
         /// <summary>
@@ -815,8 +820,6 @@ namespace Pchp.Library
                 return false;
             }
 
-            //stejny
-
             if (startpos != 0)
             {
                 // There is no API for this parameter in FluentFTP Library. 
@@ -827,7 +830,7 @@ namespace Pchp.Library
 
             try
             {
-                return resource.Client.Upload(stream.RawStream, remote_file, FtpExists.Overwrite);
+                return resource.Client.Upload(stream.RawStream, remote_file, FtpRemoteExists.Overwrite) != FtpStatus.Failed;
             }
             catch (FtpException ex)
             {
@@ -907,7 +910,7 @@ namespace Pchp.Library
 
             try
             {
-                return resource.Client.UploadFile(localPath, remote_file, append ? FtpExists.Append : FtpExists.Overwrite);
+                return resource.Client.UploadFile(localPath, remote_file, append ? FtpRemoteExists.Append : FtpRemoteExists.Overwrite) != FtpStatus.Failed;
             }
             /* FtpException everytime wraps other exceptions (Message from server). 
             * https://github.com/robinrodricks/FluentFTP/blob/master/FluentFTP/Client/FtpClient_HighLevelUpload.cs#L595 */
@@ -995,15 +998,18 @@ namespace Pchp.Library
                 // type of file
                 itemArr.Add("type", item.Type.ToString());
                 // modify
-                if (item.Modified != null) {
+                if (item.Modified != null)
+                {
                     itemArr.Add("modify", DateTimeUtils.UtcToUnixTimeStamp(item.Modified.ToUniversalTime()));
                 }
                 // chmod
-                if (item.Chmod != 0) {
+                if (item.Chmod != 0)
+                {
                     itemArr.Add("UNIX.mode", ConvertUnixModeFromInput(item.Chmod));
                 }
                 // owner perm
-                if (!String.IsNullOrEmpty(item.RawOwner)) {
+                if (!String.IsNullOrEmpty(item.RawOwner))
+                {
                     itemArr.Add("UNIX.owner", item.RawOwner);
                 }
                 // group perm
@@ -1099,7 +1105,8 @@ namespace Pchp.Library
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public static bool ftp_get(Context ctx, PhpResource ftp_stream, string local_file, string remote_file, int mode = FTP_BINARY, int resumepos = 0)
         {
-            using (var stream = PhpPath.fopen(ctx, local_file, "w")) {
+            using (var stream = PhpPath.fopen(ctx, local_file, "w"))
+            {
                 return ftp_fget(ftp_stream, stream, remote_file, mode, resumepos);
             }
         }
@@ -1146,7 +1153,7 @@ namespace Pchp.Library
 
             resource.PrepareForPendingOperation(mode);
 
-            resource.PendingOperationTask = resource.Client.UploadFileAsync(localPath, remote_file, FtpExists.Overwrite, false, FtpVerify.None,null, resource.TokenSource.Token);
+            resource.PendingOperationTask = resource.Client.UploadFileAsync(localPath, remote_file, FtpRemoteExists.Overwrite, false, FtpVerify.None, null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }
@@ -1160,7 +1167,7 @@ namespace Pchp.Library
         /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
         /// <param name="startpos">The position in the remote file to start uploading to.</param>
         /// <returns>Returns FTP_FAILED or FTP_FINISHED or FTP_MOREDATA.</returns>
-        public static int ftp_nb_fput(PhpResource ftp_stream , string remote_file , PhpResource handle, int mode = FTP_BINARY, int startpos = 0)
+        public static int ftp_nb_fput(PhpResource ftp_stream, string remote_file, PhpResource handle, int mode = FTP_BINARY, int startpos = 0)
         {
             // Check file resource
             var stream = PhpStream.GetValid(handle);
@@ -1180,8 +1187,8 @@ namespace Pchp.Library
 
             resource.PrepareForPendingOperation(mode);
 
-            resource.PendingOperationTask = resource.Client.UploadAsync(stream.RawStream, remote_file,FtpExists.Overwrite,false,null, resource.TokenSource.Token);
-            
+            resource.PendingOperationTask = resource.Client.UploadAsync(stream.RawStream, remote_file, FtpRemoteExists.Overwrite, false, null, resource.TokenSource.Token);
+
             return TasksGetInfo(resource);
         }
 
@@ -1276,28 +1283,41 @@ namespace Pchp.Library
 
         private static int TasksGetInfo(FtpResource ftp_stream)
         {
-            if (ftp_stream.PendingOperationTask == null)
+            var task = ftp_stream.PendingOperationTask;
+
+            if (task == null)
             {
                 PhpException.Throw(PhpError.Warning, Resources.Resources.ftp_error_no_nb);
                 return FTP_FAILED;
             }
 
-            if (ftp_stream.PendingOperationTask.IsFaulted)
+            switch (task.Status)
             {
-                foreach(Exception ex in ftp_stream.PendingOperationTask.Exception.InnerExceptions)
-                    PhpException.Throw(PhpError.Warning, ex.Message);
+                case TaskStatus.Faulted:
+                    foreach (Exception ex in task.Exception.InnerExceptions)
+                    {
+                        PhpException.Throw(PhpError.Warning, ex.Message);
+                    }
 
-                return FTP_FAILED;
+                    return FTP_FAILED;
+
+                case TaskStatus.Canceled:
+                    return FTP_FAILED;
+
+                case TaskStatus.RanToCompletion:
+
+                    return task switch
+                    {
+                        Task<bool> booltask => booltask.Result ? FTP_FINISHED : FTP_FAILED,
+                        Task<FtpStatus> ftptask => ftptask.Result != FtpStatus.Failed ? FTP_FINISHED : FTP_FAILED,
+                        _ => throw new NotImplementedException(task.GetType().Name),
+                    };
+
+                default:
+                    return FTP_MOREDATA;
             }
-
-            if (ftp_stream.PendingOperationTask.IsCompleted)
-            {
-                return ftp_stream.PendingOperationTask.Result ? FTP_FINISHED : FTP_FAILED;
-            }
-
-            return FTP_MOREDATA;
         }
-       
+
         #endregion
     }
 }

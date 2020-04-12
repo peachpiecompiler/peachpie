@@ -98,7 +98,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optional. A <c>.ctor</c> that ensures the initialization of the class without calling the PHP constructor.
         /// </summary>
-        public IMethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.SingleOrDefault(MethodSymbolExtensions.IsFieldsOnlyConstructor);
+        public IMethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.SingleOrDefault(ctor => ctor.IsInitFieldsOnly);
 
         #endregion
 
