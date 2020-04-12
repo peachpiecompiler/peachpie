@@ -847,6 +847,10 @@ namespace Pchp.Library
                     return @default;
 
                 case FILTER_VALIDATE_DOMAIN:
+                    value = variable.ToString(ctx);
+                    return Uri.CheckHostName(value) != UriHostNameType.Unknown
+                        ? value
+                        : @default;
 
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(filter), filter);
