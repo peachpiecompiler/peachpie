@@ -39,8 +39,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual IMethodSymbol ConstructedFrom => this;
 
-        public BoundExpression Initializer => null;
-
         ImmutableArray<IMethodSymbol> IMethodSymbol.ExplicitInterfaceImplementations => StaticCast<IMethodSymbol>.From(ExplicitInterfaceImplementations);
 
         public virtual ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations => ImmutableArray<MethodSymbol>.Empty;
@@ -273,9 +271,16 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Gets value indicating the method is annotated with [PhpHiddenAttribute] metadata.
+        /// </summary>
+        public virtual bool IsPhpHidden => false;
+
         #region IPhpRoutineSymbol
 
         public virtual bool CastToFalse => false;
+
+        public virtual bool IsInitFieldsOnly => false;
 
         public virtual bool HasNotNull => false;
 
@@ -294,6 +299,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Whether routine represents a global code.
         /// </summary>
         public virtual bool IsGlobalScope => false;
+
+        public BoundExpression Initializer => null; // not applicable for methods
 
         #endregion
     }

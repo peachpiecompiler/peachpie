@@ -1008,7 +1008,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// GetUserEntryPoint encode a string by shifting every letter (a-z, A-Z) by 13 places in the alphabet.
+        /// Encodes a string by shifting every letter (a-z, A-Z) by 13 places in the alphabet.
         /// </summary>
         /// <param name="str">The string to be encoded.</param>
         /// <returns>The string with characters rotated by 13 places.</returns>

@@ -32,6 +32,12 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public int length => _list.Count;
 
+        /// <summary>
+        /// Get number of nodes in the list.
+        /// Alias to <see cref="length"/>/
+        /// </summary>
+        public int count() => _list.Count;
+
         #endregion
 
         #region Construction

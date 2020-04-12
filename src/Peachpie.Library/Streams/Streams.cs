@@ -316,16 +316,29 @@ namespace Pchp.Library.Streams
 
         #endregion
 
-        #region stream_filter_append, stream_filter_prepend
+        #region stream_filter_append, stream_filter_prepend, stream_filter_remove
 
-        /// <summary>Adds filtername to the list of filters attached to stream.</summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="stream"></param>
-        /// <param name="filter"></param>
-        /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
-        public static bool stream_filter_append(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite)
+        sealed class StreamFilterResource : PhpResource
         {
-            return stream_filter_append(ctx, stream, filter, read_write, PhpValue.Null);
+            internal PhpStream Stream { get; private set; }
+            internal PhpFilter WriteFilter { get; private set; }
+            internal PhpFilter ReadFilter { get; private set; }
+
+            public StreamFilterResource(PhpStream stream, PhpFilter writeFilter, PhpFilter readFilter) : base("stream filter")
+            {
+                this.Stream = stream;
+                this.WriteFilter = writeFilter;
+                this.ReadFilter = readFilter;
+            }
+
+            protected override void FreeManaged()
+            {
+                Stream = null;
+                WriteFilter = null;
+                ReadFilter = null;
+
+                base.FreeManaged();
+            }
         }
 
         /// <summary>Adds filtername to the list of filters attached to stream.</summary>
@@ -334,23 +347,24 @@ namespace Pchp.Library.Streams
         /// <param name="filter">The filter name.</param>
         /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
         /// <param name="parameters">Additional parameters for a user filter.</param>
-        public static bool stream_filter_append(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write, PhpValue parameters)
+        [return: CastToFalse]
+        public static PhpResource stream_filter_append(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite, PhpValue parameters = default)
         {
             PhpStream s = PhpStream.GetValid(stream);
-            if (s == null) return false;
+            if (s == null) return null; // false;
 
-            var where = (FilterChainOptions)read_write & FilterChainOptions.ReadWrite;
-            return PhpFilter.AddToStream(ctx, s, filter, where | FilterChainOptions.Tail, parameters);
-        }
+            var where = read_write & FilterChainOptions.ReadWrite;
+            var added = PhpFilter.AddToStream(ctx, s, filter, where | FilterChainOptions.Tail, parameters);
 
-        /// <summary>Adds <paramref name="filter"/> to the list of filters attached to <paramref name="stream"/>.</summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="stream">The target stream.</param>
-        /// <param name="filter">The filter name.</param>
-        /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
-        public static bool stream_filter_prepend(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite)
-        {
-            return stream_filter_prepend(ctx, stream, filter, read_write, PhpValue.Null);
+            //
+            if (added.readFilter != null || added.writeFilter != null)
+            {
+                return new StreamFilterResource(s, added.writeFilter, added.readFilter);
+            }
+            else
+            {
+                return null; // false
+            }
         }
 
         /// <summary>Adds <paramref name="filter"/> to the list of filters attached to <paramref name="stream"/>.</summary>
@@ -359,13 +373,58 @@ namespace Pchp.Library.Streams
         /// <param name="filter">The filter name.</param>
         /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
         /// <param name="parameters">Additional parameters for a user filter.</param>
-        public static bool stream_filter_prepend(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write, PhpValue parameters)
+        [return: CastToFalse]
+        public static PhpResource stream_filter_prepend(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite, PhpValue parameters = default)
         {
             var s = PhpStream.GetValid(stream);
-            if (s == null) return false;
+            if (s == null) return null; // false;
 
-            var where = (FilterChainOptions)read_write & FilterChainOptions.ReadWrite;
-            return PhpFilter.AddToStream(ctx, s, filter, where | FilterChainOptions.Head, parameters);
+            var where = read_write & FilterChainOptions.ReadWrite;
+            var added = PhpFilter.AddToStream(ctx, s, filter, where | FilterChainOptions.Head, parameters);
+
+            //
+            if (added.readFilter != null || added.writeFilter != null)
+            {
+                return new StreamFilterResource(s, added.writeFilter, added.readFilter);
+            }
+            else
+            {
+                return null; // false
+            }
+        }
+
+        /// <summary>
+        /// Removes a stream filter previously added to a stream with stream_filter_prepend() or stream_filter_append().
+        /// Any data remaining in the filter's internal buffer will be flushed through to the next filter before removing it.
+        /// </summary>
+        public static bool stream_filter_remove(PhpResource stream_filter)
+        {
+            bool removed = false;
+
+            if (stream_filter is StreamFilterResource s && s.IsValid && s.Stream != null && s.Stream.IsValid)
+            {
+                s.Stream.Flush();
+
+                if (s.WriteFilter != null)
+                {
+                    removed |= s.Stream.RemoveFilter(s.WriteFilter, FilterChainOptions.Write);
+                }
+
+                if (s.ReadFilter != null)
+                {
+                    removed |= s.Stream.RemoveFilter(s.ReadFilter, FilterChainOptions.Read);
+                }
+
+                s.Dispose();
+            }
+            else
+            {
+                // Invalid resource given, not a stream filter
+                PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.invalid_stream_resource);
+            }
+
+            //
+            return removed;
         }
 
         #endregion
@@ -565,9 +624,9 @@ namespace Pchp.Library.Streams
         {
             /// <summary>Seek from the beginning of the file.</summary>
             Set = SeekOrigin.Begin,   // 0 (OK)
-                                      /// <summary>Seek from the current position.</summary>
+            /// <summary>Seek from the current position.</summary>
             Current = SeekOrigin.Current, // 1 (OK)
-                                          /// <summary>Seek from the end of the file.</summary>
+            /// <summary>Seek from the end of the file.</summary>
             End = SeekOrigin.End      // 2 (OK)
         }
 
@@ -870,7 +929,7 @@ namespace Pchp.Library.Streams
         {
             var array = new PhpArray();
 
-            foreach (PhpFilter f in stream.StreamFilters)
+            foreach (var f in stream.StreamFilters)
             {
                 array.Add(f.filtername);
             }
@@ -1091,8 +1150,8 @@ namespace Pchp.Library.Streams
                 switch (valid.OpenedPath)
                 {
                     case "php://stdin": return !Console.IsInputRedirected; // -10
-                    case "php://stdout":return !Console.IsOutputRedirected;// -11
-                    case "php://stderr":return !Console.IsErrorRedirected; // -12
+                    case "php://stdout": return !Console.IsOutputRedirected;// -11
+                    case "php://stderr": return !Console.IsErrorRedirected; // -12
                 }
             }
 

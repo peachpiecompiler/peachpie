@@ -527,4 +527,50 @@ namespace Pchp.Library
             return result;
         }
     }
+
+    #region class WeakReference
+
+    /// <summary>
+    /// Weak references allow to retain a reference to an object
+    /// which does not prevent the object from being garbage collected.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly), PhpExtension("Core")]
+    public sealed class WeakReference
+    {
+        [PhpHidden]
+        readonly WeakReference<object> _value;
+
+        private WeakReference(object value)
+        {
+            _value = new WeakReference<object>(value);
+        }
+
+        /// <summary>
+        /// Private ctor.
+        /// </summary>
+        private void __construct()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Create a weak reference
+        /// </summary>
+        public static WeakReference create(object referent)
+        {
+            return new WeakReference(referent);
+        }
+
+        /// <summary>
+        /// Gets a weakly referenced object.
+        /// If the object has already been garbage collected, <c>NULL</c> is returned.
+        /// </summary>
+        public object get()
+        {
+            _value.TryGetTarget(out var value);
+            return value;
+        }
+    }
+
+    #endregion
 }
