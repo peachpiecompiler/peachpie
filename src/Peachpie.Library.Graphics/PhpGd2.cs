@@ -2105,14 +2105,14 @@ namespace Peachpie.Library.Graphics
                 !affine.TryGetItemValue("2", out PhpValue n_3) | !affine.TryGetItemValue("3", out PhpValue n_4) | 
                 !affine.TryGetItemValue("4", out PhpValue n_5) | !affine.TryGetItemValue("5", out PhpValue n_6))
             {
-                PhpException.Throw(PhpError.Warning, "Wrong type of one or more parameters");
+                PhpException.Throw(PhpError.Warning, Resources.affine_array_number_of_params);
                 return null;
             }
 
             if (!n_1.IsDouble() || !n_2.IsDouble() || !n_3.IsDouble() || 
                 !n_4.IsDouble() || !n_5.IsDouble() || !n_6.IsDouble())
             {
-                PhpException.Throw(PhpError.Warning, "Affine array must have six elements");
+                PhpException.Throw(PhpError.Warning, Resources.wrong_type);
                 return null;
             }
 
@@ -2133,7 +2133,7 @@ namespace Peachpie.Library.Graphics
 
                 if (!xValue.IsInteger() || !yValue.IsInteger() || !widthValue.IsInteger() || !heightValue.IsInteger())
                     {
-                        PhpException.Throw(PhpError.Warning, "Wrong type of one or more parameters");
+                        PhpException.Throw(PhpError.Warning, Resources.wrong_type);
                         return null;
                     }
                 else
