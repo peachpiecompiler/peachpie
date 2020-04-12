@@ -110,6 +110,18 @@ namespace Pchp.Library
             /// ID of "validate_ip" filter.
             /// </summary>
             IP = 275,
+
+            /// <summary>
+            /// Validates value as MAC address.
+            /// </summary>
+            MAC = 276,
+
+            /// <summary>
+            /// Validates whether the domain name label lengths are valid.
+            /// Validates domain names against RFC 1034, RFC 1035, RFC 952, RFC 1123, RFC 2732, RFC 2181, and RFC 1123.
+            /// Optional flag <see cref="FILTER_FLAG_HOSTNAME"/> adds ability to specifically validate hostnames (they must start with an alphanumeric character and contain only alphanumerics or hyphens).
+            /// </summary>
+            DOMAIN = 277,
         }
 
         public const int FILTER_VALIDATE_INT = (int)FilterValidate.INT;
@@ -119,6 +131,8 @@ namespace Pchp.Library
         public const int FILTER_VALIDATE_URL = (int)FilterValidate.URL;
         public const int FILTER_VALIDATE_EMAIL = (int)FilterValidate.EMAIL;
         public const int FILTER_VALIDATE_IP = (int)FilterValidate.IP;
+        public const int FILTER_VALIDATE_MAC = (int)FilterValidate.MAC;
+        public const int FILTER_VALIDATE_DOMAIN = (int)FilterValidate.DOMAIN;
 
         /// <summary>
         /// Sanitize filters.
@@ -811,6 +825,29 @@ namespace Pchp.Library
 
                     return @default;
 
+                case FILTER_VALIDATE_MAC:
+                    //try
+                    //{
+                    var value = variable.ToString(ctx);
+                    //var macaddr = System.Net.NetworkInformation.PhysicalAddress.Parse(value).GetAddressBytes(); // only validates "dash" format
+                    //if (macaddr.Length == 6)
+                    //{
+                    //    return value;
+                    //}
+                    if (RegexUtilities.IsValidMacAddress(value))
+                    {
+                        return value;
+                    }
+
+                    //}
+                    //catch
+                    //{
+                    //}
+
+                    return @default;
+
+                case FILTER_VALIDATE_DOMAIN:
+
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(filter), filter);
                     break;
@@ -837,13 +874,21 @@ namespace Pchp.Library
             //        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
             //    System.Threading.LazyThreadSafetyMode.None);
 
+            static readonly Lazy<Regex> s_lazyMacAddressRegex = new Lazy<Regex>(
+                () => new Regex(
+                    @"^(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}|(?:[0-9a-fA-F]{2}-){5}[0-9a-fA-F]{2}|(?:[0-9a-fA-F]{2}){5}[0-9a-fA-F]{2}|(?:[0-9a-fA-F]{4}.){2}[0-9a-fA-F]{4}$",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+                System.Threading.LazyThreadSafetyMode.None);
+
+            public static bool IsValidMacAddress(string physicaladdress) => !string.IsNullOrEmpty(physicaladdress) && s_lazyMacAddressRegex.Value.IsMatch(physicaladdress);
+
             public static bool IsValidEmail(string strIn)
             {
                 if (string.IsNullOrEmpty(strIn) || strIn.Length > 320)
                 {
                     return false;
                 }
-                
+
                 // Use IdnMapping class to convert Unicode domain names.
                 try
                 {
