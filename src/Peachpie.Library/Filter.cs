@@ -180,6 +180,11 @@ namespace Pchp.Library
             /// ID of "magic_quotes" filter.
             /// </summary>
             MAGIC_QUOTES = 521,
+
+            /// <summary>
+            /// add_slashes filter.
+            /// </summary>
+            ADD_SLASHES = 523,
         }
 
         public const int FILTER_SANITIZE_STRING = (int)FilterSanitize.STRING;
@@ -193,6 +198,7 @@ namespace Pchp.Library
         public const int FILTER_SANITIZE_NUMBER_INT = (int)FilterSanitize.NUMBER_INT;
         public const int FILTER_SANITIZE_NUMBER_FLOAT = (int)FilterSanitize.NUMBER_FLOAT;
         public const int FILTER_SANITIZE_MAGIC_QUOTES = (int)FilterSanitize.MAGIC_QUOTES;
+        public const int FILTER_SANITIZE_ADD_SLASHES = (int)FilterSanitize.ADD_SLASHES;
 
         [Flags]
         public enum FilterFlag : int
@@ -606,6 +612,10 @@ namespace Pchp.Library
                             c == '*' || c == '+' || c == '-' || c == '/' || c == '=' || c == '!' ||
                             c == '?' || c == '^' || c == '_' || c == '`' || c == '{' || c == '|' ||
                             c == '}' || c == '~' || c == '@' || c == '.' || c == '[' || c == ']'));
+
+                case (int)FilterSanitize.MAGIC_QUOTES: // -->
+                case (int)FilterSanitize.ADD_SLASHES:
+                    return StringUtils.AddCSlashes(variable.ToString(ctx), true, true, true);
 
                 //
                 // VALIDATE
