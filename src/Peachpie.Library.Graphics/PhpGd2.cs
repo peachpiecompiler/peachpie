@@ -1982,7 +1982,9 @@ namespace Peachpie.Library.Graphics
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
+            {
                 return false;
+            }
 
             switch (mode)
             {
@@ -2014,27 +2016,39 @@ namespace Peachpie.Library.Graphics
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
+            {
                 return null;
+            }
 
-            if (!rect.ContainsKey("x") || !rect.ContainsKey("y") || !rect.ContainsKey("width") || !rect.ContainsKey("height"))
+            if (!rect.TryGetValue("x", out var x) | !rect.TryGetValue("y", out var y) | !rect.TryGetValue("width", out var width) | !rect.TryGetValue("height", out var height))
             {
                 PhpException.Throw(PhpError.Warning, Resources.missing_params);
                 return null;
             }
 
-            if (!rect["x"].IsInteger() || !rect["y"].IsInteger() || !rect["width"].IsInteger() || !rect["height"].IsInteger())
+            Rectangle rectangle = default;
+
+            try
+            {
+                rectangle.X = (int)StrictConvert.ToLong(x);
+                rectangle.Y = (int)StrictConvert.ToLong(y);
+                rectangle.Width = (int)StrictConvert.ToLong(width);
+                rectangle.Height = (int)StrictConvert.ToLong(height);
+            }
+            catch //
             {
                 PhpException.Throw(PhpError.Warning, Resources.wrong_type);
                 return null;
             }
 
-            Rectangle rectangle = new Rectangle(rect["x"].ToInt(), rect["y"].ToInt(), rect["width"].ToInt(), rect["height"].ToInt());
-
             // Makes bigger image and then crops it. 
-            if (rectangle.X + rectangle.Width > img.Image.Width || rectangle.Y + rectangle.Height > img.Image.Height)
+            if (rectangle.Right > img.Image.Width ||
+                rectangle.Bottom > img.Image.Height)
             {
                 var resized = new PhpGdImageResource(new Image<Rgba32>(
-                    Math.Max(rectangle.X + rectangle.Width, img.Image.Width), Math.Max(rectangle.Y + rectangle.Height, img.Image.Height)), img.Format);
+                    Math.Max(rectangle.Right, img.Image.Width),
+                    Math.Max(rectangle.Bottom, img.Image.Height)),
+                    img.Format);
                 resized.Image.Mutate(o => o.DrawImage(img.Image, 1).Crop(rectangle));
                 return resized;
             }
@@ -2057,15 +2071,20 @@ namespace Peachpie.Library.Graphics
             // TODO: modes fixed
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
+            {
                 return null;
+            }
 
             if (new_height < 0 && new_width < 0)
+            {
+                PhpException.InvalidArgument(nameof(new_width));
                 return null;
+            }
 
             new_height = new_height < 0 ? (img.Image.Height / img.Image.Width) * new_width : new_height;
             new_width = new_width < 0 ? (img.Image.Width / img.Image.Height) * new_height : new_width;
 
-            IResampler res = null;
+            IResampler res;
             switch (mode)
             {
                 case IMG_NEAREST_NEIGHBOUR:
@@ -2098,59 +2117,80 @@ namespace Peachpie.Library.Graphics
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
+            {
                 return null;
+            }
 
-            // Check Arguments
-            if (!affine.TryGetItemValue("0", out PhpValue n_1) | !affine.TryGetItemValue("1", out PhpValue n_2) |
-                !affine.TryGetItemValue("2", out PhpValue n_3) | !affine.TryGetItemValue("3", out PhpValue n_4) |
-                !affine.TryGetItemValue("4", out PhpValue n_5) | !affine.TryGetItemValue("5", out PhpValue n_6))
+            Matrix3x2 affineMatrix = default;
+            Rectangle sourceBox = new Rectangle(0, 0, img.Image.Width, img.Image.Height);
+
+            // Process Arguments
+
+            if (affine.TryGetValue(0, out var n_11) & affine.TryGetValue(1, out var n_12) |
+                affine.TryGetValue(2, out var n_21) & affine.TryGetValue(3, out var n_22) |
+                affine.TryGetValue(4, out var n_31) & affine.TryGetValue(5, out var n_32))
+            {
+                if (TryGetFloat(n_11, out affineMatrix.M11) &
+                    TryGetFloat(n_12, out affineMatrix.M12) &
+                    TryGetFloat(n_21, out affineMatrix.M21) &
+                    TryGetFloat(n_22, out affineMatrix.M22) &
+                    TryGetFloat(n_31, out affineMatrix.M31) &
+                    TryGetFloat(n_32, out affineMatrix.M32))
+                {
+                    // ok
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.wrong_type);
+                    return null;
+                }
+            }
+            else
             {
                 PhpException.Throw(PhpError.Warning, Resources.affine_array_number_of_params);
                 return null;
             }
 
-            if (!n_1.IsDouble() || !n_2.IsDouble() || !n_3.IsDouble() ||
-                !n_4.IsDouble() || !n_5.IsDouble() || !n_6.IsDouble())
-            {
-                PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                return null;
-            }
-
-            Matrix3x2 affineMatrix = new Matrix3x2((float)n_1.ToDouble(), (float)n_2.ToDouble(), (float)n_3.ToDouble(),
-                                                   (float)n_4.ToDouble(), (float)n_5.ToDouble(), (float)n_6.ToDouble());
-
-            Rectangle sourceBox = new Rectangle(0, 0, img.Image.Width, img.Image.Height);
-
             if (clip != null) // Check Arguments if clip exists
             {
-                if (!clip.TryGetItemValue("x", out PhpValue xValue) | !clip.TryGetItemValue("y", out PhpValue yValue) |
-                    !clip.TryGetItemValue("width", out PhpValue widthValue) |
-                    !clip.TryGetItemValue("height", out PhpValue heightValue))
+                if (clip.TryGetValue("x", out var x) &
+                    clip.TryGetValue("y", out var y) &
+                    clip.TryGetValue("width", out var width) &
+                    clip.TryGetValue("height", out var height))
+                {
+                    try
+                    {
+                        sourceBox.X = (int)StrictConvert.ToLong(x);
+                        sourceBox.Y = (int)StrictConvert.ToLong(y);
+                        sourceBox.Width = (int)StrictConvert.ToLong(width);
+                        sourceBox.Height = (int)StrictConvert.ToLong(height);
+                    }
+                    catch // (Pchp.Library.Spl.TypeError)
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.wrong_type);
+                        return null;
+                    }
+                }
+                else
                 {
                     PhpException.Throw(PhpError.Warning, Resources.missing_params);
                     return null;
                 }
-
-                if (!xValue.IsInteger() || !yValue.IsInteger() || !widthValue.IsInteger() || !heightValue.IsInteger())
-                {
-                    PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                    return null;
-                }
-                else
-                {
-                    sourceBox.X = xValue.ToInt();
-                    sourceBox.Y = yValue.ToInt();
-                    sourceBox.Width = widthValue.ToInt();
-                    sourceBox.Height = heightValue.ToInt();
-                }
             }
 
             // Calculate translation
-            PointF[] extent = new PointF[4] { new PointF(0, 0), new PointF(img.Image.Width, 0),
-                    new PointF(img.Image.Width, img.Image.Height), new PointF(0, img.Image.Height) };
+            var extent = new PointF[4]
+            {
+                new PointF(0, 0),
+                new PointF(img.Image.Width, 0),
+                new PointF(img.Image.Width, img.Image.Height),
+                new PointF(0, img.Image.Height)
+            };
 
             for (int i = 0; i < extent.Length; i++)
+            {
                 extent[i] = ApplyAffineToPointF(extent[i], affineMatrix);
+            }
 
             PointF min = extent[0];
             for (int i = 1; i < 4; i++)
@@ -2171,12 +2211,30 @@ namespace Peachpie.Library.Graphics
             return new PhpGdImageResource(transformed, img.Format);
         }
 
+        static bool TryGetFloat(PhpValue value, out float number)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Boolean: number = value.Boolean ? 1 : 0; return true;
+                case PhpTypeCode.Long: number = value.Long; return true;
+                case PhpTypeCode.Double: number = (float)value.Double; return true;
+                //PhpTypeCode.Null : 0,
+                //PhpTypeCode.String
+                case PhpTypeCode.Alias: return TryGetFloat(value.Alias.Value, out number);
+                default:
+                    PhpException.Throw(PhpError.Warning, Resources.wrong_type);
+                    number = default;
+                    return false;
+            }
+        }
+
         private static PointF ApplyAffineToPointF(PointF point, Matrix3x2 affine)
         {
             var x = point.X;
             var y = point.Y;
             return new PointF(x * affine.M11 + y * affine.M21 + affine.M31, x * affine.M12 + y * affine.M22 + affine.M32);
         }
+
         #endregion
     }
 
