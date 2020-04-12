@@ -274,6 +274,11 @@ namespace Pchp.Library
             EMPTY_STRING_NULL = 256,
 
             /// <summary>
+            /// ?
+            /// </summary>
+            STRIP_BACKTICK = 512,
+
+            /// <summary>
             /// Allow fractional part in "number_float" filter.
             /// </summary>
             ALLOW_FRACTION = 4096,
@@ -389,6 +394,11 @@ namespace Pchp.Library
         /// ?
         /// </summary>
         public const int FILTER_FLAG_EMPTY_STRING_NULL = (int)FilterFlag.EMPTY_STRING_NULL;
+
+        /// <summary>
+        /// Removes backtick characters from the string, anywhere.
+        /// </summary>
+        public const int FILTER_FLAG_STRIP_BACKTICK = (int)FilterFlag.STRIP_BACKTICK;
 
         /// <summary>
         /// Allow fractional part in "number_float" filter.
@@ -567,6 +577,18 @@ namespace Pchp.Library
             }
         }
 
+        private static string StripBacktickIfSet(string value, FilterFlag flags)
+        {
+            if ((flags & FilterFlag.STRIP_BACKTICK) == 0 || string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+            else
+            {
+                return value.Replace("`", "");
+            }
+        }
+
         /// <summary>
         /// Filters a variable with a specified filter.
         /// </summary>
@@ -624,6 +646,13 @@ namespace Pchp.Library
                 case (int)FilterSanitize.FILTER_DEFAULT:
                     return (PhpValue)variable.ToString(ctx);
 
+                //case (int)FilterSanitize.STRIPPED:
+                //case (int)FilterSanitize.STRING:
+                //    throw new NotImplementedException();
+
+                case (int)FilterSanitize.ENCODED:
+                    return System.Web.HttpUtility.UrlEncode(StripBacktickIfSet(variable.ToString(ctx), (FilterFlag)flags));
+
                 case (int)FilterSanitize.EMAIL:
                     // Remove all characters except letters, digits and !#$%&'*+-/=?^_`{|}~@.[].
                     return (PhpValue)FilterSanitizeString(variable.ToString(ctx), (c) =>
@@ -635,7 +664,7 @@ namespace Pchp.Library
 
                 case (int)FilterSanitize.FULL_SPECIAL_CHARS:
                     return Strings.htmlspecialchars(
-                        variable.ToString(ctx),
+                        StripBacktickIfSet(variable.ToString(ctx), (FilterFlag)flags),
                         (flags & (long)FilterFlag.NO_ENCODE_QUOTES) != 0 ? Strings.QuoteStyle.NoQuotes : Strings.QuoteStyle.BothQuotes);
 
                 case (int)FilterSanitize.MAGIC_QUOTES: // -->
