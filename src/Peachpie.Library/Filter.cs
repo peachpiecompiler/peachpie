@@ -182,6 +182,11 @@ namespace Pchp.Library
             MAGIC_QUOTES = 521,
 
             /// <summary>
+            /// Equivalent to calling htmlspecialchars() with ENT_QUOTES set.
+            /// </summary>
+            FULL_SPECIAL_CHARS = 522,
+
+            /// <summary>
             /// add_slashes filter.
             /// </summary>
             ADD_SLASHES = 523,
@@ -198,6 +203,7 @@ namespace Pchp.Library
         public const int FILTER_SANITIZE_NUMBER_INT = (int)FilterSanitize.NUMBER_INT;
         public const int FILTER_SANITIZE_NUMBER_FLOAT = (int)FilterSanitize.NUMBER_FLOAT;
         public const int FILTER_SANITIZE_MAGIC_QUOTES = (int)FilterSanitize.MAGIC_QUOTES;
+        public const int FILTER_SANITIZE_FULL_SPECIAL_CHARS = (int)FilterSanitize.FULL_SPECIAL_CHARS;
         public const int FILTER_SANITIZE_ADD_SLASHES = (int)FilterSanitize.ADD_SLASHES;
 
         [Flags]
@@ -612,6 +618,11 @@ namespace Pchp.Library
                             c == '*' || c == '+' || c == '-' || c == '/' || c == '=' || c == '!' ||
                             c == '?' || c == '^' || c == '_' || c == '`' || c == '{' || c == '|' ||
                             c == '}' || c == '~' || c == '@' || c == '.' || c == '[' || c == ']'));
+
+                case (int)FilterSanitize.FULL_SPECIAL_CHARS:
+                    return Strings.htmlspecialchars(
+                        variable.ToString(ctx),
+                        (flags & (long)FilterFlag.NO_ENCODE_QUOTES) != 0 ? Strings.QuoteStyle.NoQuotes : Strings.QuoteStyle.BothQuotes);
 
                 case (int)FilterSanitize.MAGIC_QUOTES: // -->
                 case (int)FilterSanitize.ADD_SLASHES:
