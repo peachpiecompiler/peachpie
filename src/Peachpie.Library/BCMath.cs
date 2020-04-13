@@ -224,30 +224,44 @@ namespace Pchp.Library
                     return "0";
                 }
 
-                var num = Sig.ToString("R", CultureInfo.InvariantCulture);
+                string result;
 
-                if (Exp > 0)
+                if (Exp >= 0)
                 {
+                    result = Sig.ToString("D", CultureInfo.InvariantCulture);
+
                     // *10^E
-                    num = num.PadRight(num.Length + Exp, '0');
+                    result = result.PadRight(result.Length + Exp, '0');
                 }
-                else if (Exp < 0)
+                else // if (Exp < 0)
                 {
-                    var dot = num.Length + Exp;
-                    if (dot > 0)
+                    var digits = -Exp;
+
+                    //if (digits < 100)
+                    //{
+                    //    result = Sig.ToString("D" + digits, CultureInfo.InvariantCulture);
+                    //}
+                    //else
                     {
-                        num = num.Substring(0, dot) + "." + num.Substring(dot);
+                        result = Sig.ToString("D", CultureInfo.InvariantCulture);
+                        result = result.PadLeft(digits, '0');
+                    }
+
+                    var dot = result.Length + Exp;
+                    if (dot == 0)
+                    {
+                        result = "0." + result.PadLeft(-Exp, '0');
                     }
                     else
                     {
-                        num = "0." + num.PadLeft(-Exp, '0');
+                        result = result.Substring(0, dot) + "." + result.Substring(dot);
                     }
 
                     // TODO: scale
                     // TODO: trim zeros
                 }
 
-                return num;
+                return result;
             }
 
             public override string ToString() => ToInvariantString(MaxScale);
