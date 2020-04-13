@@ -90,7 +90,7 @@ namespace Pchp.Library
             {
                 if (value.Length == 0)
                 {
-                    result = default;
+                    result = Zero;
                     return false;
                 }
 
@@ -131,7 +131,7 @@ namespace Pchp.Library
                 // parsed whole string ?
                 if (index != value.Length || !hasdigit)
                 {
-                    result = default;
+                    result = Zero;
                     return false;
                 }
 
@@ -174,7 +174,7 @@ namespace Pchp.Library
                 }
 
                 //
-                result = default;
+                result = Zero;
                 return false;
             }
 
@@ -281,14 +281,13 @@ namespace Pchp.Library
 
         //public static string bcadd(string left, string right, int? scale = default)
         //{
-        //    if (BigFloat.TryParse(left.AsSpan(), out var lnum) && BigFloat.TryParse(right.AsSpan(), out var rnum))
+        //    if (!BigFloat.TryParse(left.AsSpan(), out var lnum) |
+        //        !BigFloat.TryParse(right.AsSpan(), out var rnum))
         //    {
-        //        return (lnum + rnum).ToString();
+        //        // Warning: bcmath function argument is not well-formed
         //    }
-        //    else
-        //    {
-        //        return "0";
-        //    }
+
+        //    return (lnum + rnum).ToString();
         //}
 
         //function bcsub
