@@ -175,7 +175,7 @@ namespace Pchp.Library.DateTime
         //[return:CastToFalse]
         public static DateTime date_sub(DateTime @object, DateInterval interval) => @object.sub(interval);
 
-        static System_DateTime TimeFromInterface(DateTimeInterface dti)
+        internal static System_DateTime TimeFromInterface(DateTimeInterface dti)
         {
             if (dti is Library.DateTime.DateTime dt) return dt.Time;
             if (dti is DateTimeImmutable dtimmutable) return dtimmutable.Time;
