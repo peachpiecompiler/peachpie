@@ -106,6 +106,7 @@
     </PropertyGroup>
     <ComposerTask Condition=" Exists('$(ComposerJsonPath)') "
                   ComposerJsonPath="$(ComposerJsonPath)"
+                  VersionSuffix="$(VersionSuffix)"
                   >
       <Output TaskParameter="Name" PropertyName="_cName" />
       <Output TaskParameter="Description" PropertyName="_cDescription" />
@@ -117,7 +118,7 @@
     </ComposerTask>
   </Target>
 
-  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="CollectPackageReferences" Outputs="$(ComposerJsonPath)">
+  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="ComposerResolve;CollectPackageReferences" Outputs="$(ComposerJsonPath)">
     <PropertyGroup Condition=" '$(_cName)'!='' ">
       <!--AssemblyName>$(_cName)</AssemblyName-->
       <PackageId>$(_cName)</PackageId>
@@ -126,10 +127,13 @@
     <PropertyGroup>
       <PackageDescription Condition=" '$(_cDescription)'!='' ">$(_cDescription)</PackageDescription>
       <PackageProjectUrl Condition=" '$(PackageProjectUrl)'=='' AND '$(_cHomepage)'!='' ">$(_cHomepage)</PackageProjectUrl>
-      <Version Condition=" '$(_cVersion)'!='' ">$(_cVersion)</Version>
-      <PackageVersion Condition=" '$(_cVersion)'!='' ">$(_cVersion)</PackageVersion>
       <PackageLicenseExpression Condition=" '$(PackageLicenseExpression)'=='' AND '$(_cLicense)'!='' ">$(_cLicense)</PackageLicenseExpression>
       <Authors Condition=" '@(_cAuthors->Count())'!='0' ">@(_cAuthors -> '%(Name);', ';')</Authors>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(_cVersion)'!='' ">
+      <Version>$(_cVersion)</Version>
+      <PackageVersion>$(_cVersion)</PackageVersion>      
     </PropertyGroup>
 
     <ItemGroup Condition=" '$(ComposerDependencies)'=='true' ">

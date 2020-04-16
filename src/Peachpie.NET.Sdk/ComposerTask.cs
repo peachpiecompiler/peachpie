@@ -21,6 +21,11 @@ namespace Peachpie.NET.Sdk.Tools
         public string ComposerJsonPath { get; set; }
 
         /// <summary>
+        /// Specified version suffix.
+        /// </summary>
+        public string VersionSuffix { get; set; }
+
+        /// <summary>
         /// Outputs name of the project if specified.
         /// </summary>
         [Output]
@@ -138,6 +143,11 @@ namespace Peachpie.NET.Sdk.Tools
                         break;
 
                     case "version":
+                        /*
+                         * This must follow the format of `X.Y.Z` or `vX.Y.Z`
+                         * with an optional suffix of `-dev`, `-patch` (-p), `-alpha` (-a), `-beta` (-b) or `-RC`.
+                         * The patch, alpha, beta and RC suffixes can also be followed by a number.
+                         */
                         Version = GetVersion(node.Value);
                         break;
 
@@ -168,7 +178,40 @@ namespace Peachpie.NET.Sdk.Tools
 
         string GetLicense(JSONNode license) => license.Value;
 
-        string GetVersion(JSONNode version) => System.Version.TryParse(version.Value, out var v) ? v.ToString(3) : string.Empty;
+        string GetVersion(JSONNode version)
+        {
+            var value = version.Value;
+            if (string.IsNullOrEmpty(value))
+            {
+                return null;
+            }
+
+            if (value[0] == 'v')
+            {
+                // vX.Y.Z-PreRelease
+                value = value.Substring(1);
+            }
+
+            var dash = value.IndexOf('-');
+            var prefix = dash < 0 ? value : value.Remove(dash);
+            var suffix = !string.IsNullOrEmpty(VersionSuffix) ? VersionSuffix : (dash < 0 ? "" : value.Substring(dash + 1));
+
+            // prefix must be in form of X.Y.Z
+            if (!System.Version.TryParse(prefix, out var v))
+            {
+                Log.LogWarning($"Invalid \"version\" = \"{prefix}\".");
+                return null;
+            }
+
+            var resultVersionString = v.ToString(3);
+
+            if (suffix.Length != 0)
+            {
+                resultVersionString = $"{resultVersionString}-{suffix}";
+            }
+
+            return resultVersionString;
+        }
 
         DateTime GetReleaseDate(JSONNode date) => DateTime.Parse(date.Value);
 
