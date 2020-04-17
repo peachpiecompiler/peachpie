@@ -118,7 +118,7 @@
     </ComposerTask>
   </Target>
 
-  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="ComposerResolve;CollectPackageReferences" Outputs="$(ComposerJsonPath)">
+  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="GenerateNuspec;CollectPackageReferences" Outputs="$(ComposerJsonPath)">
     <PropertyGroup Condition=" '$(_cName)'!='' ">
       <!--AssemblyName>$(_cName)</AssemblyName-->
       <PackageId>$(_cName)</PackageId>
