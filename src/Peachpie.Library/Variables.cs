@@ -867,7 +867,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region print_r, var_export, var_dump
+        #region print_r, var_export, var_dump, debug_zval_dump
 
         abstract class FormatterVisitor : PhpVariableVisitor, IPhpVariableFormatter
         {
@@ -879,7 +879,7 @@ namespace Pchp.Library
 
             protected const string RECURSION = "*RECURSION*";
 
-            protected FormatterVisitor(Context ctx, string newline)
+            protected FormatterVisitor(Context ctx, string newline = "\n")
             {
                 Debug.Assert(ctx != null);
                 _ctx = ctx;
@@ -941,7 +941,7 @@ namespace Pchp.Library
                 }
             }
 
-            public PrintFormatter(Context ctx, string newline)
+            public PrintFormatter(Context ctx, string newline = "\n")
                 : base(ctx, newline)
             {
             }
@@ -1077,7 +1077,7 @@ namespace Pchp.Library
                 }
             }
 
-            public ExportFormatter(Context ctx, string newline)
+            public ExportFormatter(Context ctx, string newline = "\n")
                 : base(ctx, newline)
             {
             }
@@ -1263,6 +1263,11 @@ namespace Pchp.Library
         {
             const int IndentSize = 2;
 
+            /// <summary>
+            /// Enables verbose dump.
+            /// </summary>
+            bool Verbose { get; }
+
             void OutputIndent()
             {
                 if (_indent > 0)
@@ -1271,9 +1276,10 @@ namespace Pchp.Library
                 }
             }
 
-            public DumpFormatter(Context ctx, string newline)
+            public DumpFormatter(Context ctx, string newline = "\n", bool verbose = false)
                 : base(ctx, newline)
             {
+                this.Verbose = verbose;
             }
 
             public override PhpString Serialize(PhpValue value)
@@ -1451,7 +1457,7 @@ namespace Pchp.Library
         /// <returns>A string representation or <c>true</c> if <paramref name="returnString"/> is <c>false</c>.</returns>
         public static PhpValue print_r(Context ctx, PhpValue value, bool returnString = false)
         {
-            var output = (new PrintFormatter(ctx, "\n")).Serialize(value);
+            var output = (new PrintFormatter(ctx)).Serialize(value);
 
             if (returnString)
             {
@@ -1473,7 +1479,22 @@ namespace Pchp.Library
         /// <param name="variables">Variables to be dumped.</param>
         public static void var_dump(Context ctx, params PhpValue[] variables)
         {
-            var formatter = new DumpFormatter(ctx, "\n"); // TODO: HtmlDumpFormatter
+            var formatter = new DumpFormatter(ctx); // TODO: HtmlDumpFormatter
+            for (int i = 0; i < variables.Length; i++)
+            {
+                ctx.Echo(formatter.Serialize(variables[i].GetValue()));
+            }
+        }
+
+        /// <summary>
+        /// Dumps a more detailed string representation of value.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="variables">Variables to be dumped.</param>
+        public static void debug_zval_dump(Context ctx, params PhpValue[] variables)
+        {
+            var formatter = new DumpFormatter(ctx, verbose: true);
+
             for (int i = 0; i < variables.Length; i++)
             {
                 ctx.Echo(formatter.Serialize(variables[i].GetValue()));
@@ -1489,7 +1510,7 @@ namespace Pchp.Library
         /// <returns>A string representation or a <c>null</c> reference if <paramref name="returnString"/> is <c>false</c>.</returns>
         public static string var_export(Context ctx, PhpValue variable, bool returnString = false)
         {
-            var output = (new ExportFormatter(ctx, "\n")).Serialize(variable);
+            var output = (new ExportFormatter(ctx)).Serialize(variable);
 
             if (returnString)
             {
