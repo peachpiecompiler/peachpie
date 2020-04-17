@@ -82,9 +82,11 @@ namespace Peachpie.Library.PDO
 
                 if (convertTypes)
                 {
+                    bool stringify = ((PdoConnectionResource)this.Connection).PDO.Stringify;
+
                     for (int i = 0; i < oa.Length; i++)
                     {
-                        oa[i] = ConvertDbValue(dataTypes[i], my_reader.GetValue(i));
+                        oa[i] = ConvertDbValue(dataTypes[i], my_reader.GetValue(i), stringify);
                     }
                 }
                 else
@@ -108,8 +110,10 @@ namespace Peachpie.Library.PDO
             /// </summary>
             /// <param name="dataType">MySQL DB data type.</param>
             /// <param name="sqlValue">The value.</param>
+            /// <param name="stringify">Whether to convert the value to nullable string.
+            /// Byte arrays are not converted to be later properly turned into PhpString.</param>
             /// <returns>PHP value.</returns>
-            private static object ConvertDbValue(string dataType, object sqlValue)
+            private static object ConvertDbValue(string dataType, object sqlValue, bool stringify)
             {
                 //if (sqlValue == null || sqlValue.GetType() == typeof(string))
                 //    return sqlValue;
@@ -175,7 +179,14 @@ namespace Peachpie.Library.PDO
                 //        return "0000-00-00 00:00:00";
                 //}
 
-                return sqlValue;
+                if (stringify && sqlValue != null && sqlValue.GetType() != typeof(byte[]))  // Prevent byte[] from corruption (will be stored to PhpString later)
+                {
+                    return sqlValue.ToString();
+                }
+                else
+                {
+                    return sqlValue;
+                }
             }
 
             static string ConvertDateTime(string dataType, System.DateTime value)

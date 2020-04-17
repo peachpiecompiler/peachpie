@@ -20,6 +20,8 @@ namespace Peachpie.Library.PDO
         /// </summary>
         private protected PDO_NULL _oracle_nulls; // = PDO_NULL.NULL_NATURAL; // 0
 
+        internal bool Stringify { get; private set; } = true;
+
         private protected bool TryGetAttribute(PDO_ATTR attribute, out PhpValue value)
         {
             if (_lazyAttributes != null && _lazyAttributes.TryGetValue(attribute, out value))
@@ -48,7 +50,7 @@ namespace Peachpie.Library.PDO
                 case PDO_ATTR.ATTR_STATEMENT_CLASS: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_FETCH_CATALOG_NAMES: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_FETCH_TABLE_NAMES: value = PhpValue.Null; return true;
-                case PDO_ATTR.ATTR_STRINGIFY_FETCHES: value = PhpValue.Null; return true;
+                case PDO_ATTR.ATTR_STRINGIFY_FETCHES: value = this.Stringify; return true;
                 case PDO_ATTR.ATTR_MAX_COLUMN_LEN: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_DEFAULT_FETCH_MODE: value = 0; return true;
                 case PDO_ATTR.ATTR_EMULATE_PREPARES: value = PhpValue.False; return true;
@@ -103,8 +105,12 @@ namespace Peachpie.Library.PDO
 
                 case PDO_ATTR.ATTR_AUTOCOMMIT:
                 case PDO_ATTR.ATTR_EMULATE_PREPARES:
-                case PDO_ATTR.ATTR_STRINGIFY_FETCHES:   // TODO: bool _stringify = false;
                     _lazyAttributes[attribute] = value;
+                    return true;
+
+                case PDO_ATTR.ATTR_STRINGIFY_FETCHES:
+                    _lazyAttributes[attribute] = value;
+                    this.Stringify = value;
                     return true;
 
                 //strict positif integers
