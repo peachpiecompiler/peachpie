@@ -58,6 +58,9 @@ namespace Pchp.Library
         public const double NAN = double.NaN;
         public const double INF = double.PositiveInfinity;
 
+        public const int MT_RAND_MT19937 = 0;
+        public const int MT_RAND_PHP = 1;
+
         #endregion
 
         #region Absolutize Range
@@ -278,6 +281,15 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// <see cref="mt_srand(int, MtMode)"/> mode.
+        /// </summary>
+        public enum MtMode : int
+        {
+            MT19937 = MT_RAND_MT19937,
+            PHP = MT_RAND_PHP,
+        }
+
+        /// <summary>
         /// Seed the better random number generator.
         /// No return value.
         /// </summary>
@@ -294,6 +306,22 @@ namespace Pchp.Library
         public static void mt_srand(int seed)
         {
             MTGenerator.Seed(unchecked((uint)seed));
+        }
+
+        /// <summary>
+        /// Seed the better random number generator.
+        /// No return value.
+        /// </summary>
+        /// <param name="seed">Optional seed value.</param>
+        /// <param name="mode">Seed algorithm implementation.</param>
+        public static void mt_srand(int seed, MtMode mode = MtMode.MT19937)
+        {
+            if (mode != MtMode.MT19937)
+            {
+                PhpException.ArgumentValueNotSupported(nameof(mode), mode.ToString());
+            }
+
+            mt_srand(seed);
         }
 
         #endregion
