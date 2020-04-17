@@ -216,6 +216,7 @@ namespace Pchp.Library
             Register("assert.callback", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("assert.quiet_eval", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("assert.warning", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("assert.exception", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("async_send", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
             Register("auto_append_file", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("auto_detect_line_endings", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
@@ -562,6 +563,7 @@ namespace Pchp.Library
             bail = 3,
             warning = 4,
             quiet_eval = 5,
+            exception = 6,
         }
 
         public const int ASSERT_ACTIVE = (int)AssertWhat.active;
@@ -569,6 +571,7 @@ namespace Pchp.Library
         public const int ASSERT_BAIL = (int)AssertWhat.bail;
         public const int ASSERT_WARNING = (int)AssertWhat.warning;
         public const int ASSERT_QUIET_EVAL = (int)AssertWhat.quiet_eval;
+        public const int ASSERT_EXCEPTION = (int)AssertWhat.exception;
 
         #region ini_get, ini_set, ini_restore, get_cfg_var, ini_alter, ini_get_all
 
@@ -748,8 +751,9 @@ namespace Pchp.Library
                 case AssertWhat.bail:
                 case AssertWhat.warning:
                 case AssertWhat.quiet_eval:
+                case AssertWhat.exception:
 
-                    var option_name = $"assert.{what.ToString()}";
+                    var option_name = "assert." + what.ToString();
 
                     if (value.IsDefault)
                     {
