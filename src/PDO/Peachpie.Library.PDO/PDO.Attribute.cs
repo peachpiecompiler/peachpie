@@ -109,7 +109,6 @@ namespace Peachpie.Library.PDO
                     return true;
 
                 case PDO_ATTR.ATTR_STRINGIFY_FETCHES:
-                    _lazyAttributes[attribute] = value;
                     this.Stringify = value;
                     return true;
 
