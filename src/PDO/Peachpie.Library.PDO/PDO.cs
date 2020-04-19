@@ -118,9 +118,6 @@ namespace Peachpie.Library.PDO
                 //if (sqlValue == null || sqlValue.GetType() == typeof(string))
                 //    return sqlValue;
 
-                //if (sqlValue.GetType() == typeof(double))
-                //    return Pchp.Core.Convert.ToString((double)sqlValue);
-
                 if (sqlValue == DBNull.Value)
                     return null;
 
@@ -129,9 +126,6 @@ namespace Peachpie.Library.PDO
 
                 //if (sqlValue.GetType() == typeof(uint))
                 //    return ((uint)sqlValue).ToString();
-
-                //if (sqlValue.GetType() == typeof(bool))
-                //    return (bool)sqlValue ? "1" : "0";
 
                 //if (sqlValue.GetType() == typeof(byte))
                 //    return ((byte)sqlValue).ToString();
@@ -145,11 +139,8 @@ namespace Peachpie.Library.PDO
                 //if (sqlValue.GetType() == typeof(ushort))
                 //    return ((ushort)sqlValue).ToString();
 
-                //if (sqlValue.GetType() == typeof(float))
-                //    return Pchp.Core.Convert.ToString((float)sqlValue);
-
-                if (sqlValue.GetType() == typeof(System.DateTime))
-                    return ConvertDateTime(dataType, (System.DateTime)sqlValue);
+                if (sqlValue is System.DateTime datetime)
+                    return ConvertDateTime(dataType, datetime);
 
                 //if (sqlValue.GetType() == typeof(long))
                 //    return ((long)sqlValue).ToString();
@@ -157,11 +148,11 @@ namespace Peachpie.Library.PDO
                 //if (sqlValue.GetType() == typeof(ulong))
                 //    return ((ulong)sqlValue).ToString();
 
-                //if (sqlValue.GetType() == typeof(TimeSpan))
-                //    return ((TimeSpan)sqlValue).ToString();
+                if (sqlValue.GetType() == typeof(TimeSpan))
+                    return ((TimeSpan)sqlValue).ToString();
 
-                //if (sqlValue.GetType() == typeof(decimal))
-                //    return ((decimal)sqlValue).ToString();
+                if (sqlValue.GetType() == typeof(decimal))
+                    return ((decimal)sqlValue).ToString();
 
                 //if (sqlValue.GetType() == typeof(byte[]))
                 //    return (byte[])sqlValue;
@@ -179,14 +170,25 @@ namespace Peachpie.Library.PDO
                 //        return "0000-00-00 00:00:00";
                 //}
 
-                if (stringify && sqlValue != null && sqlValue.GetType() != typeof(byte[]))  // Prevent byte[] from corruption (will be stored to PhpString later)
+                if (stringify && sqlValue != null)
                 {
+                    if (sqlValue is bool b)
+                        return b ? "1" : "0";
+
+                    if (sqlValue is double d)
+                        return Pchp.Core.Convert.ToString(d);
+
+                    if (sqlValue.GetType() == typeof(float))
+                        return Pchp.Core.Convert.ToString((float)sqlValue);
+
+                    if (sqlValue.GetType() == typeof(byte[]))
+                        return sqlValue;    // keep byte[] array (will be stored to PhpString later)
+
                     return sqlValue.ToString();
                 }
-                else
-                {
-                    return sqlValue;
-                }
+                
+                //
+                return sqlValue;
             }
 
             static string ConvertDateTime(string dataType, System.DateTime value)
