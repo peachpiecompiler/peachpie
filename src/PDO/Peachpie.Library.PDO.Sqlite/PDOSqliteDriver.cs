@@ -17,6 +17,11 @@ namespace Peachpie.Library.PDO.Sqlite
     public class PDOSqliteDriver : PDODriver
     {
         /// <summary>
+        /// SQLite PDO driver can retrieve values only as strings in PHP.
+        /// </summary>
+        public override bool IsStringifyForced => true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PDOSqliteDriver"/> class.
         /// </summary>
         public PDOSqliteDriver() : base("sqlite", Factory.Instance)

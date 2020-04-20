@@ -115,8 +115,15 @@ namespace Peachpie.Library.PDO
                     return true;
 
                 case PDO_ATTR.ATTR_STRINGIFY_FETCHES:
-                    this.Stringify = value;
-                    return true;
+                    if (!value && this.Driver.IsStringifyForced)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        this.Stringify = value;
+                        return true;
+                    }
 
                 //strict positif integers
 

@@ -41,6 +41,15 @@ namespace Peachpie.Library.PDO
         public DbProviderFactory DbFactory { get; }
 
         /// <summary>
+        /// Whether to force <see cref="PDO.PDO_ATTR.ATTR_STRINGIFY_FETCHES"/> to be <c>true</c>.
+        /// </summary>
+        /// <remarks>
+        /// Certain PDO drivers in PHP currently don't support returning the values any other way
+        /// than as strings, no matter the configuration.
+        /// </remarks>
+        public virtual bool IsStringifyForced => false;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PDODriver"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
