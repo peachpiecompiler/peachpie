@@ -207,6 +207,9 @@ namespace Pchp.Library.Reflection
 
             foreach (var t in _tinfo.Type.ImplementedInterfaces)
             {
+                if (t.IsHiddenType())
+                    continue;
+
                 result.Add(t.GetPhpTypeInfo().Name);
             }
 
@@ -218,6 +221,9 @@ namespace Pchp.Library.Reflection
 
             foreach (var t in _tinfo.Type.ImplementedInterfaces)
             {
+                if (t.IsHiddenType())
+                    continue;
+
                 var iinfo = t.GetPhpTypeInfo();
                 result.Add(iinfo.Name, PhpValue.FromClass(new ReflectionClass(iinfo)));
             }
