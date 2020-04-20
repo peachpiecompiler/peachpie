@@ -10,7 +10,7 @@ namespace Pchp.Library.DateTime
     /// A date period allows iteration over a set of dates and times, recurring at regular intervals, over a given period.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
-    public class DatePeriod : Traversable, IEnumerable<DateTimeInterface>
+    public class DatePeriod : Traversable, IEnumerable<(long, DateTimeInterface)>
     {
         /// <summary>
         /// Exclude start date option.
@@ -72,13 +72,14 @@ namespace Pchp.Library.DateTime
         //    throw new NotImplementedException();
         //}
 
-        IEnumerator<DateTimeInterface> IEnumerable<DateTimeInterface>.GetEnumerator()
+        IEnumerator<(long, DateTimeInterface)> IEnumerable<(long, DateTimeInterface)>.GetEnumerator()
         {
+            long key = 0;
             DateTimeImmutable current = start as DateTimeImmutable ?? (start as DateTime)?.AsDateTimeImmutable() ?? throw new InvalidOperationException();
             
             if (include_start_date)
             {
-                yield return current;
+                yield return (key++, current);
             }
 
             if (end == null && recurrences == 0)
@@ -108,10 +109,10 @@ namespace Pchp.Library.DateTime
                 }
 
                 //
-                yield return current;
+                yield return (key++, current);
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<DateTime>)this).GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<(long, DateTimeInterface)>)this).GetEnumerator();
     }
 }
