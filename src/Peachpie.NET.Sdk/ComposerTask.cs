@@ -260,7 +260,7 @@ namespace Peachpie.NET.Sdk.Tools
                 yield return new TaskItem("PackageDependency", new Dictionary<string, string>()
                 {
                     { "Name", IdToNuGetId(r.Key) },
-                    { "Version", VersionRangeToNuGetVersion(r.Value.Value) },
+                    { "Version", VersionRangeToPackageVersion(r.Value.Value) },
                 });
             }
         }
@@ -275,9 +275,12 @@ namespace Peachpie.NET.Sdk.Tools
             return value.Replace('/', '.');
         }
 
-        string VersionRangeToNuGetVersion(string value)
+        string VersionRangeToPackageVersion(string value)
         {
-            // TODO see https://getcomposer.org/doc/articles/versions.md
+            // https://getcomposer.org/doc/articles/versions.md
+            // https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#floating-versions
+
+            // convert composer version constraint to a floating version:
 
             //*
             //>= 1.0
