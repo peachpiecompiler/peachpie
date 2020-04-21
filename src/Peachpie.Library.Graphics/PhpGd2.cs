@@ -1984,7 +1984,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="image">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
         /// <param name="mode">Flip mode, this can be one of the IMG_FLIP_* constants:</param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        public static bool imageflip(PhpResource image , int mode)
+        public static bool imageflip(PhpResource image, int mode)
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
@@ -2015,30 +2015,24 @@ namespace Peachpie.Library.Graphics
         /// <param name="image">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
         /// <param name="rect">The cropping rectangle as array with keys x, y, width and height.</param>
         /// <returns>Return cropped image resource on success or FALSE on failure.</returns>
-        [return:CastToFalse]
+        [return: CastToFalse]
         public static PhpResource imagecrop(PhpResource image, PhpArray rect)
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
                 return null;
 
-            if (!rect.ContainsKey("x") || !rect.ContainsKey("y") || !rect.ContainsKey("width") || !rect.ContainsKey("height"))
+            Rectangle? rectangleOrNull = GetRectangle(rect);
+            if (!rectangleOrNull.HasValue)
             {
-                PhpException.Throw(PhpError.Warning, Resources.missing_params);
+                PhpException.Throw(PhpError.Warning, Resources.array_expected, "m1");
                 return null;
             }
-
-            if (!rect["x"].IsInteger() || !rect["y"].IsInteger() || !rect["width"].IsInteger() || !rect["height"].IsInteger())
-            {
-                PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                return null;
-            }
-
-            Rectangle rectangle = new Rectangle(rect["x"].ToInt(), rect["y"].ToInt(), rect["width"].ToInt(), rect["height"].ToInt());
+            Rectangle rectangle = rectangleOrNull.Value;
 
             // Makes bigger image and then crops it. 
             if (rectangle.X + rectangle.Width > img.Image.Width || rectangle.Y + rectangle.Height > img.Image.Height)
-            {  
+            {
                 var resized = new PhpGdImageResource(new Image<Rgba32>(
                     Math.Max(rectangle.X + rectangle.Width, img.Image.Width), Math.Max(rectangle.Y + rectangle.Height, img.Image.Height)), img.Format);
                 resized.Image.Mutate(o => o.DrawImage(img.Image, 1).Crop(rectangle));
@@ -2056,7 +2050,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="new_height">The height to scale the image to.If omitted or negative, the aspect ratio will be preserved.</param>
         /// <param name="mode"></param>
         /// <returns>Return the scaled image resource on success or FALSE on failure.</returns>
-        [return:CastToFalse]
+        [return: CastToFalse]
         public static PhpResource imagescale(PhpResource image, int new_width, int new_height = -1, int mode = IMG_BILINEAR_FIXED)
         {
             // TODO: Description mode
@@ -2087,7 +2081,7 @@ namespace Peachpie.Library.Graphics
                     throw new NotSupportedException();
                 default:
                     return null;
-            }  
+            }
 
             return new PhpGdImageResource(img.Image.Clone(o => o.Resize(new_width, new_height, res)), img.Format);
         }
@@ -2099,67 +2093,37 @@ namespace Peachpie.Library.Graphics
         /// <param name="affine">Array with keys 0 to 5.</param>
         /// <param name="clip">Array with keys "x", "y", "width" and "height".</param>
         /// <returns>Return affined image resource on success or FALSE on failure.</returns>
-        [return:CastToFalse]
+        [return: CastToFalse]
         public static PhpResource imageaffine(PhpResource image, PhpArray affine, PhpArray clip = null)
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
                 return null;
 
-            // Check Arguments
-            if (!affine.TryGetItemValue("0", out PhpValue n_1) | !affine.TryGetItemValue("1", out PhpValue n_2) | 
-                !affine.TryGetItemValue("2", out PhpValue n_3) | !affine.TryGetItemValue("3", out PhpValue n_4) | 
-                !affine.TryGetItemValue("4", out PhpValue n_5) | !affine.TryGetItemValue("5", out PhpValue n_6))
+            // Check Arguments and get Matrix
+            Matrix3x2? matrix = GetTransformMatrix(affine);
+            if (!matrix.HasValue)
             {
-                PhpException.Throw(PhpError.Warning, Resources.affine_array_number_of_params);
+                PhpException.Throw(PhpError.Warning, Resources.array_expected, "m1");
                 return null;
             }
+            Matrix3x2 affineMatrix = matrix.Value;
 
-            if (!n_1.IsDouble() || !n_2.IsDouble() || !n_3.IsDouble() || 
-                !n_4.IsDouble() || !n_5.IsDouble() || !n_6.IsDouble())
-            {
-                PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                return null;
-            }
-
-            Matrix3x2 affineMatrix = new Matrix3x2((float)n_1.ToDouble(), (float)n_2.ToDouble(), (float)n_3.ToDouble(),
-                                                   (float)n_4.ToDouble(), (float)n_5.ToDouble(), (float)n_6.ToDouble());
-
+            // Check Arguments if clip exists
             Rectangle sourceBox = new Rectangle(0, 0, img.Image.Width, img.Image.Height);
-
-            if (clip != null) // Check Arguments if clip exists
-            {
-                if (!clip.TryGetItemValue("x", out PhpValue xValue) | !clip.TryGetItemValue("y", out PhpValue yValue) | 
-                    !clip.TryGetItemValue("width", out PhpValue widthValue) |
-                    !clip.TryGetItemValue("height", out PhpValue heightValue))
-                    {
-                        PhpException.Throw(PhpError.Warning, Resources.missing_params);
-                        return null;
-                    }
-
-                if (!xValue.IsInteger() || !yValue.IsInteger() || !widthValue.IsInteger() || !heightValue.IsInteger())
-                    {
-                        PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                        return null;
-                    }
-                else
-                {
-                    sourceBox.X = xValue.ToInt();
-                    sourceBox.Y = yValue.ToInt();
-                    sourceBox.Width = widthValue.ToInt();
-                    sourceBox.Height = heightValue.ToInt();
-                }
-            }
+            Rectangle? RectangleOrNull = GetRectangle(clip);
+            if (RectangleOrNull.HasValue)
+                sourceBox = RectangleOrNull.Value;   
 
             // Calculate translation
-            PointF[] extent = new PointF[4] { new PointF(0, 0), new PointF(img.Image.Width, 0),
-                    new PointF(img.Image.Width, img.Image.Height), new PointF(0, img.Image.Height) };
+            PointF[] extent = new PointF[4] { new PointF(0, 0), new PointF(sourceBox.Width, 0),
+                    new PointF(sourceBox.Width, sourceBox.Height), new PointF(0, sourceBox.Height) };
 
             for (int i = 0; i < extent.Length; i++)
                 extent[i] = ApplyAffineToPointF(extent[i], affineMatrix);
 
             PointF min = extent[0];
-            for(int i = 1; i < 4; i++) {
+            for (int i = 1; i < 4; i++) {
                 if (min.X > extent[i].X)
                     min.X = extent[i].X;
                 if (min.Y > extent[i].Y)
@@ -2168,12 +2132,12 @@ namespace Peachpie.Library.Graphics
 
             var translationMatrix = new Matrix3x2(1, 0, 0, 1, -min.X, -min.Y);
 
-            AffineTransformBuilder builder = 
+            AffineTransformBuilder builder =
                 new AffineTransformBuilder().AppendMatrix(affineMatrix).AppendMatrix(translationMatrix);
 
-            var transformed = img.Image.Clone(o => o.Transform(sourceBox, builder,new TriangleResampler()));
+            var transformed = img.Image.Clone(o => o.Crop(sourceBox).Transform(builder, new TriangleResampler()));
 
-            return new PhpGdImageResource(transformed,img.Format);
+            return new PhpGdImageResource(transformed, img.Format);
         }
 
         private static bool IsNumber(PhpValue value) => value.IsInteger() || value.IsDouble();
