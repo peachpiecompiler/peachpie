@@ -49,7 +49,7 @@ You can find an up-to-date status of the project in our [Roadmap](https://docs.p
 
 
 ## How to use PeachPie
-There are currently two ways of using PeachPie via `msbuild`: in your favorite shell or comfortably in Visual Studio 2017/Visual Studio Code using our official extensions. 
+There are currently two ways of using PeachPie via `dotnet`: in your favorite shell or comfortably in Visual Studio 2017/Visual Studio Code using our official extensions. 
 
 ### Visual Studio
 Download our official [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vs), which makes working with PeachPie compiler as convenient as possible. The extension allows you to easily create a new project using our templates, build & debug, profile your PHP code using the VS diagnostic tools and deploy your project to Azure:
