@@ -1962,7 +1962,7 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imageflip, imagecrop, imagescale, imageaffine
+        #region imageflip, imagecrop, imagescale, imageaffine, imageaffinematrixget
 
         public const int IMG_FLIP_HORIZONTAL = 1;
         public const int IMG_FLIP_VERTICAL = 2;
@@ -1971,6 +1971,12 @@ namespace Peachpie.Library.Graphics
         public const int IMG_BILINEAR_FIXED = 3;
         public const int IMG_BICUBIC = 4;
         public const int IMG_BICUBIC_FIXED = 5;
+
+        public const int IMG_AFFINE_TRANSLATE = 0;
+        public const int IMG_AFFINE_SCALE = 1;
+        public const int IMG_AFFINE_ROTATE = 2;
+        public const int IMG_AFFINE_SHEAR_HORIZONTAL = 3;
+        public const int IMG_AFFINE_SHEAR_VERTICAL = 4;
 
         /// <summary>
         /// Flips an image using a given mode
@@ -2176,7 +2182,92 @@ namespace Peachpie.Library.Graphics
             var y = point.Y;
             return new PointF(x * affine.M11 + y * affine.M21 + affine.M31, x * affine.M12 + y * affine.M22 + affine.M32);
         }
+
+        /// <summary>
+        /// Get an affine transformation matrix
+        /// </summary>
+        /// <param name="type">One of the IMG_AFFINE_* constants.</param>
+        /// <param name="options">If type is IMG_AFFINE_TRANSLATE or IMG_AFFINE_SCALE, options has to be an array with keys x and y, both having float values.
+        /// If type is IMG_AFFINE_ROTATE, IMG_AFFINE_SHEAR_HORIZONTAL or IMG_AFFINE_SHEAR_VERTICAL, options has to be a float specifying the angle.</param>
+        /// <returns>Returns an affine transformation matrix.</returns>
+        [return:CastToFalse]
+        public static PhpArray imageaffinematrixget(int type, PhpValue options)
+        {
+            switch (type)
+            {
+                case IMG_AFFINE_TRANSLATE:
+                case IMG_AFFINE_SCALE:
+                    if (options.IsArray)
+                    {
+                        var arr = options.AsArray();
+                        if (!arr.TryGetItemValue("x", out PhpValue xVal))
+                        {
+                            PhpException.Throw(PhpError.Warning, Resources.missing_param,"x");
+                            break;
+                        }
+
+                        if (!arr.TryGetItemValue("y", out PhpValue yVal))
+                        {
+                            PhpException.Throw(PhpError.Warning, Resources.missing_param, "y");
+                            break;
+                        }
+
+                        double x = 0;
+                        double y = 0;
+
+                        // If there is another type, coordinates are zero.
+                        if (xVal.IsDouble() || yVal.IsDouble() || yVal.IsInteger() || xVal.IsInteger())
+                        {
+                            x = xVal.ToDouble();
+                            y = yVal.ToDouble();
+                        }
+
+                        return (type == IMG_AFFINE_TRANSLATE) ? GetPhpMatrix(m00: 1, m11: 1, m20: x, m21: y) : GetPhpMatrix(m00: x, m11: y);
+                    }
+
+                    PhpException.Throw(PhpError.Warning, Resources.array_expected, "options");
+                    break;
+                case IMG_AFFINE_ROTATE:
+                case IMG_AFFINE_SHEAR_HORIZONTAL:
+                case IMG_AFFINE_SHEAR_VERTICAL:
+                    double angle = 0;
+
+                    // If there is another type, coordinates are zero.
+                    if (options.IsDouble() || options.IsInteger())
+                        angle = Math.PI * options.ToDouble() / 180.0;
+
+                    if (type == IMG_AFFINE_ROTATE) 
+                    {
+                        double cos = Math.Cos(angle);
+                        double sin = Math.Sin(angle);
+                        return GetPhpMatrix(m00: cos, m01: sin, m10: -sin, m11:cos);
+                    }
+                    else
+                    {
+                        double tan = Math.Tan(angle);
+                        return (type == IMG_AFFINE_SHEAR_HORIZONTAL) ? GetPhpMatrix(m00: 1, m10: tan, m11: 1) : GetPhpMatrix(m00: 1, m01: tan, m11: 1);
+                    }
+                default:
+                    PhpException.Throw(PhpError.Warning, Resources.invalid_type, type.ToString());
+                    break;
+            }
+
+            return null;
+        }
+
+        private static PhpArray GetPhpMatrix(double m00 = 0, double m01 = 0, double m10 = 0, double m11 = 0, double m20 = 0, double m21 = 0)
+        {
+            var result = new PhpArray(6);
+            result.Add(0, m00);
+            result.Add(1, m01);
+            result.Add(2, m10);
+            result.Add(3, m11);
+            result.Add(4, m20);
+            result.Add(5, m21);
+
+            return result;
+        }
+
         #endregion
     }
-
 }
