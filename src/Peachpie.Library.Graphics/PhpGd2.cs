@@ -1962,7 +1962,7 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imageflip, imagecrop, imagescale, imageaffine, imageaffinematrixget
+        #region imageflip, imagecrop, imagescale, imageaffine, imageaffinematrixget, imageaffinematrixconcat
 
         public const int IMG_FLIP_HORIZONTAL = 1;
         public const int IMG_FLIP_VERTICAL = 2;
@@ -2176,6 +2176,8 @@ namespace Peachpie.Library.Graphics
             return new PhpGdImageResource(transformed,img.Format);
         }
 
+        private static bool IsNumber(PhpValue value) => value.IsInteger() || value.IsDouble();
+
         private static PointF ApplyAffineToPointF(PointF point, Matrix3x2 affine)
         {
             var x = point.X;
@@ -2216,7 +2218,7 @@ namespace Peachpie.Library.Graphics
                         double y = 0;
 
                         // If there is another type, coordinates are zero.
-                        if (xVal.IsDouble() || yVal.IsDouble() || yVal.IsInteger() || xVal.IsInteger())
+                        if (IsNumber(xVal) || IsNumber(yVal))
                         {
                             x = xVal.ToDouble();
                             y = yVal.ToDouble();
@@ -2233,7 +2235,7 @@ namespace Peachpie.Library.Graphics
                     double angle = 0;
 
                     // If there is another type, coordinates are zero.
-                    if (options.IsDouble() || options.IsInteger())
+                    if (IsNumber(options))
                         angle = Math.PI * options.ToDouble() / 180.0;
 
                     if (type == IMG_AFFINE_ROTATE) 
@@ -2255,19 +2257,102 @@ namespace Peachpie.Library.Graphics
             return null;
         }
 
-        private static PhpArray GetPhpMatrix(double m00 = 0, double m01 = 0, double m10 = 0, double m11 = 0, double m20 = 0, double m21 = 0)
+        private static PhpArray GetPhpMatrix(double m00 = 0, double m01 = 0, double m10 = 0, double m11 = 0, double m20 = 0, double m21 = 0) 
+            => new PhpArray() { m00, m01, m10, m11, m20, m21 };
+
+        /// <summary>
+        /// Get Matrix 3x2 from a PhpArray.
+        /// </summary>
+        /// <param name="matrix">Php matrix representation.</param>
+        /// <returns>Matrix3x2 or null, when there is error.</returns>
+        private static Matrix3x2? GetTransformMatrix(PhpArray matrix)
         {
-            var result = new PhpArray(6);
-            result.Add(0, m00);
-            result.Add(1, m01);
-            result.Add(2, m10);
-            result.Add(3, m11);
-            result.Add(4, m20);
-            result.Add(5, m21);
+            if (matrix == null)
+                return null;
+
+            if (!matrix.TryGetItemValue("0", out PhpValue n_1) | !matrix.TryGetItemValue("1", out PhpValue n_2) |
+                !matrix.TryGetItemValue("2", out PhpValue n_3) | !matrix.TryGetItemValue("3", out PhpValue n_4) |
+                !matrix.TryGetItemValue("4", out PhpValue n_5) | !matrix.TryGetItemValue("5", out PhpValue n_6))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.affine_array_number_of_params);
+                return null;
+            }
+
+            if (!IsNumber(n_1) || !IsNumber(n_2) || !IsNumber(n_3) ||
+                !IsNumber(n_4) || !IsNumber(n_5) || !IsNumber(n_6))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.wrong_type);
+                return null;
+            }
+
+            return new Matrix3x2((float)n_1.ToDouble(), (float)n_2.ToDouble(), (float)n_3.ToDouble(),
+                                 (float)n_4.ToDouble(), (float)n_5.ToDouble(), (float)n_6.ToDouble());
+        }
+
+        /// <summary>
+        /// Get Rectangle from a PhpArray.
+        /// </summary>
+        /// <param name="rectangle">Php rectangle representation.</param>
+        /// <returns>Rectangle or null, when there is error.</returns>
+        private static Rectangle? GetRectangle(PhpArray rectangle)
+        {
+            if (rectangle == null)
+                return null;
+
+            if (!rectangle.TryGetItemValue("x", out PhpValue xValue) | !rectangle.TryGetItemValue("y", out PhpValue yValue) |
+                !rectangle.TryGetItemValue("width", out PhpValue widthValue) |
+                !rectangle.TryGetItemValue("height", out PhpValue heightValue))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.missing_params);
+                return null;
+            }
+
+            if (!IsNumber(xValue) || !IsNumber(yValue) || !IsNumber(widthValue) || !IsNumber(heightValue))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.wrong_type);
+                return null;
+            }
+
+            return new Rectangle() { X = xValue.ToInt(), Y = yValue.ToInt(), 
+                                    Width = widthValue.ToInt(), Height = heightValue.ToInt()};
+        }
+
+        /// <summary>
+        /// Concatenate two affine transformation matrices
+        /// </summary>
+        /// <param name="m1">An affine transformation matrix (an array with keys 0 to 5 and float values).</param>
+        /// <param name="m2">An affine transformation matrix (an array with keys 0 to 5 and float values).</param>
+        /// <returns>An affine transformation matrix (an array with keys 0 to 5 and float values) or FALSE on failure.</returns>
+        [return: CastToFalse]
+        public static PhpArray imageaffinematrixconcat(PhpArray m1, PhpArray m2)
+        {
+            Matrix3x2? matrix1OrNull = GetTransformMatrix(m1);
+            if (!matrix1OrNull.HasValue)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.array_expected, "m1");
+                return null;
+            }
+            Matrix3x2 matrix1 = matrix1OrNull.Value;
+
+            Matrix3x2? matrix2OrNull = GetTransformMatrix(m2);
+            if (!matrix2OrNull.HasValue)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.array_expected, "m1");
+                return null;
+            }
+            Matrix3x2 matrix2 = matrix2OrNull.Value;
+
+            PhpArray result = new PhpArray() {
+            matrix1.M11 * matrix2.M11 + matrix1.M21 * matrix2.M12, // 0
+            matrix1.M11 * matrix2.M12 + matrix1.M12 * matrix2.M22, // 1
+            matrix1.M21 * matrix2.M11 + matrix1.M22 * matrix2.M21, // 2
+            matrix1.M12 * matrix2.M21 + matrix1.M22 * matrix2.M22, // 3
+            matrix1.M31 * matrix2.M11 + matrix1.M32 * matrix2.M12 + matrix2.M31, // 4
+            matrix1.M31 * matrix2.M21 + matrix1.M32 * matrix2.M22 + matrix2.M32 // 5
+            };
 
             return result;
         }
-
         #endregion
     }
 }
