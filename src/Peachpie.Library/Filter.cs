@@ -687,12 +687,12 @@ namespace Pchp.Library
                 //case (int)FilterSanitize.STRIPPED: // alias to "string" filter
                 case (int)FilterSanitize.STRING:
 
-                    return variable.AsObject() switch
+                    if (variable.IsPhpArray(out _) || variable.AsObject() is PhpResource)
                     {
-                        PhpResource _ => false,
-                        PhpArray _ => false,
-                        _ => SanitizeString(variable.ToString(ctx), (FilterFlag)flags),
-                    };
+                        return false;
+                    }
+
+                    return SanitizeString(variable.ToString(ctx), (FilterFlag)flags);
 
                 case (int)FilterSanitize.ENCODED:
                     return System.Web.HttpUtility.UrlEncode(StripBacktickIfSet(variable.ToString(ctx), (FilterFlag)flags));
