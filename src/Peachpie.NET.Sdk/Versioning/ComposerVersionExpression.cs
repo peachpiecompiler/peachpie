@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using Devsense.PHP.Errors;
 
 namespace Peachpie.NET.Sdk.Versioning
 {
@@ -39,12 +40,12 @@ namespace Peachpie.NET.Sdk.Versioning
         /// <summary>
         /// ~A
         /// </summary>
-        CaretVersionRange,
+        TildeVersionRange,
 
         /// <summary>
         /// ^A
         /// </summary>
-        TildeVersionRange,
+        CaretVersionRange,
 
         /// <summary>
         /// `&gt;`
@@ -260,7 +261,66 @@ namespace Peachpie.NET.Sdk.Versioning
 
         public override FloatingVersion Evaluate()
         {
-            throw new NotImplementedException();
+            if (Version.IsAnyMajor)
+            {
+                // *
+                return new FloatingVersion();
+            }
+
+            switch (Operation)
+            {
+                case Operation.TildeVersionRange:
+                    return new FloatingVersion
+                    {
+                        LowerBound = Version.AnyToZero(),
+                        UpperBound = Version.IsAnyBuild
+                            ? new ComposerVersion(Version.Major + 1, 0, 0) { Stability = Version.Stability }
+                            : new ComposerVersion(Version.Major, Version.Minor + 1, 0) { Stability = Version.Stability },
+                        UpperBoundExclusive = true,
+                    };
+
+                case Operation.CaretVersionRange:
+                    return new FloatingVersion
+                    {
+                        LowerBound = Version.AnyToZero(),
+                        UpperBound = Version.Major >= 1
+                            ? new ComposerVersion(Version.Major + 1, 0, 0) { Stability = Version.Stability }
+                            : Version.GetClosestHigher(),
+                        UpperBoundExclusive = true,
+                    };
+
+                case Operation.LessThan:
+                    return new FloatingVersion
+                    {
+                        UpperBound = Version.AnyToZero(),
+                        UpperBoundExclusive = true,
+                    };
+
+                case Operation.LessThanOrEqual:
+                    return new FloatingVersion
+                    {
+                        UpperBound = Version.AnyToZero(),
+                    };
+
+                case Operation.NotEqual:
+                // we can only have one range
+                // gt
+                case Operation.GreaterThan:
+                    return new FloatingVersion
+                    {
+                        LowerBound = Version.AnyToZero(),
+                        LowerBoundExclusive = true,
+                    };
+
+                case Operation.GreaterThanOrEqual:
+                    return new FloatingVersion
+                    {
+                        LowerBound = Version.AnyToZero(),
+                    };
+
+                default:
+                    throw new InvalidOperationException(Operation.ToString());
+            }
         }
     }
 
@@ -273,16 +333,51 @@ namespace Peachpie.NET.Sdk.Versioning
 
         public override FloatingVersion Evaluate() => Evaluate(Left.Evaluate(), Right.Evaluate());
 
-        protected abstract FloatingVersion Evaluate(FloatingVersion left, FloatingVersion right);
+        protected abstract FloatingVersion Evaluate(FloatingVersion x, FloatingVersion y);
     }
 
     sealed class AndExpression : BinaryExpression
     {
         public override Operation Operation => Operation.And;
 
-        protected override FloatingVersion Evaluate(FloatingVersion left, FloatingVersion right)
+        protected override FloatingVersion Evaluate(FloatingVersion x, FloatingVersion y)
         {
-            throw new NotImplementedException();
+            var result = new FloatingVersion();
+
+            // LowerBound = Max(x.LowerBound, y.LowerBound)
+            var lowerx = x.LowerBound.AnyToZero();
+            var lowery = y.LowerBound.AnyToZero();
+
+            var lowercomp = lowerx.CompareTo(lowery);
+            if (lowercomp > 0 || (lowercomp == 0 && x.LowerBoundExclusive))
+            {
+                result.LowerBound = lowerx;
+                result.LowerBoundExclusive = x.LowerBoundExclusive;
+            }
+            else
+            {
+                result.LowerBound = lowery;
+                result.LowerBoundExclusive = y.LowerBoundExclusive;
+            }
+
+            // UpperBound = Min(x.UpperBound, y.UpperBound)
+            var upperx = x.UpperBound.GetClosestHigher();
+            var uppery = y.UpperBound.GetClosestHigher();
+
+            var uppercomp = upperx.CompareTo(uppery);
+            if (uppercomp < 0 || (uppercomp == 0 && x.UpperBoundExclusive))
+            {
+                result.UpperBound = x.UpperBound;
+                result.UpperBoundExclusive = x.UpperBoundExclusive;
+            }
+            else
+            {
+                result.UpperBound = y.UpperBound;
+                result.UpperBoundExclusive = y.UpperBoundExclusive;
+            }
+
+            //
+            return result;
         }
     }
 
@@ -290,12 +385,47 @@ namespace Peachpie.NET.Sdk.Versioning
     {
         public override Operation Operation => Operation.Or;
 
-        protected override FloatingVersion Evaluate(FloatingVersion left, FloatingVersion right)
+        protected override FloatingVersion Evaluate(FloatingVersion x, FloatingVersion y)
         {
             // cannot be translated,
             // so we'll just merge the ranges
 
-            throw new NotImplementedException();
+            var result = new FloatingVersion();
+
+            // LowerBound = Max(x.LowerBound, y.LowerBound)
+            var lowerx = x.LowerBound.AnyToZero();
+            var lowery = y.LowerBound.AnyToZero();
+
+            var lowercomp = lowerx.CompareTo(lowery);
+            if (lowercomp < 0 || (lowercomp == 0 && !x.LowerBoundExclusive))
+            {
+                result.LowerBound = lowerx;
+                result.LowerBoundExclusive = x.LowerBoundExclusive;
+            }
+            else
+            {
+                result.LowerBound = lowery;
+                result.LowerBoundExclusive = y.LowerBoundExclusive;
+            }
+
+            // UpperBound = Min(x.UpperBound, y.UpperBound)
+            var upperx = x.UpperBound.GetClosestHigher();
+            var uppery = y.UpperBound.GetClosestHigher();
+
+            var uppercomp = upperx.CompareTo(uppery);
+            if (uppercomp > 0 || (uppercomp == 0 && !x.UpperBoundExclusive))
+            {
+                result.UpperBound = x.UpperBound;
+                result.UpperBoundExclusive = x.UpperBoundExclusive;
+            }
+            else
+            {
+                result.UpperBound = y.UpperBound;
+                result.UpperBoundExclusive = y.UpperBoundExclusive;
+            }
+
+            //
+            return result;
         }
     }
 
@@ -309,36 +439,29 @@ namespace Peachpie.NET.Sdk.Versioning
         public override FloatingVersion Evaluate()
         {
             // has asterisks?
-            if (Version.PartsCount == 0 || Version.PartsCount >= 1 && Version.Major < 0)
+            if (Version.IsAnyMajor)
             {
                 // *
                 return new FloatingVersion();
             }
 
-            if (Version.PartsCount >= 2 && Version.Minor < 0)
+            if (Version.IsAnyMinor || Version.IsAnyBuild)
             {
-                // Major.* => [Major.0.0,Major+1,0,0)
                 return new FloatingVersion
                 {
-                    LowerBound = new ComposerVersion(Version.Major, 0, 0),
-                    UpperBound = new ComposerVersion(Version.Major + 1, 0, 0),
+                    LowerBound = Version.AnyToZero(),
+                    UpperBound = Version.GetClosestHigher(),
                     UpperBoundExclusive = true,
                 };
             }
-
-            if (Version.PartsCount >= 3 && Version.Build < 0)
+            else
             {
-                // Major.Minor.* => [Major.Minor.0,Major,Minor+1,0)
                 return new FloatingVersion
                 {
-                    LowerBound = new ComposerVersion(Version.Major, Version.Minor, 0),
-                    UpperBound = new ComposerVersion(Version.Major, Version.Minor + 1, 0),
-                    UpperBoundExclusive = true,
+                    LowerBound = Version,
+                    UpperBound = Version,
                 };
             }
-
-            // exact version
-            return new FloatingVersion { LowerBound = Version, UpperBound = Version, };
         }
     }
 
@@ -353,7 +476,12 @@ namespace Peachpie.NET.Sdk.Versioning
 
         public override FloatingVersion Evaluate()
         {
-            throw new NotImplementedException();
+            return new FloatingVersion
+            {
+                LowerBound = From.AnyToZero(),
+                UpperBound = To.GetClosestHigher(),
+                UpperBoundExclusive = true,
+            };
         }
     }
 }

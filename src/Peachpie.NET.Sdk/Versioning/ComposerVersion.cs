@@ -82,6 +82,21 @@ namespace Peachpie.NET.Sdk.Versioning
         public int PartsCount { get; set; }
 
         /// <summary>
+        /// Major component is any.
+        /// </summary>
+        public bool IsAnyMajor => Major < 0 || PartsCount < 1;
+
+        /// <summary>
+        /// Minor component is any.
+        /// </summary>
+        public bool IsAnyMinor => Minor < 0 || PartsCount < 2;
+
+        /// <summary>
+        /// Minor component is any.
+        /// </summary>
+        public bool IsAnyBuild => Build < 0 || PartsCount < 3;
+
+        /// <summary>
         /// Gets value indicating the value is specified.
         /// </summary>
         public bool HasValue => PartsCount != 0 || Stability != null;
@@ -215,6 +230,36 @@ namespace Peachpie.NET.Sdk.Versioning
             return value.IsEmpty; // all consumed
         }
 
+        /// <summary>
+        /// Substitutes all non-specified components with <c>0</c>. Always returns version with 3 components.
+        /// e.g.
+        /// * -> 0.0.0
+        /// 1.* -> 1.0.0
+        /// 1.2 -> 1.2.0
+        /// </summary>
+        public ComposerVersion AnyToZero() =>
+            new ComposerVersion(IsAnyMajor ? 0 : Major, IsAnyMinor ? 0 : Minor, IsAnyBuild ? 0 : Build)
+            {
+                Stability = Stability
+            };
+
+        /// <summary>
+        /// Gets the next closest version which satisfies:
+        /// value &lt; closest_higer
+        /// e.g.
+        /// * -> *
+        /// 1.* -> 2.0
+        /// 1.2 -> 1.3
+        /// 1.2.3 -> 1.2.4
+        /// </summary>
+        public ComposerVersion GetClosestHigher()
+        {
+            if (IsAnyMajor) return new ComposerVersion(Asterisk) { Stability = Stability };
+            if (IsAnyMinor) return new ComposerVersion(Major + 1, 0, 0) { Stability = Stability };
+            if (IsAnyBuild) return new ComposerVersion(Major, Minor + 1, 0) { Stability = Stability };
+            return new ComposerVersion(Major, Minor, Build + 1) { Stability = Stability };
+        }
+
         /// <inheritdoc/>
         public override bool Equals(object obj) => obj is ComposerVersion v && Equals(v);
 
@@ -222,21 +267,18 @@ namespace Peachpie.NET.Sdk.Versioning
         public override int GetHashCode() => Major | (Minor << 4) | (Build << 8) /*^ Stability.GetHashCode()*/;
 
         /// <inheritdoc/>
-        public bool Equals(ComposerVersion other)
-        {
-            return Major == other.Major && Minor == other.Minor && Build == other.Build && Stability == other.Stability;
-        }
+        public bool Equals(ComposerVersion other) => CompareTo(other) == 0;
 
         /// <inheritdoc/>
         public int CompareTo(ComposerVersion other)
         {
-            if (Major < 0 || other.Major < 0) return 0;
+            if (IsAnyMajor || other.IsAnyMajor) return 0;
             if (Major != other.Major) return Major - other.Major;
 
-            if (Minor < 0 || other.Minor < 0) return 0;
+            if (IsAnyMinor || other.IsAnyMinor) return 0;
             if (Minor != other.Minor) return Minor - other.Minor;
 
-            if (Build < 0 || other.Build < 0) return 0;
+            if (IsAnyBuild || other.IsAnyBuild) return 0;
             if (Build != other.Build) return Build - other.Build;
 
             //
