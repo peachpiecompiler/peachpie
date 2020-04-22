@@ -52,9 +52,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library.PDO", "Library.PDO", "{5DA1C2A7-6FFD-4E52-8E58-D3D082B84152}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{30104149-66C2-44B1-899F-F97E9ECA3860}"
-	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Runtime.Tests", "src\Tests\Peachpie.Runtime.Tests\Peachpie.Runtime.Tests.csproj", "{BD22AE7D-311C-46A2-B066-E937CBDD93EA}"
 EndProject
