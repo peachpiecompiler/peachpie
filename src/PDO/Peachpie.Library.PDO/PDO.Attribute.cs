@@ -139,6 +139,7 @@ namespace Peachpie.Library.PDO
                     else
                     {
                         // Warning: PDO::setAttribute(): SQLSTATE[HY000]: General error: invalid error mode
+                        // TODO: this.RaiseError( ... ) ?
                         PhpException.InvalidArgument(nameof(value));
                         return false;
                     }
