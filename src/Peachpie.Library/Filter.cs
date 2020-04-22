@@ -589,6 +589,44 @@ namespace Pchp.Library
             }
         }
 
+        private static string SanitizeString(string value, FilterFlag flags)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            value = Strings.strip_tags(value);
+
+            //FILTER_FLAG_STRIP_LOW
+
+            //FILTER_FLAG_STRIP_HIGH
+
+            //FILTER_FLAG_STRIP_BACKTICK
+            value = StripBacktickIfSet(value, flags);
+
+            //FILTER_FLAG_ENCODE_LOW
+
+            //FILTER_FLAG_ENCODE_HIGH            
+
+            //FILTER_FLAG_NO_ENCODE_QUOTES + FILTER_FLAG_ENCODE_AMP
+            if ((flags & FilterFlag.NO_ENCODE_QUOTES) == 0)
+            {
+                value = Strings.HtmlSpecialCharsEncode(value, 0, value.Length,
+                    quoteStyle: Strings.QuoteStyle.BothQuotes,
+                    charSet: null,
+                    keepExisting: (flags & FilterFlag.ENCODE_AMP) == 0); // sanitize `&` properly
+            }
+            //FILTER_FLAG_ENCODE_AMP
+            else if ((flags & FilterFlag.ENCODE_AMP) != 0)
+            {
+                value = value.Replace("&", "&#38;");
+            }
+
+            //
+            return value;
+        }
+
         /// <summary>
         /// Filters a variable with a specified filter.
         /// </summary>
@@ -646,9 +684,15 @@ namespace Pchp.Library
                 case (int)FilterSanitize.FILTER_DEFAULT:
                     return (PhpValue)variable.ToString(ctx);
 
-                //case (int)FilterSanitize.STRIPPED:
-                //case (int)FilterSanitize.STRING:
-                //    throw new NotImplementedException();
+                //case (int)FilterSanitize.STRIPPED: // alias to "string" filter
+                case (int)FilterSanitize.STRING:
+
+                    return variable.AsObject() switch
+                    {
+                        PhpResource _ => false,
+                        PhpArray _ => false,
+                        _ => SanitizeString(variable.ToString(ctx), (FilterFlag)flags),
+                    };
 
                 case (int)FilterSanitize.ENCODED:
                     return System.Web.HttpUtility.UrlEncode(StripBacktickIfSet(variable.ToString(ctx), (FilterFlag)flags));
