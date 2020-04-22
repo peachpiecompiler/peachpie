@@ -44,7 +44,7 @@ namespace Peachpie.NET.Sdk.Versioning
         }
 
         /// <summary>
-        /// Denotiofies a version component that matches to anything.
+        /// Denotifies a version component that matches to anything.
         /// </summary>
         public static int Asterisk => -1;
 

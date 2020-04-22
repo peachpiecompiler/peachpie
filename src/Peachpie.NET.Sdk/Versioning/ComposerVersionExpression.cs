@@ -115,9 +115,7 @@ namespace Peachpie.NET.Sdk.Versioning
 
             // ranges
             var range = value.IndexOf(Tokens.Range); // regexp
-            if (range > 0 &&
-                value[range - 1] != '|' &&
-                range + Tokens.Range.Length < value.Length && value[range + Tokens.Range.Length] != '|')
+            if (range > 0)
             {
                 // A - B
                 if (ComposerVersion.TryParse(value.Slice(0, range), out var fromversion) &&
