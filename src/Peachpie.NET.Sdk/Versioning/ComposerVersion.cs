@@ -7,12 +7,51 @@ namespace Peachpie.NET.Sdk.Versioning
     /// <summary>
     /// Single composer version.
     /// </summary>
-    public struct ComposerVersion
+    public struct ComposerVersion : IEquatable<ComposerVersion>, IComparable<ComposerVersion>
     {
         /// <summary>
         /// Version corresponding to <c>"*"</c>.
         /// </summary>
-        public static ComposerVersion Any => new ComposerVersion { Major = -1, Minor = -1, Build = -1, };
+        public static ComposerVersion Any => new ComposerVersion(Asterisk);
+
+        private ComposerVersion(int major, int minor, int build, int parts)
+        {
+            if (parts < 0 || parts > 3) throw new ArgumentOutOfRangeException(nameof(parts));
+
+            Major = major;
+            Minor = minor;
+            Build = build;
+            Stability = null;
+            PartsCount = parts;
+        }
+
+        /// <summary></summary>
+        public ComposerVersion(int major, int minor, int build)
+            : this(major, minor, build, 3)
+        {
+        }
+
+        /// <summary></summary>
+        public ComposerVersion(int major, int minor)
+            : this(major, minor, Asterisk, 2)
+        {
+        }
+
+        /// <summary></summary>
+        public ComposerVersion(int major)
+            : this(major, Asterisk, Asterisk, 1)
+        {
+        }
+
+        /// <summary>
+        /// Denotiofies a version component that matches to anything.
+        /// </summary>
+        public static int Asterisk => -1;
+
+        /// <summary>
+        /// Stability flag corresponding to no version suffix (no PreRelase).
+        /// </summary>
+        public static string StabilityStable => "stable";
 
         /// <summary>
         /// Major version component/
@@ -40,24 +79,186 @@ namespace Peachpie.NET.Sdk.Versioning
         /// <summary>
         /// What parts of the version are specified.
         /// </summary>
-        public int PartsCount => Major < 0 ? 0 : Minor < 0 ? 1 : Build < 0 ? 2 : 3;
+        public int PartsCount { get; set; }
 
         /// <summary>
         /// Gets value indicating the value is specified.
         /// </summary>
-        public bool HasValue => Major != 0 || Minor != 0 || Build != 0 || Stability != null;
+        public bool HasValue => PartsCount != 0 || Stability != null;
 
         /// <summary>Returns string representation of the version.</summary>
         public override string ToString()
         {
+            string majorstr = Major < 0 ? "*" : Major.ToString();
+            string minorstr = Minor < 0 ? "*" : Minor.ToString();
+            string buildstr = Build < 0 ? "*" : Build.ToString();
+
             return PartsCount switch
             {
                 0 => "",
-                1 => $"{Major}",
-                2 => $"{Major}.{Minor}",
-                3 => $"{Major}.{Minor}.{Build}",
+                1 => $"{majorstr}",
+                2 => $"{majorstr}.{minorstr}",
+                3 => $"{majorstr}.{minorstr}.{buildstr}",
                 _ => throw new ArgumentException(),
             };
         }
+
+        /// <summary>
+        /// Parses version string.
+        /// </summary>
+        public static bool TryParse(string value, out ComposerVersion version) => TryParse(value.AsSpan(), out version);
+
+        /// <summary>
+        /// Parses version string.
+        /// </summary>
+        public static bool TryParse(ReadOnlySpan<char> value, out ComposerVersion version)
+        {
+            value = value.Trim();
+
+            if (value.IsEmpty)
+            {
+                version = default;
+                return false;
+            }
+
+            var result = Any;
+
+            // A.B.C-<stable>
+
+            // [0-9]+|\*
+            int ConsumeDigitsOrAsterisk(ReadOnlySpan<char> value, out int num)
+            {
+                num = 0;
+
+                if (value.IsEmpty)
+                {
+                    return 0;
+                }
+                else if (char.IsDigit(value[0]))
+                {
+                    int i = 0;
+
+                    for (; i < value.Length && value[i] >= '0' && value[i] <= '9'; i++)
+                    {
+                        num = num * 10 + (value[i] - '0');
+                    }
+
+                    return i;
+                }
+                else if (value[0] == '*')
+                {
+                    num = Asterisk;
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+
+            bool ConsumeDot(ReadOnlySpan<char> value)
+            {
+                return value.Length != 0 && value[0] == '.';
+            }
+
+            int consumed;
+            int n;
+
+            // Major
+            if ((consumed = ConsumeDigitsOrAsterisk(value, out n)) > 0)
+            {
+                result.Major = n;
+                result.PartsCount = 1;
+                value = value.Slice(consumed);
+
+                // .
+                if (ConsumeDot(value))
+                {
+                    value = value.Slice(1);
+
+                    // Minor
+                    if ((consumed = ConsumeDigitsOrAsterisk(value, out n)) > 0)
+                    {
+                        result.Minor = n;
+                        result.PartsCount = 2;
+                        value = value.Slice(consumed);
+
+                        // .
+                        if (ConsumeDot(value))
+                        {
+                            value = value.Slice(1);
+
+                            // Build
+                            if ((consumed = ConsumeDigitsOrAsterisk(value, out n)) > 0)
+                            {
+                                result.Build = n;
+                                result.PartsCount = 3;
+                                value = value.Slice(consumed);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // -<stability>
+            if (value.Length != 0 && value[0] == '-')
+            {
+                int i = 1;
+                while (i < value.Length && !char.IsWhiteSpace(value[i])) i++;
+
+                result.Stability = value.Slice(1, i - 1).ToString();
+                value = value.Slice(i);
+            }
+
+            //
+            version = result;
+            return value.IsEmpty; // all consumed
+        }
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ComposerVersion v && Equals(v);
+
+        /// <inheritdoc/>
+        public override int GetHashCode() => Major | (Minor << 4) | (Build << 8) /*^ Stability.GetHashCode()*/;
+
+        /// <inheritdoc/>
+        public bool Equals(ComposerVersion other)
+        {
+            return Major == other.Major && Minor == other.Minor && Build == other.Build && Stability == other.Stability;
+        }
+
+        /// <inheritdoc/>
+        public int CompareTo(ComposerVersion other)
+        {
+            if (Major < 0 || other.Major < 0) return 0;
+            if (Major != other.Major) return Major - other.Major;
+
+            if (Minor < 0 || other.Minor < 0) return 0;
+            if (Minor != other.Minor) return Minor - other.Minor;
+
+            if (Build < 0 || other.Build < 0) return 0;
+            if (Build != other.Build) return Build - other.Build;
+
+            //
+            return 0;
+        }
+
+        /// <summary></summary>
+        public static bool operator ==(ComposerVersion a, ComposerVersion b) => a.Equals(b);
+
+        /// <summary></summary>
+        public static bool operator !=(ComposerVersion a, ComposerVersion b) => !a.Equals(b);
+
+        /// <summary></summary>
+        public static bool operator <(ComposerVersion a, ComposerVersion b) => a.CompareTo(b) < 0;
+
+        /// <summary></summary>
+        public static bool operator >(ComposerVersion a, ComposerVersion b) => a.CompareTo(b) > 0;
+
+        /// <summary></summary>
+        public static bool operator <=(ComposerVersion a, ComposerVersion b) => a.CompareTo(b) <= 0;
+
+        /// <summary></summary>
+        public static bool operator >=(ComposerVersion a, ComposerVersion b) => a.CompareTo(b) >= 0;
     }
 }

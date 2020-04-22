@@ -382,12 +382,6 @@ namespace Peachpie.NET.Sdk.Tools
             // convert composer version constraint to a floating version,
             // note, not all the constraints can be converted to a corresponding floating version.
 
-            // *
-            if (string.IsNullOrEmpty(value) || value == "*")
-            {
-                return "*";
-            }
-
             //>= 1.0
             //>= 1.0 <2.0
             //>= 1.0 <1.1 || >= 1.2
@@ -396,8 +390,14 @@ namespace Peachpie.NET.Sdk.Tools
             //~1.2.3
             //1 - 2
             //1.0.0 - 2.1.0
+            if (Versioning.ComposerVersionExpression.TryParse(value.AsSpan(), out var expression))
+            {
+                var version = expression.Evaluate();
+                return version.ToString();
+            }
 
-            return value;
+            // any
+            return "*";
         }
 
         string GetTags(JSONNode keywords)
