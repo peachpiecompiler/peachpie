@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -120,7 +121,7 @@ namespace Peachpie.NET.Sdk.Tools
             // process the file:
             foreach (var node in json)
             {
-                switch (node.Key)
+                switch (node.Key.ToLowerInvariant())
                 {
                     case "name":
                         Name = GetName(node.Value);
@@ -144,11 +145,16 @@ namespace Peachpie.NET.Sdk.Tools
 
                     case "version":
                         /*
+                         * Note, in general it is recommended to omit this tag and infer the value from a build process.
+                         * Anyways, if it's there we should respect it.
+                         */
+
+                        /*
                          * This must follow the format of `X.Y.Z` or `vX.Y.Z`
                          * with an optional suffix of `-dev`, `-patch` (-p), `-alpha` (-a), `-beta` (-b) or `-RC`.
                          * The patch, alpha, beta and RC suffixes can also be followed by a number.
                          */
-                        Version = GetVersion(node.Value);
+                        Version = SanitizeVersionValue(node.Value.Value);
                         break;
 
                     case "time":
@@ -178,10 +184,9 @@ namespace Peachpie.NET.Sdk.Tools
 
         string GetLicense(JSONNode license) => license.Value;
 
-        string GetVersion(JSONNode version)
+        string SanitizeVersionValue(string value)
         {
-            var value = version.Value;
-            if (string.IsNullOrEmpty(value))
+            if (string.IsNullOrWhiteSpace(value))
             {
                 return null;
             }
@@ -232,6 +237,69 @@ namespace Peachpie.NET.Sdk.Tools
             }
         }
 
+        static string ResolvePeachpieSdkVersion()
+        {
+            foreach (var inf in typeof(ComposerTask).Assembly.GetCustomAttributes<AssemblyInformationalVersionAttribute>())
+            {
+                var version = inf.InformationalVersion;
+                if (string.IsNullOrEmpty(version))
+                {
+                    continue;
+                }
+
+                // remove metadata
+                int meta = version.IndexOf('+');
+                if (meta >= 0)
+                {
+                    version = version.Remove(meta);
+                }
+
+                //
+                return version;
+            }
+
+            //
+            return typeof(ComposerTask).Assembly.GetName().Version.ToString(3);
+        }
+
+        /// <summary>Current version of Peachpie build. Used for referenced libraries</summary>
+        static string PeachpieSdkVersion => _lazyPeachpieSdkVersion ??= ResolvePeachpieSdkVersion();
+        static string _lazyPeachpieSdkVersion;
+
+        /// <summary>
+        /// Map of known dependency id's to a corresponding package reference.
+        /// </summary>
+        static readonly Dictionary<string, string> s_knowndeps_to_packageid = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+        {
+            {"ext-curl", "Peachpie.Library.Network"},
+            {"ext-gettext", "Peachpie.Library"},
+            {"ext-fileinfo", "Peachpie.Library"},
+            {"ext-mbstring", "Peachpie.Library"},
+            {"ext-mysql", "Peachpie.Library.MySql"},
+            {"ext-mysqli", "Peachpie.Library.MySql"},
+            {"ext-mssql", "Peachpie.Library.MsSql"},
+            {"ext-dom", "Peachpie.Library.XmlDom"},
+            {"ext-xsl", "Peachpie.Library.XmlDom"},
+            {"ext-exif", "Peachpie.Library.Graphics"},
+            {"ext-gd2", "Peachpie.Library.Graphics"},
+            {"ext-pdo", "Peachpie.Library.PDO"},
+            {"ext-pdo-sqlite", "Peachpie.Library.PDO.Sqlite"},
+            {"ext-pdo-firebird", "Peachpie.Library.PDO.Firebird"},
+            {"ext-pdo-ibm", "Peachpie.Library.PDO.IBM"},
+            {"ext-pdo-mysql", "Peachpie.Library.PDO.MySQL"},
+            {"ext-pdo-pgsql", "Peachpie.Library.PDO.PgSQL"},
+            {"ext-pdo-sqlsrv", "Peachpie.Library.PDO.SqlSrv"},
+        };
+
+        static TaskItem PackageDependencyItem(string name, string version)
+        {
+            return new TaskItem("PackageDependency", new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+            {
+                { "Name", name },
+                { "Version", version },
+            });
+        }
+
         IEnumerable<ITaskItem> GetDependencies(JSONNode require)
         {
             if (require == null)
@@ -241,27 +309,40 @@ namespace Peachpie.NET.Sdk.Tools
 
             foreach (var r in require)
             {
-                if (r.Key.Equals("php", StringComparison.OrdinalIgnoreCase))
+                if (r.Key.Equals("php", StringComparison.OrdinalIgnoreCase) || r.Key.StartsWith("php-", StringComparison.OrdinalIgnoreCase))
                 {
                     // php version,
                     // ignore for now
                     continue;
                 }
 
+                if (s_knowndeps_to_packageid.TryGetValue(r.Key, out var packageid))
+                {
+                    yield return PackageDependencyItem(
+                        name: packageid,
+                        version: PeachpieSdkVersion);
+                }
+
                 if (r.Key.StartsWith("ext-", StringComparison.OrdinalIgnoreCase))
                 {
-                    // php extension,
-                    continue;   // TODO: translate to PeachPie-like library name
+                    // php extension name
+                    // ignore unknown for now
+                    continue;
+                }
+
+                if (r.Key.StartsWith("lib-", StringComparison.OrdinalIgnoreCase))
+                {
+                    // internal library restriction
+                    // ignored
+                    continue;
                 }
 
                 // regular dependency,
                 // translate composer-like name to NuGet-like name
 
-                yield return new TaskItem("PackageDependency", new Dictionary<string, string>()
-                {
-                    { "Name", IdToNuGetId(r.Key) },
-                    { "Version", VersionRangeToPackageVersion(r.Value.Value) },
-                });
+                yield return PackageDependencyItem(
+                    name: IdToNuGetId(r.Key),
+                    version: VersionRangeToPackageVersion(r.Value.Value));
             }
         }
 

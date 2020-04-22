@@ -88,7 +88,7 @@
   </ItemGroup>
 
   <Target Name="PublishAll">
-    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish" Properties="GeneratePackageOnBuild=false;" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish" Properties="GeneratePackageOnBuild=false;Version=$(Version)" />
   </Target>
 
   <Target Name="SetPackageDependencies" BeforeTargets="GenerateNuspec" DependsOnTargets="PublishAll">
