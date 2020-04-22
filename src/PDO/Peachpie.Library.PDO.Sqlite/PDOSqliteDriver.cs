@@ -18,7 +18,7 @@ namespace Peachpie.Library.PDO.Sqlite
         public override string Name => "sqlite";
 
         /// <inheritDoc />
-        public override DbProviderFactory DbFactory => Microsoft.Data.Sqlite.SqliteFactory.Instance;
+        public override DbProviderFactory DbFactory => SqliteFactory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
@@ -45,14 +45,9 @@ namespace Peachpie.Library.PDO.Sqlite
         /// <inheritDoc />
         public override bool TrySetStringifyFetches(PDO pdo, bool stringify)
         {
-            // SQLite PDO driver can retrieve values only as strings in PHP.
-            if (stringify)
-            {
-                pdo.Stringify = true;
-                return true;
-            }
-
-            return false;
+            // SQLite PDO driver can retrieve values only as strings in PHP
+            pdo.Stringify = true;
+            return stringify == true;
         }
 
         /// <inheritDoc />

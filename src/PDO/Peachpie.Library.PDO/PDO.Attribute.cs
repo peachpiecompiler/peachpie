@@ -116,7 +116,8 @@ namespace Peachpie.Library.PDO
                     return true;
 
                 case PDO_ATTR.ATTR_STRINGIFY_FETCHES:
-                    return Driver.TrySetStringifyFetches(this, value.ToBoolean());
+                    Driver.TrySetStringifyFetches(this, value.ToBoolean());
+                    return true; // always returns TRUE
 
                 //strict positif integers
 

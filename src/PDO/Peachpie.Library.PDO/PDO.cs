@@ -70,6 +70,24 @@ namespace Peachpie.Library.PDO
         /// <summary>Result loaded with data supporting iteration.</summary>
         sealed class PdoResultResource : ResultResource
         {
+            #region Properties
+
+            /// <summary>
+            /// Underlying connection resource.
+            /// </summary>
+            new PdoConnectionResource Connection => (PdoConnectionResource)base.Connection;
+
+            /// <summary>Current context.</summary>
+            Context Context => Connection.Context;
+
+            /// <summary>Reference to containing <see cref="PDO"/> instance.</summary>
+            PDO PDO => Connection.PDO;
+
+            /// <summary>Reference to underlying PDO driver.</summary>
+            PDODriver Driver => PDO.Driver;
+
+            #endregion
+
             public PdoResultResource(PdoConnectionResource connection, IDataReader reader, bool convertTypes)
                 : base(connection, reader, nameof(PdoResultResource), convertTypes)
             {
@@ -82,7 +100,7 @@ namespace Peachpie.Library.PDO
 
                 if (convertTypes)
                 {
-                    bool stringify = ((PdoConnectionResource)this.Connection).PDO.Stringify;
+                    bool stringify = PDO.Stringify;
 
                     for (int i = 0; i < oa.Length; i++)
                     {
@@ -186,7 +204,7 @@ namespace Peachpie.Library.PDO
 
                     return sqlValue.ToString();
                 }
-                
+
                 //
                 return sqlValue;
             }

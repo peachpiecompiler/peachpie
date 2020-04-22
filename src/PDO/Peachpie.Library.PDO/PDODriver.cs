@@ -88,6 +88,8 @@ namespace Peachpie.Library.PDO
         /// <returns>Value indicating the attribute was set succesfuly.</returns>
         public virtual bool TrySetStringifyFetches(PDO pdo, bool stringify)
         {
+            // NOTE: this method should be removed and stringify handled when actually used in PdoResultResource.GetValues()
+
             pdo.Stringify = stringify;
             return true;
         }
