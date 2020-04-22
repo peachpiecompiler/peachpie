@@ -114,7 +114,7 @@
       <Output TaskParameter="License" PropertyName="_cLicense" />
       <Output TaskParameter="Homepage" PropertyName="_cHomepage" />
       <Output TaskParameter="Authors" ItemName="_cAuthors" />
-      <Output TaskParameter="Dependencies" ItemName="_cDependencies" />
+      <Output TaskParameter="Dependencies" ItemName="ComposerPackageReference" />
     </ComposerTask>
   </Target>
 
@@ -138,7 +138,7 @@
 
     <ItemGroup Condition=" '$(ComposerDependencies)'=='true' ">
       <!-- this will be enabled by default -->
-      <PackageReference Include="@(_cDependencies->'%(Name)')" />
+      <PackageReference Include="@(ComposerPackageReference->'%(Name)')" />
     </ItemGroup>
 
   </Target>
