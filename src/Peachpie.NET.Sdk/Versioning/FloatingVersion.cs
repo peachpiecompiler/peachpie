@@ -33,7 +33,7 @@ namespace Peachpie.NET.Sdk.Versioning
                 if (!UpperBound.HasValue && !LowerBoundExclusive)
                 {
                     // version
-                    return LowerBound.ToString();// + (LowerBound.Stability != null ? "-*" : "");
+                    return $"[{LowerBound},]";// + (LowerBound.Stability != null ? "-*" : "");
                 }
 
                 value.Append(LowerBoundExclusive ? '(' : '[');
@@ -47,14 +47,13 @@ namespace Peachpie.NET.Sdk.Versioning
                         //value.Append("-*");
                     }
 
-                    if (LowerBound == UpperBound)
+                    if (UpperBound.HasValue && !LowerBoundExclusive && LowerBound == UpperBound)
                     {
                         // [version]
                         value.Append("]");
                         return value.ToString();
                     }
                 }
-
 
                 value.Append(',');
 
