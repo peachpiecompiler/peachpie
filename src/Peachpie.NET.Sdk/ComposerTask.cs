@@ -309,28 +309,35 @@ namespace Peachpie.NET.Sdk.Tools
 
             foreach (var r in require)
             {
-                if (r.Key.Equals("php", StringComparison.OrdinalIgnoreCase) || r.Key.StartsWith("php-", StringComparison.OrdinalIgnoreCase))
+                var name = r.Key?.Trim();
+                if (string.IsNullOrEmpty(name))
+                {
+                    // invalid requirement name:
+                    continue;
+                }
+
+                if (name.Equals("php", StringComparison.OrdinalIgnoreCase) || name.StartsWith("php-", StringComparison.OrdinalIgnoreCase))
                 {
                     // php version,
                     // ignore for now
                     continue;
                 }
 
-                if (s_knowndeps_to_packageid.TryGetValue(r.Key, out var packageid))
+                if (s_knowndeps_to_packageid.TryGetValue(name, out var packageid))
                 {
                     yield return PackageDependencyItem(
                         name: packageid,
                         version: PeachpieSdkVersion);
                 }
 
-                if (r.Key.StartsWith("ext-", StringComparison.OrdinalIgnoreCase))
+                if (name.StartsWith("ext-", StringComparison.OrdinalIgnoreCase))
                 {
                     // php extension name
                     // ignore unknown for now
                     continue;
                 }
 
-                if (r.Key.StartsWith("lib-", StringComparison.OrdinalIgnoreCase))
+                if (name.StartsWith("lib-", StringComparison.OrdinalIgnoreCase))
                 {
                     // internal library restriction
                     // ignored
@@ -341,19 +348,30 @@ namespace Peachpie.NET.Sdk.Tools
                 // translate composer-like name to NuGet-like name
 
                 yield return PackageDependencyItem(
-                    name: IdToNuGetId(r.Key),
+                    name: IdToNuGetId(name),
                     version: VersionRangeToPackageVersion(r.Value.Value));
             }
         }
 
-        string IdToNuGetId(string value)
+        /// <summary>
+        /// Convert composer-like name to NugetId-like name.
+        /// </summary>
+        /// <param name="value">Composer requirement name.</param>
+        /// <returns></returns>
+        public static string IdToNuGetId(string value)
         {
             if (string.IsNullOrEmpty(value))
             {
-                return string.Empty;
+                throw new ArgumentException(nameof(value));
             }
 
-            return value.Replace('/', '.');
+            // <vendor>/<name> => <vendor>.<name>
+            // replace vendor separator with dot
+            // '/' is not allows in file names and nuget id's
+            value = value.Replace('/', '.');
+
+            // ids are case insensitive
+            return value.ToLowerInvariant();
         }
 
         string VersionRangeToPackageVersion(string value)
@@ -361,16 +379,23 @@ namespace Peachpie.NET.Sdk.Tools
             // https://getcomposer.org/doc/articles/versions.md
             // https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#floating-versions
 
-            // convert composer version constraint to a floating version:
+            // convert composer version constraint to a floating version,
+            // note, not all the constraints can be converted to a corresponding floating version.
 
-            //*
+            // *
+            if (string.IsNullOrEmpty(value) || value == "*")
+            {
+                return "*";
+            }
+
             //>= 1.0
-            //>= 1.0 < 2.0
-            //>= 1.0 < 1.1 || >= 1.2
+            //>= 1.0 <2.0
+            //>= 1.0 <1.1 || >= 1.2
             //1.0.*
             //^1.2.3
             //~1.2.3
             //1 - 2
+            //1.0.0 - 2.1.0
 
             return value;
         }
