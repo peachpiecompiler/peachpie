@@ -112,25 +112,18 @@ namespace Peachpie.Library.PDO
 
                 case PDO_ATTR.ATTR_AUTOCOMMIT:
                 case PDO_ATTR.ATTR_EMULATE_PREPARES:
-                    GetOrCreateAttributes()[attribute] = value;
+                    GetOrCreateAttributes()[attribute] = value.ToBoolean();
                     return true;
 
                 case PDO_ATTR.ATTR_STRINGIFY_FETCHES:
-                    if (!value && this.Driver.IsStringifyForced)
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        this.Stringify = value;
-                        return true;
-                    }
+                    return Driver.TrySetStringifyFetches(this, value.ToBoolean());
 
                 //strict positif integers
 
                 case PDO_ATTR.ATTR_PREFETCH:
                 case PDO_ATTR.ATTR_TIMEOUT:
-                    GetOrCreateAttributes()[attribute] = value;
+                    // TODO: strict positif integers
+                    GetOrCreateAttributes()[attribute] = value.GetValue().DeepCopy();
                     return true;
 
                 //remaining
@@ -221,7 +214,7 @@ namespace Peachpie.Library.PDO
                     }
 
                     // invalid attribute:
-                    Debug.WriteLine($"PDO_ATTR {attribute.ToString()} is not known.");
+                    Debug.WriteLine($"PDO_ATTR {attribute} is not known.");
                     return false;
             }
 

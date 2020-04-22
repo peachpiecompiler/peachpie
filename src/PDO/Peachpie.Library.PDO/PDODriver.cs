@@ -41,15 +41,6 @@ namespace Peachpie.Library.PDO
         public abstract DbProviderFactory DbFactory { get; }
 
         /// <summary>
-        /// Whether to force <see cref="PDO.PDO_ATTR.ATTR_STRINGIFY_FETCHES"/> to be <c>true</c>.
-        /// </summary>
-        /// <remarks>
-        /// Certain PDO drivers in PHP currently don't support returning the values any other way
-        /// than as strings, no matter the configuration.
-        /// </remarks>
-        public virtual bool IsStringifyForced => false;
-
-        /// <summary>
         /// Builds the connection string.
         /// </summary>
         /// <param name="dsn">The DSN.</param>
@@ -88,6 +79,18 @@ namespace Peachpie.Library.PDO
         /// <param name="name">The name.</param>
         /// <returns></returns>
         public abstract string GetLastInsertId(PDO pdo, string name);
+
+        /// <summary>
+        /// Sets <see cref="PDO.PDO_ATTR.ATTR_STRINGIFY_FETCHES"/> attribute value.
+        /// </summary>
+        /// <param name="pdo"><see cref="PDO"/> object reference.</param>
+        /// <param name="stringify">Whether to stringify fetched values.</param>
+        /// <returns>Value indicating the attribute was set succesfuly.</returns>
+        public virtual bool TrySetStringifyFetches(PDO pdo, bool stringify)
+        {
+            pdo.Stringify = stringify;
+            return true;
+        }
 
         /// <summary>
         /// Tries to set a driver specific attribute value.

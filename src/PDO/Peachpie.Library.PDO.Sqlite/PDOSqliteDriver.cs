@@ -14,11 +14,6 @@ namespace Peachpie.Library.PDO.Sqlite
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
     public class PDOSqliteDriver : PDODriver
     {
-        /// <summary>
-        /// SQLite PDO driver can retrieve values only as strings in PHP.
-        /// </summary>
-        public override bool IsStringifyForced => true;
-
         /// <inheritDoc />
         public override string Name => "sqlite";
 
@@ -45,6 +40,19 @@ namespace Peachpie.Library.PDO.Sqlite
             new SqliteCommand("PRAGMA foreign_keys=OFF", connection).ExecuteNonQuery();
 
             return connection;
+        }
+
+        /// <inheritDoc />
+        public override bool TrySetStringifyFetches(PDO pdo, bool stringify)
+        {
+            // SQLite PDO driver can retrieve values only as strings in PHP.
+            if (stringify)
+            {
+                pdo.Stringify = true;
+                return true;
+            }
+
+            return false;
         }
 
         /// <inheritDoc />
