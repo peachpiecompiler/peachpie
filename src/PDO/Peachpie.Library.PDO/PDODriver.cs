@@ -21,7 +21,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Gets the driver name (used in DSN)
         /// </summary>
-        public string Name { get; }
+        public abstract string Name { get; }
 
         /// <summary>
         /// Gets the client version.
@@ -38,7 +38,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public DbProviderFactory DbFactory { get; }
+        public abstract DbProviderFactory DbFactory { get; }
 
         /// <summary>
         /// Whether to force <see cref="PDO.PDO_ATTR.ATTR_STRINGIFY_FETCHES"/> to be <c>true</c>.
@@ -48,22 +48,6 @@ namespace Peachpie.Library.PDO
         /// than as strings, no matter the configuration.
         /// </remarks>
         public virtual bool IsStringifyForced => false;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDODriver"/> class.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="dbFactory">The database factory object.</param>
-        /// <exception cref="System.ArgumentNullException">
-        /// name
-        /// or
-        /// dbFactory
-        /// </exception>
-        public PDODriver(string name, DbProviderFactory dbFactory)
-        {
-            this.Name = name ?? throw new ArgumentNullException(nameof(name));
-            this.DbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-        }
 
         /// <summary>
         /// Builds the connection string.

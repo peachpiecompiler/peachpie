@@ -31,7 +31,8 @@ namespace Peachpie.Library.PDO
         /// <c>ATTR_STRINGIFY_FETCHES</c> option.
         /// Instructs the ResultResource to convert values to strings.
         /// </summary>
-        private protected bool Stringify { get; private set; } = true;
+        [PhpHidden]
+        public bool Stringify { get; set; } = true;
 
         private protected bool TryGetAttribute(PDO_ATTR attribute, out PhpValue value)
         {

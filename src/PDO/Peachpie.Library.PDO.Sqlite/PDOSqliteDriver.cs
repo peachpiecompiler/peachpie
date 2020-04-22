@@ -5,8 +5,6 @@ using System.Diagnostics;
 using Microsoft.Data.Sqlite;
 using Pchp.Core;
 using Peachpie.Library.PDO.Utilities;
-using ConnectionStringBuilder = Microsoft.Data.Sqlite.SqliteConnectionStringBuilder;
-using Factory = Microsoft.Data.Sqlite.SqliteFactory;
 
 namespace Peachpie.Library.PDO.Sqlite
 {
@@ -21,24 +19,21 @@ namespace Peachpie.Library.PDO.Sqlite
         /// </summary>
         public override bool IsStringifyForced => true;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDOSqliteDriver"/> class.
-        /// </summary>
-        public PDOSqliteDriver() : base("sqlite", Factory.Instance)
-        {
+        /// <inheritDoc />
+        public override string Name => "sqlite";
 
-        }
+        /// <inheritDoc />
+        public override DbProviderFactory DbFactory => Microsoft.Data.Sqlite.SqliteFactory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
-            var csb = new ConnectionStringBuilder();
+            var csb = new SqliteConnectionStringBuilder();
 
             csb.DataSource = dsn.ToString();
             csb.Add("Password", password);
             csb.Add("UserId", user);
 
-            
             return csb.ConnectionString;
         }
 

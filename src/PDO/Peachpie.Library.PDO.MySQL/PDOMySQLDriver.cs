@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using MySql.Data.MySqlClient;
 
 using Pchp.Core;
@@ -13,13 +14,11 @@ namespace Peachpie.Library.PDO.MySQL
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
     public sealed class PDOMySQLDriver : PDODriver
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDOMySQLDriver"/> class.
-        /// </summary>
-        public PDOMySQLDriver() : base("mysql", MySqlClientFactory.Instance)
-        {
+        /// <inheritDoc />
+        public override string Name => "mysql";
 
-        }
+        /// <inheritDoc />
+        public override DbProviderFactory DbFactory => MySqlClientFactory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
