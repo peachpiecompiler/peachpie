@@ -116,6 +116,45 @@ namespace Peachpie.Library.Network
         public const int SOL_TCP = (int)ProtocolType.Tcp;
         public const int SOL_UDP = (int)ProtocolType.Udp;
 
+        public const int SO_FREE = 8;
+        public const int SO_NOSERVER = 16;
+        public const int SO_DEBUG = 1;
+        public const int SO_REUSEADDR = 4;
+        public const int SO_KEEPALIVE = 8;
+        public const int SO_DONTROUTE = 16;
+        public const int SO_LINGER = 128;
+        public const int SO_BROADCAST = 32;
+        public const int SO_OOBINLINE = 256;
+        public const int SO_SNDBUF = 4097;
+        public const int SO_RCVBUF = 4098;
+        public const int SO_SNDLOWAT = 4099;
+        public const int SO_RCVLOWAT = 4100;
+        public const int SO_SNDTIMEO = 4101;
+        public const int SO_RCVTIMEO = 4102;
+        public const int SO_TYPE = 4104;
+        public const int SO_ERROR = 4103;
+
+        public enum SocketOption
+        {
+            FREE = SO_FREE,
+            NOSERVER = SO_NOSERVER,
+            DEBUG = SO_DEBUG,
+            REUSEADDR = SO_REUSEADDR,
+            KEEPALIVE = SO_KEEPALIVE,
+            DONTROUTE = SO_DONTROUTE,
+            LINGER = SO_LINGER,
+            BROADCAST = SO_BROADCAST,
+            OOBINLINE = SO_OOBINLINE,
+            SNDBUF = SO_SNDBUF,
+            RCVBUF = SO_RCVBUF,
+            SNDLOWAT = SO_SNDLOWAT,
+            RCVLOWAT = SO_RCVLOWAT,
+            SNDTIMEO = SO_SNDTIMEO,
+            RCVTIMEO = SO_RCVTIMEO,
+            TYPE = SO_TYPE,
+            ERROR = SO_ERROR,
+        }
+
         #endregion
 
         static void HandleException(Context ctx, SocketResource resource, Exception ex)
