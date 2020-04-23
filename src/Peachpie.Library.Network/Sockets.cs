@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Microsoft.Extensions.ObjectPool;
 using Pchp.Core;
 using Pchp.Core.Resources;
+using Pchp.Library.Streams;
 
 namespace Peachpie.Library.Network
 {
@@ -135,6 +139,16 @@ namespace Peachpie.Library.Network
         public const int SO_TYPE = (int)SocketOptionName.Type;
         public const int SO_ERROR = (int)SocketOptionName.Error;
         public const int TCP_NODELAY = (int)SocketOptionName.NoDelay;
+
+        /// <summary>
+        /// Reading stops at \n or \r.
+        /// </summary>
+        public const int PHP_NORMAL_READ = 1;
+
+        /// <summary>
+        /// (Default) Safe for reading binary data.
+        /// </summary>
+        public const int PHP_BINARY_READ = 2;
 
         #endregion
 
@@ -506,7 +520,58 @@ namespace Peachpie.Library.Network
             }
         }
 
-        //socket_read — Reads a maximum of length bytes from a socket
+        /// <summary>
+        /// Reads a maximum of length bytes from a socket.
+        /// </summary>
+        /// <param name="socket"></param>
+        /// <param name="length"></param>
+        /// <param name="type">Either <see cref="PHP_NORMAL_READ"/> or <see cref="PHP_BINARY_READ"/>.</param>
+        /// <returns></returns>
+        [return: CastToFalse]
+        public static PhpString socket_read(PhpResource socket, int length, int type = PHP_BINARY_READ)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return default; // FALSE
+            }
+
+            if (type == PHP_BINARY_READ)
+            {
+                var pool = ArrayPool<byte>.Shared;
+                var buffer = pool.Rent(length);
+                try
+                {
+                    var received = s.Socket.Receive(buffer, length, SocketFlags.None);
+                    if (received == 0)
+                    {
+                        return PhpString.Empty;
+                    }
+
+                    var result = new byte[received];
+                    Array.Copy(buffer, result, received);
+
+                    //
+                    return new PhpString(result);
+                }
+                catch (SocketException ex)
+                {
+                    HandleException(null, s, ex);
+                }
+                finally
+                {
+                    pool.Return(buffer);
+                }
+            }
+            else if (type == PHP_NORMAL_READ)
+            {
+                throw new NotImplementedException();
+            }
+
+            //
+            return default; // false;
+        }
+
         //socket_recv — Receives data from a connected socket
         //socket_recvfrom — Receives data from a socket whether or not it is connection-oriented
         //socket_recvmsg — Read a message
