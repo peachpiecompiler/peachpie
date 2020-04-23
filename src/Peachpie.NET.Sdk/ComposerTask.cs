@@ -272,6 +272,7 @@ namespace Peachpie.NET.Sdk.Tools
         static readonly Dictionary<string, string> s_knowndeps_to_packageid = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
             {"ext-curl", "Peachpie.Library.Network"},
+            {"ext-sockets", "Peachpie.Library.Network"},
             {"ext-gettext", "Peachpie.Library"},
             {"ext-fileinfo", "Peachpie.Library"},
             {"ext-mbstring", "Peachpie.Library"},
