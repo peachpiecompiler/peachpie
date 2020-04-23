@@ -134,10 +134,11 @@ namespace Peachpie.Library.Network
         public const int SO_TYPE = 4104;
         public const int SO_ERROR = 4103;
 
+        /// <summary>
+        /// Socket option name.
+        /// </summary>
         public enum SocketOption
         {
-            FREE = SO_FREE,
-            NOSERVER = SO_NOSERVER,
             DEBUG = SO_DEBUG,
             REUSEADDR = SO_REUSEADDR,
             KEEPALIVE = SO_KEEPALIVE,
@@ -344,7 +345,50 @@ namespace Peachpie.Library.Network
         }
 
         //socket_export_stream — Export a socket extension resource into a stream that encapsulates a socket
-        //socket_get_option — Gets socket options for the socket
+
+        /// <summary>
+        /// Gets socket options for the socket
+        /// </summary>
+        public static PhpValue socket_get_option(PhpResource socket, int level, SocketOption option, PhpValue option_value)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return false;
+            }
+
+            switch (option)
+            {
+                case SocketOption.LINGER:
+                    {
+                        var linger = s.Socket.LingerState;
+                        return new PhpArray(2)
+                        {
+                            { "l_onoff", linger.Enabled ? 1 : 0 },
+                            { "l_linger", linger.LingerTime },
+                        };
+                    }
+
+                case SocketOption.DEBUG:
+                case SocketOption.REUSEADDR:
+                case SocketOption.KEEPALIVE:
+                case SocketOption.DONTROUTE:
+                case SocketOption.BROADCAST:
+                case SocketOption.OOBINLINE:
+                case SocketOption.SNDBUF:
+                case SocketOption.RCVBUF:
+                case SocketOption.SNDLOWAT:
+                case SocketOption.RCVLOWAT:
+                case SocketOption.SNDTIMEO:
+                case SocketOption.RCVTIMEO:
+                case SocketOption.TYPE:
+                case SocketOption.ERROR:
+                default:
+                    PhpException.ArgumentValueNotSupported(nameof(option), option);
+                    return false;
+            }
+        }
+
         //socket_getopt — Alias of socket_get_option
         //socket_getpeername — Queries the remote side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type
 
@@ -455,8 +499,56 @@ namespace Peachpie.Library.Network
         //socket_sendto — Sends a message to a socket, whether it is connected or not
         //socket_set_block — Sets blocking mode on a socket resource
         //socket_set_nonblock — Sets nonblocking mode for file descriptor fd
-        //socket_set_option — Sets socket options for the socket
-        //socket_setopt — Alias of socket_set_option
+
+        /// <summary>
+        /// Sets socket options for the socket.
+        /// </summary>
+        public static bool socket_set_option(PhpResource socket, int level, SocketOption option, PhpValue option_value)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return false;
+            }
+
+            PhpArray arr;
+
+            switch (option)
+            {
+                case SocketOption.LINGER:
+                    if (option_value.IsPhpArray(out arr))
+                    {
+                        s.Socket.LingerState = new LingerOption((int)arr["l_onoff"] != 0, (int)arr["l_linger"]);
+                        return true;
+                    }
+                    return false;
+
+                case SocketOption.DEBUG:
+                case SocketOption.REUSEADDR:
+                case SocketOption.KEEPALIVE:
+                case SocketOption.DONTROUTE:
+                case SocketOption.BROADCAST:
+                case SocketOption.OOBINLINE:
+                case SocketOption.SNDBUF:
+                case SocketOption.RCVBUF:
+                case SocketOption.SNDLOWAT:
+                case SocketOption.RCVLOWAT:
+                case SocketOption.SNDTIMEO:
+                case SocketOption.RCVTIMEO:
+                case SocketOption.TYPE:
+                case SocketOption.ERROR:
+                default:
+                    PhpException.ArgumentValueNotSupported(nameof(option), option);
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Alias of <see cref="socket_set_option"/>.
+        /// </summary>
+        public static bool socket_setopt(PhpResource socket, int level, SocketOption option, PhpValue option_value)
+            => socket_set_option(socket, level, option, option_value);
+
         //socket_shutdown — Shuts down a socket for receiving, sending, or both
 
         //socket_strerror — Return a string describing a socket error
