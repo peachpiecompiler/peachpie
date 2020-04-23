@@ -17,7 +17,7 @@ namespace Pchp.Library.Streams
 	/// </summary>
 	/// <threadsafety static="true"/>
     [PhpExtension("standard")]
-	public static class StreamSocket
+    public static class StreamSocket
     {
         #region Enums
 
@@ -104,6 +104,48 @@ namespace Pchp.Library.Streams
         public const int STREAM_OOB = (int)SendReceiveOptions.OutOfBand;
         public const int STREAM_PEEK = (int)SendReceiveOptions.Peek;
 
+        [Flags]
+        public enum CryptoMethod
+        {
+            ANY_CLIENT = STREAM_CRYPTO_METHOD_ANY_CLIENT,
+            SSLv2_CLIENT = STREAM_CRYPTO_METHOD_SSLv2_CLIENT,
+            SSLv3_CLIENT = STREAM_CRYPTO_METHOD_SSLv3_CLIENT,
+            SSLv23_CLIENT = STREAM_CRYPTO_METHOD_SSLv23_CLIENT,
+            TLS_CLIENT = STREAM_CRYPTO_METHOD_TLS_CLIENT,
+            TLSv1_0_CLIENT = STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT,
+            TLSv1_1_CLIENT = STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT,
+            TLSv1_2_CLIENT = STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT,
+            TLSv1_3_CLIENT = STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT,
+            ANY_SERVER = STREAM_CRYPTO_METHOD_ANY_SERVER,
+            SSLv2_SERVER = STREAM_CRYPTO_METHOD_SSLv2_SERVER,
+            SSLv3_SERVER = STREAM_CRYPTO_METHOD_SSLv3_SERVER,
+            SSLv23_SERVER = STREAM_CRYPTO_METHOD_SSLv23_SERVER,
+            TLS_SERVER = STREAM_CRYPTO_METHOD_TLS_SERVER,
+            TLSv1_0_SERVER = STREAM_CRYPTO_METHOD_TLSv1_0_SERVER,
+            TLSv1_1_SERVER = STREAM_CRYPTO_METHOD_TLSv1_1_SERVER,
+            TLSv1_2_SERVER = STREAM_CRYPTO_METHOD_TLSv1_2_SERVER,
+            TLSv1_3_SERVER = STREAM_CRYPTO_METHOD_TLSv1_3_SERVER,
+        }
+
+        public const int STREAM_CRYPTO_METHOD_ANY_CLIENT = 127;
+        public const int STREAM_CRYPTO_METHOD_SSLv2_CLIENT = 3;
+        public const int STREAM_CRYPTO_METHOD_SSLv3_CLIENT = 5;
+        public const int STREAM_CRYPTO_METHOD_SSLv23_CLIENT = 57;
+        public const int STREAM_CRYPTO_METHOD_TLS_CLIENT = 121;
+        public const int STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT = 9;
+        public const int STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT = 17;
+        public const int STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT = 33;
+        public const int STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT = 65;
+        public const int STREAM_CRYPTO_METHOD_ANY_SERVER = 126;
+        public const int STREAM_CRYPTO_METHOD_SSLv2_SERVER = 2;
+        public const int STREAM_CRYPTO_METHOD_SSLv3_SERVER = 4;
+        public const int STREAM_CRYPTO_METHOD_SSLv23_SERVER = 120;
+        public const int STREAM_CRYPTO_METHOD_TLS_SERVER = 120;
+        public const int STREAM_CRYPTO_METHOD_TLSv1_0_SERVER = 8;
+        public const int STREAM_CRYPTO_METHOD_TLSv1_1_SERVER = 16;
+        public const int STREAM_CRYPTO_METHOD_TLSv1_2_SERVER = 32;
+        public const int STREAM_CRYPTO_METHOD_TLSv1_3_SERVER = 64;
+
         #endregion
 
         #region TODO: stream_get_transports, stream_socket_get_name
@@ -126,7 +168,7 @@ namespace Pchp.Library.Streams
 
         #endregion
 
-        #region TODO: stream_socket_client
+        #region stream_socket_client
 
         //private static void SplitSocketAddressPort(ref string socket, out int port)
         //{
@@ -248,8 +290,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static bool stream_socket_accept(Context ctx, PhpResource serverSocket)
         {
-            string peerName;
-            return stream_socket_accept(serverSocket, ctx.Configuration.Core.DefaultSocketTimeout, out peerName);
+            return stream_socket_accept(serverSocket, ctx.Configuration.Core.DefaultSocketTimeout, out _);
         }
 
         /// <summary>
@@ -322,6 +363,61 @@ namespace Pchp.Library.Streams
 
         #endregion
 
+        #region TODO: stream_socket_enable_crypto
+
+        ///// <summary>
+        ///// Turns encryption on/off on an already connected socket
+        ///// </summary>
+        ///// <param name="stream">The stream resource.</param>
+        ///// <param name="enable">Enable/disable cryptography on the stream.</param>
+        ///// <returns>Returns TRUE on success, FALSE if negotiation has failed or 0 if there isn't enough data and you should try again (only for non-blocking sockets).</returns>
+        //public static PhpValue/*int|bool*/ stream_socket_enable_crypto(PhpResource stream, bool enable)
+        //{
+        //    var s = PhpStream.GetValid(stream);
+        //    if (s != null)
+        //    {
+        //        // obtain crypto_method option
+        //        var crypto_method = default(CryptoMethod);
+
+        //        if (enable)
+        //        {
+        //            var ssl_options = s.Context.GetOptions("ssl");
+        //            if (ssl_options != null && ssl_options.TryGetValue("crypto_method", out var crypto_method_value))
+        //            {
+        //                crypto_method = (CryptoMethod)crypto_method_value.ToLong();
+        //            }
+        //            else
+        //            {
+        //                PhpException.InvalidArgument(nameof(crypto_method)); // 'crypto_method' must be specified when enabling encryption
+        //                return false;
+        //            }
+        //        }
+
+        //        return stream_socket_enable_crypto(s, enable, crypto_method, null);
+        //    }
+
+        //    //
+        //    return false;
+        //}
+
+        ///// <summary>
+        ///// Turns encryption on/off on an already connected socket
+        ///// </summary>
+        ///// <param name="stream">The stream resource.</param>
+        ///// <param name="enable">Enable/disable cryptography on the stream.</param>
+        ///// <param name="crypto_method">Encryption on the stream. If omitted, the <c>crypto_method</c> context option on the stream's SSL context will be used instead.</param>
+        ///// <param name="session_stream">Seed the stream with settings from session_stream.</param>
+        ///// <returns>Returns TRUE on success, FALSE if negotiation has failed or 0 if there isn't enough data and you should try again (only for non-blocking sockets).</returns>
+        //public static PhpValue/*int|bool*/ stream_socket_enable_crypto(PhpResource stream, bool enable, CryptoMethod crypto_method = default, PhpResource session_stream = null)
+        //{
+        //    var s = PhpStream.GetValid(stream);
+        //    if (s == null) return false;
+
+        //    throw new NotImplementedException();
+        //}
+
+        #endregion
+
         #region Connect
 
         /// <summary>
@@ -334,7 +430,7 @@ namespace Pchp.Library.Streams
 
             if (remoteSocket == null)
             {
-                PhpException.ArgumentNull("remoteSocket");
+                PhpException.ArgumentNull(nameof(remoteSocket));
                 return null;
             }
 
