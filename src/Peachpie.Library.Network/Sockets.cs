@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -94,11 +95,11 @@ namespace Peachpie.Library.Network
             INET6 = AF_INET6,
         }
 
-        public const int SOCK_STREAM = 1;
-        public const int SOCK_DGRAM = 2;
-        public const int SOCK_RAW = 3;
-        public const int SOCK_SEQPACKET = 5;
-        public const int SOCK_RDM = 4;
+        public const int SOCK_STREAM = (int)SocketType.Stream; // 1
+        public const int SOCK_DGRAM = (int)SocketType.Dgram; // 2
+        public const int SOCK_RAW = (int)SocketType.Raw; // 3
+        public const int SOCK_RDM = (int)SocketType.Rdm; // 4
+        public const int SOCK_SEQPACKET = (int)SocketType.Seqpacket; // 5
 
         /// <summary>
         /// Socket underlying communication type.
@@ -112,49 +113,28 @@ namespace Peachpie.Library.Network
             RDM = SOCK_RDM,
         }
 
-        public const int SOL_SOCKET = 65535;
-        public const int SOL_TCP = (int)ProtocolType.Tcp;
-        public const int SOL_UDP = (int)ProtocolType.Udp;
+        public const int SOL_SOCKET = (int)SocketOptionLevel.Socket; // 65535
+        public const int SOL_TCP = (int)SocketOptionLevel.Tcp; // 6
+        public const int SOL_UDP = (int)SocketOptionLevel.Udp; // 17
 
         public const int SO_FREE = 8;
         public const int SO_NOSERVER = 16;
-        public const int SO_DEBUG = 1;
-        public const int SO_REUSEADDR = 4;
-        public const int SO_KEEPALIVE = 8;
-        public const int SO_DONTROUTE = 16;
-        public const int SO_LINGER = 128;
-        public const int SO_BROADCAST = 32;
-        public const int SO_OOBINLINE = 256;
-        public const int SO_SNDBUF = 4097;
-        public const int SO_RCVBUF = 4098;
-        public const int SO_SNDLOWAT = 4099;
-        public const int SO_RCVLOWAT = 4100;
-        public const int SO_SNDTIMEO = 4101;
-        public const int SO_RCVTIMEO = 4102;
-        public const int SO_TYPE = 4104;
-        public const int SO_ERROR = 4103;
-
-        /// <summary>
-        /// Socket option name.
-        /// </summary>
-        public enum SocketOption
-        {
-            DEBUG = SO_DEBUG,
-            REUSEADDR = SO_REUSEADDR,
-            KEEPALIVE = SO_KEEPALIVE,
-            DONTROUTE = SO_DONTROUTE,
-            LINGER = SO_LINGER,
-            BROADCAST = SO_BROADCAST,
-            OOBINLINE = SO_OOBINLINE,
-            SNDBUF = SO_SNDBUF,
-            RCVBUF = SO_RCVBUF,
-            SNDLOWAT = SO_SNDLOWAT,
-            RCVLOWAT = SO_RCVLOWAT,
-            SNDTIMEO = SO_SNDTIMEO,
-            RCVTIMEO = SO_RCVTIMEO,
-            TYPE = SO_TYPE,
-            ERROR = SO_ERROR,
-        }
+        public const int SO_DEBUG = (int)SocketOptionName.Debug; // 1
+        public const int SO_REUSEADDR = (int)SocketOptionName.ReuseAddress; // 4
+        public const int SO_KEEPALIVE = (int)SocketOptionName.KeepAlive; // 8
+        public const int SO_DONTROUTE = (int)SocketOptionName.DontRoute; // 16
+        public const int SO_LINGER = (int)SocketOptionName.Linger; // 128
+        public const int SO_BROADCAST = (int)SocketOptionName.Broadcast; // 32
+        public const int SO_OOBINLINE = (int)SocketOptionName.OutOfBandInline; // 256
+        public const int SO_SNDBUF = (int)SocketOptionName.SendBuffer;
+        public const int SO_RCVBUF = (int)SocketOptionName.ReceiveBuffer;
+        public const int SO_SNDLOWAT = (int)SocketOptionName.SendLowWater;
+        public const int SO_RCVLOWAT = (int)SocketOptionName.ReceiveLowWater;
+        public const int SO_SNDTIMEO = (int)SocketOptionName.SendTimeout;
+        public const int SO_RCVTIMEO = (int)SocketOptionName.ReceiveTimeout;
+        public const int SO_TYPE = (int)SocketOptionName.Type;
+        public const int SO_ERROR = (int)SocketOptionName.Error;
+        public const int TCP_NODELAY = (int)SocketOptionName.NoDelay;
 
         #endregion
 
@@ -349,7 +329,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Gets socket options for the socket
         /// </summary>
-        public static PhpValue socket_get_option(PhpResource socket, int level, SocketOption option, PhpValue option_value)
+        public static PhpValue socket_get_option(PhpResource socket, SocketOptionLevel level, SocketOptionName option, PhpValue option_value)
         {
             var s = SocketResource.GetValid(socket);
             if (s == null)
@@ -359,7 +339,7 @@ namespace Peachpie.Library.Network
 
             switch (option)
             {
-                case SocketOption.LINGER:
+                case SocketOptionName.Linger:
                     {
                         var linger = s.Socket.LingerState;
                         return new PhpArray(2)
@@ -369,24 +349,61 @@ namespace Peachpie.Library.Network
                         };
                     }
 
-                case SocketOption.DEBUG:
-                case SocketOption.REUSEADDR:
-                case SocketOption.KEEPALIVE:
-                case SocketOption.DONTROUTE:
-                case SocketOption.BROADCAST:
-                case SocketOption.OOBINLINE:
-                case SocketOption.SNDBUF:
-                case SocketOption.RCVBUF:
-                case SocketOption.SNDLOWAT:
-                case SocketOption.RCVLOWAT:
-                case SocketOption.SNDTIMEO:
-                case SocketOption.RCVTIMEO:
-                case SocketOption.TYPE:
-                case SocketOption.ERROR:
+                case SocketOptionName.ReceiveTimeout:
+                    return new PhpArray(2)
+                    {
+                        { "sec",  s.Socket.ReceiveTimeout / 1000 },
+                        { "usec", (s.Socket.ReceiveTimeout % 1000) * 1000 }
+                    };
+
+                case SocketOptionName.SendTimeout:
+                    return new PhpArray(2)
+                    {
+                        { "sec",  s.Socket.SendTimeout / 1000 },
+                        { "usec", (s.Socket.SendTimeout % 1000) * 1000 }
+                    };
+
+                //case SocketOptionName.NODELAY:
+                //    return s.Socket.NoDelay ? 1 : 0;
+
+
+                case SocketOptionName.Type:
+                    Debug.Assert((int)SocketType.Stream == SOCK_STREAM);
+                    Debug.Assert((int)SocketType.Dgram == SOCK_DGRAM);
+                    // SocketType enum corresponds to SOCK_ constants
+                    return (int)s.Socket.SocketType;
+
+                case SocketOptionName.Error:
+                case SocketOptionName.Debug:
+                case SocketOptionName.ReuseAddress:
+                case SocketOptionName.KeepAlive:
+                case SocketOptionName.DontRoute:
+                case SocketOptionName.Broadcast:
+                case SocketOptionName.OutOfBandInline:
+                case SocketOptionName.SendBuffer:
+                case SocketOptionName.ReceiveBuffer:
+                case SocketOptionName.SendLowWater:
+                case SocketOptionName.ReceiveLowWater:
                 default:
-                    PhpException.ArgumentValueNotSupported(nameof(option), option);
-                    return false;
+                    try
+                    {
+                        var value = s.Socket.GetSocketOption(level, option);
+                        if (value is int ivalue)
+                        {
+                            return ivalue;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        HandleException(null, s, ex);
+                        return false;
+                    }
+                    break;
             }
+
+            //
+            PhpException.ArgumentValueNotSupported(nameof(option), option);
+            return false;
         }
 
         //socket_getopt — Alias of socket_get_option
@@ -503,7 +520,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Sets socket options for the socket.
         /// </summary>
-        public static bool socket_set_option(PhpResource socket, int level, SocketOption option, PhpValue option_value)
+        public static bool socket_set_option(PhpResource socket, SocketOptionLevel level, SocketOptionName option, PhpValue option_value)
         {
             var s = SocketResource.GetValid(socket);
             if (s == null)
@@ -515,7 +532,7 @@ namespace Peachpie.Library.Network
 
             switch (option)
             {
-                case SocketOption.LINGER:
+                case SocketOptionName.Linger:
                     if (option_value.IsPhpArray(out arr))
                     {
                         s.Socket.LingerState = new LingerOption((int)arr["l_onoff"] != 0, (int)arr["l_linger"]);
@@ -523,20 +540,40 @@ namespace Peachpie.Library.Network
                     }
                     return false;
 
-                case SocketOption.DEBUG:
-                case SocketOption.REUSEADDR:
-                case SocketOption.KEEPALIVE:
-                case SocketOption.DONTROUTE:
-                case SocketOption.BROADCAST:
-                case SocketOption.OOBINLINE:
-                case SocketOption.SNDBUF:
-                case SocketOption.RCVBUF:
-                case SocketOption.SNDLOWAT:
-                case SocketOption.RCVLOWAT:
-                case SocketOption.SNDTIMEO:
-                case SocketOption.RCVTIMEO:
-                case SocketOption.TYPE:
-                case SocketOption.ERROR:
+                case SocketOptionName.SendTimeout:
+                case SocketOptionName.ReceiveTimeout:
+                    if (option_value.IsPhpArray(out arr))
+                    {
+                        var sec = (int)arr["sec"];
+                        var msec = (int)arr["usec"] / 1000;
+
+                        // in ms, 0 and -1 indicates infinite
+                        var ms = (sec < 0) ? 0 : (sec * 1000 + msec);
+                        if (option == SocketOptionName.ReceiveTimeout)
+                        {
+                            s.Socket.ReceiveTimeout = ms;
+                        }
+                        else if (option == SocketOptionName.SendTimeout)
+                        {
+                            s.Socket.SendTimeout = ms;
+                        }
+                        return true;
+                    }
+                    return false;
+
+                // case SocketOptionName.ERROR: // cannot be set
+                // case SocketOptionName.TYPE: // cannot be set
+
+                case SocketOptionName.Debug:
+                case SocketOptionName.ReuseAddress:
+                case SocketOptionName.KeepAlive:
+                case SocketOptionName.DontRoute:
+                case SocketOptionName.Broadcast:
+                case SocketOptionName.OutOfBandInline:
+                case SocketOptionName.SendBuffer:
+                case SocketOptionName.ReceiveBuffer:
+                case SocketOptionName.SendLowWater:
+                case SocketOptionName.ReceiveLowWater:
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(option), option);
                     return false;
@@ -546,7 +583,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Alias of <see cref="socket_set_option"/>.
         /// </summary>
-        public static bool socket_setopt(PhpResource socket, int level, SocketOption option, PhpValue option_value)
+        public static bool socket_setopt(PhpResource socket, SocketOptionLevel level, SocketOptionName option, PhpValue option_value)
             => socket_set_option(socket, level, option, option_value);
 
         //socket_shutdown — Shuts down a socket for receiving, sending, or both
