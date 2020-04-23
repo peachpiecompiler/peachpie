@@ -322,7 +322,30 @@ namespace Peachpie.Library.Network
             return false;
         }
 
-        //socket_create_listen — Opens a socket on port to accept connections
+        /// <summary>
+        /// Opens a socket on port to accept connections.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpResource socket_create_listen(int port, int backlog = 128)
+        {
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            try
+            {
+                socket.Bind(new IPEndPoint(IPAddress.Any, port));
+                socket.Listen(backlog);
+
+                return new SocketResource(socket);
+            }
+            catch (SocketException ex)
+            {
+                HandleException(null, null, ex);
+            }
+
+            //
+            return null; // FALSE
+        }
+
         //socket_create_pair — Creates a pair of indistinguishable sockets and stores them in an array
 
         /// <summary>
