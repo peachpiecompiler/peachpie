@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -514,7 +515,6 @@ namespace Peachpie.Library.Network
             }
         }
 
-
         //socket_import_stream — Import a stream
 
         /// <summary>
@@ -542,7 +542,6 @@ namespace Peachpie.Library.Network
             //
             return (int)SocketError.Success;
         }
-
 
         /// <summary>
         /// Listens for a connection on a socket.
@@ -634,7 +633,19 @@ namespace Peachpie.Library.Network
         //socket_recv — Receives data from a connected socket
         //socket_recvfrom — Receives data from a socket whether or not it is connection-oriented
         //socket_recvmsg — Read a message
-        //socket_select — Runs the select() system call on the given arrays of sockets with a specified timeout
+
+        ///// <summary>
+        ///// Runs the select() system call on the given arrays of sockets with a specified timeout.
+        ///// </summary>
+        //public static int socket_select(ref PhpArray read, ref PhpArray write, ref PhpArray except, int tv_sec, int tv_usec = 0)
+        //{
+        //    int micro = (tv_sec >= 0 || tv_usec > 0) ? (tv_sec * 1_000_000 + tv_usec) : -1;
+
+            
+            
+        //    throw new NotImplementedException();
+        //}
+
         //socket_send — Sends data to a connected socket
         //socket_sendmsg — Send a message
         //socket_sendto — Sends a message to a socket, whether it is connected or not
