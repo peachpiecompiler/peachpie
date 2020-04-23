@@ -652,7 +652,38 @@ namespace Peachpie.Library.Network
         public static bool socket_setopt(PhpResource socket, SocketOptionLevel level, SocketOptionName option, PhpValue option_value)
             => socket_set_option(socket, level, option, option_value);
 
-        //socket_shutdown — Shuts down a socket for receiving, sending, or both
+        /// <summary>
+        /// Shuts down a socket for receiving, sending, or both.
+        /// </summary>
+        /// <param name="socket"></param>
+        /// <param name="how">
+        /// 0	Shutdown socket reading<br/>
+        /// 1	Shutdown socket writing<br/>
+        /// 2	Shutdown socket reading and writing<br/>
+        /// </param>
+        public static bool socket_shutdown(PhpResource socket, SocketShutdown how = SocketShutdown.Both)
+        {
+            Debug.Assert((int)SocketShutdown.Receive == 0);
+            Debug.Assert((int)SocketShutdown.Send == 1);
+            Debug.Assert((int)SocketShutdown.Both == 2);
+
+            var s = SocketResource.GetValid(socket);
+            if (s != null)
+            {
+                try
+                {
+                    s.Socket.Shutdown(how);
+                    return true;
+                }
+                catch (SocketException ex)
+                {
+                    HandleException(null, s, ex);
+                }
+            }
+
+            //
+            return false;
+        }
 
         //socket_strerror — Return a string describing a socket error
         public static string socket_strerror(SocketError errno)
