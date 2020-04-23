@@ -135,12 +135,35 @@ namespace Peachpie.Library.Network
             }
         }
 
+        static EndPoint BindEndPoint(AddressFamily af, string address, int port = 0)
+        {
+            switch (af)
+            {
+                case AddressFamily.InterNetwork:
+                case AddressFamily.InterNetworkV6:
+                    // address is IP address
+                    // port is used
+                    if (IPAddress.TryParse(address, out var ipaddress))
+                    {
+                        return new IPEndPoint(ipaddress, port);
+                    }
+
+                    // TODO: warning
+
+                    return null;
+
+                default:
+                    PhpException.ArgumentValueNotSupported(nameof(s.Socket.AddressFamily), s.Socket.AddressFamily);
+                    return null;
+            }
+        }
+
         /// <summary>
         /// Accepts a connection on a socket.
         /// </summary>
         /// <returns>Returns a new socket resource on success, or FALSE on error.</returns>
         [return: CastToFalse]
-        public static PhpResource socket_accept(PhpResource socket )
+        public static PhpResource socket_accept(PhpResource socket)
         {
             var s = SocketResource.GetValid(socket);
             if (s == null)
@@ -185,32 +208,22 @@ namespace Peachpie.Library.Network
                 return false;
             }
 
-            switch (s.Socket.AddressFamily)
+            var endpoint = BindEndPoint(s.Socket.AddressFamily, address, port);
+            if (endpoint != null)
             {
-                case AddressFamily.InterNetwork:
-                case AddressFamily.InterNetworkV6:
-                    // address is IP address
-                    // port is used
-                    if (IPAddress.TryParse(address, out var ipaddress))
-                    {
-                        var endpoint = new IPEndPoint(ipaddress, port);
-                        try
-                        {
-                            s.Socket.Bind(endpoint);
-                            return true;
-                        }
-                        catch (SocketException ex)
-                        {
-                            HandleException(null, s, ex);
-                        }
-                    }
-
-                    return false;
-
-                default:
-                    PhpException.ArgumentValueNotSupported(nameof(s.Socket.AddressFamily), s.Socket.AddressFamily);
-                    return false;
+                try
+                {
+                    s.Socket.Bind(endpoint);
+                    return true;
+                }
+                catch (SocketException ex)
+                {
+                    HandleException(null, s, ex);
+                }
             }
+
+            //
+            return false;
         }
 
         //socket_clear_error — Clears the error on the socket or the last error code
@@ -224,7 +237,37 @@ namespace Peachpie.Library.Network
         }
 
         //socket_cmsg_space — Calculate message buffer size
-        //socket_connect — Initiates a connection on a socket
+
+        /// <summary>
+        /// Initiates a connection on a socket.
+        /// </summary>
+        public static bool socket_connect(PhpResource socket, string address, int port = 0)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return false;
+            }
+
+            // NOT: address cannot be a host name, otherwise we would resolve it here
+
+            var endpoint = BindEndPoint(s.Socket.AddressFamily, address, port);
+            if (endpoint != null)
+            {
+                try
+                {
+                    s.Socket.Connect(endpoint);
+                    return true;
+                }
+                catch (SocketException ex)
+                {
+                    HandleException(null, s, ex);
+                }
+            }
+
+            return false;
+        }
+
         //socket_create_listen — Opens a socket on port to accept connections
         //socket_create_pair — Creates a pair of indistinguishable sockets and stores them in an array
 
