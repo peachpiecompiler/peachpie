@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Library.Streams;
@@ -175,6 +176,94 @@ namespace Pchp.Library
         public static bool socket_set_timeout(PhpResource stream, int seconds, int microseconds = 0)
         {
             return PhpStreams.stream_set_timeout(stream, seconds, microseconds);
+        }
+
+        #endregion
+
+        #region getprotobyname, getprotobynumber
+
+        static IEnumerable<(string name, ProtocolType type)> EnumerateProtocolTypes()
+        {
+            yield return ("ip", ProtocolType.IP);
+            yield return ("icmp", ProtocolType.Icmp);
+            yield return ("igmp", ProtocolType.Igmp);
+            yield return ("ggp", ProtocolType.Ggp);
+            yield return ("tcp", ProtocolType.Tcp);
+            //yield return ("egp", ProtocolType.); // 8
+            yield return ("pup", ProtocolType.Pup);
+            yield return ("udp", ProtocolType.Udp);
+            //yield return ("hmp", ProtocolType.); // 20
+            yield return ("xns-idp", ProtocolType.Idp);
+            //yield return ("rdp", ProtocolType.); // 27
+            yield return ("ipv6", ProtocolType.IPv6);
+            yield return ("ipv6-route", ProtocolType.IPv6RoutingHeader);
+            yield return ("ipv6-frag", ProtocolType.IPv6FragmentHeader);
+            yield return ("esp", ProtocolType.IPSecEncapsulatingSecurityPayload);
+            yield return ("ah", ProtocolType.IPSecAuthenticationHeader);
+            yield return ("ipv6-icmp", ProtocolType.IcmpV6);
+            yield return ("ipv6-nonxt", ProtocolType.IPv6NoNextHeader);
+            yield return ("ipv6-opts", ProtocolType.IPv6DestinationOptions);
+            //yield return ("rvd", ProtocolType.); // 66
+            //yield return ("nd", ProtocolType.ND);
+            yield return ("ipx", ProtocolType.Ipx);
+        }
+
+        static readonly Lazy<Dictionary<string, ProtocolType>> s_protoByName = new Lazy<Dictionary<string, ProtocolType>>(() =>
+        {
+            var map = new Dictionary<string, ProtocolType>(19, StringComparer.OrdinalIgnoreCase);
+            
+            foreach (var value in EnumerateProtocolTypes())
+            {
+                map[value.name] = value.type;
+            }
+
+            return map;
+        });
+
+        static readonly Lazy<Dictionary<ProtocolType, string>> s_protoByNumber = new Lazy<Dictionary<ProtocolType, string>>(() =>
+        {
+            var map = new Dictionary<ProtocolType, string>(19);
+
+            foreach (var value in EnumerateProtocolTypes())
+            {
+                map[value.type] = value.name;
+            }
+
+            return map;
+        });
+
+        /// <summary>
+        /// Get protocol number associated with protocol name.
+        /// </summary>
+        /// <remarks>Numbers correspond to <see cref="System.Net.Sockets.ProtocolType"/>.</remarks>
+        [return: CastToFalse]
+        public static int getprotobyname(string name)
+        {
+            if (s_protoByName.Value.TryGetValue(name, out var type))
+            {
+                return (int)type;
+            }
+            else
+            {
+                return -1; // FALSE
+            }
+        }
+
+        /// <summary>
+        /// Get protocol number associated with protocol name.
+        /// </summary>
+        /// <remarks>Numbers correspond to <see cref="System.Net.Sockets.ProtocolType"/>.</remarks>
+        [return: CastToFalse]
+        public static string getprotobynumber(ProtocolType type)
+        {
+            if (s_protoByNumber.Value.TryGetValue(type, out var name))
+            {
+                return name;
+            }
+            else
+            {
+                return null; // FALSE
+            }
         }
 
         #endregion

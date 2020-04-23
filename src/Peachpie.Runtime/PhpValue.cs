@@ -447,7 +447,7 @@ namespace Pchp.Core
         public object AsObject() => TypeCode switch
         {
             PhpTypeCode.Object => Object,
-            PhpTypeCode.Alias => Alias.Value.Object,
+            PhpTypeCode.Alias => Alias.Value.AsObject(),
             _ => null,
         };
 
