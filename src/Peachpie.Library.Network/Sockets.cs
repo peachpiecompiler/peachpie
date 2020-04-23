@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Pchp.Core;
@@ -106,7 +107,17 @@ namespace Peachpie.Library.Network
             RDM = SOCK_RDM,
         }
 
+        public const int SOL_SOCKET = 65535;
+        public const int SOL_TCP = (int)ProtocolType.Tcp;
+        public const int SOL_UDP = (int)ProtocolType.Udp;
+
         #endregion
+
+        static void HandleException(SocketResource resource, Exception ex)
+        {
+            PhpException.Throw(PhpError.Warning, ex.Message);
+            // TODO: remember last error
+        }
 
         //socket_accept — Accepts a connection on a socket
 
@@ -114,7 +125,50 @@ namespace Peachpie.Library.Network
         //socket_addrinfo_connect — Create and connect to a socket from a given addrinfo
         //socket_addrinfo_explain — Get information about addrinfo
         //socket_addrinfo_lookup — Get array with contents of getaddrinfo about the given hostname
-        //socket_bind — Binds a name to a socket
+
+        /// <summary>
+        /// Binds a name to a socket.
+        /// </summary>
+        /// <param name="socket"></param>
+        /// <param name="address"></param>
+        /// <param name="port">The port parameter is only used when binding an <see cref="AF_INET"/> socket, and designates the port on which to listen for connections.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool socket_bind(PhpResource socket, string address, int port = 0)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return false;
+            }
+
+            switch (s.Socket.AddressFamily)
+            {
+                case AddressFamily.InterNetwork:
+                case AddressFamily.InterNetworkV6:
+                    // address is IP address
+                    // port is used
+                    if (IPAddress.TryParse(address, out var ipaddress))
+                    {
+                        var endpoint = new IPEndPoint(ipaddress, port);
+                        try
+                        {
+                            s.Socket.Bind(endpoint);
+                            return true;
+                        }
+                        catch (SocketException ex)
+                        {
+                            HandleException(s, ex);
+                        }
+                    }
+
+                    return false;
+
+                default:
+                    PhpException.ArgumentValueNotSupported(nameof(s.Socket.AddressFamily), s.Socket.AddressFamily);
+                    return false;
+            }
+        }
+
         //socket_clear_error — Clears the error on the socket or the last error code
 
         /// <summary>
