@@ -584,17 +584,113 @@ namespace Peachpie.Library.Network
         //socket_recvfrom — Receives data from a socket whether or not it is connection-oriented
         //socket_recvmsg — Read a message
 
-        ///// <summary>
-        ///// Runs the select() system call on the given arrays of sockets with a specified timeout.
-        ///// </summary>
-        //public static int socket_select(ref PhpArray read, ref PhpArray write, ref PhpArray except, int tv_sec, int tv_usec = 0)
-        //{
-        //    int micro = (tv_sec >= 0 || tv_usec > 0) ? (tv_sec * 1_000_000 + tv_usec) : -1;
+        /// <summary>
+        /// Selects values of type <see cref="SocketResource"/> and adds them to newly created list.
+        /// </summary>
+        /// <returns>Whether the array was valid.</returns>
+        static int ToSocketListOrNull(PhpArray arr, out List<Socket> list)
+        {
+            if (arr == null || arr.Count == 0)
+            {
+                list = null;
+                return 0;
+            }
 
-            
-            
-        //    throw new NotImplementedException();
-        //}
+            list = new List<Socket>(arr.Count);
+
+            var enumerator = arr.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                if (enumerator.CurrentValue.AsObject() is SocketResource s)
+                {
+                    // TODO: check IsValid ?
+                    list.Add(s.Socket);
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+
+            return list.Count;
+        }
+
+        /// <summary>
+        /// Filters out socket resources from <paramref name="original"/> that are contained in <paramref name="list"/>.
+        /// </summary>
+        static PhpArray SocketListToPhpArray(List<Socket> list, PhpArray original)
+        {
+            if (original == null)
+            {
+                // keep NULL if user provided NULL
+                return null;
+            }
+
+            var result = new PhpArray();
+
+            if (list != null && list.Count != 0)
+            {
+                var enumerator = original.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.CurrentValue.AsObject() is SocketResource s)
+                    {
+                        if (list.Contains(s.Socket))
+                        {
+                            result.Add(PhpValue.FromClass(s));
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Runs the select() system call on the given arrays of sockets with a specified timeout.
+        /// </summary>
+        [return: CastToFalse]
+        public static int socket_select(ref PhpArray read, ref PhpArray write, ref PhpArray except, int tv_sec, int tv_usec = 0)
+        {
+            var nread = ToSocketListOrNull(read, out var checkread);
+            var nwrite = ToSocketListOrNull(write, out var checkwrite);
+            var nerr = ToSocketListOrNull(except, out var checkerr);
+
+            if (nread < 0 || nwrite < 0 || nerr < 0)
+            {
+                PhpException.InvalidArgument(nread < 0 ? nameof(read) : nwrite < 0 ? nameof(write) : nameof(except));
+                return -1;
+            }
+
+            if (nread + nwrite + nerr == 0)
+            {
+                PhpException.Throw(PhpError.Warning, "No resources provided.");
+                return -1;
+            }
+
+            int micro = (tv_sec >= 0 || tv_usec > 0) ? (tv_sec * 1_000_000 + tv_usec) : -1;
+
+            try
+            {
+                Socket.Select(checkread, checkwrite, checkerr, micro);
+            }
+            catch (SocketException ex)
+            {
+                HandleException(null, null, ex);
+                return -1; // FALSE
+            }
+
+            // 
+            read = SocketListToPhpArray(checkread, read);
+            write = SocketListToPhpArray(checkwrite, write);
+            except = SocketListToPhpArray(checkerr, except);
+
+            // count 
+            return
+                (read != null ? read.Count : 0) +
+                (write != null ? write.Count : 0) +
+                (except != null ? except.Count : 0);
+        }
 
         //socket_send — Sends data to a connected socket
         //socket_sendmsg — Send a message
