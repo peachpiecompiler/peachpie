@@ -366,7 +366,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Gets socket options for the socket
         /// </summary>
-        public static PhpValue socket_get_option(PhpResource socket, SocketOptionLevel level, SocketOptionName option, PhpValue option_value)
+        public static PhpValue socket_get_option(PhpResource socket, SocketOptionLevel level, SocketOptionName option)
         {
             var s = SocketResource.GetValid(socket);
             if (s == null)
@@ -443,7 +443,11 @@ namespace Peachpie.Library.Network
             return false;
         }
 
-        //socket_getopt — Alias of socket_get_option
+        /// <summary>
+        /// Alias of socket_get_option.
+        /// </summary>
+        public static PhpValue socket_getopt(PhpResource socket, SocketOptionLevel level, SocketOptionName option) => socket_get_option(socket, level, option);
+
         //socket_getpeername — Queries the remote side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type
 
         /// <summary>
