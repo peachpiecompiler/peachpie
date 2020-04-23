@@ -153,7 +153,7 @@ namespace Peachpie.Library.Network
                     return null;
 
                 default:
-                    PhpException.ArgumentValueNotSupported(nameof(s.Socket.AddressFamily), s.Socket.AddressFamily);
+                    PhpException.ArgumentValueNotSupported(nameof(AddressFamily), af);
                     return null;
             }
         }
