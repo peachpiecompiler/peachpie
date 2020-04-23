@@ -1640,4 +1640,7 @@ Additional information:
   <data name="next_array_key_unavailable" xml:space="preserve">
     <value>Cannot add element to the array as the next element is already occupied</value>
   </data>
+  <data name="invalid_socket_resource" xml:space="preserve">
+    <value>Supplied resource is not a valid 'stream' resource</value>
+  </data>
 </root>
