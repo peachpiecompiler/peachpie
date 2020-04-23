@@ -448,7 +448,38 @@ namespace Peachpie.Library.Network
         /// </summary>
         public static PhpValue socket_getopt(PhpResource socket, SocketOptionLevel level, SocketOptionName option) => socket_get_option(socket, level, option);
 
-        //socket_getpeername — Queries the remote side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type
+        /// <summary>
+        /// Queries the remote side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type.
+        /// </summary>
+        public static bool socket_getpeername(PhpResource socket, out string addr) => socket_getpeername(socket, out addr, out _);
+
+        /// <summary>
+        /// Queries the remote side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type.
+        /// </summary>
+        public static bool socket_getpeername(PhpResource socket, out string addr, out int port)
+        {
+            addr = null;
+            port = 0;
+
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return false;
+            }
+
+            var ep = s.Socket.RemoteEndPoint;
+            if (ep is IPEndPoint ipep)
+            {
+                addr = ipep.Address.ToString();
+                port = ipep.Port;
+                return true;
+            }
+            else
+            {
+                PhpException.ArgumentValueNotSupported(nameof(AddressFamily), s.Socket.AddressFamily);
+                return false;
+            }
+        }
 
         /// <summary>
         /// Queries the local side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type.
