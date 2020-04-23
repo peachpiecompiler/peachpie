@@ -565,6 +565,7 @@ namespace Peachpie.Library.Network
             }
             else if (type == PHP_NORMAL_READ)
             {
+                // TODO: PHP_NORMAL_READ
                 throw new NotImplementedException();
             }
 
@@ -660,7 +661,37 @@ namespace Peachpie.Library.Network
             return errno.ToString();
         }
 
-        //socket_write — Write to a socket
+        /// <summary>
+        /// Write to a socket.
+        /// </summary>
+        [return: CastToFalse]
+        public static int socket_write(Context ctx, PhpResource socket, PhpString buffer, int length = -1)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return -1; // FALSE
+            }
+
+            var bytes = buffer.ToBytes(ctx);
+            if (length < 0 || length > bytes.Length)
+            {
+                length = bytes.Length;
+            }
+
+            try
+            {
+                return s.Socket.Send(bytes, 0, length, SocketFlags.None);
+            }
+            catch (SocketException ex)
+            {
+                HandleException(ctx, s, ex);
+            }
+
+            //
+            return -1; // FALSE
+        }
+
         //socket_wsaprotocol_info_export — Exports the WSAPROTOCOL_INFO Structure
         //socket_wsaprotocol_info_import — Imports a Socket from another Process
         //socket_wsaprotocol_info_release — Releases an exported WSAPROTOCOL_INFO Structure
