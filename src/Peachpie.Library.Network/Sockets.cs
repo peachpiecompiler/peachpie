@@ -226,7 +226,25 @@ namespace Peachpie.Library.Network
             return false;
         }
 
-        //socket_clear_error — Clears the error on the socket or the last error code
+        /// <summary>
+        /// Clears the error on the socket or the last error code.
+        /// </summary>
+        public static void socket_clear_error(Context ctx, PhpResource socket = null)
+        {
+            if (socket != null)
+            {
+                var s = SocketResource.GetValid(socket);
+                if (s != null)
+                {
+                    // get error on the socket resource
+                    s.LastError = SocketError.Success;
+                }
+            }
+            else
+            {            // get last SocketException from context
+                ctx.SetProperty<SocketException>(null);
+            }
+        }
 
         /// <summary>
         /// Closes a socket resource.
@@ -254,6 +272,8 @@ namespace Peachpie.Library.Network
             var endpoint = BindEndPoint(s.Socket.AddressFamily, address, port);
             if (endpoint != null)
             {
+                // TODO: If the socket is non-blocking then return FALSE with an error Operation now in progress.
+
                 try
                 {
                     s.Socket.Connect(endpoint);
