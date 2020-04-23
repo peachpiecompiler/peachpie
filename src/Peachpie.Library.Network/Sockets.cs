@@ -37,6 +37,11 @@ namespace Peachpie.Library.Network
                 return null;
             }
         }
+
+        /// <summary>
+        /// Gets or sets last error caused by the operation on this socket.
+        /// </summary>
+        public SocketError LastError { get; set; } = SocketError.Success;
     }
 
     #region Helpers
@@ -113,10 +118,21 @@ namespace Peachpie.Library.Network
 
         #endregion
 
-        static void HandleException(SocketResource resource, Exception ex)
+        static void HandleException(Context ctx, SocketResource resource, Exception ex)
         {
             PhpException.Throw(PhpError.Warning, ex.Message);
-            // TODO: remember last error
+
+            // remember last error
+
+            if (resource != null)
+            {
+                resource.LastError = ex is SocketException se ? se.SocketErrorCode : SocketError.SocketError;
+            }
+
+            if (ctx != null && ex is SocketException sex)
+            {
+                ctx.SetProperty(sex);
+            }
         }
 
         //socket_accept — Accepts a connection on a socket
@@ -157,7 +173,7 @@ namespace Peachpie.Library.Network
                         }
                         catch (SocketException ex)
                         {
-                            HandleException(s, ex);
+                            HandleException(null, s, ex);
                         }
                     }
 
@@ -237,7 +253,33 @@ namespace Peachpie.Library.Network
 
 
         //socket_import_stream — Import a stream
-        //socket_last_error — Returns the last error on the socket
+
+        /// <summary>
+        /// Returns the last error on the socket.
+        /// </summary>
+        public static int socket_last_error(Context ctx, PhpResource socket = null)
+        {
+            if (socket != null)
+            {
+                var s = SocketResource.GetValid(socket);
+                if (s != null)
+                {
+                    // get error on the socket resource
+                    return (int)s.LastError;
+                }
+            }
+
+            // get last SocketException from context
+            var err = ctx.TryGetProperty<SocketException>();
+            if (err != null)
+            {
+                return (int)err.SocketErrorCode;
+            }
+
+            //
+            return (int)SocketError.Success;
+        }
+
 
         /// <summary>
         /// Listens for a connection on a socket.
@@ -263,7 +305,7 @@ namespace Peachpie.Library.Network
                     }
                     catch (SocketException ex)
                     {
-                        HandleException(s, ex);
+                        HandleException(null, s, ex);
                         return false;
                     }
 
@@ -286,7 +328,14 @@ namespace Peachpie.Library.Network
         //socket_set_option — Sets socket options for the socket
         //socket_setopt — Alias of socket_set_option
         //socket_shutdown — Shuts down a socket for receiving, sending, or both
+
         //socket_strerror — Return a string describing a socket error
+        public static string socket_strerror(SocketError errno)
+        {
+            // TODO: get full error message
+            return errno.ToString();
+        }
+
         //socket_write — Write to a socket
         //socket_wsaprotocol_info_export — Exports the WSAPROTOCOL_INFO Structure
         //socket_wsaprotocol_info_import — Imports a Socket from another Process
