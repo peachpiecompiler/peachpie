@@ -201,7 +201,41 @@ namespace Peachpie.Library.Network
         //socket_get_option — Gets socket options for the socket
         //socket_getopt — Alias of socket_get_option
         //socket_getpeername — Queries the remote side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type
-        //socket_getsockname — Queries the local side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type
+
+        /// <summary>
+        /// Queries the local side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type.
+        /// </summary>
+        public static bool socket_getsockname(PhpResource socket, out string addr) => socket_getsockname(socket, out addr, out _);
+
+        /// <summary>
+        /// Queries the local side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type.
+        /// </summary>
+        public static bool socket_getsockname(PhpResource socket, out string addr, out int port)
+        {
+            addr = null;
+            port = 0;
+
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return false;
+            }
+
+            var ep = s.Socket.LocalEndPoint;
+            if (ep is IPEndPoint ipep)
+            {
+                addr = ipep.Address.ToString();
+                port = ipep.Port;
+                return true;
+            }
+            else
+            {
+                PhpException.ArgumentValueNotSupported(nameof(AddressFamily), s.Socket.AddressFamily);
+                return false;
+            }
+        }
+
+
         //socket_import_stream — Import a stream
         //socket_last_error — Returns the last error on the socket
 
