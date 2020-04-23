@@ -204,7 +204,41 @@ namespace Peachpie.Library.Network
         //socket_getsockname — Queries the local side of the given socket which may either result in host/port or in a Unix filesystem path, dependent on its type
         //socket_import_stream — Import a stream
         //socket_last_error — Returns the last error on the socket
-        //socket_listen — Listens for a connection on a socket
+
+        /// <summary>
+        /// Listens for a connection on a socket.
+        /// </summary>
+        public static bool socket_listen(PhpResource socket, int backlog = 0)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return false;
+            }
+
+            // applicable only to sockets of type SOCK_STREAM or SOCK_SEQPACKET
+            switch (s.Socket.SocketType)
+            {
+                case SocketType.Stream:
+                case SocketType.Seqpacket:
+
+                    try
+                    {
+                        s.Socket.Listen(backlog);
+                        return true;
+                    }
+                    catch (SocketException ex)
+                    {
+                        HandleException(s, ex);
+                        return false;
+                    }
+
+                default:
+                    PhpException.ArgumentValueNotSupported(nameof(SocketType), s.Socket.SocketType);
+                    return false;
+            }
+        }
+
         //socket_read — Reads a maximum of length bytes from a socket
         //socket_recv — Receives data from a connected socket
         //socket_recvfrom — Receives data from a socket whether or not it is connection-oriented
