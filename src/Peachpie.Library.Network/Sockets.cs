@@ -50,34 +50,6 @@ namespace Peachpie.Library.Network
         public SocketError LastError { get; set; } = SocketError.Success;
     }
 
-    #region Helpers
-
-    /// <summary>
-    /// Helper socket methods.
-    /// </summary>
-    static class SocketsExtension
-    {
-        public static AddressFamily GetAddressFamily(this Sockets.PhpAddressFamily af) => af switch
-        {
-            Sockets.PhpAddressFamily.UNIX => AddressFamily.Unix,
-            Sockets.PhpAddressFamily.INET => AddressFamily.InterNetwork,
-            Sockets.PhpAddressFamily.INET6 => AddressFamily.InterNetworkV6,
-            _ => default,
-        };
-
-        public static SocketType GetSocketType(this Sockets.PhpSocketType type) => type switch
-        {
-            Sockets.PhpSocketType.STREAM => SocketType.Stream,
-            Sockets.PhpSocketType.DGRAM => SocketType.Dgram,
-            Sockets.PhpSocketType.RAW => SocketType.Raw,
-            Sockets.PhpSocketType.SEQPACKET => SocketType.Seqpacket,
-            Sockets.PhpSocketType.RDM => SocketType.Rdm,
-            _ => default,
-        };
-    }
-
-    #endregion
-
     /// <summary>
     /// "socket" extension functions.
     /// </summary>
@@ -86,37 +58,15 @@ namespace Peachpie.Library.Network
     {
         #region Constants
 
-        public const int AF_UNIX = 1;
-        public const int AF_INET = 2;
-        public const int AF_INET6 = 23;
-
-        /// <summary>
-        /// Socket family to be used for creating new sockets.
-        /// </summary>
-        public enum PhpAddressFamily
-        {
-            UNIX = AF_UNIX,
-            INET = AF_INET,
-            INET6 = AF_INET6,
-        }
+        public const int AF_UNIX = (int)AddressFamily.Unix; // 1
+        public const int AF_INET = (int)AddressFamily.InterNetwork; // 2;
+        public const int AF_INET6 = (int)AddressFamily.InterNetworkV6; // 23;
 
         public const int SOCK_STREAM = (int)SocketType.Stream; // 1
         public const int SOCK_DGRAM = (int)SocketType.Dgram; // 2
         public const int SOCK_RAW = (int)SocketType.Raw; // 3
         public const int SOCK_RDM = (int)SocketType.Rdm; // 4
         public const int SOCK_SEQPACKET = (int)SocketType.Seqpacket; // 5
-
-        /// <summary>
-        /// Socket underlying communication type.
-        /// </summary>
-        public enum PhpSocketType
-        {
-            STREAM = SOCK_STREAM,
-            DGRAM = SOCK_DGRAM,
-            RAW = SOCK_RAW,
-            SEQPACKET = SOCK_SEQPACKET,
-            RDM = SOCK_RDM,
-        }
 
         public const int SOL_SOCKET = (int)SocketOptionLevel.Socket; // 65535
         public const int SOL_TCP = (int)SocketOptionLevel.Tcp; // 6
@@ -356,10 +306,10 @@ namespace Peachpie.Library.Network
         /// <param name="type"></param>
         /// <param name="protocol"></param>
         /// <returns></returns>
-        public static PhpResource socket_create(PhpAddressFamily domain, PhpSocketType type, ProtocolType protocol)
+        public static PhpResource socket_create(AddressFamily domain, SocketType type, ProtocolType protocol)
         {
             // TODO: validate arguments and return FALSE
-            return new SocketResource(new Socket(domain.GetAddressFamily(), type.GetSocketType(), protocol));
+            return new SocketResource(new Socket(domain, type, protocol));
         }
 
         //socket_export_stream — Export a socket extension resource into a stream that encapsulates a socket
