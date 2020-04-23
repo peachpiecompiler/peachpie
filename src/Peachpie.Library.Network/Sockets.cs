@@ -135,7 +135,35 @@ namespace Peachpie.Library.Network
             }
         }
 
-        //socket_accept — Accepts a connection on a socket
+        /// <summary>
+        /// Accepts a connection on a socket.
+        /// </summary>
+        /// <returns>Returns a new socket resource on success, or FALSE on error.</returns>
+        [return: CastToFalse]
+        public static PhpResource socket_accept(PhpResource socket )
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return null;// FALSE
+            }
+
+            if (s.Socket.Connected)
+            {
+                throw new InvalidOperationException("socket connected");
+                //return null; // FALSE
+            }
+
+            try
+            {
+                return new SocketResource(s.Socket.Accept());
+            }
+            catch (SocketException ex)
+            {
+                HandleException(null, s, ex);
+                return null;
+            }
+        }
 
         //socket_addrinfo_bind — Create and bind to a socket from a given addrinfo
         //socket_addrinfo_connect — Create and connect to a socket from a given addrinfo
