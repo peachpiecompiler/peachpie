@@ -695,8 +695,40 @@ namespace Peachpie.Library.Network
         //socket_send — Sends data to a connected socket
         //socket_sendmsg — Send a message
         //socket_sendto — Sends a message to a socket, whether it is connected or not
-        //socket_set_block — Sets blocking mode on a socket resource
-        //socket_set_nonblock — Sets nonblocking mode for file descriptor fd
+
+        /// <summary>
+        /// Sets blocking mode.
+        /// </summary>
+        public static bool socket_set_block(PhpResource socket) => SetBlocking(socket, true);
+
+        /// <summary>
+        /// Sets nonblocking mode.
+        /// </summary>
+        public static bool socket_set_nonblock(PhpResource socket) => SetBlocking(socket, false);
+
+        /// <summary>
+        /// Sets <see cref="Socket.Blocking"/> on <see cref="SocketResource.Socket"/>.
+        /// </summary>
+        static bool SetBlocking(PhpResource socket, bool blocking)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                s.Socket.Blocking = blocking;
+            }
+            catch (SocketException ex)
+            {
+                HandleException(null, s, ex);
+                return false;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Sets socket options for the socket.
@@ -800,7 +832,9 @@ namespace Peachpie.Library.Network
             return false;
         }
 
-        //socket_strerror — Return a string describing a socket error
+        /// <summary>
+        /// Return a string describing a socket error.
+        /// </summary>
         public static string socket_strerror(SocketError errno)
         {
             // TODO: get full error message
