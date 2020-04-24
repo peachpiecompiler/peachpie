@@ -145,6 +145,8 @@ namespace Pchp.Library
 
         sealed class PhpEncodingProvider : EncodingProvider
         {
+            public static Encoding EightBit { get; } = new EightBitEncoding();
+
             public override Encoding GetEncoding(int codepage)
             {
                 return null;
@@ -182,7 +184,7 @@ namespace Pchp.Library
                 //HTML-ENTITIES
                 //Quoted-Printable
                 //7bit
-                //8bit
+                if (name.EqualsOrdinalIgnoreCase("8bit")) return EightBit;
                 //UCS-4
                 //UCS-4BE
                 //UCS-4LE
@@ -257,6 +259,34 @@ namespace Pchp.Library
 
                 //
                 return null;
+            }
+
+            /// <summary>
+            /// Emulation of 8bit PHP encoding. Converts bytes to string by simply extending each byte to two-byte char.
+            /// .NET string is converted to bytes using UTF-8.
+            /// </summary>
+            private sealed class EightBitEncoding : Encoding
+            {
+                public override int GetCharCount(byte[] bytes, int index, int count) => count;
+
+                public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+                {
+                    for (int i = 0; i < byteCount; i++)
+                    {
+                        chars[charIndex + i] = (char)bytes[byteIndex + i];
+                    }
+
+                    return byteCount;
+                }
+
+                public override int GetMaxCharCount(int byteCount) => byteCount;
+
+                public override int GetByteCount(char[] chars, int index, int count) => Encoding.UTF8.GetByteCount(chars, index, count);
+
+                public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+                    => Encoding.UTF8.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
+
+                public override int GetMaxByteCount(int charCount) => Encoding.UTF8.GetMaxByteCount(charCount);
             }
         }
 
@@ -378,7 +408,7 @@ namespace Pchp.Library
                 //HTML-ENTITIES
                 //Quoted-Printable
                 //7bit
-                //8bit
+                "8bit",
                 //UCS-4
                 //UCS-4BE
                 //UCS-4LE
