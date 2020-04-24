@@ -609,6 +609,8 @@ namespace Peachpie.Library.Network
         //socket_recvfrom — Receives data from a socket whether or not it is connection-oriented
         //socket_recvmsg — Read a message
 
+        #region socket_select
+
         /// <summary>
         /// Selects values of type <see cref="SocketResource"/> and adds them to newly created list.
         /// </summary>
@@ -640,12 +642,10 @@ namespace Peachpie.Library.Network
             return list.Count;
         }
 
-        #region socket_select
-
         /// <summary>
         /// Filters out socket resources from <paramref name="original"/> that are contained in <paramref name="list"/>.
         /// </summary>
-        static PhpArray SocketListToPhpArray(List<Socket> list, PhpArray original)
+        static PhpArray ToPhpArrayOrNull(List<Socket> list, PhpArray original)
         {
             if (original == null)
             {
@@ -708,9 +708,9 @@ namespace Peachpie.Library.Network
             }
 
             // 
-            read = SocketListToPhpArray(checkread, read);
-            write = SocketListToPhpArray(checkwrite, write);
-            except = SocketListToPhpArray(checkerr, except);
+            read = ToPhpArrayOrNull(checkread, read);
+            write = ToPhpArrayOrNull(checkwrite, write);
+            except = ToPhpArrayOrNull(checkerr, except);
 
             // count 
             return
