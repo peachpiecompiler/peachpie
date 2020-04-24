@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -16,21 +17,27 @@ namespace Pchp.Library.Streams
 	/// </summary>
 	public class SocketStream : PhpStream
     {
-        public override bool CanReadWithoutLock => socket.Available > 0 && (currentTask == null || currentTask.IsCompleted);
+        public override bool CanReadWithoutLock => Socket.Available > 0 && (currentTask == null || currentTask.IsCompleted);
 
         public override bool CanWriteWithoutLock => currentTask == null || currentTask.IsCompleted;
 
         /// <summary>
         /// The encapsulated network socket.
         /// </summary>
-        protected Socket socket;
+        internal Socket Socket { get; private set; }
+
+        /// <summary>
+        /// Optionally, SSL stream wrapping the socket if encryption is enabled.
+        /// </summary>
+        internal SslStream SslStream { get; set; }
 
         /// <summary>
         /// Result of the last read/write operation.
         /// </summary>
         protected bool eof;
 
-        private bool isAsync;
+        private readonly bool isAsync;
+
         private Task currentTask;
 
         #region PhpStream overrides
@@ -39,21 +46,34 @@ namespace Pchp.Library.Streams
             : base(ctx, null, StreamAccessOptions.Read | StreamAccessOptions.Write, openedPath, context)
         {
             Debug.Assert(socket != null);
-            this.socket = socket;
+            this.Socket = socket;
             this.IsWriteBuffered = false;
             this.eof = false;
             this.isAsync = isAsync;
             this.IsReadBuffered = false;
         }
 
-        /// <summary>
-        /// PhpResource.FreeManaged overridden to get rid of the contained context on Dispose.
-        /// </summary>
         protected override void FreeManaged()
         {
             base.FreeManaged();
-            socket.Dispose();    // .Close()
-            socket = null;
+
+            CloseSslStream();
+
+            if (Socket != null)
+            {
+                Socket.Dispose();    // .Close()
+                Socket = null;
+            }
+        }
+
+        internal void CloseSslStream()
+        {
+            if (SslStream != null)
+            {
+                SslStream.Flush();
+                SslStream.Dispose();
+                SslStream = null;
+            }
         }
 
         #endregion
@@ -62,53 +82,93 @@ namespace Pchp.Library.Streams
 
         protected override int RawRead(byte[] buffer, int offset, int count)
         {
-            if (currentTask != null)
-                currentTask.Wait();
+            currentTask?.Wait();
+
             try
             {
-                int rv = socket.Receive(buffer, offset, count, SocketFlags.None);
+                // we have stream:
+                if (SslStream != null)
+                {
+                    int read = SslStream.Read(buffer, offset, count);
+                    if (read == 0) eof = true;
+                    return read;
+                }
+
+                // raw socket:
+                int rv = Socket.Receive(buffer, offset, count, SocketFlags.None);
                 eof = rv == 0;
                 return rv;
+            }
+            catch (NotSupportedException)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Read");
+                return -1;
+            }
+            catch (IOException e)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_read_io_error, e.Message);
+                return -1;
             }
             catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_socket_error, e.Message);
-                return 0;
+                return -1;
             }
         }
 
         protected override int RawWrite(byte[] buffer, int offset, int count)
         {
+            currentTask?.Wait();
+
             try
             {
-                if (isAsync)
+                // we have stream:
+                if (SslStream != null)
                 {
-                    if (currentTask != null)
-                        currentTask.Wait();
-                    currentTask = new Task(() =>
-                    {
-                        int rv = socket.Send(buffer, offset, count, SocketFlags.None);
-                        eof = rv == 0;
-                    });
-                    currentTask.Start();
+                    SslStream.Write(buffer, offset, count);
                     return count;
                 }
-                else
+
+                // raw socket:
+                //if (isAsync)
+                //{
+                //    // Socket.SendAsync(new SocketAsyncEventArgs {  })
+                //    currentTask = new Task(() =>
+                //    {
+                //        int rv = Socket.Send(buffer, offset, count, SocketFlags.None);
+                //        eof = rv == 0;
+                //    });
+                //    currentTask.Start();
+                //    return count;
+                //}
+                //else
                 {
-                    int rv = socket.Send(buffer, offset, count, SocketFlags.None);
+                    int rv = Socket.Send(buffer, offset, count, SocketFlags.None);
                     eof = rv == 0;
                     return rv;
                 }
             }
+            catch (NotSupportedException)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Write");
+                return -1;
+            }
+            catch (IOException e)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_write_io_error, e.Message);
+                return -1;
+            }
             catch (System.Exception e)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_socket_error, e.Message);
-                return 0;
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_write_error, e.Message);
+                return -1;
             }
         }
 
         protected override bool RawFlush()
         {
+            SslStream?.Flush();
+
             return true;
         }
 
@@ -125,8 +185,8 @@ namespace Pchp.Library.Streams
             if (option == StreamParameterOptions.ReadTimeout)
             {
                 int timeout = (int)(value.ToDouble() * 1000.0);
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout);
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, timeout);
+                Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout);
+                Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, timeout);
                 return true;
             }
             return base.SetParameter(option, value);
@@ -140,7 +200,7 @@ namespace Pchp.Library.Streams
         {
             get
             {
-                throw new NotImplementedException();
+                return SslStream ?? throw new NotImplementedException();
             }
         }
 
@@ -148,10 +208,13 @@ namespace Pchp.Library.Streams
 
         new public static SocketStream GetValid(PhpResource handle)
         {
-            SocketStream result = handle as SocketStream;
-            if (result == null)
-                PhpException.Throw(PhpError.Warning, ErrResources.invalid_socket_stream_resource);
-            return result;
+            if (handle is SocketStream result && result.IsValid)
+            {
+                return result;
+            }
+
+            PhpException.Throw(PhpError.Warning, ErrResources.invalid_socket_stream_resource);
+            return null;
         }
     }
 }

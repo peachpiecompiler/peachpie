@@ -615,6 +615,8 @@ namespace Peachpie.Library.Network
             return list.Count;
         }
 
+        #region socket_select
+
         /// <summary>
         /// Filters out socket resources from <paramref name="original"/> that are contained in <paramref name="list"/>.
         /// </summary>
@@ -691,6 +693,8 @@ namespace Peachpie.Library.Network
                 (write != null ? write.Count : 0) +
                 (except != null ? except.Count : 0);
         }
+
+        #endregion
 
         //socket_send — Sends data to a connected socket
         //socket_sendmsg — Send a message

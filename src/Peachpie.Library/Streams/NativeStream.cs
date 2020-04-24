@@ -38,6 +38,7 @@ namespace Pchp.Library.Streams
             catch (NotSupportedException)
             {
             }
+
             if (Wrapper != null)    //Can be php://output
             {
                 Wrapper.Dispose();
