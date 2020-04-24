@@ -17,9 +17,9 @@ namespace Pchp.Library.Streams
 	/// </summary>
 	public class SocketStream : PhpStream
     {
-        public override bool CanReadWithoutLock => Socket.Available > 0 && (currentTask == null || currentTask.IsCompleted);
+        public override bool CanReadWithoutLock => Socket.Available > 0;
 
-        public override bool CanWriteWithoutLock => currentTask == null || currentTask.IsCompleted;
+        public override bool CanWriteWithoutLock => true;
 
         /// <summary>
         /// The encapsulated network socket.
@@ -36,20 +36,15 @@ namespace Pchp.Library.Streams
         /// </summary>
         protected bool eof;
 
-        private readonly bool isAsync;
-
-        private Task currentTask;
-
         #region PhpStream overrides
 
-        public SocketStream(Context ctx, Socket socket, string openedPath, StreamContext context, bool isAsync = false)
+        public SocketStream(Context ctx, Socket socket, string openedPath, StreamContext context)
             : base(ctx, null, StreamAccessOptions.Read | StreamAccessOptions.Write, openedPath, context)
         {
             Debug.Assert(socket != null);
             this.Socket = socket;
             this.IsWriteBuffered = false;
             this.eof = false;
-            this.isAsync = isAsync;
             this.IsReadBuffered = false;
         }
 
@@ -82,20 +77,21 @@ namespace Pchp.Library.Streams
 
         protected override int RawRead(byte[] buffer, int offset, int count)
         {
-            currentTask?.Wait();
-
             try
             {
-                // we have stream:
+                int rv;
+
                 if (SslStream != null)
                 {
-                    int read = SslStream.Read(buffer, offset, count);
-                    if (read == 0) eof = true;
-                    return read;
+                    // we have stream:
+                    rv = SslStream.Read(buffer, offset, count);
+                }
+                else
+                {
+                    // raw socket:
+                    rv = Socket.Receive(buffer, offset, count, SocketFlags.None);
                 }
 
-                // raw socket:
-                int rv = Socket.Receive(buffer, offset, count, SocketFlags.None);
                 eof = rv == 0;
                 return rv;
             }
@@ -118,8 +114,6 @@ namespace Pchp.Library.Streams
 
         protected override int RawWrite(byte[] buffer, int offset, int count)
         {
-            currentTask?.Wait();
-
             try
             {
                 // we have stream:
@@ -130,23 +124,9 @@ namespace Pchp.Library.Streams
                 }
 
                 // raw socket:
-                //if (isAsync)
-                //{
-                //    // Socket.SendAsync(new SocketAsyncEventArgs {  })
-                //    currentTask = new Task(() =>
-                //    {
-                //        int rv = Socket.Send(buffer, offset, count, SocketFlags.None);
-                //        eof = rv == 0;
-                //    });
-                //    currentTask.Start();
-                //    return count;
-                //}
-                //else
-                {
-                    int rv = Socket.Send(buffer, offset, count, SocketFlags.None);
-                    eof = rv == 0;
-                    return rv;
-                }
+                int rv = Socket.Send(buffer, offset, count, SocketFlags.None);
+                eof = rv == 0;
+                return rv;
             }
             catch (NotSupportedException)
             {
