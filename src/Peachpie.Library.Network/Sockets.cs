@@ -312,7 +312,20 @@ namespace Peachpie.Library.Network
             return new SocketResource(new Socket(domain, type, protocol));
         }
 
-        //socket_export_stream — Export a socket extension resource into a stream that encapsulates a socket
+        /// <summary>
+        /// Export a socket extension resource into a stream that encapsulates a socket.
+        /// </summary>
+        [return: CastToFalse]
+        public static SocketStream socket_export_stream(Context ctx, PhpResource socket)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s != null)
+            {
+                return new SocketStream(ctx, s.Socket, s.Socket.RemoteEndPoint.ToString(), StreamContext.Default);
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Gets socket options for the socket
