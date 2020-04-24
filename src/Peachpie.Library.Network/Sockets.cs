@@ -465,7 +465,19 @@ namespace Peachpie.Library.Network
             }
         }
 
-        //socket_import_stream — Import a stream
+        /// <summary>
+        /// Imports a stream that encapsulates a socket into a socket extension resource.
+        /// </summary>
+        public static PhpResource socket_import_stream(PhpResource stream)
+        {
+            var s = SocketStream.GetValid(stream);
+            if (s != null)
+            {
+                return new SocketResource(s.Socket);
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Returns the last error on the socket.

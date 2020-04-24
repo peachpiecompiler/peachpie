@@ -24,12 +24,12 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// The encapsulated network socket.
         /// </summary>
-        internal Socket Socket { get; private set; }
+        public Socket Socket { get; private set; }
 
         /// <summary>
         /// Optionally, SSL stream wrapping the socket if encryption is enabled.
         /// </summary>
-        internal SslStream SslStream { get; set; }
+        public SslStream SslStream { get; set; }
 
         /// <summary>
         /// Result of the last read/write operation.
