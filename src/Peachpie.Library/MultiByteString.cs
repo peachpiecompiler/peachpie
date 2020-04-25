@@ -172,7 +172,7 @@ namespace Pchp.Library
                     // cp{CodePage}
                     if (name.StartsWith("cp", StringComparison.OrdinalIgnoreCase) &&
                         name.Length > 2 &&
-                        int.TryParse(name.Substring(2), out codepage))
+                        int.TryParse(name.Substring(2), out codepage)) // TODO: netstandard2.1 ReadOnlySpan
                     {
                         return true;
                     }
@@ -181,7 +181,7 @@ namespace Pchp.Library
                     const string CodepagePrefix = "Codepage - ";
                     if (name.StartsWith(CodepagePrefix, StringComparison.OrdinalIgnoreCase) &&
                         name.Length > CodepagePrefix.Length &&
-                        int.TryParse(name.Substring(CodepagePrefix.Length), out codepage))
+                        int.TryParse(name.Substring(CodepagePrefix.Length), out codepage))  // TODO: netstandard2.1 ReadOnlySpan
                     {
                         return true;
                     }
@@ -470,7 +470,7 @@ namespace Pchp.Library
                 //HTML-ENTITIES
                 //Quoted-Printable
                 //7bit
-                "8bit",
+                //8bit,
                 //UCS-4
                 //UCS-4BE
                 //UCS-4LE
