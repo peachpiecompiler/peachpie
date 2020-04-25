@@ -65,14 +65,19 @@ namespace Pchp.Library.DateTime
         public struct Relative
         {
             /// <summary>
-            /// Number of years/months/days.
+            /// Number of years/months.
             /// </summary>
-            public int y, m, d;
+            public int y, m;
+            
+            /// <summary>
+            /// Number of days.
+            /// </summary>
+            public long d;
 
             /// <summary>
             /// Number of hours/minutes/seconds.
             /// </summary>
-            public int h, i, s;
+            public long h, i, s;
 
             /// <summary>
             /// Weekday (e.g. "next monday").
@@ -451,19 +456,58 @@ namespace Pchp.Library.DateTime
             }
         }
 
+        public static int ParseSignedInt(string str, ref int pos, int maxDigits)
+        {
+            var value = ParseSignedLong(str, ref pos, maxDigits);
+
+            if (value <= int.MinValue) return int.MinValue;
+            if (value >= int.MaxValue) return int.MaxValue;
+
+            return (int)value;
+        }
+
+        public static int ParseUnsignedInt(string str, ref int pos, int maxDigits)
+        {
+            var value = ParseUnsignedLong(str, ref pos, maxDigits);
+
+            if (value >= int.MaxValue) return int.MaxValue;
+
+            return (int)value;
+        }
+
+        public static int ParseUnsignedInt(string str, ref int pos, int maxDigits, out int len)
+        {
+            var value = ParseUnsignedLong(str, ref pos, maxDigits, out len);
+
+            if (value >= int.MaxValue) return int.MaxValue;
+
+            return (int)value;
+        }
+
         /// <summary>
         /// Parse integer with possible sign of a specified maximal number of digits.
         /// </summary>
-        public static int ParseSignedInt(string str, ref int pos, int maxDigits)
+        public static long ParseSignedLong(string str, ref int pos, int maxDigits)
         {
-            int sign = +1;
-
             // skip non-digit, non-sign chars:
-            while (pos < str.Length && !Char.IsDigit(str, pos) && str[pos] != '+' && str[pos] != '-')
+            while (pos < str.Length)
             {
+                var ch = str[pos];
+                
+                if (char.IsDigit(ch) || ch == '+' || ch == '-')
+                {
+                    break;
+                }
+
                 pos++;
             }
-            if (pos == str.Length) return -1;
+
+            if (pos == str.Length)
+            {
+                return -1;
+            }
+
+            bool sign = false;
 
             // set sign:
             if (str[pos] == '+')
@@ -472,43 +516,75 @@ namespace Pchp.Library.DateTime
             }
             else if (str[pos] == '-')
             {
-                sign = -1;
+                sign = true;
                 pos++;
             }
 
-            return sign * ParseUnsignedInt(str, ref pos, maxDigits);
+            var value = ParseUnsignedLong(str, ref pos, maxDigits);
+
+            if (sign)
+            {
+                // value is unsigned, no overflow check
+                value = -value;
+            }
+
+            return value;
         }
 
         /// <summary>
         /// Parse unsigned integer of a specified maximal length.
         /// </summary>
-        public static int ParseUnsignedInt(string str, ref int pos, int maxDigits)          // PHP: timelib_get_nr
+        public static long ParseUnsignedLong(string str, ref int pos, int maxDigits)          // PHP: timelib_get_nr
         {
-            return ParseUnsignedInt(str, ref pos, maxDigits, out _);
+            return ParseUnsignedLong(str, ref pos, maxDigits, out _);
         }
 
         /// <summary>
         /// Parse unsigned integer of a specified maximal length.
+        /// Returns parsed number, or <c>-1</c> if there are no digits, or <see cref="long.MaxValue"/> if value overflows.
         /// </summary>
-        public static int ParseUnsignedInt(string str, ref int pos, int maxDigits, out int len)          // PHP: timelib_get_nr
+        public static long ParseUnsignedLong(string str, ref int pos, int maxDigits, out int len)          // PHP: timelib_get_nr
         {
             len = 0;
 
             // skips non-digits:
-            while (pos < str.Length && !Char.IsDigit(str, pos))
+            while (pos < str.Length && !char.IsDigit(str, pos))
             {
                 pos++;
             }
-            if (pos == str.Length) return -1;
 
-            int begin = pos;
-            while (pos < str.Length && Char.IsDigit(str, pos) && len < maxDigits)
+            if (pos == str.Length)
             {
+                return -1;
+            }
+
+            long result = 0;
+            while (pos < str.Length && len < maxDigits)
+            {
+                var ch = str[pos];
+                if (ch < '0' || ch > '9')
+                {
+                    break;
+                }
+
+                var num = ch - '0';
+
+                if ((result < long.MaxValue / 10) ||
+                    (result == long.MaxValue / 10 && num <= long.MaxValue % 10))
+                {
+                    result = (result * 10) + num;
+                }
+                else
+                {
+                    result = long.MaxValue;
+                }
+
+                //
                 pos++;
                 len++;
             }
 
-            return Int32.Parse(str.Substring(begin, len));
+            return result;
         }
 
         /// <summary>
@@ -738,7 +814,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Sets relative time and date information according to the parsed text.
         /// </summary>
-        public void SetRelative(string str, int amount, int behavior)
+        public void SetRelative(string str, long amount, int behavior)
         {
             switch (str.ToLowerInvariant())
             {
@@ -768,7 +844,7 @@ namespace Pchp.Library.DateTime
 
                 case "month":
                 case "months":
-                    relative.m += amount;
+                    relative.m += (int)amount;
                     return;
 
                 case "week":
@@ -785,7 +861,7 @@ namespace Pchp.Library.DateTime
 
                 case "year":
                 case "years":
-                    relative.y += amount;
+                    relative.y += (int)amount;
                     return;
             }
 
