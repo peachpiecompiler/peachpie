@@ -353,9 +353,11 @@ namespace Peachpie.NET.Sdk.Tools
 
                 yield return PackageDependencyItem(
                     name: IdToNuGetId(name),
-                    version: VersionRangeToPackageVersion(r.Value.Value));
+                    version: VersionRangeToPackageVersion(r.Value.Value, ForcePreReleaseDependency));
             }
         }
+
+        bool ForcePreReleaseDependency => !string.IsNullOrEmpty(VersionSuffix);
 
         /// <summary>
         /// Convert composer-like name to NugetId-like name.
@@ -378,7 +380,7 @@ namespace Peachpie.NET.Sdk.Tools
             return value.ToLowerInvariant();
         }
 
-        string VersionRangeToPackageVersion(string value)
+        string VersionRangeToPackageVersion(string value, bool forcePreRelease)
         {
             // https://getcomposer.org/doc/articles/versions.md
             // https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#floating-versions
@@ -394,14 +396,13 @@ namespace Peachpie.NET.Sdk.Tools
             //~1.2.3
             //1 - 2
             //1.0.0 - 2.1.0
-            if (Versioning.ComposerVersionExpression.TryParse(value.AsSpan(), out var expression))
-            {
-                var version = expression.Evaluate();
-                return version.ToString();
-            }
 
-            // any
-            return "*";
+            var version = Versioning.ComposerVersionExpression.TryParse(value, out var expression)
+                ? expression.Evaluate()
+                : new Versioning.FloatingVersion(); // any version
+            
+            //
+            return version.ToString(forcePreRelease: forcePreRelease);
         }
 
         string GetTags(JSONNode keywords)
