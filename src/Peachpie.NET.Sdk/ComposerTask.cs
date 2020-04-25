@@ -266,6 +266,8 @@ namespace Peachpie.NET.Sdk.Tools
         static string PeachpieSdkVersion => _lazyPeachpieSdkVersion ??= ResolvePeachpieSdkVersion();
         static string _lazyPeachpieSdkVersion;
 
+        const string Package_PeachpieLibrary = "Peachpie.Library";
+
         /// <summary>
         /// Map of known dependency id's to a corresponding package reference.
         /// </summary>
@@ -273,9 +275,10 @@ namespace Peachpie.NET.Sdk.Tools
         {
             {"ext-curl", "Peachpie.Library.Network"},
             {"ext-sockets", "Peachpie.Library.Network"},
-            {"ext-gettext", "Peachpie.Library"},
-            {"ext-fileinfo", "Peachpie.Library"},
-            {"ext-mbstring", "Peachpie.Library"},
+            {"ext-gettext", Package_PeachpieLibrary},
+            {"ext-fileinfo", Package_PeachpieLibrary},
+            {"ext-mbstring", Package_PeachpieLibrary},
+            {"ext-json", Package_PeachpieLibrary},
             {"ext-mysql", "Peachpie.Library.MySql"},
             {"ext-mysqli", "Peachpie.Library.MySql"},
             {"ext-mssql", "Peachpie.Library.MsSql"},
