@@ -173,10 +173,147 @@ namespace Peachpie.Library.Network
             }
         }
 
+        #region socket_addrinfo
+
+        sealed class AddressInfoResource : PhpResource
+        {
+            public IPAddress Address { get; set; }
+
+            public int Port { get; set; }
+
+            public SocketType SocketType { get; set; }
+
+            public ProtocolType ProtocolType { get; set; }
+
+            public AddressInfoResource() : base("AddressInfo")
+            {
+
+            }
+
+            PhpArray ExplainAddr()
+            {
+                if (Address.AddressFamily == AddressFamily.InterNetworkV6)
+                {
+                    return new PhpArray()
+                {
+                    { "sin6_port", Port },
+                    { "sin6_addr", Address.ToString() },
+                };
+                }
+                else
+                {
+                    return new PhpArray()
+                {
+                    { "sin_port", Port },
+                    { "sin_addr", Address.ToString() },
+                };
+                }
+            }
+
+            public PhpArray Explain()
+            {
+                //[ai_flags] => 0
+                //[ai_family] => 23
+                //[ai_socktype] => 0
+                //[ai_protocol] => 0
+                //[ai_addr] => Array
+                //    (
+                //        [sin6_port] => 80
+                //        [sin6_addr] => ::1
+                //    )
+
+                return new PhpArray(5)
+            {
+                { "ai_flags", 0 },
+                { "ai_family", (int)Address.AddressFamily },
+                { "ai_socktype", (int)SocketType },
+                { "ai_protocol", (int)ProtocolType },
+                { "ai_addr", ExplainAddr() },
+            };
+            }
+
+            public static AddressInfoResource GetValid(PhpResource resource)
+            {
+                if (resource is AddressInfoResource s && s.IsValid)
+                {
+                    return s;
+                }
+                else
+                {
+                    PhpException.InvalidArgument(nameof(resource));
+                    return null;
+                }
+            }
+
+            public static bool LookupService(string service, out int port, out SocketType sockettype, out ProtocolType prototype)
+            {
+                port = 0;
+                sockettype = default;
+                prototype = default;
+
+                if (string.IsNullOrEmpty(service))
+                {
+                    return false;
+                }
+
+                if (int.TryParse(service, out port)) //|| ServiceNames.ServiceToPortNumber(service, out port, out sockettype))
+                {
+                    return true;
+                }
+
+                // native GetAddrInfo
+
+                // not found
+                return false;
+            }
+        }
+
         //socket_addrinfo_bind — Create and bind to a socket from a given addrinfo
         //socket_addrinfo_connect — Create and connect to a socket from a given addrinfo
-        //socket_addrinfo_explain — Get information about addrinfo
-        //socket_addrinfo_lookup — Get array with contents of getaddrinfo about the given hostname
+
+        /// <summary>
+        /// Get information about addrinfo.
+        /// </summary>
+        public static PhpArray socket_addrinfo_explain(PhpResource resource)
+        {
+            var a = AddressInfoResource.GetValid(resource);
+            if (a != null)
+            {
+                return a.Explain();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        ///// <summary>
+        ///// Get array with contents of getaddrinfo about the given hostname.
+        ///// </summary>
+        //public static PhpArray socket_addrinfo_lookup(string host, string service = null, PhpArray hints = null)
+        //{
+        //    var result = new PhpArray();
+
+        //    if (!AddressInfoResource.LookupService(service, out var port, out var sockettype, out var prototype))
+        //    {
+        //        // unspecified
+        //    }
+
+        //    foreach (var addr in Dns.GetHostAddresses(host))
+        //    {
+        //        result.Add(new AddressInfoResource
+        //        {
+        //            Port = port,
+        //            Address = addr,
+        //            SocketType = sockettype,
+        //            ProtocolType = prototype,
+        //        });
+        //    }
+
+        //    return result;
+        //}
+
+        #endregion
 
         /// <summary>
         /// Binds a name to a socket.
