@@ -54,6 +54,21 @@ namespace Peachpie.NET.Sdk.Versioning
         public static string StabilityStable => "stable";
 
         /// <summary>
+        /// Stability flag corresponding to development suffix (<c>"-dev"</c>).
+        /// </summary>
+        public static string StabilityDev => "dev";
+
+        /// <summary>
+        /// Gets value indicating the versions refers to a stable release (no Pre-Release).
+        /// </summary>
+        public bool IsStable => string.IsNullOrEmpty(Stability) || Stability.Equals(StabilityStable, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Gets value indicating the versions refers to a pre-release.
+        /// </summary>
+        public bool IsPreRelease => !IsStable;
+
+        /// <summary>
         /// Major version component/
         /// Value of <c>-1</c> represents not specified version component.
         /// </summary>
@@ -101,7 +116,9 @@ namespace Peachpie.NET.Sdk.Versioning
         /// </summary>
         public bool HasValue => PartsCount != 0 || Stability != null;
 
-        /// <summary>Returns string representation of the version.</summary>
+        /// <summary>
+        /// Returns string representation of the version in format <c>0.0.0</c> or <c>*</c>, depending on <see cref="PartsCount"/>
+        /// </summary>
         public override string ToString()
         {
             string majorstr = Major < 0 ? "*" : Major.ToString();
@@ -241,6 +258,15 @@ namespace Peachpie.NET.Sdk.Versioning
             new ComposerVersion(IsAnyMajor ? 0 : Major, IsAnyMinor ? 0 : Minor, IsAnyBuild ? 0 : Build)
             {
                 Stability = Stability
+            };
+
+        /// <summary>
+        /// Returns the same version with specified stability flag.
+        /// </summary>
+        public ComposerVersion WithStabilityFlag(string stability) =>
+            new ComposerVersion(Major, Minor, Build, PartsCount)
+            {
+                Stability = stability,
             };
 
         /// <summary>

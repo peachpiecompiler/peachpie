@@ -272,8 +272,8 @@ namespace Peachpie.NET.Sdk.Versioning
                     {
                         LowerBound = Version.AnyToZero(),
                         UpperBound = Version.IsAnyBuild
-                            ? new ComposerVersion(Version.Major + 1, 0, 0) { Stability = Version.Stability }
-                            : new ComposerVersion(Version.Major, Version.Minor + 1, 0) { Stability = Version.Stability },
+                            ? new ComposerVersion(Version.Major + 1, 0, 0) { Stability = Version.Stability ?? ComposerVersion.StabilityDev }
+                            : new ComposerVersion(Version.Major, Version.Minor + 1, 0) { Stability = Version.Stability ?? ComposerVersion.StabilityDev },
                         UpperBoundExclusive = true,
                     };
 
@@ -290,7 +290,7 @@ namespace Peachpie.NET.Sdk.Versioning
                 case Operation.LessThan:
                     return new FloatingVersion
                     {
-                        UpperBound = Version.AnyToZero(),
+                        UpperBound = Version.AnyToZero().WithStabilityFlag(Version.Stability ?? ComposerVersion.StabilityDev),
                         UpperBoundExclusive = true,
                     };
 
@@ -313,7 +313,7 @@ namespace Peachpie.NET.Sdk.Versioning
                 case Operation.GreaterThanOrEqual:
                     return new FloatingVersion
                     {
-                        LowerBound = Version.AnyToZero(),
+                        LowerBound = Version.AnyToZero().WithStabilityFlag(Version.Stability ?? ComposerVersion.StabilityDev),
                     };
 
                 default:
@@ -447,8 +447,8 @@ namespace Peachpie.NET.Sdk.Versioning
             {
                 return new FloatingVersion
                 {
-                    LowerBound = Version.AnyToZero(),
-                    UpperBound = Version.GetClosestHigher(),
+                    LowerBound = Version.AnyToZero().WithStabilityFlag(Version.Stability ?? ComposerVersion.StabilityDev),
+                    UpperBound = Version.GetClosestHigher().WithStabilityFlag(Version.Stability ?? ComposerVersion.StabilityDev),
                     UpperBoundExclusive = true,
                 };
             }
