@@ -68,7 +68,7 @@ namespace Pchp.Library.DateTime
             /// Number of years/months.
             /// </summary>
             public int y, m;
-            
+
             /// <summary>
             /// Number of days.
             /// </summary>
@@ -296,12 +296,29 @@ namespace Pchp.Library.DateTime
 
             var result = new System.DateTime(y, m, d, h, i, s, (int)(f * 1000), DateTimeKind.Unspecified);
 
-            result = result.AddDays(relative.d + days_overflow);
-            result = result.AddMonths(relative.m);
-            result = result.AddYears(relative.y);
-            result = result.AddHours(relative.h);
-            result = result.AddMinutes(relative.i);
-            result = result.AddSeconds(relative.s);
+            // relative years and months:
+            result = result.AddMonths(relative.y * 12 + relative.m);
+
+            // check relative ranges
+            if (relative.s >= long.MaxValue / TimeSpan.TicksPerSecond) return System.DateTime.MaxValue;
+            if (relative.s <= long.MinValue / TimeSpan.TicksPerSecond) return System.DateTime.MinValue;
+
+            // relative seconds
+            long relative_ticks =
+                relative.s * TimeSpan.TicksPerSecond +
+                relative.i * TimeSpan.TicksPerMinute +
+                relative.h * TimeSpan.TicksPerHour +
+                (relative.d + days_overflow) * TimeSpan.TicksPerDay;
+
+            try
+            {
+                result = result.AddTicks(relative_ticks);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                if (relative_ticks > 0) return System.DateTime.MaxValue;
+                if (relative_ticks < 0) return System.DateTime.MinValue;
+            }
 
             // adds relative weekday:
             if (have_weekday_relative > 0)
@@ -493,7 +510,7 @@ namespace Pchp.Library.DateTime
             while (pos < str.Length)
             {
                 var ch = str[pos];
-                
+
                 if (char.IsDigit(ch) || ch == '+' || ch == '-')
                 {
                     break;
@@ -761,7 +778,6 @@ namespace Pchp.Library.DateTime
 
             return 0;
         }
-
 
         static void SkipSpaces(string str, ref int pos) // timelib_eat_spaces
         {
