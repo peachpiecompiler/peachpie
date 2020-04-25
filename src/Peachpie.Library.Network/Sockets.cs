@@ -58,20 +58,26 @@ namespace Peachpie.Library.Network
     {
         #region Constants
 
+        // AddressFamily
         public const int AF_UNIX = (int)AddressFamily.Unix; // 1
         public const int AF_INET = (int)AddressFamily.InterNetwork; // 2;
         public const int AF_INET6 = (int)AddressFamily.InterNetworkV6; // 23;
 
+        // SocketType
         public const int SOCK_STREAM = (int)SocketType.Stream; // 1
         public const int SOCK_DGRAM = (int)SocketType.Dgram; // 2
         public const int SOCK_RAW = (int)SocketType.Raw; // 3
         public const int SOCK_RDM = (int)SocketType.Rdm; // 4
         public const int SOCK_SEQPACKET = (int)SocketType.Seqpacket; // 5
 
+        // SocketOptionLevel
         public const int SOL_SOCKET = (int)SocketOptionLevel.Socket; // 65535
         public const int SOL_TCP = (int)SocketOptionLevel.Tcp; // 6
         public const int SOL_UDP = (int)SocketOptionLevel.Udp; // 17
+        public const int IPPROTO_IP = (int)SocketOptionLevel.IP;
+        public const int IPPROTO_IPV6 = (int)SocketOptionLevel.IPv6;
 
+        // SocketOptionName
         public const int SO_FREE = 8;
         public const int SO_NOSERVER = 16;
         public const int SO_DEBUG = (int)SocketOptionName.Debug; // 1
@@ -91,6 +97,30 @@ namespace Peachpie.Library.Network
         public const int SO_ERROR = (int)SocketOptionName.Error;
         public const int TCP_NODELAY = (int)SocketOptionName.NoDelay;
 
+        public const int IP_MULTICAST_IF = (int)SocketOptionName.MulticastInterface; // 9
+        public const int IP_MULTICAST_TTL = (int)SocketOptionName.MulticastTimeToLive; // 10;
+        public const int IP_MULTICAST_LOOP = (int)SocketOptionName.MulticastLoopback; // 11;
+
+        public const int IPV6_MULTICAST_IF = (int)SocketOptionName.MulticastInterface; // 9
+        public const int IPV6_MULTICAST_HOPS = 10;
+        public const int IPV6_MULTICAST_LOOP = (int)SocketOptionName.MulticastLoopback; // 11;
+        public const int IPV6_V6ONLY = (int)SocketOptionName.IPv6Only; // 27;
+        public const int IPV6_UNICAST_HOPS = 4; // (int)SocketOptionName.IpTimeToLive ?
+        public const int IPV6_RECVPKTINFO = (int)SocketOptionName.PacketInformation; // 19;
+        public const int IPV6_PKTINFO = (int)SocketOptionName.PacketInformation; // 19
+        public const int IPV6_RECVHOPLIMIT = (int)SocketOptionName.HopLimit; // 21;
+        public const int IPV6_HOPLIMIT = (int)SocketOptionName.HopLimit; // 21;
+        public const int IPV6_RECVTCLASS = 40;
+        public const int IPV6_TCLASS = 39;
+
+        // MulticastOption
+        public const int MCAST_JOIN_GROUP = 41;
+        public const int MCAST_LEAVE_GROUP = 42;
+        public const int MCAST_BLOCK_SOURCE = 43;
+        public const int MCAST_UNBLOCK_SOURCE = 44;
+        public const int MCAST_JOIN_SOURCE_GROUP = 45;
+        public const int MCAST_LEAVE_SOURCE_GROUP = 46;
+
         /// <summary>
         /// Reading stops at \n or \r.
         /// </summary>
@@ -100,6 +130,74 @@ namespace Peachpie.Library.Network
         /// (Default) Safe for reading binary data.
         /// </summary>
         public const int PHP_BINARY_READ = 2;
+
+        /// <summary>
+        /// Maximum number of backlog connections.
+        /// Hardcoded since obtaining this value on .NET throws <see cref="SocketException"/>.
+        /// https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.socketoptionname?view=netcore-3.1#System_Net_Sockets_SocketOptionName_MaxConnections
+        /// </summary>
+        public const int SOMAXCONN = 2147483647;
+
+        // AddrInfo
+        public const int AI_PASSIVE = 1;
+        public const int AI_CANONNAME = 2;
+        public const int AI_NUMERICHOST = 4;
+        public const int AI_NUMERICSERV = 8;
+        public const int AI_ADDRCONFIG = 1024;
+
+        // SocketError
+        public const int SOCKET_EINTR = (int)SocketError.Interrupted; // 10004
+        public const int SOCKET_EBADF = 10009;
+        public const int SOCKET_EACCES = (int)SocketError.AccessDenied; // 10013
+        public const int SOCKET_EFAULT = (int)SocketError.Fault; // 10014
+        public const int SOCKET_EINVAL = (int)SocketError.InvalidArgument; // 10022
+        public const int SOCKET_EMFILE = (int)SocketError.TooManyOpenSockets; // 10024
+        public const int SOCKET_EWOULDBLOCK = (int)SocketError.WouldBlock; // 10035
+        public const int SOCKET_EINPROGRESS = (int)SocketError.InProgress; // 10036
+        public const int SOCKET_EALREADY = (int)SocketError.AlreadyInProgress; // 10037
+        public const int SOCKET_ENOTSOCK = (int)SocketError.NotSocket; // 10038
+        public const int SOCKET_EDESTADDRREQ = (int)SocketError.DestinationAddressRequired; // 10039
+        public const int SOCKET_EMSGSIZE = (int)SocketError.MessageSize; // 10040
+        public const int SOCKET_EPROTOTYPE = (int)SocketError.ProtocolType; // 10041
+        public const int SOCKET_ENOPROTOOPT = (int)SocketError.ProtocolOption; // 10042
+        public const int SOCKET_EPROTONOSUPPORT = (int)SocketError.ProtocolNotSupported; // 10043
+        public const int SOCKET_ESOCKTNOSUPPORT = (int)SocketError.SocketNotSupported; // 10044
+        public const int SOCKET_EOPNOTSUPP = (int)SocketError.OperationNotSupported; // 10045
+        public const int SOCKET_EPFNOSUPPORT = (int)SocketError.ProtocolFamilyNotSupported; // 10046
+        public const int SOCKET_EAFNOSUPPORT = (int)SocketError.AddressFamilyNotSupported; // 10047
+        public const int SOCKET_EADDRINUSE = (int)SocketError.AddressAlreadyInUse; // 10048
+        public const int SOCKET_EADDRNOTAVAIL = (int)SocketError.AddressNotAvailable; // 10049
+        public const int SOCKET_ENETDOWN = (int)SocketError.NetworkDown; // 10050
+        public const int SOCKET_ENETUNREACH = (int)SocketError.NetworkUnreachable; // 10051
+        public const int SOCKET_ENETRESET = (int)SocketError.NetworkReset; // 10052
+        public const int SOCKET_ECONNABORTED = (int)SocketError.ConnectionAborted; // 10053
+        public const int SOCKET_ECONNRESET = (int)SocketError.ConnectionReset; // 10054
+        public const int SOCKET_ENOBUFS = (int)SocketError.NoBufferSpaceAvailable; // 10055
+        public const int SOCKET_EISCONN = (int)SocketError.IsConnected; // 10056
+        public const int SOCKET_ENOTCONN = (int)SocketError.NotConnected; // 10057
+        public const int SOCKET_ESHUTDOWN = (int)SocketError.Shutdown; // 10058
+        public const int SOCKET_ETOOMANYREFS = 10059;
+        public const int SOCKET_ETIMEDOUT = (int)SocketError.TimedOut; // 10060
+        public const int SOCKET_ECONNREFUSED = (int)SocketError.ConnectionRefused; // 10061
+        public const int SOCKET_ELOOP = 10062;
+        public const int SOCKET_ENAMETOOLONG = 10063;
+        public const int SOCKET_EHOSTDOWN = (int)SocketError.HostDown; // 10064
+        public const int SOCKET_EHOSTUNREACH = (int)SocketError.HostUnreachable; // 10065
+        public const int SOCKET_ENOTEMPTY = 10066;
+        public const int SOCKET_EPROCLIM = (int)SocketError.ProcessLimit; // 10067
+        public const int SOCKET_EUSERS = 10068;
+        public const int SOCKET_EDQUOT = 10069;
+        public const int SOCKET_ESTALE = 10070;
+        public const int SOCKET_EREMOTE = 10071;
+        public const int SOCKET_EDISCON = (int)SocketError.Disconnecting; // 10101
+        public const int SOCKET_SYSNOTREADY = (int)SocketError.SystemNotReady; // 10091
+        public const int SOCKET_VERNOTSUPPORTED = (int)SocketError.VersionNotSupported; // 10092
+        public const int SOCKET_NOTINITIALISED = (int)SocketError.NotInitialized; // 10093
+        public const int SOCKET_HOST_NOT_FOUND = (int)SocketError.HostNotFound; // 11001
+        public const int SOCKET_TRY_AGAIN = (int)SocketError.TryAgain; // 11002
+        public const int SOCKET_NO_RECOVERY = (int)SocketError.NoRecovery; // 11003
+        public const int SOCKET_NO_DATA = (int)SocketError.NoData; // 11004
+        public const int SOCKET_NO_ADDRESS = (int)SocketError.NoData; // 11004
 
         #endregion
 
