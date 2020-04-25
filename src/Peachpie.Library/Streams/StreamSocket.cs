@@ -364,6 +364,45 @@ namespace Pchp.Library.Streams
 
         #endregion
 
+        #region stream_socket_shutdown
+
+        public const int STREAM_SHUT_RD = (int)SocketShutdown.Receive; // 0;
+        public const int STREAM_SHUT_WR = (int)SocketShutdown.Send; // 1;
+        public const int STREAM_SHUT_RDWR = (int)SocketShutdown.Both; // 2;
+
+        /// <summary>
+        /// Shutdown a full-duplex connection.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="how">One of the following constants:
+        /// - STREAM_SHUT_RD (disable further receptions)<br />
+        /// - STREAM_SHUT_WR (disable further transmissions)<br />
+        /// - STREAM_SHUT_RDWR (disable further receptions and transmissions).<br/>
+        /// </param>
+        /// <returns></returns>
+        public static bool stream_socket_shutdown(PhpResource stream, SocketShutdown how)
+        {
+            var s = SocketStream.GetValid(stream);
+            if (s != null)
+            {
+                try
+                {
+                    s.Socket.Shutdown(how);
+                }
+                catch (SocketException ex)
+                {
+                    PhpException.Throw(PhpError.Warning, ex.Message);
+                    return false;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        #endregion
+
         #region stream_socket_enable_crypto
 
         /// <summary>
