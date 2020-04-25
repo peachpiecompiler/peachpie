@@ -584,11 +584,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 _aliasedValueLoc = null;
             }
 
+            if (_synthesizedIndexLoc != null)
+            {
+                cg.ReturnTemporaryLocal(_synthesizedIndexLoc);
+                _synthesizedIndexLoc = null;
+            }
+
             cg.ReturnTemporaryLocal(_enumeratorLoc);
             _enumeratorLoc = null;
-
-            cg.ReturnTemporaryLocal(_synthesizedIndexLoc);
-            _synthesizedIndexLoc = null;
 
             // unbind
             _moveNextMethod = null;
