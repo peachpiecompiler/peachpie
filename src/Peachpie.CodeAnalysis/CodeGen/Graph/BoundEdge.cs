@@ -71,9 +71,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // }
 
                 // if (Condition)
-                cg.EmitHiddenSequencePoint(); 
+                cg.EmitHiddenSequencePoint();
                 cg.Builder.MarkLabel(condition);
-                
+
                 cg.EmitSequencePoint(this.Condition.PhpSyntax);
                 cg.EmitConvert(condition, cg.CoreTypes.Boolean);
 
@@ -318,7 +318,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ForeachEnumereeEdge
     {
-        CodeGenerator.TemporaryLocalDefinition _enumeratorLoc;
+        CodeGenerator.TemporaryLocalDefinition _enumeratorLoc, _synthesizedIndexLoc;
         LocalDefinition _aliasedValueLoc;
         MethodSymbol _moveNextMethod, _disposeMethod, _currentValue, _currentKey, _current, _iterator_next;
 
@@ -360,7 +360,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(_moveNextMethod.IsStatic == false);
 
             // leaving scope of `foreach` body
-            
+
             EmitReleaseRef(cg);
 
             if (_enumeratorLoc.Type.IsValueType)
@@ -421,12 +421,23 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.Builder.EmitNullConstant();
                 cg.Builder.EmitLocalStore(_aliasedValueLoc);
             }
+
+            var nextedge = NextBlock.NextEdge as ForeachMoveNextEdge;
+            if (_currentKey == null && nextedge.KeyVariable != null && !IsAPairValue(_current.ReturnType, out _, out _))
+            {
+                // KeyVariable will be iterated from 1
+                _synthesizedIndexLoc = cg.GetTemporaryLocal(cg.CoreTypes.Long, true, immediateReturn: false);
+
+                // Template: KeyVariable = 0;
+                cg.Builder.EmitLongConstant(0L);
+                _synthesizedIndexLoc.EmitStore();
+            }
         }
 
         static bool IsAPairValue(TypeSymbol type, out Symbol key, out Symbol value)
         {
             key = value = default;
-            
+
             if (type.IsValueType)
             {
                 if (type.Name == "ValueTuple" && ((NamedTypeSymbol)type).Arity == 2)
@@ -472,7 +483,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
 
                 var valuetype = _current.ReturnType;
-                
+
                 // ValueTuple<T1, T2> (Item1, Item2)
                 // KeyValuePair<TKey, TValue> (Key, Value)
                 if (IsAPairValue(valuetype, out var skey, out var svalue))
@@ -520,7 +531,20 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                     if (keyVar != null)
                     {
-                        throw new InvalidOperationException();
+                        Debug.Assert(_synthesizedIndexLoc != null);
+
+                        cg.EmitSequencePoint(keyVar.PhpSyntax);
+
+                        // key = LOAD KeyVariable
+                        keyVar.BindPlace(cg).EmitStore(cg, () => _synthesizedIndexLoc.EmitLoad(cg.Builder), keyVar.TargetAccess());
+
+                        // KeyVariable ++
+                        _synthesizedIndexLoc.EmitLoad(cg.Builder); // Key
+                        cg.Builder.EmitLongConstant(1L);           // 1
+
+                        cg.Builder.EmitOpCode(ILOpCode.Add);
+
+                        _synthesizedIndexLoc.EmitStore();
                     }
                 }
             }
@@ -562,6 +586,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             cg.ReturnTemporaryLocal(_enumeratorLoc);
             _enumeratorLoc = null;
+
+            cg.ReturnTemporaryLocal(_synthesizedIndexLoc);
+            _synthesizedIndexLoc = null;
 
             // unbind
             _moveNextMethod = null;
@@ -745,7 +772,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             cg.EmitHiddenSequencePoint();
             cg.Builder.MarkLabel(this.EnumereeEdge._lbl_MoveNext);
-            
+
             cg.EmitSequencePoint(MoveNextSpan);
             this.EnumereeEdge.EmitMoveNext(cg); // bool
             cg.Builder.EmitBranch(ILOpCode.Brtrue, lblBody);
