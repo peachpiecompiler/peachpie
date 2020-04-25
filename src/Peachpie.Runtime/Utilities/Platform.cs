@@ -80,7 +80,7 @@ namespace Pchp.Core.Utilities
     /// <summary>
     /// Windows specific functions.
     /// </summary>
-    static class WindowsPlatform
+    public static class WindowsPlatform
     {
         [DllImport("kernel32.dll")]
         private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
@@ -94,19 +94,43 @@ namespace Pchp.Core.Utilities
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern IntPtr GetStdHandle(int nStdHandle);
 
-        const int STD_INPUT_HANDLE = -10;
-        const int STD_OUTPUT_HANDLE = -11;
-        const int STD_ERROR_HANDLE = -12;
+        public const int STD_INPUT_HANDLE = -10;
+        public const int STD_OUTPUT_HANDLE = -11;
+        public const int STD_ERROR_HANDLE = -12;
 
-        const int ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
+        const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
 
-        static bool Enable_VT100(int handle_no)
+        /// <summary>
+        /// Gets value indicating whether console mode of given Std input/output/error handle
+        /// has <c>ENABLE_VIRTUAL_TERMINAL_PROCESSING</c> enabled.
+        /// </summary>
+        /// <param name="handle_no">STD_*_handle.</param>
+        public static bool Has_VT100(int handle_no)
         {
             var handle = GetStdHandle(handle_no);
 
             if (handle != IntPtr.Zero && GetConsoleMode(handle, out var mode))
             {
-                mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+                return (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+            }
+
+            return false;
+        }
+
+        public static bool Enable_VT100(int handle_no, bool enable)
+        {
+            var handle = GetStdHandle(handle_no);
+
+            if (handle != IntPtr.Zero && GetConsoleMode(handle, out var mode))
+            {
+                if (enable)
+                {
+                    mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+                }
+                else
+                {
+                    mode &= ~ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+                }
 
                 return SetConsoleMode(handle, mode);
             }
@@ -116,8 +140,8 @@ namespace Pchp.Core.Utilities
 
         public static void Enable_VT100()
         {
-            Enable_VT100(STD_OUTPUT_HANDLE);
-            Enable_VT100(STD_ERROR_HANDLE);
+            Enable_VT100(STD_OUTPUT_HANDLE, true);
+            Enable_VT100(STD_ERROR_HANDLE, true);
         }
     }
 

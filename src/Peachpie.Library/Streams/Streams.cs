@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 using System;
 using System.Collections.Generic;
@@ -1180,15 +1181,68 @@ namespace Pchp.Library.Streams
         /// <param name="stream">Stream resource. If <c>null</c> or not a stream resource, warning is thrown and function returns <c>false</c>.</param>
         public static bool stream_isatty(PhpResource stream)
         {
-            var valid = PhpStream.GetValid(stream);
-            if (valid != null)
+            var s = PhpStream.GetValid(stream);
+            if (s != null)
             {
-                switch (valid.OpenedPath)
+                if (InputOutputStreamWrapper.IsStdIn(s)) return !Console.IsInputRedirected; // -10
+                if (InputOutputStreamWrapper.IsStdOut(s)) return !Console.IsOutputRedirected;// -11
+                if (InputOutputStreamWrapper.IsStdErr(s)) return !Console.IsErrorRedirected; // -12
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region sapi_windows_vt100_support
+
+        /// <summary>
+        /// Resolves one of if possible
+        /// <see cref="WindowsPlatform.STD_ERROR_HANDLE"/>,
+        /// <see cref="WindowsPlatform.STD_OUTPUT_HANDLE"/>,
+        /// <see cref="WindowsPlatform.STD_INPUT_HANDLE"/>.
+        /// </summary>
+        static bool TryResolveWindowsIoStdHandle(PhpResource stream, out int handle)
+        {
+            if (CurrentPlatform.IsWindows)
+            {
+                var s = PhpStream.GetValid(stream);
+                if (s != null)
                 {
-                    case "php://stdin": return !Console.IsInputRedirected; // -10
-                    case "php://stdout": return !Console.IsOutputRedirected;// -11
-                    case "php://stderr": return !Console.IsErrorRedirected; // -12
+                    if (InputOutputStreamWrapper.IsStdIn(s))
+                    {
+                        handle = WindowsPlatform.STD_INPUT_HANDLE;
+                        return true;
+                    }
+
+                    if (InputOutputStreamWrapper.IsStdOut(s))
+                    {
+                        handle = WindowsPlatform.STD_OUTPUT_HANDLE;
+                        return true;
+                    }
+
+                    if (InputOutputStreamWrapper.IsStdErr(s))
+                    {
+                        handle = WindowsPlatform.STD_ERROR_HANDLE;
+                        return true;
+                    }
                 }
+            }
+
+            handle = 0;
+            return false;
+        }
+
+        public static bool sapi_windows_vt100_support(PhpResource stream)
+        {
+            return TryResolveWindowsIoStdHandle(stream, out var handle) && WindowsPlatform.Has_VT100(handle);
+        }
+
+        public static bool sapi_windows_vt100_support(PhpResource stream, bool enable)
+        {
+            if (TryResolveWindowsIoStdHandle(stream, out var handle))
+            {
+                return WindowsPlatform.Enable_VT100(handle, enable);
             }
 
             return false;

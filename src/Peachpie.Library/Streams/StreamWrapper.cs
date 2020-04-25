@@ -1633,6 +1633,10 @@ namespace Pchp.Library.Streams
 
         #endregion
 
+        public static bool IsStdIn(PhpStream stream) => stream is NativeStream && stream.OpenedPath == "php://stdin";
+        public static bool IsStdOut(PhpStream stream) => stream is NativeStream && stream.OpenedPath == "php://stdout";
+        public static bool IsStdErr(PhpStream stream) => stream is NativeStream && stream.OpenedPath == "php://stderr";
+
         /// <summary>
         /// Represents the console input stream (alias php://stdin).
         /// </summary>
