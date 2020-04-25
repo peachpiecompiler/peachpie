@@ -270,7 +270,7 @@ namespace Peachpie.NET.Sdk.Versioning
                 case Operation.TildeVersionRange:
                     return new FloatingVersion
                     {
-                        LowerBound = Version.AnyToZero(),
+                        LowerBound = Version.AnyToZero().WithStabilityFlag(Version.Stability ?? ComposerVersion.StabilityDev),
                         UpperBound = Version.IsAnyBuild
                             ? new ComposerVersion(Version.Major + 1, 0, 0) { Stability = Version.Stability ?? ComposerVersion.StabilityDev }
                             : new ComposerVersion(Version.Major, Version.Minor + 1, 0) { Stability = Version.Stability ?? ComposerVersion.StabilityDev },
@@ -476,7 +476,7 @@ namespace Peachpie.NET.Sdk.Versioning
         {
             return new FloatingVersion
             {
-                LowerBound = From.AnyToZero(),
+                LowerBound = From.AnyToZero().WithStabilityFlag(From.Stability ?? ComposerVersion.StabilityDev),
                 UpperBound = To.GetClosestHigher(),
                 UpperBoundExclusive = true,
             };

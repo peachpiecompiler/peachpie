@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace Peachpie.NET.Sdk.Versioning
@@ -24,33 +25,32 @@ namespace Peachpie.NET.Sdk.Versioning
         /// <summary>
         /// Gets corresponding package floating version string.
         /// </summary>
-        public override string ToString()
+        public string ToString(bool forcePreRelease)
         {
             if (LowerBound.HasValue || UpperBound.HasValue)
             {
                 var value = new StringBuilder();
+                var suffix = (forcePreRelease || (LowerBound.HasValue ? LowerBound.IsPreRelease : UpperBound.IsPreRelease))
+                    ? "-*"
+                    : "";
 
                 if (!UpperBound.HasValue && !LowerBoundExclusive)
                 {
-                    // version
-                    return $"[{LowerBound},]";// + (LowerBound.Stability != null ? "-*" : "");
+                    // minimum version
+                    return $"[{LowerBound.AnyToZero()}{suffix},]";
                 }
 
                 value.Append(LowerBoundExclusive ? '(' : '[');
 
                 if (LowerBound.HasValue)
                 {
-                    value.Append(LowerBound.ToString());
-                    if (LowerBound.Stability != null)
-                    {
-                        if (LowerBound.PartsCount == 0) value.Append('*');
-                        //value.Append("-*");
-                    }
+                    value.Append(LowerBound.AnyToZero().ToString());
+                    value.Append(suffix);
 
                     if (UpperBound.HasValue && !LowerBoundExclusive && LowerBound == UpperBound)
                     {
-                        // [version]
-                        value.Append("]");
+                        // exact [version]
+                        value.Append(suffix.Length == 0 ? "]" : ",]");
                         return value.ToString();
                     }
                 }
@@ -59,13 +59,10 @@ namespace Peachpie.NET.Sdk.Versioning
 
                 if (UpperBound.HasValue)
                 {
-                    value.Append(UpperBound.ToString());
+                    // upper bound does not allow asteriks
+                    Debug.Assert(!UpperBound.IsAnyMajor && !UpperBound.IsAnyMinor && !UpperBound.IsAnyBuild);
 
-                    if (UpperBound.Stability != null)
-                    {
-                        if (UpperBound.PartsCount == 0) value.Append('*');
-                        //value.Append("-*");
-                    }
+                    value.Append(UpperBound.ToString());
                 }
 
                 value.Append(UpperBoundExclusive ? ')' : ']');
@@ -75,8 +72,14 @@ namespace Peachpie.NET.Sdk.Versioning
             }
             else
             {
-                return "*";
+                //
+                return forcePreRelease ? "0.0.0-*" : "*";
             }
         }
+
+        /// <summary>
+        /// Gets corresponding package floating version string.
+        /// </summary>
+        public override string ToString() => ToString(forcePreRelease: false);
     }
 }
