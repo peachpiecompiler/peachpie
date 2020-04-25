@@ -312,7 +312,20 @@ namespace Peachpie.Library.Network
             return new SocketResource(new Socket(domain, type, protocol));
         }
 
-        //socket_export_stream — Export a socket extension resource into a stream that encapsulates a socket
+        /// <summary>
+        /// Export a socket extension resource into a stream that encapsulates a socket.
+        /// </summary>
+        [return: CastToFalse]
+        public static SocketStream socket_export_stream(Context ctx, PhpResource socket)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s != null)
+            {
+                return new SocketStream(ctx, s.Socket, s.Socket.RemoteEndPoint.ToString(), StreamContext.Default);
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Gets socket options for the socket
@@ -465,7 +478,19 @@ namespace Peachpie.Library.Network
             }
         }
 
-        //socket_import_stream — Import a stream
+        /// <summary>
+        /// Imports a stream that encapsulates a socket into a socket extension resource.
+        /// </summary>
+        public static PhpResource socket_import_stream(PhpResource stream)
+        {
+            var s = SocketStream.GetValid(stream);
+            if (s != null)
+            {
+                return new SocketResource(s.Socket);
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Returns the last error on the socket.
@@ -584,6 +609,8 @@ namespace Peachpie.Library.Network
         //socket_recvfrom — Receives data from a socket whether or not it is connection-oriented
         //socket_recvmsg — Read a message
 
+        #region socket_select
+
         /// <summary>
         /// Selects values of type <see cref="SocketResource"/> and adds them to newly created list.
         /// </summary>
@@ -615,12 +642,10 @@ namespace Peachpie.Library.Network
             return list.Count;
         }
 
-        #region socket_select
-
         /// <summary>
         /// Filters out socket resources from <paramref name="original"/> that are contained in <paramref name="list"/>.
         /// </summary>
-        static PhpArray SocketListToPhpArray(List<Socket> list, PhpArray original)
+        static PhpArray ToPhpArrayOrNull(List<Socket> list, PhpArray original)
         {
             if (original == null)
             {
@@ -683,9 +708,9 @@ namespace Peachpie.Library.Network
             }
 
             // 
-            read = SocketListToPhpArray(checkread, read);
-            write = SocketListToPhpArray(checkwrite, write);
-            except = SocketListToPhpArray(checkerr, except);
+            read = ToPhpArrayOrNull(checkread, read);
+            write = ToPhpArrayOrNull(checkwrite, write);
+            except = ToPhpArrayOrNull(checkerr, except);
 
             // count 
             return

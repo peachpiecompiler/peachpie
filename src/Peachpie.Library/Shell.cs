@@ -425,7 +425,7 @@ namespace Pchp.Library
                 else
                 {
                     p.StartInfo.FileName = "/bin/bash";
-                    p.StartInfo.Arguments = command;
+                    p.StartInfo.Arguments = "-c " + command;
                 }
 
                 p.StartInfo.UseShellExecute = false;

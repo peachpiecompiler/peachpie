@@ -329,7 +329,9 @@ namespace Peachpie.Library.PDO
 
             if (Result == null)
             {
-                throw new InvalidOperationException();
+                // statement not executed
+                PhpException.Throw(PhpError.Notice, "no results to fetch");
+                return false;
             }
 
             try

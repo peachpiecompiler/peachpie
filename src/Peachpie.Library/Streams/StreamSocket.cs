@@ -520,6 +520,8 @@ namespace Pchp.Library.Streams
                 PhpException.ArgumentValueNotSupported("flags", (int)flags);
             }
 
+            var connect_async = (flags & SocketOptions.Asynchronous) != 0;
+
             try
             {
                 // workitem 299181; for remoteSocket as IPv4 address it results in IPv6 address
@@ -583,7 +585,7 @@ namespace Pchp.Library.Streams
                     }
 
                     //
-                    return new SocketStream(ctx, socket, remoteSocket, context, (flags & SocketOptions.Asynchronous) != 0)
+                    return new SocketStream(ctx, socket, remoteSocket, context)
                     {
                         SslStream = sslstream,
                     };
