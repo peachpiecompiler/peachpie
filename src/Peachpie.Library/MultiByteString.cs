@@ -143,36 +143,83 @@ namespace Pchp.Library
 
         #region Encodings
 
+        /// <summary>
+        /// Encoding name.
+        /// Provides case insensitive comparison.
+        /// </summary>
+        struct EncodingName : IEquatable<EncodingName>, IEquatable<string>
+        {
+            public string Name { get; set; }
+
+            static readonly HashSet<string> s_unicodenames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "utf8", "utf-8", "utf16", "utf-16", "utf-16le", "utf-16be", "unicode", "utf",
+            };
+
+            public EncodingName(string name)
+            {
+                Name = name;
+            }
+
+            public static implicit operator EncodingName(string name) => new EncodingName(name);
+
+            public bool IsCodePageEncoding(out int codepage) => IsCodePageEncoding(Name, out codepage);
+
+            public static bool IsCodePageEncoding(string name, out int codepage)
+            {
+                if (name != null)
+                {
+                    // cp{CodePage}
+                    if (name.StartsWith("cp", StringComparison.OrdinalIgnoreCase) &&
+                        name.Length > 2 &&
+                        int.TryParse(name.Substring(2), out codepage)) // TODO: netstandard2.1 ReadOnlySpan
+                    {
+                        return true;
+                    }
+
+                    // Codepage - {CodePage}
+                    const string CodepagePrefix = "Codepage - ";
+                    if (name.StartsWith(CodepagePrefix, StringComparison.OrdinalIgnoreCase) &&
+                        name.Length > CodepagePrefix.Length &&
+                        int.TryParse(name.Substring(CodepagePrefix.Length), out codepage))  // TODO: netstandard2.1 ReadOnlySpan
+                    {
+                        return true;
+                    }
+                }
+
+                //
+                codepage = 0;
+                return false;
+            }
+
+            public bool Is8bit() => Equals("8bit");
+
+            public bool IsUtfEncoding() => IsUtfEncoding(Name);
+
+            public static bool IsUtfEncoding(string name) => name != null && s_unicodenames.Contains(name);
+
+            static bool Equals(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+
+            public bool Equals(EncodingName other) => Equals(Name, other.Name);
+
+            public bool Equals(string other) => Equals(Name, other);
+
+            public override bool Equals(object obj)
+                => obj is EncodingName encname ? Equals(encname)
+                : obj is string str ? Equals(new EncodingName { Name = str })
+                : false;
+
+            public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Name ?? "");
+
+        }
+
         sealed class PhpEncodingProvider : EncodingProvider
         {
-            public override Encoding GetEncoding(int codepage)
+            static readonly Dictionary<EncodingName, Func<Encoding>> s_encmap = new Dictionary<EncodingName, Func<Encoding>>()
             {
-                return null;
-            }
-
-            public static bool IsUtfEncoding(string name)
-            {
-                return
-                    name.EqualsOrdinalIgnoreCase("UTF-8") ||
-                    name.EqualsOrdinalIgnoreCase("UTF-16") ||
-                    name.EqualsOrdinalIgnoreCase("UTF-16LE") ||
-                    name.EqualsOrdinalIgnoreCase("UTF-16BE") ||
-                    name.EqualsOrdinalIgnoreCase("Unicode") ||
-                    name.EqualsOrdinalIgnoreCase("UTF");
-            }
-
-            public static bool IsUtfEncoding(Encoding enc)
-            {
-                return enc is UnicodeEncoding || enc == Encoding.UTF8 || enc == Encoding.UTF32;
-            }
-
-            public override Encoding GetEncoding(string name)
-            {
-                // encoding names used in PHP
-
                 //enc["pass"] = Encoding.Default; // TODO: "pass" encoding
-                if (name.EqualsOrdinalIgnoreCase("auto")) return Encoding.UTF8;
-                if (name.EqualsOrdinalIgnoreCase("wchar")) return Encoding.Unicode;
+                { "auto", () => Encoding.UTF8 },
+                { "wchar", () => Encoding.Unicode },
                 //byte2be
                 //byte2le
                 //byte4be
@@ -182,7 +229,7 @@ namespace Pchp.Library
                 //HTML-ENTITIES
                 //Quoted-Printable
                 //7bit
-                //8bit
+                //8bit // EightBitEncoding.Instance
                 //UCS-4
                 //UCS-4BE
                 //UCS-4LE
@@ -194,11 +241,11 @@ namespace Pchp.Library
                 //UTF-32LE
                 //UTF-16
                 //UTF-16BE
-                if (name.EqualsOrdinalIgnoreCase("UTF-16LE")) return Encoding.Unicode;// alias UTF-16
-                if (name.EqualsOrdinalIgnoreCase("UTF-8")) return Encoding.UTF8;// alias UTF8
+                { "UTF-16LE", () => Encoding.Unicode }, // alias UTF-16
+                { "UTF-8", () => Encoding.UTF8 },       // alias UTF8
                 //UTF-7
                 //UTF7-IMAP
-                if (name.EqualsOrdinalIgnoreCase("ASCII")) return Encoding.ASCII;  // alias us-ascii
+                { "ASCII", () => Encoding.ASCII },      // alias us-ascii
                 //EUC-JP
                 //SJIS
                 //eucJP-win
@@ -237,20 +284,32 @@ namespace Pchp.Library
                 //KOI8-U
                 //ArmSCII-8
                 //CP850
+            };
 
-                // cp{CodePage}
-                if (name.StartsWith("cp", StringComparison.OrdinalIgnoreCase) &&
-                    name.Length > 2 &&
-                    int.TryParse(name.Substring(2), out int codepage))
+
+            public override Encoding GetEncoding(int codepage)
+            {
+                return null;
+            }
+
+            public static bool IsUtfEncoding(Encoding enc)
+            {
+                return enc is UnicodeEncoding || enc == Encoding.UTF8 || enc == Encoding.UTF32;
+            }
+
+            public override Encoding GetEncoding(string name)
+            {
+                var encname = new EncodingName(name);
+
+                // encoding names used in PHP
+                if (s_encmap.TryGetValue(encname, out var getter))
                 {
-                    return Encoding.GetEncoding(codepage);
+                    return getter?.Invoke();
                 }
 
+                // cp{CodePage}
                 // Codepage - {CodePage}
-                const string CodepagePrefix = "Codepage - ";
-                if (name.StartsWith(CodepagePrefix, StringComparison.OrdinalIgnoreCase) &&
-                    name.Length > CodepagePrefix.Length &&
-                    int.TryParse(name.Substring(CodepagePrefix.Length), out codepage))
+                if (encname.IsCodePageEncoding(out var codepage))
                 {
                     return Encoding.GetEncoding(codepage);
                 }
@@ -258,6 +317,39 @@ namespace Pchp.Library
                 //
                 return null;
             }
+
+            ///// <summary>
+            ///// 8-bit PHP encoding.
+            ///// Converts bytes to string by simply extending each byte to two-byte char.
+            ///// .NET string is converted to bytes using UTF-8.
+            ///// </summary>
+            //sealed class EightBitEncoding : Encoding
+            //{
+            //    public static readonly Encoding Instance = new EightBitEncoding();
+
+            //    private EightBitEncoding() { }
+
+            //    public override int GetCharCount(byte[] bytes, int index, int count) => count;
+
+            //    public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+            //    {
+            //        for (int i = 0; i < byteCount; i++)
+            //        {
+            //            chars[charIndex + i] = (char)bytes[byteIndex + i];
+            //        }
+
+            //        return byteCount;
+            //    }
+
+            //    public override int GetMaxCharCount(int byteCount) => byteCount;
+
+            //    public override int GetByteCount(char[] chars, int index, int count) => UTF8.GetByteCount(chars, index, count);
+
+            //    public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+            //        => UTF8.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
+
+            //    public override int GetMaxByteCount(int charCount) => UTF8.GetMaxByteCount(charCount);
+            //}
         }
 
         /// <summary>
@@ -378,7 +470,7 @@ namespace Pchp.Library
                 //HTML-ENTITIES
                 //Quoted-Printable
                 //7bit
-                //8bit
+                //8bit,
                 //UCS-4
                 //UCS-4BE
                 //UCS-4LE
@@ -521,7 +613,18 @@ namespace Pchp.Library
         /// <summary>
         /// Counts characters in a Unicode string or multi-byte string in PhpBytes.
         /// </summary>
-        public static int mb_strlen(Context ctx, PhpValue str, string encoding = null) => ToString(ctx, str, encoding).Length;
+        public static int mb_strlen(Context ctx, PhpString str, string encoding = null)
+        {
+            if (encoding != null && ((EncodingName)encoding).Is8bit())
+            {
+                // gets byte count in str
+                return str.GetByteCount(ctx.StringEncoding);
+            }
+
+            // encode to unicode string using provided encoding,
+            // return characters count
+            return ToString(ctx, str, encoding).Length;
+        }
 
         /// <summary>
         /// Return width of string.
@@ -981,7 +1084,7 @@ namespace Pchp.Library
             HashSet<object> visited = null;
 
             // only convert non-unicode encodings, otherwise keep the `System.String`
-            var to_enc = string.IsNullOrEmpty(to_encoding) || PhpEncodingProvider.IsUtfEncoding(to_encoding)
+            var to_enc = string.IsNullOrEmpty(to_encoding) || EncodingName.IsUtfEncoding(to_encoding)
                 ? null
                 : (ctx.StringEncoding.WebName == to_encoding/*internal encoding might not be registered but it's there*/ ? ctx.StringEncoding : GetEncoding(to_encoding));
 
