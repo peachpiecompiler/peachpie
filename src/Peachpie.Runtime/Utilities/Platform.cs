@@ -143,6 +143,46 @@ namespace Pchp.Core.Utilities
             Enable_VT100(STD_OUTPUT_HANDLE, true);
             Enable_VT100(STD_ERROR_HANDLE, true);
         }
+
+        [DllImport("kernel32.dll")]
+        private static extern bool GetVersionEx(ref OSVERSIONINFOEX osVersionInfo);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct OSVERSIONINFOEX
+        {
+            public int dwOSVersionInfoSize;
+            public int dwMajorVersion;
+            public int dwMinorVersion;
+            public int dwBuildNumber;
+            public int dwPlatformId;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            public string szCSDVersion;
+            public short wServicePackMajor;
+            public short wServicePackMinor;
+            public short wSuiteMask;
+            public byte wProductType;
+            public byte wReserved;
+        }
+
+        internal static void GetVersionInformation(
+            out short sp_major, out short sp_minor,
+            out byte producttype, out short suitemask)
+        {
+            sp_major = sp_minor = suitemask = 0;
+            producttype = 0;
+
+            var osVersionInfo = new OSVERSIONINFOEX();
+
+            osVersionInfo.dwOSVersionInfoSize = Marshal.SizeOf(typeof(OSVERSIONINFOEX));
+
+            if (GetVersionEx(ref osVersionInfo))
+            {
+                sp_major = osVersionInfo.wServicePackMajor;
+                sp_minor = osVersionInfo.wServicePackMinor;
+                producttype = osVersionInfo.wProductType;
+                suitemask = osVersionInfo.wSuiteMask;
+            }
+        }
     }
 
     #endregion

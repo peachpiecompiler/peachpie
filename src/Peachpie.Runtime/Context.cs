@@ -193,7 +193,8 @@ namespace Pchp.Core
                     }
                 }
 
-                ConstsMap.DefineAppConstant("PHP_SAPI", new Func<Context, PhpValue>(ctx => ctx.ServerApi), false, "Core");
+                // define various Core constants dynamically
+                DefineCoreConstants();
 
                 // scripts
                 foreach (var t in assembly.GetTypes())
@@ -211,6 +212,39 @@ namespace Pchp.Core
 
                 //
                 s_targetPhpLanguageAttribute ??= assembly.GetCustomAttribute<TargetPhpLanguageAttribute>();
+            }
+
+            /// <summary>
+            /// Defines Core constants depending on host OS and runtime.
+            /// </summary>
+            static void DefineCoreConstants()
+            {
+                ConstsMap.DefineAppConstant("PHP_SAPI", new Func<Context, PhpValue>(ctx => ctx.ServerApi), false, "Core");
+
+                if (CurrentPlatform.IsWindows)
+                {
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_MAJOR", Environment.OSVersion.Version.Major);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_MINOR", Environment.OSVersion.Version.Minor);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_BUILD", Environment.OSVersion.Version.Build);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_PLATFORM", (int)Environment.OSVersion.Platform);
+
+                    // PHP_WINDOWS_VERSION_SP_**
+                    WindowsPlatform.GetVersionInformation(
+                        out var sp_major, out var sp_minor,
+                        out var producttype,
+                        out var suitemask);
+
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_SP_MAJOR", (int)sp_major);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_SP_MINOR", (int)sp_minor);
+
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_SUITEMASK", (int)suitemask);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_PRODUCTTYPE", (int)producttype);
+                }
+            }
+
+            static void DefineCoreConstant(string name, PhpValue value)
+            {
+                ConstsMap.DefineAppConstant(name, value, false, "Core");
             }
         }
 

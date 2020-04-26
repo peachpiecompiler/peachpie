@@ -62,5 +62,14 @@ namespace Pchp.Library
         public static readonly int PHP_DEBUG = ContextExtensions.IsDebugRuntime() ? 1 : 0;
 
         public const int PHP_ZTS = 1;
+
+        /// <summary>This is a workstation system, specified as a value of <c>PHP_WINDOWS_VERSION_PRODUCTTYPE</c> constant.</summary>
+        public const int PHP_WINDOWS_NT_WORKSTATION = 1;
+
+        /// <summary>This is a server system, specified as a value of <c>PHP_WINDOWS_VERSION_PRODUCTTYPE</c> constant.</summary>
+        public const int PHP_WINDOWS_NT_SERVER = 3;
+
+        /// <summary>This is a domain controller, specified as a value of <c>PHP_WINDOWS_VERSION_PRODUCTTYPE</c> constant.</summary>
+        public const int PHP_WINDOWS_NT_DOMAIN_CONTROLLER = 2;
     }
 }
