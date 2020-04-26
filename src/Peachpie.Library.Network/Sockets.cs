@@ -541,7 +541,24 @@ namespace Peachpie.Library.Network
             return null; // FALSE
         }
 
-        //socket_create_pair — Creates a pair of indistinguishable sockets and stores them in an array
+        //socket_create_pair - Creates a pair of indistinguishable sockets and stores them in an array
+        //public static bool socket_create_pair(AddressFamily domain, SocketType type, ProtocolType protocol, ref PhpArray fd)
+        //{
+        //    switch (domain)
+        //    {
+        //        case AddressFamily.InterNetwork:
+        //        case AddressFamily.InterNetworkV6:
+        //        case AddressFamily.Unix:
+
+        //            fd = new PhpArray(socketpair);
+        //            return true;
+
+        //        default:
+
+        //            PhpException.InvalidArgument(nameof(domain));
+        //            return false;
+        //    }
+        //}
 
         /// <summary>
         /// Create a socket(endpoint for communication).
