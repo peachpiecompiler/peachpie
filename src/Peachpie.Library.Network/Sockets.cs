@@ -675,16 +675,38 @@ namespace Peachpie.Library.Network
                 return false;
             }
 
-            var ep = s.Socket.RemoteEndPoint;
-            if (ep is IPEndPoint ipep)
+            if (TryGetHostAndPort(s.Socket.RemoteEndPoint, out addr, out port))
             {
-                addr = ipep.Address.ToString();
-                port = ipep.Port;
                 return true;
             }
             else
             {
                 PhpException.ArgumentValueNotSupported(nameof(AddressFamily), s.Socket.AddressFamily);
+                return false;
+            }
+        }
+
+        static bool TryGetHostAndPort(EndPoint ep, out string host, out int port)
+        {
+            if (ep is IPEndPoint ipep)
+            {
+                host = ipep.Address.ToString();
+                port = ipep.Port;
+                return true;
+            }
+            else if (ep is DnsEndPoint dnsep)
+            {
+                host = dnsep.Host;
+                port = dnsep.Port;
+                return true;
+            }
+            //else if (ep is UnixDomainSocketEndPoint unixep) // TODO: NETSTANDARD2.1
+            //{
+            //}
+            else
+            {
+                host = null;
+                port = 0;
                 return false;
             }
         }
@@ -902,7 +924,107 @@ namespace Peachpie.Library.Network
             return -1; // false
         }
 
-        //socket_recvfrom — Receives data from a socket whether or not it is connection-oriented
+        /// <summary>
+        /// Receives data from a socket whether or not it is connection-oriented.
+        /// </summary>
+        public static int socket_recvfrom(PhpResource socket, PhpAlias buf, int length, SocketFlags flags, ref string name)
+        {
+            int port = 0;
+            return socket_recvfrom(socket, buf, length, flags, ref name, ref port);
+        }
+
+        /// <summary>
+        /// Receives data from a socket whether or not it is connection-oriented.
+        /// </summary>
+        public static int socket_recvfrom(PhpResource socket, PhpAlias buf, int length, SocketFlags flags, ref string name, ref int port)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return -1;
+            }
+
+            if (length <= 0)
+            {
+                PhpException.InvalidArgument(nameof(length));
+                return -1;
+            }
+
+            bool TryGetEndPoint(string name, int port, out EndPoint ep)
+            {
+                if (string.IsNullOrEmpty(name))
+                {
+                    // connection oriented
+                    ep = null;
+                    return true;
+                }
+
+                if (IPAddress.TryParse(name, out var ipaddr))
+                {
+                    ep = new IPEndPoint(ipaddr, port);
+                    return true;
+                }
+
+                ep = null;
+                return false;
+            }
+
+            switch (s.Socket.AddressFamily)
+            {
+                case AddressFamily.InterNetwork:
+                case AddressFamily.InterNetworkV6:
+                    if (TryGetEndPoint(name, port, out var ep))
+                    {
+                        var pool = ArrayPool<byte>.Shared;
+                        var buffer = pool.Rent(length);
+
+                        try
+                        {
+                            var received = s.Socket.ReceiveFrom(buffer, length, flags, ref ep);
+                            if (received == 0)
+                            {
+                                buf.Value = PhpString.Empty;
+                            }
+                            else if (received > 0)
+                            {
+                                var result = new byte[received];
+                                Array.Copy(buffer, result, received);
+
+                                //
+                                buf.Value = new PhpString(result);
+                            }
+
+                            if (string.IsNullOrEmpty(name))
+                            {
+                                TryGetHostAndPort(ep, out name, out port);
+                            }
+
+                            //
+                            return received;
+                        }
+                        catch (SocketException ex)
+                        {
+                            HandleException(null, s, ex);
+                        }
+                        finally
+                        {
+                            pool.Return(buffer);
+                        }
+                    }
+                    break;
+
+                case AddressFamily.Unix:
+                // TODO: AF_UNIX
+
+                default:
+                    PhpException.ArgumentValueNotSupported(nameof(AddressFamily), s.Socket.AddressFamily);
+                    break;
+            }
+
+            //
+            return -1;
+        }
+
         //socket_recvmsg — Read a message
 
         #region socket_select
@@ -1104,7 +1226,7 @@ namespace Peachpie.Library.Network
                     return -1;
 
                 case AddressFamily.Unix:
-                    // TODO: AF_UNIX
+                // TODO: AF_UNIX
 
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(AddressFamily), s.Socket.AddressFamily);
