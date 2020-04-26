@@ -849,7 +849,59 @@ namespace Peachpie.Library.Network
             return default; // false;
         }
 
-        //socket_recv — Receives data from a connected socket
+        /// <summary>
+        /// Receives data from a connected socket.
+        /// </summary>
+        [return: CastToFalse]
+        public static int socket_recv(PhpResource socket, PhpAlias buf, int length, SocketFlags flags)
+        {
+            var s = SocketResource.GetValid(socket);
+            if (s == null)
+            {
+                return -1;
+            }
+
+            if (length <= 0)
+            {
+                PhpException.InvalidArgument(nameof(length));
+                return -1;
+            }
+
+            var pool = ArrayPool<byte>.Shared;
+            var buffer = pool.Rent(length);
+
+            try
+            {
+                var received = s.Socket.Receive(buffer, length, flags);
+                if (received == 0)
+                {
+                    buf.Value = PhpString.Empty;
+                }
+                else if (received > 0)
+                {
+                    var result = new byte[received];
+                    Array.Copy(buffer, result, received);
+
+                    //
+                    buf.Value = new PhpString(result);
+                }
+
+                //
+                return received;
+            }
+            catch (SocketException ex)
+            {
+                HandleException(null, s, ex);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+
+            //
+            return -1; // false
+        }
+
         //socket_recvfrom — Receives data from a socket whether or not it is connection-oriented
         //socket_recvmsg — Read a message
 
