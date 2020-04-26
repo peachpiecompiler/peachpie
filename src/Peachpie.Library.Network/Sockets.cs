@@ -199,6 +199,15 @@ namespace Peachpie.Library.Network
         public const int SOCKET_NO_DATA = (int)SocketError.NoData; // 11004
         public const int SOCKET_NO_ADDRESS = (int)SocketError.NoData; // 11004
 
+        // SocketFlags
+        public const int MSG_OOB = (int)SocketFlags.OutOfBand; // 1;
+        public const int MSG_WAITALL = 8;
+        public const int MSG_CTRUNC = (int)SocketFlags.ControlDataTruncated; // 512;
+        public const int MSG_TRUNC = (int)SocketFlags.Truncated; // 256
+        public const int MSG_PEEK = (int)SocketFlags.Peek; // 2;
+        public const int MSG_DONTROUTE = (int)SocketFlags.DontRoute; // 4;
+        public const int MSG_ERRQUEUE = 4096;
+
         #endregion
 
         static void HandleException(Context ctx, SocketResource resource, Exception ex)
