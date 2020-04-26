@@ -71,5 +71,14 @@ namespace Pchp.Library
 
         /// <summary>This is a domain controller, specified as a value of <c>PHP_WINDOWS_VERSION_PRODUCTTYPE</c> constant.</summary>
         public const int PHP_WINDOWS_NT_DOMAIN_CONTROLLER = 2;
+
+        /// <summary>
+        /// Native <c>FD_SETSIZE</c> is actually not used.
+        /// <c>Socket.Select</c> in .NET uses poll instead of system select.
+        /// In result there is not limitation to <c>FD_SETSIZE</c>.
+        /// Instead the check lists are limited to 65536 items.
+        /// </summary>
+        /// <remarks>https://github.com/dotnet/runtime/blob/ca1a6842d796d95b44a64222b023263f023a6c5e/src/libraries/System.Net.Sockets/src/System/Net/Sockets/SocketPal.Unix.cs#L1491</remarks>
+        public const int PHP_FD_SETSIZE = 65536;
     }
 }
