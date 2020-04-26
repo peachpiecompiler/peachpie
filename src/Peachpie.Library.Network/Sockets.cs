@@ -965,9 +965,100 @@ namespace Peachpie.Library.Network
 
         #endregion
 
-        //socket_send — Sends data to a connected socket
+        static bool ValidateArguments(PhpResource socket, out SocketResource s, byte[] buffer, ref int length)
+        {
+            if ((s = SocketResource.GetValid(socket)) == null)
+            {
+                return false;
+            }
+
+            if (buffer == null)
+            {
+                PhpException.ArgumentNull(nameof(buffer));
+                return false;
+            }
+
+            if (length < 0)
+            {
+                PhpException.InvalidArgument(nameof(length));
+                return false;
+            }
+
+            if (length > buffer.Length)
+            {
+                length = buffer.Length;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Sends data to a connected socket.
+        /// </summary>
+        /// <param name="socket">Socket resource.</param>
+        /// <param name="buffer">Buffer containing the data.</param>
+        /// <param name="length">Number of bytes that will be sent from <paramref name="buffer"/>.</param>
+        /// <param name="flags">Optional socket flags.</param>
+        /// <returns>Number of bytes sent, or <c>FALSE</c> on error.</returns>
+        [return: CastToFalse]
+        public static int socket_send(PhpResource socket, byte[] buffer, int length, SocketFlags flags)
+        {
+            if (!ValidateArguments(socket, out var s, buffer, ref length))
+            {
+                return -1; // false;
+            }
+
+            try
+            {
+                return s.Socket.Send(buffer, 0, length, flags);
+            }
+            catch (SocketException ex)
+            {
+                HandleException(null, s, ex);
+            }
+
+            //
+            return -1; // FALSE
+        }
+
         //socket_sendmsg — Send a message
-        //socket_sendto — Sends a message to a socket, whether it is connected or not
+
+        /// <summary>
+        /// Sends a message to a socket, whether it is connected or not.
+        /// </summary>
+        [return: CastToFalse]
+        public static int socket_sendto(PhpResource socket, byte[] buffer, int length, SocketFlags flags, string addr, int port = 0)
+        {
+            if (!ValidateArguments(socket, out var s, buffer, ref length))
+            {
+                return -1; // false;
+            }
+
+            switch (s.Socket.AddressFamily)
+            {
+                case AddressFamily.InterNetwork:
+                case AddressFamily.InterNetworkV6:
+                    if (IPAddress.TryParse(addr, out var ipaddr))
+                    {
+                        try
+                        {
+                            return s.Socket.SendTo(buffer, length, flags, new IPEndPoint(ipaddr, port));
+                        }
+                        catch (SocketException ex)
+                        {
+                            HandleException(null, s, ex);
+                        }
+                    }
+                    return -1;
+
+                case AddressFamily.Unix:
+                    // TODO: AF_UNIX
+
+                default:
+                    PhpException.ArgumentValueNotSupported(nameof(AddressFamily), s.Socket.AddressFamily);
+                    return -1;
+            }
+        }
 
         /// <summary>
         /// Sets blocking mode.
@@ -1118,27 +1209,27 @@ namespace Peachpie.Library.Network
         /// Write to a socket.
         /// </summary>
         [return: CastToFalse]
-        public static int socket_write(Context ctx, PhpResource socket, PhpString buffer, int length = -1)
-        {
-            var s = SocketResource.GetValid(socket);
-            if (s == null)
-            {
-                return -1; // FALSE
-            }
+        public static int socket_write(PhpResource socket, byte[] buffer)
+            => socket_write(socket, buffer, buffer != null ? buffer.Length : 0);
 
-            var bytes = buffer.ToBytes(ctx);
-            if (length < 0 || length > bytes.Length)
+        /// <summary>
+        /// Write to a socket.
+        /// </summary>
+        [return: CastToFalse]
+        public static int socket_write(PhpResource socket, byte[] buffer, int length)
+        {
+            if (!ValidateArguments(socket, out var s, buffer, ref length))
             {
-                length = bytes.Length;
+                return -1; // false;
             }
 
             try
             {
-                return s.Socket.Send(bytes, 0, length, SocketFlags.None);
+                return s.Socket.Send(buffer, 0, length, SocketFlags.None);
             }
             catch (SocketException ex)
             {
-                HandleException(ctx, s, ex);
+                HandleException(null, s, ex);
             }
 
             //
