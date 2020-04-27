@@ -1668,8 +1668,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // because not complying with the parameter type would have caused throwing a TypeError
                 var local = State.GetLocalHandle(refvar.Name.NameValue);
                 var localType = State.GetLocalType(local);
+                var paramTypeNonNull = TypeCtx.WithoutNull(expected.Type);
                 if (localType.IsAnyType && !localType.IsRef &&
-                    (TypeCtx.IsObject(expected.Type) || TypeCtx.IsArray(expected.Type)))
+                    (TypeCtx.IsObjectOnly(paramTypeNonNull) || TypeCtx.IsArrayOnly(paramTypeNonNull)))    // E.g. support ?MyClass but not callable
                 {
                     Debug.Assert(!expected.Type.IsRef);
                     State.SetLocalType(local, expected.Type);
