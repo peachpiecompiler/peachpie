@@ -193,6 +193,40 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Requests execution of a command on the FTP server.
+        /// </summary>
+        public static bool ftp_exec(PhpResource ftp_stream, string command)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return false;
+
+            if (string.IsNullOrEmpty(command))
+            {
+                PhpException.InvalidArgument(nameof(command));
+                return false;
+            }
+
+            try
+            {
+                var reply = resource.Client.Execute(command);
+                if (reply.Success)
+                {
+                    return true;
+                }
+
+                PhpException.Throw(PhpError.Notice, reply.ErrorMessage);
+            }
+            catch (FtpCommandException ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+            }
+
+            //
+            return false;
+        }
+
+        /// <summary>
         /// Opens an explicit SSL-FTP connection to the specified host.
         /// </summary>
         /// <param name="host">The FTP server address. This parameter shouldn't have any trailing slashes and 
