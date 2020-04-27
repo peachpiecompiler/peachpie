@@ -188,10 +188,16 @@ namespace Pchp.Library
             public Regex Regex { get; }
             public string Replacement { get; }
 
+            /// <summary>
+            /// If set, <see cref="Replacement"/> is not used.
+            /// </summary>
+            public MatchEvaluator Evaluator { get; }
+
             public PatternAndReplacement(Regex regex, string replacement)
             {
                 this.Regex = regex;
                 this.Replacement = replacement;
+                this.Evaluator = null;
             }
         }
 
@@ -224,9 +230,13 @@ namespace Pchp.Library
                         }
 
                         //
-                        if (TryParseRegexp(pattern.ToStringOrThrow(ctx), out var regex))
+                        if (TryParseRegexp(pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), out var regex))
                         {
                             regexes[i++] = new PatternAndReplacement(regex, replacement_string);
+                        }
+                        else
+                        {
+                            return null;
                         }
                     }
                 }
@@ -241,9 +251,13 @@ namespace Pchp.Library
                     var pattern_enumerator = pattern_array.GetFastEnumerator();
                     while (pattern_enumerator.MoveNext())
                     {
-                        if (TryParseRegexp(pattern.ToStringOrThrow(ctx), out var regex))
+                        if (TryParseRegexp(pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), out var regex))
                         {
                             regexes[i++] = new PatternAndReplacement(regex, replacement_string);
+                        }
+                        else
+                        {
+                            return null;
                         }
                     }
                 }
