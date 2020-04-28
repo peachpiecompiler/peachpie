@@ -27,6 +27,16 @@ namespace Peachpie.NET.Sdk.Tools
         public string VersionSuffix { get; set; }
 
         /// <summary>
+        /// If set, <c>"suggest"</c> composer packages are included into <see cref="Dependencies"/>.
+        /// </summary>
+        public bool ComposerIncludeSuggestPackages { get; set; }
+
+        /// <summary>
+        /// If set, <c>"require-dev"</c> composer packages are included into <see cref="Dependencies"/>.
+        /// </summary>
+        public bool ComposerIncludeDevPackages { get; set; }
+
+        /// <summary>
         /// Outputs name of the project if specified.
         /// </summary>
         [Output]
@@ -166,7 +176,24 @@ namespace Peachpie.NET.Sdk.Tools
                         break;
 
                     case "require":
-                        Dependencies = GetDependencies(node.Value).ToArray();
+                        // { "name": "version constraint", }
+                        AddDependencies(GetDependencies(node.Value));
+                        break;
+
+                    case "require-dev":
+                        if (ComposerIncludeDevPackages)
+                        {
+                            // { "name": "version constraint", }
+                            AddDependencies(GetDependencies(node.Value));
+                        }
+                        break;
+
+                    case "suggest":
+                        if (ComposerIncludeSuggestPackages)
+                        {
+                            // { "name": "description", }
+                            AddDependencies(GetDependencies(node.Value, ignoreVersion: true));
+                        }
                         break;
 
                         // TODO: autoload { files, classmap, psr-0, psr-4 }
@@ -174,6 +201,16 @@ namespace Peachpie.NET.Sdk.Tools
             }
 
             return true;
+        }
+
+        void AddDependencies(IEnumerable<ITaskItem> deps)
+        {
+            if (Dependencies != null)
+            {
+                deps = Dependencies.Concat(deps);
+            }
+
+            Dependencies = deps.ToArray();
         }
 
         string GetName(JSONNode name) => IdToNuGetId(name.Value);
@@ -304,7 +341,7 @@ namespace Peachpie.NET.Sdk.Tools
             });
         }
 
-        IEnumerable<ITaskItem> GetDependencies(JSONNode require)
+        IEnumerable<ITaskItem> GetDependencies(JSONNode require, bool ignoreVersion = false)
         {
             if (require == null)
             {
@@ -353,7 +390,7 @@ namespace Peachpie.NET.Sdk.Tools
 
                 yield return PackageDependencyItem(
                     name: IdToNuGetId(name),
-                    version: VersionRangeToPackageVersion(r.Value.Value, ForcePreReleaseDependency));
+                    version: VersionRangeToPackageVersion(ignoreVersion ? string.Empty : r.Value.Value, ForcePreReleaseDependency));
             }
         }
 
@@ -400,7 +437,7 @@ namespace Peachpie.NET.Sdk.Tools
             var version = Versioning.ComposerVersionExpression.TryParse(value, out var expression)
                 ? expression.Evaluate()
                 : new Versioning.FloatingVersion(); // any version
-            
+
             //
             return version.ToString(forcePreRelease: forcePreRelease);
         }
