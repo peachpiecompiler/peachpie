@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -22,7 +24,7 @@ namespace Pchp.Library
         /// <param name="name">A name of the variable.</param>
         /// <returns>Current value of the variable.</returns>
         [return: CastToFalse]
-        public static string getenv(Context ctx, string name)
+        public static string? getenv(Context ctx, string name)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -138,7 +140,7 @@ namespace Pchp.Library
         /// <param name="ctx">Runtime context.</param>
         /// <param name="command">The command to execute.</param>
         /// <returns>The last line of the output.</returns>
-        public static string exec(Context ctx, string command)
+        public static string? exec(Context ctx, string command)
         {
             Execution.ShellExec(ctx, command, Execution.OutputHandling.ArrayOfLines, null, out var result);
             return result;
@@ -151,7 +153,7 @@ namespace Pchp.Library
         /// <param name="command">The command to execute.</param>
         /// <param name="output">An array where to add items of output. One item per each line of the output.</param>
         /// <returns>The last line of the output.</returns>
-        public static string exec(Context ctx, string command, ref PhpArray output) => exec(ctx, command, ref output, out var _);
+        public static string? exec(Context ctx, string command, ref PhpArray output) => exec(ctx, command, ref output, out _);
 
         /// <summary>
         /// Executes a shell command.
@@ -161,7 +163,7 @@ namespace Pchp.Library
         /// <param name="output">An array where to add items of output. One item per each line of the output.</param>
         /// <param name="exitCode">Exit code of the process.</param>
         /// <returns>The last line of the output.</returns>
-        public static string exec(Context ctx, string command, ref PhpArray output, out int exitCode)
+        public static string? exec(Context ctx, string command, ref PhpArray output, out int exitCode)
         {
             // creates a new array if user specified variable not containing one:
             if (output == null)
@@ -213,9 +215,9 @@ namespace Pchp.Library
         /// Either the last line of the output or a <B>null</B> reference if the command fails (returns non-zero exit code).
         /// </returns>
         [return: CastToFalse]
-        public static string system(Context ctx, string command)
+        public static string? system(Context ctx, string command)
         {
-            return system(ctx, command, out var exit_code);
+            return system(ctx, command, out _);
         }
 
         /// <summary>
@@ -229,7 +231,7 @@ namespace Pchp.Library
         /// Either the last line of the output or a <B>null</B> reference if the command fails (returns non-zero exit code).
         /// </returns>
         [return: CastToFalse]
-        public static string system(Context ctx, string command, out int exitCode)
+        public static string? system(Context ctx, string command, out int exitCode)
         {
             exitCode = Execution.ShellExec(ctx, command, Execution.OutputHandling.FlushLinesToScriptOutput, null, out var result);
             return (exitCode == 0) ? result : null;
@@ -239,7 +241,7 @@ namespace Pchp.Library
 
         #region shell_exec
 
-        public static string shell_exec(Context ctx, string command)
+        public static string? shell_exec(Context ctx, string command)
         {
             Execution.ShellExec(ctx, command, Execution.OutputHandling.String, null, out var result);
             return result;
@@ -256,27 +258,35 @@ namespace Pchp.Library
         /// <param name="longopts">An array of options. Each element in this array will be used as option strings and matched against options passed to the script starting with two hyphens (--).   For example, an longopts element "opt" recognizes an option --opt. </param>
         /// <returns>This function will return an array of option / argument pairs or FALSE  on failure. </returns>
         [return: CastToFalse]
-        public static PhpArray getopt(string options, PhpArray longopts = null)
+        public static PhpArray getopt(string options, PhpArray? longopts = null)
         {
+            // TODO: return FALSE on failure
+
             var args = System.Environment.GetCommandLineArgs();
             var result = new PhpArray();
 
             // process single char options
             if (options != null)
-                for (int i = 0; i < options.Length; ++i)
+            {
+                for (int i = 0; i < options.Length; i++)
                 {
                     char opt = options[i];
                     if (!char.IsLetterOrDigit(opt))
                         break;
 
-                    int ncolons = 0;
-                    if (i + 1 < options.Length && options[i + 1] == ':') { ++ncolons; ++i; }    // require value
-                    if (i + 1 < options.Length && options[i + 1] == ':') { ++ncolons; ++i; }    // optional value
+                    var option = opt.ToString();
 
-                    object value = ParseOption(opt.ToString(), false, ncolons == 1, ncolons == 2, args);
+                    int ncolons = 0;
+                    while (i + 1 < options.Length && options[i + 1] == ':') { ncolons++; i++; }
+
+                    var value = ParseOption(option, false, ncolons == 1, ncolons > 1, args);
                     if (value != null)
-                        result.Add(opt.ToString(), value);
+                    {
+                        var key = char.IsDigit(opt) ? new IntStringKey(opt) : new IntStringKey(option);
+                        result[key] = value;
+                    }
                 }
+            }
 
             // process long options
             if (longopts != null)
@@ -284,23 +294,31 @@ namespace Pchp.Library
                 var enumerator = longopts.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    string str = enumerator.CurrentValue.ToStringOrNull();
-                    if (str == null) continue;
+                    if (enumerator.CurrentValue.TryToIntStringKey(out var key))
+                    {
+                        var option = key.ToString();
+                        int ncolons = 0;
 
-                    int ncolons = 0;
-                    if (str.EndsWith(":")) ncolons = (str.EndsWith("::")) ? 2 : 1;
-                    str = str.Substring(0, str.Length - ncolons);// remove colons
+                        if (option.LastChar() == ':')
+                        {
+                            ncolons = option.EndsWith("::", StringComparison.Ordinal) ? 2 : 1;
+                            option = option.Substring(0, option.Length - ncolons);// remove colons
+                            key = Core.Convert.StringToArrayKey(option);
+                        }
 
-                    object value = ParseOption(str, true, ncolons == 1, ncolons == 2, args);
-                    if (value != null)
-                        result.Add(str, value);
+                        var value = ParseOption(option, true, ncolons == 1, ncolons == 2, args);
+                        if (value != null)
+                        {
+                            result[key] = value;
+                        }
+                    }
                 }
             }
 
             return result;
         }
 
-        static object ParseOption(string option, bool longOpt, bool valueRequired, bool valueOptional, string[] args)
+        static string? ParseOption(string option, bool longOpt, bool valueRequired, bool valueOptional, string[] args)
         {
             string prefix = (longOpt ? "--" : "-") + option;
             bool noValue = (!valueOptional && !valueRequired);
@@ -308,12 +326,12 @@ namespace Pchp.Library
             // find matching arg
             for (int a = 1; a < args.Length; ++a)
             {
-                string arg = args[a];
-                if (arg.StartsWith(prefix))
+                var arg = args[a];
+                if (arg.StartsWith(prefix, StringComparison.InvariantCulture))
                 {
                     if (noValue)
                     {
-                        if (arg.Length == prefix.Length) return false;   // OK, no value
+                        if (arg.Length == prefix.Length) return string.Empty;   // OK, no value
                         if (longOpt) continue; // try another arg
                         return null;    // invalid arg
                     }
@@ -330,7 +348,7 @@ namespace Pchp.Library
                         return value;   // value resolved (optional or required)
                     }
 
-                    if (valueOptional) return false;
+                    if (valueOptional) return string.Empty;
 
                     // value required
                     if (a + 1 >= args.Length) return null;  // missing value
@@ -376,6 +394,82 @@ namespace Pchp.Library
             RedirectToScriptOutput
         }
 
+        const char Quote = '"';
+        const char Backslash = '\\';
+
+        /// <summary>Checks the string does not contains a whitespaces or a double quote.</summary>
+        static bool NoWhitespacesNorQuotes(string str)
+        {
+            foreach (char c in str)
+            {
+                if (char.IsWhiteSpace(c) || c == Quote)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>Safely appends an argument. Encloses in quotes if necessary.</summary>
+        static void AppendArgument(StringBuilder stringBuilder, string argument)
+        {
+            if (stringBuilder.Length != 0)
+            {
+                stringBuilder.Append(' ');
+            }
+
+            if (argument.Length != 0 && NoWhitespacesNorQuotes(argument))
+            {
+                stringBuilder.Append(argument);
+                return;
+            }
+
+            stringBuilder.Append(Quote);
+
+            int index = 0;
+            while (index < argument.Length)
+            {
+                var c = argument[index++];
+                switch (c)
+                {
+                    case Backslash:
+                        {
+                            int slashes = 1;
+                            while (index < argument.Length && argument[index] == '\\')
+                            {
+                                index++;
+                                slashes++;
+                            }
+                            if (index == argument.Length)
+                            {
+                                stringBuilder.Append(Backslash, slashes * 2);
+                            }
+                            else if (argument[index] == Quote)
+                            {
+                                stringBuilder.Append(Backslash, slashes * 2 + 1);
+                                stringBuilder.Append(Quote);
+                                index++;
+                            }
+                            else
+                            {
+                                stringBuilder.Append(Backslash, slashes);
+                            }
+                            break;
+                        }
+
+                    case Quote:
+                        stringBuilder.Append(Backslash);
+                        stringBuilder.Append(Quote);
+                        break;
+
+                    default:
+                        stringBuilder.Append(c);
+                        break;
+                }
+            }
+            stringBuilder.Append(Quote);
+        }
+
         /// <summary>
         /// Executes a <c>cmd.exe</c> and passes it a specified command.
         /// </summary>
@@ -391,11 +485,11 @@ namespace Pchp.Library
         /// <see cref="OutputHandling.FlushLinesToScriptOutput"/>. 
         /// </param>
         /// <returns>Exit code of the process.</returns>
-        public static int ShellExec(Context ctx, string command, OutputHandling handling, PhpArray arrayOutput, out string stringOutput)
+        public static int ShellExec(Context ctx, string command, OutputHandling handling, PhpArray? arrayOutput, out string? stringOutput)
         {
             if (!MakeCommandSafe(ref command))
             {
-                stringOutput = string.Empty;
+                stringOutput = null;
                 return -1;
             }
 
@@ -417,15 +511,24 @@ namespace Pchp.Library
                 //    }
                 //}
 
-                if (CurrentPlatform.IsWindows)
+                // prepare arguments
                 {
-                    p.StartInfo.FileName = "cmd.exe";
-                    p.StartInfo.Arguments = "/c " + command;
-                }
-                else
-                {
-                    p.StartInfo.FileName = "/bin/bash";
-                    p.StartInfo.Arguments = "-c " + command;
+                    var arguments = StringBuilderUtilities.Pool.Get();
+
+                    if (CurrentPlatform.IsWindows)
+                    {
+                        p.StartInfo.FileName = "cmd.exe";
+                        AppendArgument(arguments, "/c");
+                    }
+                    else
+                    {
+                        p.StartInfo.FileName = "/bin/bash";
+                        AppendArgument(arguments, "-c");
+                    }
+
+                    AppendArgument(arguments, command);
+
+                    p.StartInfo.Arguments = StringBuilderUtilities.GetStringAndReturn(arguments);
                 }
 
                 p.StartInfo.UseShellExecute = false;
@@ -498,46 +601,46 @@ namespace Pchp.Library
             var sb = new StringBuilder(command);
 
             // GENERICS:
-            //			if (Environment.OSVersion.Platform!=PlatformID.Unix)
-            //{
-            //    for (int i = 0; i < sb.Length; i++)
-            //    {
-            //        switch (sb[i])
-            //        {
-            //            case '"':
-            //            case '\'':
-            //            case '#':
-            //            case '&':
-            //            case ';':
-            //            case '`':
-            //            case '|':
-            //            case '*':
-            //            case '?':
-            //            case '~':
-            //            case '<':
-            //            case '>':
-            //            case '^':
-            //            case '(':
-            //            case ')':
-            //            case '[':
-            //            case ']':
-            //            case '{':
-            //            case '}':
-            //            case '$':
-            //            case '\\':
-            //            case '\u000A':
-            //            case '\u00FF':
-            //            case '%':
-            //                sb[i] = ' ';
-            //                break;
-            //        }
-            //    }
-            //}
-            //      else
-            //      {
-            //        // ???
-            //        PhpException.FunctionNotSupported();
-            //      } 
+            if (CurrentPlatform.IsWindows)
+            {
+                for (int i = 0; i < sb.Length; i++)
+                {
+                    switch (sb[i])
+                    {
+                        case '"':
+                        case '\'':
+                        case '#':
+                        case '&':
+                        case ';':
+                        case '`':
+                        case '|':
+                        case '*':
+                        case '?':
+                        case '~':
+                        case '<':
+                        case '>':
+                        case '^':
+                        case '(':
+                        case ')':
+                        case '[':
+                        case ']':
+                        case '{':
+                        case '}':
+                        case '$':
+                        case '\\':
+                        case '\u000A':
+                        case '\u00FF':
+                        case '%':
+                            sb[i] = ' ';
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                // ???
+                PhpException.FunctionNotSupported(nameof(Shell.escapeshellcmd));
+            }
 
             return sb.ToString();
         }
