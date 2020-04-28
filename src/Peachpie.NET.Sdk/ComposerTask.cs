@@ -27,14 +27,14 @@ namespace Peachpie.NET.Sdk.Tools
         public string VersionSuffix { get; set; }
 
         /// <summary>
-        /// If set, <c>"suggest"</c> composer packages are included into <see cref="Dependencies"/>.
-        /// </summary>
-        public bool ComposerIncludeSuggestPackages { get; set; }
-
-        /// <summary>
         /// If set, <c>"require-dev"</c> composer packages are included into <see cref="Dependencies"/>.
         /// </summary>
         public bool ComposerIncludeDevPackages { get; set; }
+
+        /// <summary>
+        /// If set, <c>"suggest"</c> composer packages are included into <see cref="Dependencies"/>.
+        /// </summary>
+        public bool ComposerIncludeSuggestPackages { get; set; }
 
         /// <summary>
         /// Outputs name of the project if specified.
