@@ -107,6 +107,8 @@
     <ComposerTask Condition=" Exists('$(ComposerJsonPath)') "
                   ComposerJsonPath="$(ComposerJsonPath)"
                   VersionSuffix="$(VersionSuffix)"
+                  ComposerIncludeDevPackages="$(ComposerIncludeDevPackages)"
+                  ComposerIncludeSuggestPackages="$(ComposerIncludeSuggestPackages)"
                   >
       <Output TaskParameter="Name" PropertyName="_cName" />
       <Output TaskParameter="Description" PropertyName="_cDescription" />
