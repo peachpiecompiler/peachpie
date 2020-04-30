@@ -101,6 +101,15 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary></summary>
         public ITaskItem[] Resources { get; set; }
 
+        /// <summary>Autoload PSR-4 map. Each item provides properties:<br/>
+        /// - Prefix<br/>
+        /// - Path<br/>
+        /// </summary>
+        public ITaskItem[] Autoload_PSR4 { get; set; }
+
+        /// <summary>Set of files to be included in autoload class-map.</summary>
+        public string[] Autoload_ClassMap { get; set; }
+
         /// <summary>
         /// Used for debugging purposes.
         /// If enabled a debugger is attached to the current process upon the task execution.
@@ -187,6 +196,22 @@ namespace Peachpie.NET.Sdk.Tools
                 foreach (var res in Resources)
                 {
                     args.Add(FormatArgFromItem(res, "res", "LogicalName", "Access"));
+                }
+            }
+
+            if (Autoload_PSR4 != null)
+            {
+                foreach (var psr4map in Autoload_PSR4)
+                {
+                    args.Add(FormatArgFromItem(psr4map, "autoload", "Prefix", "Path"));
+                }
+            }
+
+            if (Autoload_ClassMap != null)
+            {
+                foreach (var fname in Autoload_ClassMap)
+                {
+                    args.Add("/classmap:" + fname);
                 }
             }
 
