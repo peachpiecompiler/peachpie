@@ -186,7 +186,7 @@ namespace Pchp.Core
         /// <summary>
         /// Value indicating how to treat the type name in PHP.
         /// </summary>
-        public enum PhpTypeName
+        public enum PhpTypeName : byte
         {
             /// <summary>
             /// Full type name including its namespace name is used.
@@ -213,12 +213,22 @@ namespace Pchp.Core
             TypeNameAs = typeNameAs;
         }
 
+        public PhpTypeAttribute(string phpTypeName, string fileName)
+            : this(phpTypeName, fileName, default)
+        {
+        }
+
         /// <summary>
         /// Annotates the PHP type.
         /// </summary>
         /// <param name="phpTypeName">The type name that will be used in PHP context instead of CLR type name.</param>
         /// <param name="fileName">Optional relative path to the file where the type is defined.</param>
-        public PhpTypeAttribute(string phpTypeName, string fileName)
+        /// <param name="autoload">Optional. Specifies if the type can be autoloaded:<br/>
+        /// - 0: type is not selected to be autloaded.<br/>
+        /// - 1: type is marked to be autoloaded.<br/>
+        /// - 2: type is marked to be autoloaded and it is the only unconditional declaration in its source file.<br/>
+        /// </param>
+        public PhpTypeAttribute(string phpTypeName, string fileName, byte autoload)
         {
             ExplicitTypeName = phpTypeName ?? throw new ArgumentNullException();
             FileName = fileName;

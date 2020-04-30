@@ -16,6 +16,7 @@ using Microsoft.CodeAnalysis.Text;
 using static Pchp.CodeAnalysis.AstUtils;
 using Pchp.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Errors;
+using System.IO;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -30,6 +31,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Gets fully qualified name of the class.
         /// </summary>
         public virtual QualifiedName FullName => _syntax.QualifiedName;
+
+        /// <summary><see cref="FullName"/> as string.</summary>
+        internal string FullNameString => _FullNameString ??= FullName.ToString();
+        string _FullNameString;
 
         /// <summary>
         /// Optional.
@@ -1366,16 +1371,85 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
             => GetTypeMembers().Where(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).AsImmutable();
 
+        /// <summary>
+        /// See <c>PhpTypeAttribute</c>
+        /// - 0: type is not selected to be autloaded.<br/>
+        /// - 1: type is marked to be autoloaded.<br/>
+        /// - 2: type is marked to be autoloaded and it is the only unconditional declaration in its source file.<br/>
+        /// </summary>
+        byte ResolvePhpTypeAutoloadFlag()
+        {
+            var options = DeclaringCompilation.Options;
+
+            bool isautoload = false;
+
+            if (options.Autoload_ClassMapFiles != null &&
+                options.Autoload_ClassMapFiles.Count != 0)
+            {
+                var relativeFilePath = this.ContainingFile.RelativeFilePath;
+                isautoload = options.Autoload_ClassMapFiles.Contains(relativeFilePath);
+            }
+
+            if (!isautoload && // autoload not resolved yet
+                options.Autoload_PSR4 != null &&
+                options.Autoload_PSR4.Count != 0 &&
+                (FullName.Name.Value + ".php").Equals(ContainingFile.FileName, StringComparison.InvariantCultureIgnoreCase) // "file name" must match "class name .php"
+                )
+            {
+                var fullname = FullNameString;
+                var relativeFilePath = this.ContainingFile.RelativeFilePath;
+
+                foreach (var prefix_path in options.Autoload_PSR4)
+                {
+                    // prefix must match (it may or may not be suffixed with slash)
+                    if (fullname.StartsWith(prefix_path.prefix, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        // cut off name component of prefix, including trailing slash
+                        // "UniqueGlobalClass" -> ""
+                        // "Monolog\" -> "Monolog"
+                        // "A\B\" -> "A\B"
+                        var nsprefix = prefix_path.prefix;
+                        var slash = nsprefix.LastIndexOf(QualifiedName.Separator);
+                        if (slash >= 0) nsprefix = nsprefix.Remove(slash);
+
+                        // path+{fullname without prefix namespace} == {relativeFilePath}
+                        var expectedpath = PhpFileUtilities.NormalizeSlashes(Path.Combine(prefix_path.path, fullname.Substring(nsprefix.Length) + ".php"));
+                        if (expectedpath.Equals(relativeFilePath, StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            isautoload = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            bool singleclass = false;
+
+            //
+            if (isautoload)
+            {
+                // source file does not have any side effects (function declaration, other types, global code
+                singleclass = ContainingFile.SyntaxTree.Types.Length == 1 && ContainingFile.SyntaxTree.Functions.Length == 0;
+
+                // TODO: ContainingFile.SyntaxTree.Root contains a global code ??
+            }
+
+            //
+            return isautoload ? singleclass ? (byte)2 : (byte)1 : (byte)0;
+        }
+
         public override ImmutableArray<AttributeData> GetAttributes()
         {
             var attrs = base.GetAttributes();
 
-            // [PhpTypeAttribute(FullName, FileName)]
+            // [PhpTypeAttribute(string FullName, string FileName, byte Autoload)]
             attrs = attrs.Add(new SynthesizedAttributeData(
-                    DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
+                    DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string_byte,
                     ImmutableArray.Create(
-                        DeclaringCompilation.CreateTypedConstant(FullName.ToString()),
-                        DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString())),
+                        DeclaringCompilation.CreateTypedConstant(FullNameString),
+                        DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString()),
+                        DeclaringCompilation.CreateTypedConstant(ResolvePhpTypeAutoloadFlag())
+                    ),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
 
             // attributes from syntax node
