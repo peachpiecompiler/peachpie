@@ -115,12 +115,7 @@ namespace Pchp.Core
         /// </summary>
         PhpTypeInfo? ImplicitAutoloadTypeByName(string fullName)
         {
-            if (EnableImplicitAutoload)
-            {
-                return AutoloadByTypeNameFromClassMap(fullName, onlyAllowed: false);
-            }
-
-            return null;
+            return AutoloadByTypeNameFromClassMap(fullName, onlyAllowed: !EnableImplicitAutoload);
         }
 
         /// <summary>
