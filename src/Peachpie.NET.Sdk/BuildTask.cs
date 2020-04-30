@@ -204,7 +204,8 @@ namespace Peachpie.NET.Sdk.Tools
             {
                 foreach (var psr4map in Autoload_PSR4)
                 {
-                    args.Add(FormatArgFromItem(psr4map, "autoload", "Prefix", "Path"));
+                    //args.Add(FormatArgFromItem(psr4map, "autoload", "Prefix", "Path")); // Prefix can be empty!
+                    args.Add($"/autoload:psr-4,{psr4map.GetMetadata("Prefix")},{psr4map.GetMetadata("Path")}");
                 }
             }
 
