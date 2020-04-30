@@ -194,6 +194,9 @@ namespace Pchp.CodeAnalysis.CommandLine
             DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
             List<string> referencePaths = new List<string>();
             List<string> keyFileSearchPaths = new List<string>();
+            var autoload_classmapfiles = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+            var autoload_psr4 = new List<(string prefix, string path)>();
+
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
 
@@ -659,6 +662,39 @@ namespace Pchp.CodeAnalysis.CommandLine
                         embeddedFiles.AddRange(ParseSeparatedFileArgument(value, baseDirectory, diagnostics));
                         continue;
 
+                    case "autoload":
+                        if (string.IsNullOrWhiteSpace(value))
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
+                            break;
+                        }
+
+                        const string classmapprefix = "classmap,";
+                        const string psr4prefix = "psr-4,";
+
+                        if (value.StartsWith(classmapprefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // "classmap,<fullfilename>"
+                            autoload_classmapfiles.Add(value.Substring(classmapprefix.Length));
+                            break;
+                        }
+                        else if (value.StartsWith(psr4prefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // "psr-4,<prefix>,<path>"
+                            var prefix_dir = value.Substring(psr4prefix.Length);
+                            var comma = prefix_dir.IndexOf(',');
+                            if (comma >= 0)
+                            {
+                                autoload_psr4.Add((prefix_dir.Remove(comma), prefix_dir.Substring(comma + 1)));
+                            }
+
+                            break;
+                        }
+
+                        // not handled
+                        diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_BadCompilationOptionValue, Location.None, name, value));
+                        break;
+
                     default:
                         break;
                 }
@@ -692,7 +728,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var evetsources = new[] { CreateObserver("Peachpie.Compiler.Diagnostics.Observer,Peachpie.Compiler.Diagnostics", moduleName) }.WhereNotNull();
 
 #if TRACE
-            evetsources = evetsources.Concat(new Utilities.CompilationTrackerExtension.TraceObserver());
+            evetsources = evetsources.Concat(new CompilationTrackerExtension.TraceObserver());
 #endif
 
             // Dev11 searches for the key file in the current directory and assembly output directory.
@@ -771,6 +807,8 @@ namespace Pchp.CodeAnalysis.CommandLine
             )
             {
                 EventSources = evetsources.AsImmutableOrEmpty(),
+                Autoload_PSR4 = autoload_psr4,
+                Autoload_ClassMapFiles = autoload_classmapfiles,
             };
 
             if (debugPlus)
