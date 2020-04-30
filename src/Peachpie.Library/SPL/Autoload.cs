@@ -69,7 +69,7 @@ namespace Pchp.Library.Spl
 
                 //
                 var resolved = _ctx.AutoloadByTypeNameFromClassMap(fullName, onlyAllowed: true);
-                if (resolved != null)
+                if (resolved == null)
                 {
                     using (var token = new Context.RecursionCheckToken(_ctx, fullName))
                     {
