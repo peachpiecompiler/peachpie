@@ -136,7 +136,7 @@ namespace Peachpie.NET.Sdk.Tools
         /// Supports wildcard patterns.
         /// </summary>
         [Output]
-        public string Autoload_ClassMap_Exclude { get; private set; }
+        public ITaskItem[] Autoload_ClassMap_Exclude { get; private set; }
 
         /// <summary>
         /// Processes the <c>composer.json</c> file.
@@ -159,6 +159,7 @@ namespace Peachpie.NET.Sdk.Tools
             Authors = new ITaskItem[0];
             Dependencies = new ITaskItem[0];
             Autoload_ClassMap = new ITaskItem[0];
+            Autoload_ClassMap_Exclude = new ITaskItem[0];
             Autoload_PSR4 = new ITaskItem[0];
 
             // process the file:
@@ -251,7 +252,8 @@ namespace Peachpie.NET.Sdk.Tools
                                     break;
 
                                 case "exclude-from-classmap":
-                                    //Autoload_ClassMap_Exclude = $"{Autoload_ClassMap_Exclude};{GetAutoloadClassMapString(autoload.Value.AsArray, true)}".Trim(';', ' ');
+                                    Autoload_ClassMap_Exclude = Autoload_ClassMap_Exclude.Concat(
+                                        GetAutoloadClassMapString(autoload.Value.AsArray, true).Select(path => new TaskItem(path))).ToArray();
                                     break;
 
                                 case "files": // TODO: "files"

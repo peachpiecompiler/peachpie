@@ -119,11 +119,12 @@
       <Output TaskParameter="Dependencies" ItemName="ComposerPackageReference" />
       <Output TaskParameter="Autoload_PSR4" ItemName="Autoload_PSR4" />
       <Output TaskParameter="Autoload_ClassMap" ItemName="_cAutoload_ClassMap" />
-      <Output TaskParameter="Autoload_ClassMap_Exclude" PropertyName="_cAutoload_ClassMap_Exclude" />
+      <Output TaskParameter="Autoload_ClassMap_Exclude" ItemName="_cAutoload_ClassMap_Exclude" />
     </ComposerTask>
 
     <ItemGroup>
       <Autoload_ClassMap Include="%(_cAutoload_ClassMap.Identity)" />
+      <Autoload_ClassMap Remove="%(_cAutoload_ClassMap_Exclude.Identity)" />
     </ItemGroup>
 
   </Target>
