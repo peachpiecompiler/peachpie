@@ -197,7 +197,7 @@ namespace Pchp.Core
                 DefineCoreConstants();
 
                 // scripts
-                foreach (var t in assembly.GetTypes())
+                foreach (var t in assembly.ExportedTypes)
                 {
                     if (t.IsPublic &&
                         t.IsAbstract && t.IsSealed)// => static
