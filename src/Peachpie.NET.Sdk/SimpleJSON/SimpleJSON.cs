@@ -149,9 +149,11 @@ namespace SimpleJSON
         {
             enum Type { None, Array, Object }
 
-            readonly Type _type;
-            readonly Dictionary<string, JSONNode>.Enumerator _object;
-            readonly List<JSONNode>.Enumerator _array;
+            private Type _type;
+
+            private Dictionary<string, JSONNode>.Enumerator _object;
+
+            private List<JSONNode>.Enumerator _array;
 
             public bool IsValid { get { return _type != Type.None; } }
 
@@ -191,7 +193,7 @@ namespace SimpleJSON
         }
         public struct ValueEnumerator
         {
-            readonly Enumerator _enumerator;
+            private Enumerator _enumerator;
             public ValueEnumerator(List<JSONNode>.Enumerator aArrayEnum) : this(new Enumerator(aArrayEnum)) { }
             public ValueEnumerator(Dictionary<string, JSONNode>.Enumerator aDictEnum) : this(new Enumerator(aDictEnum)) { }
             public ValueEnumerator(Enumerator aEnumerator) { _enumerator = aEnumerator; }
@@ -201,7 +203,7 @@ namespace SimpleJSON
         }
         public struct KeyEnumerator
         {
-            readonly Enumerator _enumerator;
+            private Enumerator _enumerator;
             public KeyEnumerator(List<JSONNode>.Enumerator aArrayEnum) : this(new Enumerator(aArrayEnum)) { }
             public KeyEnumerator(Dictionary<string, JSONNode>.Enumerator aDictEnum) : this(new Enumerator(aDictEnum)) { }
             public KeyEnumerator(Enumerator aEnumerator) { _enumerator = aEnumerator; }
