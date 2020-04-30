@@ -61,14 +61,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static bool IsPhpUserType(this TypeSymbol/*!*/type) =>
             type.OriginalDefinition is SourceTypeSymbol ||  // either declared in source code
-            (type.TryGetPhpTypeAttribute(out var tname, out var fname) && fname != null); // or referenced with [PhpType("name", "path to original PHP file")]
+            (type.TryGetPhpTypeAttribute(out _, out var fname, out _) && fname != null); // or referenced with [PhpType("name", "path to original PHP file")]
 
         /// <summary>
         /// Gets value indicating the type is a PHP user type (declared in a PHP code).
         /// </summary>
         public static bool IsPhpType(this TypeSymbol/*!*/type) =>
             type.OriginalDefinition is SourceTypeSymbol ||  // either declared in source code
-            (type.TryGetPhpTypeAttribute(out var tname, out var fname)); // or having [PhpTypeAttribute]
+            (type.TryGetPhpTypeAttribute(out _, out _, out _)); // or having [PhpTypeAttribute]
 
         public static bool ImplementsInterface(this TypeSymbol subType, TypeSymbol superInterface/*, ref HashSet<DiagnosticInfo> useSiteDiagnostics*/)
         {

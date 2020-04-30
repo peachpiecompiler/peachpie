@@ -675,7 +675,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         if (value.StartsWith(classmapprefix, StringComparison.OrdinalIgnoreCase))
                         {
                             // "classmap,<fullfilename>"
-                            autoload_classmapfiles.Add(value.Substring(classmapprefix.Length));
+                            autoload_classmapfiles.Add(PhpFileUtilities.NormalizeSlashes(value.Substring(classmapprefix.Length)));
                             break;
                         }
                         else if (value.StartsWith(psr4prefix, StringComparison.OrdinalIgnoreCase))
@@ -685,7 +685,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                             var comma = prefix_dir.IndexOf(',');
                             if (comma >= 0)
                             {
-                                autoload_psr4.Add((prefix_dir.Remove(comma), prefix_dir.Substring(comma + 1)));
+                                autoload_psr4.Add((prefix_dir.Remove(comma), PhpFileUtilities.NormalizeSlashes(prefix_dir.Substring(comma + 1))));
                             }
 
                             break;
