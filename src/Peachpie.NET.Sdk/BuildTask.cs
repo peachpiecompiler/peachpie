@@ -211,7 +211,7 @@ namespace Peachpie.NET.Sdk.Tools
             {
                 foreach (var fname in Autoload_ClassMap)
                 {
-                    args.Add("/classmap:" + fname);
+                    args.Add("/autoload:classmap," + fname);
                 }
             }
 
