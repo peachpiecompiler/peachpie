@@ -872,19 +872,13 @@ namespace SimpleJSON
         {
             get
             {
-                if (_dict.ContainsKey(aKey))
-                    return _dict[aKey];
-                else
-                    return new JSONLazyCreator(this, aKey);
+                return _dict.TryGetValue(aKey ?? string.Empty, out var value)
+                    ? value
+                    : new JSONLazyCreator(this, aKey);
             }
             set
             {
-                if (value == null)
-                    value = JSONNull.CreateOrGet();
-                if (_dict.ContainsKey(aKey))
-                    _dict[aKey] = value;
-                else
-                    _dict.Add(aKey, value);
+                _dict[aKey] = value ?? JSONNull.CreateOrGet();
             }
         }
 
@@ -914,18 +908,7 @@ namespace SimpleJSON
 
         public override void Add(string aKey, JSONNode aItem)
         {
-            if (aItem == null)
-                aItem = JSONNull.CreateOrGet();
-
-            if (!string.IsNullOrEmpty(aKey))
-            {
-                if (_dict.ContainsKey(aKey))
-                    _dict[aKey] = aItem;
-                else
-                    _dict.Add(aKey, aItem);
-            }
-            else
-                _dict.Add(Guid.NewGuid().ToString(), aItem);
+            _dict[aKey ?? string.Empty] = aItem ?? JSONNull.CreateOrGet();
         }
 
         public override JSONNode Remove(string aKey)
@@ -1185,11 +1168,7 @@ namespace SimpleJSON
     partial class JSONNull : JSONNode
     {
         static JSONNull s_instance = new JSONNull();
-        public static bool reuseSameInstance = true;
-        public static JSONNull CreateOrGet()
-        {
-            return reuseSameInstance ? s_instance : new JSONNull();
-        }
+        public static JSONNull CreateOrGet() => s_instance;
         private JSONNull() { }
 
         public override JSONNodeType Tag { get { return JSONNodeType.NullValue; } }
