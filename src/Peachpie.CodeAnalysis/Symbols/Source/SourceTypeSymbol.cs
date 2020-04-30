@@ -1404,13 +1404,12 @@ namespace Pchp.CodeAnalysis.Symbols
                     // prefix must match (it may or may not be suffixed with slash)
                     if (fullname.StartsWith(prefix_path.prefix, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        // cut off name component of prefix, including trailing slash
+                        // cut off name component of prefix, keep trailing slash
                         // "UniqueGlobalClass" -> ""
-                        // "Monolog\" -> "Monolog"
-                        // "A\B\" -> "A\B"
+                        // "Monolog\" -> "Monolog\"
+                        // "A\B\" -> "A\B\"
                         var nsprefix = prefix_path.prefix;
-                        var slash = nsprefix.LastIndexOf(QualifiedName.Separator);
-                        if (slash >= 0) nsprefix = nsprefix.Remove(slash);
+                        nsprefix = nsprefix.Substring(0, nsprefix.LastIndexOf(QualifiedName.Separator) + 1);
 
                         // path+{fullname without prefix namespace} == {relativeFilePath}
                         var expectedpath = PhpFileUtilities.NormalizeSlashes(Path.Combine(prefix_path.path, fullname.Substring(nsprefix.Length) + ".php"));

@@ -118,9 +118,6 @@ namespace Pchp.Core
 
                 ProcessedAssemblies = s_processedAssemblies.ToArray();
 
-                // remember the assembly for class map:
-                s_assClassMap.AddPhpAssemblyNoLock(assembly);
-
                 // reflect the module for imported symbols:
 
                 var module = assembly.ManifestModule;
@@ -196,16 +193,22 @@ namespace Pchp.Core
                 // define various Core constants dynamically
                 DefineCoreConstants();
 
-                // scripts
+                // scripts & PHP types
                 foreach (var t in assembly.ExportedTypes)
                 {
-                    if (t.IsPublic &&
-                        t.IsAbstract && t.IsSealed)// => static
+                    if (t.IsAbstract && t.IsSealed)// => static
                     {
                         var sattr = ReflectionUtils.GetScriptAttribute(t);
                         if (sattr != null && sattr.Path != null && t.GetCustomAttribute<PharAttribute>() == null)
                         {
                             ScriptsMap.DeclareScript(sattr.Path, ScriptInfo.CreateMain(t));
+                        }
+                    }
+                    else
+                    {
+                        if (s_typeMap.AddTypeNoLock(t, out var tinfo) == PhpTypeAttribute.AutoloadAllowNoSideEffect)
+                        {
+                            TypesTable.DeclareAppType(tinfo);
                         }
                     }
                 }
@@ -372,9 +375,9 @@ namespace Pchp.Core
                 }
             }
 
-            // NOTE: app-types should not be checked using ExpectTypeDeclared<T> method, compiler knows that
-
-            if (!IsUserTypeDeclared(TypeInfoHolder<T>.TypeInfo))
+            //
+            var tinfo = TypeInfoHolder<T>.TypeInfo;
+            if (tinfo.IsUserType && !IsUserTypeDeclared(tinfo))
             {
                 EnsureTypeDeclared();
             }

@@ -178,6 +178,17 @@ namespace Pchp.Core
         public string? FileName { get; }
 
         /// <summary>
+        /// - 0: type is not selected to be autoloaded.<br/>
+        /// - 1: type is marked to be autoloaded.<br/>
+        /// - 2: type is marked to be autoloaded and it is the only unconditional declaration in its source file.<br/>
+        /// </summary>
+        public byte AutoloadFlag { get; }
+
+        public const byte AutoloadAllow = 1;
+
+        public const byte AutoloadAllowNoSideEffect = 2;
+
+        /// <summary>
         /// Value stating that the type name is inherited from the CLR name excluding its namespace part, see <see cref="PhpTypeName.NameOnly"/>.
         /// It causes CLR type <c>A.B.C.X</c> to appear in PHP as <c>X</c>.
         /// </summary>
@@ -233,6 +244,7 @@ namespace Pchp.Core
             ExplicitTypeName = phpTypeName ?? throw new ArgumentNullException();
             FileName = fileName;
             TypeNameAs = PhpTypeName.CustomName;
+            AutoloadFlag = autoload;
         }
     }
 
