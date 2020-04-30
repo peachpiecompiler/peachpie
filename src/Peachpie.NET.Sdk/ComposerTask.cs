@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using Devsense.PHP.Syntax;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using SimpleJSON;
@@ -104,7 +106,7 @@ namespace Peachpie.NET.Sdk.Tools
         /// - role: The author's role in the project (e.g. developer or translator)
         /// </summary>
         [Output]
-        public List<ITaskItem> Authors { get; private set; }
+        public ITaskItem[] Authors { get; private set; }
 
         /// <summary>
         /// Outputs list of dependencies.
@@ -113,15 +115,15 @@ namespace Peachpie.NET.Sdk.Tools
         /// - Version: version range (optional)
         /// </summary>
         [Output]
-        public List<ITaskItem> Dependencies { get; private set; }
+        public ITaskItem[] Dependencies { get; private set; }
 
         /// <summary>
-        /// Autoload patterns according to PSR-4 (PSR-0 is converted to PSR-4).
-        /// - Prefix: full class name prefix
-        /// - Path: path where to look for the class implementation (without the prefixed namespace)
+        /// Autoload patterns according to PSR-4 (PSR-0 is converted to PSR-4).<br/>
+        /// - Prefix: full class name prefix<br/>
+        /// - Path: path where to look for the class implementation (without the prefixed namespace)<br/>
         /// </summary>
         [Output]
-        public List<ITaskItem> Autoload_PSR4 { get; private set; }
+        public ITaskItem[] Autoload_PSR4 { get; private set; }
 
         /// <summary>
         /// Autoload class map directories.
@@ -142,6 +144,8 @@ namespace Peachpie.NET.Sdk.Tools
         /// </summary>
         public override bool Execute()
         {
+            Debugger.Launch();
+
             // parse the input JSON file:
             JSONNode json;
             try
@@ -155,9 +159,9 @@ namespace Peachpie.NET.Sdk.Tools
             }
 
             // cleanup output properties
-            Authors = new List<ITaskItem>();
-            Dependencies = new List<ITaskItem>();
-            Autoload_PSR4 = new List<ITaskItem>();
+            Authors = new ITaskItem[0];
+            Dependencies = new ITaskItem[0];
+            Autoload_PSR4 = new ITaskItem[0];
 
             // process the file:
             foreach (var node in json)
@@ -203,19 +207,19 @@ namespace Peachpie.NET.Sdk.Tools
                         break;
 
                     case "authors":
-                        Authors.AddRange(GetAuthors(node.Value.AsArray));
+                        Authors = Authors.Concat(GetAuthors(node.Value.AsArray)).AsArray();
                         break;
 
                     case "require":
                         // { "name": "version constraint", }
-                        Dependencies.AddRange(GetDependencies(node.Value));
+                        Dependencies = Dependencies.Concat(GetDependencies(node.Value)).AsArray();
                         break;
 
                     case "require-dev":
                         if (ComposerIncludeDevPackages)
                         {
                             // { "name": "version constraint", }
-                            Dependencies.AddRange(GetDependencies(node.Value));
+                            Dependencies = Dependencies.Concat(GetDependencies(node.Value)).AsArray();
                         }
                         break;
 
@@ -225,7 +229,7 @@ namespace Peachpie.NET.Sdk.Tools
                             // CONSIDER: Suggest packages are only informative, does not make much sense to reference those "names" directly.
 
                             // { "name": "description", }
-                            Dependencies.AddRange(GetDependencies(node.Value, ignoreVersion: true));
+                            Dependencies = Dependencies.Concat(GetDependencies(node.Value, ignoreVersion: true)).AsArray();
                         }
                         break;
 
@@ -236,11 +240,11 @@ namespace Peachpie.NET.Sdk.Tools
                             switch (autoload.Key.ToLowerInvariant())
                             {
                                 case "psr-4":
-                                    Autoload_PSR4.AddRange(GetAutoloadPsr4FromPsr4(autoload.Value.AsObject));
+                                    Autoload_PSR4 = Autoload_PSR4.Concat(GetAutoloadPsr4FromPsr4(autoload.Value.AsObject)).AsArray();
                                     break;
 
                                 case "psr-0":
-                                    Autoload_PSR4.AddRange(GetAutoloadPsr4FromPsr0(autoload.Value.AsObject));
+                                    Autoload_PSR4 = Autoload_PSR4.Concat(GetAutoloadPsr4FromPsr0(autoload.Value.AsObject)).AsArray();
                                     break;
 
                                 case "classmap":
@@ -330,7 +334,7 @@ namespace Peachpie.NET.Sdk.Tools
 
         static ITaskItem AutoloadPSR4Item(string prefix, string path)
         {
-            return new TaskItem("Autoload_PSR4", new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+            return new TaskItem("psr-4", new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
             {
                 { "Prefix", prefix },
                 { "Path", path },
