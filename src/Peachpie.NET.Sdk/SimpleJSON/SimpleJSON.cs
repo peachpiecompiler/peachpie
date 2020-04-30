@@ -868,7 +868,6 @@ namespace SimpleJSON
 
         public override Enumerator GetEnumerator() { return new Enumerator(_dict.GetEnumerator()); }
 
-
         public override JSONNode this[string aKey]
         {
             get
