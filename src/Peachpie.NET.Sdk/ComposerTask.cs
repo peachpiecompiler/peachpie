@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -34,6 +35,9 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary>
         /// If set, <c>"suggest"</c> composer packages are included into <see cref="Dependencies"/>.
         /// </summary>
+        /// <remarks>
+        /// Suggest packages are only informative, does not make much sense to reference those Ids directly.
+        /// </remarks>
         public bool ComposerIncludeSuggestPackages { get; set; }
 
         /// <summary>
@@ -100,7 +104,7 @@ namespace Peachpie.NET.Sdk.Tools
         /// - role: The author's role in the project (e.g. developer or translator)
         /// </summary>
         [Output]
-        public ITaskItem[] Authors { get; private set; }
+        public List<ITaskItem> Authors { get; private set; }
 
         /// <summary>
         /// Outputs list of dependencies.
@@ -109,7 +113,29 @@ namespace Peachpie.NET.Sdk.Tools
         /// - Version: version range (optional)
         /// </summary>
         [Output]
-        public ITaskItem[] Dependencies { get; private set; }
+        public List<ITaskItem> Dependencies { get; private set; }
+
+        /// <summary>
+        /// Autoload patterns according to PSR-4 (PSR-0 is converted to PSR-4).
+        /// - Prefix: full class name prefix
+        /// - Path: path where to look for the class implementation (without the prefixed namespace)
+        /// </summary>
+        [Output]
+        public List<ITaskItem> Autoload_PSR4 { get; private set; }
+
+        /// <summary>
+        /// Autoload class map directories.
+        /// Supports wildcard patterns.
+        /// </summary>
+        [Output]
+        public string Autoload_ClassMap_Include { get; private set; }
+
+        /// <summary>
+        /// Autoload class map directories to be excluded.
+        /// Supports wildcard patterns.
+        /// </summary>
+        [Output]
+        public string Autoload_ClassMap_Exclude { get; private set; }
 
         /// <summary>
         /// Processes the <c>composer.json</c> file.
@@ -127,6 +153,11 @@ namespace Peachpie.NET.Sdk.Tools
                 Log.LogErrorFromException(ex);
                 return false;
             }
+
+            // cleanup output properties
+            Authors = new List<ITaskItem>();
+            Dependencies = new List<ITaskItem>();
+            Autoload_PSR4 = new List<ITaskItem>();
 
             // process the file:
             foreach (var node in json)
@@ -172,45 +203,68 @@ namespace Peachpie.NET.Sdk.Tools
                         break;
 
                     case "authors":
-                        Authors = GetAuthors(node.Value.AsArray).ToArray();
+                        Authors.AddRange(GetAuthors(node.Value.AsArray));
                         break;
 
                     case "require":
                         // { "name": "version constraint", }
-                        AddDependencies(GetDependencies(node.Value));
+                        Dependencies.AddRange(GetDependencies(node.Value));
                         break;
 
                     case "require-dev":
                         if (ComposerIncludeDevPackages)
                         {
                             // { "name": "version constraint", }
-                            AddDependencies(GetDependencies(node.Value));
+                            Dependencies.AddRange(GetDependencies(node.Value));
                         }
                         break;
 
                     case "suggest":
                         if (ComposerIncludeSuggestPackages)
                         {
+                            // CONSIDER: Suggest packages are only informative, does not make much sense to reference those "names" directly.
+
                             // { "name": "description", }
-                            AddDependencies(GetDependencies(node.Value, ignoreVersion: true));
+                            Dependencies.AddRange(GetDependencies(node.Value, ignoreVersion: true));
                         }
                         break;
 
-                        // TODO: autoload { files, classmap, psr-0, psr-4 }
+                    case "autoload":
+                        // "autoload" : { "psr-0", "psr-4", "classmap", "exclude-from-classmap", "files" }
+                        foreach (var autoload in node.Value)
+                        {
+                            switch (autoload.Key.ToLowerInvariant())
+                            {
+                                case "psr-4":
+                                    Autoload_PSR4.AddRange(GetAutoloadPsr4FromPsr4(autoload.Value.AsObject));
+                                    break;
+
+                                case "psr-0":
+                                    Autoload_PSR4.AddRange(GetAutoloadPsr4FromPsr0(autoload.Value.AsObject));
+                                    break;
+
+                                case "classmap":
+                                    Autoload_ClassMap_Include = $"{Autoload_ClassMap_Include};{GetAutoloadClassMapString(autoload.Value.AsArray, false)}";
+                                    break;
+
+                                case "exclude-from-classmap":
+                                    Autoload_ClassMap_Exclude = $"{Autoload_ClassMap_Exclude};{GetAutoloadClassMapString(autoload.Value.AsArray, true)}";
+                                    break;
+
+                                case "files": // TODO: "files"
+
+                                default:
+                                    // ???
+                                    this.Log.LogWarning($"autoload \"{autoload.Key}\" key is not handled.");
+                                    break;
+                            }
+                        }
+
+                        break;
                 }
             }
 
             return true;
-        }
-
-        void AddDependencies(IEnumerable<ITaskItem> deps)
-        {
-            if (Dependencies != null)
-            {
-                deps = Dependencies.Concat(deps);
-            }
-
-            Dependencies = deps.ToArray();
         }
 
         string GetName(JSONNode name) => IdToNuGetId(name.Value);
@@ -272,6 +326,149 @@ namespace Peachpie.NET.Sdk.Tools
                     { "EMail", author["email"].Value },
                 });
             }
+        }
+
+        static ITaskItem AutoloadPSR4Item(string prefix, string path)
+        {
+            return new TaskItem("Autoload_PSR4", new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+            {
+                { "Prefix", prefix },
+                { "Path", path },
+            });
+        }
+
+        IEnumerable<ITaskItem> GetAutoloadPsr4FromPsr4(JSONObject map)
+        {
+            if (map == null)
+            {
+                Log.LogWarning($"autoload \"psr-4\" is not a JSON object.");
+                yield break;
+            }
+
+            foreach (var pair in map)
+            {
+                if (pair.Value is JSONArray patharray)
+                {
+                    // "Monolog\\" : ["src/", "lib/"]
+                    foreach (var path in patharray)
+                    {
+                        if (path.Value is JSONString pathstring)
+                        {
+                            yield return AutoloadPSR4Item(pair.Key, pathstring.Value.Trim());
+                        }
+                    }
+                }
+                else if (pair.Value is JSONString pathstring)
+                {
+                    // "Monolog\\" : "src/"
+                    yield return AutoloadPSR4Item(pair.Key, pathstring.Value.Trim());
+                }
+            }
+        }
+
+        IEnumerable<ITaskItem> GetAutoloadPsr4FromPsr0(JSONObject map)
+        {
+            if (map == null)
+            {
+                Log.LogWarning($"autoload \"psr-0\" is not a JSON object.");
+                yield break;
+            }
+
+            foreach (var pair in map)
+            {
+                // class name prefix
+                var prefix = pair.Key;
+
+                // get the namespace part of the class name
+                // psr-0 -> psr-4
+
+                var slash = prefix.LastIndexOf('\\');
+                var ns = slash > 0 ? prefix.Remove(slash) : string.Empty;
+
+                //
+                if (pair.Value is JSONArray patharray)
+                {
+                    // "Monolog\\" : ["src/", "lib/"]
+                    foreach (var path in patharray)
+                    {
+                        if (path.Value is JSONString pathstring)
+                        {
+                            yield return AutoloadPSR4Item(prefix, pathstring.Value.Trim() + ns);
+                        }
+                    }
+                }
+                else if (pair.Value is JSONString pathstring)
+                {
+                    // "Monolog\\" : "src/"
+                    yield return AutoloadPSR4Item(prefix, pathstring.Value.Trim() + ns);
+                }
+            }
+        }
+
+        string GetAutoloadClassMapString(JSONArray paths, bool isExclude)
+        {
+            var patterns = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+
+            // gets path suffixed with slash in case it is directory.
+            string NormalizePath(string pattern, out bool isDirectory)
+            {
+                if (string.IsNullOrWhiteSpace(pattern))
+                {
+                    isDirectory = true;
+                    return "/";
+                }
+
+                pattern = pattern.Trim();
+
+                if (pattern[pattern.Length - 1] == '/' ||
+                    pattern[pattern.Length - 1] == '\\')
+                {
+                    isDirectory = true;
+                    return pattern;
+                }
+
+                if (string.IsNullOrEmpty(Path.GetExtension(pattern)))
+                {
+                    isDirectory = true;
+                    return pattern + "/";
+                }
+
+                //
+                isDirectory = false;
+                return pattern;
+            }
+
+            if (paths != null)
+            {
+                foreach (var pair in paths)
+                {
+                    var path = pair.Value.Value;
+                    if (path.Length == 0) continue;
+
+                    var pattern = NormalizePath(path, out var isDirectory);
+                    if (isDirectory)
+                    {
+                        if (isExclude)
+                        {
+                            // '**' is implicitly added to the end of the paths.
+                            patterns.Add(pattern + "**");
+                        }
+                        else
+                        {
+                            // all .php and .inc files in the given directories/files.
+                            patterns.Add(pattern + "**/*.php");
+                            patterns.Add(pattern + "**/*.inc");
+                        }
+                    }
+                    else
+                    {
+                        patterns.Add(pattern);
+                    }
+                }
+            }
+
+            //
+            return string.Join(";", patterns.Where(str => str.Length != 0));
         }
 
         static string ResolvePeachpieSdkVersion()
@@ -350,8 +547,9 @@ namespace Peachpie.NET.Sdk.Tools
 
             foreach (var r in require)
             {
-                var name = r.Key?.Trim();
-                if (string.IsNullOrEmpty(name))
+                var name = r.Key.Trim();
+
+                if (name.Length == 0)
                 {
                     // invalid requirement name:
                     continue;
