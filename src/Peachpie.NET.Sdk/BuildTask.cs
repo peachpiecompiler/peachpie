@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.Build.Framework;
@@ -209,7 +210,7 @@ namespace Peachpie.NET.Sdk.Tools
 
             if (Autoload_ClassMap != null)
             {
-                foreach (var fname in Autoload_ClassMap)
+                foreach (var fname in Autoload_ClassMap.Distinct())
                 {
                     args.Add("/autoload:classmap," + fname);
                 }
