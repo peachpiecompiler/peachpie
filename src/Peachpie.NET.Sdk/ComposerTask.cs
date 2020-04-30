@@ -127,10 +127,9 @@ namespace Peachpie.NET.Sdk.Tools
 
         /// <summary>
         /// Autoload class map directories.
-        /// Supports wildcard patterns.
         /// </summary>
         [Output]
-        public string Autoload_ClassMap_Include { get; private set; }
+        public ITaskItem[] Autoload_ClassMap { get; private set; }
 
         /// <summary>
         /// Autoload class map directories to be excluded.
@@ -144,8 +143,6 @@ namespace Peachpie.NET.Sdk.Tools
         /// </summary>
         public override bool Execute()
         {
-            Debugger.Launch();
-
             // parse the input JSON file:
             JSONNode json;
             try
@@ -161,6 +158,7 @@ namespace Peachpie.NET.Sdk.Tools
             // cleanup output properties
             Authors = new ITaskItem[0];
             Dependencies = new ITaskItem[0];
+            Autoload_ClassMap = new ITaskItem[0];
             Autoload_PSR4 = new ITaskItem[0];
 
             // process the file:
@@ -248,11 +246,12 @@ namespace Peachpie.NET.Sdk.Tools
                                     break;
 
                                 case "classmap":
-                                    Autoload_ClassMap_Include = $"{Autoload_ClassMap_Include};{GetAutoloadClassMapString(autoload.Value.AsArray, false)}";
+                                    Autoload_ClassMap = Autoload_ClassMap.Concat(
+                                        GetAutoloadClassMapString(autoload.Value.AsArray, false).Select(path => new TaskItem(path))).ToArray();
                                     break;
 
                                 case "exclude-from-classmap":
-                                    Autoload_ClassMap_Exclude = $"{Autoload_ClassMap_Exclude};{GetAutoloadClassMapString(autoload.Value.AsArray, true)}";
+                                    //Autoload_ClassMap_Exclude = $"{Autoload_ClassMap_Exclude};{GetAutoloadClassMapString(autoload.Value.AsArray, true)}".Trim(';', ' ');
                                     break;
 
                                 case "files": // TODO: "files"
@@ -409,20 +408,18 @@ namespace Peachpie.NET.Sdk.Tools
             }
         }
 
-        string GetAutoloadClassMapString(JSONArray paths, bool isExclude)
+        IEnumerable<string> GetAutoloadClassMapString(JSONArray paths, bool isExclude)
         {
-            var patterns = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
-
             // gets path suffixed with slash in case it is directory.
             string NormalizePath(string pattern, out bool isDirectory)
             {
-                if (string.IsNullOrWhiteSpace(pattern))
+                pattern = pattern.Trim().TrimStart('\\', '/', ' ');
+
+                if (pattern.Length == 0)
                 {
                     isDirectory = true;
-                    return "/";
+                    return "";
                 }
-
-                pattern = pattern.Trim();
 
                 if (pattern[pattern.Length - 1] == '/' ||
                     pattern[pattern.Length - 1] == '\\')
@@ -455,24 +452,21 @@ namespace Peachpie.NET.Sdk.Tools
                         if (isExclude)
                         {
                             // '**' is implicitly added to the end of the paths.
-                            patterns.Add(pattern + "**");
+                            yield return pattern + "**";
                         }
                         else
                         {
                             // all .php and .inc files in the given directories/files.
-                            patterns.Add(pattern + "**/*.php");
-                            patterns.Add(pattern + "**/*.inc");
+                            yield return pattern + "**/*.php";
+                            yield return pattern + "**/*.inc";
                         }
                     }
                     else
                     {
-                        patterns.Add(pattern);
+                        yield return pattern;
                     }
                 }
             }
-
-            //
-            return string.Join(";", patterns.Where(str => str.Length != 0));
         }
 
         static string ResolvePeachpieSdkVersion()
