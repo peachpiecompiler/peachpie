@@ -61,8 +61,6 @@ namespace Pchp.Library.Spl
             /// </summary>
             public PhpTypeInfo AutoloadTypeByName(string fullName)
             {
-                PhpTypeInfo resolved = null;
-
                 // remove leading \ from the type name
                 if (fullName.Length != 0 && fullName[0] == '\\')
                 {
@@ -70,16 +68,20 @@ namespace Pchp.Library.Spl
                 }
 
                 //
-                using (var token = new Context.RecursionCheckToken(_ctx, fullName))
+                var resolved = _ctx.AutoloadByTypeNameFromClassMap(fullName, onlyAllowed: true);
+                if (resolved != null)
                 {
-                    if (!token.IsInRecursion)
+                    using (var token = new Context.RecursionCheckToken(_ctx, fullName))
                     {
-                        var args = new[] { (PhpValue)fullName };
-
-                        for (var node = _autoloaders.First; node != null && resolved == null; node = node.Next)
+                        if (!token.IsInRecursion)
                         {
-                            node.Value.Invoke(_ctx, args);
-                            resolved = _ctx.GetDeclaredType(fullName);
+                            var args = new[] { (PhpValue)fullName };
+
+                            for (var node = _autoloaders.First; node != null && resolved == null; node = node.Next)
+                            {
+                                node.Value.Invoke(_ctx, args);
+                                resolved = _ctx.GetDeclaredType(fullName);
+                            }
                         }
                     }
                 }

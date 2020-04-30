@@ -675,7 +675,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         if (value.StartsWith(classmapprefix, StringComparison.OrdinalIgnoreCase))
                         {
                             // "classmap,<fullfilename>"
-                            autoload_classmapfiles.Add(PhpFileUtilities.NormalizeSlashes(value.Substring(classmapprefix.Length)));
+                            autoload_classmapfiles.Add(value.Substring(classmapprefix.Length));
                             break;
                         }
                         else if (value.StartsWith(psr4prefix, StringComparison.OrdinalIgnoreCase))
@@ -685,7 +685,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                             var comma = prefix_dir.IndexOf(',');
                             if (comma >= 0)
                             {
-                                autoload_psr4.Add((prefix_dir.Remove(comma), PhpFileUtilities.NormalizeSlashes(prefix_dir.Substring(comma + 1))));
+                                autoload_psr4.Add((prefix_dir.Remove(comma), prefix_dir.Substring(comma + 1)));
                             }
 
                             break;
@@ -723,6 +723,21 @@ namespace Pchp.CodeAnalysis.CommandLine
                     documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(baseDirectory, documentationPath);
                 }
             }
+
+            // sanitize autoload paths, prefix them with subdir
+            for (int i = 0; i < autoload_psr4.Count; i++)
+            {
+                var value = autoload_psr4[i];
+                var path = subDirectory == null
+                    ? value.path
+                    : PathUtilities.CombinePathsUnchecked(subDirectory, value.path);
+
+                autoload_psr4[i] = (value.prefix, PhpFileUtilities.NormalizeSlashes(path));
+            }
+
+            autoload_classmapfiles = new HashSet<string>(
+                autoload_classmapfiles.Select(path => PhpFileUtilities.NormalizeSlashes(subDirectory == null ? path : PathUtilities.CombinePathsUnchecked(subDirectory, path))),
+                autoload_classmapfiles.Comparer);
 
             // event source // TODO: change to EventSource
             var evetsources = new[] { CreateObserver("Peachpie.Compiler.Diagnostics.Observer,Peachpie.Compiler.Diagnostics", moduleName) }.WhereNotNull();

@@ -487,7 +487,7 @@ namespace Pchp.Library.Reflection
         }
 
         public bool isTrait() => _tinfo.IsTrait;
-        public bool isUserDefined() => _tinfo.IsUserType;
+        public bool isUserDefined() => _tinfo.IsUserType || _tinfo.RelativePath != null;
         public object newInstance(Context ctx, params PhpValue[] args) => _tinfo.Creator(ctx, args);
         public object newInstanceArgs(Context ctx, PhpArray args) => newInstance(ctx, args.GetValues());
         public object newInstanceWithoutConstructor(Context ctx) => _tinfo.CreateUninitializedInstance(ctx);
