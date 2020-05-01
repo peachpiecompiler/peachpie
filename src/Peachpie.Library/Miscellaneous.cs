@@ -495,9 +495,8 @@ namespace Pchp.Library
             var webctx = ctx.HttpPhpContext;
             if (webctx != null)
             {
-                webctx.Flush();
-
-                // TODO: finish the request
+                // finish the request
+                webctx.Flush(endRequest: true);
 
                 return true;
             }

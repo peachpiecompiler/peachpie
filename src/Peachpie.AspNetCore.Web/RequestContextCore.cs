@@ -133,9 +133,14 @@ namespace Peachpie.AspNetCore.Web
             });
         }
 
-        void IHttpPhpContext.Flush()
+        void IHttpPhpContext.Flush(bool endRequest)
         {
             _httpctx.Response.Body.Flush();
+
+            if (endRequest)
+            {
+                _httpctx.Abort();
+            }
         }
 
         /// <summary>

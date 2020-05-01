@@ -265,7 +265,7 @@ namespace Pchp.Library
         /// </summary>
         public static void flush(Context ctx)
         {
-            ctx.HttpPhpContext?.Flush();
+            ctx.HttpPhpContext?.Flush(endRequest: false);
         }
 
         /// <summary>

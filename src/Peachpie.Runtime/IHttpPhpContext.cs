@@ -64,7 +64,8 @@ namespace Pchp.Core
         /// <summary>
         /// Flushes the response stream of the HTTP server.
         /// </summary>
-        void Flush();
+        /// <param name="endRequest">If set, flushes all response data to the client and finishes the request.</param>
+        void Flush(bool endRequest = false);
 
         /// <summary>
         /// Gets max request size (upload size, post size) in bytes.
