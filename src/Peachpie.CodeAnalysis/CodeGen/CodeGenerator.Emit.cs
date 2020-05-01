@@ -3004,6 +3004,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 }
 
+                if (ntype.OriginalDefinition is IPhpTypeSymbol phpt && phpt.AutoloadFlag == 2)
+                {
+                    // type is autoloaded without side effects
+                    return;
+                }
+
                 if (this.CallerType != null && this.CallerType.IsOfType(ntype))
                 {
                     // the type is a sub-type of current class context, so it must be declared for sure
