@@ -181,10 +181,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets [PhpType] attribute and its parameters.
         /// </summary>
-        public static bool TryGetPhpTypeAttribute(this TypeSymbol symbol, out string typename, out string filename, out bool autoload)
+        public static bool TryGetPhpTypeAttribute(this TypeSymbol symbol, out string typename, out string filename, out byte autoload)
         {
             typename = filename = null;
-            autoload = false;
+            autoload = 0;
 
             var a = symbol.GetAttribute(CoreTypes.PhpTypeAttributeFullName);
             if (a != null)
@@ -194,7 +194,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     typename = (string)args[0].Value;
                     filename = (string)args[1].Value;
-                    autoload = args.Length >= 3 && (byte)args[2].Value == 2;
+                    autoload = args.Length >= 3 ? (byte)args[2].Value : (byte)0;
                     return true;
                 }
                 else if (args.Length == 1)

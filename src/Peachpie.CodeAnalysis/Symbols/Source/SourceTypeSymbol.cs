@@ -105,6 +105,21 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public IMethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.SingleOrDefault(ctor => ctor.IsInitFieldsOnly);
 
+        public virtual byte AutoloadFlag
+        {
+            get
+            {
+                if (_autoloadFlag == 0xff)
+                {
+                    _autoloadFlag = ResolvePhpTypeAutoloadFlag();
+                }
+
+                return _autoloadFlag;
+            }
+        }
+
+        byte _autoloadFlag = 0xff;
+
         #endregion
 
         #region TraitUse
@@ -1447,7 +1462,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     ImmutableArray.Create(
                         DeclaringCompilation.CreateTypedConstant(FullNameString),
                         DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString()),
-                        DeclaringCompilation.CreateTypedConstant(ResolvePhpTypeAutoloadFlag())
+                        DeclaringCompilation.CreateTypedConstant(AutoloadFlag)
                     ),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
 
@@ -1554,6 +1569,8 @@ namespace Pchp.CodeAnalysis.Symbols
         public new AnonymousTypeDecl Syntax => (AnonymousTypeDecl)_syntax;
 
         public override QualifiedName FullName => Syntax.GetAnonymousTypeQualifiedName();
+
+        public override byte AutoloadFlag => 0; // anonymous classes are never autoloaded (nor even declared in Context)
 
         public override string MetadataName => Name;
 
