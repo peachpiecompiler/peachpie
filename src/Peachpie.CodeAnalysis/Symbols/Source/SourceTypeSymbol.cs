@@ -1398,6 +1398,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             bool isautoload = false;
 
+            // match the class in classmap:
             if (options.Autoload_ClassMapFiles != null &&
                 options.Autoload_ClassMapFiles.Count != 0)
             {
@@ -1405,6 +1406,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 isautoload = options.Autoload_ClassMapFiles.Contains(relativeFilePath);
             }
 
+            // match the class in psr map:
             if (!isautoload && // autoload not resolved yet
                 options.Autoload_PSR4 != null &&
                 options.Autoload_PSR4.Count != 0 &&
@@ -1437,19 +1439,66 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-            bool singleclass = false;
-
-            //
+            // determine autoload flag:
             if (isautoload)
             {
-                // source file does not have any side effects (function declaration, other types, global code
-                singleclass = ContainingFile.SyntaxTree.Types.Length == 1 && ContainingFile.SyntaxTree.Functions.Length == 0;
+                // source file does not have any side effects?
+                // 1: autoload but with side effects
+                // 2: autoload without side effect
 
-                // TODO: ContainingFile.SyntaxTree.Root contains a global code ??
+                // function declaration, other types, global code, ... ?
+
+                foreach (var f in ContainingFile.SyntaxTree.Functions)
+                {
+                    if (f.ContainingType == null) // function declared in global code (not in a method)
+                        return 1;
+                }
+
+                foreach (var t in ContainingFile.SyntaxTree.Types)
+                {
+                    if (t is AnonymousTypeDecl)
+                        continue;
+
+                    if (t.IsConditional || t != this.Syntax)
+                        return 1;
+                }
+
+                // ContainingFile.SyntaxTree.Root contains a global code?
+                var statements = new List<Statement>(ContainingFile.SyntaxTree.Root.Statements);
+                for (int i = 0; i < statements.Count; i++)
+                {
+                    var stmt = statements[i];
+
+                    if (stmt is NamespaceDecl ns)
+                    {
+                        statements.AddRange(ns.Body.Statements);
+                    }
+                    else if (stmt is EmptyStmt || stmt is TypeDecl || stmt is DeclareStmt)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        return 1;
+                    }
+                }
+
+                // naive recursion prevention...
+                _autoloadFlag = 2;
+
+                // check base type, interfaces, and used traits
+                foreach (var d in this.GetDependentSourceTypeSymbols().OfType<IPhpTypeSymbol>())
+                {
+                    var a = d.AutoloadFlag;
+                    if (a == 0 || a == 1) return 1;
+                }
+
+                // no side effects found
+                return 2;
             }
 
             //
-            return isautoload ? singleclass ? (byte)2 : (byte)1 : (byte)0;
+            return 0;
         }
 
         public override ImmutableArray<AttributeData> GetAttributes()

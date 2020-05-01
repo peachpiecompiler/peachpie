@@ -125,15 +125,15 @@ namespace Pchp.Core.Reflection
         public void DeclareType(PhpTypeInfo info)
         {
             var index = EnsureTypeIndex(info);
-            Debug.Assert(index > 0);
-
-            //
-            if (_contextTypes.Length < index)
+            if (index > 0)
             {
-                Array.Resize(ref _contextTypes, index * 2);
-            }
+                if (_contextTypes.Length < index)
+                {
+                    Array.Resize(ref _contextTypes, index * 2);
+                }
 
-            DeclareType(ref _contextTypes[index - 1], info);
+                DeclareType(ref _contextTypes[index - 1], info);
+            }
         }
 
         public void DeclareTypeAlias(PhpTypeInfo info, string name)
