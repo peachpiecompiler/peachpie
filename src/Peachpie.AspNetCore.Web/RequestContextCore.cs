@@ -139,7 +139,7 @@ namespace Peachpie.AspNetCore.Web
 
             if (endRequest && ResponseTask is object)
             {
-                ResponseTask.SetResult(null);
+               ResponseTask.SetResult(null);
             }
         }
 
@@ -231,10 +231,10 @@ namespace Peachpie.AspNetCore.Web
         /// Performs the request lifecycle, invokes given entry script and cleanups the context.
         /// </summary>
         /// <param name="script">Entry script.</param>
+        /// <param name="taskCompletion">The task completion source for the HttpResponse</param>
         public void ProcessScript(ScriptInfo script, TaskCompletionSource<object> taskCompletion)
         {
-            Debug.Assert(script.IsValid);
-
+            Debug.Assert(script.IsValid);            
             // set additional $_SERVER items
             AddServerScriptItems(script);
 
@@ -243,31 +243,31 @@ namespace Peachpie.AspNetCore.Web
 
             try
             {
+                ResponseTask = taskCompletion;
                 if (Debugger.IsAttached)
                 {
-                    ResponseTask = taskCompletion;
                     script.Evaluate(this, this.Globals, null);
-                    taskCompletion.TrySetResult(new object());
+                    taskCompletion.TrySetResult(null); // Might have been set by Flush(true)
                 }
                 else
                 {
                     using (_requestTimer = new Timer(RequestTimeout, null, DefaultPhpConfigurationService.Instance.Core.ExecutionTimeout, Timeout.Infinite))
                     {
                         script.Evaluate(this, this.Globals, null);
-                        taskCompletion.TrySetResult(new object());
+                        taskCompletion.TrySetResult(null); // Might have been set by Flush(true)
                     }
                 }
             }
             catch (ScriptDiedException died)
             {
                 died.ProcessStatus(this);
-                taskCompletion.SetException(died);
+                taskCompletion.TrySetException(died); // Might have been set by Flush(true)
             }
             catch (Exception exception)
             {
                 if (!OnUnhandledException(exception))
                 {
-                    taskCompletion.SetException(exception);
+                    taskCompletion.TrySetException(exception);  // Might have been set by Flush(true)
                 }
             }
         }
