@@ -96,7 +96,7 @@ namespace Peachpie.AspNetCore.Web
                 using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
                 {
                     OnContextCreated(phpctx);                    
-                    Task.Run(() => phpctx.ProcessScript(script, taskSource)).ConfigureAwait(true); // fire & forget
+                    Task.Run(() => phpctx.ProcessScript(script, taskSource)).ConfigureAwait(false); // fire & forget
                     return taskSource.Task; // This gets set in phpctx.ProcessScript
                 }
 
