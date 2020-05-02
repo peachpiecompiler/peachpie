@@ -137,9 +137,9 @@ namespace Peachpie.AspNetCore.Web
         {
             _httpctx.Response.Body.Flush();
 
-            if (endRequest && ResponseTask is object)
+            if (endRequest && _responseTask is object && !_responseTask.Task.IsCompleted)
             {
-               ResponseTask.TrySetResult(null); // Might be called more than once
+                _ = _responseTask.TrySetResult(null); // Might be called more than once
             }
         }
 
@@ -225,7 +225,7 @@ namespace Peachpie.AspNetCore.Web
         }
 
 
-        private TaskCompletionSource<object> ResponseTask;
+        private TaskCompletionSource<object> _responseTask;
 
         /// <summary>
         /// Performs the request lifecycle, invokes given entry script and cleanups the context.
@@ -234,7 +234,7 @@ namespace Peachpie.AspNetCore.Web
         /// <param name="taskCompletion">The task completion source for the HttpResponse</param>
         public void ProcessScript(ScriptInfo script, TaskCompletionSource<object> taskCompletion)
         {
-            Debug.Assert(script.IsValid);            
+            Debug.Assert(script.IsValid);
             // set additional $_SERVER items
             AddServerScriptItems(script);
 
@@ -243,31 +243,46 @@ namespace Peachpie.AspNetCore.Web
 
             try
             {
-                ResponseTask = taskCompletion;
+                _responseTask = taskCompletion;
                 if (Debugger.IsAttached)
                 {
                     script.Evaluate(this, this.Globals, null);
-                    taskCompletion.TrySetResult(null); // Might have been set by Flush(true)
+
+                    if (!taskCompletion.Task.IsCompleted)
+                    {
+                        _ = taskCompletion.TrySetResult(null);
+                    }
+
                 }
                 else
                 {
                     using (_requestTimer = new Timer(RequestTimeout, null, DefaultPhpConfigurationService.Instance.Core.ExecutionTimeout, Timeout.Infinite))
                     {
                         script.Evaluate(this, this.Globals, null);
-                        taskCompletion.TrySetResult(null); // Might have been set by Flush(true)
+                        if (!taskCompletion.Task.IsCompleted)
+                        {
+
+                            _ = taskCompletion.TrySetResult(null); 
+                        }
                     }
                 }
             }
             catch (ScriptDiedException died)
             {
                 died.ProcessStatus(this);
-                taskCompletion.TrySetException(died); // Might have been set by Flush(true)
+                if (!taskCompletion.Task.IsCompleted)
+                {
+                    _ = taskCompletion.TrySetException(died); 
+                }
             }
             catch (Exception exception)
             {
                 if (!OnUnhandledException(exception))
                 {
-                    taskCompletion.TrySetException(exception);  // Might have been set by Flush(true)
+                    if (!taskCompletion.Task.IsCompleted)
+                    {
+                        _ = taskCompletion.TrySetException(exception); 
+                    }
                 }
             }
         }
@@ -518,7 +533,7 @@ namespace Peachpie.AspNetCore.Web
 
                 // gets a path where temporary files are stored:
                 var temppath = Path.GetTempPath(); // global_config.PostedFiles.GetTempPath(global_config.SafeMode);
-                // temporary file name (first part)
+                                                   // temporary file name (first part)
                 var basetempfilename = string.Concat("php_", DateTime.UtcNow.Ticks.ToString("x"), "-");
                 var basetempfileid = this.GetHashCode();
 
