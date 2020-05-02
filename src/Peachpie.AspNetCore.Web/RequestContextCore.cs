@@ -139,7 +139,7 @@ namespace Peachpie.AspNetCore.Web
 
             if (endRequest && ResponseTask is object)
             {
-               ResponseTask.SetResult(null);
+               ResponseTask.TrySetResult(null); // Might be called more than once
             }
         }
 
