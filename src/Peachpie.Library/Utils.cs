@@ -356,14 +356,15 @@ namespace Pchp.Library
     {
         /// <summary>
         /// Decodes encoded string, ignores whitespaces and missing `=` characters.
-        /// Silently ignores invalid characters &lt; 128;
+        /// Silently ignores invalid characters;
         /// </summary>
         /// <param name="base64">The input base64 encoded string.</param>
-        /// <exception cref="FormatException">Invalid character &gt;= 128.</exception>
-        public static byte[] FromBase64(ReadOnlySpan<char> base64)
+        /// <param name="strict">If set, invalid characters cause <see cref="FormatException"/>.</param>
+        /// <exception cref="FormatException">Invalid character if <paramref name="strict"/> is set.</exception>
+        public static byte[] FromBase64(ReadOnlySpan<char> base64, bool strict)
         {
             // count resulting bytes:
-            var count = CountResultingLength(base64);
+            var count = CountResultingLength(base64, strict);
             if (count == 0)
             {
                 return Array.Empty<byte>();
@@ -377,10 +378,10 @@ namespace Pchp.Library
 
             foreach (var ch in base64)
             {
-                var idx = B64ToIndex(ch);
+                var idx = B64ToIndex(ch, false);
                 if (idx < 0) continue;
 
-                Debug.Assert(idx <= 64); // 6-bits
+                Debug.Assert(idx >= 0 && idx <= 64); // 6-bits
 
                 fourbytes = (fourbytes << 6) | (idx);
 
@@ -413,14 +414,14 @@ namespace Pchp.Library
             return bytes;
         }
 
-        static int CountResultingLength(ReadOnlySpan<char> base64)
+        static int CountResultingLength(ReadOnlySpan<char> base64, bool strict)
         {
             int validbytes = 0;
 
             //
             foreach (var ch in base64)
             {
-                var idx = B64ToIndex(ch);
+                var idx = B64ToIndex(ch, strict);
                 if (idx >= 0)
                 {
                     validbytes++;
@@ -439,7 +440,7 @@ namespace Pchp.Library
             return count;
         }
 
-        static int B64ToIndex(char c)
+        static int B64ToIndex(char c, bool strict)
         {
             // map:
             // return map.IndexOf(c);
@@ -468,11 +469,6 @@ namespace Pchp.Library
                 {
                     return c - 'a' + off_a;
                 }
-
-                if (c > 0x7f)
-                {
-                    ThrowBadCharacter();
-                }
             }
             else
             {
@@ -496,7 +492,11 @@ namespace Pchp.Library
                 }
             }
 
-            // ignore anything not in the map <= 127
+            if (strict && c != '=' && !char.IsWhiteSpace(c))
+            {
+                ThrowBadCharacter();
+            }
+
             return -1;
         }
 

@@ -52,7 +52,7 @@ namespace Pchp.Library
 
             try
             {
-                return new PhpString(Base64Utils.FromBase64(encoded_data.AsSpan()));
+                return new PhpString(Base64Utils.FromBase64(encoded_data.AsSpan(), strict));
             }
             catch (FormatException)
             {
