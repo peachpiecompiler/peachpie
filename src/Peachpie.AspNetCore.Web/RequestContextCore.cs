@@ -137,9 +137,9 @@ namespace Peachpie.AspNetCore.Web
         {
             _httpctx.Response.Body.Flush();
 
-            if (endRequest)
+            if (endRequest && ResponseTask is object)
             {
-                _httpctx.Abort();
+                ResponseTask.SetResult(null);
             }
         }
 
@@ -224,11 +224,14 @@ namespace Peachpie.AspNetCore.Web
             return script;
         }
 
+
+        private TaskCompletionSource<object> ResponseTask;
+
         /// <summary>
         /// Performs the request lifecycle, invokes given entry script and cleanups the context.
         /// </summary>
         /// <param name="script">Entry script.</param>
-        public void ProcessScript(ScriptInfo script)
+        public void ProcessScript(ScriptInfo script, TaskCompletionSource<object> taskCompletion)
         {
             Debug.Assert(script.IsValid);
 
@@ -238,31 +241,33 @@ namespace Peachpie.AspNetCore.Web
             // remember the initial script file
             this.MainScriptFile = script;
 
-            //
-
             try
             {
                 if (Debugger.IsAttached)
                 {
+                    ResponseTask = taskCompletion;
                     script.Evaluate(this, this.Globals, null);
+                    taskCompletion.TrySetResult(new object());
                 }
                 else
                 {
                     using (_requestTimer = new Timer(RequestTimeout, null, DefaultPhpConfigurationService.Instance.Core.ExecutionTimeout, Timeout.Infinite))
                     {
                         script.Evaluate(this, this.Globals, null);
+                        taskCompletion.TrySetResult(new object());
                     }
                 }
             }
             catch (ScriptDiedException died)
             {
                 died.ProcessStatus(this);
+                taskCompletion.SetException(died);
             }
             catch (Exception exception)
             {
                 if (!OnUnhandledException(exception))
                 {
-                    throw;
+                    taskCompletion.SetException(exception);
                 }
             }
         }
