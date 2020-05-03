@@ -47,7 +47,7 @@ namespace Pchp.Core
         /// Buffered output associated with the context.
         /// </summary>
         public BufferedOutput/*!*/BufferedOutput => EnsureBufferedOutput(false);    // Initialize lazily as not buffered output by default.
-        
+
         /// <remarks>Is <c>null</c> reference until it is not used for the first time.</remarks>
         BufferedOutput _bufferedOutput;
 
@@ -122,11 +122,17 @@ namespace Pchp.Core
             }
         }
 
+
+        private bool _alreadyFinalized = false;
         /// <summary>
         /// Flushes all remaining data from output buffers.
         /// </summary>
-        internal void FinalizeBufferedOutput()
+        protected void FinalizeBufferedOutput()
         {
+            if (_alreadyFinalized)
+            {
+                return;
+            }
             // flushes output, applies user defined output filter, and disables buffering:
             if (_bufferedOutput != null)
                 _bufferedOutput.FlushAll();
@@ -134,6 +140,7 @@ namespace Pchp.Core
             // redirects sinks:
             IsOutputBuffered = false;
             Output.Flush();
+            _alreadyFinalized = true;
         }
 
         #endregion

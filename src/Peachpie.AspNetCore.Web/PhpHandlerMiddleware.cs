@@ -93,13 +93,17 @@ namespace Peachpie.AspNetCore.Web
             if (script.IsValid)
             {
                 var taskSource = new TaskCompletionSource<object>();
-                using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
-                {
-                    OnContextCreated(phpctx);                    
-                    Task.Run(() => phpctx.ProcessScript(script, taskSource)).ConfigureAwait(false); // fire & forget
-                    return taskSource.Task; // This gets set in phpctx.ProcessScript
-                }
 
+                Task.Run(() =>
+                {
+                    using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
+                    {
+                        OnContextCreated(phpctx);
+                        phpctx.ProcessScript(script, taskSource);
+                    }
+                }).ConfigureAwait(false);// fire & forget
+                    
+                return taskSource.Task; // This gets set in phpctx.ProcessScript
             }
             else
             {

@@ -139,6 +139,7 @@ namespace Peachpie.AspNetCore.Web
 
             if (endRequest && _responseTask is object && !_responseTask.Task.IsCompleted)
             {
+                FinalizeBufferedOutput();
                 _ = _responseTask.TrySetResult(null); // Might be called more than once
             }
         }
