@@ -181,11 +181,16 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Processes DB exception and returns corresponding error info.
         /// </summary>
-        public virtual void HandleException(Exception ex, out string SQLSTATE, out string code, out string message)
+        public virtual void HandleException(Exception ex, out PDO.ErrorInfo errorInfo)
         {
-            SQLSTATE = string.Empty;
-            code = null;
-            message = ex.Message;
+            if (ex is Pchp.Library.Spl.Exception pex)
+            {
+                errorInfo = PDO.ErrorInfo.Create(string.Empty, pex.getCode().ToString(), pex.Message);
+            }
+            else
+            {
+                errorInfo = PDO.ErrorInfo.Create(string.Empty, null, ex.Message);
+            }
         }
 
         /// <summary>

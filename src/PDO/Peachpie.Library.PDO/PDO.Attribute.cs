@@ -185,7 +185,7 @@ namespace Peachpie.Library.PDO
                     }
                     else
                     {
-                        RaiseError("attribute value must be an integer");
+                        HandleError("attribute value must be an integer");
                         return false;
                     }
 
