@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Primitives;
 using Pchp.Core;
@@ -137,9 +138,9 @@ namespace Peachpie.AspNetCore.Web
         {
             _httpctx.Response.Body.Flush();
 
-            if (endRequest && _responseTask is object && !_responseTask.Task.IsCompleted)
+            if (endRequest && _responseEndSignal is object)
             {
-                _ = _responseTask.TrySetResult(null); // Might be called more than once
+                _responseEndSignal.Set(); // Might be called more than once
             }
         }
 
@@ -225,14 +226,14 @@ namespace Peachpie.AspNetCore.Web
         }
 
 
-        private TaskCompletionSource<object> _responseTask;
+        private ManualResetEvent _responseEndSignal;
 
         /// <summary>
         /// Performs the request lifecycle, invokes given entry script and cleanups the context.
         /// </summary>
         /// <param name="script">Entry script.</param>
         /// <param name="taskCompletion">The task completion source for the HttpResponse</param>
-        public void ProcessScript(ScriptInfo script, TaskCompletionSource<object> taskCompletion)
+        public void ProcessScript(ScriptInfo script, ManualResetEvent responseEndSignal)
         {
             Debug.Assert(script.IsValid);
             // set additional $_SERVER items
@@ -243,15 +244,12 @@ namespace Peachpie.AspNetCore.Web
 
             try
             {
-                _responseTask = taskCompletion;
+                this._responseEndSignal = responseEndSignal;
+
                 if (Debugger.IsAttached)
                 {
                     script.Evaluate(this, this.Globals, null);
-
-                    if (!taskCompletion.Task.IsCompleted)
-                    {
-                        _ = taskCompletion.TrySetResult(null);
-                    }
+                    responseEndSignal.Set();
 
                 }
                 else
@@ -259,30 +257,20 @@ namespace Peachpie.AspNetCore.Web
                     using (_requestTimer = new Timer(RequestTimeout, null, DefaultPhpConfigurationService.Instance.Core.ExecutionTimeout, Timeout.Infinite))
                     {
                         script.Evaluate(this, this.Globals, null);
-                        if (!taskCompletion.Task.IsCompleted)
-                        {
-
-                            _ = taskCompletion.TrySetResult(null); 
-                        }
+                        responseEndSignal.Set();
                     }
                 }
             }
             catch (ScriptDiedException died)
             {
                 died.ProcessStatus(this);
-                if (!taskCompletion.Task.IsCompleted)
-                {
-                    _ = taskCompletion.TrySetException(died); 
-                }
+                responseEndSignal.Set();
             }
             catch (Exception exception)
             {
                 if (!OnUnhandledException(exception))
                 {
-                    if (!taskCompletion.Task.IsCompleted)
-                    {
-                        _ = taskCompletion.TrySetException(exception); 
-                    }
+                    responseEndSignal.Set();
                 }
             }
         }

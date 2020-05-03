@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -91,13 +92,15 @@ namespace Peachpie.AspNetCore.Web
         {
             var script = RequestContextCore.ResolveScript(context.Request);
             if (script.IsValid)
-            {
-                var taskSource = new TaskCompletionSource<object>();
+            {                
+                var manualResetEvent = new ManualResetEvent(false);
+                var returnTask = Task.Run(() => manualResetEvent.WaitOne());
+
                 using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
                 {
                     OnContextCreated(phpctx);                    
-                    Task.Run(() => phpctx.ProcessScript(script, taskSource)).ConfigureAwait(false); // fire & forget
-                    return taskSource.Task; // This gets set in phpctx.ProcessScript
+                    phpctx.ProcessScript(script, manualResetEvent);
+                    return returnTask; // This gets set in phpctx.ProcessScript
                 }
 
             }
