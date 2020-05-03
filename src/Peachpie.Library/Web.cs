@@ -47,24 +47,17 @@ namespace Pchp.Library
         {
             if (string.IsNullOrEmpty(encoded_data))
             {
-                return default(PhpString);
-            }
-
-            //
-            var remainder = encoded_data.Length % 4;
-            if (remainder != 0)
-            {
-                encoded_data = encoded_data.PadRight(encoded_data.Length + 4 - remainder, '=');
+                return default; // FALSE
             }
 
             try
             {
-                return new PhpString(System.Convert.FromBase64String(encoded_data));
+                return new PhpString(Base64Utils.FromBase64(encoded_data.AsSpan(), strict));
             }
             catch (FormatException)
             {
                 PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_base64_encoded_data);
-                return default(PhpString);
+                return default; // FALSE
             }
         }
 

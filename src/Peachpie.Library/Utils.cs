@@ -352,6 +352,167 @@ namespace Pchp.Library
         }
     }
 
+    internal static class Base64Utils
+    {
+        /// <summary>
+        /// Decodes encoded string, ignores whitespaces and missing `=` characters.
+        /// Silently ignores invalid characters;
+        /// </summary>
+        /// <param name="base64">The input base64 encoded string.</param>
+        /// <param name="strict">If set, invalid characters cause <see cref="FormatException"/>.</param>
+        /// <exception cref="FormatException">Invalid character if <paramref name="strict"/> is set.</exception>
+        public static byte[] FromBase64(ReadOnlySpan<char> base64, bool strict)
+        {
+            // count resulting bytes:
+            var count = CountResultingLength(base64, strict);
+            if (count == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            int fourbytes = 0;
+            int n = 0;
+
+            var bytes = new byte[count];
+            Span<byte> seq = bytes; // output current sequence of 3 bytes
+
+            foreach (var ch in base64)
+            {
+                var idx = B64ToIndex(ch, false);
+                if (idx < 0) continue;
+
+                Debug.Assert(idx >= 0 && idx <= 64); // 6-bits
+
+                fourbytes = (fourbytes << 6) | (idx);
+
+                if (++n == 4)
+                {
+                    B64_24Bits_to_3Chars(fourbytes, out var a, out var b, out var c);
+
+                    seq[0] = a;
+                    seq[1] = b;
+                    seq[2] = c;
+
+                    seq = seq.Slice(3);
+                    n = 0;
+                    fourbytes = 0;
+                }
+            }
+
+            if (n > 0)
+            {
+                var remaining = 4 - n;
+                fourbytes <<= (6 * remaining);
+
+                B64_24Bits_to_3Chars(fourbytes, out var a, out var b, out var c);
+
+                seq[0] = a;
+                if (n > 2) seq[1] = b;
+            }
+
+            //
+            return bytes;
+        }
+
+        static int CountResultingLength(ReadOnlySpan<char> base64, bool strict)
+        {
+            int validbytes = 0;
+
+            //
+            foreach (var ch in base64)
+            {
+                var idx = B64ToIndex(ch, strict);
+                if (idx >= 0)
+                {
+                    validbytes++;
+                }
+            }
+
+            var count = 3 * Math.DivRem(validbytes, 4, out var n);
+
+            // 
+            if (n > 0)
+            {
+                count++;
+                if (n > 2) count++;
+            }
+
+            return count;
+        }
+
+        static int B64ToIndex(char c, bool strict)
+        {
+            // map:
+            // return map.IndexOf(c);
+
+            // ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
+            // 65 - 90, 97 - 122, 48 - 57, 43, 47
+
+            const int off_A = 0;
+            const int off_a = 26;
+            const int off_0 = 52;
+            const int off_plus = 62;
+            const int off_slash = 63;
+
+            // divide intervals
+
+            if (c >= 'A')
+            {
+                if (c <= 'Z')
+                {
+                    // 65 - 90
+                    return c - 'A' + off_A;
+                }
+
+                // (90 .. )
+                if (c >= 'a' && c <= 'z')
+                {
+                    return c - 'a' + off_a;
+                }
+            }
+            else
+            {
+                // < 65
+
+                if (c >= '0')
+                {
+                    if (c <= '9')
+                    {
+                        return c - '0' + off_0;
+                    }
+
+                    // (57 .. 65)
+                    // nothing
+                }
+                else
+                {
+                    // ( .. 48)
+                    if (c == '+') return off_plus;
+                    if (c == '/') return off_slash;
+                }
+            }
+
+            if (strict && c != '=' && !char.IsWhiteSpace(c))
+            {
+                ThrowBadCharacter();
+            }
+
+            return -1;
+        }
+
+        static void B64_24Bits_to_3Chars(int bits, out byte a, out byte b, out byte c)
+        {
+            a = (byte)(bits >> 16);
+            b = (byte)(bits >> 8);
+            c = (byte)(bits);
+        }
+
+        static void ThrowBadCharacter()
+        {
+            throw new FormatException();
+        }
+    }
+
     internal static class ArrayExtensions
     {
         /// <summary>

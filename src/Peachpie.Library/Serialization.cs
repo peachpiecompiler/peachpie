@@ -300,7 +300,7 @@ namespace Pchp.Library
                         // this shouldn't happen
                         // an array was referenced twice without being enclosed within the same alias (PhpAlias)
 
-                        Debug.Fail("Multiple references to the same array instance!");
+                        Debug.WriteLine("Multiple references to the same array instance!"); // harmless issue, handled as a regular alias
 
                         // this reference has already been serialized -> write out its seq. number
                         Write(Tokens.Reference);
