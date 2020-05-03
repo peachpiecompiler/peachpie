@@ -495,15 +495,21 @@ namespace Pchp.Library
             var webctx = ctx.HttpPhpContext;
             if (webctx != null)
             {
-                // finish the request
-                webctx.Flush(endRequest: true);
+                try
+                {
+                    // finish the request
+                    webctx.Flush(endRequest: true);
 
-                return true;
+                    return true;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // already ended
+                }
             }
-            else
-            {
-                return false;
-            }
+            
+            //
+            return false;
         }
 
         public static bool gc_enabled()

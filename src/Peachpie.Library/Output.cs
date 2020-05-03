@@ -265,7 +265,14 @@ namespace Pchp.Library
         /// </summary>
         public static void flush(Context ctx)
         {
-            ctx.HttpPhpContext?.Flush(endRequest: false);
+            try
+            {
+                ctx.HttpPhpContext?.Flush(endRequest: false);
+            }
+            catch (ObjectDisposedException)
+            {
+                // connection closed
+            }
         }
 
         /// <summary>

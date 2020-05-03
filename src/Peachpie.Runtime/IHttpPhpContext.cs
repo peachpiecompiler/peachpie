@@ -65,6 +65,7 @@ namespace Pchp.Core
         /// Flushes the response stream of the HTTP server.
         /// </summary>
         /// <param name="endRequest">If set, flushes all response data to the client and finishes the request.</param>
+        /// <exception cref="ObjectDisposedException">The response has been disposed already.</exception>
         void Flush(bool endRequest = false);
 
         /// <summary>
