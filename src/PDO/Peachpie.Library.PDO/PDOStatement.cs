@@ -430,7 +430,7 @@ namespace Peachpie.Library.PDO
         {
             // check parameters
 
-            if (fetch_style == PDO.PDO_FETCH.FETCH_COLUMN)
+            if (fetch_style == PDO_FETCH.FETCH_COLUMN)
             {
                 if (fetch_argument.IsLong(out var l))
                 {
@@ -452,7 +452,7 @@ namespace Peachpie.Library.PDO
             {
                 case PDO_FETCH.FETCH_KEY_PAIR:
 
-                    while (Result.TryReadRow(out var oa, out var names))
+                    while (Result.TryReadRow(out var oa, out _))
                     {
                         // 1st col => 2nd col
                         result[PhpValue.FromClr(oa[0]).ToIntStringKey()] = PhpValue.FromClr(oa[1]);
