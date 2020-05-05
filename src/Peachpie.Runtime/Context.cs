@@ -94,8 +94,52 @@ namespace Pchp.Core
             /// <summary>
             /// Set of reflected script assemblies.
             /// </summary>
-            public static IReadOnlyCollection<Assembly> ProcessedAssemblies { get; private set; } = Array.Empty<Assembly>();
+            public static IReadOnlyCollection<Assembly> ProcessedAssemblies => s_processedAssembliesImmutable ??= s_processedAssemblies.ToArray();
+            static Assembly[] s_processedAssembliesImmutable;
+
             static readonly HashSet<Assembly> s_processedAssemblies = new HashSet<Assembly>();
+
+            /// <summary>
+            /// Processes referenced assembly which is annotated as [PhpExtension]
+            /// </summary>
+            static void AddPhpPackageReference(Type scriptOrModule)
+            {
+                if (scriptOrModule == null)
+                {
+                    return;
+                }
+
+                if (scriptOrModule.Name == ScriptInfo.ScriptTypeName)
+                {
+                    // <Script> // it is a PHP assembly
+                    AddScriptReference(scriptOrModule.Assembly);
+                }
+                else if (TryAddAssembly(scriptOrModule.Assembly))
+                {
+                    // it is a C# assembly
+                    ExtensionsAppContext.ExtensionsTable.VisitAssembly(scriptOrModule.Assembly);
+                }
+            }
+
+            /// <summary>
+            /// Adds assembly to the list of referenced packages.
+            /// This is used
+            /// - by `eval()` to collect references
+            /// - to avoid processing same assembly twice
+            /// - as a recursion prevention
+            /// </summary>
+            static bool TryAddAssembly(Assembly/*!*/assembly)
+            {
+                if (s_processedAssemblies.Add(assembly))
+                {
+                    s_processedAssembliesImmutable = null;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
 
             /// <summary>
             /// Reflects given assembly for PeachPie compiler specifics - compiled scripts, references to other assemblies, declared functions and classes.
@@ -110,13 +154,11 @@ namespace Pchp.Core
                     throw new ArgumentNullException(nameof(assembly));
                 }
 
-                if (assembly.GetType(ScriptInfo.ScriptTypeName) == null || !s_processedAssemblies.Add(assembly))
+                if (assembly.GetType(ScriptInfo.ScriptTypeName) == null || !TryAddAssembly(assembly))
                 {
                     // nothing to reflect
                     return;
                 }
-
-                ProcessedAssemblies = s_processedAssemblies.ToArray();
 
                 // reflect the module for imported symbols:
 
@@ -125,10 +167,7 @@ namespace Pchp.Core
                 // PhpPackageReferenceAttribute
                 foreach (var r in module.GetCustomAttributes<PhpPackageReferenceAttribute>())
                 {
-                    if (r.ScriptType != null) // always true
-                    {
-                        AddScriptReference(r.ScriptType.Assembly);
-                    }
+                    AddPhpPackageReference(r.ScriptType);
                 }
 
                 // ImportPhpTypeAttribute
