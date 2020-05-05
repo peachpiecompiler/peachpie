@@ -402,7 +402,11 @@ namespace Peachpie.Library.PDO
         public virtual bool beginTransaction()
         {
             if (CurrentTransaction != null)
-                throw new PDOException("Transaction already active");
+            {
+                HandleError("Transaction already active");
+                return false;
+            }
+
             //TODO DbTransaction isolation level
             CurrentTransaction = Connection.BeginTransaction();
             return true;
@@ -415,7 +419,11 @@ namespace Peachpie.Library.PDO
         public virtual bool commit()
         {
             if (CurrentTransaction == null)
-                throw new PDOException("No active transaction");
+            {
+                HandleError("No active transaction");
+                return false;
+            }
+
             CurrentTransaction.Commit();
             CurrentTransaction = null;
             return true;
@@ -428,7 +436,11 @@ namespace Peachpie.Library.PDO
         public virtual bool rollBack()
         {
             if (CurrentTransaction == null)
-                throw new PDOException("No active transaction");
+            {
+                HandleError("No active transaction");
+                return false;
+            }
+
             CurrentTransaction.Rollback();
             CurrentTransaction = null;
             return true;
@@ -474,6 +486,10 @@ namespace Peachpie.Library.PDO
         public virtual PDOStatement query(string statement, params PhpValue[] args)
         {
             var stmt = CreateStatement(statement, null);
+            if (stmt == null)
+            {
+                return null; // FALSE
+            }
 
             if (args.Length > 0)
             {
@@ -542,7 +558,9 @@ namespace Peachpie.Library.PDO
                     return instance;
                 }
 
-                throw new PDOException();
+                // error
+                HandleError("Invalid class name.");
+                return null;
             }
             else
             {

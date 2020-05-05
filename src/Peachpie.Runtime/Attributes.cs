@@ -472,7 +472,7 @@ namespace Pchp.Core
         /// <summary>
         /// The Script type from the dependent assembly.
         /// </summary>
-        public Type ScriptType { get; private set; }
+        public Type ScriptType { get; }
 
         public PhpPackageReferenceAttribute(Type scriptType)
         {

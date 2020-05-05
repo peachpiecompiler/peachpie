@@ -64,17 +64,15 @@ namespace Peachpie.Library.PDO.MySQL
         }
 
         /// <inheritDoc />
-        public override void HandleException(Exception ex, out string SQLSTATE, out string code, out string message)
+        public override void HandleException(Exception ex, out PDO.ErrorInfo errorInfo)
         {
             if (ex is MySqlException mex)
             {
-                SQLSTATE = mex.SqlState;
-                code = mex.Number.ToString();
-                message = ex.Message;
+                errorInfo = PDO.ErrorInfo.Create(mex.SqlState, mex.Number.ToString(), ex.Message);
             }
             else
             {
-                base.HandleException(ex, out SQLSTATE, out code, out message);
+                base.HandleException(ex, out errorInfo);
             }
         }
     }

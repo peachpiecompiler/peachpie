@@ -147,6 +147,38 @@ namespace Peachpie.Library.PDO
         /// </summary>
         private protected ResultResource Result { get; private set; }
 
+        #region Error Handling
+
+        /// <summary>
+        /// Error information associated with the last operation on the statement.
+        /// </summary>
+        private ErrorInfo _lastError;
+
+        private protected void ClearError()
+        {
+            _lastError = default;
+            PDO.ClearError();
+        }
+
+        /// <summary>
+        /// Raises simple "HY000" error.
+        /// </summary>
+        private protected void HandleError(string message) => HandleError(ErrorInfo.Create(message));
+
+        private protected void HandleError(Exception exception)
+        {
+            Driver.HandleException(exception, out var error);
+            HandleError(error);
+        }
+
+        private protected void HandleError(ErrorInfo error)
+        {
+            _lastError = error;
+            PDO.HandleError(error);
+        }
+
+        #endregion
+
         #region Construction
 
         /// <summary>
@@ -270,13 +302,13 @@ namespace Peachpie.Library.PDO
         /// Fetch the SQLSTATE associated with the last operation on the statement handle
         /// </summary>
         /// <returns>Identical to PDO::errorCode(), except that PDOStatement::errorCode() only retrieves error codes for operations performed with PDOStatement objects</returns>
-        public virtual string errorCode() { throw new NotImplementedException(); }
+        public virtual string errorCode() => _lastError.Code;
 
         /// <summary>
         /// Fetch extended error information associated with the last operation on the statement handle.
         /// </summary>
         /// <returns>PDOStatement::errorInfo() returns an array of error information about the last operation performed by this statement handle.</returns>
-        public virtual PhpArray errorInfo() { throw new NotImplementedException(); }
+        public virtual PhpArray errorInfo() => _lastError.ToPhpErrorInfo();
 
         /// <summary>
         /// Executes a prepared statement
@@ -304,7 +336,7 @@ namespace Peachpie.Library.PDO
             }
             else
             {
-                PDO.HandleError(Connection.LastException);
+                HandleError(Connection.LastException);
                 return false;
             }
 
@@ -320,7 +352,7 @@ namespace Peachpie.Library.PDO
         /// <returns>The return value of this function on success depends on the fetch type. In all cases, FALSE is returned on failure.</returns>
         public virtual PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO_FETCH.Default/*0*/, PDO_FETCH_ORI cursor_orientation = PDO_FETCH_ORI.FETCH_ORI_NEXT/*0*/, int cursor_offet = 0)
         {
-            PDO.ClearError();
+            ClearError();
 
             if (cursor_orientation != PDO_FETCH_ORI.FETCH_ORI_NEXT) // 0
             {
@@ -381,7 +413,7 @@ namespace Peachpie.Library.PDO
             }
             catch (System.Exception ex)
             {
-                PDO.HandleError(ex);
+                HandleError(ex);
                 return PhpValue.False;
             }
         }
@@ -398,7 +430,7 @@ namespace Peachpie.Library.PDO
         {
             // check parameters
 
-            if (fetch_style == PDO.PDO_FETCH.FETCH_COLUMN)
+            if (fetch_style == PDO_FETCH.FETCH_COLUMN)
             {
                 if (fetch_argument.IsLong(out var l))
                 {
@@ -406,7 +438,7 @@ namespace Peachpie.Library.PDO
                 }
                 else
                 {
-                    RaiseError("The fetch_argument must be an integer for FETCH_COLUMN.");
+                    HandleError("The fetch_argument must be an integer for FETCH_COLUMN.");
                     return null;
                 }
             }
@@ -420,7 +452,7 @@ namespace Peachpie.Library.PDO
             {
                 case PDO_FETCH.FETCH_KEY_PAIR:
 
-                    while (Result.TryReadRow(out var oa, out var names))
+                    while (Result.TryReadRow(out var oa, out _))
                     {
                         // 1st col => 2nd col
                         result[PhpValue.FromClr(oa[0]).ToIntStringKey()] = PhpValue.FromClr(oa[1]);
@@ -576,7 +608,7 @@ namespace Peachpie.Library.PDO
                 case PDO_FETCH.FETCH_KEY_PAIR:
                     if (args.Length != 0)
                     {
-                        RaiseError("fetch mode doesn't allow any extra arguments");
+                        HandleError("fetch mode doesn't allow any extra arguments");
                         return false;
                     }
 
@@ -586,7 +618,7 @@ namespace Peachpie.Library.PDO
                 case PDO_FETCH.FETCH_COLUMN:
                     if (args.Length != 1)
                     {
-                        RaiseError("fetch mode requires the colno argument");
+                        HandleError("fetch mode requires the colno argument");
                         return false;
                     }
                     else if (args[0].IsLong(out var l))
@@ -596,7 +628,7 @@ namespace Peachpie.Library.PDO
                     }
                     else
                     {
-                        RaiseError("colno must be an integer");
+                        HandleError("colno must be an integer");
                         return false;
                     }
 
@@ -610,7 +642,7 @@ namespace Peachpie.Library.PDO
                         // will be getting its class name from 1st column
                         if (args.Length != 0)
                         {
-                            RaiseError("fetch mode doesn't allow any extra arguments");
+                            HandleError("fetch mode doesn't allow any extra arguments");
                             return false;
                         }
                         else
@@ -622,12 +654,12 @@ namespace Peachpie.Library.PDO
                     {
                         if (args.Length == 0)
                         {
-                            RaiseError("fetch mode requires the classname argument");
+                            HandleError("fetch mode requires the classname argument");
                             return false;
                         }
                         else if (args.Length > 2)
                         {
-                            RaiseError("too many arguments");
+                            HandleError("too many arguments");
                             return false;
                         }
                         else if (args[0].IsString(out var name))
@@ -640,7 +672,7 @@ namespace Peachpie.Library.PDO
                                     var ctorargs = args[1].AsArray();
                                     if (ctorargs == null && !args[1].IsNull)
                                     {
-                                        RaiseError("ctor_args must be either NULL or an array");
+                                        HandleError("ctor_args must be either NULL or an array");
                                         return false;
                                     }
                                     else if (ctorargs != null && ctorargs.Count != 0)
@@ -658,7 +690,7 @@ namespace Peachpie.Library.PDO
                         }
                         else
                         {
-                            RaiseError("classname must be a string");
+                            HandleError("classname must be a string");
                             return false;
                         }
                     }
@@ -736,7 +768,7 @@ namespace Peachpie.Library.PDO
         {
             if (phpt == null)
             {
-                RaiseError("Fetch class not set.");
+                HandleError("Fetch class not set.");
                 return null;
             }
 
@@ -828,11 +860,6 @@ namespace Peachpie.Library.PDO
 
             return false;
         }
-
-        /// <summary>
-        /// Raises simple "HY000" error.
-        /// </summary>
-        private protected void RaiseError(string message) => PDO.RaiseError(message);
 
         private protected bool StoreParameter(ref Dictionary<IntStringKey, BoundParam> dict, IntStringKey parameter, PhpValue variable, PARAM? type)
         {

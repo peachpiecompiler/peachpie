@@ -144,7 +144,16 @@ namespace Pchp.CodeAnalysis.Symbols
             ctor = (MethodSymbol)DeclaringCompilation.GetTypeByMetadataName("Pchp.Core.PhpPackageReferenceAttribute").InstanceConstructors.Single();
             foreach (var a in DeclaringCompilation.GlobalSemantics.ReferencedPhpPackageReferences)
             {
-                var scriptType = a.GetTypeByMetadataName(WellKnownPchpNames.DefaultScriptClassName);
+                var scriptType = a.GetTypeByMetadataName(WellKnownPchpNames.DefaultScriptClassName); // <Script> for PHP libraries
+                if (scriptType.IsErrorTypeOrNull())
+                {
+                    // pick any type as a refernce for C# extension libraries
+                    var alltypes = a.PrimaryModule.GlobalNamespace.GetTypeMembers();
+                    scriptType =
+                        alltypes.FirstOrDefault(x => x.DeclaredAccessibility == Accessibility.Public) ??
+                        alltypes.FirstOrDefault(x => x.DeclaredAccessibility == Accessibility.Internal);
+                }
+
                 if (scriptType.IsValidType())
                 {
                     yield return new SynthesizedAttributeData(

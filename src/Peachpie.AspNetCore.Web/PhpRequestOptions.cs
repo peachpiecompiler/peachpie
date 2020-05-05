@@ -15,7 +15,7 @@ namespace Microsoft.AspNetCore.Builder
         /// <summary>
         /// Set of assemblies name containing compiled PHP scripts to be sideloaded.
         /// </summary>
-        public string[] ScriptAssembliesName { get; set; } = new[] { "website" };
+        public string[] ScriptAssembliesName { get; set; }
 
         /// <summary>
         /// Encoding to be used for
