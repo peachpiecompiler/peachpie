@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.Library.Resources;
 using PerlRegex = Peachpie.Library.RegularExpressions;
+using Peachpie.Library.RegularExpressions;
+using System.Buffers;
 
 namespace Pchp.Library
 {
@@ -82,8 +84,13 @@ namespace Pchp.Library
         public const int PREG_BAD_UTF8_OFFSET_ERROR = 5;
         public const int PREG_JIT_STACKLIMIT_ERROR = 6;
 
+        public const int PCRE_VERSION_MAJOR = 10;
+        public const int PCRE_VERSION_MINOR = 33;
+
         /// <summary>PCRE version and release date</summary>
-        public const string PCRE_VERSION = "8.4 .NET";
+        public static string PCRE_VERSION => $"{PCRE_VERSION_MAJOR}.{PCRE_VERSION_MINOR} .NET";
+
+        public const bool PCRE_JIT_SUPPORT = true;
 
         #endregion
 
@@ -154,10 +161,163 @@ namespace Pchp.Library
         /// <returns></returns>
         public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit, out long count)
         {
-            return PregReplaceInternal(ctx, pattern, replacement, subject, limit, out count, filter: false);
+            return PregReplaceInternal(ctx, PreparePatternArray(ctx, pattern, replacement), subject, limit, out count, filter: false);
         }
 
-        static PhpValue PregReplaceInternal(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit, out long count, bool filter)
+        /// <summary>
+        /// Perform a regular expression search and replace.
+        /// </summary>
+        public static PhpValue preg_filter(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit = -1)
+        {
+            return preg_filter(ctx, pattern, replacement, subject, limit, out _);
+        }
+
+        /// <summary>
+        /// Perform a regular expression search and replace.
+        /// </summary>
+        public static PhpValue preg_filter(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit, out long count)
+        {
+            return PregReplaceInternal(ctx, PreparePatternArray(ctx, pattern, replacement), subject, limit, out count, filter: true);
+        }
+
+        /// <summary>
+        /// Helper value representing a regular expression with its replacement expression.
+        /// </summary>
+        readonly struct PatternAndReplacement
+        {
+            public Regex Regex { get; }
+            public string Replacement { get; }
+
+            /// <summary>
+            /// If set, <see cref="Replacement"/> is not used.
+            /// </summary>
+            public MatchEvaluator Evaluator { get; }
+
+            public PhpString Replace(Context ctx, PhpString subject, int limit, ref long count)
+            {
+                var oldcount = count;
+                var newvalue = Evaluator != null
+                    ? Regex.Replace(subject.ToString(ctx), Evaluator, (int)limit, ref count)
+                    : Regex.Replace(subject.ToString(ctx), Replacement, (int)limit, ref count);
+
+                if (oldcount != count)
+                {
+                    subject = newvalue; // NOTE: possible corruption of 8bit string
+                }
+                else
+                {
+                    // - workaround for https://github.com/peachpiecompiler/peachpie/issues/178
+                    // - use the original value if possible
+                }
+
+                return subject;
+            }
+
+            public PatternAndReplacement(Regex regex, string replacement)
+            {
+                this.Regex = regex;
+                this.Replacement = replacement;
+                this.Evaluator = null;
+            }
+
+            public PatternAndReplacement(Regex regex, MatchEvaluator evaluator)
+            {
+                this.Regex = regex;
+                this.Replacement = null;
+                this.Evaluator = evaluator;
+            }
+        }
+
+        static PatternAndReplacement[] PreparePatternArray(Context ctx, PhpValue pattern, PhpValue replacement)
+        {
+            if (pattern.IsPhpArray(out var pattern_array))
+            {
+                var regexes = new PatternAndReplacement[pattern_array.Count];
+
+                if (replacement.IsPhpArray(out var replacement_array))
+                {
+                    int i = 0;
+                    var pattern_enumerator = pattern_array.GetFastEnumerator();
+                    var replacement_enumerator = replacement_array.GetFastEnumerator();
+                    bool replacement_valid = true;
+
+                    while (pattern_enumerator.MoveNext())
+                    {
+                        string replacement_string;
+
+                        // replacements are in array, move to next item and take it if possible, in other case take empty string:
+                        if (replacement_valid && replacement_enumerator.MoveNext())
+                        {
+                            replacement_string = replacement_enumerator.CurrentValue.ToStringOrThrow(ctx);
+                        }
+                        else
+                        {
+                            replacement_string = string.Empty;
+                            replacement_valid = false;  // end of replacement_enumerator, do not call MoveNext again
+                        }
+
+                        //
+                        if (TryParseRegexp(pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), out var regex))
+                        {
+                            regexes[i++] = new PatternAndReplacement(regex, replacement_string);
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                }
+                else
+                {
+                    // array pattern
+                    // string replacement
+
+                    var replacement_string = replacement.ToStringOrThrow(ctx);
+
+                    int i = 0;
+                    var pattern_enumerator = pattern_array.GetFastEnumerator();
+                    while (pattern_enumerator.MoveNext())
+                    {
+                        if (TryParseRegexp(pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), out var regex))
+                        {
+                            regexes[i++] = new PatternAndReplacement(regex, replacement_string);
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                }
+
+                return regexes;
+            }
+            else
+            {
+                if (replacement.IsPhpArray(out _))
+                {
+                    // string pattern and array replacement not allowed:
+                    // Parameter mismatch, pattern is a string while replacement is an array
+                    PhpException.InvalidArgument(nameof(replacement), LibResources.replacement_array_pattern_not);
+                    return null;
+                }
+
+                // string pattern
+                // string replacement
+                if (TryParseRegexp(pattern.ToStringOrThrow(ctx), out var regex))
+                {
+                    return new PatternAndReplacement[]
+                    {
+                        new PatternAndReplacement(regex, replacement.ToStringOrThrow(ctx))
+                    };
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        static PhpValue PregReplaceInternal(Context ctx, PatternAndReplacement[] regexes, PhpValue subject, long limit, out long count, bool filter)
         {
             count = 0;
 
@@ -167,88 +327,110 @@ namespace Pchp.Library
                 limit = 0;
             }
 
-            // TODO: PHP enumerates subjects first, then patterns and replacements
-            //if (subject.IsPhpArray(out var subject_array))
-            //{
-            //    // returning PhpArray
-            //    var s = subject_array.GetFastEnumerator();
-            //    while (s.MoveNext())
-            //    {
-            //    }
-            //}
-            //else
-            //{
-            //    // returning string|PhpString|NULL
-            //    var s = subject.ToStringOrThrow(ctx);
-            //}
-
-            //
-            var replacement_array = replacement.AsArray();
-            var pattern_array = pattern.AsArray();
-
-            if (pattern_array == null)
+            if (regexes == null)
             {
-                if (replacement_array == null)
-                {
-                    // string pattern
-                    // string replacement
-
-                    return PregReplaceInternal(ctx, pattern.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx), null, subject, (int)limit, ref count, filter);
-                }
-                else
-                {
-                    // string pattern and array replacement not allowed:
-                    PhpException.InvalidArgument(nameof(replacement), LibResources.replacement_array_pattern_not);
-                    return PhpValue.Null;
-                }
+                // NOTE: PHP returns FALSE when pattern is string and replacement is array which is wrong according to manual
+                return PhpValue.Null;
             }
-            else if (replacement_array == null)
+
+            // enumerate subjects first, then patterns and replacements
+            if (subject.IsPhpArray(out var subject_array))
             {
-                // array  pattern
-                // string replacement
-
-                var replacement_string = replacement.ToStringOrThrow(ctx);
-
-                var pattern_enumerator = pattern_array.GetFastEnumerator();
-                while (pattern_enumerator.MoveNext())
+                // returning PhpArray
+                var arr = new PhpArray(subject_array.Count);
+                var s = subject_array.GetFastEnumerator();
+                while (s.MoveNext())
                 {
-                    subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement_string,
-                        null, subject, (int)limit, ref count, filter);
+                    var oldcount = count;
+                    var newvalue = PregReplaceInternal(ctx, regexes, s.CurrentValue.ToPhpString(ctx), limit, ref count);
+
+                    if (filter && oldcount == count)
+                    {
+                        continue;
+                    }
+
+                    arr[s.CurrentKey] = newvalue.DeepCopy();
                 }
 
-                //
-                return subject;
+                return arr;
             }
             else
             {
+                var newvalue = PregReplaceInternal(ctx, regexes, subject.ToPhpString(ctx), limit, ref count);
+
+                if (filter && count == 0)
+                {
+                    return PhpValue.Null;
+                }
+
+                return newvalue;
+            }
+        }
+
+        static PhpString PregReplaceInternal(Context ctx, PatternAndReplacement[] regexes, PhpString subject, long limit, ref long count)
+        {
+            for (int i = 0; i < regexes.Length; i++)
+            {
+                subject = regexes[i].Replace(ctx, subject, (int)limit, ref count);
+            }
+
+            //
+            return subject;
+        }
+
+        static PatternAndReplacement[] PreparePatternArray(Context ctx, PhpValue pattern, IPhpCallable callback)
+        {
+            if (callback == null)
+            {
+                PhpException.ArgumentNull(nameof(callback));
+                return null;
+            }
+
+            var evaluator = new MatchEvaluator(match =>
+            {
+                var matches_arr = new PhpArray();
+                GroupsToPhpArray(match.PcreGroups, false, false, matches_arr);
+
+                return callback
+                    .Invoke(ctx, (PhpValue)matches_arr)
+                    .ToStringOrThrow(ctx);
+            });
+
+            if (pattern.IsPhpArray(out var pattern_array))
+            {
+                var regexes = new PatternAndReplacement[pattern_array.Count];
+
                 // array pattern
-                // array replacement
-
-                var replacement_enumerator = replacement_array.GetFastEnumerator();
-
-                bool replacement_valid = true;
-                string replacement_string;
-
+                int i = 0;
                 var pattern_enumerator = pattern_array.GetFastEnumerator();
                 while (pattern_enumerator.MoveNext())
                 {
-                    // replacements are in array, move to next item and take it if possible, in other case take empty string:
-                    if (replacement_valid && replacement_enumerator.MoveNext())
+                    if (TryParseRegexp(pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), out var regex))
                     {
-                        replacement_string = replacement_enumerator.CurrentValue.ToStringOrThrow(ctx);
+                        regexes[i++] = new PatternAndReplacement(regex, evaluator);
                     }
                     else
                     {
-                        replacement_string = string.Empty;
-                        replacement_valid = false;  // end of replacement_enumerator, do not call MoveNext again!
+                        return null;
                     }
-
-                    subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement_string,
-                        null, subject, (int)limit, ref count, filter);
                 }
 
-                //
-                return subject;
+                return regexes;
+            }
+            else
+            {
+                // string pattern
+                if (TryParseRegexp(pattern.ToStringOrThrow(ctx), out var regex))
+                {
+                    return new PatternAndReplacement[]
+                    {
+                        new PatternAndReplacement(regex, evaluator)
+                    };
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
 
@@ -260,34 +442,53 @@ namespace Pchp.Library
 
         public static PhpValue preg_replace_callback(Context ctx, PhpValue pattern, IPhpCallable callback, PhpValue subject, long limit, ref long count)
         {
-            count = 0;
+            return PregReplaceInternal(ctx, PreparePatternArray(ctx, pattern, callback), subject, limit, out count, filter: false);
+        }
 
-            // PHP's behaviour for undocumented limit range
-            if (limit < -1)
+        static PatternAndReplacement[] PreparePatternArray(Context ctx, PhpArray patterns_and_callbacks)
+        {
+            if (patterns_and_callbacks == null)
             {
-                limit = 0;
+                PhpException.ArgumentNull(nameof(patterns_and_callbacks));
+                return null;
+            }
+
+            var regexes = new PatternAndReplacement[patterns_and_callbacks.Count];
+
+            int i = 0;
+            var enumerator = patterns_and_callbacks.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var pattern = enumerator.CurrentKey.String;
+                var callback = enumerator.CurrentValue.AsCallable();
+
+                if (TryParseRegexp(pattern, out var regex))
+                {
+                    var evaluator = new MatchEvaluator(match =>
+                    {
+                        var matches_arr = new PhpArray();
+                        GroupsToPhpArray(match.PcreGroups, false, false, matches_arr);
+
+                        return callback
+                            .Invoke(ctx, (PhpValue)matches_arr)
+                            .ToStringOrThrow(ctx);
+                    });
+
+                    regexes[i++] = new PatternAndReplacement(regex, evaluator);
+                }
+                else
+                {
+                    return null;
+                }
             }
 
             //
-            var pattern_array = pattern.AsArray();
-
-            if (pattern_array == null)
-            {
-                // string pattern
-                return PregReplaceInternal(ctx, pattern.ToStringOrThrow(ctx), null, callback, subject, (int)limit, ref count);
-            }
-            else
-            {
-                // array pattern
-            }
-
-            throw new NotImplementedException();
+            return regexes;
         }
 
         public static PhpValue preg_replace_callback_array(Context ctx, PhpArray patterns_and_callbacks, PhpValue subject, long limit = -1)
         {
-            long count;
-            return preg_replace_callback_array(ctx, patterns_and_callbacks, subject, limit, out count);
+            return preg_replace_callback_array(ctx, patterns_and_callbacks, subject, limit, out _);
         }
 
         /// <summary>
@@ -304,121 +505,7 @@ namespace Pchp.Library
         /// </returns>
         public static PhpValue preg_replace_callback_array(Context ctx, PhpArray patterns_and_callbacks, PhpValue subject, long limit, out long count)
         {
-            if (patterns_and_callbacks == null)
-            {
-                throw new ArgumentNullException(nameof(patterns_and_callbacks));
-            }
-
-            count = 0;
-
-            var enumerator = patterns_and_callbacks.GetFastEnumerator();
-            while (enumerator.MoveNext())
-            {
-                var pattern = enumerator.CurrentKey.String ?? throw new ArgumentException();
-                var callback = enumerator.CurrentValue.AsCallable();
-
-                subject = PregReplaceInternal(ctx, pattern, null, callback, subject, (int)limit, ref count);
-            }
-
-            //
-            return subject;
-        }
-
-        ///// <summary>
-        ///// Perform a regular expression search and replace.
-        ///// </summary>
-        //public static PhpValue preg_filter(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit = -1)
-        //{
-        //    return preg_filter(ctx, pattern, replacement, subject, limit, out _);
-        //}
-
-        ///// <summary>
-        ///// Perform a regular expression search and replace.
-        ///// </summary>
-        //public static PhpValue preg_filter(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit, out long count)
-        //{
-        //    return PregReplaceInternal(ctx, pattern, replacement, subject, limit, out count, filter: true);
-        //}
-
-        static PhpValue PregReplaceInternal(Context ctx, string pattern, string replacement, IPhpCallable callback, PhpValue subject, int limit, ref long count, bool filter = false)
-        {
-            if (!TryParseRegexp(pattern, out var regex))
-            {
-                return PhpValue.Null;
-            }
-
-            // callback
-            PerlRegex.MatchEvaluator evaluator = null;
-            if (callback != null)
-            {
-                evaluator = (match) =>
-                {
-                    var matches_arr = new PhpArray();
-                    GroupsToPhpArray(match.PcreGroups, false, false, matches_arr);
-
-                    return callback
-                        .Invoke(ctx, (PhpValue)matches_arr)
-                        .ToStringOrThrow(ctx);
-                };
-            }
-
-            // TODO: subject as a binary string would be corrupted after Replace - https://github.com/peachpiecompiler/peachpie/issues/178
-
-            //
-            if (subject.IsPhpArray(out var subject_array))
-            {
-                var arr = new PhpArray(subject_array.Count);
-
-                var enumerator = subject_array.GetFastEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    var input = enumerator.CurrentValue;
-                    var oldvalue = input.ToStringOrThrow(ctx);
-                    var oldcount = count;
-
-                    PhpValue newvalue = evaluator == null
-                        ? regex.Replace(oldvalue, replacement, limit, ref count)
-                        : regex.Replace(oldvalue, evaluator, limit, ref count);
-
-                    if (oldcount == count)
-                    {
-                        // no match
-                        if (filter)
-                            continue;
-
-                        // - quick workaround for https://github.com/peachpiecompiler/peachpie/issues/178
-                        // - use the original value if possible (mem perf.)
-                        newvalue = (input.IsBinaryString(out var bstring) ? bstring.DeepCopy() : oldvalue);
-                    }
-
-                    arr[enumerator.CurrentKey] = newvalue;
-                }
-
-                return arr;
-            }
-            else
-            {
-                var oldvalue = subject.ToStringOrThrow(ctx);
-                var oldcount = count;
-
-                PhpValue newvalue = evaluator == null
-                        ? regex.Replace(oldvalue, replacement, limit, ref count)
-                        : regex.Replace(oldvalue, evaluator, limit, ref count);
-
-                if (oldcount == count)
-                {
-                    // no match
-                    if (filter)
-                        return PhpValue.Null;
-
-                    // - quick workaround for https://github.com/peachpiecompiler/peachpie/issues/178
-                    // - use the original value if possible (mem perf.)
-                    newvalue = (subject.IsBinaryString(out var bstring) ? bstring.DeepCopy() : oldvalue);
-                }
-
-                //
-                return newvalue;
-            }
+            return PregReplaceInternal(ctx, PreparePatternArray(ctx, patterns_and_callbacks), subject, limit, out count, filter: false);
         }
 
         [return: CastToFalse]

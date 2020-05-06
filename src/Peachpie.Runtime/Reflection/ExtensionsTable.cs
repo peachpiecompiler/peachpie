@@ -155,7 +155,7 @@ namespace Pchp.Core.Reflection
         /// </summary>
         /// <param name="ass">The assembly to be added.</param>
         /// <returns>Value indicating the assembly was visited for the first time.</returns>
-        bool VisitAssembly(Assembly ass)
+        internal bool VisitAssembly(Assembly ass)
         {
             if (_processed.Add(ass))
             {

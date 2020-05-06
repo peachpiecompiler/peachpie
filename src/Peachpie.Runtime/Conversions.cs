@@ -1380,6 +1380,48 @@ namespace Pchp.Core
             }
         }
 
+        public static double ToDouble(string value)
+        {
+            if (value != null && (Convert.IsNumber(value, value.Length, 0, out _, out _, out var _, out var doubleValue) & Convert.NumberInfo.IsNumber) != 0)
+            {
+                // Notice: A non well formed numeric value encountered
+                return doubleValue;
+            }
+
+            // TypeError: must be of the type int, null given
+            throw PhpException.TypeErrorException();
+        }
+
+        /// <summary>
+        /// Explicit conversion to <see cref="double"/>.
+        /// </summary>
+        public static double ToDouble(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Long: return value.Long;
+
+                case PhpTypeCode.Double: return value.Double;
+
+                case PhpTypeCode.Boolean: return value.Boolean ? 1 : 0;
+
+                case PhpTypeCode.String: return ToDouble(value.String);
+
+                case PhpTypeCode.MutableString: return ToDouble(value.MutableStringBlob.ToString());
+
+                //case PhpTypeCode.Object:
+                //    return (value.Object is IPhpConvertible convertible)
+                //        ? convertible.ToLong()
+                //        : throw PhpException.TypeErrorException(string.Format(Resources.ErrResources.object_could_not_be_converted, value.Object.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
+
+                case PhpTypeCode.Alias: return ToDouble(value.Alias.Value);
+
+                default:
+                    // TypeError: must be of the type int, null given
+                    throw PhpException.TypeErrorException();
+            }
+        }
+
         public static PhpArray ToArray(PhpValue value) => value.TypeCode switch
         {
             PhpTypeCode.PhpArray => value.Array,

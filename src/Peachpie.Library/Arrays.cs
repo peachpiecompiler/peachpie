@@ -1983,41 +1983,39 @@ namespace Pchp.Library
         /// Values associated with existing string keys are be overwritten.
         /// </summary>
         /// <param name="arrays">Arrays to be merged.</param>
-        /// <returns>The <see cref="PhpArray"/> containing items from all <paramref name="arrays"/>.</returns>
+        /// <returns>
+        /// The <see cref="PhpArray"/> containing items from all <paramref name="arrays"/>.
+        /// Returns <c>null</c> in case of error.</returns>
         //[return: PhpDeepCopy]
         public static PhpArray array_merge(params PhpArray[] arrays)
         {
             // "arrays" argument is PhpArray[] => compiler generates code converting any value to PhpArray.
             // Note, PHP does reject non-array arguments.
 
-            if (arrays == null)
-            {
-                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg_null_or_empty"));
-                //return null;
-                throw new ArgumentNullException();
-            }
-
-            if (arrays.Length == 0)
+            if (arrays == null || arrays.Length == 0)
             {
                 return PhpArray.NewEmpty();
             }
 
-            var result = new PhpArray(arrays[0].Count);
+            var result = new PhpArray(arrays[0] != null ? arrays[0].Count : 0);
 
             for (int i = 0; i < arrays.Length; i++)
             {
-                if (arrays[i] != null)
+                if (arrays[i] == null)
                 {
-                    var enumerator = arrays[i].GetFastEnumerator();
-                    while (enumerator.MoveNext())
-                    {
-                        var value = enumerator.CurrentValue.DeepCopy();
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.argument_not_array, (i + 1).ToString());
+                    return null;
+                }
 
-                        if (enumerator.CurrentKey.IsString)
-                            result[enumerator.CurrentKey] = value;
-                        else
-                            result.Add(value);
-                    }
+                var enumerator = arrays[i].GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    var value = enumerator.CurrentValue.DeepCopy();
+
+                    if (enumerator.CurrentKey.IsString)
+                        result[enumerator.CurrentKey] = value;
+                    else
+                        result.Add(value);
                 }
             }
 

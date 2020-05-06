@@ -106,6 +106,18 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public ImmutableDictionary<string, string> Defines { get; internal set; }
 
+        /// <summary>
+        /// Set of relative file names from which class map will be generated.
+        /// Contained types will be marked as autoloaded.
+        /// </summary>
+        public ISet<string> Autoload_ClassMapFiles { get; internal set; }
+
+        /// <summary>
+        /// Collection of PSR-4 autoload rules.
+        /// Matching types (classes, traits and interfaces) will be marked as autoloaded.
+        /// </summary>
+        public IReadOnlyCollection<(string prefix, string path)> Autoload_PSR4 { get; internal set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -270,6 +282,8 @@ namespace Pchp.CodeAnalysis
             referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions)
         {
             EventSources = other.EventSources;
+            Autoload_ClassMapFiles = other.Autoload_ClassMapFiles;
+            Autoload_PSR4 = other.Autoload_PSR4;
         }
 
         public override string Language => Constants.PhpLanguageName;

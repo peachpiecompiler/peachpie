@@ -27,14 +27,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static bool IsPhpHidden(this Symbol s, PhpCompilation compilation = null)
         {
-            if (s is SynthesizedMethodSymbol smethod)
+            if (s is MethodSymbol m)
             {
-                return smethod.IsPhpHidden;
-            }
-
-            if (s is SourceRoutineSymbol)
-            {
-                return false;
+                return m.IsPhpHidden;
             }
 
             var attrs = s.GetAttributes();
@@ -110,7 +105,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static QualifiedName GetPhpTypeNameOrNull(this PENamedTypeSymbol s)
         {
-            if (TryGetPhpTypeAttribute(s, out var tname, out var fname))
+            if (TryGetPhpTypeAttribute(s, out var tname, out _, out _))
             {
                 return tname != null
                     ? QualifiedName.Parse(tname, true)
@@ -186,36 +181,32 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets [PhpType] attribute and its parameters.
         /// </summary>
-        public static bool TryGetPhpTypeAttribute(this TypeSymbol symbol, out string typename, out string filename)
+        public static bool TryGetPhpTypeAttribute(this TypeSymbol symbol, out string typename, out string filename, out byte autoload)
         {
-            var attrs = symbol.GetAttributes();
-            for (int i = 0; i < attrs.Length; i++)
+            typename = filename = null;
+            autoload = 0;
+
+            var a = symbol.GetAttribute(CoreTypes.PhpTypeAttributeFullName);
+            if (a != null)
             {
-                var a = attrs[i];
-                var fullname = MetadataHelpers.BuildQualifiedName((a.AttributeClass as NamedTypeSymbol)?.NamespaceName, a.AttributeClass.Name);
-                if (fullname == CoreTypes.PhpTypeAttributeFullName)
+                var args = a.CommonConstructorArguments;
+                if (args.Length >= 2)
                 {
-                    var args = a.CommonConstructorArguments;
-                    if (args.Length == 2)
-                    {
-                        typename = (string)args[0].Value;
-                        filename = (string)args[1].Value;
-                        return true;
-                    }
-                    else if (args.Length == 1)
-                    {
-                        typename = filename = null;
+                    typename = (string)args[0].Value;
+                    filename = (string)args[1].Value;
+                    autoload = args.Length >= 3 ? (byte)args[2].Value : (byte)0;
+                    return true;
+                }
+                else if (args.Length == 1)
+                {
+                    var phptype = (byte)args[0].Value; // see PhpTypeAttribute.PhpTypeName
+                    if (phptype == 1/*PhpTypeName.NameOnly*/) typename = symbol.Name;
 
-                        var phptype = (int)args[0].Value; // see PhpTypeAttribute.PhpTypeName
-                        if (phptype == 1/*PhpTypeName.NameOnly*/) typename = symbol.Name;
-
-                        return true;
-                    }
+                    return true;
                 }
             }
 
             //
-            typename = filename = null;
             return false;
         }
 

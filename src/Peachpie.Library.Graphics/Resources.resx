@@ -156,4 +156,13 @@
   <data name="png_corrupted" xml:space="preserve">
     <value>PNG file corrupted by ASCII conversion</value>
   </data>
+  <data name="missing_params" xml:space="preserve">
+    <value>Missing parameter or parameters</value>
+  </data>
+  <data name="affine_array_number_of_params" xml:space="preserve">
+    <value>Affine array must have six elements</value>
+  </data>
+  <data name="wrong_type" xml:space="preserve">
+    <value>Wrong type of one or more parameters</value>
+  </data>
 </root>

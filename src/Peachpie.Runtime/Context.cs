@@ -94,8 +94,52 @@ namespace Pchp.Core
             /// <summary>
             /// Set of reflected script assemblies.
             /// </summary>
-            public static IReadOnlyCollection<Assembly> ProcessedAssemblies { get; private set; } = Array.Empty<Assembly>();
+            public static IReadOnlyCollection<Assembly> ProcessedAssemblies => s_processedAssembliesImmutable ??= s_processedAssemblies.ToArray();
+            static Assembly[] s_processedAssembliesImmutable;
+
             static readonly HashSet<Assembly> s_processedAssemblies = new HashSet<Assembly>();
+
+            /// <summary>
+            /// Processes referenced assembly which is annotated as [PhpExtension]
+            /// </summary>
+            static void AddPhpPackageReference(Type scriptOrModule)
+            {
+                if (scriptOrModule == null)
+                {
+                    return;
+                }
+
+                if (scriptOrModule.Name == ScriptInfo.ScriptTypeName)
+                {
+                    // <Script> // it is a PHP assembly
+                    AddScriptReference(scriptOrModule.Assembly);
+                }
+                else if (TryAddAssembly(scriptOrModule.Assembly))
+                {
+                    // it is a C# assembly
+                    ExtensionsAppContext.ExtensionsTable.VisitAssembly(scriptOrModule.Assembly);
+                }
+            }
+
+            /// <summary>
+            /// Adds assembly to the list of referenced packages.
+            /// This is used
+            /// - by `eval()` to collect references
+            /// - to avoid processing same assembly twice
+            /// - as a recursion prevention
+            /// </summary>
+            static bool TryAddAssembly(Assembly/*!*/assembly)
+            {
+                if (s_processedAssemblies.Add(assembly))
+                {
+                    s_processedAssembliesImmutable = null;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
 
             /// <summary>
             /// Reflects given assembly for PeachPie compiler specifics - compiled scripts, references to other assemblies, declared functions and classes.
@@ -110,16 +154,11 @@ namespace Pchp.Core
                     throw new ArgumentNullException(nameof(assembly));
                 }
 
-                if (assembly.GetType(ScriptInfo.ScriptTypeName) == null || !s_processedAssemblies.Add(assembly))
+                if (assembly.GetType(ScriptInfo.ScriptTypeName) == null || !TryAddAssembly(assembly))
                 {
                     // nothing to reflect
                     return;
                 }
-
-                ProcessedAssemblies = s_processedAssemblies.ToArray();
-
-                // remember the assembly for class map:
-                s_assClassMap.AddPhpAssemblyNoLock(assembly);
 
                 // reflect the module for imported symbols:
 
@@ -128,10 +167,7 @@ namespace Pchp.Core
                 // PhpPackageReferenceAttribute
                 foreach (var r in module.GetCustomAttributes<PhpPackageReferenceAttribute>())
                 {
-                    if (r.ScriptType != null) // always true
-                    {
-                        AddScriptReference(r.ScriptType.Assembly);
-                    }
+                    AddPhpPackageReference(r.ScriptType);
                 }
 
                 // ImportPhpTypeAttribute
@@ -193,13 +229,13 @@ namespace Pchp.Core
                     }
                 }
 
-                ConstsMap.DefineAppConstant("PHP_SAPI", new Func<Context, PhpValue>(ctx => ctx.ServerApi), false, "Core");
+                // define various Core constants dynamically
+                DefineCoreConstants();
 
-                // scripts
-                foreach (var t in assembly.GetTypes())
+                // scripts & PHP types
+                foreach (var t in assembly.ExportedTypes)
                 {
-                    if (t.IsPublic &&
-                        t.IsAbstract && t.IsSealed)// => static
+                    if (t.IsAbstract && t.IsSealed)// => static
                     {
                         var sattr = ReflectionUtils.GetScriptAttribute(t);
                         if (sattr != null && sattr.Path != null && t.GetCustomAttribute<PharAttribute>() == null)
@@ -207,10 +243,50 @@ namespace Pchp.Core
                             ScriptsMap.DeclareScript(sattr.Path, ScriptInfo.CreateMain(t));
                         }
                     }
+                    else
+                    {
+                        if (s_typeMap.AddTypeNoLock(t, out var tinfo) == PhpTypeAttribute.AutoloadAllowNoSideEffect)
+                        {
+                            TypesTable.DeclareAppType(tinfo);
+                        }
+                    }
                 }
 
                 //
                 s_targetPhpLanguageAttribute ??= assembly.GetCustomAttribute<TargetPhpLanguageAttribute>();
+            }
+
+            /// <summary>
+            /// Defines Core constants depending on host OS and runtime.
+            /// </summary>
+            static void DefineCoreConstants()
+            {
+                ConstsMap.DefineAppConstant("PHP_SAPI", new Func<Context, PhpValue>(ctx => ctx.ServerApi), false, "Core");
+
+                if (CurrentPlatform.IsWindows)
+                {
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_MAJOR", Environment.OSVersion.Version.Major);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_MINOR", Environment.OSVersion.Version.Minor);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_BUILD", Environment.OSVersion.Version.Build);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_PLATFORM", (int)Environment.OSVersion.Platform);
+
+                    // PHP_WINDOWS_VERSION_SP_**
+                    WindowsPlatform.GetVersionInformation(
+                        out var sp_major, out var sp_minor,
+                        out var producttype,
+                        out var suitemask);
+
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_SP_MAJOR", (int)sp_major);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_SP_MINOR", (int)sp_minor);
+
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_SUITEMASK", (int)suitemask);
+                    DefineCoreConstant("PHP_WINDOWS_VERSION_PRODUCTTYPE", (int)producttype);
+                }
+            }
+
+            static void DefineCoreConstant(string name, PhpValue value)
+            {
+                ConstsMap.DefineAppConstant(name, value, false, "Core");
             }
         }
 
@@ -338,9 +414,9 @@ namespace Pchp.Core
                 }
             }
 
-            // NOTE: app-types should not be checked using ExpectTypeDeclared<T> method, compiler knows that
-
-            if (!IsUserTypeDeclared(TypeInfoHolder<T>.TypeInfo))
+            //
+            var tinfo = TypeInfoHolder<T>.TypeInfo;
+            if (tinfo.IsUserType && !IsUserTypeDeclared(tinfo))
             {
                 EnsureTypeDeclared();
             }

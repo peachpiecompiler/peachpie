@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Npgsql;
@@ -13,13 +14,11 @@ namespace Peachpie.Library.PDO.PgSQL
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
     public class PDONpgsqlDriver : PDODriver
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDONpgsqlDriver"/> class.
-        /// </summary>
-        public PDONpgsqlDriver() : base("pgsql", NpgsqlFactory.Instance)
-        {
+        /// <inheritDoc />
+        public override string Name => "pgsql";
 
-        }
+        /// <inheritDoc />
+        public override DbProviderFactory DbFactory => NpgsqlFactory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)

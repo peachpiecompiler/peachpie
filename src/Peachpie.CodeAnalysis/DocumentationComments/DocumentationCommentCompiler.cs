@@ -319,7 +319,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                     {
                         var ctor_id = CommentIdResolver.GetId(ctors[j]);
 
-                        if (ctors[j].IsFieldsOnlyConstructor())
+                        if (ctors[j].IsInitFieldsOnly)
                         {
                             // annotate special .ctor that initializes only fields
                             _writer.WriteLine($"<member name=\"{ctor_id}\">");

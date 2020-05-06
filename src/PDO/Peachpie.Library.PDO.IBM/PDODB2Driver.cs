@@ -4,6 +4,7 @@ using Pchp.Core;
 namespace Peachpie.Library.PDO
 {
     using System;
+    using System.Data.Common;
     //IBM pure ADO.NET Driver is not available on dotnet core, only on framework
     using IBM.Data.DB2.Core;
     using Peachpie.Library.PDO.Utilities;
@@ -14,13 +15,11 @@ namespace Peachpie.Library.PDO
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
     public class PDODB2Driver : PDODriver
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDODB2Driver"/> class.
-        /// </summary>
-        public PDODB2Driver() : base("ibm", DB2Factory.Instance)
-        {
-        }
+        /// <inheritDoc />
+        public override string Name => "ibm";
 
+        /// <inheritDoc />
+        public override DbProviderFactory DbFactory => DB2Factory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)

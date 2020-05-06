@@ -1,4 +1,6 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,12 +15,24 @@ namespace Peachpie.Library.PDO
         /// Lazily initialized set of explicitly set attributes.
         /// If not specified, the attributed has its default value.
         /// </summary>
-        private protected Dictionary<PDO_ATTR, PhpValue> _lazyAttributes;
+        private protected Dictionary<PDO_ATTR, PhpValue>? _lazyAttributes;
+
+        /// <summary>
+        /// Lazily initializes <see cref="_lazyAttributes"/>.
+        /// </summary>
+        private protected Dictionary<PDO_ATTR, PhpValue> GetOrCreateAttributes() => _lazyAttributes ??= new Dictionary<PDO_ATTR, PhpValue>();
 
         /// <summary>
         /// "Oracle" handling of NULL and empty strings.
         /// </summary>
         private protected PDO_NULL _oracle_nulls; // = PDO_NULL.NULL_NATURAL; // 0
+
+        /// <summary>
+        /// <c>ATTR_STRINGIFY_FETCHES</c> option.
+        /// Instructs the ResultResource to convert values to strings.
+        /// </summary>
+        [PhpHidden]
+        public bool Stringify { get; set; } = true;
 
         private protected bool TryGetAttribute(PDO_ATTR attribute, out PhpValue value)
         {
@@ -48,7 +62,7 @@ namespace Peachpie.Library.PDO
                 case PDO_ATTR.ATTR_STATEMENT_CLASS: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_FETCH_CATALOG_NAMES: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_FETCH_TABLE_NAMES: value = PhpValue.Null; return true;
-                case PDO_ATTR.ATTR_STRINGIFY_FETCHES: value = PhpValue.Null; return true;
+                case PDO_ATTR.ATTR_STRINGIFY_FETCHES: value = this.Stringify; return true;
                 case PDO_ATTR.ATTR_MAX_COLUMN_LEN: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_DEFAULT_FETCH_MODE: value = 0; return true;
                 case PDO_ATTR.ATTR_EMULATE_PREPARES: value = PhpValue.False; return true;
@@ -82,11 +96,6 @@ namespace Peachpie.Library.PDO
         /// <returns></returns>
         public virtual bool setAttribute(PDO_ATTR attribute, PhpValue value)
         {
-            if (_lazyAttributes == null)
-            {
-                _lazyAttributes = new Dictionary<PDO_ATTR, PhpValue>();
-            }
-
             long l; // temp value
 
             switch (attribute)
@@ -103,15 +112,19 @@ namespace Peachpie.Library.PDO
 
                 case PDO_ATTR.ATTR_AUTOCOMMIT:
                 case PDO_ATTR.ATTR_EMULATE_PREPARES:
-                case PDO_ATTR.ATTR_STRINGIFY_FETCHES:   // TODO: bool _stringify = false;
-                    _lazyAttributes[attribute] = value;
+                    GetOrCreateAttributes()[attribute] = value.ToBoolean();
                     return true;
+
+                case PDO_ATTR.ATTR_STRINGIFY_FETCHES:
+                    Driver.TrySetStringifyFetches(this, value.ToBoolean());
+                    return true; // always returns TRUE
 
                 //strict positif integers
 
                 case PDO_ATTR.ATTR_PREFETCH:
                 case PDO_ATTR.ATTR_TIMEOUT:
-                    _lazyAttributes[attribute] = value;
+                    // TODO: strict positif integers
+                    GetOrCreateAttributes()[attribute] = value.GetValue().DeepCopy();
                     return true;
 
                 //remaining
@@ -120,12 +133,13 @@ namespace Peachpie.Library.PDO
                     l = value.ToLong();
                     if (Enum.IsDefined(typeof(PDO_ERRMODE), (int)l))
                     {
-                        _lazyAttributes[attribute] = l;
+                        GetOrCreateAttributes()[attribute] = l;
                         return true;
                     }
                     else
                     {
                         // Warning: PDO::setAttribute(): SQLSTATE[HY000]: General error: invalid error mode
+                        // TODO: this.RaiseError( ... ) ?
                         PhpException.InvalidArgument(nameof(value));
                         return false;
                     }
@@ -133,7 +147,7 @@ namespace Peachpie.Library.PDO
                     l = value.ToLong();
                     if (Enum.IsDefined(typeof(PDO_CASE), (int)l))
                     {
-                        _lazyAttributes[attribute] = l;
+                        GetOrCreateAttributes()[attribute] = l;
                         return true;
                     }
                     return false;
@@ -141,7 +155,7 @@ namespace Peachpie.Library.PDO
                     l = value.ToLong();
                     if (Enum.IsDefined(typeof(PDO_CURSOR), (int)l))
                     {
-                        _lazyAttributes[attribute] = l;
+                        GetOrCreateAttributes()[attribute] = l;
                         return true;
                     }
                     return false;
@@ -149,15 +163,15 @@ namespace Peachpie.Library.PDO
                     l = value.ToLong();
                     if (Enum.IsDefined(typeof(PDO_FETCH), (int)l))
                     {
-                        _lazyAttributes[attribute] = l;
+                        GetOrCreateAttributes()[attribute] = l;
                         return true;
                     }
                     return false;
 
                 case PDO_ATTR.ATTR_STATEMENT_CLASS:
-                    if (value.IsPhpArray(out var arr) && arr.Count != 0)
+                    if (value.IsPhpArray(out var arr) && arr != null && arr.Count != 0)
                     {
-                        _lazyAttributes[attribute] = arr.DeepCopy();
+                        GetOrCreateAttributes()[attribute] = arr.DeepCopy();
                         return true;
                     }
                     return false;
@@ -171,7 +185,7 @@ namespace Peachpie.Library.PDO
                     }
                     else
                     {
-                        RaiseError("attribute value must be an integer");
+                        HandleError("attribute value must be an integer");
                         return false;
                     }
 
@@ -179,7 +193,7 @@ namespace Peachpie.Library.PDO
                 case PDO_ATTR.ATTR_FETCH_TABLE_NAMES:
                 case PDO_ATTR.ATTR_MAX_COLUMN_LEN:
                 case PDO_ATTR.ATTR_PERSISTENT:
-                    throw new NotImplementedException($"setAttribute( {attribute} )");
+                    throw new NotImplementedException($"setAttribute({attribute})");
 
                 //statement only
                 case PDO_ATTR.ATTR_CURSOR_NAME:
@@ -192,7 +206,7 @@ namespace Peachpie.Library.PDO
                     {
                         if (attribute >= PDO_ATTR.ATTR_DRIVER_SPECIFIC)
                         {
-                            return Driver.TrySetAttribute(_lazyAttributes, attribute, value);
+                            return Driver.TrySetAttribute(GetOrCreateAttributes(), attribute, value);
                         }
                     }
                     catch (System.Exception ex)
@@ -202,7 +216,7 @@ namespace Peachpie.Library.PDO
                     }
 
                     // invalid attribute:
-                    Debug.WriteLine($"PDO_ATTR {attribute.ToString()} is not known.");
+                    Debug.WriteLine($"PDO_ATTR {attribute} is not known.");
                     return false;
             }
 

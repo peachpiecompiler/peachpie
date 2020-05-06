@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FirebirdSql.Data.FirebirdClient;
 using Peachpie.Library.PDO.Utilities;
+using System.Data.Common;
 
 namespace Peachpie.Library.PDO.Firebird
 {
@@ -14,13 +15,11 @@ namespace Peachpie.Library.PDO.Firebird
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
     public class PDOFirebirdDriver : PDODriver
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDOFirebirdDriver"/> class.
-        /// </summary>
-        public PDOFirebirdDriver() : base("firebird", FirebirdClientFactory.Instance)
-        {
+        /// <inheritDoc />
+        public override string Name => "firebird";
 
-        }
+        /// <inheritDoc />
+        public override DbProviderFactory DbFactory => FirebirdClientFactory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)

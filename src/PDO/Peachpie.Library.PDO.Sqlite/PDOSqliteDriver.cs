@@ -5,8 +5,6 @@ using System.Diagnostics;
 using Microsoft.Data.Sqlite;
 using Pchp.Core;
 using Peachpie.Library.PDO.Utilities;
-using ConnectionStringBuilder = Microsoft.Data.Sqlite.SqliteConnectionStringBuilder;
-using Factory = Microsoft.Data.Sqlite.SqliteFactory;
 
 namespace Peachpie.Library.PDO.Sqlite
 {
@@ -16,24 +14,21 @@ namespace Peachpie.Library.PDO.Sqlite
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
     public class PDOSqliteDriver : PDODriver
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDOSqliteDriver"/> class.
-        /// </summary>
-        public PDOSqliteDriver() : base("sqlite", Factory.Instance)
-        {
+        /// <inheritDoc />
+        public override string Name => "sqlite";
 
-        }
+        /// <inheritDoc />
+        public override DbProviderFactory DbFactory => SqliteFactory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
-            var csb = new ConnectionStringBuilder();
+            var csb = new SqliteConnectionStringBuilder();
 
             csb.DataSource = dsn.ToString();
             csb.Add("Password", password);
             csb.Add("UserId", user);
 
-            
             return csb.ConnectionString;
         }
 
@@ -45,6 +40,14 @@ namespace Peachpie.Library.PDO.Sqlite
             new SqliteCommand("PRAGMA foreign_keys=OFF", connection).ExecuteNonQuery();
 
             return connection;
+        }
+
+        /// <inheritDoc />
+        public override bool TrySetStringifyFetches(PDO pdo, bool stringify)
+        {
+            // SQLite PDO driver can retrieve values only as strings in PHP
+            pdo.Stringify = true;
+            return stringify == true;
         }
 
         /// <inheritDoc />

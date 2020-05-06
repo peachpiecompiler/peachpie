@@ -70,6 +70,24 @@ namespace Peachpie.Library.PDO
         /// <summary>Result loaded with data supporting iteration.</summary>
         sealed class PdoResultResource : ResultResource
         {
+            #region Properties
+
+            /// <summary>
+            /// Underlying connection resource.
+            /// </summary>
+            new PdoConnectionResource Connection => (PdoConnectionResource)base.Connection;
+
+            /// <summary>Current context.</summary>
+            Context Context => Connection.Context;
+
+            /// <summary>Reference to containing <see cref="PDO"/> instance.</summary>
+            PDO PDO => Connection.PDO;
+
+            /// <summary>Reference to underlying PDO driver.</summary>
+            PDODriver Driver => PDO.Driver;
+
+            #endregion
+
             public PdoResultResource(PdoConnectionResource connection, IDataReader reader, bool convertTypes)
                 : base(connection, reader, nameof(PdoResultResource), convertTypes)
             {
@@ -82,9 +100,11 @@ namespace Peachpie.Library.PDO
 
                 if (convertTypes)
                 {
+                    bool stringify = PDO.Stringify;
+
                     for (int i = 0; i < oa.Length; i++)
                     {
-                        oa[i] = ConvertDbValue(dataTypes[i], my_reader.GetValue(i));
+                        oa[i] = ConvertDbValue(dataTypes[i], my_reader.GetValue(i), stringify);
                     }
                 }
                 else
@@ -108,14 +128,13 @@ namespace Peachpie.Library.PDO
             /// </summary>
             /// <param name="dataType">MySQL DB data type.</param>
             /// <param name="sqlValue">The value.</param>
+            /// <param name="stringify">Whether to convert the value to nullable string.
+            /// Byte arrays are not converted to be later properly turned into PhpString.</param>
             /// <returns>PHP value.</returns>
-            private static object ConvertDbValue(string dataType, object sqlValue)
+            private static object ConvertDbValue(string dataType, object sqlValue, bool stringify)
             {
                 //if (sqlValue == null || sqlValue.GetType() == typeof(string))
                 //    return sqlValue;
-
-                //if (sqlValue.GetType() == typeof(double))
-                //    return Pchp.Core.Convert.ToString((double)sqlValue);
 
                 if (sqlValue == DBNull.Value)
                     return null;
@@ -125,9 +144,6 @@ namespace Peachpie.Library.PDO
 
                 //if (sqlValue.GetType() == typeof(uint))
                 //    return ((uint)sqlValue).ToString();
-
-                //if (sqlValue.GetType() == typeof(bool))
-                //    return (bool)sqlValue ? "1" : "0";
 
                 //if (sqlValue.GetType() == typeof(byte))
                 //    return ((byte)sqlValue).ToString();
@@ -141,11 +157,8 @@ namespace Peachpie.Library.PDO
                 //if (sqlValue.GetType() == typeof(ushort))
                 //    return ((ushort)sqlValue).ToString();
 
-                //if (sqlValue.GetType() == typeof(float))
-                //    return Pchp.Core.Convert.ToString((float)sqlValue);
-
-                if (sqlValue.GetType() == typeof(System.DateTime))
-                    return ConvertDateTime(dataType, (System.DateTime)sqlValue);
+                if (sqlValue is System.DateTime datetime)
+                    return ConvertDateTime(dataType, datetime);
 
                 //if (sqlValue.GetType() == typeof(long))
                 //    return ((long)sqlValue).ToString();
@@ -153,11 +166,11 @@ namespace Peachpie.Library.PDO
                 //if (sqlValue.GetType() == typeof(ulong))
                 //    return ((ulong)sqlValue).ToString();
 
-                //if (sqlValue.GetType() == typeof(TimeSpan))
-                //    return ((TimeSpan)sqlValue).ToString();
+                if (sqlValue.GetType() == typeof(TimeSpan))
+                    return ((TimeSpan)sqlValue).ToString();
 
-                //if (sqlValue.GetType() == typeof(decimal))
-                //    return ((decimal)sqlValue).ToString();
+                if (sqlValue.GetType() == typeof(decimal))
+                    return ((decimal)sqlValue).ToString();
 
                 //if (sqlValue.GetType() == typeof(byte[]))
                 //    return (byte[])sqlValue;
@@ -175,6 +188,24 @@ namespace Peachpie.Library.PDO
                 //        return "0000-00-00 00:00:00";
                 //}
 
+                if (stringify && sqlValue != null)
+                {
+                    if (sqlValue is bool b)
+                        return b ? "1" : "0";
+
+                    if (sqlValue is double d)
+                        return Pchp.Core.Convert.ToString(d);
+
+                    if (sqlValue.GetType() == typeof(float))
+                        return Pchp.Core.Convert.ToString((float)sqlValue);
+
+                    if (sqlValue.GetType() == typeof(byte[]))
+                        return sqlValue;    // keep byte[] array (will be stored to PhpString later)
+
+                    return sqlValue.ToString();
+                }
+
+                //
                 return sqlValue;
             }
 
@@ -371,7 +402,11 @@ namespace Peachpie.Library.PDO
         public virtual bool beginTransaction()
         {
             if (CurrentTransaction != null)
-                throw new PDOException("Transaction already active");
+            {
+                HandleError("Transaction already active");
+                return false;
+            }
+
             //TODO DbTransaction isolation level
             CurrentTransaction = Connection.BeginTransaction();
             return true;
@@ -384,7 +419,11 @@ namespace Peachpie.Library.PDO
         public virtual bool commit()
         {
             if (CurrentTransaction == null)
-                throw new PDOException("No active transaction");
+            {
+                HandleError("No active transaction");
+                return false;
+            }
+
             CurrentTransaction.Commit();
             CurrentTransaction = null;
             return true;
@@ -397,7 +436,11 @@ namespace Peachpie.Library.PDO
         public virtual bool rollBack()
         {
             if (CurrentTransaction == null)
-                throw new PDOException("No active transaction");
+            {
+                HandleError("No active transaction");
+                return false;
+            }
+
             CurrentTransaction.Rollback();
             CurrentTransaction = null;
             return true;
@@ -443,6 +486,10 @@ namespace Peachpie.Library.PDO
         public virtual PDOStatement query(string statement, params PhpValue[] args)
         {
             var stmt = CreateStatement(statement, null);
+            if (stmt == null)
+            {
+                return null; // FALSE
+            }
 
             if (args.Length > 0)
             {
@@ -511,7 +558,9 @@ namespace Peachpie.Library.PDO
                     return instance;
                 }
 
-                throw new PDOException();
+                // error
+                HandleError("Invalid class name.");
+                return null;
             }
             else
             {

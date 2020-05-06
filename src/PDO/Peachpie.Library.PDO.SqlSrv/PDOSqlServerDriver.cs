@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.Common;
 using System.Data.SqlClient;
 using Pchp.Core;
 using Peachpie.Library.PDO.Utilities;
@@ -11,12 +12,11 @@ namespace Peachpie.Library.PDO.SqlSrv
     /// <seealso cref="PDODriver" />
     public class PDOSqlServerDriver : PDODriver
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDOSqlServerDriver"/> class.
-        /// </summary>
-        public PDOSqlServerDriver() : base("sqlsrv", SqlClientFactory.Instance)
-        {
-        }
+        /// <inheritDoc />
+        public override string Name => "sqlsrv";
+
+        /// <inheritDoc />
+        public override DbProviderFactory DbFactory => SqlClientFactory.Instance;
 
         /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)

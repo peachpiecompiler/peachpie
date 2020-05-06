@@ -65,38 +65,38 @@
       Condition=" '@(EmbeddedResource)' != '' "
       DependsOnTargets="$(CreateManifestResourceNamesDependsOn)"
         >
-    
-        <ItemGroup>
-            <_Temporary Remove="@(_Temporary)" />
-        </ItemGroup>
-        
-        <!-- Create manifest names for culture and non-culture Resx files, and for non-culture Non-Resx resources -->
-        <CreateCSharpManifestResourceName
-              ResourceFiles="@(EmbeddedResource)"
-              RootNamespace="$(RootNamespace)"              
-              Condition="'%(EmbeddedResource.ManifestResourceName)' == '' and ('%(EmbeddedResource.WithCulture)' == 'false' or '%(EmbeddedResource.Type)' == 'Resx')">
 
-            <Output TaskParameter="ResourceFilesWithManifestResourceNames" ItemName="_Temporary" />
+    <ItemGroup>
+      <_Temporary Remove="@(_Temporary)" />
+    </ItemGroup>
 
-        </CreateCSharpManifestResourceName>
-        
-        <!-- Create manifest names for all culture non-resx resources -->
-        <CreateCSharpManifestResourceName
-              ResourceFiles="@(EmbeddedResource)"
-              RootNamespace="$(RootNamespace)"
-              PrependCultureAsDirectory="false"
-              Condition="'%(EmbeddedResource.ManifestResourceName)' == '' and '%(EmbeddedResource.WithCulture)' == 'true' and '%(EmbeddedResource.Type)' == 'Non-Resx'">
+    <!-- Create manifest names for culture and non-culture Resx files, and for non-culture Non-Resx resources -->
+    <CreateCSharpManifestResourceName
+          ResourceFiles="@(EmbeddedResource)"
+          RootNamespace="$(RootNamespace)"
+          Condition="'%(EmbeddedResource.ManifestResourceName)' == '' and ('%(EmbeddedResource.WithCulture)' == 'false' or '%(EmbeddedResource.Type)' == 'Resx')">
 
-            <Output TaskParameter="ResourceFilesWithManifestResourceNames" ItemName="_Temporary" />
+      <Output TaskParameter="ResourceFilesWithManifestResourceNames" ItemName="_Temporary" />
 
-        </CreateCSharpManifestResourceName>
+    </CreateCSharpManifestResourceName>
 
-        <ItemGroup>
-            <EmbeddedResource Remove="@(EmbeddedResource)" Condition="'%(EmbeddedResource.ManifestResourceName)' == ''"/>
-            <EmbeddedResource Include="@(_Temporary)" />
-            <_Temporary Remove="@(_Temporary)" />
-        </ItemGroup>
-  
+    <!-- Create manifest names for all culture non-resx resources -->
+    <CreateCSharpManifestResourceName
+          ResourceFiles="@(EmbeddedResource)"
+          RootNamespace="$(RootNamespace)"
+          PrependCultureAsDirectory="false"
+          Condition="'%(EmbeddedResource.ManifestResourceName)' == '' and '%(EmbeddedResource.WithCulture)' == 'true' and '%(EmbeddedResource.Type)' == 'Non-Resx'">
+
+      <Output TaskParameter="ResourceFilesWithManifestResourceNames" ItemName="_Temporary" />
+
+    </CreateCSharpManifestResourceName>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="@(EmbeddedResource)" Condition="'%(EmbeddedResource.ManifestResourceName)' == ''"/>
+      <EmbeddedResource Include="@(_Temporary)" />
+      <_Temporary Remove="@(_Temporary)" />
+    </ItemGroup>
+
   </Target>
 
   <!-- processes composer.json file if available -->
@@ -106,6 +106,9 @@
     </PropertyGroup>
     <ComposerTask Condition=" Exists('$(ComposerJsonPath)') "
                   ComposerJsonPath="$(ComposerJsonPath)"
+                  VersionSuffix="$(VersionSuffix)"
+                  ComposerIncludeDevPackages="$(ComposerIncludeDevPackages)"
+                  ComposerIncludeSuggestPackages="$(ComposerIncludeSuggestPackages)"
                   >
       <Output TaskParameter="Name" PropertyName="_cName" />
       <Output TaskParameter="Description" PropertyName="_cDescription" />
@@ -113,11 +116,20 @@
       <Output TaskParameter="License" PropertyName="_cLicense" />
       <Output TaskParameter="Homepage" PropertyName="_cHomepage" />
       <Output TaskParameter="Authors" ItemName="_cAuthors" />
-      <Output TaskParameter="Dependencies" ItemName="_cDependencies" />
+      <Output TaskParameter="Dependencies" ItemName="ComposerPackageReference" />
+      <Output TaskParameter="Autoload_PSR4" ItemName="Autoload_PSR4" />
+      <Output TaskParameter="Autoload_ClassMap" ItemName="_cAutoload_ClassMap" />
+      <Output TaskParameter="Autoload_ClassMap_Exclude" ItemName="_cAutoload_ClassMap_Exclude" />
     </ComposerTask>
+
+    <ItemGroup>
+      <Autoload_ClassMap Include="%(_cAutoload_ClassMap.Identity)" />
+      <Autoload_ClassMap Remove="%(_cAutoload_ClassMap_Exclude.Identity)" />
+    </ItemGroup>
+
   </Target>
 
-  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="CollectPackageReferences" Outputs="$(ComposerJsonPath)">
+  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="GenerateNuspec;CollectPackageReferences" Outputs="$(ComposerJsonPath)">
     <PropertyGroup Condition=" '$(_cName)'!='' ">
       <!--AssemblyName>$(_cName)</AssemblyName-->
       <PackageId>$(_cName)</PackageId>
@@ -126,15 +138,18 @@
     <PropertyGroup>
       <PackageDescription Condition=" '$(_cDescription)'!='' ">$(_cDescription)</PackageDescription>
       <PackageProjectUrl Condition=" '$(PackageProjectUrl)'=='' AND '$(_cHomepage)'!='' ">$(_cHomepage)</PackageProjectUrl>
-      <Version Condition=" '$(_cVersion)'!='' ">$(_cVersion)</Version>
-      <PackageVersion Condition=" '$(_cVersion)'!='' ">$(_cVersion)</PackageVersion>
       <PackageLicenseExpression Condition=" '$(PackageLicenseExpression)'=='' AND '$(_cLicense)'!='' ">$(_cLicense)</PackageLicenseExpression>
       <Authors Condition=" '@(_cAuthors->Count())'!='0' ">@(_cAuthors -> '%(Name);', ';')</Authors>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(_cVersion)'!='' ">
+      <Version>$(_cVersion)</Version>
+      <PackageVersion>$(_cVersion)</PackageVersion>
+    </PropertyGroup>
+
     <ItemGroup Condition=" '$(ComposerDependencies)'=='true' ">
       <!-- this will be enabled by default -->
-      <PackageReference Include="@(_cDependencies->'%(Name)')" />
+      <PackageReference Include="@(ComposerPackageReference->'%(Name)')" />
     </ItemGroup>
 
   </Target>
@@ -144,6 +159,7 @@
           Name="CoreCompile"
           Inputs="$(MSBuildAllProjects);
                 @(Compile);
+                $(ComposerJsonPath);
                 @(_CoreCompileResourceInputs);
                 $(ApplicationIcon);
                 $(AssemblyOriginatorKeyFile);
@@ -193,7 +209,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      
+
       <TempOutputDir>%(IntermediateAssembly.RelativeDir)</TempOutputDir>
       <OutputType Condition=" '$(OutputType)' == '' ">library</OutputType>
       <GenerateDocumentationFile Condition=" '$(GenerateDocumentationFile)' == '' and '$(DocumentationFile)' != '' ">true</GenerateDocumentationFile>
@@ -220,7 +236,7 @@
 
     <Error Condition=" '$(PeachpieToolFullPath)'=='' " Text="Path to Peachpie.NET.Sdk.dll was not set." />
 
-    <BuildTask Condition=" Exists('$(PeachpieToolFullPath)') "               
+    <BuildTask Condition=" Exists('$(PeachpieToolFullPath)') "
                OutputPath="$(TempOutputDir)%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)"
                OutputName="%(IntermediateAssembly.Filename)"
                TempOutputPath="$(TempOutputDir)"
@@ -246,6 +262,8 @@
                ReferencePath="@(ReferencePath)"
                Compile="@(Compile)"
                Resources="@(EmbeddedResource)"
+               Autoload_PSR4="@(Autoload_PSR4)"
+               Autoload_ClassMap="@(Autoload_ClassMap)"
                DebuggerAttach="$(DebuggerAttach)"
                GenerateFullPaths="$(GenerateFullPaths)"
                />

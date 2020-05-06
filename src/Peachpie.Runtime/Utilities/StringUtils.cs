@@ -24,34 +24,26 @@ namespace Pchp.Core.Utilities
             if (bytes.Length == 0) return string.Empty;
             if (separator == null) separator = string.Empty;
 
-            int c;
-            int length = bytes.Length;
-            int sep_length = separator.Length;
-            int res_length = length * (2 + sep_length);
-
             const string hex_digs = "0123456789abcdef";
 
-            // prepares characters which will be appended to the result for each byte:
-            char[] chars = new char[2 + sep_length];
-            separator.CopyTo(0, chars, 2, sep_length);
-
             // prepares the result:
-            StringBuilder result = new StringBuilder(res_length, res_length);
+            var capacity = bytes.Length * (separator.Length + 2);
+            var result = new StringBuilder(capacity, capacity);
 
             // appends characters to the result for each byte:
-            for (int i = 0; i < length - 1; i++)
+            for (int i = 0; i < bytes.Length; i++)
             {
-                c = bytes[i];
-                chars[0] = hex_digs[(c & 0xf0) >> 4];
-                chars[1] = hex_digs[(c & 0x0f)];
-                result.Append(chars);
+                if (i != 0)
+                {
+                    result.Append(separator);
+                }
+
+                var c = bytes[i];
+                result.Append(hex_digs[(c & 0xf0) >> 4]);
+                result.Append(hex_digs[(c & 0x0f)]);
             }
 
-            // the last byte:
-            c = bytes[length - 1];
-            result.Append(hex_digs[(c & 0xf0) >> 4]);
-            result.Append(hex_digs[(c & 0x0f)]);
-
+            //
             return result.ToString();
         }
 
@@ -86,7 +78,7 @@ namespace Pchp.Core.Utilities
             str1.CopyTo(chars);
             chars[str1.Length] = str2;
             str3.CopyTo(chars.Slice(str1.Length + 1));
-            
+
             return chars.ToString();
         }
 

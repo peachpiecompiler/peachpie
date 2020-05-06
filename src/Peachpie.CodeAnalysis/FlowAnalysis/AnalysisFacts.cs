@@ -284,9 +284,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         arg,
                         currentType =>
                         {
-                            // Closure is specified in both branches
-                            TypeRefMask targetType = 0;
-                            AddTypeIfInContext(typeCtx, type => type.IsLambda, false, ref targetType);
+                            // Closure and lambdas are specified in both branches
+                            TypeRefMask targetType = typeCtx.GetClosureTypeMask();
+                            targetType |= typeCtx.GetLambdasFromMask(currentType);
 
                             if (branch == ConditionBranch.ToTrue)
                             {
@@ -300,7 +300,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             }
                             else
                             {
-                                // For closure, is_callable always returns true -> remove the closure type from false branch,
+                                // For closure and lambdas, is_callable always returns true -> remove them from false branch,
                                 // don't remove IncludeSubclasses flag
                                 return targetType;
                             }
@@ -318,23 +318,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 default:
                     return false;
             }
-        }
-
-        private static void AddTypeIfInContext(
-            TypeRefContext typeCtx,
-            Func<IBoundTypeRef, bool> selector,
-            bool includeSubclasses,
-            ref TypeRefMask mask)
-        {
-            //
-            var closureTypeRef = typeCtx.Types.FirstOrDefault(selector);
-            if (closureTypeRef != null)
-            {
-                mask |= closureTypeRef.GetTypeRefMask(typeCtx);
-            }
-
-            //
-            mask.IncludesSubclasses = includeSubclasses;
         }
 
         /// <summary>

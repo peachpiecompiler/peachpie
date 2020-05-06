@@ -382,4 +382,7 @@
   <data name="ERR_PdbWritingFailed" xml:space="preserve">
     <value>Failure writing debug information: {0}</value>
   </data>
+  <data name="ERR_CantOpenFileWrite" xml:space="preserve">
+    <value>Cannot open '{0}' for writing -- '{1}'</value>
+  </data>
 </root>

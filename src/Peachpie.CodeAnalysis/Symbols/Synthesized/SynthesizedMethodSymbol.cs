@@ -33,10 +33,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public bool IsEditorBrowsableHidden { get; internal set; }
 
+        public override bool IsPhpHidden => IsPhpHiddenInternal;
+
         /// <summary>
         /// If set to <c>true</c>, the method will emit [PhpHiddenAttribute] attribute.
         /// </summary>
-        public bool IsPhpHidden { get; internal set; }
+        internal bool IsPhpHiddenInternal { get; set; }
 
         public override IMethodSymbol OverriddenMethod => ExplicitOverride;
 
@@ -54,9 +56,9 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, bool isfinal = true, bool isabstract = false, bool phphidden = false, params ParameterSymbol[] ps)
-            :this(containingType as Cci.ITypeDefinition, (ModuleSymbol)containingType.ContainingModule, name, isstatic, isvirtual, returnType, accessibility, isfinal, isabstract)
+            : this(containingType as Cci.ITypeDefinition, (ModuleSymbol)containingType.ContainingModule, name, isstatic, isvirtual, returnType, accessibility, isfinal, isabstract)
         {
-            IsPhpHidden = phphidden;
+            IsPhpHiddenInternal = phphidden;
             SetParameters(ps);
         }
 

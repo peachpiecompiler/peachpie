@@ -206,8 +206,11 @@ namespace Pchp.Library.Streams
                 case 'r':
                     // flags = 0;
                     // fileMode is already set to Open
-                    fileAccess = FileAccess.Read;
+                    fileAccess = (mode.Length > 1 && mode[1] == 'w')
+                        ? FileAccess.ReadWrite  // rw
+                        : FileAccess.Read;      // r
                     //accessOptions |= findFile;
+
                     break;
 
                 case 'w':
@@ -1629,6 +1632,10 @@ namespace Pchp.Library.Streams
         public const string scheme = "php";
 
         #endregion
+
+        public static bool IsStdIn(PhpStream stream) => stream is NativeStream && stream.OpenedPath == "php://stdin";
+        public static bool IsStdOut(PhpStream stream) => stream is NativeStream && stream.OpenedPath == "php://stdout";
+        public static bool IsStdErr(PhpStream stream) => stream is NativeStream && stream.OpenedPath == "php://stderr";
 
         /// <summary>
         /// Represents the console input stream (alias php://stdin).

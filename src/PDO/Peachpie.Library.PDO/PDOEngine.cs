@@ -19,7 +19,7 @@ namespace Peachpie.Library.PDO
         /// List of known assembly names exporting implementations of <see cref="PDODriver"/> interface.
         /// CONSIDER: TODO: configuration ? We have the 'Context' so we can read the config there ...
         /// </summary>
-        static string[] _knownAssemblies => new[]
+        static string[] s_knownAssemblies => new[]
         {
             "Peachpie.Library.PDO.Firebird",
             "Peachpie.Library.PDO.IBM",
@@ -47,7 +47,7 @@ namespace Peachpie.Library.PDO
         {
             var drivertypes = new List<Type>();
 
-            foreach (var assname in _knownAssemblies)
+            foreach (var assname in s_knownAssemblies)
             {
                 try
                 {

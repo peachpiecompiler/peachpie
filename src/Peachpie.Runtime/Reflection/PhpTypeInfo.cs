@@ -29,7 +29,7 @@ namespace Pchp.Core.Reflection
 
         /// <summary>
         /// Gets value indicating the type was declared in a users code.
-        /// Otherwise the type is from a library.
+        /// Otherwise the type was declared into application context.
         /// </summary>
         public bool IsUserType => _index > 0;
 

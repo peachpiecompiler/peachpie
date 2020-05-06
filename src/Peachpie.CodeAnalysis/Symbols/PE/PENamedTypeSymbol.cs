@@ -113,9 +113,23 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optional. A <c>.ctor</c> that ensures the initialization of the class without calling the type PHP constructor.
         /// </summary>
-        public IMethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
+        public IMethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(ctor => ctor.IsInitFieldsOnly).SingleOrDefault();
 
         public abstract bool IsTrait { get; }
+
+        public byte AutoloadFlag
+        {
+            get
+            {
+                if (this.TryGetPhpTypeAttribute(out _, out _, out var autoload))
+                {
+                    return autoload;
+                }
+
+                // not applicable:
+                return 0;
+            }
+        }
 
         #endregion
 

@@ -62,5 +62,27 @@ namespace Pchp.Library
         public static readonly int PHP_DEBUG = ContextExtensions.IsDebugRuntime() ? 1 : 0;
 
         public const int PHP_ZTS = 1;
+
+        /// <summary>This is a workstation system, specified as a value of <c>PHP_WINDOWS_VERSION_PRODUCTTYPE</c> constant.</summary>
+        public const int PHP_WINDOWS_NT_WORKSTATION = 1;
+
+        /// <summary>This is a server system, specified as a value of <c>PHP_WINDOWS_VERSION_PRODUCTTYPE</c> constant.</summary>
+        public const int PHP_WINDOWS_NT_SERVER = 3;
+
+        /// <summary>This is a domain controller, specified as a value of <c>PHP_WINDOWS_VERSION_PRODUCTTYPE</c> constant.</summary>
+        public const int PHP_WINDOWS_NT_DOMAIN_CONTROLLER = 2;
+
+        /// <summary>
+        /// Default FD_SETSIZE is 64.
+        /// Mono is compiled with FD_SETSIZE=1024.
+        /// <c>Socket.Select</c> on Unix uses poll instead of system select (*remarks).
+        /// WinSock2 does not seem to have the limitation either (???).
+        /// Socket.Select is limited to 65536 items in check lists.
+        /// And there is no way of determining the constant in rutnime AFAIK.
+        /// </summary>
+        /// <remarks>
+        /// https://github.com/dotnet/runtime/blob/ca1a6842d796d95b44a64222b023263f023a6c5e/src/libraries/System.Net.Sockets/src/System/Net/Sockets/SocketPal.Unix.cs#L1491
+        /// </remarks>
+        public const int PHP_FD_SETSIZE = 65536;
     }
 }

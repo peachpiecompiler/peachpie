@@ -20,86 +20,49 @@ namespace Peachpie.Library.Graphics
         [PhpHidden]
         public enum ImageType
         {
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             Unknown = 0,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             GIF = 1,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             JPEG = 2,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             PNG = 3,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             SWF = 4,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             PSD = 5,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             BMP = 6,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             TIFF_II = 7,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             TIFF_MM = 8,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             JPC = 9,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             JPEG2000 = 9,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             JP2 = 10,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             JPX = 11,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             JB2 = 12,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             SWC = 13,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             IFF = 14,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             WBMP = 15,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             XBM = 16,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
+            /// <summary></summary>
             ICO = 17,
-            /// <summary>
-            /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
-            /// </summary>
-            Count = 18,
+            /// <summary></summary>
+            WEBP = 18,
+
+            /// <summary>Number of values.</summary>
+            Count,
         }
 
         #endregion
@@ -125,6 +88,7 @@ namespace Peachpie.Library.Graphics
         public const int IMAGETYPE_WBMP = (int)ImageType.WBMP;
         public const int IMAGETYPE_XBM = (int)ImageType.XBM;
         public const int IMAGETYPE_ICO = (int)ImageType.ICO;
+        public const int IMAGETYPE_WEBP = (int)ImageType.WEBP;
         public const int IMAGETYPE_COUNT = (int)ImageType.Count;
 
         #endregion
@@ -573,7 +537,7 @@ namespace Peachpie.Library.Graphics
                     return ImageType.Unknown;
 
                 /* loop chunks to find BMHD chunk */
-                for (;;)
+                for (; ; )
                 {
                     if (stream.Read(a, 0, 8) != 8) return ImageType.Unknown;
                     int chunkId = BitConverter.ToInt32(ReversedBytes(a, 0, 4, reversed), 0);
@@ -861,7 +825,7 @@ namespace Peachpie.Library.Graphics
                 JpegMarker marker = JpegMarker.M_PSEUDO;
                 int ff_read = 1;
 
-                for (;;)
+                for (; ; )
                 {
                     marker = GetNextMarker(ms, marker, 1, ff_read);
                     ff_read = 0;
@@ -1056,7 +1020,7 @@ namespace Peachpie.Library.Graphics
                     {
                         // read the line:
                         var bld = new StringBuilder(32);
-                        for (;;)
+                        for (; ; )
                         {
                             int b = ReadByte(buffer, stream);
                             if (b == 10 || b == 13 || b <= 0)   // until 13, 10, 0, EOF
@@ -1401,68 +1365,57 @@ namespace Peachpie.Library.Graphics
         /// Get file extension for image type
         /// </summary> 
         [return: CastToFalse]
-        public static string image_type_to_extension(int imagetype, bool include_dot = true)
+        public static string image_type_to_extension(ImageType imagetype, bool include_dot = true)
         {
-            string extension;
-
-            switch (imagetype)
+            var extension = imagetype switch
             {
-                case (int)ImageType.GIF:
-                    extension = "gif";
-                    break;
-                case (int)ImageType.JPEG:
-                    extension = "jpeg";
-                    break;
-                case (int)ImageType.PNG:
-                    extension = "png";
-                    break;
-                case (int)ImageType.SWF:
-                    extension = "swf";
-                    break;
-                case (int)ImageType.PSD:
-                    extension = "psd";
-                    break;
-                case (int)ImageType.BMP:
-                    extension = "bmp";
-                    break;
-                case (int)ImageType.TIFF_II:
-                    extension = "tiff";
-                    break;
-                case (int)ImageType.TIFF_MM:
-                    extension = "tiff";
-                    break;
-                case (int)ImageType.JPC:
-                    extension = "jpc";
-                    break;
-                case (int)ImageType.JP2:
-                    extension = "jp2";
-                    break;
-                case (int)ImageType.JPX:
-                    extension = "jpx";
-                    break;
-                case (int)ImageType.JB2:
-                    extension = "jb2";
-                    break;
-                case (int)ImageType.SWC:
-                    extension = "swc";
-                    break;
-                case (int)ImageType.IFF:
-                    extension = "iff";
-                    break;
-                case (int)ImageType.WBMP:
-                    extension = "wbmp";
-                    break;
-                case (int)ImageType.XBM:
-                    extension = "xbm";
-                    break;
-                case (int)ImageType.ICO:
-                    extension = "ico";
-                    break;
-                default:
-                    return null;
-            }
+                ImageType.GIF => "gif",
 
-            return include_dot ? ("." + extension) : (extension);
+                ImageType.JPEG => "jpeg",
+
+                ImageType.PNG => "png",
+
+                ImageType.SWF => "swf",
+
+                ImageType.PSD => "psd",
+
+                ImageType.BMP => "bmp",
+
+                ImageType.TIFF_II => "tiff",
+
+                ImageType.TIFF_MM => "tiff",
+
+                ImageType.JPC => "jpc",
+
+                ImageType.JP2 => "jp2",
+
+                ImageType.JPX => "jpx",
+
+                ImageType.JB2 => "jb2",
+
+                ImageType.SWC => "swc",
+
+                ImageType.IFF => "iff",
+
+                ImageType.WBMP => "wbmp",
+
+                ImageType.XBM => "xbm",
+
+                ImageType.ICO => "ico",
+
+                ImageType.WEBP => "webp",
+
+                _ => null,
+            };
+
+            if (extension != null)
+            {
+                return include_dot ? ("." + extension) : (extension);
+            }
+            else
+            {
+                return null; // FALSE
+            }
         }
 
         #endregion
@@ -1473,65 +1426,46 @@ namespace Peachpie.Library.Graphics
         /// Get Mime-Type for image-type returned by getimagesize, exif_read_data, exif_thumbnail, exif_imagetype
         /// </summary> 
         //[return: CastToFalse]
-        public static string image_type_to_mime_type(ImageType imagetype)
+        public static string image_type_to_mime_type(ImageType imagetype) => imagetype switch
         {
-            switch (imagetype)
-            {
-                case ImageType.GIF:
-                    return "image/gif";
+            ImageType.GIF => "image/gif",
 
-                case ImageType.JPEG:
-                    return "image/jpeg";
+            ImageType.JPEG => "image/jpeg",
 
-                case ImageType.PNG:
-                    return "image/png";
+            ImageType.PNG => "image/png",
 
-                case ImageType.SWF:
-                    return "application/x-shockwave-flash";
+            ImageType.SWF => "application/x-shockwave-flash",
 
-                case ImageType.PSD:
-                    return "image/psd";
+            ImageType.PSD => "image/psd",
 
-                case ImageType.BMP:
-                    return "image/x-ms-bmp";
+            ImageType.BMP => "image/x-ms-bmp",
 
-                case ImageType.TIFF_II:
-                    return "image/tiff";
+            ImageType.TIFF_II => "image/tiff",
 
-                case ImageType.TIFF_MM:
-                    return "image/tiff";
+            ImageType.TIFF_MM => "image/tiff",
 
-                case ImageType.JPC:
-                    return "application/octet-stream";
+            ImageType.JPC => "application/octet-stream",
 
-                case ImageType.JP2:
-                    return "image/jp2";
+            ImageType.JP2 => "image/jp2",
 
-                case ImageType.JPX:
-                    return "application/octet-stream";
+            ImageType.JPX => "application/octet-stream",
 
-                case ImageType.JB2:
-                    return "application/octet-stream";
+            ImageType.JB2 => "application/octet-stream",
 
-                case ImageType.SWC:
-                    return "application/x-shockwave-flash";
+            ImageType.SWC => "application/x-shockwave-flash",
 
-                case ImageType.IFF:
-                    return "image/iff";
+            ImageType.IFF => "image/iff",
 
-                case ImageType.WBMP:
-                    return "image/vnd.wap.wbmp";
+            ImageType.WBMP => "image/vnd.wap.wbmp",
 
-                case ImageType.XBM:
-                    return "image/xbm";
+            ImageType.XBM => "image/xbm",
 
-                case ImageType.ICO:
-                    return "image/vnd.microsoft.icon";
+            ImageType.ICO => "image/vnd.microsoft.icon",
 
-                default:
-                    return "application/octet-stream"; // suppose binary format
-            }
-        }
+            ImageType.WEBP => "image/webp",
+
+            _ => "application/octet-stream", // suppose binary format
+        };
 
         #endregion
     }

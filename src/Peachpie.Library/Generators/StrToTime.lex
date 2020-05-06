@@ -200,13 +200,13 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	time.UNHAVE_DATE();
 	time.UNHAVE_TIME();
 
-	int i = DateInfo.ParseSignedInt(str, ref pos, 24);
+	var l = DateInfo.ParseSignedLong(str, ref pos, 24);
 	time.y = 1970;
 	time.m = 1;
 	time.d = 1;
 	time.h = time.i = time.s = 0;
 	time.f = 0.0;
-	time.relative.s += i;
+	time.relative.s += l;
 	time.z = 0;
 	
 	time.HAVE_TZ();
@@ -684,7 +684,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 	while(pos < str.Length) 
 	{
-		int amount = DateInfo.ParseSignedInt(str, ref pos, 24);
+		var amount = DateInfo.ParseSignedLong(str, ref pos, 24);
 		
 		while (pos < str.Length && str[pos] == ' ') pos++;
 		

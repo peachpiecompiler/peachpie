@@ -22,6 +22,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         bool IsTrait { get; }
 
+        /// <summary>
+        /// Indicates how the type is being autoloaded in runtime:<br/>
+        /// - 0: the class is not set for autoloading<br/>
+        /// - 1: type is autoloaded<br/>
+        /// - 2: type is autoloaded and the containing script does not have any sideeffects<br/>
+        /// </summary>
+        byte AutoloadFlag { get; }
+
         #region Model
 
         /// <summary>

@@ -101,9 +101,10 @@ namespace Pchp.Core
         static string PeachpieLibraryAssembly => "Peachpie.Library";
         static string ErrorClass => "Pchp.Library.Spl.Error";
         static string TypeErrorClass => "Pchp.Library.Spl.TypeError";
+        static string ArgumentCountErrorClass => "Pchp.Library.Spl.ArgumentCountError";
         static string AssertionErrorClass => "Pchp.Library.Spl.AssertionError";
 
-        static Type _Error, _TypeError, _AssertionError;
+        static Type _Error, _TypeError, _AssertionError, _ArgumentCountError;
 
         static Exception Exception(ref Type _type, string _typename, string message)
         {
@@ -129,6 +130,8 @@ namespace Pchp.Core
         public static Exception TypeErrorException() => TypeErrorException(string.Empty);
 
         public static Exception TypeErrorException(string message) => Exception(ref _TypeError, TypeErrorClass, message);
+
+        public static Exception ArgumentCountErrorException(string message) => Exception(ref _ArgumentCountError, ArgumentCountErrorClass, message);
 
         public static Exception AssertionErrorException(string message) => Exception(ref _AssertionError, AssertionErrorClass, message);
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -149,13 +150,15 @@ namespace Pchp.Core.Reflection
             typeof(IPhpConvertible),
             typeof(IPhpPrintable),
             typeof(IPhpComparable),
+            typeof(IEnumerable),
+            typeof(IEnumerable<>),
         };
 
         /// <summary>
         /// Determines if given type is not visible to PHP runtime.
         /// We implement these types implicitly in compile time, so we should ignore them at proper places.
         /// </summary>
-        public static bool IsHiddenType(this Type t) => s_hiddenTypes.Contains(t);
+        public static bool IsHiddenType(this Type t) => s_hiddenTypes.Contains(t) || (t.IsConstructedGenericType && s_hiddenTypes.Contains(t.GetGenericTypeDefinition()));
 
         /// <summary>
         /// Determines the parameter is considered as implicitly passed by runtime.

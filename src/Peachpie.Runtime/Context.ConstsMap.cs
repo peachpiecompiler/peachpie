@@ -142,7 +142,7 @@ namespace Pchp.Core
             /// <summary>
             /// Maps constant ID to its actual value, accross all contexts (application wide).
             /// </summary>
-            static ConstData[] s_valuesApp = new ConstData[1200];   // there is ~1162 builtin constants
+            static ConstData[] s_valuesApp = new ConstData[1500];   // there is at least ~1357 builtin constants
 
             /// <summary>
             /// Actual count of defined constant names.
