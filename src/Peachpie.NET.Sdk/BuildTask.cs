@@ -111,6 +111,9 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary>Set of files to be included in autoload class-map.</summary>
         public string[] Autoload_ClassMap { get; set; }
 
+        /// <summary>Set of files to be autoloaded (included) on each request.</summary>
+        public string[] Autoload_Files { get; set; }
+
         /// <summary>
         /// Used for debugging purposes.
         /// If enabled a debugger is attached to the current process upon the task execution.
@@ -214,6 +217,14 @@ namespace Peachpie.NET.Sdk.Tools
                 foreach (var fname in Autoload_ClassMap.Distinct())
                 {
                     args.Add("/autoload:classmap," + fname);
+                }
+            }
+
+            if (Autoload_Files != null)
+            {
+                foreach (var fname in Autoload_Files.Distinct())
+                {
+                    args.Add("/autoload:files," + fname);
                 }
             }
 

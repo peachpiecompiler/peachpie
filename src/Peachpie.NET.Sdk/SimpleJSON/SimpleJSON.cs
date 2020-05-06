@@ -122,6 +122,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Microsoft.Build.Framework;
 
 namespace SimpleJSON
 {
@@ -849,6 +850,8 @@ namespace SimpleJSON
                 aSB.AppendLine().Append(' ', aIndent);
             aSB.Append(']');
         }
+
+        internal IEnumerable<TResult> Select<TResult>(Func<JSONNode, TResult> func) => _list.Select(func);
     }
     // End of JSONArray
 

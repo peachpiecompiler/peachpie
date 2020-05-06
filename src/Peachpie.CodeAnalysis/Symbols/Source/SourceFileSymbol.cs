@@ -10,6 +10,8 @@ using static Pchp.CodeAnalysis.AstUtils;
 using Devsense.PHP.Syntax;
 using System.Threading;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
+using System.IO;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -197,6 +199,31 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        protected virtual DateTime LastWriteTime
+        {
+            get
+            {
+                try
+                {
+                    return File.GetLastWriteTimeUtc(SyntaxTree.FilePath);
+                }
+                catch
+                {
+                }
+
+                return default;
+            }
+        }
+
+        protected virtual bool IsAutoloaded
+        {
+            get
+            {
+                var autoloaded_files = DeclaringCompilation.Options.Autoload_Files;
+                return autoloaded_files != null && autoloaded_files.Contains(this.RelativeFilePath);
+            }
+        }
+
         public string FileName => PathUtilities.GetFileName(SyntaxTree.Source.FilePath);
 
         public override string Name => PathUtilities.GetFileName(_syntaxTree.Source.FilePath, true).Replace('.', '_');
@@ -205,13 +232,28 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            // [ScriptAttribute(RelativeFilePath)]  // TODO: LastWriteTime
+            // [ScriptAttribute(RelativeFilePath, LastWriteTime_Ticks)]
             if (_lazyScriptAttribute == null)
             {
+                var lastWriteTime = LastWriteTime;
+                var namedproperties = ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty;
+
+                //
+                if (IsAutoloaded)
+                {
+                    // , IsAutoloaded = true
+                    namedproperties = ImmutableArray.Create(
+                        new KeyValuePair<string, TypedConstant>(
+                            CoreMethods.ScriptAttribute_IsAutoloaded, DeclaringCompilation.CreateTypedConstant(true))
+                        );
+                }
+
                 var scriptAttribute = new SynthesizedAttributeData(
-                    DeclaringCompilation.CoreMethods.Ctors.ScriptAttribute_string,
-                    ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(this.RelativeFilePath)),
-                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                    DeclaringCompilation.CoreMethods.Ctors.ScriptAttribute_string_long,
+                    ImmutableArray.Create(
+                        DeclaringCompilation.CreateTypedConstant(this.RelativeFilePath),
+                        DeclaringCompilation.CreateTypedConstant(lastWriteTime.Ticks)),
+                    namedproperties);
                 Interlocked.CompareExchange(ref _lazyScriptAttribute, scriptAttribute, null);
             }
 
@@ -351,6 +393,24 @@ namespace Pchp.CodeAnalysis.Symbols
                 return PhpFileUtilities.NormalizeSlashes(SyntaxTree.Source.FilePath);
             }
         }
+
+        protected override DateTime LastWriteTime
+        {
+            get
+            {
+                try
+                {
+                    return File.GetLastWriteTimeUtc(SyntaxTree.PharStubFile.FilePath);
+                }
+                catch
+                {
+                }
+
+                return default;
+            }
+        }
+
+        protected override bool IsAutoloaded => false; // phar entries cannot be autoloaded
 
         // <Phar>pharentrypath
         public override string NamespaceName => WellKnownPchpNames.PharEntryRootNamespace + DirectoryRelativePath;
