@@ -1520,18 +1520,18 @@ namespace Pchp.Core
                     (Enumerator as IDisposable)?.Dispose();
                 }
 
-                public bool MoveFirst()
+                public virtual bool MoveFirst()
                 {
                     Enumerator.Reset();
                     return MoveNext();
                 }
 
-                public bool MoveLast()
+                public virtual bool MoveLast()
                 {
                     throw new NotImplementedException();
                 }
 
-                public bool MoveNext()
+                public virtual bool MoveNext()
                 {
                     if (Enumerator.MoveNext())
                     {
@@ -1544,7 +1544,7 @@ namespace Pchp.Core
                     }
                 }
 
-                public bool MovePrevious()
+                public virtual bool MovePrevious()
                 {
                     throw new NotSupportedException();
                 }
@@ -1561,9 +1561,23 @@ namespace Pchp.Core
 
                 protected override IEnumerator Enumerator => _enumerator;
 
+                long _key;
+
+                public override bool MoveFirst()
+                {
+                    _key = -1;
+                    return base.MoveFirst();
+                }
+
+                public override bool MoveNext()
+                {
+                    _key++;
+                    return base.MoveNext();
+                }
+
                 protected override void FetchCurrent(ref PhpValue key, ref PhpValue value)
                 {
-                    key = (PhpValue)key.ToLong();
+                    key = _key;
                     value = PhpValue.FromClr(_enumerator.Current);
                 }
 
@@ -1571,6 +1585,7 @@ namespace Pchp.Core
                 {
                     Debug.Assert(enumerator != null);
                     _enumerator = enumerator;
+                    _key = -1;
                 }
             }
 

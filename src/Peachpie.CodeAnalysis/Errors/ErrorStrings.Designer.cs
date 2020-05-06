@@ -178,6 +178,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot open &apos;{0}&apos; for writing -- &apos;{1}&apos;.
+        /// </summary>
+        internal static string ERR_CantOpenFileWrite {
+            get {
+                return ResourceManager.GetString("ERR_CantOpenFileWrite", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error reading resource &apos;{0}&apos; -- &apos;{1}&apos;.
         /// </summary>
         internal static string ERR_CantReadResource {

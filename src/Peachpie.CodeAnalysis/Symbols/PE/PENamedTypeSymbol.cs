@@ -117,6 +117,20 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public abstract bool IsTrait { get; }
 
+        public byte AutoloadFlag
+        {
+            get
+            {
+                if (this.TryGetPhpTypeAttribute(out _, out _, out var autoload))
+                {
+                    return autoload;
+                }
+
+                // not applicable:
+                return 0;
+            }
+        }
+
         #endregion
 
         #region IPhpScriptTypeSymbol // applies when [PhpScriptAttributes] and <Main> method are declared

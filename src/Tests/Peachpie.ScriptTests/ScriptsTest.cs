@@ -21,6 +21,16 @@ namespace ScriptsTest
         /// </summary>
         const string SkippedTestReturn = "***SKIP***";
 
+        static readonly string[] AdditionalReferences = new[]
+        {
+            typeof(Peachpie.Library.Graphics.PhpGd2).Assembly.Location,
+            typeof(Peachpie.Library.PDO.PDO).Assembly.Location,
+            typeof(Peachpie.Library.PDO.Sqlite.PDOSqliteDriver).Assembly.Location,
+            typeof(Peachpie.Library.Scripting.Standard).Assembly.Location,
+            typeof(Peachpie.Library.XmlDom.XmlDom).Assembly.Location,
+            typeof(Peachpie.Library.Network.CURLFunctions).Assembly.Location,
+        };
+
         static readonly Context.IScriptingProvider _provider = Context.DefaultScriptingProvider; // use IScriptingProvider singleton 
 
         private readonly ITestOutputHelper _output;
@@ -96,6 +106,7 @@ namespace ScriptsTest
                     IsSubmission = false,
                     EmitDebugInformation = true,
                     Location = new Location(path, 0, 0),
+                    AdditionalReferences = AdditionalReferences,
                 }, File.ReadAllText(path));
 
                 // run

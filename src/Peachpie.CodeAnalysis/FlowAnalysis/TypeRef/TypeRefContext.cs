@@ -630,7 +630,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public TypeRefMask GetCallableTypeMask()
         {
             // string | Closure | array | object
-            return GetStringTypeMask() | GetClosureTypeMask() | GetArrayTypeMask() | GetSystemObjectTypeMask();
+            return GetStringTypeMask() | GetWritableStringTypeMask() | GetClosureTypeMask() | GetArrayTypeMask() | GetSystemObjectTypeMask();
         }
 
         /// <summary>
@@ -766,6 +766,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (mask.IsAnyType) return 0;
             return mask & _isObjectMask;
+        }
+
+        /// <summary>
+        /// Gets mask representing only lambda types in given mask.
+        /// (Only bits corresponding to a lambda type will be set).
+        /// </summary>
+        public TypeRefMask GetLambdasFromMask(TypeRefMask mask)
+        {
+            if (mask.IsAnyType) return 0;
+            return mask & _isLambdaMask;
         }
 
         #endregion
@@ -914,6 +924,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Gets value indicating whether given type mask represents an array.
         /// </summary>
         public bool IsArray(TypeRefMask mask) { return (mask.Mask & _isArrayMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents only array(s).
+        /// </summary>
+        public bool IsArrayOnly(TypeRefMask mask) { return IsArray(mask) && (mask.TypesMask & ~_isArrayMask) == 0; }
 
         /// <summary>
         /// Gets value indicating whether given type mask represents a lambda function or <c>callable</c> primitive type.

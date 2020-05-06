@@ -380,12 +380,22 @@ namespace Pchp.Core.Dynamic
                     return Expression.Constant(null, typeof(string));
                 }
 
-                // __toString
-
+                // __toString is called by ToString below
             }
 
-            // ToString()
-            return Expression.Call(expr, Cache.Object.ToString);
+            var callToString = Expression.Call(expr, Cache.Object.ToString);
+            if (expr.Type.IsValueType)
+            {
+                // ToString()
+                return callToString;
+            }
+            else
+            {
+                var nullString = Expression.Constant(null, typeof(string));
+
+                // ?ToString()
+                return Expression.Condition(Expression.ReferenceEqual(expr, nullString), nullString, callToString);
+            }
         }
 
         private static Expression BindToChar(Expression expr, Expression ctx)

@@ -467,7 +467,6 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentOutOfRangeException(string.Format("The time {0}:{1}:{2} is not valid.", hour, minute, second), e);
             }
 
-
             return this;
         }
 

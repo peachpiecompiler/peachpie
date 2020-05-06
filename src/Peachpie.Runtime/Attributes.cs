@@ -178,6 +178,17 @@ namespace Pchp.Core
         public string? FileName { get; }
 
         /// <summary>
+        /// - 0: type is not selected to be autoloaded.<br/>
+        /// - 1: type is marked to be autoloaded.<br/>
+        /// - 2: type is marked to be autoloaded and it is the only unconditional declaration in its source file.<br/>
+        /// </summary>
+        public byte AutoloadFlag { get; }
+
+        public const byte AutoloadAllow = 1;
+
+        public const byte AutoloadAllowNoSideEffect = 2;
+
+        /// <summary>
         /// Value stating that the type name is inherited from the CLR name excluding its namespace part, see <see cref="PhpTypeName.NameOnly"/>.
         /// It causes CLR type <c>A.B.C.X</c> to appear in PHP as <c>X</c>.
         /// </summary>
@@ -186,7 +197,7 @@ namespace Pchp.Core
         /// <summary>
         /// Value indicating how to treat the type name in PHP.
         /// </summary>
-        public enum PhpTypeName
+        public enum PhpTypeName : byte
         {
             /// <summary>
             /// Full type name including its namespace name is used.
@@ -213,16 +224,27 @@ namespace Pchp.Core
             TypeNameAs = typeNameAs;
         }
 
+        public PhpTypeAttribute(string phpTypeName, string fileName)
+            : this(phpTypeName, fileName, default)
+        {
+        }
+
         /// <summary>
         /// Annotates the PHP type.
         /// </summary>
         /// <param name="phpTypeName">The type name that will be used in PHP context instead of CLR type name.</param>
         /// <param name="fileName">Optional relative path to the file where the type is defined.</param>
-        public PhpTypeAttribute(string phpTypeName, string fileName)
+        /// <param name="autoload">Optional. Specifies if the type can be autoloaded:<br/>
+        /// - 0: type is not selected to be autloaded.<br/>
+        /// - 1: type is marked to be autoloaded.<br/>
+        /// - 2: type is marked to be autoloaded and it is the only unconditional declaration in its source file.<br/>
+        /// </param>
+        public PhpTypeAttribute(string phpTypeName, string fileName, byte autoload)
         {
             ExplicitTypeName = phpTypeName ?? throw new ArgumentNullException();
             FileName = fileName;
             TypeNameAs = PhpTypeName.CustomName;
+            AutoloadFlag = autoload;
         }
     }
 
@@ -450,7 +472,7 @@ namespace Pchp.Core
         /// <summary>
         /// The Script type from the dependent assembly.
         /// </summary>
-        public Type ScriptType { get; private set; }
+        public Type ScriptType { get; }
 
         public PhpPackageReferenceAttribute(Type scriptType)
         {

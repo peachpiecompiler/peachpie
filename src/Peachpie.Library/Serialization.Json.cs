@@ -139,7 +139,7 @@ namespace Pchp.Library
                     else
                     {
                         // upgrade _value to object[4]
-                        set.value = new [] { set.value, obj, null, null, };
+                        set.value = new[] { set.value, obj, null, null, };
                         set.top = 2;
                     }
                 }
@@ -849,6 +849,20 @@ namespace Pchp.Library
         // 
         // Values returned by json_last_error function.
         //
+        enum JsonError
+        {
+            None = JSON_ERROR_NONE,
+            Depth = JSON_ERROR_DEPTH,
+            StateMismatch = JSON_ERROR_STATE_MISMATCH,
+            CtrlChar = JSON_ERROR_CTRL_CHAR,
+            Syntax = JSON_ERROR_SYNTAX,
+            Utf8 = JSON_ERROR_UTF8,
+            Recursion = JSON_ERROR_RECURSION,
+            InfOrNan = JSON_ERROR_INF_OR_NAN,
+            UnsupportedType = JSON_ERROR_UNSUPPORTED_TYPE,
+            InvalidPropertyName = JSON_ERROR_INVALID_PROPERTY_NAME,
+        }
+
         /// <summary>
         /// No error has occurred  	 
         /// </summary>
@@ -878,6 +892,31 @@ namespace Pchp.Library
         /// 
         /// </summary>
         public const int JSON_ERROR_UTF8 = 5;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public const int JSON_ERROR_RECURSION = 6;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public const int JSON_ERROR_INF_OR_NAN = 7;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public const int JSON_ERROR_UNSUPPORTED_TYPE = 8;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public const int JSON_ERROR_INVALID_PROPERTY_NAME = 9;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public const int JSON_ERROR_UTF16 = 10;
 
         /// <summary>
         /// 
@@ -1041,14 +1080,24 @@ namespace Pchp.Library
         /// </summary>
         public static string json_last_error_msg(Context ctx)
         {
-            switch (PhpSerialization.GetLastJsonError(ctx))
+            var error = (JsonError)PhpSerialization.GetLastJsonError(ctx);
+
+            // TODO: to resources
+
+            switch (error)
             {
-                case JSON_ERROR_NONE: return "No error";
-                case JSON_ERROR_DEPTH: return "Maximum stack depth exceeded";
-                case JSON_ERROR_STATE_MISMATCH: return "State mismatch (invalid or malformed JSON)";
-                case JSON_ERROR_CTRL_CHAR: return "Control character error, possibly incorrectly encoded";
-                case JSON_ERROR_SYNTAX: return "Syntax error";
-                case JSON_ERROR_UTF8: return "Malformed UTF-8 characters, possibly incorrectly encoded";
+                case JsonError.None: return "No error";
+                case JsonError.Depth: return "Maximum stack depth exceeded";
+                case JsonError.StateMismatch: return "State mismatch (invalid or malformed JSON)";
+                case JsonError.CtrlChar: return "Control character error, possibly incorrectly encoded";
+                case JsonError.Syntax: return "Syntax error";
+                case JsonError.Utf8: return "Malformed UTF-8 characters, possibly incorrectly encoded";
+                case JsonError.Recursion:
+                case JsonError.InfOrNan:
+                case JsonError.UnsupportedType:
+                case JsonError.InvalidPropertyName:
+                    return error.ToString();
+
                 default: throw new ArgumentOutOfRangeException();
             }
         }

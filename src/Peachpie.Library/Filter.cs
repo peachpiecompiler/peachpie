@@ -110,6 +110,18 @@ namespace Pchp.Library
             /// ID of "validate_ip" filter.
             /// </summary>
             IP = 275,
+
+            /// <summary>
+            /// Validates value as MAC address.
+            /// </summary>
+            MAC = 276,
+
+            /// <summary>
+            /// Validates whether the domain name label lengths are valid.
+            /// Validates domain names against RFC 1034, RFC 1035, RFC 952, RFC 1123, RFC 2732, RFC 2181, and RFC 1123.
+            /// Optional flag <see cref="FILTER_FLAG_HOSTNAME"/> adds ability to specifically validate hostnames (they must start with an alphanumeric character and contain only alphanumerics or hyphens).
+            /// </summary>
+            DOMAIN = 277,
         }
 
         public const int FILTER_VALIDATE_INT = (int)FilterValidate.INT;
@@ -119,6 +131,8 @@ namespace Pchp.Library
         public const int FILTER_VALIDATE_URL = (int)FilterValidate.URL;
         public const int FILTER_VALIDATE_EMAIL = (int)FilterValidate.EMAIL;
         public const int FILTER_VALIDATE_IP = (int)FilterValidate.IP;
+        public const int FILTER_VALIDATE_MAC = (int)FilterValidate.MAC;
+        public const int FILTER_VALIDATE_DOMAIN = (int)FilterValidate.DOMAIN;
 
         /// <summary>
         /// Sanitize filters.
@@ -180,6 +194,16 @@ namespace Pchp.Library
             /// ID of "magic_quotes" filter.
             /// </summary>
             MAGIC_QUOTES = 521,
+
+            /// <summary>
+            /// Equivalent to calling htmlspecialchars() with ENT_QUOTES set.
+            /// </summary>
+            FULL_SPECIAL_CHARS = 522,
+
+            /// <summary>
+            /// add_slashes filter.
+            /// </summary>
+            ADD_SLASHES = 523,
         }
 
         public const int FILTER_SANITIZE_STRING = (int)FilterSanitize.STRING;
@@ -193,6 +217,8 @@ namespace Pchp.Library
         public const int FILTER_SANITIZE_NUMBER_INT = (int)FilterSanitize.NUMBER_INT;
         public const int FILTER_SANITIZE_NUMBER_FLOAT = (int)FilterSanitize.NUMBER_FLOAT;
         public const int FILTER_SANITIZE_MAGIC_QUOTES = (int)FilterSanitize.MAGIC_QUOTES;
+        public const int FILTER_SANITIZE_FULL_SPECIAL_CHARS = (int)FilterSanitize.FULL_SPECIAL_CHARS;
+        public const int FILTER_SANITIZE_ADD_SLASHES = (int)FilterSanitize.ADD_SLASHES;
 
         [Flags]
         public enum FilterFlag : int
@@ -248,6 +274,11 @@ namespace Pchp.Library
             EMPTY_STRING_NULL = 256,
 
             /// <summary>
+            /// ?
+            /// </summary>
+            STRIP_BACKTICK = 512,
+
+            /// <summary>
             /// Allow fractional part in "number_float" filter.
             /// </summary>
             ALLOW_FRACTION = 4096,
@@ -292,6 +323,11 @@ namespace Pchp.Library
             /// (they must start with an alphanumberic character and contain only alphanumerics or hyphens).
             /// </summary>
             HOSTNAME = 1048576, // yes the same as IPV4
+
+            /// <summary>
+            /// Accepts Unicode characters in the local part in "validate_email" filter.
+            /// </summary>
+            EMAIL_UNICODE = 1048576, // same as HOSTNAME
 
             /// <summary>
             /// Allow only IPv6 address in "validate_ip" filter.
@@ -360,6 +396,11 @@ namespace Pchp.Library
         public const int FILTER_FLAG_EMPTY_STRING_NULL = (int)FilterFlag.EMPTY_STRING_NULL;
 
         /// <summary>
+        /// Removes backtick characters from the string, anywhere.
+        /// </summary>
+        public const int FILTER_FLAG_STRIP_BACKTICK = (int)FilterFlag.STRIP_BACKTICK;
+
+        /// <summary>
         /// Allow fractional part in "number_float" filter.
         /// </summary>
         public const int FILTER_FLAG_ALLOW_FRACTION = (int)FilterFlag.ALLOW_FRACTION;
@@ -399,6 +440,11 @@ namespace Pchp.Library
         /// (they must start with an alphanumberic character and contain only alphanumerics or hyphens).
         /// </summary>
         public const int FILTER_FLAG_HOSTNAME = (int)FilterFlag.HOSTNAME;
+
+        /// <summary>
+        /// Accepts Unicode characters in the local part in "validate_email" filter.
+        /// </summary>
+        public const int FILTER_FLAG_EMAIL_UNICODE = (int)FilterFlag.EMAIL_UNICODE;
 
         /// <summary>
         /// Allow only IPv4 address in "validate_ip" filter.
@@ -531,6 +577,56 @@ namespace Pchp.Library
             }
         }
 
+        private static string StripBacktickIfSet(string value, FilterFlag flags)
+        {
+            if ((flags & FilterFlag.STRIP_BACKTICK) == 0 || string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+            else
+            {
+                return value.Replace("`", "");
+            }
+        }
+
+        private static string SanitizeString(string value, FilterFlag flags)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            value = Strings.strip_tags(value);
+
+            //FILTER_FLAG_STRIP_LOW
+
+            //FILTER_FLAG_STRIP_HIGH
+
+            //FILTER_FLAG_STRIP_BACKTICK
+            value = StripBacktickIfSet(value, flags);
+
+            //FILTER_FLAG_ENCODE_LOW
+
+            //FILTER_FLAG_ENCODE_HIGH            
+
+            //FILTER_FLAG_NO_ENCODE_QUOTES + FILTER_FLAG_ENCODE_AMP
+            if ((flags & FilterFlag.NO_ENCODE_QUOTES) == 0)
+            {
+                value = Strings.HtmlSpecialCharsEncode(value, 0, value.Length,
+                    quoteStyle: Strings.QuoteStyle.BothQuotes,
+                    charSet: null,
+                    keepExisting: (flags & FilterFlag.ENCODE_AMP) == 0); // sanitize `&` properly
+            }
+            //FILTER_FLAG_ENCODE_AMP
+            else if ((flags & FilterFlag.ENCODE_AMP) != 0)
+            {
+                value = value.Replace("&", "&#38;");
+            }
+
+            //
+            return value;
+        }
+
         /// <summary>
         /// Filters a variable with a specified filter.
         /// </summary>
@@ -588,6 +684,19 @@ namespace Pchp.Library
                 case (int)FilterSanitize.FILTER_DEFAULT:
                     return (PhpValue)variable.ToString(ctx);
 
+                //case (int)FilterSanitize.STRIPPED: // alias to "string" filter
+                case (int)FilterSanitize.STRING:
+
+                    if (variable.IsPhpArray(out _) || variable.AsObject() is PhpResource)
+                    {
+                        return false;
+                    }
+
+                    return SanitizeString(variable.ToString(ctx), (FilterFlag)flags);
+
+                case (int)FilterSanitize.ENCODED:
+                    return System.Web.HttpUtility.UrlEncode(StripBacktickIfSet(variable.ToString(ctx), (FilterFlag)flags));
+
                 case (int)FilterSanitize.EMAIL:
                     // Remove all characters except letters, digits and !#$%&'*+-/=?^_`{|}~@.[].
                     return (PhpValue)FilterSanitizeString(variable.ToString(ctx), (c) =>
@@ -596,6 +705,15 @@ namespace Pchp.Library
                             c == '*' || c == '+' || c == '-' || c == '/' || c == '=' || c == '!' ||
                             c == '?' || c == '^' || c == '_' || c == '`' || c == '{' || c == '|' ||
                             c == '}' || c == '~' || c == '@' || c == '.' || c == '[' || c == ']'));
+
+                case (int)FilterSanitize.FULL_SPECIAL_CHARS:
+                    return Strings.htmlspecialchars(
+                        StripBacktickIfSet(variable.ToString(ctx), (FilterFlag)flags),
+                        (flags & (long)FilterFlag.NO_ENCODE_QUOTES) != 0 ? Strings.QuoteStyle.NoQuotes : Strings.QuoteStyle.BothQuotes);
+
+                case (int)FilterSanitize.MAGIC_QUOTES: // -->
+                case (int)FilterSanitize.ADD_SLASHES:
+                    return StringUtils.AddCSlashes(variable.ToString(ctx), true, true, true);
 
                 //
                 // VALIDATE
@@ -780,6 +898,33 @@ namespace Pchp.Library
 
                     return @default;
 
+                case FILTER_VALIDATE_MAC:
+                    //try
+                    //{
+                    var value = variable.ToString(ctx);
+                    //var macaddr = System.Net.NetworkInformation.PhysicalAddress.Parse(value).GetAddressBytes(); // only validates "dash" format
+                    //if (macaddr.Length == 6)
+                    //{
+                    //    return value;
+                    //}
+                    if (RegexUtilities.IsValidMacAddress(value))
+                    {
+                        return value;
+                    }
+
+                    //}
+                    //catch
+                    //{
+                    //}
+
+                    return @default;
+
+                case FILTER_VALIDATE_DOMAIN:
+                    value = variable.ToString(ctx);
+                    return Uri.CheckHostName(value) != UriHostNameType.Unknown
+                        ? value
+                        : @default;
+
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(filter), filter);
                     break;
@@ -794,10 +939,25 @@ namespace Pchp.Library
 
         private static class RegexUtilities
         {
-            private static readonly Regex ValidEmailRegex = new Regex(
-                    @"^(?("")(""[^""]+?""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
-                    @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-\w]*[0-9a-z]*\.)+[a-z0-9]{2,17}))$",
-                    RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            //static readonly Lazy<Regex> ValidEmailRegex = new Lazy<Regex>(() => new Regex(
+            //        @"^(?("")(""[^""]+?""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
+            //        @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-\w]*[0-9a-z]*\.)+[a-z0-9]{2,17}))$",
+            //        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+            //    System.Threading.LazyThreadSafetyMode.None);
+
+            //static readonly Lazy<Regex> ValidEmailUnicodeRegex = new Lazy<Regex>(() => new Regex(
+            //        @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=(?:[0-9a-z]|[^\x20-\x7E]))@))" +
+            //        @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-\w]*[0-9a-z]*\.)+[a-z0-9][\-a-z0-9]{0,22}[a-z0-9]))$",
+            //        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+            //    System.Threading.LazyThreadSafetyMode.None);
+
+            static readonly Lazy<Regex> s_lazyMacAddressRegex = new Lazy<Regex>(
+                () => new Regex(
+                    @"^(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}|(?:[0-9a-fA-F]{2}-){5}[0-9a-fA-F]{2}|(?:[0-9a-fA-F]{2}){5}[0-9a-fA-F]{2}|(?:[0-9a-fA-F]{4}.){2}[0-9a-fA-F]{4}$",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+                System.Threading.LazyThreadSafetyMode.None);
+
+            public static bool IsValidMacAddress(string physicaladdress) => !string.IsNullOrEmpty(physicaladdress) && s_lazyMacAddressRegex.Value.IsMatch(physicaladdress);
 
             public static bool IsValidEmail(string strIn)
             {
@@ -809,18 +969,31 @@ namespace Pchp.Library
                 // Use IdnMapping class to convert Unicode domain names.
                 try
                 {
-                    strIn = Regex.Replace(strIn, @"(@)(.+)$", DomainMapper);
+                    strIn = Regex.Replace(strIn, @"(@)(.+)$", match => DomainMapper(match));
                 }
                 catch (ArgumentException)
                 {
                     return false;
                 }
 
-                // Return true if strIn is in valid e-mail format.
-                return ValidEmailRegex.IsMatch(strIn);
+                // use MailAddress parser:
+                try
+                {
+                    var addr = new System.Net.Mail.MailAddress(strIn);
+                    var valid = addr.Address == strIn;
+
+                    return valid;
+                }
+                catch
+                {
+                    return false;
+                }
+
+                //// Return true if strIn is in valid e-mail format.
+                //return ValidEmailRegex.Value.IsMatch(strIn);
             }
 
-            private static string DomainMapper(Match match)
+            static string DomainMapper(Match match)
             {
                 string domainName = match.Groups[2].Value;
 

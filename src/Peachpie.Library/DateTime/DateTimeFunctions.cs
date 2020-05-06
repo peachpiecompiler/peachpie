@@ -175,7 +175,7 @@ namespace Pchp.Library.DateTime
         //[return:CastToFalse]
         public static DateTime date_sub(DateTime @object, DateInterval interval) => @object.sub(interval);
 
-        static System_DateTime TimeFromInterface(DateTimeInterface dti)
+        internal static System_DateTime TimeFromInterface(DateTimeInterface dti)
         {
             if (dti is Library.DateTime.DateTime dt) return dt.Time;
             if (dti is DateTimeImmutable dtimmutable) return dtimmutable.Time;
@@ -209,6 +209,28 @@ namespace Pchp.Library.DateTime
         /// Gets the date and time as Unix timestamp.
         /// </summary>
         public static long date_timestamp_get(DateTime @object) => @object.getTimestamp();
+
+        #endregion
+
+        #region
+
+        /// <summary>
+        /// Alias to <see cref="DateTime.setTime"/>.
+        /// </summary>
+        public static DateTime date_time_set(DateTime @object, int hour, int minute, int second)
+            => @object.setTime(hour, minute, second);
+
+        /// <summary>
+        /// Alias to <see cref="DateTime.setDate"/>.
+        /// </summary>
+        public static DateTime date_date_set(DateTime @object, int year, int month, int day)
+            => @object.setDate(year, month, day);
+
+        /// <summary>
+        /// Alias to <see cref="DateTime.setISODate"/>.
+        /// </summary>
+        public static DateTime date_isodate_set(DateTime @object, int year, int week, int day = 1)
+            => @object.setISODate(year, week, day);
 
         #endregion
 
@@ -693,12 +715,18 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region date_interval_create_from_date_string
+        #region date_interval_create_from_date_string, date_interval_format
 
         /// <summary>
         /// Alias of <see cref="DateInterval.createFromDateString(string)"/>.
         /// </summary>
         public static DateInterval date_interval_create_from_date_string(string time) => DateInterval.createFromDateString(time);
+
+        /// <summary>
+        /// Alias to <see cref="DateInterval.format"/>.
+        /// </summary>
+        [return: NotNull]
+        public static string date_interval_format(DateInterval @object, string format) => @object.format(format);
 
         #endregion
 

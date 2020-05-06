@@ -118,7 +118,13 @@ function numeric_check(/*|mixed|*/$x) {
 }
 
 function callable_check(/*|mixed|*/$x) {
-  switch ($x) {
+  if (is_callable(/*|mixed|*/$x)) {
+    echo /*|mixed|*/$x;
+  } else {
+    echo /*|mixed|*/$x;
+  }
+
+  switch (/*|mixed|*/$x) {
     case 0:
       /*|integer|*/$y = 42;
       break;

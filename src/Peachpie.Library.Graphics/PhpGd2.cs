@@ -91,6 +91,12 @@ namespace Peachpie.Library.Graphics
             /// </summary>
             XPM = 16,
 
+            WEBP = 32,
+
+            BMP = 64,
+
+            TGA = 128,
+
             /// <summary>
             /// A combinanation of IMG_ constants that are supported.
             /// </summary>
@@ -108,6 +114,9 @@ namespace Peachpie.Library.Graphics
         public const int IMG_PNG = (int)ImgType.PNG;
         public const int IMG_WBMP = (int)ImgType.WBMP;
         public const int IMG_XPM = (int)ImgType.XPM;
+        public const int IMG_WEBP = (int)ImgType.WEBP;
+        public const int IMG_BMP = (int)ImgType.BMP;
+        public const int IMG_TGA = (int)ImgType.TGA;
 
         #endregion
 
@@ -307,8 +316,7 @@ namespace Peachpie.Library.Graphics
         }
 
         /// <summary>
-        /// Return the types of images supported in a bitfield - 1=GIF, 2=JPEG, 4=PNG, 8=WBMP, 16=XPM
-        /// IMG_GIF | IMG_JPG | IMG_PNG | IMG_WBMP | IMG_XPM
+        /// Return the types of images supported in a bitfield of <c>IMG_*</c> constants.
         /// </summary> 
         public static int imagetypes()
         {

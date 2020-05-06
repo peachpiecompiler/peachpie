@@ -21,7 +21,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Gets the driver name (used in DSN)
         /// </summary>
-        public string Name { get; }
+        public abstract string Name { get; }
 
         /// <summary>
         /// Gets the client version.
@@ -38,23 +38,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public DbProviderFactory DbFactory { get; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDODriver"/> class.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="dbFactory">The database factory object.</param>
-        /// <exception cref="System.ArgumentNullException">
-        /// name
-        /// or
-        /// dbFactory
-        /// </exception>
-        public PDODriver(string name, DbProviderFactory dbFactory)
-        {
-            this.Name = name ?? throw new ArgumentNullException(nameof(name));
-            this.DbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-        }
+        public abstract DbProviderFactory DbFactory { get; }
 
         /// <summary>
         /// Builds the connection string.
@@ -95,6 +79,20 @@ namespace Peachpie.Library.PDO
         /// <param name="name">The name.</param>
         /// <returns></returns>
         public abstract string GetLastInsertId(PDO pdo, string name);
+
+        /// <summary>
+        /// Sets <see cref="PDO.PDO_ATTR.ATTR_STRINGIFY_FETCHES"/> attribute value.
+        /// </summary>
+        /// <param name="pdo"><see cref="PDO"/> object reference.</param>
+        /// <param name="stringify">Whether to stringify fetched values.</param>
+        /// <returns>Value indicating the attribute was set succesfuly.</returns>
+        public virtual bool TrySetStringifyFetches(PDO pdo, bool stringify)
+        {
+            // NOTE: this method should be removed and stringify handled when actually used in PdoResultResource.GetValues()
+
+            pdo.Stringify = stringify;
+            return true;
+        }
 
         /// <summary>
         /// Tries to set a driver specific attribute value.
@@ -183,11 +181,16 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Processes DB exception and returns corresponding error info.
         /// </summary>
-        public virtual void HandleException(Exception ex, out string SQLSTATE, out string code, out string message)
+        public virtual void HandleException(Exception ex, out PDO.ErrorInfo errorInfo)
         {
-            SQLSTATE = string.Empty;
-            code = null;
-            message = ex.Message;
+            if (ex is Pchp.Library.Spl.Exception pex)
+            {
+                errorInfo = PDO.ErrorInfo.Create(string.Empty, pex.getCode().ToString(), pex.Message);
+            }
+            else
+            {
+                errorInfo = PDO.ErrorInfo.Create(string.Empty, null, ex.Message);
+            }
         }
 
         /// <summary>

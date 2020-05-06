@@ -334,7 +334,7 @@ namespace Peachpie.Library.Network
             }
         }
 
-        static readonly Lazy<IWebProxy> s_DefaultProxy = new Lazy<IWebProxy>(() => new WebProxy(), LazyThreadSafetyMode.None);
+        static readonly IWebProxy s_DefaultProxy = new WebProxy();
 
         static Task<WebResponse> ExecHttpRequestInternalAsync(Context ctx, CURLResource ch, Uri uri)
         {
@@ -379,7 +379,7 @@ namespace Peachpie.Library.Network
             else
             {
                 // by default, curl does not go through system proxy
-                req.Proxy = s_DefaultProxy.Value;
+                req.Proxy = s_DefaultProxy;
             }
 
             // 

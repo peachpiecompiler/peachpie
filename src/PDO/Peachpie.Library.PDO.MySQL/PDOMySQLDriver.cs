@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using MySql.Data.MySqlClient;
 
 using Pchp.Core;
@@ -13,13 +14,11 @@ namespace Peachpie.Library.PDO.MySQL
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
     public sealed class PDOMySQLDriver : PDODriver
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PDOMySQLDriver"/> class.
-        /// </summary>
-        public PDOMySQLDriver() : base("mysql", MySqlClientFactory.Instance)
-        {
+        /// <inheritDoc />
+        public override string Name => "mysql";
 
-        }
+        /// <inheritDoc />
+        public override DbProviderFactory DbFactory => MySqlClientFactory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
@@ -65,17 +64,15 @@ namespace Peachpie.Library.PDO.MySQL
         }
 
         /// <inheritDoc />
-        public override void HandleException(Exception ex, out string SQLSTATE, out string code, out string message)
+        public override void HandleException(Exception ex, out PDO.ErrorInfo errorInfo)
         {
             if (ex is MySqlException mex)
             {
-                SQLSTATE = mex.SqlState;
-                code = mex.Number.ToString();
-                message = ex.Message;
+                errorInfo = PDO.ErrorInfo.Create(mex.SqlState, mex.Number.ToString(), ex.Message);
             }
             else
             {
-                base.HandleException(ex, out SQLSTATE, out code, out message);
+                base.HandleException(ex, out errorInfo);
             }
         }
     }

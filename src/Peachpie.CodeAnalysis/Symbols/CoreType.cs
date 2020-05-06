@@ -149,7 +149,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable, ImportValueAttribute, DummyFieldsOnlyCtor,
-            Void, Object, Int32, Long, Double, Boolean, String, Exception,
+            Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
             stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
 
@@ -161,6 +161,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             Void = Create(SpecialType.System_Void);
             Object = Create(SpecialType.System_Object);
+            Byte = Create(SpecialType.System_Byte);
             Int32 = Create(SpecialType.System_Int32);
             Long = Create(SpecialType.System_Int64);
             Double = Create(SpecialType.System_Double);

@@ -1017,6 +1017,52 @@ namespace Pchp.Core
 
             #endregion
 
+            #region GetByteCount
+
+            public int GetByteCount(Encoding encoding)
+            {
+                var chunks = _chunks;
+                if (chunks != null)
+                {
+                    return (chunks is object[] objs)
+                        ? GetByteCount(encoding, objs, _chunksCount)
+                        : GetByteCount(encoding, chunks);
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+
+            static int GetByteCount(Encoding encoding, object[] chunks, int count)
+            {
+                var length = 0;
+
+                for (int i = 0; i < count; i++)
+                {
+                    length += GetByteCount(encoding, chunks[i]);
+                }
+
+                return length;
+            }
+
+            static int GetByteCount(Encoding encoding, object chunk)
+            {
+                AssertChunkObject(chunk);
+
+                switch (chunk)
+                {
+                    case string str: return encoding.GetByteCount(str);
+                    case byte[] barr: return barr.Length;
+                    case Blob b: return b.GetByteCount(encoding);
+                    case char[] carr: return carr.Length;
+                    case BlobChar[] barr: return barr.Length;
+                    default: throw new ArgumentException(chunk.GetType().ToString());
+                }
+            }
+
+            #endregion
+
             #region ToString
 
             public override string ToString() => ToString(Encoding.UTF8);
@@ -1744,6 +1790,29 @@ namespace Pchp.Core
         /// Gets the value as <see cref="PhpValue"/>.
         /// </summary>
         public static implicit operator PhpValue(PhpString value) => AsPhpValue(value);
+
+        /// <summary>
+        /// Gets bytes count when converted to bytes using provided <paramref name="encoding"/>.
+        /// </summary>
+        /// <param name="encoding">Encoding to be used to decode bytes from unicode string segments.</param>
+        /// <returns>Resulting bytes count.</returns>
+        public int GetByteCount(Encoding encoding)
+        {
+            if (encoding == null) throw new ArgumentNullException(nameof(encoding));
+
+            if (_data is string str)
+            {
+                return encoding.GetByteCount(str);
+            }
+            else if (_data is Blob b)
+            {
+                return b.GetByteCount(encoding);
+            }
+            else
+            {
+                return 0;
+            }
+        }
 
         #endregion
 

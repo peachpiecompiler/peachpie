@@ -1,10 +1,12 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -1026,67 +1028,102 @@ namespace Pchp.Library.Streams
 
             //
             var startTime = System.DateTime.UtcNow;
-            var waitTime = Math.Max(tv_sec * 1000 + tv_usec / 1000, 1); // [1..)
+            int wait_ms = (tv_sec >= 0 || tv_usec > 0) ? (tv_sec * 1_000 + tv_usec / 1_000) : -1;
 
             //
-            var readResult = new PhpArray();
-            var writeResult = new PhpArray();
-            int count;
+            var readcheck = read != null ? new PhpArray() : null;
+            var writecheck = write != null ? new PhpArray() : null;
+            var errcheck = except != null ? new PhpArray() : null;
 
             for (int i = 0; ; i++)
             {
+                int count = 0;
+
                 //
-                if (read != null)
+                if (read != null && read.Count != 0)
                 {
-                    readResult.Clear();
-
-                    foreach (var item in read)
+                    foreach (var item in read.Values)
                     {
-                        if (item.Value.Object is PhpStream stream && stream.CanReadWithoutLock)
+                        if (item.AsObject() is PhpStream stream && stream.CanReadWithoutLock)
                         {
-                            readResult.Add(item);
+                            readcheck.Add(item);
                         }
+                    }
+
+                    count += readcheck.Count;
+                }
+
+                if (write != null && write.Count != 0)
+                {
+                    foreach (var item in write.Values)
+                    {
+                        if (item.AsObject() is PhpStream stream && stream.CanWriteWithoutLock)
+                        {
+                            writecheck.Add(item);
+                        }
+                    }
+
+                    count += writecheck.Count;
+                }
+
+                if (except != null && except.Count != 0)
+                {
+                    // watch for high priority exceptional ("out-of-band") data arriving
+                    // NOTICE: only for SocketStream
+
+                    var list = new List<Socket>(except.Count);
+
+                    foreach (var item in except.Values)
+                    {
+                        if (item.AsObject() is SocketStream ss && ss.IsValid)
+                        {
+                            list.Add(ss.Socket);
+                        }
+                    }
+
+                    try
+                    {
+                        Socket.Select(null, null, list, wait_ms * 1_000);
+                    }
+                    catch (SocketException ex)
+                    {
+                        PhpException.Throw(PhpError.Warning, ex.Message);
+                    }
+
+                    if (list.Count != 0)
+                    {
+                        foreach (var item in except.Values)
+                        {
+                            if (item.AsObject() is SocketStream ss && list.Contains(ss.Socket))
+                            {
+                                errcheck.Add(PhpValue.FromClass(ss));
+                            }
+                        }
+
+                        count += errcheck.Count;
                     }
                 }
 
-                if (write != null)
+                // check stream available or timeout
+                if (count != 0 || (wait_ms > 0 && (System.DateTime.UtcNow - startTime).TotalMilliseconds >= wait_ms))
                 {
-                    writeResult.Clear();
+                    // update ref parameters and return:
+                    read = readcheck;
+                    write = writecheck;
+                    except = errcheck;
 
-                    foreach (var item in write)
-                    {
-                        if (item.Value.Object is PhpStream stream && stream.CanWriteWithoutLock)
-                        {
-                            writeResult.Add(item);
-                        }
-                    }
+                    //
+                    return count;
                 }
 
-                // check we found available streams:
-                count = readResult.Count + writeResult.Count + (except != null ? except.Count : 0);
-
-                if (count == 0 && (System.DateTime.UtcNow - startTime).TotalMilliseconds < waitTime)
-                {
-                    // avoids polling CPU without a break:
-
-                    if (i < 8)
-                        // just spin
-                        Thread.Yield();
-                    else
-                        // sleep the thread for [2..100] ms
-                        Thread.Sleep(Math.Min(Math.Min((i + 1) * 2, 100), waitTime));
-                }
+                // avoids polling CPU without a break:
+                if (i < 8)
+                    // just spin
+                    Thread.Yield();
                 else
-                {
-                    // found streams or timeout:
-                    break;
-                }
+                    // sleep the thread for [2..100] ms
+                    Thread.Sleep(Math.Min(Math.Min((i + 1) * 2, 100), wait_ms));
             }
-
-            // update ref parameters and return:
-            read = readResult;
-            write = writeResult;
-            return count;
         }
 
         #endregion
@@ -1144,15 +1181,68 @@ namespace Pchp.Library.Streams
         /// <param name="stream">Stream resource. If <c>null</c> or not a stream resource, warning is thrown and function returns <c>false</c>.</param>
         public static bool stream_isatty(PhpResource stream)
         {
-            var valid = PhpStream.GetValid(stream);
-            if (valid != null)
+            var s = PhpStream.GetValid(stream);
+            if (s != null)
             {
-                switch (valid.OpenedPath)
+                if (InputOutputStreamWrapper.IsStdIn(s)) return !Console.IsInputRedirected; // -10
+                if (InputOutputStreamWrapper.IsStdOut(s)) return !Console.IsOutputRedirected;// -11
+                if (InputOutputStreamWrapper.IsStdErr(s)) return !Console.IsErrorRedirected; // -12
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region sapi_windows_vt100_support
+
+        /// <summary>
+        /// Resolves one of if possible
+        /// <see cref="WindowsPlatform.STD_ERROR_HANDLE"/>,
+        /// <see cref="WindowsPlatform.STD_OUTPUT_HANDLE"/>,
+        /// <see cref="WindowsPlatform.STD_INPUT_HANDLE"/>.
+        /// </summary>
+        static bool TryResolveWindowsIoStdHandle(PhpResource stream, out int handle)
+        {
+            if (CurrentPlatform.IsWindows)
+            {
+                var s = PhpStream.GetValid(stream);
+                if (s != null)
                 {
-                    case "php://stdin": return !Console.IsInputRedirected; // -10
-                    case "php://stdout": return !Console.IsOutputRedirected;// -11
-                    case "php://stderr": return !Console.IsErrorRedirected; // -12
+                    if (InputOutputStreamWrapper.IsStdIn(s))
+                    {
+                        handle = WindowsPlatform.STD_INPUT_HANDLE;
+                        return true;
+                    }
+
+                    if (InputOutputStreamWrapper.IsStdOut(s))
+                    {
+                        handle = WindowsPlatform.STD_OUTPUT_HANDLE;
+                        return true;
+                    }
+
+                    if (InputOutputStreamWrapper.IsStdErr(s))
+                    {
+                        handle = WindowsPlatform.STD_ERROR_HANDLE;
+                        return true;
+                    }
                 }
+            }
+
+            handle = 0;
+            return false;
+        }
+
+        public static bool sapi_windows_vt100_support(PhpResource stream)
+        {
+            return TryResolveWindowsIoStdHandle(stream, out var handle) && WindowsPlatform.Has_VT100(handle);
+        }
+
+        public static bool sapi_windows_vt100_support(PhpResource stream, bool enable)
+        {
+            if (TryResolveWindowsIoStdHandle(stream, out var handle))
+            {
+                return WindowsPlatform.Enable_VT100(handle, enable);
             }
 
             return false;

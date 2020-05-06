@@ -430,6 +430,12 @@ namespace Peachpie.Library.Scripting
         ///<summary>yield from generators(available since PHP 7.0.0)</summary>
         public const int T_YIELD_FROM = (int)Tokens.T_YIELD_FROM;
 
+        /// <summary>
+        /// Not used.
+        /// Our lexer does not report T_BAD_CHARACTER on long script (&gt; Int32.MaxValue characters)
+        /// </summary>
+        public const int T_BAD_CHARACTER = 1024;
+
         #endregion
 
         /// <summary>

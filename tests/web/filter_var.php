@@ -44,3 +44,19 @@ echo ",'500'", filter_var('500', FILTER_VALIDATE_INT);
 echo ",'500.0:'", filter_var("500.0", FILTER_VALIDATE_INT);
 echo ",[]:", filter_var([], FILTER_VALIDATE_INT);
 echo ",null:", filter_var(null, FILTER_VALIDATE_INT);
+
+// FILTER_SANITIZE_STRING
+class X
+{
+    function __toString() {
+        return __CLASS__;
+    }
+}
+
+// FILTER_SANITIZE_STRING
+foreach ([null, 123, true, "Simple String", "With <a> tag", new X, [1, 2, 3]] as $ord => $value)
+{
+    echo "FILTER_SANITIZE_STRING ({$ord}) = ";
+    print_r(filter_var($value, FILTER_SANITIZE_STRING));
+    echo PHP_EOL;
+}

@@ -88,6 +88,14 @@ namespace Pchp.Library.DateTime
             Initialize(date2 - date1);
         }
 
+        internal bool IsZero
+        {
+            get
+            {
+                return m == 0 && y == 0 && _span.Ticks == 0;
+            }
+        }
+
         internal System.DateTime Apply(System.DateTime datetime, bool negate)
         {
             var span = _span;
@@ -174,6 +182,7 @@ namespace Pchp.Library.DateTime
             return new DateInterval(scanner.Time, negative: false);
         }
 
+        [return: NotNull]
         public virtual string format(string format)
         {
             if (string.IsNullOrEmpty(format))
