@@ -1891,6 +1891,44 @@ namespace Peachpie.Library.Graphics
         public static bool imagefilledpolygon(PhpResource im, PhpArray point, int num_points, long col)
             => Polygon(im, point, num_points, col, filled: true);
 
+        /// <summary>
+        /// Draws an open polygon on the given image. Contrary to imagepolygon(), no line is drawn between the last and the first point.
+        /// </summary>
+        /// <param name="image">An image resource, returned by one of the image creation functions.</param>
+        /// <param name="point">An array containing the polygon's vertices.</param>
+        /// <param name="num_points">Total number of points (vertices), which must be at least 3.</param>
+        /// <param name="color">A color identifier created with imagecolorallocate().</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool imageopenpolygon(PhpResource image, PhpArray point, int num_points, long color)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img == null)
+                return false;
+
+            if (point == null)
+            {
+                PhpException.Throw(PhpError.Warning, Pchp.Library.Resources.Resources.unexpected_arg_given, nameof(point), PhpArray.PhpTypeName, PhpVariable.TypeNameNull);
+                return false;
+            }
+
+            if (point.Count < num_points * 2)
+            {
+                return false;
+            }
+
+            if (num_points <= 0)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.must_be_positive_number_of_points);
+                return false;
+            }
+
+            var points = GetPointFsFromArray(point, num_points);
+
+            img.Image.Mutate(o => o.DrawLines(new Pen(FromRGBA(color), 1.0f),points));
+
+            return true;
+        }
+
         static bool Polygon(PhpResource im, PhpArray point, int num_points, long col, bool filled)
         {
             var img = PhpGdImageResource.ValidImage(im);
@@ -1916,17 +1954,7 @@ namespace Peachpie.Library.Graphics
                 return false;
             }
 
-            var enumerator = point.GetFastEnumerator();
-            var points = new PointF[num_points];
-            for (int i = 0; i < points.Length; i++)
-            {
-                enumerator.MoveNext();
-                var x = (float)enumerator.CurrentValue.ToDouble();
-                enumerator.MoveNext();
-                var y = (float)enumerator.CurrentValue.ToDouble();
-
-                points[i] = new PointF(x, y);
-            }
+            var points = GetPointFsFromArray(point, num_points);
 
             if (filled)
             {
@@ -1958,9 +1986,30 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
+        /// <summary>
+        /// Gets a SixLabors representation of point from PhpArray
+        /// </summary>
+        private static PointF[] GetPointFsFromArray(PhpArray point, int num_points)
+        {
+            var enumerator = point.GetFastEnumerator();
+            var points = new PointF[num_points];
+            for (int i = 0; i < points.Length; i++)
+            {
+                enumerator.MoveNext();
+                var x = (float)enumerator.CurrentValue.ToDouble();
+                enumerator.MoveNext();
+                var y = (float)enumerator.CurrentValue.ToDouble();
+
+                points[i] = new PointF(x, y);
+            }
+            return points;
+        }
+
         #endregion
 
         #endregion
+
+        //imagegrabscreen is only available on Windows.
 
         #region imageflip, imagecrop, imagescale, imageaffine, imageaffinematrixget, imageaffinematrixconcat, imageresolution
 
@@ -2366,6 +2415,7 @@ namespace Peachpie.Library.Graphics
 
             return true;
         }
+
         #endregion
     }
 }
