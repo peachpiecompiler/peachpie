@@ -241,6 +241,11 @@ namespace Pchp.Core
                         if (sattr != null && sattr.Path != null && t.GetCustomAttribute<PharAttribute>() == null)
                         {
                             ScriptsMap.DeclareScript(sattr.Path, ScriptInfo.CreateMain(t));
+
+                            if (sattr.IsAutoloaded)
+                            {
+                                // TODO: remember as autoloaded
+                            }
                         }
                     }
                     else
