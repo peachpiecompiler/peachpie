@@ -1962,7 +1962,7 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imageflip, imagecrop, imagescale, imageaffine, imageaffinematrixget, imageaffinematrixconcat
+        #region imageflip, imagecrop, imagescale, imageaffine, imageaffinematrixget, imageaffinematrixconcat, imageresolution
 
         public const int IMG_FLIP_HORIZONTAL = 1;
         public const int IMG_FLIP_VERTICAL = 2;
@@ -2316,6 +2316,55 @@ namespace Peachpie.Library.Graphics
             };
 
             return result;
+        }
+
+        /// <summary>
+        /// Allows to get the resolution of an image in DPI. The resolution is only used as meta information. It does not affect any drawing operations.
+        /// </summary>
+        /// <param name="image">An image resource, returned by one of the image creation functions.</param>
+        /// <returns>It returns an indexed array of the horizontal and vertical resolution on success, or FALSE on failure. </returns>
+        [return: CastToFalse]
+        public static PhpArray imageresolution(PhpResource image)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img == null)
+                return null;
+
+            return new PhpArray() { img.Image.Metadata.HorizontalResolution, img.Image.Metadata.VerticalResolution };
+        }
+
+        /// <summary>
+        ///  Allows to set the resolution of an image in DPI. The resolution is only used as meta information. It does not affect any drawing operations.
+        /// </summary>
+        /// <param name="image">An image resource, returned by one of the image creation functions.</param>
+        /// <param name="res_x">The horizontal resolution in DPI.</param>
+        /// <param name="res_y">The vertical resolution in DPI.</param>
+        /// <returns>It returns TRUE on success, or FALSE on failure.</returns>
+        public static bool imageresolution(PhpResource image, int res_x, int res_y = -1)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img == null)
+                return false;
+
+            if (res_x != 0)
+            {
+                img.Image.Metadata.HorizontalResolution = res_x;
+
+                if (res_y == -1)
+                    img.Image.Metadata.VerticalResolution = res_x;
+                else
+                    img.Image.Metadata.VerticalResolution = res_y;
+
+
+            }
+            else if (res_y != 0)
+            {
+                img.Image.Metadata.VerticalResolution = res_y;
+            }
+
+            //TODO: support negative values ?? 
+
+            return true;
         }
         #endregion
     }
