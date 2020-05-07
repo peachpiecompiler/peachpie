@@ -135,7 +135,6 @@
   <Target Name="ComposerResolve"
           DependsOnTargets="ComposerCore"
           BeforeTargets="GenerateNuspec;CollectPackageReferences"
-          Inputs="$(ComposerJsonPath)"
           >
     <PropertyGroup Condition=" '$(_cName)'!='' ">
       <!--AssemblyName>$(_cName)</AssemblyName-->
