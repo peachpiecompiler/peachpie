@@ -19,11 +19,28 @@ namespace Pchp.Core
         /// <summary>
         /// Script path relative to the root.
         /// </summary>
-        public string Path { get; private set; }
+        public string Path { get; }
+
+        /// <summary>
+        /// Last modified time of the source file (UTC).
+        /// Can be <c>default</c> if not set.
+        /// </summary>
+        public DateTime LastModifiedTime { get; }
+
+        /// <summary>
+        /// Gets value indicating whether the file is marked to be autoloaded for each request.
+        /// </summary>
+        public bool IsAutoloaded { get; set; }
 
         public ScriptAttribute(string path)
+            : this(path, 0L)
+        {
+        }
+
+        public ScriptAttribute(string path, long modifiedTimeTicks)
         {
             this.Path = path;
+            this.LastModifiedTime = modifiedTimeTicks != 0 ? new DateTime(modifiedTimeTicks, DateTimeKind.Utc) : default;
         }
     }
 

@@ -25,6 +25,14 @@ namespace Pchp.Core
     partial class Context : IPhpAutoloadService
     {
         /// <summary>
+        /// Invokes scripts marked as to be autoloaded.
+        /// </summary>
+        protected void AutoloadFiles()
+        {
+            ScriptsMap.AutoloadFiles(this);
+        }
+
+        /// <summary>
         /// Default implementation of PHP autoload.
         /// </summary>
         PhpTypeInfo? IPhpAutoloadService.AutoloadTypeByName(string fullName) => DefaultAutoloadTypeByName(fullName) ?? ImplicitAutoloadTypeByName(fullName);

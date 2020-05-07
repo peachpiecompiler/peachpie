@@ -139,6 +139,13 @@ namespace Peachpie.NET.Sdk.Tools
         public ITaskItem[] Autoload_ClassMap_Exclude { get; private set; }
 
         /// <summary>
+        /// Files to be autoloaded.
+        /// Supports wildcard patterns.
+        /// </summary>
+        [Output]
+        public ITaskItem[] Autoload_Files { get; private set; }
+
+        /// <summary>
         /// Processes the <c>composer.json</c> file.
         /// </summary>
         public override bool Execute()
@@ -156,11 +163,12 @@ namespace Peachpie.NET.Sdk.Tools
             }
 
             // cleanup output properties
-            Authors = new ITaskItem[0];
-            Dependencies = new ITaskItem[0];
-            Autoload_ClassMap = new ITaskItem[0];
-            Autoload_ClassMap_Exclude = new ITaskItem[0];
-            Autoload_PSR4 = new ITaskItem[0];
+            Authors = Array.Empty<ITaskItem>();
+            Dependencies = Array.Empty<ITaskItem>();
+            Autoload_ClassMap = Array.Empty<ITaskItem>();
+            Autoload_ClassMap_Exclude = Array.Empty<ITaskItem>();
+            Autoload_PSR4 = Array.Empty<ITaskItem>();
+            Autoload_Files = Array.Empty<ITaskItem>();
 
             // process the file:
             foreach (var node in json)
@@ -256,7 +264,16 @@ namespace Peachpie.NET.Sdk.Tools
                                         GetAutoloadClassMapString(autoload.Value.AsArray, true).Select(path => new TaskItem(path))).ToArray();
                                     break;
 
-                                case "files": // TODO: "files"
+                                case "files":
+                                    if (autoload.Value is JSONArray files_array)
+                                    {
+                                        Autoload_Files = Autoload_Files.Concat(
+                                         files_array
+                                            .Select(node => node.Value?.Trim())
+                                            .Where(str => !string.IsNullOrEmpty(str))
+                                            .Select(path => new TaskItem(path))).ToArray();
+                                    }
+                                    break;
 
                                 default:
                                     // ???

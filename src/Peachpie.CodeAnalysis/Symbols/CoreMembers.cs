@@ -238,6 +238,9 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly DynamicHolder Dynamic;
         public readonly ReflectionHolder Reflection;
 
+        /// <summary>Property name of <c>ScriptAttribute.IsAutoloaded</c>.</summary>
+        public static string ScriptAttribute_IsAutoloaded => "IsAutoloaded";
+
         public CoreMethods(CoreTypes types)
         {
             Contract.ThrowIfNull(types);
@@ -864,7 +867,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
                 IntStringKey_long = ct.IntStringKey.Ctor(ct.Long);
                 IntStringKey_string = ct.IntStringKey.Ctor(ct.String);
-                ScriptAttribute_string = ct.ScriptAttribute.Ctor(ct.String);
+                ScriptAttribute_string_long = ct.ScriptAttribute.Ctor(ct.String, ct.Long);
                 PhpTraitAttribute = ct.PhpTraitAttribute.Ctor();
                 PharAttribute_string = ct.PharAttribute.Ctor(ct.String);
                 PhpTypeAttribute_string_string_byte = ct.PhpTypeAttribute.Ctor(ct.String, ct.String, ct.Byte);
@@ -886,7 +889,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpString_Blob, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
                 Blob,
                 IntStringKey_long, IntStringKey_string,
-                ScriptAttribute_string, PhpTraitAttribute, PharAttribute_string, PhpTypeAttribute_string_string_byte, PhpFieldsOnlyCtorAttribute, PhpHiddenAttribute, NotNullAttribute,
+                ScriptAttribute_string_long, PhpTraitAttribute, PharAttribute_string, PhpTypeAttribute_string_string_byte, PhpFieldsOnlyCtorAttribute, PhpHiddenAttribute, NotNullAttribute,
                 DefaultValueAttribute_string,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue,
                 IndirectLocal_PhpArray_IntStringKey;

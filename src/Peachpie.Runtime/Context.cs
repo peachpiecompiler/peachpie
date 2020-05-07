@@ -66,6 +66,9 @@ namespace Pchp.Core
             }
 
             //
+            ctx.AutoloadFiles();
+
+            //
             return ctx;
         }
 
@@ -78,10 +81,7 @@ namespace Pchp.Core
         /// <summary>
         /// Resolves service.
         /// </summary>
-        object IServiceProvider.GetService(Type serviceType)
-        {
-            return null;
-        }
+        object IServiceProvider.GetService(Type serviceType) => _services?.GetService(serviceType);
 
         #endregion
 
@@ -240,7 +240,13 @@ namespace Pchp.Core
                         var sattr = ReflectionUtils.GetScriptAttribute(t);
                         if (sattr != null && sattr.Path != null && t.GetCustomAttribute<PharAttribute>() == null)
                         {
-                            ScriptsMap.DeclareScript(sattr.Path, ScriptInfo.CreateMain(t));
+                            var info = ScriptsMap.DeclareScript(sattr.Path, ScriptInfo.CreateMain(t));
+
+                            if (sattr.IsAutoloaded)
+                            {
+                                // remember as autoloaded
+                                ScriptsMap.AddAutoload(info);
+                            }
                         }
                     }
                     else

@@ -195,6 +195,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             List<string> referencePaths = new List<string>();
             List<string> keyFileSearchPaths = new List<string>();
             var autoload_classmapfiles = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+            var autoload_files = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
             var autoload_psr4 = new List<(string prefix, string path)>();
 
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
@@ -671,6 +672,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         const string classmapprefix = "classmap,";
                         const string psr4prefix = "psr-4,";
+                        const string filesprefix = "files,";
 
                         if (value.StartsWith(classmapprefix, StringComparison.OrdinalIgnoreCase))
                         {
@@ -688,6 +690,12 @@ namespace Pchp.CodeAnalysis.CommandLine
                                 autoload_psr4.Add((prefix_dir.Remove(comma), prefix_dir.Substring(comma + 1)));
                             }
 
+                            break;
+                        }
+                        else if (value.StartsWith(filesprefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // "files,<fullfilename>"
+                            autoload_files.Add(value.Substring(filesprefix.Length));
                             break;
                         }
 
@@ -738,6 +746,10 @@ namespace Pchp.CodeAnalysis.CommandLine
             autoload_classmapfiles = new HashSet<string>(
                 autoload_classmapfiles.Select(path => PhpFileUtilities.NormalizeSlashes(subDirectory == null ? path : PathUtilities.CombinePathsUnchecked(subDirectory, path))),
                 autoload_classmapfiles.Comparer);
+
+            autoload_files = new HashSet<string>(
+                autoload_files.Select(path => PhpFileUtilities.NormalizeSlashes(subDirectory == null ? path : PathUtilities.CombinePathsUnchecked(subDirectory, path))),
+                autoload_files.Comparer);
 
             // event source // TODO: change to EventSource
             var evetsources = new[] { CreateObserver("Peachpie.Compiler.Diagnostics.Observer,Peachpie.Compiler.Diagnostics", moduleName) }.WhereNotNull();
@@ -824,6 +836,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 EventSources = evetsources.AsImmutableOrEmpty(),
                 Autoload_PSR4 = autoload_psr4,
                 Autoload_ClassMapFiles = autoload_classmapfiles,
+                Autoload_Files = autoload_files,
             };
 
             if (debugPlus)

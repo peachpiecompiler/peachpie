@@ -117,19 +117,26 @@
       <Output TaskParameter="Homepage" PropertyName="_cHomepage" />
       <Output TaskParameter="Authors" ItemName="_cAuthors" />
       <Output TaskParameter="Dependencies" ItemName="ComposerPackageReference" />
-      <Output TaskParameter="Autoload_PSR4" ItemName="Autoload_PSR4" />
+      <Output TaskParameter="Autoload_PSR4" ItemName="_cAutoload_PSR4" />
       <Output TaskParameter="Autoload_ClassMap" ItemName="_cAutoload_ClassMap" />
       <Output TaskParameter="Autoload_ClassMap_Exclude" ItemName="_cAutoload_ClassMap_Exclude" />
+      <Output TaskParameter="Autoload_Files" ItemName="_cAutoload_Files" />
     </ComposerTask>
 
-    <ItemGroup>
+    <ItemGroup Condition=" '$(ComposerAutoload)'!='false' ">
       <Autoload_ClassMap Include="%(_cAutoload_ClassMap.Identity)" />
       <Autoload_ClassMap Remove="%(_cAutoload_ClassMap_Exclude.Identity)" />
+      <Autoload_Files Include="%(_cAutoload_Files.Identity)" />
+      <Autoload_PSR4 Include="@(_cAutoload_PSR4)" />
     </ItemGroup>
 
   </Target>
 
-  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="GenerateNuspec;CollectPackageReferences" Outputs="$(ComposerJsonPath)">
+  <Target Name="ComposerResolve"
+          DependsOnTargets="ComposerCore"
+          BeforeTargets="GenerateNuspec;CollectPackageReferences"
+          Inputs="$(ComposerJsonPath)"
+          >
     <PropertyGroup Condition=" '$(_cName)'!='' ">
       <!--AssemblyName>$(_cName)</AssemblyName-->
       <PackageId>$(_cName)</PackageId>
@@ -264,6 +271,7 @@
                Resources="@(EmbeddedResource)"
                Autoload_PSR4="@(Autoload_PSR4)"
                Autoload_ClassMap="@(Autoload_ClassMap)"
+               Autoload_Files="@(Autoload_Files)"
                DebuggerAttach="$(DebuggerAttach)"
                GenerateFullPaths="$(GenerateFullPaths)"
                />
