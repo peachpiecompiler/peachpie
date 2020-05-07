@@ -22,11 +22,6 @@ namespace Peachpie.Library.PDO
             /// <summary>Error message.</summary>
             public string Message;
 
-            /// <summary>
-            /// Error code for own PDO errors.
-            /// </summary>
-            public static string HY000 => "HY000";
-
             /// <summary>Gets code as number if possible.</summary>
             internal int CodeOrZero()
             {
@@ -35,9 +30,9 @@ namespace Peachpie.Library.PDO
             }
 
             /// <summary>
-            /// Create error infor for own PDO error.
+            /// Create error info for a general PDO error.
             /// </summary>
-            public static ErrorInfo Create(string message) => Create(null, HY000, message);
+            public static ErrorInfo Create(string message) => Create(null, nameof(ErrorCodes.HY000), message);
 
             /// <summary>
             /// Create error info.

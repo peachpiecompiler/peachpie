@@ -531,7 +531,18 @@ namespace Peachpie.Library.PDO
         /// </summary>
         /// <param name="attribute"></param>
         /// <returns>Returns the attribute value</returns>
-        public virtual PhpValue getAttribute(int attribute) { throw new NotImplementedException(); }
+        public virtual PhpValue getAttribute(int attribute)
+        {
+            switch ((PDO_ATTR)attribute)
+            {
+                case PDO_ATTR.ATTR_CURSOR_NAME:
+                // TODO: Driver.StatementAttribute ...
+
+                default:
+                    HandleError(ErrorInfo.Create(string.Empty, nameof(ErrorCodes.IM001), ErrorCodes.IM001));
+                    return false;
+            }
+        }
 
         /// <summary>
         /// Set a statement attribute.
@@ -539,7 +550,18 @@ namespace Peachpie.Library.PDO
         /// <param name="attribute">The attribute.</param>
         /// <param name="value">The value.</param>
         /// <returns>Returns TRUE on success or FALSE on failure</returns>
-        public virtual bool setAttribute(int attribute, PhpValue value) { throw new NotImplementedException(); }
+        public virtual bool setAttribute(int attribute, PhpValue value)
+        {
+            switch ((PDO_ATTR)attribute)
+            {
+                case PDO_ATTR.ATTR_CURSOR_NAME:
+                // TODO: Driver.StatementAttribute ...
+
+                default:
+                    HandleError(ErrorInfo.Create(string.Empty, nameof(ErrorCodes.IM001), ErrorCodes.IM001));
+                    return false;
+            }
+        }
 
         /// <summary>
         /// Returns metadata for a column in a result set.
@@ -558,7 +580,7 @@ namespace Peachpie.Library.PDO
                     // {  "flags", PhpValue.Null },
                     {  "name", Result.GetFieldName(column) },
                     // { "table", PhpValue.Null },
-                    // { "len", PhpValue.Null },
+                    // { "len", -1 },
                     // { "precision", PhpValue.Null },
                     // { "pdo_type", (int)PDO.PARAM.PARAM_NULL },
                 };
