@@ -78,10 +78,7 @@ namespace Pchp.Core
         /// <summary>
         /// Resolves service.
         /// </summary>
-        object IServiceProvider.GetService(Type serviceType)
-        {
-            return null;
-        }
+        object IServiceProvider.GetService(Type serviceType) => _services?.GetService(serviceType);
 
         #endregion
 
