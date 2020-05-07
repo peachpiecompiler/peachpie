@@ -154,6 +154,12 @@
       <PackageReference Include="@(ComposerPackageReference->'%(Name)')" />
     </ItemGroup>
 
+    <ItemGroup Condition=" '$(ComposerAutoload)'=='false' ">
+      <Autoload_PSR4 Remove="@(Autoload_PSR4)" />
+      <Autoload_ClassMap Remove="@(Autoload_ClassMap)" />
+      <Autoload_Files Remove="@(Autoload_Files)" />
+    </ItemGroup>
+
   </Target>
 
   <!-- performs compilation -->
