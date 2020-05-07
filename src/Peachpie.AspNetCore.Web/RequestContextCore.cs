@@ -237,6 +237,8 @@ namespace Peachpie.AspNetCore.Web
 
             try
             {
+                this.AutoloadFiles();
+
                 if (Debugger.IsAttached)
                 {
                     script.Evaluate(this, this.Globals, null);

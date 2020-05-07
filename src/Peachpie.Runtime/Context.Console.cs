@@ -80,6 +80,9 @@ namespace Pchp.Core
                 // (sometimes??) the Encoding used by Console cannot be resolved by Encoding.GetEncoding(),
                 // register it for sure:
                 Encoding.RegisterProvider(new OSEncodingProvider(Console.OutputEncoding));
+
+                // autoload files
+                AutoloadFiles();
             }
         }
 

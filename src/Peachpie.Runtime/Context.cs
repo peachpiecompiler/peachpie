@@ -66,6 +66,9 @@ namespace Pchp.Core
             }
 
             //
+            ctx.AutoloadFiles();
+
+            //
             return ctx;
         }
 

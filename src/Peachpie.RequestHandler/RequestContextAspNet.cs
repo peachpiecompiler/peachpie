@@ -634,6 +634,7 @@ namespace Peachpie.RequestHandler
             if (script.IsValid)
             {
                 this.MainScriptFile = script;
+                this.AutoloadFiles();
                 script.Evaluate(this, locals: Globals, @this: null, self: default);
                 return true;
             }
