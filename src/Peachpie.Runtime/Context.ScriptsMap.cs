@@ -145,6 +145,11 @@ namespace Pchp.Core
             static readonly ReaderWriterLockSlim s_lock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
             /// <summary>
+            /// Scripts marked as to be autoloaded.
+            /// </summary>
+            static readonly List<ScriptInfo> s_autoloadfiles = new List<ScriptInfo>();
+            
+            /// <summary>
             /// Scripts descriptors corresponding to id.
             /// </summary>
             static ScriptInfo[] s_scripts = new ScriptInfo[64];
@@ -158,6 +163,36 @@ namespace Pchp.Core
                 {
                     _included = new ElasticBitArray(s_scriptsMap.Count),
                 };
+            }
+
+            /// <summary>
+            /// Invokes scripts marked as to be autoloaded.
+            /// </summary>
+            public static void AutoloadFiles(Context ctx)
+            {
+                var files = s_autoloadfiles;
+                for (int i = 0; i < files.Count; i++)
+                {
+                    var script = files[i];
+
+                    // require_once() semantic:
+                    if (!ctx._scripts.IsIncluded(script.Index))
+                    {
+                        script.Evaluate(ctx, ctx.Globals, @this: null);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Sets the script to be autoloaded before request starts.
+            /// </summary>
+            public static void AddAutoload(ScriptInfo script)
+            {
+                Debug.Assert(script.IsValid);
+                if (s_autoloadfiles.All(x => x.Index != script.Index))
+                {
+                    s_autoloadfiles.Add(script);
+                }
             }
 
             static void AddToMapNoLock(string path, int index)
@@ -182,14 +217,16 @@ namespace Pchp.Core
                 }
             }
 
-            static void DeclareScript(int index, ScriptInfo script)
+            static void DeclareScript(ScriptInfo script)
             {
-                if (index >= s_scripts.Length)
+                Debug.Assert(script.Index >= 0);
+
+                if (script.Index >= s_scripts.Length)
                 {
-                    Array.Resize(ref s_scripts, index * 2 + 1);
+                    Array.Resize(ref s_scripts, (script.Index + 1) * 2);
                 }
 
-                s_scripts[index] = script;
+                s_scripts[script.Index] = script;
             }
 
             /// <summary>
@@ -230,17 +267,20 @@ namespace Pchp.Core
                 return index;
             }
 
-            static int DeclareScript(string path, Type script)
+            static ScriptInfo DeclareScript(string path, Type script)
             {
                 int index = EnsureScriptIndex(ref path);
-                DeclareScript(index, new ScriptInfo(index, path, script));
-                return index;
+                var info = new ScriptInfo(index, path, script);
+                DeclareScript(info);
+                return info;
             }
 
-            public static void DeclareScript(string path, MainDelegate main)
+            public static ScriptInfo DeclareScript(string path, MainDelegate main)
             {
                 int index = EnsureScriptIndex(ref path);
-                DeclareScript(index, new ScriptInfo(index, path, main));
+                var info = new ScriptInfo(index, path, main);
+                DeclareScript(info);
+                return info;
             }
 
             static string NormalizeSlashes(string path) => CurrentPlatform.NormalizeSlashes(path);
@@ -299,7 +339,7 @@ namespace Pchp.Core
                     ? attr.Path
                     : $"?{s_scriptsMap.Count}"; // note: should not happen, see assertion above
 
-                return DeclareScript(path, script);
+                return DeclareScript(path, script).Index;
             }
 
             /// <summary>

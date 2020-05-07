@@ -237,11 +237,12 @@ namespace Pchp.Core
                         var sattr = ReflectionUtils.GetScriptAttribute(t);
                         if (sattr != null && sattr.Path != null && t.GetCustomAttribute<PharAttribute>() == null)
                         {
-                            ScriptsMap.DeclareScript(sattr.Path, ScriptInfo.CreateMain(t));
+                            var info = ScriptsMap.DeclareScript(sattr.Path, ScriptInfo.CreateMain(t));
 
                             if (sattr.IsAutoloaded)
                             {
-                                // TODO: remember as autoloaded
+                                // remember as autoloaded
+                                ScriptsMap.AddAutoload(info);
                             }
                         }
                     }
