@@ -251,9 +251,16 @@ namespace Peachpie.RequestHandler
             _httpctx.Response.AppendCookie(cookie);
         }
 
-        void IHttpPhpContext.Flush()
+        void IHttpPhpContext.Flush(bool endRequest)
         {
-            _httpctx.Response.Flush();
+            if (endRequest)
+            {
+                _httpctx.Response.End();
+            }
+            else
+            {
+                _httpctx.Response.Flush();
+            }
         }
 
         /// <summary>

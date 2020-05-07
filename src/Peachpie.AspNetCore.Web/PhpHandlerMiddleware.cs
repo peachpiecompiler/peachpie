@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -119,17 +121,57 @@ namespace Peachpie.AspNetCore.Web
             _options.BeforeRequest?.Invoke(ctx);
         }
 
+        Task InvokeAndDispose(RequestContextCore phpctx, Context.ScriptInfo script)
+        {
+            try
+            {
+                OnContextCreated(phpctx);
+                phpctx.ProcessScript(script);
+            }
+            finally
+            {
+                phpctx.Dispose();
+                phpctx.RequestEndEvent.Set();
+            }
+
+            //
+            return Task.CompletedTask;
+        }
+
+        static TimeSpan GetRequestTimeout(Context phpctx) =>
+            Debugger.IsAttached
+            ? Timeout.InfiniteTimeSpan
+            : TimeSpan.FromSeconds(phpctx.Configuration.Core.ExecutionTimeout);
+
         public Task Invoke(HttpContext context)
         {
             var script = RequestContextCore.ResolveScript(context.Request);
             if (script.IsValid)
             {
-                using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
+                using var endevent = new ManualResetEventSlim(false);
+                var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding)
                 {
-                    OnContextCreated(phpctx);
-                    phpctx.ProcessScript(script);
+                    RequestEndEvent = endevent,
+                };
+
+                // run the script, dispose phpctx when finished
+                var task = Task.Run(() => InvokeAndDispose(phpctx, script));
+
+                // wait for the request to finish
+                if (endevent.Wait(GetRequestTimeout(phpctx)) == false)
+                {
+                    // timeout or cancelled
                 }
 
+                phpctx.RequestEndEvent = null;
+
+                if (task.Exception != null)
+                {
+                    // rethrow script exception
+                    throw task.Exception;
+                }
+
+                //
                 return Task.CompletedTask;
             }
             else
