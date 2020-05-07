@@ -241,6 +241,11 @@ namespace Pchp.Core
             TypeNameAs = typeNameAs;
         }
 
+        /// <summary>
+        /// Annotates the PHP type.
+        /// </summary>
+        /// <param name="phpTypeName">The type name that will be used in PHP context instead of CLR type name.</param>
+        /// <param name="fileName">Optional. Relative path to the file where the type is defined.</param>
         public PhpTypeAttribute(string phpTypeName, string fileName)
             : this(phpTypeName, fileName, default)
         {
@@ -250,7 +255,7 @@ namespace Pchp.Core
         /// Annotates the PHP type.
         /// </summary>
         /// <param name="phpTypeName">The type name that will be used in PHP context instead of CLR type name.</param>
-        /// <param name="fileName">Optional relative path to the file where the type is defined.</param>
+        /// <param name="fileName">Relative path to the file where the type is defined.</param>
         /// <param name="autoload">Optional. Specifies if the type can be autoloaded:<br/>
         /// - 0: type is not selected to be autloaded.<br/>
         /// - 1: type is marked to be autoloaded.<br/>

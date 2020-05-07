@@ -1505,15 +1505,35 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var attrs = base.GetAttributes();
 
-            // [PhpTypeAttribute(string FullName, string FileName, byte Autoload)]
-            attrs = attrs.Add(new SynthesizedAttributeData(
+            AttributeData phptypeattr;
+            var autoload = AutoloadFlag;
+            if (autoload == 0)
+            {
+                // most common case, shorter signature:
+                // [PhpTypeAttribute(string FullName, string FileName)]
+                phptypeattr = new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
+                    ImmutableArray.Create(
+                        DeclaringCompilation.CreateTypedConstant(FullNameString),
+                        DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString())
+                    ),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+            else
+            {
+                // [PhpTypeAttribute(string FullName, string FileName, byte Autoload)]
+                phptypeattr = new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string_byte,
                     ImmutableArray.Create(
                         DeclaringCompilation.CreateTypedConstant(FullNameString),
                         DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString()),
-                        DeclaringCompilation.CreateTypedConstant(AutoloadFlag)
+                        DeclaringCompilation.CreateTypedConstant(autoload)
                     ),
-                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            //
+            attrs = attrs.Add(phptypeattr);
 
             // attributes from syntax node
             if (this.Syntax.TryGetCustomAttributes(out var customattrs))
