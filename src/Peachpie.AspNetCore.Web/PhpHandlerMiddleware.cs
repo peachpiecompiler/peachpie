@@ -73,13 +73,27 @@ namespace Peachpie.AspNetCore.Web
                         continue;
                     }
 
+                    if (lib.Name.StartsWith("Peachpie.", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
                     // process assembly if it has a dependency to runtime
                     var dependencies = lib.Dependencies;
                     for (int i = 0; i < dependencies.Count; i++)
                     {
                         if (dependencies[i].Name == PeachpieRuntime)
                         {
-                            Context.AddScriptReference(Assembly.Load(new AssemblyName(lib.Name)));
+                            try
+                            {
+                                // assuming DLL is deployed with the executable,
+                                // and contained lib is the same name as package:
+                                Context.AddScriptReference(Assembly.Load(new AssemblyName(lib.Name)));
+                            }
+                            catch
+                            {
+                                // 
+                            }
                             break;
                         }
                     }
