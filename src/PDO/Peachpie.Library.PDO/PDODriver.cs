@@ -122,17 +122,14 @@ namespace Peachpie.Library.PDO
         /// Returns updated query string, optionally creates the <paramref name="bound_param_map"/> with parameter name mapping.
         /// Most of ADO.NET drivers does not allow to use unnamed parameters - we'll rewrite them to named parameters.
         /// </summary>
-        /// <param name="stmt">The original command text.</param>
+        /// <param name="queryString">The original command text.</param>
         /// <param name="options">Custom options.</param>
         /// <param name="bound_param_map">Will be set to <c>null</c> or a map of user-provided names to rewritten parameter names.</param>
-        public virtual string RewriteCommand(PDOStatement stmt, PhpArray options, out Dictionary<IntStringKey, IntStringKey> bound_param_map)
+        public virtual string RewriteCommand(string queryString, PhpArray options, out Dictionary<IntStringKey, IntStringKey> bound_param_map)
         {
-            string queryString;
-
-            //
-            using (var rewriter = new StatementStringRewriter())
+            using (var rewriter = new StatementStringRewriter() { TranslateNamedParams = true, })
             {
-                rewriter.ParseString(stmt.queryString);
+                rewriter.ParseString(queryString);
 
                 bound_param_map = rewriter.BoundParamMap;
                 queryString = rewriter.RewrittenQueryString;
@@ -151,19 +148,49 @@ namespace Peachpie.Library.PDO
 
             public Dictionary<IntStringKey, IntStringKey> BoundParamMap { get; private set; }
 
+            /// <summary>
+            /// Translate `:name` syntax to `@name` syntax.
+            /// Add `name` to <see cref="BoundParamMap"/>.
+            /// </summary>
+            public bool TranslateNamedParams { get; set; }
+
             protected override void Next(Tokens token, string text, int start, int length)
             {
+                string mappedParamName;
+
                 switch (token)
                 {
                     case Tokens.UnnamedParameter:
 
-                        if (BoundParamMap == null) BoundParamMap = new Dictionary<IntStringKey, IntStringKey>();
-                        string mappedParamName;
-                        BoundParamMap[_unnamedParamIndex++] = mappedParamName = "@_" + _unnamedParamIndex;
-
+                        mappedParamName = "@_" + _unnamedParamIndex;
                         _stringBuilder.Append(mappedParamName);
 
+                        BoundParamMap ??= new Dictionary<IntStringKey, IntStringKey>();
+                        BoundParamMap[_unnamedParamIndex++] = mappedParamName;
+
                         break;
+
+                    case Tokens.NamedParameter:
+
+                        if (TranslateNamedParams && text[start] == ':')
+                        {
+                            // :name => @name
+                            var paramName = text.Substring(start + 1, length - 1);
+                            mappedParamName = "@" + paramName;
+                            _stringBuilder.Append(mappedParamName);
+
+                            // BoundParamMap["name"] = "@name"
+                            // BoundParamMap[":name"] = "@name"
+                            BoundParamMap ??= new Dictionary<IntStringKey, IntStringKey>();
+                            BoundParamMap[paramName] = mappedParamName;
+                            BoundParamMap[":" + paramName] = mappedParamName;
+
+                            break;
+                        }
+                        else
+                        {
+                            goto default;
+                        }
 
                     default:
                         _stringBuilder.Append(text, start, length);

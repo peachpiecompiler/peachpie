@@ -210,7 +210,7 @@ namespace Peachpie.Library.PDO
             this.queryString = queryString;
 
             //
-            var actualQuery = Driver.RewriteCommand(this, options, out bound_param_map);
+            var actualQuery = Driver.RewriteCommand(queryString, options, out bound_param_map);
             _cmd = PDO.CreateCommand(actualQuery);
 
             //_cmd.Prepare(); // <-- compiles the query, needs parameters to be bound
