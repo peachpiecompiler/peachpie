@@ -21,8 +21,10 @@ namespace Pchp.Core.Reflection
     public class PhpTypeInfo : ICloneable
     {
         /// <summary>
-        /// Index to the type slot.
+        /// Index to the type slot.<br/>
         /// <c>0</c> is an uninitialized index.
+        /// <c>&lt;0</c> is an application context type; always declared.<br/>
+        /// <c>&gt;0</c> is a user type; must be declared in current <see cref="Context"/>.
         /// </summary>
         internal int Index { get { return _index; } set { _index = value; } }
         protected int _index;

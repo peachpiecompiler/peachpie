@@ -422,7 +422,11 @@ namespace Pchp.Core
 
             //
             var tinfo = TypeInfoHolder<T>.TypeInfo;
-            if (tinfo.IsUserType && !IsUserTypeDeclared(tinfo))
+            if (tinfo.Index < 0)
+            {
+                // app-context type, declared
+            }
+            else if (!IsUserTypeDeclared(tinfo))
             {
                 EnsureTypeDeclared();
             }
