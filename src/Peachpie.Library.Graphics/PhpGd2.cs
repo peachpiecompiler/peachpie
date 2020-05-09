@@ -388,9 +388,7 @@ namespace Peachpie.Library.Graphics
         {
             var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), BmpFormat.Instance);
 
-            var opt = new GraphicsOptions();
-            opt.AlphaCompositionMode = PixelAlphaCompositionMode.Clear;
-            img.Image.Mutate(o => o.BackgroundColor(opt, Color.White));
+            img.Image.Mutate(o => o.BackgroundColor(Color.White));
             img.AlphaBlending = true;
 
             return img;
@@ -404,9 +402,7 @@ namespace Peachpie.Library.Graphics
         {
             var img = imagecreatecommon(x_size, y_size, new PngConfigurationModule(), PngFormat.Instance);
 
-            var opt = new GraphicsOptions();
-            opt.AlphaCompositionMode = PixelAlphaCompositionMode.Clear;
-            img.Image.Mutate(o => o.BackgroundColor(opt, Color.Black));
+            img.Image.Mutate(o => o.BackgroundColor(Color.Black));
             img.AlphaBlending = true;
 
             return img;
@@ -661,7 +657,7 @@ namespace Peachpie.Library.Graphics
                 return -1;// TODO: false
 
             //TODO: In non-truecolor images allocate the color
-            return RGBA(red, green, blue, alpha);
+            return RGBA(red, green, blue, 255 - alpha);
         }
 
         #endregion
@@ -671,16 +667,16 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// RGBA values to PHP Color format.
         /// </summary>
-        static long RGBA(long red, long green, long blue, long alpha = 0x00)
+        static long RGBA(long red, long green, long blue, long alpha = 0xff)
         {
-            return (alpha << 24)
+            return ( (255-alpha)<< 24)
                 | ((blue & 0x0000FF) << 16)
                 | ((green & 0x0000FF) << 8)
                 | (red & 0x0000FF);
         }
 
         static Rgba32 FromRGB(long color) => new Rgba32((uint)color | 0xff000000u);
-        static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? new Rgba32((uint)color) : (Rgba32)Color.Transparent;
+        static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? new Rgba32(0xff000000u - ((uint)color & 0xff000000u) + ((uint)color & 0x00ffffffu)) : (Rgba32)Color.Transparent;
 
         private static int PHPColorToPHPAlpha(int color) => FromRGBA(color).A;
         private static int PHPColorToRed(int color) => FromRGBA(color).R;
@@ -826,8 +822,7 @@ namespace Peachpie.Library.Graphics
             }
 
             var image = img.Image;
-
-            return (long)image[x, y].Rgba;
+            return 0xff000000u - (image[x, y].Rgba & 0xff000000u) + (image[x, y].Rgba & 0x00ffffffu);
         }
 
         /// <summary>
