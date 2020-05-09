@@ -388,7 +388,9 @@ namespace Peachpie.Library.Graphics
         {
             var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), BmpFormat.Instance);
 
-            img.Image.Mutate(o => o.BackgroundColor(Color.White));
+            var opt = new GraphicsOptions();
+            opt.AlphaCompositionMode = PixelAlphaCompositionMode.Clear;
+            img.Image.Mutate(o => o.BackgroundColor(opt, Color.White));
             img.AlphaBlending = true;
 
             return img;
@@ -402,7 +404,9 @@ namespace Peachpie.Library.Graphics
         {
             var img = imagecreatecommon(x_size, y_size, new PngConfigurationModule(), PngFormat.Instance);
 
-            img.Image.Mutate(o => o.BackgroundColor(Color.Black));
+            var opt = new GraphicsOptions();
+            opt.AlphaCompositionMode = PixelAlphaCompositionMode.Clear;
+            img.Image.Mutate(o => o.BackgroundColor(opt, Color.Black));
             img.AlphaBlending = true;
 
             return img;
@@ -667,7 +671,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// RGBA values to PHP Color format.
         /// </summary>
-        static long RGBA(long red, long green, long blue, long alpha = 0xff)
+        static long RGBA(long red, long green, long blue, long alpha = 0x00)
         {
             return (alpha << 24)
                 | ((blue & 0x0000FF) << 16)
