@@ -356,10 +356,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(yield.YieldIndex), target));
             }
 
-            // emit switch table that based on g._state jumps to appropriate continuation label
-            cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, cg.GeneratorStateLocal, Microsoft.Cci.PrimitiveTypeCode.Int32);
-            
-            cg.Builder.MarkLabel(noContinuationLabel);
+            if (yieldExLabels.Count != 0)
+            {
+                // emit switch table that based on g._state jumps to appropriate continuation label
+                cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, cg.GeneratorStateLocal, Microsoft.Cci.PrimitiveTypeCode.Int32);
+
+                cg.Builder.MarkLabel(noContinuationLabel);
+            }
         }
     }
 
