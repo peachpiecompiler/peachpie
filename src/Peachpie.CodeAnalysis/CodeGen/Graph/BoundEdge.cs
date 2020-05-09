@@ -111,6 +111,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // Stack must be empty at beginning of try block.
             cg.Builder.AssertStackEmpty();
 
+            // mark label before "try" block,
+            // used by generator state maching and awaits eventually
+            cg.Builder.MarkLabel(this);
+
             // IL requires catches and finally block to be distinct try
             // blocks so if the source contained both a catch and
             // a finally, nested scopes are emitted.
@@ -132,6 +136,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
+                // jump table for nested yield or await
+                EmitJumpTable(cg);
+
+                // try body
                 cg.GenerateScope(_body, (_finallyBlock ?? NextBlock).Ordinal);
 
                 if (NextBlock?.FlowState != null)
@@ -313,6 +321,45 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             //
             il.CloseLocalScope();
+        }
+
+        void EmitJumpTable(CodeGenerator cg)
+        {
+            var yields = cg.Routine.ControlFlowGraph.Yields;
+            if (yields.IsDefaultOrEmpty)
+            {
+                return;
+            }
+
+            // local <state> = g._state that is switched on (can't switch on remote field)
+            Debug.Assert(cg.GeneratorStateLocal != null);
+            
+            // create label for situation when state doesn't correspond to continuation: 0 -> didn't run to first yield
+            var noContinuationLabel = new NamedLabel("noStateContinuation");
+
+            // prepare jump table from yields
+            var yieldExLabels = new List<KeyValuePair<ConstantValue, object>>();
+            foreach (var yield in yields)
+            {
+                // only applies to yields inside this "try" block
+                var node = yield.ContainingTryScopes.First;
+                while (node != null && node.Value != this)
+                {
+                    node = node.Next;
+                }
+                if (node == null) continue;
+
+                // jump to next nested "try" or inside "yield" itself
+                var target = (object)node.Next?.Value/*next try block*/ ?? yield/*inside yield*/;
+
+                // case YieldIndex: goto target;
+                yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(yield.YieldIndex), target));
+            }
+
+            // emit switch table that based on g._state jumps to appropriate continuation label
+            cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, cg.GeneratorStateLocal, Microsoft.Cci.PrimitiveTypeCode.Int32);
+            
+            cg.Builder.MarkLabel(noContinuationLabel);
         }
     }
 

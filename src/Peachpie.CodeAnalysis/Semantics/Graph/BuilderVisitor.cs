@@ -193,7 +193,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private void Add(Statement stmt)
         {
-            Add(_binder.BindWholeStatement(stmt));
+            Add(_binder.BindWholeStatement(stmt, _tryTargets));
         }
 
         private void Add(BoundItemsBag<BoundStatement> stmtBag)
@@ -360,7 +360,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitTypeDecl(TypeDecl x)
         {
-            var bound = _binder.BindWholeStatement(x).SingleBoundElement();
+            var bound = _binder.BindWholeStatement(x, null).SingleBoundElement();
             if (DeclareConditionally(x))
             {
                 _current.Add(bound);
@@ -430,7 +430,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitFunctionDecl(FunctionDecl x)
         {
-            var bound = _binder.BindWholeStatement(x).SingleBoundElement();
+            var bound = _binder.BindWholeStatement(x, null).SingleBoundElement();
             if (x.IsConditional)
             {
                 _current.Add(bound);

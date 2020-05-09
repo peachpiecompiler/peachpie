@@ -163,8 +163,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             cg.EmitGeneratorInstance();
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorState_Generator);
 
-            var stateTmpLocal = cg.GetTemporaryLocal(cg.CoreTypes.Int32);
-            cg.Builder.EmitLocalStore(stateTmpLocal);
+            var stateLocal = cg.GeneratorStateLocal = cg.GetTemporaryLocal(cg.CoreTypes.Int32);
+            cg.Builder.EmitLocalStore(stateLocal);
 
             // g._state = -1 : running
             cg.EmitGeneratorInstance();
@@ -181,13 +181,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // labels have 1-based index (zero is reserved for run to first yield)
                 // label object is the BoundYieldStatement itself, it is Marked at the proper place within its Emit method
                 Debug.Assert(yield.YieldIndex >= 1);
-                yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(yield.YieldIndex), yield));
+
+                // yield statements inside "try" block are handled at beginning of try block itself (we cannot branch directly inside "try" from outside)
+                var target = (object)yield.ContainingTryScopes.First?.Value ?? yield;
+
+                // case YieldIndex: goto target;
+                yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(yield.YieldIndex), target));
             }
 
             // emit switch table that based on g._state jumps to appropriate continuation label
-            cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, stateTmpLocal, Microsoft.Cci.PrimitiveTypeCode.Int32);
-            cg.ReturnTemporaryLocal(stateTmpLocal);
-
+            cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, stateLocal, Cci.PrimitiveTypeCode.Int32);
+            
             cg.Builder.MarkLabel(noContinuationLabel);
         }
     }
@@ -243,25 +247,43 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             cg.Builder.EmitBranch(ILOpCode.Br, GetReturnLabel());
         }
 
+        /// <summary>
+        /// set generator state to -2 (closed)
+        /// </summary>
+        internal void EmitGeneratorEnd(CodeGenerator cg)
+        {
+            Debug.Assert(cg.Routine.IsGeneratorMethod());
+
+            // g._state = -2 (closed): got to the end of the generator method
+            cg.EmitGeneratorInstance();
+            cg.Builder.EmitIntConstant(-2);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
+        }
+
         internal override void Emit(CodeGenerator cg)
         {
             // note: ILBuider removes eventual unreachable .ret opcode
-
-            if (_retlbl != null && _rettmp == null)
-            {
-                cg.Builder.MarkLabel(_retlbl);
-            }
-
-            // if generator method: set state to -2 (closed)
+            
+            // at the end of generator method:
+            // set state to -2 (closed)
             if (cg.Routine.IsGeneratorMethod())
             {
                 // g._state = -2 (closed): got to the end of the generator method
-                cg.EmitGeneratorInstance();
-                cg.Builder.EmitIntConstant(-2);
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
+                EmitGeneratorEnd(cg);
+
+                if (_retlbl != null)
+                {
+                    cg.Builder.MarkLabel(_retlbl);
+                }
 
                 cg.Builder.EmitRet(true);
                 return;
+            }
+
+            //
+            if (_retlbl != null && _rettmp == null)
+            {
+                cg.Builder.MarkLabel(_retlbl);
             }
 
             // return <default>;

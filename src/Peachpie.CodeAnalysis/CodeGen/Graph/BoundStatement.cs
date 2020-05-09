@@ -70,9 +70,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorReturnedValue_Generator_PhpValue);
                 }
 
-                // g._state = -2 (closed): got to the end of the generator method
+                // g._state = -2 (closed): go to the end of the generator method
+                ((Graph.ExitBlock)cg.Routine.ControlFlowGraph.Exit).EmitGeneratorEnd(cg);
+
                 // .ret
-                cg.EmitRet(cg.CoreTypes.Void, forceJumpToExit: true);
+                cg.EmitRet(cg.CoreTypes.Void);
                 return;
             }
 
@@ -338,7 +340,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
             // return & set continuation point just after that
-            il.EmitRet(true);
+            cg.EmitRet(cg.CoreTypes.Void); // il.EmitRet(true);
             il.MarkLabel(this);
 
             // Operators.HandleGeneratorException(generator)

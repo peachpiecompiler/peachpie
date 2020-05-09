@@ -288,7 +288,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
-        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt) => BindStatement(stmt);
+        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt, IEnumerable<TryCatchEdge> tryScopes) => BindStatement(stmt);
 
         protected virtual BoundStatement BindStatement(AST.Statement stmt) => BindStatementCore(stmt).WithSyntax(stmt);
 
@@ -1295,14 +1295,16 @@ namespace Pchp.CodeAnalysis.Semantics
         private BoundBlock _preBoundBlockFirst;
         private BoundBlock _preBoundBlockLast;
 
-        BoundBlock NewBlock() => _newBlockFunc();
-        Func<BoundBlock> _newBlockFunc;
+        private BoundBlock NewBlock() => _newBlockFunc();
+        private Func<BoundBlock> _newBlockFunc;
+
+        private IEnumerable<TryCatchEdge> _tryScopes;
 
         BoundYieldStatement NewYieldStatement(BoundExpression valueExpression, BoundExpression keyExpression,
             AST.LangElement syntax = null,
             bool isYieldFrom = false)
         {
-            var yieldStmt = new BoundYieldStatement(_yields.Count + 1, valueExpression, keyExpression)
+            var yieldStmt = new BoundYieldStatement(_yields.Count + 1, valueExpression, keyExpression, _tryScopes)
             {
                 IsYieldFrom = isYieldFrom,
             }
@@ -1394,12 +1396,16 @@ namespace Pchp.CodeAnalysis.Semantics
             return boundBag;
         }
 
-        public override BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt)
+        public override BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt, IEnumerable<TryCatchEdge> tryScopes)
         {
             Debug.Assert(!AnyPreBoundItems);
 
+            _tryScopes = tryScopes;
+
             var boundItem = BindStatement(stmt);
             var boundBag = new BoundItemsBag<BoundStatement>(boundItem, _preBoundBlockFirst, _preBoundBlockLast);
+
+            _tryScopes = null;
 
             ClearPreBoundBlocks();
             return boundBag;

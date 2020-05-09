@@ -243,7 +243,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     }
 
     /// <summary>
-    /// Represents try/catch edge.
+    /// Represents try/catch/finally edge.
     /// </summary>
     [DebuggerDisplay("TryCatchEdge")]
     public sealed partial class TryCatchEdge : Edge

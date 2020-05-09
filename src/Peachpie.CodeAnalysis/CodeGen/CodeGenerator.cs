@@ -317,6 +317,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         TypeSymbol _callerType;
         IPlace _callerTypePlace;
 
+        /// <summary>
+        /// Local variable containing the current state of state machine.
+        /// </summary>
+        internal LocalDefinition GeneratorStateLocal { get; set; }
+
         static TypeSymbol GetSelfType(TypeSymbol scope) => scope is SourceTraitTypeSymbol t ? t.TSelfParameter : scope;
 
         public SourceFileSymbol ContainingFile

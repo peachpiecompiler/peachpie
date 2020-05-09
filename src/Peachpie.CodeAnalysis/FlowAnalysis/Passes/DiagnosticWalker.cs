@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             public bool Contains(BoundBlock b) => b != null && b.Ordinal >= From && b.Ordinal < To;
 
-            public bool IsTryCatch => ScopeKind == Kind.Try || ScopeKind == Kind.Catch || ScopeKind == Kind.Finally;
+            public bool IsCatchFinally => /*ScopeKind == Kind.Try ||*/ ScopeKind == Kind.Catch || ScopeKind == Kind.Finally;
 
             public int From, To;
             public Kind ScopeKind;
@@ -59,7 +59,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         bool IsInScope(Scope.Kind kind) => _lazyScopes != null && _lazyScopes.Any(s => s.ScopeKind == kind && s.Contains(_currentBlock));
 
-        bool IsInTryCatchScope() => _lazyScopes != null && _lazyScopes.Any(s => s.IsTryCatch && s.Contains(_currentBlock));
+        bool IsInIsCatchFinally() => _lazyScopes != null && _lazyScopes.Any(s => s.IsCatchFinally && s.Contains(_currentBlock));
 
         #endregion
 
@@ -992,10 +992,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override T VisitYieldStatement(BoundYieldStatement boundYieldStatement)
         {
-            if (IsInTryCatchScope())
+            if (IsInIsCatchFinally())
             {
                 // TODO: Start supporting yielding from exception handling constructs.
-                _diagnostics.Add(_routine, boundYieldStatement.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (try, catch, finally)");
+                _diagnostics.Add(_routine, boundYieldStatement.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (catch, finally)");
             }
 
             return default;
