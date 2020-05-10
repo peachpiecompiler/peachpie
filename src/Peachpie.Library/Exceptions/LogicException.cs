@@ -13,7 +13,7 @@ namespace Pchp.Library.Spl
     public class LogicException : Spl.Exception
     {
         [PhpFieldsOnlyCtor]
-        protected LogicException() { }
+        protected LogicException() : base() { }
 
         public LogicException(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -28,7 +28,7 @@ namespace Pchp.Library.Spl
     public class BadFunctionCallException : LogicException
     {
         [PhpFieldsOnlyCtor]
-        protected BadFunctionCallException() { }
+        protected BadFunctionCallException() : base() { }
 
         public BadFunctionCallException(string message = "", long code = 0, Throwable previous = null)
         {
@@ -43,7 +43,7 @@ namespace Pchp.Library.Spl
     public class BadMethodCallException : BadFunctionCallException
     {
         [PhpFieldsOnlyCtor]
-        protected BadMethodCallException() { }
+        protected BadMethodCallException() : base() { }
 
         public BadMethodCallException(string message = "", long code = 0, Throwable previous = null)
         {
@@ -58,7 +58,7 @@ namespace Pchp.Library.Spl
     public class DomainException : LogicException
     {
         [PhpFieldsOnlyCtor]
-        protected DomainException() { }
+        protected DomainException() : base() { }
 
         public DomainException(string message = "", long code = 0, Throwable previous = null)
         {
@@ -73,7 +73,7 @@ namespace Pchp.Library.Spl
     public class LengthException : LogicException
     {
         [PhpFieldsOnlyCtor]
-        protected LengthException() { }
+        protected LengthException() : base() { }
 
         public LengthException(string message = "", long code = 0, Throwable previous = null)
         {
@@ -88,7 +88,7 @@ namespace Pchp.Library.Spl
     public class OutOfRangeException : LogicException
     {
         [PhpFieldsOnlyCtor]
-        protected OutOfRangeException() { }
+        protected OutOfRangeException() : base() { }
 
         public OutOfRangeException(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)

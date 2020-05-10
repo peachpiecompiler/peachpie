@@ -36,17 +36,25 @@ namespace Pchp.Library.Spl
 
         private Throwable previous;
 
+        /// <summary>
+        /// Initializes the file and line fields from <see cref="_stacktrace"/>.
+        /// </summary>
+        internal protected void InitializeInternal()
+        {
+            this.file = _stacktrace.GetFilename();
+            this.line = _stacktrace.GetLine();
+        }
+
         [PhpFieldsOnlyCtor]
         protected Error()
         {
+            InitializeInternal();
         }
 
         public Error(string message = "", long code = 0, Throwable previous = null)
             : base(message, previous as System.Exception)
         {
-            this.file = _stacktrace.GetFilename();
-            this.line = _stacktrace.GetLine();
-
+            InitializeInternal();
             __construct(message, code, previous);
         }
 
@@ -55,7 +63,7 @@ namespace Pchp.Library.Spl
         /// </summary>
         public override string Message => this.message ?? string.Empty;
 
-        public virtual void __construct(string message = "", long code = 0, Throwable previous = null)
+        public void __construct(string message = "", long code = 0, Throwable previous = null)
         {
             this.message = message;
             this.code = code;
@@ -69,7 +77,7 @@ namespace Pchp.Library.Spl
 
         public virtual int getLine() => line;
 
-        public virtual string getMessage() => message;
+        public virtual string getMessage() => this.message ?? string.Empty;
 
         public virtual Throwable getPrevious() => previous ?? this.InnerException as Throwable;
 
@@ -91,7 +99,7 @@ namespace Pchp.Library.Spl
     public class ArithmeticError : Error
     {
         [PhpFieldsOnlyCtor]
-        protected ArithmeticError() { }
+        protected ArithmeticError() : base() { }
 
         public ArithmeticError(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -106,7 +114,7 @@ namespace Pchp.Library.Spl
     public class DivisionByZeroError : ArithmeticError
     {
         [PhpFieldsOnlyCtor]
-        protected DivisionByZeroError() { }
+        protected DivisionByZeroError() : base() { }
 
         public DivisionByZeroError(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -121,7 +129,7 @@ namespace Pchp.Library.Spl
     public class AssertionError : Error
     {
         [PhpFieldsOnlyCtor]
-        protected AssertionError() { }
+        protected AssertionError() : base() { }
 
         public AssertionError(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -133,7 +141,7 @@ namespace Pchp.Library.Spl
     public class TypeError : Error
     {
         [PhpFieldsOnlyCtor]
-        protected TypeError() { }
+        protected TypeError() : base() { }
 
         public TypeError(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -145,7 +153,7 @@ namespace Pchp.Library.Spl
     public class ArgumentCountError : TypeError
     {
         [PhpFieldsOnlyCtor]
-        protected ArgumentCountError() { }
+        protected ArgumentCountError() : base() { }
 
         public ArgumentCountError(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -157,7 +165,7 @@ namespace Pchp.Library.Spl
     public class CompileError : Error
     {
         [PhpFieldsOnlyCtor]
-        protected CompileError() { }
+        protected CompileError() : base() { }
 
         public CompileError(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -169,7 +177,7 @@ namespace Pchp.Library.Spl
     public class ParseError : CompileError
     {
         [PhpFieldsOnlyCtor]
-        protected ParseError() { }
+        protected ParseError() : base() { }
 
         public ParseError(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
