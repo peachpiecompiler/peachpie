@@ -101,7 +101,7 @@ namespace Peachpie.Library.PDO
         /// <param name="attribute">The attribute to set.</param>
         /// <param name="value">The value.</param>
         /// <returns>true if value is valid, or false if value can't be set.</returns>
-        public virtual bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, PDO.PDO_ATTR attribute, PhpValue value)
+        public virtual bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
         {
             return false;
         }
@@ -226,7 +226,7 @@ namespace Peachpie.Library.PDO
         /// <param name="pdo">The pdo.</param>
         /// <param name="attribute">The attribute.</param>
         /// <returns></returns>
-        public virtual PhpValue GetAttribute(PDO pdo, PDO.PDO_ATTR attribute)
+        public virtual PhpValue GetAttribute(PDO pdo, int attribute)
         {
             return PhpValue.Null;
         }
