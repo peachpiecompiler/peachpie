@@ -205,7 +205,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // emit catch and finally blocks outside the try scope:
             if (!emitNestedScopes && EmitCatchFinallyOutsideScope)
             {
-                var continuewith = _finallyBlock ?? NextBlock;
+                var nextBlockOrExit = NextBlock?.FlowState != null ? NextBlock : cg.ExitBlock.GetReturnLabel();
+                var continuewith = _finallyBlock ?? nextBlockOrExit;
 
                 cg.Builder.EmitBranch(ILOpCode.Br, continuewith);
 
@@ -238,7 +239,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     cg.Builder.EmitIntegerSwitchJumpTable(
                         new[]
                         {
-                            new KeyValuePair<ConstantValue, object>(ConstantValue.Create((int)CodeGenerator.ExtraFinallyState.None), NextBlock),
+                            new KeyValuePair<ConstantValue, object>(ConstantValue.Create((int)CodeGenerator.ExtraFinallyState.None), nextBlockOrExit),
                             new KeyValuePair<ConstantValue, object>(ConstantValue.Create((int)CodeGenerator.ExtraFinallyState.Return), nextExtraFinallyBlock ?? cg.ExitBlock.GetReturnLabel()),
                             //new KeyValuePair<ConstantValue, object>(ConstantValue.Create((int)CodeGenerator.ExtraFinallyState.Exception), nextExtraFinallyBlock ?? cg.ExitBlock.GetRethrowLabel()),
                         },
