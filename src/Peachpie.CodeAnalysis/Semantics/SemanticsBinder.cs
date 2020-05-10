@@ -112,6 +112,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual ImmutableArray<BoundYieldStatement> Yields { get => ImmutableArray<BoundYieldStatement>.Empty; }
 
         /// <summary>
+        /// Generated state machine states.
+        /// </summary>
+        public virtual int StatesCount => 0;
+
+        /// <summary>
         /// Bag with semantic diagnostics.
         /// </summary>
         public DiagnosticBag Diagnostics => DeclaringCompilation.DeclarationDiagnostics;
@@ -1282,6 +1287,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Found yield statements (needed for ControlFlowGraph)
         /// </summary>
         public override ImmutableArray<BoundYieldStatement> Yields { get => _yields.ToImmutableArray(); }
+
+        public override int StatesCount => _yields.Count;
+
         readonly List<BoundYieldStatement> _yields = new List<BoundYieldStatement>();
 
         readonly HashSet<AST.LangElement> _yieldsToStatementRootPath = new HashSet<AST.LangElement>();

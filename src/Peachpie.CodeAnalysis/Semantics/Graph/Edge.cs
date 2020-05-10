@@ -294,7 +294,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                return new TryCatchEdge(body, catchBlocks, finallyBlock, endBlock);
+                return new TryCatchEdge(body, catchBlocks, finallyBlock, endBlock)
+                {
+                    EmitCatchFinallyOutsideScope = this.EmitCatchFinallyOutsideScope,
+
+                };
             }
         }
 
