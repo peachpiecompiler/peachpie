@@ -131,7 +131,7 @@ namespace Peachpie.AspNetCore.Web
             finally
             {
                 phpctx.Dispose();
-                phpctx.RequestEndEvent.Set();
+                phpctx.RequestEndEvent?.Set();
             }
 
             //
@@ -160,7 +160,8 @@ namespace Peachpie.AspNetCore.Web
                 // wait for the request to finish
                 if (endevent.Wait(GetRequestTimeout(phpctx)) == false)
                 {
-                    // timeout or cancelled
+                    // timeout
+                    // context.Response.StatusCode = HttpStatusCode.RequestTimeout;
                 }
 
                 phpctx.RequestEndEvent = null;
