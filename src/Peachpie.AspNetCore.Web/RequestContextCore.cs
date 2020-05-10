@@ -332,7 +332,7 @@ namespace Peachpie.AspNetCore.Web
             _encoding = encoding;
 
             httpcontext.Items[HttpContextItemKey] = this;
-            
+
             // enable synchronous IO until we make everything async
             // https://github.com/aspnet/Announcements/issues/342
             var bodyControl = httpcontext.Features.Get<IHttpBodyControlFeature>();
@@ -459,7 +459,11 @@ namespace Peachpie.AspNetCore.Web
             }
             array[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
             array[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
-            array[CommonPhpArrayKeys.HTTPS] = string.Equals(request.Scheme, "https", StringComparison.OrdinalIgnoreCase);
+
+            if (string.Equals(request.Scheme, "https", StringComparison.OrdinalIgnoreCase))
+            {
+                array[CommonPhpArrayKeys.HTTPS] = "on";
+            }
 
             //
             return array;
