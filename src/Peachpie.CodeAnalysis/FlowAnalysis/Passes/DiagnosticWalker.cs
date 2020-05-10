@@ -29,40 +29,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         TypeRefContext TypeCtx => _routine.TypeRefContext;
 
-        #region Scope
-
-        struct Scope
-        {
-            public enum Kind
-            {
-                Try, Catch, Finally,
-            }
-
-            public bool Contains(BoundBlock b) => b != null && b.Ordinal >= From && b.Ordinal < To;
-
-            public bool IsCatchFinally => /*ScopeKind == Kind.Try ||*/ ScopeKind == Kind.Catch || ScopeKind == Kind.Finally;
-
-            public int From, To;
-            public Kind ScopeKind;
-        }
-
-        List<Scope> _lazyScopes = null;
-
-        /// <summary>
-        /// Stores a scope (range) of blocks.
-        /// </summary>
-        void WithScope(Scope scope)
-        {
-            if (_lazyScopes == null) _lazyScopes = new List<Scope>();
-            _lazyScopes.Add(scope);
-        }
-
-        bool IsInScope(Scope.Kind kind) => _lazyScopes != null && _lazyScopes.Any(s => s.ScopeKind == kind && s.Contains(_currentBlock));
-
-        bool IsInIsCatchFinally() => _lazyScopes != null && _lazyScopes.Any(s => s.IsCatchFinally && s.Contains(_currentBlock));
-
-        #endregion
-
         void CheckMissusedPrimitiveType(IBoundTypeRef tref)
         {
             if (tref.IsPrimitiveType)
@@ -430,12 +396,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // A void function must not return a value
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_VoidFunctionCannotReturnValue);
                 }
-            }
-
-            // do not allow return from "finally" block, not allowed in CLR
-            if (x.PhpSyntax != null && IsInScope(Scope.Kind.Finally))
-            {
-                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "return from 'finally' block");
             }
 
             //
@@ -950,55 +910,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override T VisitCFGTryCatchEdge(TryCatchEdge x)
         {
-            // remember scopes,
-            // .Accept() on BodyBlocks traverses not only the try block but also the rest of the code
-
-            WithScope(new Scope
-            {
-                ScopeKind = Scope.Kind.Try,
-                From = x.BodyBlock.Ordinal,
-                To = x.NextBlock.Ordinal
-            });
-
-            for (int i = 0; i < x.CatchBlocks.Length; i++)
-            {
-                WithScope(new Scope
-                {
-                    ScopeKind = Scope.Kind.Catch,
-                    From = x.CatchBlocks[i].Ordinal,
-                    To = ((i + 1 < x.CatchBlocks.Length) ? x.CatchBlocks[i + 1] : x.FinallyBlock ?? x.NextBlock).Ordinal,
-                });
-            }
-
-            if (x.FinallyBlock != null)
-            {
-                WithScope(new Scope
-                {
-                    ScopeKind = Scope.Kind.Finally,
-                    From = x.FinallyBlock.Ordinal,
-                    To = x.NextBlock.Ordinal
-                });
-            }
-
-            // visit:
-
             return base.VisitCFGTryCatchEdge(x);
         }
 
         public override T VisitStaticStatement(BoundStaticVariableStatement x)
         {
             return base.VisitStaticStatement(x);
-        }
-
-        public override T VisitYieldStatement(BoundYieldStatement boundYieldStatement)
-        {
-            if (IsInIsCatchFinally())
-            {
-                // TODO: Start supporting yielding from exception handling constructs.
-                _diagnostics.Add(_routine, boundYieldStatement.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (catch, finally)");
-            }
-
-            return default;
         }
 
         public override T VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)

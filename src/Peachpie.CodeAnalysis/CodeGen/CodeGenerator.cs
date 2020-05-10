@@ -209,6 +209,40 @@ namespace Pchp.CodeAnalysis.CodeGen
         SourceGeneratorSymbol _smmethod;
 
         /// <summary>
+        /// Local variable containing the current state of state machine.
+        /// </summary>
+        internal LocalDefinition GeneratorStateLocal { get; set; }
+
+        /// <summary>
+        /// "finally" block to be branched in when returning from the routine.
+        /// This finally block is not handled by CLR as it is emitted outside the TryCatchFinally scope.
+        /// </summary>
+        internal BoundBlock ExtraFinallyBlock { get; set; }
+
+        internal enum ExtraFinallyState : int
+        {
+            /// <summary>continue to NextBlock</summary>
+            None = 0,
+            /// <summary>continue to next ExtraFinallyBlock, eventually EmitRet</summary>
+            Return = 1,
+            /// <summary>rethrow exception (<see cref="ExceptionToRethrowVariable"/>)</summary>
+            Exception = 2,
+        }
+
+        /// <summary>
+        /// Temporary variable holding state of "finally" block handling. Value of <see cref="ExtraFinallyState"/>.
+        /// Variable created once only if <see cref="ExtraFinallyBlock"/> is set.
+        /// Type: <c>System.Int32</c>
+        /// </summary>
+        internal TemporaryLocalDefinition ExtraFinallyStateVariable { get; set; }
+
+        /// <summary>
+        /// Temporary variable holding exception to be rethrown after "finally" block ends.
+        /// Type: <c>System.Exception</c>
+        /// </summary>
+        internal TemporaryLocalDefinition ExceptionToRethrowVariable { get; set; }
+
+        /// <summary>
         /// BoundBlock.Tag value indicating the block was emitted.
         /// </summary>
         readonly int _emmittedTag;
@@ -317,11 +351,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         TypeSymbol _callerType;
         IPlace _callerTypePlace;
 
-        /// <summary>
-        /// Local variable containing the current state of state machine.
-        /// </summary>
-        internal LocalDefinition GeneratorStateLocal { get; set; }
-
         static TypeSymbol GetSelfType(TypeSymbol scope) => scope is SourceTraitTypeSymbol t ? t.TSelfParameter : scope;
 
         public SourceFileSymbol ContainingFile
@@ -330,6 +359,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             internal set => _containingFile = value;
         }
         SourceFileSymbol _containingFile;
+
+        internal ExitBlock ExitBlock => ((ExitBlock)this.Routine.ControlFlowGraph.Exit);
 
         #endregion
 
@@ -378,6 +409,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             : this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine, cg._localsPlaceOpt, cg.InitializedLocals)
         {
             _emmittedTag = cg._emmittedTag;
+            GeneratorStateLocal = cg.GeneratorStateLocal;
+            ExtraFinallyBlock = cg.ExtraFinallyBlock;
         }
 
         public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, PhpOptimizationLevel optimizations, bool emittingPdb)

@@ -25,6 +25,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private Stack<LocalScopeInfo> _scopes = new Stack<LocalScopeInfo>(1);
         private int _index = 0;
 
+        /// <summary>Counts visited "return" statements.</summary>
+        private int _returnCounter = 0;
+
         /// <summary>
         /// Gets enumeration of unconditional declarations.
         /// </summary>
@@ -51,20 +54,26 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region LocalScope
 
+        private enum LocalScope
+        {
+            Code, Try, Catch, Finally,
+        }
+
         private class LocalScopeInfo
         {
-            public BoundBlock FirstBlock => _firstblock;
-            private BoundBlock _firstblock;
+            public BoundBlock FirstBlock { get; }
+            public LocalScope Scope { get; }
 
-            public LocalScopeInfo(BoundBlock firstBlock)
+            public LocalScopeInfo(BoundBlock firstBlock, LocalScope scope)
             {
-                _firstblock = firstBlock;
+                this.FirstBlock = firstBlock;
+                this.Scope = scope;
             }
         }
 
-        private void OpenScope(BoundBlock block)
+        private void OpenScope(BoundBlock block, LocalScope scope = LocalScope.Code)
         {
-            _scopes.Push(new LocalScopeInfo(block));
+            _scopes.Push(new LocalScopeInfo(block, scope));
         }
 
         private void CloseScope()
@@ -338,9 +347,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return block;
         }
 
-        private T WithOpenScope<T>(T block) where T : BoundBlock
+        private T WithOpenScope<T>(T block, LocalScope scope = LocalScope.Code) where T : BoundBlock
         {
-            OpenScope(block);
+            OpenScope(block, scope);
             return block;
         }
 
@@ -700,9 +709,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitJumpStmt(JumpStmt x)
         {
-
             if (x.Type == JumpStmt.Types.Return)
             {
+                _returnCounter++;
+
+                //
                 Add(x);
                 Connect(_current, this.Exit);
             }
@@ -907,31 +918,48 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // TryCatchEdge // Connects _current to body, catch blocks and finally
             var edge = new TryCatchEdge(_current, body, catchBlocks, finallyBlock, end);
 
+            var oldstates0 = _binder.StatesCount;
+
             // build try body
             OpenTryScope(edge);
-            OpenScope(body);
+            OpenScope(body, LocalScope.Try);
             _current = WithNewOrdinal(body);
             VisitElement(x.Body);
             CloseScope();
             CloseTryScope();
             _current = Leave(_current, finallyBlock ?? end);
 
+            var oldstates1 = _binder.StatesCount;
+
             // built catches
             for (int i = 0; i < catchBlocks.Length; i++)
             {
-                _current = WithOpenScope(WithNewOrdinal(catchBlocks[i]));
+                _current = WithOpenScope(WithNewOrdinal(catchBlocks[i]), LocalScope.Catch);
                 VisitElement(x.Catches[i].Body);
                 CloseScope();
                 _current = Leave(_current, finallyBlock ?? end);
             }
 
             // build finally
+            var oldReturnCount = _returnCounter;
             if (finallyBlock != null)
             {
-                _current = WithOpenScope(WithNewOrdinal(finallyBlock));
+                _current = WithOpenScope(WithNewOrdinal(finallyBlock), LocalScope.Finally);
                 VisitElement(x.FinallyItem.Body);
                 CloseScope();
                 _current = Leave(_current, end);
+            }
+
+            //
+            if ((oldstates0 != oldstates1 && finallyBlock != null) ||   // yield in "try" with "finally" block
+                oldstates1 != _binder.StatesCount ||                    // yield in "catch" or "finally"
+                oldReturnCount != _returnCounter)                       // return in "finally"
+            {
+                // catch or finally introduces new states to the state machine
+                // or there is "return" in finally block:
+
+                // catch/finally must not be handled by CLR
+                edge.EmitCatchFinallyOutsideScope = true;
             }
 
             // _current == end
