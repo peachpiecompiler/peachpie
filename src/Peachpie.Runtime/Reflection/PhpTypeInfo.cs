@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -376,12 +377,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Cache of resolved <see cref="PhpTypeInfo"/> corresponding to <see cref="RuntimeTypeHandle"/>.
         /// </summary>
-        readonly static Dictionary<RuntimeTypeHandle, PhpTypeInfo> s_cache = new Dictionary<RuntimeTypeHandle, PhpTypeInfo>();
-
-        /// <summary>
-        /// RW lock used ot access underlaying cache.
-        /// </summary>
-        readonly static ReaderWriterLockSlim s_lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        readonly static ConcurrentDictionary<Type, PhpTypeInfo> s_cache = new ConcurrentDictionary<Type, PhpTypeInfo>();
 
         /// <summary>
         /// Gets <see cref="PhpTypeInfo"/> of given <typeparamref name="TType"/>.
@@ -406,53 +402,22 @@ namespace Pchp.Core.Reflection
                 type = type.GetElementType() ?? throw new InvalidOperationException();
             }
 
-            PhpTypeInfo result = null;
-            var handle = type.TypeHandle;
-
-            // lookup cache first
-            s_lock.EnterUpgradeableReadLock();
-            try
+            return s_cache.GetOrAdd(type, t =>
             {
-                if (!s_cache.TryGetValue(handle, out result))
+                if (t.IsGenericTypeDefinition) // TODO: or type.IsByRefLike - netstandard2.1
                 {
-                    s_lock.EnterWriteLock();
-                    try
-                    {
-                        if (s_cache.TryGetValue(handle, out result))
-                        {
-                            // double checked lock
-                        }
-                        else if (type.IsGenericTypeDefinition) // TODO: or type.IsByRefLike - netstandard2.1
-                        {
-                            // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
-                            // just instantiate the type info and cache the result
-                            result = new PhpTypeInfo(type);
-                        }
-                        else
-                        {
-                            // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
-                            result = (PhpTypeInfo)s_getPhpTypeInfo_T
-                                .MakeGenericMethod(type)
-                                .Invoke(null, Array.Empty<object>());
-                        }
-
-                        //
-                        s_cache[handle] = result;
-                    }
-                    finally
-                    {
-                        s_lock.ExitWriteLock();
-                    }
+                    // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
+                    // just instantiate the type info and cache the result
+                    return new PhpTypeInfo(t);
                 }
-            }
-            finally
-            {
-                s_lock.ExitUpgradeableReadLock();
-            }
-
-            //
-            Debug.Assert(result != null);
-            return result;
+                else
+                {
+                    // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
+                    return (PhpTypeInfo)s_getPhpTypeInfo_T
+                        .MakeGenericMethod(t)
+                        .Invoke(null, Array.Empty<object>());
+                }
+            });
         }
 
         /// <summary>
@@ -461,25 +426,12 @@ namespace Pchp.Core.Reflection
         /// <param name="handle">Type handle of the CLR type.</param>
         public static PhpTypeInfo GetPhpTypeInfo(this RuntimeTypeHandle handle)
         {
-            PhpTypeInfo result = null;
-
-            if (handle.Equals(default))
+            if (handle.Value != IntPtr.Zero)
             {
-                return null;
+                return GetPhpTypeInfo(Type.GetTypeFromHandle(handle));
             }
 
-            // lookup cache first
-            s_lock.EnterReadLock();
-            try
-            {
-                s_cache.TryGetValue(handle, out result);
-            }
-            finally
-            {
-                s_lock.ExitReadLock();
-            }
-
-            return result ?? GetPhpTypeInfo(Type.GetTypeFromHandle(handle));
+            return null;
         }
 
         /// <summary>
@@ -542,44 +494,25 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Cached functions that creates an empty instance (instance of a class without calling its PHP constructor).
         /// </summary>
-        readonly static Dictionary<PhpTypeInfo, Func<Context, object>> s_emptyObjectActivators = new Dictionary<PhpTypeInfo, Func<Context, object>>();
+        readonly static ConcurrentDictionary<PhpTypeInfo, Func<Context, object>> s_emptyObjectActivators = new ConcurrentDictionary<PhpTypeInfo, Func<Context, object>>();
 
         /// <summary>
         /// Creates instance of the class without invoking its constructor.
         /// </summary>
         public static object CreateUninitializedInstance(this PhpTypeInfo phptype, Context ctx)
         {
-            Func<Context, object> activator;
-
-            s_lock.EnterUpgradeableReadLock();
-            try
+            Func<Context, object> activator = s_emptyObjectActivators.GetOrAdd(phptype, t =>
             {
-                if (!s_emptyObjectActivators.TryGetValue(phptype, out activator))
+                if (!TryBuildCreateEmptyObjectFunc(t, out var activator))
                 {
-                    s_lock.EnterWriteLock();
-                    try
+                    activator = (_ctx) =>
                     {
-                        if (!s_emptyObjectActivators.TryGetValue(phptype, out activator) &&
-                            !TryBuildCreateEmptyObjectFunc(phptype, out activator))
-                        {
-                            activator = (_ctx) =>
-                            {
-                                throw new NotSupportedException();
-                            };
-                        }
-
-                        s_emptyObjectActivators[phptype] = activator;
-                    }
-                    finally
-                    {
-                        s_lock.ExitWriteLock();
-                    }
+                        throw new NotSupportedException();
+                    };
                 }
-            }
-            finally
-            {
-                s_lock.ExitUpgradeableReadLock();
-            }
+
+                return activator;
+            });
 
             return activator(ctx);
         }
