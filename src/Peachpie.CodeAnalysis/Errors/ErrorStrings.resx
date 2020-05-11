@@ -385,4 +385,7 @@
   <data name="ERR_CantOpenFileWrite" xml:space="preserve">
     <value>Cannot open '{0}' for writing -- '{1}'</value>
   </data>
+  <data name="WRN_TypeNameInUse" xml:space="preserve">
+    <value>{0} '{1}' is already defined</value>
+  </data>
 </root>

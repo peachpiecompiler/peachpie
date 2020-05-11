@@ -112,7 +112,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         /// <summary>
         /// (PHP) Types exported from extension libraries and cor library.
         /// </summary>
-        Dictionary<QualifiedName, NamedTypeSymbol> ExportedTypes
+        public Dictionary<QualifiedName, NamedTypeSymbol> ExportedTypes
         {
             get
             {

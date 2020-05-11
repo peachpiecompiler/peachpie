@@ -202,6 +202,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_ArgumentVoid,
         /// <summary>PCRE pattern parse error: {0} at offset {1}</summary>
         WRN_PCRE_Pattern_Error,
+        /// <summary>{0} '{1}' is already defined</summary>
+        WRN_TypeNameInUse,
 
         //
         // Visible information

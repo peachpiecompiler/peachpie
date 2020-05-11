@@ -761,7 +761,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     errors.Add(MessageProvider.Instance.CreateDiagnostic(
                         ErrorCode.ERR_CannotExtendFrom, CreateLocation(tsignature[0].TypeRef.Span),
-                        this.FullName, v_base.IsInterface ? "interface" : v_base.IsStructType() ? "struct" : "trait", v_base.MakeQualifiedName()));
+                        this.FullNameString, v_base.GetTypeKindKeyword(), v_base.MakeQualifiedName()));
                 }
             }
 
@@ -777,7 +777,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     errors.Add(MessageProvider.Instance.CreateDiagnostic(
                         target.IsInterface() ? ErrorCode.ERR_CannotImplementNonInterface : ErrorCode.ERR_CannotUseNonTrait,
                         CreateLocation(tsignature[i].TypeRef.Span),
-                        this.FullName, bound.MakeQualifiedName()));
+                        this.FullNameString, bound.MakeQualifiedName()));
                 }
             }
 
@@ -975,7 +975,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (basedef != null && f.DeclaredAccessibility < basedef.DeclaredAccessibility)
                 {
                     // ERR: Access level to {0}::${1} must be {2} (as in class {3}) or weaker
-                    diagnostic.Add(f.Locations[0], ErrorCode.ERR_PropertyAccessibilityError, FullName, f.Name, basedef.DeclaredAccessibility.ToString().ToLowerInvariant(), ((IPhpTypeSymbol)basedef.ContainingType).FullName);
+                    diagnostic.Add(f.Locations[0], ErrorCode.ERR_PropertyAccessibilityError, FullNameString, f.Name, basedef.DeclaredAccessibility.ToString().ToLowerInvariant(), ((IPhpTypeSymbol)basedef.ContainingType).FullName);
                 }
             }
 
@@ -988,6 +988,15 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         diagnostic.Add(CreateLocation(t.Span), ErrorCode.ERR_PrimitiveTypeNameMisused, t);
                     }
+                }
+            }
+
+            // redeclaration check
+            if (!IsAnonymousType)
+            {
+                if (DeclaringCompilation.GlobalSemantics.ExportedTypes.ContainsKey(FullName))
+                {
+                    diagnostic.Add(CreateLocation(_syntax.Name.Span), ErrorCode.WRN_TypeNameInUse, this.GetTypeKindKeyword(), FullNameString);
                 }
             }
 
@@ -1442,6 +1451,14 @@ namespace Pchp.CodeAnalysis.Symbols
             // determine autoload flag:
             if (isautoload)
             {
+                // check the type is not in BCL
+                if (DeclaringCompilation.GlobalSemantics.ExportedTypes.ContainsKey(FullName))
+                {
+                    // the class is already defined,
+                    // do not provide autoload
+                    return 0;
+                }
+
                 // source file does not have any side effects?
                 // 1: autoload but with side effects
                 // 2: autoload without side effect
@@ -1490,7 +1507,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 foreach (var d in this.GetDependentSourceTypeSymbols().OfType<IPhpTypeSymbol>())
                 {
                     var a = d.AutoloadFlag;
-                    if (a == 0 || a == 1) return 1;
+                    if (a < 2) return 1;
                 }
 
                 // no side effects found

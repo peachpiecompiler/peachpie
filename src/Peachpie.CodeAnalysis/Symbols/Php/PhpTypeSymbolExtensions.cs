@@ -205,6 +205,18 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// Gets type kind as string, e.g. "class", "interface", "trait", ..
+        /// </summary>
+        public static string GetTypeKindKeyword(this TypeSymbol t)
+        {
+            if (t.IsInterfaceType()) return "interface";
+            if (t.IsTraitType()) return "trait";
+            if (t.IsStructType()) return "struct";
+            if (t.IsEnumType()) return "enum";
+            return "class";
+        }
+
+        /// <summary>
         /// For known types, gets their PHP type name.
         /// Used for diagnostic reasons.
         /// </summary>

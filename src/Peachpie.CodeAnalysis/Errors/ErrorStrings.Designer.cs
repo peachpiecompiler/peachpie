@@ -808,6 +808,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} &apos;{1}&apos; is already defined.
+        /// </summary>
+        internal static string WRN_TypeNameInUse {
+            get {
+                return ResourceManager.GetString("WRN_TypeNameInUse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Call to undefined function: &apos;{0}&apos;.
         /// </summary>
         internal static string WRN_UndefinedFunctionCall {
