@@ -372,7 +372,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// <see cref="MethodInfo"/> of <see cref="PhpTypeInfoExtension.GetPhpTypeInfo{TType}"/>.
         /// </summary>
-        readonly static MethodInfo s_getPhpTypeInfo_T = typeof(PhpTypeInfoExtension).GetRuntimeMethod("GetPhpTypeInfo", Dynamic.Cache.Types.Empty);
+        readonly static MethodInfo s_getPhpTypeInfo_T = typeof(PhpTypeInfoExtension).GetRuntimeMethod(nameof(GetPhpTypeInfo), Array.Empty<Type>());
 
         /// <summary>
         /// Cache of resolved <see cref="PhpTypeInfo"/> corresponding to <see cref="RuntimeTypeHandle"/>.
