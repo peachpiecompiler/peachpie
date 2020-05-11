@@ -56,6 +56,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
+            cg.Builder.AssertStackEmpty();
             cg.EmitSequencePoint(this.PhpSyntax);
 
             // if generator method -> return via storing the value in generator
