@@ -872,6 +872,18 @@ namespace Pchp.Core
                 return PhpValue.Null;
             }
 
+            // TODO: IDictionary
+
+            // get_Item
+            if (obj != null)
+            {
+                var getter = obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item];
+                if (getter != null)
+                {
+                    return getter.Invoke(null, obj, index);
+                }
+            }
+
             //
             if (!quiet)
             {
