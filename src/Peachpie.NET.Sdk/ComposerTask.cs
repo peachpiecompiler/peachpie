@@ -295,7 +295,50 @@ namespace Peachpie.NET.Sdk.Tools
 
         string GetHomepage(JSONNode url) => new Uri(url.Value, UriKind.Absolute).AbsoluteUri; // validate
 
-        string GetLicense(JSONNode license) => license.Value;
+        static readonly Dictionary<string, string> s_spdx_fixes = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+        {
+            { "Apache 2.0", "Apache-2.0" },
+            { "Apache License", "Apache-2.0" },
+            { "Apache License 2", "Apache-2.0" },
+            { "BSD License", "BSD-2-Clause" },
+            { "GPL 2.0", "GPL-2.0-or-later" },
+            // deprecations:
+            { "GPL-2.0", "GPL-2.0-or-later" },
+            { "GPL-2.0+", "GPL-2.0-or-later" },
+            { "AGPL-3.0", "AGPL-3.0-or-later" },
+            { "AGPL-3.0+", "AGPL-3.0-or-later" },
+            { "LGPL-2.0+", "LGPL-2.0-or-later" },
+            { "LGPL-2.1", "LGPL-2.1-or-later" },
+            { "LGPL-2.1+", "LGPL-2.1-or-later" },
+            { "LGPL-3.0", "LGPL-3.0-or-later" },
+            { "LGPL-3.0+", "LGPL-3.0-or-later" },
+        };
+
+        string GetLicense(JSONNode license)
+        {
+            if (string.IsNullOrEmpty(license?.Value))
+            {
+                return string.Empty;
+            }
+
+            var spdx = license.Value.Trim();
+
+            // there are commonly used deprecations and invalid expressions,
+            // fix the well-known issues:
+
+            if (s_spdx_fixes.TryGetValue(spdx, out var newspdx))
+            {
+                spdx = newspdx;
+            }
+            else if (spdx.IndexOf(' ') != -1) // might be expression
+            {
+                // "OR" operator must be uppercase :/
+                spdx = spdx.Replace(" or ", " OR ");
+            }
+
+            //
+            return spdx;
+        }
 
         string SanitizeVersionValue(string value)
         {
