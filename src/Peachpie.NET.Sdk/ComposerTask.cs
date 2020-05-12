@@ -364,7 +364,9 @@ namespace Peachpie.NET.Sdk.Tools
                 return null;
             }
 
-            var resultVersionString = v.ToString(3);
+            var resultVersionString = v.Build != 1
+                ? v.ToString(3)
+                : (v.ToString(2) + ".0");
 
             if (suffix.Length != 0)
             {
