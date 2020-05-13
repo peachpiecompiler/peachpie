@@ -50,6 +50,8 @@ namespace Peachpie.Runtime.Tests
             AssertFloatingVersion("^0.3", "[0.3.0,0.4.0)");
 
             AssertFloatingVersion("1.0.*", "[1.0.0-*,1.1.0)");      // >=1.0.0-dev && <1.1.0-dev
+
+            AssertFloatingVersion("~2.0|~3.0", "[2.0.0-*,4.0.0)");  // some packages use single `|` instead of double `||`
         }
     }
 }
