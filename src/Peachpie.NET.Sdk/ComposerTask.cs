@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using Devsense.PHP.Syntax;
 using Microsoft.Build.Framework;
@@ -291,7 +290,21 @@ namespace Peachpie.NET.Sdk.Tools
 
         string GetName(JSONNode name) => IdToNuGetId(name.Value);
 
-        string GetDescription(JSONNode desc) => desc.Value;
+        string GetDescription(JSONNode desc)
+        {
+            // some packages have a single whitespace as "description"
+            // causing nuget task error (no error code)
+            // trim the value.
+
+            var description = desc.Value.Trim();
+
+            if (description.Length == 0)
+            {
+                // CONSIDER: fill in something instead of `"Package Description"` filled in by nuget task
+            }
+
+            return description;
+        }
 
         string GetHomepage(JSONNode url) => new Uri(url.Value, UriKind.Absolute).AbsoluteUri; // validate
 
