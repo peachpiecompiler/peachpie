@@ -314,6 +314,7 @@ namespace Peachpie.NET.Sdk.Tools
             { "Apache License", "Apache-2.0" },
             { "Apache License 2", "Apache-2.0" },
             { "BSD", "BSD-2-Clause" },
+            { "BSD 2", "BSD-2-Clause" },
             { "BSD License", "BSD-2-Clause" },
             { "GPL 2.0", "GPL-2.0-or-later" },
             // deprecations:
@@ -326,17 +327,14 @@ namespace Peachpie.NET.Sdk.Tools
             { "LGPL-2.1+", "LGPL-2.1-or-later" },
             { "LGPL-3.0", "LGPL-3.0-or-later" },
             { "LGPL-3.0+", "LGPL-3.0-or-later" },
+            // operators:
+            { "or", "OR" },
         };
 
-        string GetLicense(JSONNode license)
+        static readonly char[] s_spdx_separators = new[] { ' ', '(', ')', ';', };
+
+        static string GetLicense(string spdx)
         {
-            if (string.IsNullOrEmpty(license?.Value))
-            {
-                return string.Empty;
-            }
-
-            var spdx = license.Value.Trim();
-
             // there are commonly used deprecations and invalid expressions,
             // fix the well-known issues:
 
@@ -344,10 +342,41 @@ namespace Peachpie.NET.Sdk.Tools
             {
                 spdx = newspdx;
             }
-            else if (spdx.IndexOf(' ') != -1) // might be expression
+            else if (spdx.IndexOf(' ') != -1) // might be an expression
             {
-                // "OR" operator must be uppercase :/
-                spdx = spdx.Replace(" or ", " OR ");
+                // naively get tokens between known separators and replace known deprecations
+                int index = 0;
+                while (index < spdx.Length)
+                {
+                    int sep = spdx.IndexOfAny(s_spdx_separators, index);
+                    if (sep < 0)
+                    {
+                        // end of string
+                        sep = spdx.Length;
+                    }
+
+                    //
+                    var length = sep - index; // word length
+                    if (length > 1)
+                    {
+                        var span = spdx.AsSpan(index);
+
+                        //
+                        foreach (var pair in s_spdx_fixes)
+                        {
+                            if (pair.Key.Length >= length && span.StartsWith(pair.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                            {
+                                // replace matched pair.Key with pair.Value:
+                                sep = index + pair.Key.Length;
+                                spdx = spdx.Remove(index) + pair.Value + spdx.Substring(sep);
+                                break;
+                            }
+                        }
+                    }
+
+                    //
+                    index = sep + 1;
+                }
             }
 
             //
