@@ -2,7 +2,7 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Peachpie.NET.Sdk.Versioning;
 
-namespace Peachpie.Runtime.Tests
+namespace Peachpie.NET.SdkTests
 {
     [TestClass]
     public class ComposerVersionTest

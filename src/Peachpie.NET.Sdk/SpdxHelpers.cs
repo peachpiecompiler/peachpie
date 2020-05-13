@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Peachpie.NET.Sdk
@@ -72,7 +73,7 @@ namespace Peachpie.NET.Sdk
                         var span = spdx.AsSpan(index);
 
                         //
-                        foreach (var pair in s_spdx_fixes)
+                        foreach (var pair in s_spdx_fixes.OrderByDescending(p => p.Key.Length))
                         {
                             if (pair.Key.Length >= length && span.StartsWith(pair.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                             {
