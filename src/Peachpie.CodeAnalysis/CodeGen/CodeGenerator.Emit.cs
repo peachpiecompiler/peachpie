@@ -140,13 +140,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits reference to <c>this</c>.
         /// </summary>
         /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>
-        public NamedTypeSymbol EmitThis()
+        public TypeSymbol EmitThis()
         {
             Contract.ThrowIfNull(_thisPlace);
             return EmitThisOrNull();
         }
 
-        public NamedTypeSymbol EmitThisOrNull()
+        public TypeSymbol EmitThisOrNull()
         {
             if (_thisPlace == null)
             {
@@ -155,7 +155,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                return (NamedTypeSymbol)_thisPlace.EmitLoad(_il);
+                return _thisPlace.EmitLoad(_il);
             }
         }
 
@@ -1342,7 +1342,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits <paramref name="thisExpr"/> to be used as target instance of method call, field or property.
         /// </summary>
-        internal NamedTypeSymbol LoadTargetInstance(BoundExpression thisExpr, MethodSymbol method)
+        internal TypeSymbol LoadTargetInstance(BoundExpression thisExpr, MethodSymbol method)
         {
             NamedTypeSymbol targetType = method.HasThis ? method.ContainingType : CoreTypes.Void;
 
