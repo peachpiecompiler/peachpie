@@ -507,6 +507,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         List<Symbol> _lazyMembers;
 
+        /// <summary>
+        /// In case the type is declared conditionally,
+        /// postpone reporting the diagnostics so they might get ignored eventually.
+        /// </summary>
+        DiagnosticBag _postponedDiagnostics;
+
         public SourceFileSymbol ContainingFile => _file;
 
         Location CreateLocation(TextSpan span) => Location.Create(ContainingFile.SyntaxTree, span);
@@ -596,8 +602,20 @@ namespace Pchp.CodeAnalysis.Symbols
                             var diagnostics = DiagnosticBag.GetInstance();
 
                             ResolveBaseTypesNoLock(tsignature, diagnostics);
-                            AddDeclarationDiagnostics(diagnostics);
-                            diagnostics.Free();
+
+                            if (IsConditional)
+                            {
+                                // the type is declared conditionally,
+                                // and might get ignored eventually the full analysis.
+                                // In such a case, diagnostics are ignored,
+                                // otherwise reported after the analysis phase in GetDiagnostics().
+                                _postponedDiagnostics = diagnostics;
+                            }
+                            else
+                            {
+                                AddDeclarationDiagnostics(diagnostics);
+                                diagnostics.Free();
+                            }
 
                             //
                             Debug.Assert(_lazyInterfacesType.IsDefault == false);
@@ -998,6 +1016,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     diagnostic.Add(CreateLocation(_syntax.Name.Span), ErrorCode.WRN_TypeNameInUse, this.GetTypeKindKeyword(), FullNameString);
                 }
+            }
+
+            // report postponed diagnostics,
+            // NOTE: GetDiagnostics() won't get called for unreachable types
+            if (_postponedDiagnostics != null)
+            {
+                diagnostic.AddRangeAndFree(_postponedDiagnostics);
+                _postponedDiagnostics = null;
             }
 
             // bind & diagnose attributes
