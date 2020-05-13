@@ -300,6 +300,7 @@ namespace Peachpie.NET.Sdk.Tools
             { "Apache 2.0", "Apache-2.0" },
             { "Apache License", "Apache-2.0" },
             { "Apache License 2", "Apache-2.0" },
+            { "BSD", "BSD-2-Clause" },
             { "BSD License", "BSD-2-Clause" },
             { "GPL 2.0", "GPL-2.0-or-later" },
             // deprecations:
