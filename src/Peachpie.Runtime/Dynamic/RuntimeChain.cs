@@ -333,7 +333,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
     {
         public TNext Next; // can be "ChainEnd"
 
-        public IntStringKey Key;
+        public PhpValue Key;
 
         public RuntimeChainOperation Operation => RuntimeChainOperation.ArrayItem;
 
@@ -348,24 +348,51 @@ namespace Pchp.Core.Dynamic.RuntimeChain
 
         public PhpAlias GetAlias(ref PhpValue value, Context ctx, Type classContext)
         {
-            var arr = PhpValue.EnsureArray(ref value);
             PhpValue tmp;
 
-            switch (Next.Operation)
+            if (value.AsObject() is ArrayAccess arrayaccess)
             {
-                case RuntimeChainOperation.ArrayItem:
-                    tmp = PhpValue.Create(arr.EnsureItemArray(Key));
-                    break;
+                // special case for ArrayAccess avoids conversion to IntStringKey
 
-                case RuntimeChainOperation.Property:
-                    tmp = PhpValue.FromClass(arr.EnsureItemObject(Key));
-                    break;
+                tmp = arrayaccess.offsetGet(Key);
 
-                case RuntimeChainOperation.End:
-                    return arr.EnsureItemAlias(Key);
+                switch (Next.Operation)
+                {
+                    case RuntimeChainOperation.ArrayItem:
+                        tmp = PhpValue.EnsureAlias(ref tmp);
+                        break;
 
-                default:
-                    throw new InvalidOperationException();
+                    case RuntimeChainOperation.Property:
+                        tmp = PhpValue.FromClass(PhpValue.EnsureObject(ref tmp));
+                        break;
+
+                    case RuntimeChainOperation.End:
+                        return PhpValue.EnsureAlias(ref tmp);
+
+                    default:
+                        throw new InvalidOperationException();
+                }
+            }
+            else
+            {
+                var arr = PhpValue.EnsureArray(ref value);
+
+                switch (Next.Operation)
+                {
+                    case RuntimeChainOperation.ArrayItem:
+                        tmp = PhpValue.Create(arr.EnsureItemArray(Key));
+                        break;
+
+                    case RuntimeChainOperation.Property:
+                        tmp = PhpValue.FromClass(arr.EnsureItemObject(Key));
+                        break;
+
+                    case RuntimeChainOperation.End:
+                        return arr.EnsureItemAlias(Key);
+
+                    default:
+                        throw new InvalidOperationException();
+                }
             }
 
             //

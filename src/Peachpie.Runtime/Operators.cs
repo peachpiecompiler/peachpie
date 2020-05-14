@@ -561,11 +561,11 @@ namespace Pchp.Core
 
         public static IPhpArray EnsureArray(object obj)
         {
-            // ArrayAccess
-            if (obj is ArrayAccess) return EnsureArray((ArrayAccess)obj);
-
             // IPhpArray
             if (obj is IPhpArray) return (IPhpArray)obj;
+
+            // ArrayAccess
+            if (obj is ArrayAccess) return EnsureArray((ArrayAccess)obj);
 
             // IList
             if (obj is IList) return new ListAsPhpArray((IList)obj);
