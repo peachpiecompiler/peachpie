@@ -75,6 +75,12 @@ namespace Pchp.Core.Reflection
         readonly TypeInfo _type;
 
         /// <summary>
+        /// Resolved <see cref="PhpTypeAttribute"/>.
+        /// Can be <c>null</c>.
+        /// </summary>
+        readonly PhpTypeAttribute _attr;
+
+        /// <summary>
         /// Gets <see cref="RuntimeTypeHandle"/> of corresponding type information.
         /// </summary>
         public RuntimeTypeHandle TypeHandle => _type.UnderlyingSystemType.TypeHandle;
@@ -254,15 +260,17 @@ namespace Pchp.Core.Reflection
         internal PhpTypeInfo(Type/*!*/t)
         {
             Debug.Assert(t != null);
-            _type = t.GetTypeInfo();
 
-            Name = ResolvePhpTypeName(t, GetPhpTypeAttribute());
+            _type = t.GetTypeInfo();
+            _attr = t.GetCustomAttribute<PhpTypeAttribute>(false);
+
+            Name = ResolvePhpTypeName(t, _attr);
 
             // register type in extension tables
             ExtensionsAppContext.ExtensionsTable.AddType(this);
         }
 
-        PhpTypeAttribute GetPhpTypeAttribute() => _type.GetCustomAttribute<PhpTypeAttribute>(false);
+        PhpTypeAttribute GetPhpTypeAttribute() => _attr;
 
         /// <summary>
         /// Resolves PHP-like type name.
