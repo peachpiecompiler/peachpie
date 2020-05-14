@@ -20,8 +20,13 @@ namespace Peachpie.NET.Sdk
             { "BSD License", "BSD-2-Clause" },
             { "GPL 2.0", "GPL-2.0-or-later" },
             // deprecations:
+            { "GPL-1.0", "GPL-1.0-or-later" },
+            { "GPL-1.0+", "GPL-1.0-or-later" },
             { "GPL-2.0", "GPL-2.0-or-later" },
             { "GPL-2.0+", "GPL-2.0-or-later" },
+            { "GPL-3.0", "GPL-2.0-or-later" },
+            { "GPL-3.0+", "GPL-2.0-or-later" },
+            { "AGPL-1.0", "AGPL-1.0-or-later" },
             { "AGPL-3.0", "AGPL-3.0-or-later" },
             { "AGPL-3.0+", "AGPL-3.0-or-later" },
             { "LGPL-2.0+", "LGPL-2.0-or-later" },
