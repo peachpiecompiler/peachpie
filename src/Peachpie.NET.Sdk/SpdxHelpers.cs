@@ -17,6 +17,7 @@ namespace Peachpie.NET.Sdk
             { "Apache License 2", "Apache-2.0" },
             { "BSD", "BSD-2-Clause" },
             { "BSD 2", "BSD-2-Clause" },
+            { "New BSD", "BSD-2-Clause" },
             { "BSD License", "BSD-2-Clause" },
             { "GPL 2.0", "GPL-2.0-or-later" },
             // deprecations:
