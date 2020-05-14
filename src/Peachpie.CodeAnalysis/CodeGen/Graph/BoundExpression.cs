@@ -2430,7 +2430,15 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);
             }
 
-            return this.BindPlace(cg).EmitLoadValue(cg, Access);
+            var boundplace = this.BindPlace(cg);
+            if (boundplace != null)
+            {
+                return boundplace.EmitLoadValue(cg, Access);
+            }
+            else
+            {
+                throw cg.NotImplementedException($"IVariableReference of {this} is null!");
+            }
         }
     }
 
