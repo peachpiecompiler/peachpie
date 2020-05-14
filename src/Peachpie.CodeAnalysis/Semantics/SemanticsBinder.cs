@@ -293,7 +293,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
-        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt, IEnumerable<TryCatchEdge> tryScopes) => BindStatement(stmt);
+        public virtual void WithTryScopes(IEnumerable<TryCatchEdge> tryScopes) { }
+
+        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt) => BindStatement(stmt);
 
         protected virtual BoundStatement BindStatement(AST.Statement stmt) => BindStatementCore(stmt).WithSyntax(stmt);
 
@@ -1392,6 +1394,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region GeneralOverrides
 
+        public override void WithTryScopes(IEnumerable<TryCatchEdge> tryScopes)
+        {
+            _tryScopes = tryScopes;
+        }
+
         public override BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
         {
             Debug.Assert(!AnyPreBoundItems);
@@ -1404,16 +1411,12 @@ namespace Pchp.CodeAnalysis.Semantics
             return boundBag;
         }
 
-        public override BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt, IEnumerable<TryCatchEdge> tryScopes)
+        public override BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt)
         {
             Debug.Assert(!AnyPreBoundItems);
 
-            _tryScopes = tryScopes;
-
             var boundItem = BindStatement(stmt);
             var boundBag = new BoundItemsBag<BoundStatement>(boundItem, _preBoundBlockFirst, _preBoundBlockLast);
-
-            _tryScopes = null;
 
             ClearPreBoundBlocks();
             return boundBag;
