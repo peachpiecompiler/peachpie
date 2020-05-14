@@ -14,6 +14,7 @@ namespace Peachpie.NET.SdkTests
         {
             Assert.AreEqual("GPL-2.0-or-later", SpdxHelpers.SanitizeSpdx("GPL-2.0+"));
             Assert.AreEqual("(GPL-2.0-or-later)", SpdxHelpers.SanitizeSpdx("(GPL-2.0+)"));
+            Assert.AreEqual("(Apache-2.0 OR GPL-2.0-or-later)", SpdxHelpers.SanitizeSpdx("(Apache-2.0 OR GPL-2.0)"));
         }
 
         [TestMethod]
