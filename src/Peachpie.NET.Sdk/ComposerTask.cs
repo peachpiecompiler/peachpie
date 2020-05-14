@@ -546,7 +546,9 @@ namespace Peachpie.NET.Sdk.Tools
             {"ext-mysql", "Peachpie.Library.MySql"},
             {"ext-mysqli", "Peachpie.Library.MySql"},
             {"ext-mssql", "Peachpie.Library.MsSql"},
-            {"ext-mongodb", "Peachpie.Library.MongoDB"}, // DOES NOT EXIST!
+            {"ext-mongodb", "Peachpie.Library.MongoDB"},// DOES NOT EXIST!
+            {"ext-sqlite3", "Peachpie.Library.Sqlite"}, // DOES NOT EXIST!
+            {"ext-ast", "Peachpie.Library.Ast"},        // DOES NOT EXIST!
             {"ext-dom", "Peachpie.Library.XmlDom"},
             {"ext-xsl", "Peachpie.Library.XmlDom"},
             {"ext-exif", "Peachpie.Library.Graphics"},

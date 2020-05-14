@@ -20,6 +20,8 @@ namespace Peachpie.NET.Sdk
             { "New BSD", "BSD-2-Clause" },
             { "BSD License", "BSD-2-Clause" },
             { "GPL 2.0", "GPL-2.0-or-later" },
+            { "PHP License v3.01", "PHP-3.01" },
+            { "PHP License v3.0", "PHP-3.0" },
             { "PHP License", "PHP-3.0" },
             // deprecations:
             { "GPL-1.0", "GPL-1.0-or-later" },
