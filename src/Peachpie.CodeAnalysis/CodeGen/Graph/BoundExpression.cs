@@ -3169,7 +3169,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(_arguments[0].Value.Access.IsRead);
             Debug.Assert(Access.IsRead || Access.IsNone);
 
-            var method = this.Target;
+            var method = this.TargetMethod;
             if (method != null) // => IsResolved
             {
                 // emit condition for include_once/require_once

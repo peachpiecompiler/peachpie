@@ -15,6 +15,7 @@ using Devsense.PHP.Syntax.Ast;
 using Peachpie.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
@@ -452,9 +453,40 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         public override T VisitInclude(BoundIncludeEx x)
         {
             // check arguments
-            return base.VisitRoutineCall(x);
+            base.VisitRoutineCall(x);
 
-            // do not check the TargetMethod
+            // check the target was not resolved
+            if (x.TargetMethod == null)
+            {
+                foreach (var arg in x.ArgumentsInSourceOrder)
+                {
+                    // in case the include is in form (__DIR__ . LITERAL)
+                    // it should get resolved
+                    if (arg.Value is BoundConcatEx concat &&
+                        concat.ArgumentsInSourceOrder.Length == 2 &&
+                        concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
+                        pc.ConstType == PseudoConstUse.Types.Dir &&
+                        concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out var relativePath) &&
+                        relativePath.Length != 0)
+                    {
+                        // WARNING: Script file '{0}' could not be resolved
+                        if (_routine != null)
+                        {
+                            relativePath = PhpFileUtilities.NormalizeSlashes(_routine.ContainingFile.DirectoryRelativePath + relativePath);
+
+                            if (Roslyn.Utilities.PathUtilities.IsAnyDirectorySeparator(relativePath[0]))
+                            {
+                                relativePath = relativePath.Substring(1); // trim leading slash
+                            }
+
+                            _diagnostics.Add(_routine, concat.PhpSyntax ?? x.PhpSyntax, ErrorCode.WRN_CannotIncludeFile, relativePath);
+                        }
+                    }
+                }
+            }
+
+            //
+            return default;
         }
 
         protected override T VisitRoutineCall(BoundRoutineCall x)

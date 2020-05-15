@@ -2074,12 +2074,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var targetExpr = x.ArgumentsInSourceOrder[0].Value;
 
             //
-            x.Target = null;
+            x.TargetMethod = null;
 
             if (targetExpr.ConstantValue.TryConvertToString(out var path))
             {
                 // include (path)
-                x.Target = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
+                x.TargetMethod = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
             }
             else if (targetExpr is BoundConcatEx concat) // common case
             {
@@ -2094,14 +2094,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // not starting with a directory separator!
                     path = Routine.ContainingFile.DirectoryRelativePath + path;
                     if (path.Length != 0 && PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
-                    x.Target = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
+                    x.TargetMethod = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
                 }
             }
 
             // resolve result type
             if (x.Access.IsRead)
             {
-                var target = x.Target;
+                var target = x.TargetMethod;
                 if (target != null)
                 {
                     x.ResultType = target.ReturnType;

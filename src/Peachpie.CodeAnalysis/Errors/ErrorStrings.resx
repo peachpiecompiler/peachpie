@@ -388,4 +388,7 @@
   <data name="WRN_TypeNameInUse" xml:space="preserve">
     <value>{0} '{1}' is already defined</value>
   </data>
+  <data name="WRN_CannotIncludeFile" xml:space="preserve">
+    <value>Script file '{0}' could not be resolved, the script inclusion is unbound.</value>
+  </data>
 </root>
