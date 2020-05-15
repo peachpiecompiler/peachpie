@@ -298,6 +298,12 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             // normalize path
             path = FileUtilities.NormalizeRelativePath(path, null, _compilation.Options.BaseDirectory);
 
+            if (string.IsNullOrEmpty(path))
+            {
+                // path cannot be normalized, usually contains a protocol://
+                return null;
+            }
+
             // absolute path
             if (PathUtilities.IsAbsolute(path))
             {
