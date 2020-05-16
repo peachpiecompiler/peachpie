@@ -1210,14 +1210,14 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var name = base.MetadataName;
+                var name = this.Name;
 
                 // count declarations with the same name
                 // to avoid duplicities in PE metadata
                 var decls = this.DeclaringCompilation.SourceSymbolCollection.GetDeclaredTypes(this.FullName).ToList();
                 Debug.Assert(decls.Count != 0);
 
-                // name?num#version
+                // name?num#version`1
 
                 if (decls.Count != 1)
                 {
@@ -1234,6 +1234,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_version != 0)
                 {
                     name += "#" + _version;
+                }
+
+                if (MangleName)
+                {
+                    // `1 at the end
+                    name = MetadataHelpers.ComposeAritySuffixedMetadataName(name, Arity);
                 }
 
                 return name;
