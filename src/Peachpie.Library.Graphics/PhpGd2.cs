@@ -657,7 +657,7 @@ namespace Peachpie.Library.Graphics
                 return -1;// TODO: false
 
             //TODO: In non-truecolor images allocate the color
-            return RGBA(red, green, blue, 255 - alpha);
+            return RGBA(red, green, blue,alpha);
         }
 
         #endregion
@@ -667,16 +667,50 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// RGBA values to PHP Color format.
         /// </summary>
-        static long RGBA(long red, long green, long blue, long alpha = 0xff)
+        static long RGBA(long red, long green, long blue, long alpha = 0)
         {
-            return ( (255-alpha)<< 24)
+            return (alpha << 24)
                 | ((blue & 0x0000FF) << 16)
                 | ((green & 0x0000FF) << 8)
-                | (red & 0x0000FF);
+                | (red & 0x0000FF); 
         }
 
-        static Rgba32 FromRGB(long color) => new Rgba32((uint)color | 0xff000000u);
-        static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? new Rgba32(0xff000000u - ((uint)color & 0xff000000u) + ((uint)color & 0x00ffffffu)) : (Rgba32)Color.Transparent;
+        static Rgba32 FromRGB(long color) => new Rgba32((uint)color & 0x00ffffffu);
+        static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? new Rgba32((uint)ConvertAlpha(color, true)) : (Rgba32)Color.Transparent;
+
+        /// <summary>
+        /// Php Alpha is reversed map. PHP: 0 -> PNG,ImageSharp:255, PHP: 127 -> PNG,ImageSharp: 0. This method converts an alpha part of a color from PHP/ImageSharp to ImageSharp/PHP.
+        /// </summary>
+        /// <param name="FromPhp">True for PHP -> ImageSharp else PHP <- ImageSharp </param>
+        /// <returns>Converted color</returns>
+        static long ConvertAlpha(long color, bool FromPhp)
+        {
+            byte alpha = (byte)(((uint)color & 0xff000000u) >> 24);
+            
+            byte newAlpha = 0;
+            if (FromPhp)
+            {
+                if (alpha == 0x7f)
+                {
+                    newAlpha = 0;
+                }
+                else
+                {
+                    newAlpha = (byte)(255 - alpha * 2);
+                }
+            }
+            else
+            {
+                if (alpha == 0x00)
+                {
+                    newAlpha = 0x7f;
+                }
+                {
+                    newAlpha = (byte)((255 - alpha) / 2);
+                }
+            }
+            return ((uint)color & 0x00ffffffu) | ((uint)newAlpha << 24);
+        }
 
         private static int PHPColorToPHPAlpha(int color) => FromRGBA(color).A;
         private static int PHPColorToRed(int color) => FromRGBA(color).R;
@@ -804,7 +838,7 @@ namespace Peachpie.Library.Graphics
             {
                 return false;
             }
-
+           
             image[x, y] = FromRGBA(color);
 
             return true;
@@ -822,7 +856,7 @@ namespace Peachpie.Library.Graphics
             }
 
             var image = img.Image;
-            return 0xff000000u - (image[x, y].Rgba & 0xff000000u) + (image[x, y].Rgba & 0x00ffffffu);
+            return ConvertAlpha(image[x, y].Rgba,false);
         }
 
         /// <summary>
@@ -1404,7 +1438,7 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static PhpArray imagecolorsforindex(PhpResource im, long col)
         {
-            var rgba = FromRGBA(col);
+            var rgba = FromRGBA(ConvertAlpha(col,false));
 
             return new PhpArray(4)
             {
