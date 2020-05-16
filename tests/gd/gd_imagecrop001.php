@@ -14,14 +14,10 @@ function draw_init_symbol($img)
     // Draw verticle axis
     for ($j = 0; $j <  $height; $j++)
         imagesetpixel($img, $width/2, $j, $color);
-
-    //imageline($img, $width/2, 0, $width/2, $height -1, $color);
     
     // Draw decreasing axis
     for ($j = 0;$j <  $height; $j++)
         imagesetpixel($img, $j, $j, $color);
-    
-    //imageline($img, 1, $height -2, $width -2, 1, $color);
 
     return $img;
 }
@@ -44,9 +40,8 @@ function print_img_pixels($img)
 function transform_img($img)
 {
     $size = min(imagesx($img), imagesy($img));
-    
-    
-    return imagescale($img, $size/2, $size/2,16);
+
+    return imagecrop($img, ['x' => 1, 'y' => 1, 'width' => $size -2, 'height' => $size -2]);
 }
 // Init
 $init_img = draw_init_symbol($img);
@@ -57,10 +52,6 @@ print_img_pixels($init_img);
 
 // Transforms img
 $transformed = transform_img($init_img);
-
-// Image in browser
-//header('Content-type: image/png');
-//imagepng($transformed);
 
 //Prints
 if (!$transformed)

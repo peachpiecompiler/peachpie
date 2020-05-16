@@ -1,5 +1,5 @@
 <?php
-$im = imagecreatefrompng('E:/Programs/xampp/htdocs/Peachpie/gd2Library/data/PHPlogo.png');
+$im = imagecreatetruecolor(300,400);
 
 echo "Resolution of the image:\n";
 print_r(imageresolution($im));

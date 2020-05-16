@@ -14,14 +14,10 @@ function draw_init_symbol($img)
     // Draw verticle axis
     for ($j = 0; $j <  $height; $j++)
         imagesetpixel($img, $width/2, $j, $color);
-
-    //imageline($img, $width/2, 0, $width/2, $height -1, $color);
     
     // Draw decreasing axis
     for ($j = 0;$j <  $height; $j++)
         imagesetpixel($img, $j, $j, $color);
-    
-    //imageline($img, 1, $height -2, $width -2, 1, $color);
 
     return $img;
 }
@@ -60,10 +56,6 @@ print_img_pixels($init_img);
 
 // Transforms img
 $transformed = transform_img($init_img);
-
-// Image in browser
-//header('Content-type: image/png');
-//imagepng($transformed);
 
 //Prints
 if (!$transformed)

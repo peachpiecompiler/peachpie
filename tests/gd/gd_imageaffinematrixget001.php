@@ -2,7 +2,8 @@
 //Can not use print_r because of different round precission between .Net(Peachpie) and PHP. 
 function writeMatrix(array $matrix) : void
 {
-    foreach ($matrix as $key => $value) {
+    foreach ($matrix as $key => $value) 
+    {
         $val = round($value,14);
         echo "{$key} => {$val} \n";
     }
