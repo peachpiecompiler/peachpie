@@ -1936,23 +1936,25 @@ namespace Peachpie.Library.Graphics
         /// Draws an open polygon on the given image. Contrary to imagepolygon(), no line is drawn between the last and the first point.
         /// </summary>
         /// <param name="image">An image resource, returned by one of the image creation functions.</param>
-        /// <param name="point">An array containing the polygon's vertices.</param>
+        /// <param name="points">An array containing the polygon's vertices.</param>
         /// <param name="num_points">Total number of points (vertices), which must be at least 3.</param>
         /// <param name="color">A color identifier created with imagecolorallocate().</param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        public static bool imageopenpolygon(PhpResource image, PhpArray point, int num_points, long color)
+        public static bool imageopenpolygon(PhpResource image, PhpArray points, int num_points, long color)
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
-                return false;
-
-            if (point == null)
             {
-                PhpException.Throw(PhpError.Warning, Pchp.Library.Resources.Resources.unexpected_arg_given, nameof(point), PhpArray.PhpTypeName, PhpVariable.TypeNameNull);
                 return false;
             }
 
-            if (point.Count < num_points * 2)
+            if (points == null)
+            {
+                PhpException.Throw(PhpError.Warning, Pchp.Library.Resources.Resources.unexpected_arg_given, nameof(points), PhpArray.PhpTypeName, PhpVariable.TypeNameNull);
+                return false;
+            }
+
+            if (points.Count < num_points * 2)
             {
                 return false;
             }
@@ -1963,9 +1965,9 @@ namespace Peachpie.Library.Graphics
                 return false;
             }
 
-            var points = GetPointFsFromArray(point, num_points);
+            var pointsF = GetPointFsFromArray(points, num_points);
 
-            img.Image.Mutate(o => o.DrawLines(new Pen(FromRGBA(color), 1.0f),points));
+            img.Image.Mutate(o => o.DrawLines(new Pen(FromRGBA(color), 1.0f),pointsF));
 
             return true;
         }
@@ -2078,7 +2080,9 @@ namespace Peachpie.Library.Graphics
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
+            {
                 return false;
+            }
 
             switch (mode)
             {
@@ -2110,15 +2114,15 @@ namespace Peachpie.Library.Graphics
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
-                return null;
-
-            Rectangle? rectangleOrNull = GetRectangle(rect);
-            if (!rectangleOrNull.HasValue)
             {
-                PhpException.Throw(PhpError.Warning, Resources.array_expected, "m1");
                 return null;
             }
-            Rectangle rectangle = rectangleOrNull.Value;
+            
+            if (!TryGetRectangle(rect, out Rectangle rectangle))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.array_expected, "rect");
+                return null;
+            }
 
             // Makes bigger image and then crops it. 
             if (rectangle.X + rectangle.Width > img.Image.Width || rectangle.Y + rectangle.Height > img.Image.Height)
@@ -2147,10 +2151,14 @@ namespace Peachpie.Library.Graphics
             // TODO: modes fixed
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
+            {
                 return null;
+            }
 
             if (new_height < 0 && new_width < 0)
+            {
                 return null;
+            }
 
             new_height = new_height < 0 ? (img.Image.Height / img.Image.Width) * new_width : new_height;
             new_width = new_width < 0 ? (img.Image.Width / img.Image.Height) * new_height : new_width;
@@ -2173,7 +2181,8 @@ namespace Peachpie.Library.Graphics
                     return null;
             }
 
-            return new PhpGdImageResource(img.Image.Clone(o => o.Resize(new_width, new_height, res)), img.Format);
+            var a = new PhpGdImageResource(img.Image.Clone(o => o.Resize(new_width, new_height, res)), img.Format);
+            return a;
         }
 
         /// <summary>
@@ -2188,22 +2197,21 @@ namespace Peachpie.Library.Graphics
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
-                return null;
-
-            // Check Arguments and get Matrix
-            Matrix3x2? matrix = GetTransformMatrix(affine);
-            if (!matrix.HasValue)
             {
-                PhpException.Throw(PhpError.Warning, Resources.array_expected, "m1");
                 return null;
             }
-            Matrix3x2 affineMatrix = matrix.Value;
+
+            // Check Arguments and get Matrix
+            if (!TryGetTransformMatrix(affine, out Matrix3x2 affineMatrix))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.array_expected, "affine");
+                return null;
+            }
+
 
             // Check Arguments if clip exists
-            Rectangle sourceBox = new Rectangle(0, 0, img.Image.Width, img.Image.Height);
-            Rectangle? RectangleOrNull = GetRectangle(clip);
-            if (RectangleOrNull.HasValue)
-                sourceBox = RectangleOrNull.Value;   
+            if(!TryGetRectangle(clip,out Rectangle sourceBox))
+                sourceBox = new Rectangle(0, 0, img.Image.Width, img.Image.Height);
 
             // Calculate translation
             PointF[] extent = new PointF[4] { new PointF(0, 0), new PointF(sourceBox.Width, 0),
@@ -2213,7 +2221,8 @@ namespace Peachpie.Library.Graphics
                 extent[i] = ApplyAffineToPointF(extent[i], affineMatrix);
 
             PointF min = extent[0];
-            for (int i = 1; i < 4; i++) {
+            for (int i = 1; i < 4; i++) 
+            {
                 if (min.X > extent[i].X)
                     min.X = extent[i].X;
                 if (min.Y > extent[i].Y)
@@ -2312,63 +2321,81 @@ namespace Peachpie.Library.Graphics
         }
 
         private static PhpArray GetPhpMatrix(double m00 = 0, double m01 = 0, double m10 = 0, double m11 = 0, double m20 = 0, double m21 = 0) 
-            => new PhpArray() { m00, m01, m10, m11, m20, m21 };
+            => new PhpArray(6) { m00, m01, m10, m11, m20, m21 };
 
         /// <summary>
         /// Get Matrix 3x2 from a PhpArray.
         /// </summary>
         /// <param name="matrix">Php matrix representation.</param>
-        /// <returns>Matrix3x2 or null, when there is error.</returns>
-        private static Matrix3x2? GetTransformMatrix(PhpArray matrix)
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        private static bool TryGetTransformMatrix(PhpArray matrix, out Matrix3x2 result)
         {
             if (matrix == null)
-                return null;
+            {
+                result = default;
+                return false;
+            }
 
-            if (!matrix.TryGetItemValue("0", out PhpValue n_1) | !matrix.TryGetItemValue("1", out PhpValue n_2) |
-                !matrix.TryGetItemValue("2", out PhpValue n_3) | !matrix.TryGetItemValue("3", out PhpValue n_4) |
-                !matrix.TryGetItemValue("4", out PhpValue n_5) | !matrix.TryGetItemValue("5", out PhpValue n_6))
+            if (!matrix.TryGetItemValue(0, out PhpValue n_1) | !matrix.TryGetItemValue(1, out PhpValue n_2) |
+                !matrix.TryGetItemValue(2, out PhpValue n_3) | !matrix.TryGetItemValue(3, out PhpValue n_4) |
+                !matrix.TryGetItemValue(4, out PhpValue n_5) | !matrix.TryGetItemValue(5, out PhpValue n_6))
             {
                 PhpException.Throw(PhpError.Warning, Resources.affine_array_number_of_params);
-                return null;
+                result = default;
+                return false;
             }
 
             if (!IsNumber(n_1) || !IsNumber(n_2) || !IsNumber(n_3) ||
                 !IsNumber(n_4) || !IsNumber(n_5) || !IsNumber(n_6))
             {
                 PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                return null;
+                result = default;
+                return false;
             }
 
-            return new Matrix3x2((float)n_1.ToDouble(), (float)n_2.ToDouble(), (float)n_3.ToDouble(),
+            result = new Matrix3x2((float)n_1.ToDouble(), (float)n_2.ToDouble(), (float)n_3.ToDouble(),
                                  (float)n_4.ToDouble(), (float)n_5.ToDouble(), (float)n_6.ToDouble());
+            return true;
         }
 
         /// <summary>
         /// Get Rectangle from a PhpArray.
         /// </summary>
         /// <param name="rectangle">Php rectangle representation.</param>
-        /// <returns>Rectangle or null, when there is error.</returns>
-        private static Rectangle? GetRectangle(PhpArray rectangle)
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        private static bool TryGetRectangle(PhpArray rectangle, out Rectangle result)
         {
             if (rectangle == null)
-                return null;
+            {
+                result = default;
+                return false;
+            }
 
             if (!rectangle.TryGetItemValue("x", out PhpValue xValue) | !rectangle.TryGetItemValue("y", out PhpValue yValue) |
                 !rectangle.TryGetItemValue("width", out PhpValue widthValue) |
                 !rectangle.TryGetItemValue("height", out PhpValue heightValue))
             {
                 PhpException.Throw(PhpError.Warning, Resources.missing_params);
-                return null;
+                result = default;
+                return false;
             }
 
             if (!IsNumber(xValue) || !IsNumber(yValue) || !IsNumber(widthValue) || !IsNumber(heightValue))
             {
                 PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                return null;
+                result = default;
+                return false;
             }
 
-            return new Rectangle() { X = xValue.ToInt(), Y = yValue.ToInt(), 
-                                    Width = widthValue.ToInt(), Height = heightValue.ToInt()};
+            result = new Rectangle()
+                        {
+                            X = xValue.ToInt(),
+                            Y = yValue.ToInt(),
+                            Width = widthValue.ToInt(),
+                            Height = heightValue.ToInt()
+                        };
+
+            return true;
         }
 
         /// <summary>
@@ -2380,23 +2407,19 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpArray imageaffinematrixconcat(PhpArray m1, PhpArray m2)
         {
-            Matrix3x2? matrix1OrNull = GetTransformMatrix(m1);
-            if (!matrix1OrNull.HasValue)
+            if (!TryGetTransformMatrix(m1, out Matrix3x2 matrix1))
             {
                 PhpException.Throw(PhpError.Warning, Resources.array_expected, "m1");
                 return null;
             }
-            Matrix3x2 matrix1 = matrix1OrNull.Value;
 
-            Matrix3x2? matrix2OrNull = GetTransformMatrix(m2);
-            if (!matrix2OrNull.HasValue)
+            if (!TryGetTransformMatrix(m2, out Matrix3x2 matrix2))
             {
-                PhpException.Throw(PhpError.Warning, Resources.array_expected, "m1");
+                PhpException.Throw(PhpError.Warning, Resources.array_expected, "m2");
                 return null;
             }
-            Matrix3x2 matrix2 = matrix2OrNull.Value;
 
-            PhpArray result = new PhpArray() {
+            PhpArray result = new PhpArray(6) {
             matrix1.M11 * matrix2.M11 + matrix1.M21 * matrix2.M12, // 0
             matrix1.M11 * matrix2.M12 + matrix1.M12 * matrix2.M22, // 1
             matrix1.M21 * matrix2.M11 + matrix1.M22 * matrix2.M21, // 2
@@ -2418,9 +2441,11 @@ namespace Peachpie.Library.Graphics
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
+            {
                 return null;
+            }
 
-            return new PhpArray() { img.Image.Metadata.HorizontalResolution, img.Image.Metadata.VerticalResolution };
+            return new PhpArray(2) { img.Image.Metadata.HorizontalResolution, img.Image.Metadata.VerticalResolution };
         }
 
         /// <summary>
@@ -2430,29 +2455,33 @@ namespace Peachpie.Library.Graphics
         /// <param name="res_x">The horizontal resolution in DPI.</param>
         /// <param name="res_y">The vertical resolution in DPI.</param>
         /// <returns>It returns TRUE on success, or FALSE on failure.</returns>
-        public static bool imageresolution(PhpResource image, int res_x, int res_y = -1)
+        public static bool imageresolution(PhpResource image, int res_x, int res_y)
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
                 return false;
 
+            if (res_x < 0 || res_y < 0)
+                throw new NotSupportedException();
+
             if (res_x != 0)
             {
                 img.Image.Metadata.HorizontalResolution = res_x;
 
-                if (res_y == -1)
-                    img.Image.Metadata.VerticalResolution = res_x;
-                else
+                if (res_y != 0)
                     img.Image.Metadata.VerticalResolution = res_y;
-
-
             }
             else if (res_y != 0)
             {
                 img.Image.Metadata.VerticalResolution = res_y;
             }
 
-            //TODO: support negative values ?? 
+            return true;
+        }
+
+        public static bool imageresolution(PhpResource image, int res_x) => imageresolution(image, res_x, res_x);
+
+        #endregion
 
             return true;
         }
