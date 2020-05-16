@@ -2483,6 +2483,27 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
+        #region imagechar
+
+        public static bool imagechar(PhpResource image, int font, int x, int y, string c, long color)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img == null)
+                return false;
+
+            var desireFont = CreateFontById(font);
+
+            if (desireFont == null)
+                throw new NotSupportedException();
+            
+            var col = FromRGBA(color);
+
+            if (string.IsNullOrEmpty(c))
+                return true;
+
+            TextGraphicsOptions opt = new TextGraphicsOptions() { Antialias = false }; 
+            img.Image.Mutate(o => o.DrawText(opt,c[0].ToString(),desireFont, new Color(col),new PointF(x, y)));
+            
             return true;
         }
 
