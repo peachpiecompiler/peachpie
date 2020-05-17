@@ -99,6 +99,10 @@ namespace Pchp.Core
 
         public static implicit operator IntStringKey(PhpNumber value) => new IntStringKey((int)value.ToLong());
 
+        public static bool operator ==(IntStringKey a, long b) => a.Integer == b && a.IsInteger;
+
+        public static bool operator !=(IntStringKey a, long b) => a.IsString || a.Integer != b;
+
         internal static IntStringKey FromObject(object key)
         {
             if (key is string str) return new IntStringKey(str);
@@ -1766,8 +1770,8 @@ namespace Pchp.Core
             /// </summary>
             public IntStringKey CurrentKey
             {
-                get => _array._data[_i].Key;
-                internal set => _array._data[_i].Key = value; // NOTE: array must be rehashed
+                get => Bucket.Key;
+                internal set => Bucket.Key = value; // NOTE: array must be rehashed
             }
 
             /// <summary>
