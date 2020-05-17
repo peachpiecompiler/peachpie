@@ -98,6 +98,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 EmitIndirectLocalsDebugWatch(cg);
             }
 
+            // remember array of arguments:
+            if ((cg.Routine.Flags & FlowAnalysis.RoutineFlags.UsesArgs) != 0)
+            {
+                // <>args = cg.Emit_ArgsArray()
+                var arrtype = cg.Emit_ArgsArray(cg.CoreTypes.PhpValue);
+                cg.FunctionArgsArray = cg.GetTemporaryLocal(arrtype);
+                cg.Builder.EmitLocalStore(cg.FunctionArgsArray);
+            }
+
             // first brace sequence point
             var body = cg.Routine.Syntax.BodySpanOrInvalid();
             if (body.IsValid && cg.IsDebug)

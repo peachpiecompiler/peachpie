@@ -243,6 +243,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TemporaryLocalDefinition ExceptionToRethrowVariable { get; set; }
 
         /// <summary>
+        /// Local variable with array of all routine's arguments.
+        /// PhpValue[]
+        /// Initialized once when <see cref="SourceRoutineSymbol.Flags"/> has <see cref="RoutineFlags.UsesArgs"/>.
+        /// </summary>
+        internal LocalDefinition FunctionArgsArray { get; set; }
+
+        /// <summary>
         /// BoundBlock.Tag value indicating the block was emitted.
         /// </summary>
         readonly int _emmittedTag;

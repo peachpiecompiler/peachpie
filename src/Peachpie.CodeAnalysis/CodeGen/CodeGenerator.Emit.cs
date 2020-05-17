@@ -932,19 +932,30 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits array of <paramref name="elementType"/> containing all current routine PHP arguments value.
         /// </summary>
-        TypeSymbol Emit_ArgsArray(TypeSymbol elementType)
+        internal TypeSymbol Emit_ArgsArray(TypeSymbol elementType)
         {
-            var routine = this.Routine;
-            if (routine == null)
-            {
-                throw new InvalidOperationException("Routine is null!");
-            }
+            var routine = this.Routine ?? throw this.NotImplementedException(nameof(Routine));
 
             if (routine.IsGlobalScope)
             {
                 // TODO: warning: use of arguments in global scope
                 _il.EmitNullConstant();
                 return (TypeSymbol)DeclaringCompilation.ObjectType;
+            }
+
+            if (routine.IsGeneratorMethod())
+            {
+                Debug.Assert(LocalsPlaceOpt != null);
+                Debug.Assert(LocalsPlaceOpt.Type == CoreTypes.PhpArray);
+
+                // TODO: this is not correct for varargs
+                // <locals> does not contain all the parameters,
+                // also it contains all the default values which should not be in listed here
+                Debug.Fail("varargs in Generator has an incorrect behavior");
+
+                // args = <locals>.GetValues();
+                LocalsPlaceOpt.EmitLoad(_il);
+                return EmitCall(ILOpCode.Call, CoreTypes.PhpHashtable.Method("GetValues"));
             }
 
             TypeSymbol arrtype;
@@ -1512,8 +1523,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return EmitLoadToken(ContainingFile, null);    // RuntimeTypeHandle
 
                     case ImportValueAttributeData.ValueSpec.CallerArgs:
-                        Debug.Assert(p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpValue()); // PhpValue[]
-                        return Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
+                        //Debug.Assert(p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpValue()); // PhpValue[]
+                        //return Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
+                        if (FunctionArgsArray != null && p.Type == (Symbol)FunctionArgsArray.Type)
+                        {
+                            _il.EmitLocalLoad(FunctionArgsArray);
+                            return p.Type;
+                        }
+                        throw this.NotImplementedException(
+                            "cannot pass caller arguments, " +
+                            FunctionArgsArray == null ? "arguments not fetched" : "parameter type does not match");
 
                     case ImportValueAttributeData.ValueSpec.Locals:
                         Debug.Assert(p.Type.Is_PhpArray());
