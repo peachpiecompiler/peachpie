@@ -259,24 +259,24 @@ namespace Pchp.Library.Spl
 
         public virtual void __unserialize(PhpArray array)
         {
-            var e = array.GetFastEnumerator();
+            PhpValue value;
 
             // 0: flags:
-            if (e.MoveNext() && e.CurrentKey == 0 && e.CurrentValue.IsLong(out long flags))
+            if (array.TryGetValue(0, out value) && value.IsLong(out long flags))
             {
                 _flags = (int)flags;
 
                 // 1: storage:
-                if (e.MoveNext() && e.CurrentKey == 1)
+                if (array.TryGetValue(1, out value))
                 {
-                    if (e.CurrentValue.IsPhpArray(out _underlayingArray) ||
-                        (_underlayingObject = e.CurrentValue.AsObject()) != null)
+                    if (value.IsPhpArray(out _underlayingArray) ||
+                        (_underlayingObject = value.AsObject()) != null)
                     {
                         // 2: runtime fields:
-                        if (e.MoveNext() && e.CurrentKey == 2 && e.CurrentValue.IsPhpArray(out __peach__runtimeFields))
+                        if (array.TryGetValue(2, out value) && value.IsPhpArray(out __peach__runtimeFields))
                         {
                             // 3: iteratorClass: (optional)
-                            if (e.MoveNext() && e.CurrentKey == 3 && e.CurrentValue.IsString(out var iteratorClass))
+                            if (array.TryGetValue(3, out value) && value.IsString(out var iteratorClass))
                             {
                                 // set and check
                                 setIteratorClass(iteratorClass);
@@ -290,7 +290,7 @@ namespace Pchp.Library.Spl
             }
 
             // error
-            throw new InvalidDataException();
+            throw new UnexpectedValueException();
         }
 
         #endregion

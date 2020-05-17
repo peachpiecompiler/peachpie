@@ -469,20 +469,20 @@ namespace Pchp.Library.Spl
 
         public virtual void __unserialize(PhpArray array)
         {
-            var e = array.GetFastEnumerator();
+            PhpValue value;
 
-            // 0: flags
-            if (e.MoveNext() && e.CurrentKey == 0 && e.CurrentValue.IsLong(out long flags))
+            // 0: flags:
+            if (array.TryGetValue(0, out value) && value.IsLong(out long flags))
             {
                 _flags = (int)flags;
 
-                // 1: storage
-                if (e.MoveNext() && e.CurrentKey == 1 && (e.CurrentValue.IsArray || e.CurrentValue.IsObject))
+                // 1: storage:
+                if (array.TryGetValue(1, out value) && (value.IsArray || value.IsObject))
                 {
-                    storage = e.CurrentValue.Object;
+                    storage = value.Object;
 
-                    // 2: runtime fields
-                    if (e.MoveNext() && e.CurrentKey == 2 && e.CurrentValue.IsPhpArray(out __peach__runtimeFields))
+                    // 2: runtime fields:
+                    if (array.TryGetValue(2, out value) && value.IsPhpArray(out __peach__runtimeFields))
                     {
                         // ok
                         return;
@@ -491,7 +491,7 @@ namespace Pchp.Library.Spl
             }
 
             // error
-            throw new InvalidDataException();
+            throw new UnexpectedValueException();
         }
 
         #endregion
