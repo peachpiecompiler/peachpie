@@ -722,6 +722,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         // remember we need varargs:
                         Routine.Flags |= RoutineFlags.UsesArgs;
+
+                        // cannot use in global scope
+                        if (Routine.IsGlobalScope)
+                        {
+                            Diagnostics.Add(GetLocation(x), Errors.ErrorCode.WRN_CalledFromGlobalScope);
+                        }
                     }
 
                     if (fname.IsAssertFunctionName())
