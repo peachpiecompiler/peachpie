@@ -33,6 +33,7 @@ namespace Peachpie.NET.Sdk
             { "AGPL-1.0", "AGPL-1.0-or-later" },
             { "AGPL-3.0", "AGPL-3.0-or-later" },
             { "AGPL-3.0+", "AGPL-3.0-or-later" },
+            { "LGPL-2.0", "LGPL-2.0-or-later" },
             { "LGPL-2.0+", "LGPL-2.0-or-later" },
             { "LGPL-2.1", "LGPL-2.1-or-later" },
             { "LGPL-2.1+", "LGPL-2.1-or-later" },
