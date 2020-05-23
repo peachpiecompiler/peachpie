@@ -1689,11 +1689,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // target will be reanalysed
                     // note: continuing current block may be waste of time, but it might gather other called targets
 
-                    if (method != Routine) // we have to continue even this routine is not yet analysed, direct recursion
-                    {
-                        // The next blocks will be analysed after this routine is re-enqueued due to the dependency
-                        _flags |= AnalysisFlags.IsCanceled;
-                    }
+                    // The next blocks will be analysed after this routine is re-enqueued due to the dependency
+                    _flags |= AnalysisFlags.IsCanceled;
                 }
             }
 
