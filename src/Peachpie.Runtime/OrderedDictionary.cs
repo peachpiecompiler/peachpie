@@ -118,9 +118,22 @@ namespace Pchp.Core
 
         public override int GetHashCode() => unchecked((int)_ikey);
 
+        public override bool Equals(object obj) => obj switch
+        {
+            string skey => Equals(skey),
+            long lkey => Equals(lkey),
+            int ikey => Equals(ikey),
+            IntStringKey key => Equals(key),
+            _ => false,
+        };
+
         public bool Equals(IntStringKey other) => _ikey == other._ikey && _skey == other._skey;
 
-        public bool Equals(int ikey) => _ikey == ikey && ReferenceEquals(_skey, null);
+        public bool Equals(int ikey) => _ikey == ikey && IsInteger;
+
+        public bool Equals(long lkey) => _ikey == lkey && IsInteger;
+
+        public bool Equals(string skey) => _skey == skey && IsString;
 
         public override string ToString() => _skey ?? _ikey.ToString();
 
