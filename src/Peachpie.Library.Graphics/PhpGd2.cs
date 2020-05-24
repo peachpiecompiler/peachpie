@@ -1716,7 +1716,7 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imagefill
+        #region imagefill, image filltoborder
 
         /// <summary>
         /// Flood fill
@@ -1731,6 +1731,23 @@ namespace Peachpie.Library.Graphics
             if (x > img.Image.Width || y > img.Image.Height) return true;
 
             img.Image.Mutate(o => o.ApplyProcessor(new FloodFillProcessor(new Point(x, y), FromRGBA(col), false, Color.Red)));
+
+            return true;
+        }
+
+        /// <summary>
+        /// Flood fill
+        /// </summary>
+        public static bool imagefilltoborder(PhpResource im, int x, int y, long border, long col)
+        {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            if (x < 0 || y < 0) return true;
+            if (x > img.Image.Width || y > img.Image.Height) return true;
+
+            img.Image.Mutate(o => o.ApplyProcessor(new FloodFillProcessor(new Point(x, y), FromRGBA(col), true, FromRGBA(border))));
 
             return true;
         }
