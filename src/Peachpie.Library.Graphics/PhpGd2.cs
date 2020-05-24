@@ -998,7 +998,8 @@ namespace Peachpie.Library.Graphics
 
             var rect = new RectangleF(x1, y1, x2 - x1, y2 - y1);
 
-            img.Image.Mutate(o => o.Draw(FromRGBA(col), 1.0f, rect));
+            ShapeGraphicsOptions opt = new ShapeGraphicsOptions() { Antialias = img.AntiAlias };
+            img.Image.Mutate(o => o.Draw(opt, FromRGBA(col), 1.0f, rect));
 
             return true;
         }
@@ -1176,7 +1177,8 @@ namespace Peachpie.Library.Graphics
             var img = PhpGdImageResource.ValidImage(im);
             if (img != null)
             {
-                img.Image.Mutate(o => o.DrawLines(GetAlphaColor(img, color), 1.0f, new PointF[] { new PointF(x1, y1), new PointF(x2, y2) }));
+                ShapeGraphicsOptions opt = new ShapeGraphicsOptions() { Antialias = img.AntiAlias };
+                img.Image.Mutate(o => o.DrawLines(opt, GetAlphaColor(img, color), 1.0f, new PointF[] { new PointF(x1, y1), new PointF(x2, y2) }));
 
                 return true;
             }
@@ -1465,8 +1467,6 @@ namespace Peachpie.Library.Graphics
 
         #region imageellipse, imagefilledellipse
 
-        static IPath CreateEllipsePath(int cx, int cy, int w, int h) => new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h);
-
         /// <summary>
         /// Draw an ellipse
         /// </summary>
@@ -1479,7 +1479,11 @@ namespace Peachpie.Library.Graphics
             if (img == null)
                 return false;
 
-            img.Image.Mutate(o => o.Draw(GetAlphaColor(img, col), 1.0f, CreateEllipsePath(cx, cy, w, h)));
+            var ellipse = new EllipsePolygon(cx, cy, w, h);
+
+            ShapeGraphicsOptions opt = new ShapeGraphicsOptions() { Antialias = img.AntiAlias };
+
+            img.Image.Mutate(o => o.Draw(opt, GetAlphaColor(img, col), 1.0f, ellipse));
 
             return true;
         }
@@ -1493,16 +1497,17 @@ namespace Peachpie.Library.Graphics
             if (img == null)
                 return false;
 
-            var ellipse = CreateEllipsePath(cx, cy, w, h);
+            var ellipse = new EllipsePolygon(cx, cy, w, h);
+            ShapeGraphicsOptions opt = new ShapeGraphicsOptions() { Antialias = img.AntiAlias };
 
             if (img.tiled != null)
             {
-                img.Image.Mutate(o => o.Fill(img.tiled, ellipse));
+                img.Image.Mutate(o => o.Fill(opt, img.tiled, ellipse));
             }
             else
             {
                 var brush = new SolidBrush(GetAlphaColor(img, col));
-                img.Image.Mutate(o => o.Fill(brush, ellipse));
+                img.Image.Mutate(o => o.Fill(opt, brush, ellipse));
             }
 
             return true;
