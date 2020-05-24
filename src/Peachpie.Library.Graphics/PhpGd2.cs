@@ -681,7 +681,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Php Alpha is reversed map. PHP: 0 -> PNG,ImageSharp:255, PHP: 127 -> PNG,ImageSharp: 0. This method converts an alpha part of a color from PHP/ImageSharp to ImageSharp/PHP.
         /// </summary>
-        /// <param name="FromPhp">True for PHP -> ImageSharp else PHP <- ImageSharp </param>
+        /// <param name="FromPhp">True for PHP to ImageSharp else ImageSharp to PHP </param>
         /// <returns>Converted color</returns>
         static long ConvertAlpha(long color, bool FromPhp)
         {
