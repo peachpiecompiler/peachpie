@@ -1580,7 +1580,31 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imagestring
+        #region imagestring, imagestringup, imagechar, imagecharup
+
+        /// <summary>
+        /// Draw a character horizontally
+        /// </summary>
+        /// <param name="image">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
+        /// <param name="font">Can be 1, 2, 3, 4, 5 for built-in fonts in latin2 encoding (where higher numbers corresponding to larger fonts) or any of your own font identifiers registered with imageloadfont().</param>
+        /// <param name="x">x-coordinate of the start.</param>
+        /// <param name="y">y-coordinate of the start.</param>
+        /// <param name="c">The character to draw.</param>
+        /// <param name="color">A color identifier created with imagecolorallocate().</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool imagechar(PhpResource image, int font, int x, int y, string c, long color) => DrawText(image, font, x, y, c[0].ToString(), color);
+
+        /// <summary>
+        /// Draw a character vertically
+        /// </summary>
+        /// <param name="image">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
+        /// <param name="font">Can be 1, 2, 3, 4, 5 for built-in fonts in latin2 encoding (where higher numbers corresponding to larger fonts) or any of your own font identifiers registered with imageloadfont().</param>
+        /// <param name="x">x-coordinate of the start.</param>
+        /// <param name="y">y-coordinate of the start.</param>
+        /// <param name="c">The character to draw.</param>
+        /// <param name="color">A color identifier created with imagecolorallocate().</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool imagecharup(PhpResource image, int font, int x, int y, string c, long color) => DrawText(image, font, x, y, c[0].ToString(), color, true);
 
         /// <summary>
         /// A function to write simple text to a gd2 image. 
@@ -1595,7 +1619,21 @@ namespace Peachpie.Library.Graphics
         /// <param name="text"></param>
         /// <param name="col">Packed color number</param>
         /// <returns></returns>
-        public static bool imagestring(PhpResource im, int fontInd, int x, int y, string text, long col)
+        public static bool imagestring(PhpResource im, int fontInd, int x, int y, string text, long col) => DrawText(im, fontInd, x, y, text, col);
+
+        /// <summary>
+        /// Draw a string vertically
+        /// </summary>
+        /// <param name="im">An image resource, returned by one of the image creation functions, such as imagecreatetruecolor().</param>
+        /// <param name="fontInd">Can be 1, 2, 3, 4, 5 for built-in fonts in latin2 encoding (where higher numbers corresponding to larger fonts) or any of your own font identifiers registered with imageloadfont().</param>
+        /// <param name="x">x-coordinate of the bottom left corner.</param>
+        /// <param name="y">y-coordinate of the bottom left corner.</param>
+        /// <param name="text">The string to be written.</param>
+        /// <param name="col">A color identifier created with imagecolorallocate().</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool imagestringup(PhpResource im, int fontInd, int x, int y, string text, long col) => DrawText(im, fontInd, x, y, text, col, true);
+
+        public static bool DrawText(PhpResource im, int fontInd, int x, int y, string text, long col, bool up = false)
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -1607,7 +1645,12 @@ namespace Peachpie.Library.Graphics
             var font = CreateFontById(fontInd);
             var color = FromRGBA(col);
 
-            img.Image.Mutate<Rgba32>(context => context.DrawText(text, font, color, new PointF(x, y)));
+            TextGraphicsOptions opt = new TextGraphicsOptions() { Antialias = img.AntiAlias };
+            if (up)
+                img.Image.Mutate(o => o.Rotate(90).DrawText(opt, text, font, new Color(color), new PointF(img.Image.Height - y, x)).Rotate(-90));
+            else
+                img.Image.Mutate<Rgba32>(context => context.DrawText(opt, text, font, color, new PointF(x, y)));
+
 
             return true;
         }
@@ -2485,32 +2528,6 @@ namespace Peachpie.Library.Graphics
         }
 
         public static bool imageresolution(PhpResource image, int res_x) => imageresolution(image, res_x, res_x);
-
-        #endregion
-
-        #region imagechar
-
-        public static bool imagechar(PhpResource image, int font, int x, int y, string c, long color)
-        {
-            var img = PhpGdImageResource.ValidImage(image);
-            if (img == null)
-                return false;
-
-            var desireFont = CreateFontById(font);
-
-            if (desireFont == null)
-                throw new NotSupportedException();
-            
-            var col = FromRGBA(color);
-
-            if (string.IsNullOrEmpty(c))
-                return true;
-
-            TextGraphicsOptions opt = new TextGraphicsOptions() { Antialias = false }; 
-            img.Image.Mutate(o => o.DrawText(opt,c[0].ToString(),desireFont, new Color(col),new PointF(x, y)));
-            
-            return true;
-        }
 
         #endregion
     }
