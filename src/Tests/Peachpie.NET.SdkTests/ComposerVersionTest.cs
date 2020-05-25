@@ -18,6 +18,9 @@ namespace Peachpie.NET.SdkTests
 
             Assert.IsTrue(ComposerVersion.TryParse("1.2", out ver));
             Assert.AreEqual("1.2", ver.ToString());
+
+            Assert.IsTrue(ComposerVersion.TryParse("1.2.x", out ver));
+            Assert.AreEqual("1.2.*", ver.ToString());
         }
 
         void AssertFloatingVersion(string versionConstrain, string expectedFloatingVersion)
