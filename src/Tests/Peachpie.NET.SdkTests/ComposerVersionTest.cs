@@ -37,6 +37,8 @@ namespace Peachpie.NET.SdkTests
 
             AssertFloatingVersion(">=1.0 <2.0", "[1.0.0-*,2.0.0)"); // >=1.0.0-dev && <2.0.0-dev
 
+            AssertFloatingVersion(">=2.4.0,<2.4.*-dev", "[2.4.0-*,2.5.0)");
+
             AssertFloatingVersion(">1.2", "(1.2.0,]");
 
             AssertFloatingVersion(">=1.2", "[1.2.0-*,]");

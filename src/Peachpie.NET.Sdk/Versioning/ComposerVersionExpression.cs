@@ -309,7 +309,15 @@ namespace Peachpie.NET.Sdk.Versioning
                 case Operation.LessThan:
                     return new FloatingVersion
                     {
-                        UpperBound = Version.AnyToZero().WithStabilityFlag(Version.Stability ?? ComposerVersion.StabilityDev),
+                        UpperBound =
+                            (Version.IsAnyMajor
+                                ? default // unspecified
+                                : Version.IsAnyMinor // * or unspecified
+                                    ? (Version.PartsCount == 1 ? new ComposerVersion(Version.Major, 0, 0) /* <1 */ : new ComposerVersion(Version.Major + 1, 0, 0)/* <1.* */)
+                                    : Version.IsAnyBuild // * or unspecified
+                                        ? (Version.PartsCount == 2 ? new ComposerVersion(Version.Major, Version.Minor, 0)/* <1.2 */ : new ComposerVersion(Version.Major, Version.Minor + 1, 0) /* <1.2.* */)
+                                        : new ComposerVersion(Version.Major, Version.Minor, Version.Build) /* <1.2.3 */
+                            ).WithStabilityFlag(!Version.IsStable ? ComposerVersion.StabilityStable : Version.Stability ?? ComposerVersion.StabilityDev), // <dev = stable
                         UpperBoundExclusive = true,
                     };
 
