@@ -294,9 +294,9 @@ namespace Peachpie.NET.Sdk.Versioning
                     return new FloatingVersion
                     {
                         LowerBound = Version.AnyToZero(),
-                        UpperBound = Version.Major >= 1
+                        UpperBound = Version.Major >= 1 || Version.IsAnyMinor
                             ? new ComposerVersion(Version.Major + 1, 0, 0) { Stability = Version.Stability }
-                            : Version.GetClosestHigher(),
+                            : new ComposerVersion(Version.Major, Version.Minor + 1, 0) { Stability = Version.Stability },
                         UpperBoundExclusive = true,
                     };
 
