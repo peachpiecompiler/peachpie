@@ -89,11 +89,12 @@ namespace Peachpie.NET.Sdk.Versioning
             public const char Lt = '<';
             public static ReadOnlySpan<char> Lte => "<=".AsSpan();
             public const char Gt = '>';
+            public const char Eq = '=';
             public static ReadOnlySpan<char> Gte => ">=".AsSpan();
             public static ReadOnlySpan<char> Ne => "!=".AsSpan();
             public const char TildeVersion = '~';
             public const char CaretVersion = '^';
-            public static readonly Regex AndRegex = new Regex(@"[^|,]+([,\s]+)[^|,]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            public static readonly Regex AndRegex = new Regex(@"[^|,\s]+([,\s]+)[^|,\s]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         }
 
         /// <summary>
@@ -226,6 +227,11 @@ namespace Peachpie.NET.Sdk.Versioning
             else if (value[0] == Tokens.Gt)
             {
                 op = Operation.GreaterThan;
+                value = value.Slice(1);
+            }
+            else if (value[0] == Tokens.Eq)
+            {
+                op = Operation.Exact;
                 value = value.Slice(1);
             }
             else
