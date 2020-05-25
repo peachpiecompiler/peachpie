@@ -2190,10 +2190,13 @@ namespace Peachpie.Library.Graphics
             }
 
             // Makes bigger image and then crops it. 
-            if (rectangle.X + rectangle.Width > img.Image.Width || rectangle.Y + rectangle.Height > img.Image.Height)
+            if (rectangle.X + rectangle.Width > img.Image.Width ||
+                rectangle.Y + rectangle.Height > img.Image.Height)
             {
                 var resized = new PhpGdImageResource(new Image<Rgba32>(
-                    Math.Max(rectangle.X + rectangle.Width, img.Image.Width), Math.Max(rectangle.Y + rectangle.Height, img.Image.Height)), img.Format);
+                    Math.Max(rectangle.X + rectangle.Width, img.Image.Width),
+                    Math.Max(rectangle.Y + rectangle.Height, img.Image.Height)), 
+                    img.Format);
                 resized.Image.Mutate(o => o.DrawImage(img.Image, 1).Crop(rectangle));
                 return resized;
             }
@@ -2279,8 +2282,13 @@ namespace Peachpie.Library.Graphics
                 sourceBox = new Rectangle(0, 0, img.Image.Width, img.Image.Height);
 
             // Calculate translation
-            PointF[] extent = new PointF[4] { new PointF(0, 0), new PointF(sourceBox.Width, 0),
-                    new PointF(sourceBox.Width, sourceBox.Height), new PointF(0, sourceBox.Height) };
+            PointF[] extent = new PointF[4] 
+            { 
+                new PointF(0, 0),
+                new PointF(sourceBox.Width, 0),
+                new PointF(sourceBox.Width, sourceBox.Height), 
+                new PointF(0, sourceBox.Height) 
+            };
 
             for (int i = 0; i < extent.Length; i++)
                 extent[i] = ApplyAffineToPointF(extent[i], affineMatrix);
@@ -2304,7 +2312,22 @@ namespace Peachpie.Library.Graphics
             return new PhpGdImageResource(transformed, img.Format);
         }
 
-        private static bool IsNumber(PhpValue value) => value.IsInteger() || value.IsDouble();
+        static bool TryGetFloat(PhpValue value, out float number)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Boolean: number = value.Boolean ? 1 : 0; return true;
+                case PhpTypeCode.Long: number = value.Long; return true;
+                case PhpTypeCode.Double: number = (float)value.Double; return true;
+                //PhpTypeCode.Null : 0,
+                //PhpTypeCode.String
+                case PhpTypeCode.Alias: return TryGetFloat(value.Alias.Value, out number);
+                default:
+                    PhpException.Throw(PhpError.Warning, Resources.wrong_type);
+                    number = default;
+                    return false;
+            }
+        }
 
         private static PointF ApplyAffineToPointF(PointF point, Matrix3x2 affine)
         {
@@ -2342,15 +2365,13 @@ namespace Peachpie.Library.Graphics
                             break;
                         }
 
-                        double x = 0;
-                        double y = 0;
+                        //double x = 0;
+                        //double y = 0;
 
                         // If there is another type, coordinates are zero.
-                        if (IsNumber(xVal) || IsNumber(yVal))
-                        {
-                            x = xVal.ToDouble();
-                            y = yVal.ToDouble();
-                        }
+                        TryGetFloat(xVal, out float x);
+                        TryGetFloat(yVal, out float y);
+                       
 
                         return (type == IMG_AFFINE_TRANSLATE) ? GetPhpMatrix(m00: 1, m11: 1, m20: x, m21: y) : GetPhpMatrix(m00: x, m11: y);
                     }
@@ -2363,8 +2384,8 @@ namespace Peachpie.Library.Graphics
                     double angle = 0;
 
                     // If there is another type, coordinates are zero.
-                    if (IsNumber(options))
-                        angle = Math.PI * options.ToDouble() / 180.0;
+                    if (TryGetFloat(options, out float res))
+                        angle = Math.PI * res / 180.0;
 
                     if (type == IMG_AFFINE_ROTATE) 
                     {
@@ -2395,32 +2416,37 @@ namespace Peachpie.Library.Graphics
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         private static bool TryGetTransformMatrix(PhpArray matrix, out Matrix3x2 result)
         {
+            result = default;
+
             if (matrix == null)
             {
-                result = default;
                 return false;
             }
 
-            if (!matrix.TryGetItemValue(0, out PhpValue n_1) | !matrix.TryGetItemValue(1, out PhpValue n_2) |
-                !matrix.TryGetItemValue(2, out PhpValue n_3) | !matrix.TryGetItemValue(3, out PhpValue n_4) |
-                !matrix.TryGetItemValue(4, out PhpValue n_5) | !matrix.TryGetItemValue(5, out PhpValue n_6))
+            if (matrix.TryGetValue(0, out var n_11) & matrix.TryGetValue(1, out var n_12) |
+                matrix.TryGetValue(2, out var n_21) & matrix.TryGetValue(3, out var n_22) |
+                matrix.TryGetValue(4, out var n_31) & matrix.TryGetValue(5, out var n_32))
+            {
+                if (TryGetFloat(n_11, out result.M11) &
+                    TryGetFloat(n_12, out result.M12) &
+                    TryGetFloat(n_21, out result.M21) &
+                    TryGetFloat(n_22, out result.M22) &
+                    TryGetFloat(n_31, out result.M31) &
+                    TryGetFloat(n_32, out result.M32))
+                {
+                    return true;
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.wrong_type);
+                    return false;
+                }
+            }
+            else
             {
                 PhpException.Throw(PhpError.Warning, Resources.affine_array_number_of_params);
-                result = default;
                 return false;
             }
-
-            if (!IsNumber(n_1) || !IsNumber(n_2) || !IsNumber(n_3) ||
-                !IsNumber(n_4) || !IsNumber(n_5) || !IsNumber(n_6))
-            {
-                PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                result = default;
-                return false;
-            }
-
-            result = new Matrix3x2((float)n_1.ToDouble(), (float)n_2.ToDouble(), (float)n_3.ToDouble(),
-                                 (float)n_4.ToDouble(), (float)n_5.ToDouble(), (float)n_6.ToDouble());
-            return true;
         }
 
         /// <summary>
@@ -2430,37 +2456,44 @@ namespace Peachpie.Library.Graphics
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         private static bool TryGetRectangle(PhpArray rectangle, out Rectangle result)
         {
+
             if (rectangle == null)
             {
                 result = default;
                 return false;
             }
 
-            if (!rectangle.TryGetItemValue("x", out PhpValue xValue) | !rectangle.TryGetItemValue("y", out PhpValue yValue) |
-                !rectangle.TryGetItemValue("width", out PhpValue widthValue) |
-                !rectangle.TryGetItemValue("height", out PhpValue heightValue))
+            if (rectangle.TryGetValue("x", out var x) &
+                    rectangle.TryGetValue("y", out var y) &
+                    rectangle.TryGetValue("width", out var width) &
+                    rectangle.TryGetValue("height", out var height))
+            {
+                try
+                {
+                    result = new Rectangle()
+                    {
+                        X = (int)StrictConvert.ToLong(x),
+                        Y = (int)StrictConvert.ToLong(y),
+                        Width = (int)StrictConvert.ToLong(width),
+                        Height = (int)StrictConvert.ToLong(height)
+                    };
+
+                    return true;
+                }
+                catch // (Pchp.Library.Spl.TypeError)
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.wrong_type);
+                    result = default;
+                    return false;
+                }
+            }
+            else
             {
                 PhpException.Throw(PhpError.Warning, Resources.missing_params);
                 result = default;
                 return false;
             }
-
-            if (!IsNumber(xValue) || !IsNumber(yValue) || !IsNumber(widthValue) || !IsNumber(heightValue))
-            {
-                PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                result = default;
-                return false;
-            }
-
-            result = new Rectangle()
-                        {
-                            X = xValue.ToInt(),
-                            Y = yValue.ToInt(),
-                            Width = widthValue.ToInt(),
-                            Height = heightValue.ToInt()
-                        };
-
-            return true;
+        
         }
 
         /// <summary>
