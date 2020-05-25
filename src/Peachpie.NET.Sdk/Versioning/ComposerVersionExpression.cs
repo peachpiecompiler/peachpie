@@ -93,7 +93,7 @@ namespace Peachpie.NET.Sdk.Versioning
             public static ReadOnlySpan<char> Ne => "!=".AsSpan();
             public const char TildeVersion = '~';
             public const char CaretVersion = '^';
-            public static readonly Regex AndRegex = new Regex(@"[^|]+([,\s]+)[^|]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            public static readonly Regex AndRegex = new Regex(@"[^|,]+([,\s]+)[^|,]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         }
 
         /// <summary>
