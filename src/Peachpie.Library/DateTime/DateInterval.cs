@@ -57,10 +57,6 @@ namespace Pchp.Library.DateTime
             set => _span = new TimeSpan(_span.Days, _span.Hours, _span.Minutes, _span.Seconds, (int)(value * 1000));
         }
 
-        public int invert;
-
-        // additional properties
-
         /// <summary>
         /// </summary>
         /// <remarks>
@@ -68,6 +64,8 @@ namespace Pchp.Library.DateTime
         /// then this is the total number of days between the start and end dates.
         /// </remarks>
         public int days { get; set; }
+
+        public int invert;
 
         /// <summary>
         /// Internal <see cref="TimeSpan"/> representing days, hours, minutes, seconds and milliseconds.
@@ -83,9 +81,15 @@ namespace Pchp.Library.DateTime
 
         internal DateInterval(System.DateTime date1, System.DateTime date2)
         {
-            // TODO: preserve difference of years and months,
-            // now {y} and {m} are always '0'
-            Initialize(date2 - date1);
+            var span = date2 - date1;
+
+            days = (int)span.TotalDays;
+            invert = span.Ticks < 0 ? 1 : 0;
+
+            CalculateDifference(date1, date2, out y, out m, out span);
+
+            Debug.Assert(span.Ticks >= 0); // absolutized
+            _span = span;
         }
 
         internal bool IsZero
@@ -118,6 +122,80 @@ namespace Pchp.Library.DateTime
 
             //
             return datetime;
+        }
+
+        private protected static void CalculateDifference(System.DateTime date1, System.DateTime date2, out int years, out int months, out TimeSpan span)
+        {
+            if (date1 > date2)
+            {
+                var tmp = date1;
+                date1 = date2;
+                date2 = tmp;
+            }
+
+            //
+            Debug.Assert(date1 <= date2);
+
+            span = date2 - date1;
+            years = months = 0;
+
+            if (span.Days > 28) // months and years may be non-zero
+            {
+                var fromMonthDays = System.DateTime.DaysInMonth(date1.Year, date1.Month);
+                var toMonthDays = System.DateTime.DaysInMonth(date2.Year, date2.Month);
+
+                // full years
+                years = date2.Year - date1.Year - 1;
+
+                // full months in the first year
+                var firstYearMonths = 12 - date1.Month;
+
+                // full months in the last year
+                var endYearMonths = date2.Month - 1;
+
+                // full months
+                months = firstYearMonths + endYearMonths;
+
+                int days = 0;
+
+                // Particular end of month cases
+                if (fromMonthDays == date1.Day && toMonthDays == date2.Day)
+                {
+                    months++;
+                }
+                else if (fromMonthDays == date1.Day)
+                {
+                    days += date2.Day;
+                }
+                else if (toMonthDays == date2.Day)
+                {
+                    days += fromMonthDays - date1.Day;
+                }
+                // For all the other cases
+                else if (date2.Day > date1.Day)
+                {
+                    months++;
+                    days += date2.Day - date1.Day;
+                }
+                else if (date2.Day < date1.Day)
+                {
+                    days += fromMonthDays - date1.Day;
+                    days += date2.Day;
+                }
+                else
+                {
+                    months++;
+                }
+
+                if (months >= 12)
+                {
+                    years++;
+                    months = months - 12;
+                }
+
+                // update span without the years/months portion
+                span = new TimeSpan(days, span.Hours, span.Minutes, span.Seconds, span.Milliseconds);
+            }
         }
 
         private protected void Initialize(DateInfo ts, bool negative)

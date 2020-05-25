@@ -19,11 +19,28 @@ namespace Pchp.Core
         /// <summary>
         /// Script path relative to the root.
         /// </summary>
-        public string Path { get; private set; }
+        public string Path { get; }
+
+        /// <summary>
+        /// Last modified time of the source file (UTC).
+        /// Can be <c>default</c> if not set.
+        /// </summary>
+        public DateTime LastModifiedTime { get; }
+
+        /// <summary>
+        /// Gets value indicating whether the file is marked to be autoloaded for each request.
+        /// </summary>
+        public bool IsAutoloaded { get; set; }
 
         public ScriptAttribute(string path)
+            : this(path, 0L)
+        {
+        }
+
+        public ScriptAttribute(string path, long modifiedTimeTicks)
         {
             this.Path = path;
+            this.LastModifiedTime = modifiedTimeTicks != 0 ? new DateTime(modifiedTimeTicks, DateTimeKind.Utc) : default;
         }
     }
 
@@ -224,6 +241,11 @@ namespace Pchp.Core
             TypeNameAs = typeNameAs;
         }
 
+        /// <summary>
+        /// Annotates the PHP type.
+        /// </summary>
+        /// <param name="phpTypeName">The type name that will be used in PHP context instead of CLR type name.</param>
+        /// <param name="fileName">Optional. Relative path to the file where the type is defined.</param>
         public PhpTypeAttribute(string phpTypeName, string fileName)
             : this(phpTypeName, fileName, default)
         {
@@ -233,7 +255,7 @@ namespace Pchp.Core
         /// Annotates the PHP type.
         /// </summary>
         /// <param name="phpTypeName">The type name that will be used in PHP context instead of CLR type name.</param>
-        /// <param name="fileName">Optional relative path to the file where the type is defined.</param>
+        /// <param name="fileName">Relative path to the file where the type is defined.</param>
         /// <param name="autoload">Optional. Specifies if the type can be autoloaded:<br/>
         /// - 0: type is not selected to be autloaded.<br/>
         /// - 1: type is marked to be autoloaded.<br/>

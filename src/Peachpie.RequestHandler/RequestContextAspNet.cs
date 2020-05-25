@@ -251,9 +251,16 @@ namespace Peachpie.RequestHandler
             _httpctx.Response.AppendCookie(cookie);
         }
 
-        void IHttpPhpContext.Flush()
+        void IHttpPhpContext.Flush(bool endRequest)
         {
-            _httpctx.Response.Flush();
+            if (endRequest)
+            {
+                _httpctx.Response.End();
+            }
+            else
+            {
+                _httpctx.Response.Flush();
+            }
         }
 
         /// <summary>
@@ -439,8 +446,9 @@ namespace Peachpie.RequestHandler
             }
 
             array[CommonPhpArrayKeys.SERVER_ADDR] = (PhpValue)serverVariables["LOCAL_ADDR"];
-            array[CommonPhpArrayKeys.REQUEST_URI] = (PhpValue)request.RawUrl;
-            array[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(_httpctx.Timestamp.ToUniversalTime());
+            array[CommonPhpArrayKeys.REQUEST_URI] = request.RawUrl;
+            array[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
+            array[CommonPhpArrayKeys.REQUEST_TIME] = DateTimeUtils.UtcToUnixTimeStamp(_httpctx.Timestamp.ToUniversalTime());
             array[CommonPhpArrayKeys.SCRIPT_FILENAME] = (PhpValue)request.PhysicalPath;
 
             //IPv6 is the default in IIS7, convert to an IPv4 address (store the IPv6 as well)
@@ -461,6 +469,8 @@ namespace Peachpie.RequestHandler
                         }
                     }
             }
+
+            array[CommonPhpArrayKeys.HTTPS] = request.IsSecureConnection ? "on" : "off";
 
             // PATH_INFO
             // should contain partial path information only
@@ -634,6 +644,7 @@ namespace Peachpie.RequestHandler
             if (script.IsValid)
             {
                 this.MainScriptFile = script;
+                this.AutoloadFiles();
                 script.Evaluate(this, locals: Globals, @this: null, self: default);
                 return true;
             }

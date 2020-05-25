@@ -507,6 +507,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         List<Symbol> _lazyMembers;
 
+        /// <summary>
+        /// In case the type is declared conditionally,
+        /// postpone reporting the diagnostics so they might get ignored eventually.
+        /// </summary>
+        DiagnosticBag _postponedDiagnostics;
+
         public SourceFileSymbol ContainingFile => _file;
 
         Location CreateLocation(TextSpan span) => Location.Create(ContainingFile.SyntaxTree, span);
@@ -596,8 +602,20 @@ namespace Pchp.CodeAnalysis.Symbols
                             var diagnostics = DiagnosticBag.GetInstance();
 
                             ResolveBaseTypesNoLock(tsignature, diagnostics);
-                            AddDeclarationDiagnostics(diagnostics);
-                            diagnostics.Free();
+
+                            if (IsConditional)
+                            {
+                                // the type is declared conditionally,
+                                // and might get ignored eventually the full analysis.
+                                // In such a case, diagnostics are ignored,
+                                // otherwise reported after the analysis phase in GetDiagnostics().
+                                _postponedDiagnostics = diagnostics;
+                            }
+                            else
+                            {
+                                AddDeclarationDiagnostics(diagnostics);
+                                diagnostics.Free();
+                            }
 
                             //
                             Debug.Assert(_lazyInterfacesType.IsDefault == false);
@@ -761,7 +779,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     errors.Add(MessageProvider.Instance.CreateDiagnostic(
                         ErrorCode.ERR_CannotExtendFrom, CreateLocation(tsignature[0].TypeRef.Span),
-                        this.FullName, v_base.IsInterface ? "interface" : v_base.IsStructType() ? "struct" : "trait", v_base.MakeQualifiedName()));
+                        this.FullNameString, v_base.GetTypeKindKeyword(), v_base.MakeQualifiedName()));
                 }
             }
 
@@ -777,7 +795,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     errors.Add(MessageProvider.Instance.CreateDiagnostic(
                         target.IsInterface() ? ErrorCode.ERR_CannotImplementNonInterface : ErrorCode.ERR_CannotUseNonTrait,
                         CreateLocation(tsignature[i].TypeRef.Span),
-                        this.FullName, bound.MakeQualifiedName()));
+                        this.FullNameString, bound.MakeQualifiedName()));
                 }
             }
 
@@ -975,7 +993,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (basedef != null && f.DeclaredAccessibility < basedef.DeclaredAccessibility)
                 {
                     // ERR: Access level to {0}::${1} must be {2} (as in class {3}) or weaker
-                    diagnostic.Add(f.Locations[0], ErrorCode.ERR_PropertyAccessibilityError, FullName, f.Name, basedef.DeclaredAccessibility.ToString().ToLowerInvariant(), ((IPhpTypeSymbol)basedef.ContainingType).FullName);
+                    diagnostic.Add(f.Locations[0], ErrorCode.ERR_PropertyAccessibilityError, FullNameString, f.Name, basedef.DeclaredAccessibility.ToString().ToLowerInvariant(), ((IPhpTypeSymbol)basedef.ContainingType).FullName);
                 }
             }
 
@@ -989,6 +1007,23 @@ namespace Pchp.CodeAnalysis.Symbols
                         diagnostic.Add(CreateLocation(t.Span), ErrorCode.ERR_PrimitiveTypeNameMisused, t);
                     }
                 }
+            }
+
+            // redeclaration check
+            if (!IsAnonymousType)
+            {
+                if (DeclaringCompilation.GlobalSemantics.ExportedTypes.ContainsKey(FullName))
+                {
+                    diagnostic.Add(CreateLocation(_syntax.Name.Span), ErrorCode.WRN_TypeNameInUse, this.GetTypeKindKeyword(), FullNameString);
+                }
+            }
+
+            // report postponed diagnostics,
+            // NOTE: GetDiagnostics() won't get called for unreachable types
+            if (_postponedDiagnostics != null)
+            {
+                diagnostic.AddRangeAndFree(_postponedDiagnostics);
+                _postponedDiagnostics = null;
             }
 
             // bind & diagnose attributes
@@ -1175,14 +1210,14 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var name = base.MetadataName;
+                var name = this.Name;
 
                 // count declarations with the same name
                 // to avoid duplicities in PE metadata
                 var decls = this.DeclaringCompilation.SourceSymbolCollection.GetDeclaredTypes(this.FullName).ToList();
                 Debug.Assert(decls.Count != 0);
 
-                // name?num#version
+                // name?num#version`1
 
                 if (decls.Count != 1)
                 {
@@ -1199,6 +1234,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_version != 0)
                 {
                     name += "#" + _version;
+                }
+
+                if (MangleName)
+                {
+                    // `1 at the end
+                    name = MetadataHelpers.ComposeAritySuffixedMetadataName(name, Arity);
                 }
 
                 return name;
@@ -1442,6 +1483,14 @@ namespace Pchp.CodeAnalysis.Symbols
             // determine autoload flag:
             if (isautoload)
             {
+                // check the type is not in BCL
+                if (DeclaringCompilation.GlobalSemantics.ExportedTypes.ContainsKey(FullName))
+                {
+                    // the class is already defined,
+                    // do not provide autoload
+                    return 0;
+                }
+
                 // source file does not have any side effects?
                 // 1: autoload but with side effects
                 // 2: autoload without side effect
@@ -1490,7 +1539,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 foreach (var d in this.GetDependentSourceTypeSymbols().OfType<IPhpTypeSymbol>())
                 {
                     var a = d.AutoloadFlag;
-                    if (a == 0 || a == 1) return 1;
+                    if (a < 2) return 1;
                 }
 
                 // no side effects found
@@ -1505,15 +1554,35 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var attrs = base.GetAttributes();
 
-            // [PhpTypeAttribute(string FullName, string FileName, byte Autoload)]
-            attrs = attrs.Add(new SynthesizedAttributeData(
+            AttributeData phptypeattr;
+            var autoload = AutoloadFlag;
+            if (autoload == 0)
+            {
+                // most common case, shorter signature:
+                // [PhpTypeAttribute(string FullName, string FileName)]
+                phptypeattr = new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
+                    ImmutableArray.Create(
+                        DeclaringCompilation.CreateTypedConstant(FullNameString),
+                        DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString())
+                    ),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+            else
+            {
+                // [PhpTypeAttribute(string FullName, string FileName, byte Autoload)]
+                phptypeattr = new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string_byte,
                     ImmutableArray.Create(
                         DeclaringCompilation.CreateTypedConstant(FullNameString),
                         DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString()),
-                        DeclaringCompilation.CreateTypedConstant(AutoloadFlag)
+                        DeclaringCompilation.CreateTypedConstant(autoload)
                     ),
-                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            //
+            attrs = attrs.Add(phptypeattr);
 
             // attributes from syntax node
             if (this.Syntax.TryGetCustomAttributes(out var customattrs))

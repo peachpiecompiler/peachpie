@@ -15,7 +15,7 @@ namespace Pchp.Core
         /// Initialize output of this context.
         /// To be used by the context constructor.
         /// </summary>
-        protected void InitOutput(Stream output, TextWriter textoutput = null)
+        protected void InitOutput(Stream output, TextWriter textoutput = null, bool enableOutputBuffering = false)
         {
             // setups Output and OutputStream
             if (output != null)
@@ -30,7 +30,7 @@ namespace Pchp.Core
             }
 
             //
-            IsOutputBuffered = false;
+            IsOutputBuffered = enableOutputBuffering;
         }
 
         /// <summary>

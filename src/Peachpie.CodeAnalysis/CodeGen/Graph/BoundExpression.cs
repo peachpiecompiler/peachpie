@@ -2430,7 +2430,15 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);
             }
 
-            return this.BindPlace(cg).EmitLoadValue(cg, Access);
+            var boundplace = this.BindPlace(cg);
+            if (boundplace != null)
+            {
+                return boundplace.EmitLoadValue(cg, Access);
+            }
+            else
+            {
+                throw cg.NotImplementedException($"IVariableReference of {this} is null!");
+            }
         }
     }
 
@@ -3161,7 +3169,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(_arguments[0].Value.Access.IsRead);
             Debug.Assert(Access.IsRead || Access.IsNone);
 
-            var method = this.Target;
+            var method = this.TargetMethod;
             if (method != null) // => IsResolved
             {
                 // emit condition for include_once/require_once

@@ -133,6 +133,20 @@ namespace Peachpie.CodeAnalysis.Syntax
                 }
             }
 
+            // T_FN in a qualified name
+            // allows to compile older pre-fn syntax
+
+            // \Fn
+            // class Fn
+            if (t == Tokens.T_FN && (_lastToken == Tokens.T_NS_SEPARATOR || _lastToken == Tokens.T_CLASS))
+            {
+                // TODO: warning, use of reserved identifier "fn"
+                var text = _provider.TokenText;
+
+                _provider.UpdateToken(new CompleteToken(Tokens.T_STRING, new TValue { String = text }, _provider.TokenPosition, text));
+                return true;
+            }
+
             //
 
             if (t != Tokens.T_WHITESPACE && t != Tokens.T_COMMENT && t != Tokens.T_DOC_COMMENT)

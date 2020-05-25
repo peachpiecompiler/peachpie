@@ -1193,9 +1193,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override IPlace Place
         {
-            get => Routine.GetPhpThisVariablePlace();
+            get => _boundplace ?? Routine.GetPhpThisVariablePlace();
             protected set => throw ExceptionUtilities.Unreachable;
         }
+
+        IPlace _boundplace;
 
         public override bool HasAddress => false;
 
@@ -1208,7 +1210,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // TODO: <locals>["this"] = this;
             }
 
-            // nada
+            _boundplace = Routine.GetPhpThisVariablePlace(cg.Module);
         }
 
         public override TypeSymbol EmitLoadValue(CodeGenerator cg, ref LhsStack lhs, BoundAccess access)

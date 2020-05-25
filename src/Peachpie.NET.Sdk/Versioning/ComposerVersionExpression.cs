@@ -85,14 +85,16 @@ namespace Peachpie.NET.Sdk.Versioning
             public const char StabilitySeparator = '-';
             public static ReadOnlySpan<char> Range => " - ".AsSpan();
             public static ReadOnlySpan<char> Or => "||".AsSpan();
+            public static char SingleOr => '|';
             public const char Lt = '<';
             public static ReadOnlySpan<char> Lte => "<=".AsSpan();
             public const char Gt = '>';
+            public const char Eq = '=';
             public static ReadOnlySpan<char> Gte => ">=".AsSpan();
             public static ReadOnlySpan<char> Ne => "!=".AsSpan();
             public const char TildeVersion = '~';
             public const char CaretVersion = '^';
-            public static readonly Regex AndRegex = new Regex(@"[^|]+([,\s]+)[^|]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            public static readonly Regex AndRegex = new Regex(@"[^|,\s]+([,\s]+)[^|,\s]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         }
 
         /// <summary>
@@ -104,6 +106,23 @@ namespace Peachpie.NET.Sdk.Versioning
         /// Parses the version expression.
         /// </summary>
         public static bool TryParse(string value, out ComposerVersionExpression expression) => TryParse(value.AsSpan(), out expression);
+
+        static (int index, int length) MatchOrOperator(ReadOnlySpan<char> value)
+        {
+            var or1 = value.IndexOf(Tokens.Or);
+            if (or1 >= 0)
+            {
+                return (or1, Tokens.Or.Length);
+            }
+
+            var or2 = value.IndexOf(Tokens.SingleOr);
+            if (or2 >= 0)
+            {
+                return (or2, 1);
+            }
+
+            return default;
+        }
 
         /// <summary>
         /// Parses the version expression.
@@ -150,12 +169,12 @@ namespace Peachpie.NET.Sdk.Versioning
             }
 
             // OR
-            var or = value.IndexOf(Tokens.Or);
-            if (or > 0)
+            var or = MatchOrOperator(value);
+            if (or.length != 0)
             {
                 // A || B
-                if (TryParse(value.Slice(0, or), out var left) &&
-                    TryParse(value.Slice(or + Tokens.Or.Length), out var right))
+                if (TryParse(value.Slice(0, or.index), out var left) &&
+                    TryParse(value.Slice(or.index + or.length), out var right))
                 {
                     expression = new OrExpression { Left = left, Right = right, };
                     return true;
@@ -164,11 +183,6 @@ namespace Peachpie.NET.Sdk.Versioning
                 {
                     return false;
                 }
-            }
-            else if (or == 0)
-            {
-                // invalid
-                return false;
             }
 
             //
@@ -213,6 +227,11 @@ namespace Peachpie.NET.Sdk.Versioning
             else if (value[0] == Tokens.Gt)
             {
                 op = Operation.GreaterThan;
+                value = value.Slice(1);
+            }
+            else if (value[0] == Tokens.Eq)
+            {
+                op = Operation.Exact;
                 value = value.Slice(1);
             }
             else
@@ -281,16 +300,24 @@ namespace Peachpie.NET.Sdk.Versioning
                     return new FloatingVersion
                     {
                         LowerBound = Version.AnyToZero(),
-                        UpperBound = Version.Major >= 1
+                        UpperBound = Version.Major >= 1 || Version.IsAnyMinor
                             ? new ComposerVersion(Version.Major + 1, 0, 0) { Stability = Version.Stability }
-                            : Version.GetClosestHigher(),
+                            : new ComposerVersion(Version.Major, Version.Minor + 1, 0) { Stability = Version.Stability },
                         UpperBoundExclusive = true,
                     };
 
                 case Operation.LessThan:
                     return new FloatingVersion
                     {
-                        UpperBound = Version.AnyToZero().WithStabilityFlag(Version.Stability ?? ComposerVersion.StabilityDev),
+                        UpperBound =
+                            (Version.IsAnyMajor
+                                ? default // unspecified
+                                : Version.IsAnyMinor // * or unspecified
+                                    ? (Version.PartsCount == 1 ? new ComposerVersion(Version.Major, 0, 0) /* <1 */ : new ComposerVersion(Version.Major + 1, 0, 0)/* <1.* */)
+                                    : Version.IsAnyBuild // * or unspecified
+                                        ? (Version.PartsCount == 2 ? new ComposerVersion(Version.Major, Version.Minor, 0)/* <1.2 */ : new ComposerVersion(Version.Major, Version.Minor + 1, 0) /* <1.2.* */)
+                                        : new ComposerVersion(Version.Major, Version.Minor, Version.Build) /* <1.2.3 */
+                            ).WithStabilityFlag(!Version.IsStable ? ComposerVersion.StabilityStable : Version.Stability ?? ComposerVersion.StabilityDev), // <dev = stable
                         UpperBoundExclusive = true,
                     };
 

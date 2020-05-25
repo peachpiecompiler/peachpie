@@ -248,7 +248,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// <summary>
     /// Represents control flow block of catch item.
     /// </summary>
-    [DebuggerDisplay("CatchBlock({ClassName.QualifiedName})")]
+    [DebuggerDisplay("CatchBlock({TypeRef})")]
     public partial class CatchBlock : BoundBlock //, ICatch
     {
         /// <summary>

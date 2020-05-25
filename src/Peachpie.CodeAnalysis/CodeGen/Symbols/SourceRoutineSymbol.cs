@@ -47,10 +47,15 @@ namespace Pchp.CodeAnalysis.Symbols
             var thisPlace = GetThisPlace();
             if (thisPlace != null)
             {
-                if (this.ContainingType.IsTraitType())
+                //if (this.ContainingType.IsTraitType())
+                if (this.ContainingType is SourceTraitTypeSymbol trait)
                 {
                     // $this ~ this.<>this
-                    return new FieldPlace(thisPlace, ((SourceTraitTypeSymbol)this.ContainingType).RealThisField, module);
+                    return new FieldPlace(thisPlace, trait.RealThisField, module);
+                }
+                else
+                {
+                    Debug.Assert(!this.ContainingType.IsTraitType());
                 }
             }
 

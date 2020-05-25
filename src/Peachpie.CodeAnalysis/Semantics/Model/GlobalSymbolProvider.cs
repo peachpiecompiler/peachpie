@@ -112,7 +112,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         /// <summary>
         /// (PHP) Types exported from extension libraries and cor library.
         /// </summary>
-        Dictionary<QualifiedName, NamedTypeSymbol> ExportedTypes
+        public Dictionary<QualifiedName, NamedTypeSymbol> ExportedTypes
         {
             get
             {
@@ -298,13 +298,20 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             // normalize path
             path = FileUtilities.NormalizeRelativePath(path, null, _compilation.Options.BaseDirectory);
 
+            if (string.IsNullOrEmpty(path))
+            {
+                // path cannot be normalized, usually contains a protocol://
+                return null;
+            }
+
             // absolute path
             if (PathUtilities.IsAbsolute(path))
             {
                 path = PhpFileUtilities.GetRelativePath(path, _compilation.Options.BaseDirectory);
             }
 
-            // lookup referenced assemblies
+            // normalize slashes
+            path = PhpFileUtilities.NormalizeSlashes(path);
 
             // ./ handled by context semantics
 
@@ -312,8 +319,8 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
             // TODO: lookup include paths
             // TODO: calling script directory
-
-            // cwd
+            
+            // lookup referenced assemblies
             var script = GetScriptsFromReferencedAssemblies().FirstOrDefault(t => t.RelativeFilePath == path);
 
             // TODO: RoutineSemantics // relative to current script

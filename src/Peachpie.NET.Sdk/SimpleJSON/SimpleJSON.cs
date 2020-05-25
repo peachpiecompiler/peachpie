@@ -121,6 +121,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace SimpleJSON
@@ -140,6 +141,37 @@ namespace SimpleJSON
     {
         Compact,
         Indent
+    }
+
+    class JSONFormatException : Exception
+    {
+        public Position Position { get; }
+
+        public JSONFormatException(string message, Position position) : base(message)
+        {
+            this.Position = position;
+        }
+    }
+
+    struct Position
+    {
+        /// <summary>
+        /// Line and column, indexed from <c>1</c>.
+        /// </summary>
+        public int Line, Col;
+
+        public bool IsValid => Line > 0 && Col > 0;
+
+        public override string ToString() => $"{Line},{Col}";
+    }
+
+    struct Location
+    {
+        public Position Start, End;
+
+        public bool IsValid => Start.Line > 0 && Start.Col > 0 && Start.Line <= End.Line && (Start.Line < End.Line || Start.Col <= End.Col);
+
+        public override string ToString() => End.IsValid ? $"({Start},{End})" : $"({Start})";
     }
 
     abstract partial class JSONNode
@@ -518,6 +550,11 @@ namespace SimpleJSON
 
         #endregion operators
 
+        /// <summary>
+        /// Node location.
+        /// </summary>
+        internal Location Location = default;
+
         [ThreadStatic]
         private static StringBuilder _escapeBuilder;
         internal static StringBuilder EscapeBuilder => _escapeBuilder ??= new StringBuilder();
@@ -572,17 +609,46 @@ namespace SimpleJSON
         private static JSONNode ParseElement(string token, bool quoted)
         {
             if (quoted)
+            {
+                // string
                 return token;
-            string tmp = token.ToLower();
-            if (tmp == "false" || tmp == "true")
-                return tmp == "true";
-            if (tmp == "null")
+            }
+
+            if (token.Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                // True
+                return true;
+            }
+
+            if (token.Equals("false", StringComparison.OrdinalIgnoreCase))
+            {
+                // False
+                return false;
+            }
+
+            if (token.Equals("null", StringComparison.OrdinalIgnoreCase))
+            {
+                // NULL
                 return JSONNull.CreateOrGet();
-            double val;
-            if (double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out val))
+            }
+
+            if (double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out var val))
+            {
+                // double
                 return val;
+            }
             else
+            {
+                // string
                 return token;
+            }
+        }
+
+        private static JSONNode ParseElement(string token, bool quoted, Position start, Position end)
+        {
+            var node = ParseElement(token, quoted);
+            node.Location = new Location { Start = start, End = end };
+            return node;
         }
 
         public static JSONNode Parse(string aJSON)
@@ -590,10 +656,33 @@ namespace SimpleJSON
             Stack<JSONNode> stack = new Stack<JSONNode>();
             JSONNode ctx = null;
             int i = 0;
-            StringBuilder Token = new StringBuilder();
+            var Token = new StringBuilder();
+            Position TokenStart = default;
             string TokenName = "";
+
             bool QuoteMode = false;
+            Position QuoteStart = default;
             bool TokenIsQuoted = false;
+
+            int line = 0, lineoffset = 0;
+
+            Position CurrentPosition() => new Position { Line = line + 1, Col = i - lineoffset + 1 };
+            void TokenReset()
+            {
+                TokenStart = default;
+                Token.Length = 0;
+                TokenIsQuoted = false;
+            }
+            void TokenAppend(char ch)
+            {
+                if (Token.Length == 0)
+                {
+                    TokenStart = CurrentPosition();
+                }
+                Token.Append(ch);
+            }
+            string TokenText() => Token.ToString();
+
             while (i < aJSON.Length)
             {
                 switch (aJSON[i])
@@ -601,33 +690,31 @@ namespace SimpleJSON
                     case '{':
                         if (QuoteMode)
                         {
-                            Token.Append(aJSON[i]);
-                            break;
+                            goto default;
                         }
-                        stack.Push(new JSONObject());
+                        stack.Push(new JSONObject() { Location = new Location { Start = CurrentPosition(), } });
                         if (ctx != null)
                         {
                             ctx.Add(TokenName, stack.Peek());
                         }
                         TokenName = "";
-                        Token.Length = 0;
+                        TokenReset();
                         ctx = stack.Peek();
                         break;
 
                     case '[':
                         if (QuoteMode)
                         {
-                            Token.Append(aJSON[i]);
-                            break;
+                            goto default;
                         }
 
-                        stack.Push(new JSONArray());
+                        stack.Push(new JSONArray() { Location = new Location { Start = CurrentPosition(), } });
                         if (ctx != null)
                         {
                             ctx.Add(TokenName, stack.Peek());
                         }
                         TokenName = "";
-                        Token.Length = 0;
+                        TokenReset();
                         ctx = stack.Peek();
                         break;
 
@@ -635,19 +722,21 @@ namespace SimpleJSON
                     case ']':
                         if (QuoteMode)
                         {
-
-                            Token.Append(aJSON[i]);
-                            break;
+                            goto default;
                         }
                         if (stack.Count == 0)
                             throw new Exception("JSON Parse: Too many closing brackets");
 
-                        stack.Pop();
+                        stack.Pop()
+                            .Location.End = CurrentPosition();
+
                         if (Token.Length > 0 || TokenIsQuoted)
-                            ctx.Add(TokenName, ParseElement(Token.ToString(), TokenIsQuoted));
-                        TokenIsQuoted = false;
+                        {
+                            ctx.Add(TokenName, ParseElement(TokenText(), TokenIsQuoted, TokenIsQuoted ? QuoteStart : TokenStart, CurrentPosition()));
+                        }
+
                         TokenName = "";
-                        Token.Length = 0;
+                        TokenReset();
                         if (stack.Count > 0)
                             ctx = stack.Peek();
                         break;
@@ -655,41 +744,53 @@ namespace SimpleJSON
                     case ':':
                         if (QuoteMode)
                         {
-                            Token.Append(aJSON[i]);
-                            break;
+                            goto default;
                         }
-                        TokenName = Token.ToString();
-                        Token.Length = 0;
-                        TokenIsQuoted = false;
+                        TokenName = TokenText();
+                        TokenReset();
                         break;
 
                     case '"':
-                        QuoteMode ^= true;
+                        if (QuoteMode)
+                        {
+                            QuoteMode = false;
+                        }
+                        else
+                        {
+                            QuoteMode = true;
+                            QuoteStart = CurrentPosition();
+                        }
+
                         TokenIsQuoted |= QuoteMode;
                         break;
 
                     case ',':
                         if (QuoteMode)
                         {
-                            Token.Append(aJSON[i]);
-                            break;
+                            goto default;
                         }
                         if (Token.Length > 0 || TokenIsQuoted)
-                            ctx.Add(TokenName, ParseElement(Token.ToString(), TokenIsQuoted));
-                        TokenIsQuoted = false;
+                            ctx.Add(TokenName, ParseElement(TokenText(), TokenIsQuoted, TokenStart, CurrentPosition()));
+
                         TokenName = "";
-                        Token.Length = 0;
-                        TokenIsQuoted = false;
+                        TokenReset();
                         break;
 
-                    case '\r':
-                    case '\n':
+                    case '\r':      // CR
+                        break;
+
+                    case '\n':      // LF
+                    case '\u2028':  // LS:    Line Separator, U+2028
+                        line++;
+                        lineoffset = i + 1;
                         break;
 
                     case ' ':
                     case '\t':
                         if (QuoteMode)
-                            Token.Append(aJSON[i]);
+                        {
+                            goto default;
+                        }
                         break;
 
                     case '\\':
@@ -700,48 +801,54 @@ namespace SimpleJSON
                             switch (C)
                             {
                                 case 't':
-                                    Token.Append('\t');
+                                    TokenAppend('\t');
                                     break;
                                 case 'r':
-                                    Token.Append('\r');
+                                    TokenAppend('\r');
                                     break;
                                 case 'n':
-                                    Token.Append('\n');
+                                    TokenAppend('\n');
                                     break;
                                 case 'b':
-                                    Token.Append('\b');
+                                    TokenAppend('\b');
                                     break;
                                 case 'f':
-                                    Token.Append('\f');
+                                    TokenAppend('\f');
                                     break;
                                 case 'u':
                                     {
-                                        string s = aJSON.Substring(i + 1, 4);
-                                        Token.Append((char)int.Parse(
-                                            s,
-                                            System.Globalization.NumberStyles.AllowHexSpecifier));
+                                        TokenAppend((char)int.Parse(aJSON.Substring(i + 1, 4), NumberStyles.AllowHexSpecifier));
                                         i += 4;
                                         break;
                                     }
                                 default:
-                                    Token.Append(C);
+                                    TokenAppend(C);
                                     break;
                             }
                         }
                         break;
 
                     default:
-                        Token.Append(aJSON[i]);
+                        TokenAppend(aJSON[i]);
                         break;
                 }
                 ++i;
             }
             if (QuoteMode)
             {
-                throw new Exception("JSON Parse: Quotation marks seems to be messed up.");
+                throw new JSONFormatException("Quotation marks seems to be messed up.", QuoteStart);
             }
+
+            //if (stack.Count != 0)
+            //{
+            //    throw new JSONFormatException("Object not closed.", stack.Peek().Location.Start);
+            //}
+
             if (ctx == null)
-                return ParseElement(Token.ToString(), TokenIsQuoted);
+            {
+                return ParseElement(TokenText(), TokenIsQuoted, TokenStart, CurrentPosition());
+            }
+
             return ctx;
         }
 
@@ -849,6 +956,8 @@ namespace SimpleJSON
                 aSB.AppendLine().Append(' ', aIndent);
             aSB.Append(']');
         }
+
+        internal IEnumerable<TResult> Select<TResult>(Func<JSONNode, TResult> func) => _list.Select(func);
     }
     // End of JSONArray
 
@@ -1001,13 +1110,12 @@ namespace SimpleJSON
 
         public override Enumerator GetEnumerator() { return new Enumerator(); }
 
-
         public override string Value
         {
             get { return _data; }
             set
             {
-                _data = value;
+                _data = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 

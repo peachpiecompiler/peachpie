@@ -778,20 +778,20 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Gets value indicating the target is resolved at compile time,
         /// so it will be called statically.
         /// </summary>
-        public bool IsResolved => !Target.IsErrorMethodOrNull();
+        public bool IsResolved => !TargetMethod.IsErrorMethodOrNull();
 
         /// <summary>
         /// In case the inclusion target is resolved, gets reference to the <c>Main</c> method of the included script.
         /// </summary>
-        internal MethodSymbol Target
+        internal new MethodSymbol TargetMethod
         {
             get
             {
-                return TargetMethod;
+                return base.TargetMethod;
             }
             set
             {
-                TargetMethod = value;
+                base.TargetMethod = value;
             }
         }
 

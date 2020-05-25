@@ -140,13 +140,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits reference to <c>this</c>.
         /// </summary>
         /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>
-        public NamedTypeSymbol EmitThis()
+        public TypeSymbol EmitThis()
         {
             Contract.ThrowIfNull(_thisPlace);
             return EmitThisOrNull();
         }
 
-        public NamedTypeSymbol EmitThisOrNull()
+        public TypeSymbol EmitThisOrNull()
         {
             if (_thisPlace == null)
             {
@@ -155,7 +155,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                return (NamedTypeSymbol)_thisPlace.EmitLoad(_il);
+                return _thisPlace.EmitLoad(_il);
             }
         }
 
@@ -932,19 +932,30 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits array of <paramref name="elementType"/> containing all current routine PHP arguments value.
         /// </summary>
-        TypeSymbol Emit_ArgsArray(TypeSymbol elementType)
+        internal TypeSymbol Emit_ArgsArray(TypeSymbol elementType)
         {
-            var routine = this.Routine;
-            if (routine == null)
-            {
-                throw new InvalidOperationException("Routine is null!");
-            }
+            var routine = this.Routine ?? throw this.NotImplementedException(nameof(Routine));
 
             if (routine.IsGlobalScope)
             {
-                // TODO: warning: use of arguments in global scope
+                // NOTE: this produces warning: Called from the global scope - no function context
                 _il.EmitNullConstant();
-                return (TypeSymbol)DeclaringCompilation.ObjectType;
+                return ArrayTypeSymbol.CreateSZArray(DeclaringCompilation.SourceAssembly, CoreTypes.PhpValue);
+            }
+
+            if (routine.IsGeneratorMethod())
+            {
+                Debug.Assert(LocalsPlaceOpt != null);
+                Debug.Assert(LocalsPlaceOpt.Type == CoreTypes.PhpArray);
+
+                // TODO: this is not correct for varargs
+                // <locals> does not contain all the parameters,
+                // also it contains all the default values which should not be in listed here
+                Debug.Fail("varargs in Generator has an incorrect behavior");
+
+                // args = <locals>.GetValues();
+                LocalsPlaceOpt.EmitLoad(_il);
+                return EmitCall(ILOpCode.Call, CoreTypes.PhpHashtable.Method("GetValues"));
             }
 
             TypeSymbol arrtype;
@@ -1342,7 +1353,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits <paramref name="thisExpr"/> to be used as target instance of method call, field or property.
         /// </summary>
-        internal NamedTypeSymbol LoadTargetInstance(BoundExpression thisExpr, MethodSymbol method)
+        internal TypeSymbol LoadTargetInstance(BoundExpression thisExpr, MethodSymbol method)
         {
             NamedTypeSymbol targetType = method.HasThis ? method.ContainingType : CoreTypes.Void;
 
@@ -1512,8 +1523,19 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return EmitLoadToken(ContainingFile, null);    // RuntimeTypeHandle
 
                     case ImportValueAttributeData.ValueSpec.CallerArgs:
-                        Debug.Assert(p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpValue()); // PhpValue[]
-                        return Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
+                        //Debug.Assert(p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpValue()); // PhpValue[]
+                        //return Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
+                        if ((Symbol)FunctionArgsArray?.Type == p.Type)
+                        {
+                            _il.EmitLocalLoad(FunctionArgsArray);
+                            return p.Type;
+                        }
+                        else
+                        {
+                            throw this.NotImplementedException(
+                                "cannot pass caller arguments, " +
+                                FunctionArgsArray == null ? "arguments not fetched" : "parameter type does not match");
+                        }
 
                     case ImportValueAttributeData.ValueSpec.Locals:
                         Debug.Assert(p.Type.Is_PhpArray());
@@ -3577,8 +3599,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         /// <summary>
         /// Emits .ret instruction with sequence point at closing brace.
+        /// Eventually emits branching to closing block.
         /// </summary>
-        public void EmitRet(TypeSymbol stack, bool forceJumpToExit = false)
+        public void EmitRet(TypeSymbol stack, bool yielding = false)
         {
             // sequence point
             var body = AstUtils.BodySpanOrInvalid(Routine?.Syntax);
@@ -3588,9 +3611,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            if (_il.InExceptionHandler || forceJumpToExit)
+            if (_il.InExceptionHandler || (ExtraFinallyBlock != null && !yielding))
             {
-                ((ExitBlock)this.Routine.ControlFlowGraph.Exit).EmitTmpRet(this, stack);
+                this.ExitBlock.EmitTmpRet(this, stack, yielding);
             }
             else
             {

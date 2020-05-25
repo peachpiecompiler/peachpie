@@ -27,6 +27,21 @@ namespace Pchp.Library
             return ctx.TryGetStatic<JsonLastError>(out var p) ? p.LastError : 0;
         }
 
+        internal static void SetLastJsonError(Context ctx, int err = JSON_ERROR_NONE)
+        {
+            if (err == 0)
+            {
+                if (ctx.TryGetStatic<JsonLastError>(out var jsonerror))
+                {
+                    jsonerror.LastError = err;
+                }
+            }
+            else
+            {
+                ctx.GetStatic<JsonLastError>().LastError = err;
+            }
+        }
+
         #endregion
 
         #region JsonSerializer
@@ -766,17 +781,13 @@ namespace Pchp.Library
 
             protected override PhpValue CommonDeserialize(Context ctx, Stream data, RuntimeTypeHandle caller)
             {
-
                 var options = _decodeOptions ?? new DecodeOptions();
                 var scanner = new Json.JsonScanner(new StreamReader(data), options);
                 var parser = new Json.Parser(options) { Scanner = scanner };
 
                 if (parser.Parse())
                 {
-                    if (ctx.TryGetStatic<JsonLastError>(out var jsonerror))
-                    {
-                        jsonerror.LastError = JSON_ERROR_NONE;
-                    }
+                    SetLastJsonError(ctx, 0);
                 }
                 else
                 {
@@ -784,7 +795,7 @@ namespace Pchp.Library
 
                     if ((options.Options & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
                     {
-                        ctx.GetStatic<JsonLastError>().LastError = errorcode;
+                        SetLastJsonError(ctx, errorcode);
                         return PhpValue.Null;
                     }
                     else
@@ -799,6 +810,8 @@ namespace Pchp.Library
 
             protected override PhpString CommonSerialize(Context ctx, PhpValue variable, RuntimeTypeHandle caller)
             {
+                SetLastJsonError(ctx, 0);
+
                 return ObjectWriter.Serialize(ctx, variable, _encodeOptions, caller);
             }
 
@@ -1041,6 +1054,8 @@ namespace Pchp.Library
         public static string json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, int depth = 512)
         {
             // TODO: depth
+
+            PhpSerialization.SetLastJsonError(ctx, 0);
 
             //return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
             return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default);

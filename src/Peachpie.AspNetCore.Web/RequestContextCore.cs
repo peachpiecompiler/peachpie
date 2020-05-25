@@ -133,9 +133,18 @@ namespace Peachpie.AspNetCore.Web
             });
         }
 
-        void IHttpPhpContext.Flush()
+        void IHttpPhpContext.Flush(bool endRequest)
         {
             _httpctx.Response.Body.Flush();
+
+            if (endRequest)
+            {
+                // reset underlying output stream without disabling Output Buffering
+                InitOutput(null, enableOutputBuffering: IsOutputBuffered);
+
+                // signal to continue request pipeline
+                RequestEndEvent?.Set();
+            }
         }
 
         /// <summary>
@@ -220,6 +229,14 @@ namespace Peachpie.AspNetCore.Web
         }
 
         /// <summary>
+        /// Event signaling the request processing has been finished or cancelled.
+        /// </summary>
+        /// <remarks>
+        /// End may occur when request finishes its processing or when event explicitly requested by user's code (See <see cref="IHttpPhpContext.Flush(bool)"/>).
+        /// </remarks>
+        public ManualResetEventSlim RequestEndEvent { get; internal set; }
+
+        /// <summary>
         /// Performs the request lifecycle, invokes given entry script and cleanups the context.
         /// </summary>
         /// <param name="script">Entry script.</param>
@@ -233,21 +250,10 @@ namespace Peachpie.AspNetCore.Web
             // remember the initial script file
             this.MainScriptFile = script;
 
-            //
-
+            // main script exception handler
             try
             {
-                if (Debugger.IsAttached)
-                {
-                    script.Evaluate(this, this.Globals, null);
-                }
-                else
-                {
-                    using (_requestTimer = new Timer(RequestTimeout, null, DefaultPhpConfigurationService.Instance.Core.ExecutionTimeout, Timeout.Infinite))
-                    {
-                        script.Evaluate(this, this.Globals, null);
-                    }
-                }
+                script.Evaluate(this, this.Globals, null);
             }
             catch (ScriptDiedException died)
             {
@@ -260,11 +266,6 @@ namespace Peachpie.AspNetCore.Web
                     throw;
                 }
             }
-        }
-
-        void RequestTimeout(object state)
-        {
-
         }
 
         void AddServerScriptItems(ScriptInfo script)
@@ -321,11 +322,6 @@ namespace Peachpie.AspNetCore.Web
         public HttpContext HttpContext => _httpctx;
         readonly HttpContext _httpctx;
 
-        /// <summary>
-        /// Internal timer used to cancel execution upon timeout.
-        /// </summary>
-        Timer _requestTimer;
-
         public RequestContextCore(HttpContext httpcontext, string rootPath, Encoding encoding)
             : base(httpcontext.RequestServices)
         {
@@ -336,7 +332,6 @@ namespace Peachpie.AspNetCore.Web
             _encoding = encoding;
 
             httpcontext.Items[HttpContextItemKey] = this;
-            httpcontext.Response.RegisterForDispose(this);
 
             // enable synchronous IO until we make everything async
             // https://github.com/aspnet/Announcements/issues/342
@@ -464,7 +459,11 @@ namespace Peachpie.AspNetCore.Web
             }
             array[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
             array[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
-            array[CommonPhpArrayKeys.HTTPS] = string.Equals(request.Scheme, "https", StringComparison.OrdinalIgnoreCase);
+
+            if (string.Equals(request.Scheme, "https", StringComparison.OrdinalIgnoreCase))
+            {
+                array[CommonPhpArrayKeys.HTTPS] = "on";
+            }
 
             //
             return array;

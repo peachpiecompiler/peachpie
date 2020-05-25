@@ -15,6 +15,7 @@ using Devsense.PHP.Syntax.Ast;
 using Peachpie.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
@@ -28,40 +29,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
 
         TypeRefContext TypeCtx => _routine.TypeRefContext;
-
-        #region Scope
-
-        struct Scope
-        {
-            public enum Kind
-            {
-                Try, Catch, Finally,
-            }
-
-            public bool Contains(BoundBlock b) => b != null && b.Ordinal >= From && b.Ordinal < To;
-
-            public bool IsTryCatch => ScopeKind == Kind.Try || ScopeKind == Kind.Catch || ScopeKind == Kind.Finally;
-
-            public int From, To;
-            public Kind ScopeKind;
-        }
-
-        List<Scope> _lazyScopes = null;
-
-        /// <summary>
-        /// Stores a scope (range) of blocks.
-        /// </summary>
-        void WithScope(Scope scope)
-        {
-            if (_lazyScopes == null) _lazyScopes = new List<Scope>();
-            _lazyScopes.Add(scope);
-        }
-
-        bool IsInScope(Scope.Kind kind) => _lazyScopes != null && _lazyScopes.Any(s => s.ScopeKind == kind && s.Contains(_currentBlock));
-
-        bool IsInTryCatchScope() => _lazyScopes != null && _lazyScopes.Any(s => s.IsTryCatch && s.Contains(_currentBlock));
-
-        #endregion
 
         void CheckMissusedPrimitiveType(IBoundTypeRef tref)
         {
@@ -432,12 +399,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
             }
 
-            // do not allow return from "finally" block, not allowed in CLR
-            if (x.PhpSyntax != null && IsInScope(Scope.Kind.Finally))
-            {
-                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "return from 'finally' block");
-            }
-
             //
             return base.VisitReturn(x);
         }
@@ -492,9 +453,40 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         public override T VisitInclude(BoundIncludeEx x)
         {
             // check arguments
-            return base.VisitRoutineCall(x);
+            base.VisitRoutineCall(x);
 
-            // do not check the TargetMethod
+            // check the target was not resolved
+            if (x.TargetMethod == null)
+            {
+                foreach (var arg in x.ArgumentsInSourceOrder)
+                {
+                    // in case the include is in form (__DIR__ . LITERAL)
+                    // it should get resolved
+                    if (arg.Value is BoundConcatEx concat &&
+                        concat.ArgumentsInSourceOrder.Length == 2 &&
+                        concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
+                        pc.ConstType == PseudoConstUse.Types.Dir &&
+                        concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out var relativePath) &&
+                        relativePath.Length != 0)
+                    {
+                        // WARNING: Script file '{0}' could not be resolved
+                        if (_routine != null)
+                        {
+                            relativePath = PhpFileUtilities.NormalizeSlashes(_routine.ContainingFile.DirectoryRelativePath + relativePath);
+
+                            if (Roslyn.Utilities.PathUtilities.IsAnyDirectorySeparator(relativePath[0]))
+                            {
+                                relativePath = relativePath.Substring(1); // trim leading slash
+                            }
+
+                            _diagnostics.Add(_routine, concat.PhpSyntax ?? x.PhpSyntax, ErrorCode.WRN_CannotIncludeFile, relativePath);
+                        }
+                    }
+                }
+            }
+
+            //
+            return default;
         }
 
         protected override T VisitRoutineCall(BoundRoutineCall x)
@@ -950,55 +942,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override T VisitCFGTryCatchEdge(TryCatchEdge x)
         {
-            // remember scopes,
-            // .Accept() on BodyBlocks traverses not only the try block but also the rest of the code
-
-            WithScope(new Scope
-            {
-                ScopeKind = Scope.Kind.Try,
-                From = x.BodyBlock.Ordinal,
-                To = x.NextBlock.Ordinal
-            });
-
-            for (int i = 0; i < x.CatchBlocks.Length; i++)
-            {
-                WithScope(new Scope
-                {
-                    ScopeKind = Scope.Kind.Catch,
-                    From = x.CatchBlocks[i].Ordinal,
-                    To = ((i + 1 < x.CatchBlocks.Length) ? x.CatchBlocks[i + 1] : x.FinallyBlock ?? x.NextBlock).Ordinal,
-                });
-            }
-
-            if (x.FinallyBlock != null)
-            {
-                WithScope(new Scope
-                {
-                    ScopeKind = Scope.Kind.Finally,
-                    From = x.FinallyBlock.Ordinal,
-                    To = x.NextBlock.Ordinal
-                });
-            }
-
-            // visit:
-
             return base.VisitCFGTryCatchEdge(x);
         }
 
         public override T VisitStaticStatement(BoundStaticVariableStatement x)
         {
             return base.VisitStaticStatement(x);
-        }
-
-        public override T VisitYieldStatement(BoundYieldStatement boundYieldStatement)
-        {
-            if (IsInTryCatchScope())
-            {
-                // TODO: Start supporting yielding from exception handling constructs.
-                _diagnostics.Add(_routine, boundYieldStatement.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (try, catch, finally)");
-            }
-
-            return default;
         }
 
         public override T VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)

@@ -99,6 +99,10 @@ namespace Pchp.Core
 
         public static implicit operator IntStringKey(PhpNumber value) => new IntStringKey((int)value.ToLong());
 
+        public static bool operator ==(IntStringKey a, long b) => a.Integer == b && a.IsInteger;
+
+        public static bool operator !=(IntStringKey a, long b) => a.IsString || a.Integer != b;
+
         internal static IntStringKey FromObject(object key)
         {
             if (key is string str) return new IntStringKey(str);
@@ -114,9 +118,22 @@ namespace Pchp.Core
 
         public override int GetHashCode() => unchecked((int)_ikey);
 
+        public override bool Equals(object obj) => obj switch
+        {
+            string skey => Equals(skey),
+            long lkey => Equals(lkey),
+            int ikey => Equals(ikey),
+            IntStringKey key => Equals(key),
+            _ => false,
+        };
+
         public bool Equals(IntStringKey other) => _ikey == other._ikey && _skey == other._skey;
 
-        public bool Equals(int ikey) => _ikey == ikey && ReferenceEquals(_skey, null);
+        public bool Equals(int ikey) => _ikey == ikey && IsInteger;
+
+        public bool Equals(long lkey) => _ikey == lkey && IsInteger;
+
+        public bool Equals(string skey) => _skey == skey && IsString;
 
         public override string ToString() => _skey ?? _ikey.ToString();
 
@@ -1766,8 +1783,8 @@ namespace Pchp.Core
             /// </summary>
             public IntStringKey CurrentKey
             {
-                get => _array._data[_i].Key;
-                internal set => _array._data[_i].Key = value; // NOTE: array must be rehashed
+                get => Bucket.Key;
+                internal set => Bucket.Key = value; // NOTE: array must be rehashed
             }
 
             /// <summary>

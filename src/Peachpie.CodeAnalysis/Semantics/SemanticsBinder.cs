@@ -112,6 +112,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual ImmutableArray<BoundYieldStatement> Yields { get => ImmutableArray<BoundYieldStatement>.Empty; }
 
         /// <summary>
+        /// Generated state machine states.
+        /// </summary>
+        public virtual int StatesCount => 0;
+
+        /// <summary>
         /// Bag with semantic diagnostics.
         /// </summary>
         public DiagnosticBag Diagnostics => DeclaringCompilation.DeclarationDiagnostics;
@@ -287,6 +292,8 @@ namespace Pchp.CodeAnalysis.Semantics
         protected Location GetLocation(AST.ILangElement expr) => ContainingFile.GetLocation(expr);
 
         #endregion
+
+        public virtual void WithTryScopes(IEnumerable<TryCatchEdge> tryScopes) { }
 
         public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt) => BindStatement(stmt);
 
@@ -715,6 +722,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         // remember we need varargs:
                         Routine.Flags |= RoutineFlags.UsesArgs;
+
+                        // cannot use in global scope
+                        if (Routine.IsGlobalScope)
+                        {
+                            Diagnostics.Add(GetLocation(x), Errors.ErrorCode.WRN_CalledFromGlobalScope);
+                        }
                     }
 
                     if (fname.IsAssertFunctionName())
@@ -1282,6 +1295,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Found yield statements (needed for ControlFlowGraph)
         /// </summary>
         public override ImmutableArray<BoundYieldStatement> Yields { get => _yields.ToImmutableArray(); }
+
+        public override int StatesCount => _yields.Count;
+
         readonly List<BoundYieldStatement> _yields = new List<BoundYieldStatement>();
 
         readonly HashSet<AST.LangElement> _yieldsToStatementRootPath = new HashSet<AST.LangElement>();
@@ -1295,14 +1311,16 @@ namespace Pchp.CodeAnalysis.Semantics
         private BoundBlock _preBoundBlockFirst;
         private BoundBlock _preBoundBlockLast;
 
-        BoundBlock NewBlock() => _newBlockFunc();
-        Func<BoundBlock> _newBlockFunc;
+        private BoundBlock NewBlock() => _newBlockFunc();
+        private Func<BoundBlock> _newBlockFunc;
+
+        private IEnumerable<TryCatchEdge> _tryScopes;
 
         BoundYieldStatement NewYieldStatement(BoundExpression valueExpression, BoundExpression keyExpression,
             AST.LangElement syntax = null,
             bool isYieldFrom = false)
         {
-            var yieldStmt = new BoundYieldStatement(_yields.Count + 1, valueExpression, keyExpression)
+            var yieldStmt = new BoundYieldStatement(_yields.Count + 1, valueExpression, keyExpression, _tryScopes)
             {
                 IsYieldFrom = isYieldFrom,
             }
@@ -1381,6 +1399,11 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
 
         #region GeneralOverrides
+
+        public override void WithTryScopes(IEnumerable<TryCatchEdge> tryScopes)
+        {
+            _tryScopes = tryScopes;
+        }
 
         public override BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
         {

@@ -177,7 +177,7 @@ namespace Peachpie.NET.Sdk.Versioning
 
                     return i;
                 }
-                else if (value[0] == '*')
+                else if (value[0] == '*' || value[0] == 'x')
                 {
                     num = Asterisk;
                     return 1;

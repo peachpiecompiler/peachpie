@@ -165,7 +165,7 @@ namespace Peachpie.CodeAnalysis.Symbols
 
             /// <summary>
             /// Provides callers parameters.
-            /// The parameter must be of type array of <c>PhpTypeInfo</c>.
+            /// The parameter must be of type array of <c>PhpValue</c>.
             /// </summary>
             CallerArgs,
 

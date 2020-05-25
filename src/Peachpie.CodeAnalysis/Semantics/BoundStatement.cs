@@ -12,6 +12,8 @@ using Microsoft.CodeAnalysis.Text;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
+using Devsense.PHP.Syntax.Ast;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -164,7 +166,7 @@ namespace Pchp.CodeAnalysis.Semantics
         IOperation IThrowOperation.Exception => this.Thrown;
 
         public BoundThrowStatement(BoundExpression thrown)
-            :base()
+            : base()
         {
             Debug.Assert(thrown != null);
             this.Thrown = thrown;
@@ -237,7 +239,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitFunctionDeclaration(this);
     }
-    
+
     /// <summary>
     /// Conditionally declared class.
     /// </summary>
@@ -502,13 +504,21 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public bool IsYieldFrom { get; set; }
 
-        public BoundYieldStatement(int index, BoundExpression valueExpression, BoundExpression keyExpression)
+        /// <summary>
+        /// "try" scopes in which is this statement included ("catch" and "finally" are handled differently).
+        /// Generator state machine may only jump before these scopes (CIL does not allow jumping into).
+        /// </summary>
+        public LinkedList<TryCatchEdge> ContainingTryScopes { get; private set; } = new LinkedList<TryCatchEdge>();
+
+        public BoundYieldStatement(int index, BoundExpression valueExpression, BoundExpression keyExpression, IEnumerable<TryCatchEdge> tryScopes = null)
         {
             Debug.Assert(index > 0);
 
             YieldIndex = index;
             YieldedValue = valueExpression;
             YieldedKey = keyExpression;
+
+            tryScopes?.ForEach(ts => ContainingTryScopes.AddLast(ts));
         }
 
         public BoundYieldStatement Update(int index, BoundExpression valueExpression, BoundExpression keyExpression)
@@ -519,7 +529,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundYieldStatement(index, valueExpression, keyExpression);
+                return new BoundYieldStatement(index, valueExpression, keyExpression, ContainingTryScopes);
             }
         }
 

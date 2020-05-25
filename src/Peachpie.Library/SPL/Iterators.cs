@@ -458,24 +458,40 @@ namespace Pchp.Library.Spl
 
         public virtual PhpArray __serialize()
         {
-            var array = new PhpArray(3);
-            array.AddValue(_flags);
-            array.AddValue(PhpValue.FromClr(storage));
-            array.AddValue(__peach__runtimeFields ?? PhpArray.NewEmpty());
-
-            return array;
+            return new PhpArray(4)
+            {
+                _flags,
+                PhpValue.FromClr(storage),
+                __peach__runtimeFields ?? PhpArray.NewEmpty(),
+                PhpValue.Null, // NULL for ArrayIterator
+            };
         }
 
         public virtual void __unserialize(PhpArray array)
         {
-            _flags = array.TryGetValue(0, out var flagsVal) && flagsVal.IsLong(out long flags)
-                ? (int)flags : throw new InvalidDataException();
+            PhpValue value;
 
-            storage = array.TryGetValue(1, out var storageVal) && (storageVal.IsArray || storageVal.IsObject)
-                ? storageVal.Object : throw new InvalidDataException();
+            // 0: flags:
+            if (array.TryGetValue(0, out value) && value.IsLong(out long flags))
+            {
+                _flags = (int)flags;
 
-            __peach__runtimeFields = array.TryGetValue(2, out var propsVal) && propsVal.IsPhpArray(out var propsArray)
-                ? propsArray : throw new InvalidDataException();
+                // 1: storage:
+                if (array.TryGetValue(1, out value) && (value.IsArray || value.IsObject))
+                {
+                    storage = value.Object;
+
+                    // 2: runtime fields:
+                    if (array.TryGetValue(2, out value) && value.IsPhpArray(out __peach__runtimeFields))
+                    {
+                        // ok
+                        return;
+                    }
+                }
+            }
+
+            // error
+            throw new UnexpectedValueException();
         }
 
         #endregion

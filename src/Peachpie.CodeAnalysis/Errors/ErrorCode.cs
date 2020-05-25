@@ -202,6 +202,12 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_ArgumentVoid,
         /// <summary>PCRE pattern parse error: {0} at offset {1}</summary>
         WRN_PCRE_Pattern_Error,
+        /// <summary>{0} '{1}' is already defined</summary>
+        WRN_TypeNameInUse,
+        /// <summary>Script file '{0}' could not be resolved, the script inclusion is unbound.</summary>
+        WRN_CannotIncludeFile,
+        /// <summary>Called from the global scope</summary>
+        WRN_CalledFromGlobalScope,
 
         //
         // Visible information

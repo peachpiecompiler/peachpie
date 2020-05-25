@@ -56,6 +56,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
+            cg.Builder.AssertStackEmpty();
             cg.EmitSequencePoint(this.PhpSyntax);
 
             // if generator method -> return via storing the value in generator
@@ -70,9 +71,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorReturnedValue_Generator_PhpValue);
                 }
 
-                // g._state = -2 (closed): got to the end of the generator method
-                // .ret
-                cg.EmitRet(cg.CoreTypes.Void, forceJumpToExit: true);
+                // g._state = -2 (closed): go to the end of the generator method
+                ((Graph.ExitBlock)cg.Routine.ControlFlowGraph.Exit).EmitGeneratorEnd(cg);
+
+                // .ret, processes eventual finally blocks
+                cg.EmitRet(cg.CoreTypes.Void);
                 return;
             }
 
@@ -338,7 +341,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
             // return & set continuation point just after that
-            il.EmitRet(true);
+            cg.EmitRet(cg.CoreTypes.Void, yielding: true); // il.EmitRet(true);
             il.MarkLabel(this);
 
             // Operators.HandleGeneratorException(generator)

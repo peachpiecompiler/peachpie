@@ -233,7 +233,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Gets the native connection instance
         /// </summary>
-        public DbConnection Connection => _connection?.Connection;
+        internal DbConnection Connection => _connection?.Connection;
 
         /// <summary>
         /// Empty constructor.

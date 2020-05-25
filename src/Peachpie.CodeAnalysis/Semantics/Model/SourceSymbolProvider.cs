@@ -22,20 +22,14 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             _table = table;
         }
 
-        public IPhpScriptTypeSymbol ResolveFile(string path)
+        public IPhpScriptTypeSymbol ResolveFile(string relativePathNormalized)
         {
-            if (string.IsNullOrEmpty(path))
+            // {relativePathNormalized} is relative to BaseDirectory
+            // slashes are normalized '/'
+
+            if (string.IsNullOrEmpty(relativePathNormalized))
             {
                 return null;
-            }
-
-            // normalize path
-            path = FileUtilities.NormalizeRelativePath(path, null, Compilation.Options.BaseDirectory);
-
-            // absolute path
-            if (PathUtilities.IsAbsolute(path))
-            {
-                path = PhpFileUtilities.GetRelativePath(path, Compilation.Options.BaseDirectory);
             }
 
             // ./ handled by context semantics
@@ -46,7 +40,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             // TODO: calling script directory
 
             // cwd
-            return _table.GetFile(path);
+            return _table.GetFile(relativePathNormalized);
         }
 
         public INamedTypeSymbol ResolveType(QualifiedName name, Dictionary<QualifiedName, INamedTypeSymbol> resolved) => _table.GetType(name, resolved);

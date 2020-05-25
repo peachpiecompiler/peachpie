@@ -98,6 +98,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 EmitIndirectLocalsDebugWatch(cg);
             }
 
+            // remember array of arguments:
+            if ((cg.Routine.Flags & FlowAnalysis.RoutineFlags.UsesArgs) != 0)
+            {
+                // <>args = cg.Emit_ArgsArray()
+                var arrtype = cg.Emit_ArgsArray(cg.CoreTypes.PhpValue);
+                cg.FunctionArgsArray = cg.GetTemporaryLocal(arrtype);
+                cg.Builder.EmitLocalStore(cg.FunctionArgsArray);
+            }
+
             // first brace sequence point
             var body = cg.Routine.Syntax.BodySpanOrInvalid();
             if (body.IsValid && cg.IsDebug)
@@ -163,8 +172,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             cg.EmitGeneratorInstance();
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorState_Generator);
 
-            var stateTmpLocal = cg.GetTemporaryLocal(cg.CoreTypes.Int32);
-            cg.Builder.EmitLocalStore(stateTmpLocal);
+            var stateLocal = cg.GeneratorStateLocal = cg.GetTemporaryLocal(cg.CoreTypes.Int32);
+            cg.Builder.EmitLocalStore(stateLocal);
 
             // g._state = -1 : running
             cg.EmitGeneratorInstance();
@@ -181,12 +190,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // labels have 1-based index (zero is reserved for run to first yield)
                 // label object is the BoundYieldStatement itself, it is Marked at the proper place within its Emit method
                 Debug.Assert(yield.YieldIndex >= 1);
-                yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(yield.YieldIndex), yield));
+
+                // yield statements inside "try" block are handled at beginning of try block itself (we cannot branch directly inside "try" from outside)
+                var target = (object)yield.ContainingTryScopes.First?.Value ?? yield;
+
+                // case YieldIndex: goto target;
+                yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(yield.YieldIndex), target));
             }
 
             // emit switch table that based on g._state jumps to appropriate continuation label
-            cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, stateTmpLocal, Microsoft.Cci.PrimitiveTypeCode.Int32);
-            cg.ReturnTemporaryLocal(stateTmpLocal);
+            cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, stateLocal, Cci.PrimitiveTypeCode.Int32);
 
             cg.Builder.MarkLabel(noContinuationLabel);
         }
@@ -204,20 +217,26 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         private object _retlbl;
 
+        /// <summary>
+        /// Rethrow label.
+        /// Marks code that rethrows <see cref="CodeGenerator.ExceptionToRethrowVariable"/>.
+        /// </summary>
+        private object _throwlbl;
+
         internal object GetReturnLabel()
         {
-            if (_retlbl == null)
-            {
-                _retlbl = new NamedLabel("<return>");
-            }
+            return _retlbl ??= new NamedLabel("<return>");
+        }
 
-            return _retlbl;
+        internal object GetRethrowLabel()
+        {
+            return _throwlbl ??= new NamedLabel("<rethrow>");
         }
 
         /// <summary>
         /// Stores value from top of the evaluation stack to a temporary variable which will be returned from the exit block.
         /// </summary>
-        internal void EmitTmpRet(CodeGenerator cg, TypeSymbol stack)
+        internal void EmitTmpRet(CodeGenerator cg, TypeSymbol stack, bool yielding)
         {
             if (_rettmp == null && !cg.Routine.IsGeneratorMethod())
             {
@@ -240,44 +259,92 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             //
+            if (cg.ExtraFinallyBlock != null && !yielding)
+            {
+                // state = 1;
+                // goto _finally;
+                cg.Builder.EmitIntConstant((int)CodeGenerator.ExtraFinallyState.Return); // 1: return
+                cg.ExtraFinallyStateVariable.EmitStore();
+                cg.Builder.EmitBranch(ILOpCode.Br, cg.ExtraFinallyBlock);
+                return;
+            }
+
+            //
             cg.Builder.EmitBranch(ILOpCode.Br, GetReturnLabel());
+        }
+
+        /// <summary>
+        /// set generator state to -2 (closed)
+        /// </summary>
+        internal void EmitGeneratorEnd(CodeGenerator cg)
+        {
+            Debug.Assert(cg.Routine.IsGeneratorMethod());
+
+            // g._state = -2 (closed): got to the end of the generator method
+            cg.EmitGeneratorInstance();
+            cg.Builder.EmitIntConstant(-2);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
         }
 
         internal override void Emit(CodeGenerator cg)
         {
             // note: ILBuider removes eventual unreachable .ret opcode
 
-            if (_retlbl != null && _rettmp == null)
-            {
-                cg.Builder.MarkLabel(_retlbl);
-            }
-
-            // if generator method: set state to -2 (closed)
+            // at the end of generator method:
+            // set state to -2 (closed)
             if (cg.Routine.IsGeneratorMethod())
             {
                 // g._state = -2 (closed): got to the end of the generator method
-                cg.EmitGeneratorInstance();
-                cg.Builder.EmitIntConstant(-2);
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
+                EmitGeneratorEnd(cg);
+
+                if (_retlbl != null)
+                {
+                    cg.Builder.MarkLabel(_retlbl);
+                }
 
                 cg.Builder.EmitRet(true);
-                return;
+            }
+            else
+            {
+                //
+                if (_retlbl != null && _rettmp == null)
+                {
+                    cg.Builder.MarkLabel(_retlbl);
+                }
+
+                // return <default>;
+                cg.EmitRetDefault();
+                cg.Builder.AssertStackEmpty();
+
+                // return <rettemp>;
+                if (_rettmp != null)
+                {
+                    Debug.Assert(_retlbl != null);
+                    cg.Builder.MarkLabel(_retlbl);
+
+                    // note: _rettmp is always initialized since we branch to _retlbl only after storing to _rettmp
+
+                    cg.Builder.EmitLocalLoad(_rettmp);
+                    cg.Builder.EmitRet(false);
+                    cg.Builder.AssertStackEmpty();
+                }
             }
 
-            // return <default>;
-            cg.EmitRetDefault();
-            cg.Builder.AssertStackEmpty();
-
-            // return <rettemp>;
-            if (_rettmp != null)
+            // rethrow <ExceptionToRethrowVariable>
+            if (_throwlbl != null)
             {
-                Debug.Assert(_retlbl != null);
-                cg.Builder.MarkLabel(_retlbl);
+                cg.Builder.MarkLabel(_throwlbl);
 
-                // note: _rettmp is always initialized since we branch to _retlbl only after storing to _rettmp
+                if (cg.ExceptionToRethrowVariable != null)
+                {
+                    cg.ExceptionToRethrowVariable.EmitLoad(cg.Builder);
+                }
+                else
+                {
+                    cg.Builder.EmitNullConstant();
+                }
 
-                cg.Builder.EmitLocalLoad(_rettmp);
-                cg.Builder.EmitRet(false);
+                cg.Builder.EmitThrow(isRethrow: false); // rethrow's not working out of tryCatchFinally scope :/
                 cg.Builder.AssertStackEmpty();
             }
         }

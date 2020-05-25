@@ -64,6 +64,12 @@ namespace Peachpie.Library.PDO.MySQL
         }
 
         /// <inheritDoc />
+        public override bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
+        {
+            return false;
+        }
+
+        /// <inheritDoc />
         public override void HandleException(Exception ex, out PDO.ErrorInfo errorInfo)
         {
             if (ex is MySqlException mex)

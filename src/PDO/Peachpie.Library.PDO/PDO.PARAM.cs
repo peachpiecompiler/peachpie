@@ -8,10 +8,7 @@ namespace Peachpie.Library.PDO
 {
     partial class PDO
     {
-        /// <summary>
-        /// 
-        /// </summary>
-        [PhpHidden]
+        /// <summary></summary>
         public enum PARAM
         {
             /// <summary>
@@ -56,7 +53,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <summary>
-        /// 
+        /// The value is NULL.
         /// </summary>
         public const int PARAM_NULL = (int)PARAM.PARAM_NULL;
         /// <summary>
@@ -87,5 +84,25 @@ namespace Peachpie.Library.PDO
         /// magic flag to denote a parameter as being input/output
         /// </summary>
         public const int PARAM_INPUT_OUTPUT = (int)PARAM.PARAM_INPUT_OUTPUT;
+
+        ///<summary></summary>
+        public const int PARAM_STR_NATL = 1 << 30;
+        ///<summary></summary>
+        public const int PARAM_STR_CHAR = 1 << 29;
+
+        ///<summary></summary>
+        public const int PARAM_EVT_ALLOC = 0;
+        ///<summary></summary>
+        public const int PARAM_EVT_FREE = 1;
+        ///<summary></summary>
+        public const int PARAM_EVT_EXEC_PRE = 2;
+        ///<summary></summary>
+        public const int PARAM_EVT_EXEC_POST = 3;
+        ///<summary></summary>
+        public const int PARAM_EVT_FETCH_PRE = 4;
+        ///<summary></summary>
+        public const int PARAM_EVT_FETCH_POST = 5;
+        ///<summary></summary>
+        public const int PARAM_EVT_NORMALIZE = 6;
     }
 }

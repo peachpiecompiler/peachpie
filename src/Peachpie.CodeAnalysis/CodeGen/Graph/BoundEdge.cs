@@ -98,6 +98,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class TryCatchEdge
     {
+        /// <summary>
+        /// Whether to emit catch and finally bodies outside the TryCatchFinally scope.
+        /// This allows to branch inside catch or finally from outside,
+        /// or branch outside of try without calling finally (required for yield and return functionality).
+        /// </summary>
+        public bool EmitCatchFinallyOutsideScope { get; internal set; }
+
         internal override void Generate(CodeGenerator cg)
         {
             EmitTryStatement(cg);
@@ -111,12 +118,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // Stack must be empty at beginning of try block.
             cg.Builder.AssertStackEmpty();
 
+            // mark label before "try" block,
+            // used by generator state maching and awaits eventually
+            cg.Builder.MarkLabel(this);
+
             // IL requires catches and finally block to be distinct try
             // blocks so if the source contained both a catch and
             // a finally, nested scopes are emitted.
             bool emitNestedScopes = (!emitCatchesOnly &&
-                //(_catchBlocks.Length != 0) &&
-                (_finallyBlock != null));
+                //(_catchBlocks.Length != 0) && // always true; there is at least one "catch" block (ScriptDiedException)
+                (_finallyBlock != null && !EmitCatchFinallyOutsideScope));
+
+            // finally block not handled by CLR
+            var nextExtraFinallyBlock = cg.ExtraFinallyBlock;
 
             cg.Builder.OpenLocalScope(ScopeType.TryCatchFinally);
 
@@ -132,11 +146,28 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
+                // jump table for nested yield or await
+                EmitJumpTable(cg);
+
+                // remember finally block
+                if (_finallyBlock != null && EmitCatchFinallyOutsideScope)
+                {
+                    cg.ExtraFinallyBlock = _finallyBlock;
+                    cg.ExtraFinallyStateVariable ??= cg.GetTemporaryLocal(cg.CoreTypes.Int32, longlive: true, immediateReturn: false);
+                    cg.ExceptionToRethrowVariable ??= cg.GetTemporaryLocal(cg.CoreTypes.Exception, longlive: true, immediateReturn: false);
+                }
+
+                // try body
                 cg.GenerateScope(_body, (_finallyBlock ?? NextBlock).Ordinal);
 
-                if (NextBlock?.FlowState != null)
+                //
+                if (NextBlock != null && NextBlock.FlowState != null) // => next is reachable
                 {
-                    cg.Builder.EmitBranch(ILOpCode.Br, NextBlock);
+                    cg.Builder.EmitBranch(ILOpCode.Br,
+                        (_finallyBlock != null && EmitCatchFinallyOutsideScope)
+                        ? _finallyBlock // goto finally
+                        : NextBlock     // goto next
+                    );
                 }
             }
 
@@ -153,9 +184,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 {
                     EmitCatchBlock(cg, catchBlock);
                 }
+
+                // emit default catch block that continues to "finally" before rethrow;
+                // only if EmitCatchFinallyOutsideScope
+                EmitDefaultCatchBlock(cg);
             }
 
-            if (!emitCatchesOnly && _finallyBlock != null)
+            if (!emitCatchesOnly && _finallyBlock != null && !EmitCatchFinallyOutsideScope)
             {
                 cg.Builder.OpenLocalScope(ScopeType.Finally);
                 cg.GenerateScope(_finallyBlock, NextBlock.Ordinal);
@@ -166,6 +201,54 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // close the whole try statement scope
             cg.Builder.CloseLocalScope();
+
+            // emit catch and finally blocks outside the try scope:
+            if (!emitNestedScopes && EmitCatchFinallyOutsideScope)
+            {
+                var nextBlockOrExit = NextBlock?.FlowState != null ? NextBlock : cg.ExitBlock.GetReturnLabel();
+                var continuewith = _finallyBlock ?? nextBlockOrExit;
+
+                cg.Builder.EmitBranch(ILOpCode.Br, continuewith);
+
+                //
+                foreach (var catchBlock in _catchBlocks)
+                {
+                    cg.GenerateScope(catchBlock, NextBlock.Ordinal);
+                    cg.Builder.EmitBranch(ILOpCode.Br, continuewith);
+                }
+
+                // forget finally block
+                cg.ExtraFinallyBlock = nextExtraFinallyBlock;
+                Debug.Assert(cg.ExtraFinallyStateVariable != null);
+
+                //
+                if (_finallyBlock != null)
+                {
+                    // emit finally block
+                    cg.GenerateScope(_finallyBlock, NextBlock.Ordinal);
+                    cg.Builder.AssertStackEmpty();
+
+                    // several "finally" states (cg.ExtraFinallyStateVariable):
+                    // - 0: none; continue to NextBlock
+                    // - 1: return; continue to nextExtraFinallyBlock, eventually EmitRet
+                    // - 2: exception; rethrow exception (cg.ExceptionToRethrowVariable)
+
+                    var stateloc = cg.GetTemporaryLocal(cg.ExtraFinallyStateVariable.EmitLoad(cg.Builder), immediateReturn: true);
+                    cg.Builder.EmitLocalStore(stateloc);
+                    Debug.Assert(stateloc.Type.TypeCode == Microsoft.Cci.PrimitiveTypeCode.Int32);
+                    
+                    cg.Builder.EmitIntegerSwitchJumpTable(
+                        new[]
+                        {
+                            new KeyValuePair<ConstantValue, object>(ConstantValue.Create((int)CodeGenerator.ExtraFinallyState.None), nextBlockOrExit),
+                            new KeyValuePair<ConstantValue, object>(ConstantValue.Create((int)CodeGenerator.ExtraFinallyState.Return), nextExtraFinallyBlock ?? cg.ExitBlock.GetReturnLabel()),
+                            //new KeyValuePair<ConstantValue, object>(ConstantValue.Create((int)CodeGenerator.ExtraFinallyState.Exception), nextExtraFinallyBlock ?? cg.ExitBlock.GetRethrowLabel()),
+                        },
+                        nextExtraFinallyBlock ?? cg.ExitBlock.GetRethrowLabel(), // ExtraFinallyState.Exception
+                        stateloc,
+                        Microsoft.Cci.PrimitiveTypeCode.Int32);
+                }
+            }
         }
 
         void EmitScriptDiedBlock(CodeGenerator cg)
@@ -175,9 +258,45 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var il = cg.Builder;
 
             // Template: catch (ScriptDiedException) { rethrow; }
+            il.AdjustStack(1); // Account for exception on the stack.
 
             il.OpenLocalScope(ScopeType.Catch, cg.CoreTypes.ScriptDiedException.Symbol);
             il.EmitThrow(true);
+            il.CloseLocalScope();
+        }
+
+        void EmitDefaultCatchBlock(CodeGenerator cg)
+        {
+            if (!EmitCatchFinallyOutsideScope || _finallyBlock?.FlowState == null)
+            {
+                return;
+            }
+
+            // emit default catch block that continues to "finally" before rethrow;
+            
+            var il = cg.Builder;
+
+            // Template: 
+            // catch (Exception ex) {
+            //   ExceptionToRethrow = ex;
+            //   ExtraFinallyState = 2;
+            //   goto _finally;
+            // }
+
+            il.AdjustStack(1); // Account for exception on the stack.
+
+            il.OpenLocalScope(ScopeType.Catch, cg.Module.Translate(cg.CoreTypes.Exception.Symbol, null, cg.Diagnostics));
+
+            // ExceptionToRethrow = ex;
+            cg.ExceptionToRethrowVariable.EmitStore();
+
+            // ExtraFinallyState = 2;
+            il.EmitIntConstant((int)CodeGenerator.ExtraFinallyState.Exception); // rethrow state
+            cg.ExtraFinallyStateVariable.EmitStore();
+
+            // .leave _finally;
+            il.EmitBranch(ILOpCode.Br, _finallyBlock);
+
             il.CloseLocalScope();
         }
 
@@ -292,27 +411,80 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // STACK : extype
+            if (catchBlock.Variable != null)
+            {
+                cg.EmitSequencePoint(catchBlock.Variable.PhpSyntax);
 
-            // <tmp> = <ex>
-            cg.EmitSequencePoint(catchBlock.Variable.PhpSyntax);
-            var tmploc = cg.GetTemporaryLocal(extype);
-            il.EmitLocalStore(tmploc);
+                // <tmp> = <ex>
+                var tmploc = cg.GetTemporaryLocal(extype);
+                il.EmitLocalStore(tmploc);
 
-            var varplace = catchBlock.Variable.BindPlace(cg);
-            Debug.Assert(varplace != null);
-
-            // $x = <tmp>
-            varplace.EmitStore(cg, tmploc, catchBlock.Variable.TargetAccess());
+                // $x = <tmp>
+                var varplace = catchBlock.Variable.BindPlace(cg);
+                varplace.EmitStore(cg, tmploc, catchBlock.Variable.TargetAccess());
+                cg.ReturnTemporaryLocal(tmploc);
+            }
+            else
+            {
+                il.EmitOpCode(ILOpCode.Pop);
+            }
 
             //
-            cg.ReturnTemporaryLocal(tmploc);
-            tmploc = null;
-
-            //
-            cg.GenerateScope(catchBlock, NextBlock.Ordinal);
+            if (EmitCatchFinallyOutsideScope)
+            {
+                // .br
+                il.EmitBranch(ILOpCode.Br, catchBlock);
+            }
+            else
+            {
+                // { .. }
+                cg.GenerateScope(catchBlock, NextBlock.Ordinal);
+            }
 
             //
             il.CloseLocalScope();
+        }
+
+        void EmitJumpTable(CodeGenerator cg)
+        {
+            var yields = cg.Routine.ControlFlowGraph.Yields;
+            if (yields.IsDefaultOrEmpty)
+            {
+                return;
+            }
+
+            // local <state> = g._state that is switched on (can't switch on remote field)
+            Debug.Assert(cg.GeneratorStateLocal != null);
+
+            // create label for situation when state doesn't correspond to continuation: 0 -> didn't run to first yield
+            var noContinuationLabel = new NamedLabel("noStateContinuation");
+
+            // prepare jump table from yields
+            var yieldExLabels = new List<KeyValuePair<ConstantValue, object>>();
+            foreach (var yield in yields)
+            {
+                // only applies to yields inside this "try" block
+                var node = yield.ContainingTryScopes.First;
+                while (node != null && node.Value != this)
+                {
+                    node = node.Next;
+                }
+                if (node == null) continue;
+
+                // jump to next nested "try" or inside "yield" itself
+                var target = (object)node.Next?.Value/*next try block*/ ?? yield/*inside yield*/;
+
+                // case YieldIndex: goto target;
+                yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(yield.YieldIndex), target));
+            }
+
+            if (yieldExLabels.Count != 0)
+            {
+                // emit switch table that based on g._state jumps to appropriate continuation label
+                cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, cg.GeneratorStateLocal, Microsoft.Cci.PrimitiveTypeCode.Int32);
+
+                cg.Builder.MarkLabel(noContinuationLabel);
+            }
         }
     }
 
