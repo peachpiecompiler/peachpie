@@ -657,7 +657,7 @@ namespace Peachpie.Library.Graphics
                 return -1;// TODO: false
 
             //TODO: In non-truecolor images allocate the color
-            return RGBA(red, green, blue,alpha);
+            return RGBA(red, green, blue, alpha);
         }
 
         #endregion
@@ -675,41 +675,43 @@ namespace Peachpie.Library.Graphics
                 | (blue & 0x0000FF); 
         }
 
-        static Rgba32 FromRGB(long color) => new Rgba32((uint)color & 0x00ffffffu);
-        static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? new Rgba32((uint)ConvertAlpha(color, true)) : (Rgba32)Color.Transparent;
+        static Rgba32 FromRGB(long color) => new Rgba32((uint)color | 0xff000000u);
 
         /// <summary>
         /// Php Alpha is reversed map. PHP: 0 -> PNG,ImageSharp:255, PHP: 127 -> PNG,ImageSharp: 0. This method converts an alpha part of a color from PHP/ImageSharp to ImageSharp/PHP.
         /// </summary>
-        /// <param name="FromPhp">True for PHP to ImageSharp else ImageSharp to PHP </param>
+        /// <param name="color"></param>
         /// <returns>Converted color</returns>
-        static long ConvertAlpha(long color, bool FromPhp)
+        static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? PHPColorToRgba((uint)color) : (Rgba32)Color.Transparent;
+
+        /// <summary>
+        /// Converts Rgba32 to long.
+        /// </summary>
+        /// <param name="phpaplha">True if you want to convert to php long format</param>
+        public static long ToLong(this Rgba32 rgba, bool phpaplha)
         {
-            byte alpha = (byte)(((uint)color & 0xff000000u) >> 24);
-            
-            byte newAlpha = 0;
-            if (FromPhp)
+            if (phpaplha)
             {
-                if (alpha == 0x7f)
-                {
-                    newAlpha = 0;
-                }
-                else
-                {
-                    newAlpha = (byte)(255 - alpha * 2);
-                }
+                byte alpha = (byte)(((uint)rgba.Rgba & 0xff000000u) >> 24);
+                byte newAlpha = (alpha == 0x00) ? (byte)0x7f : (byte)((255 - alpha) / 2);
+
+
+                return ((uint)rgba.Rgba & 0x00ffffffu) | ((uint)newAlpha << 24);
             }
             else
             {
-                if (alpha == 0x00)
-                {
-                    newAlpha = 0x7f;
-                }
-                {
-                    newAlpha = (byte)((255 - alpha) / 2);
-                }
+                return rgba.Rgba;
             }
-            return ((uint)color & 0x00ffffffu) | ((uint)newAlpha << 24);
+
+        }
+        
+        static Rgba32 PHPColorToRgba(uint color)
+        {
+            byte alpha = (byte)((color & 0xff000000u) >> 24);
+
+            byte newAlpha = (alpha == 0x7f) ? (byte)0 : (byte)(255 - alpha * 2);
+            
+            return new Rgba32((color & 0x00ffffffu) | ((uint)newAlpha << 24));
         }
 
         private static int PHPColorToPHPAlpha(int color) => FromRGBA(color).A;
@@ -838,7 +840,7 @@ namespace Peachpie.Library.Graphics
             {
                 return false;
             }
-           
+
             image[x, y] = FromRGBA(color);
 
             return true;
@@ -856,7 +858,7 @@ namespace Peachpie.Library.Graphics
             }
 
             var image = img.Image;
-            return ConvertAlpha(image[x, y].Rgba,false);
+            return image[x, y].ToLong(true);
         }
 
         /// <summary>
@@ -1440,14 +1442,14 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static PhpArray imagecolorsforindex(PhpResource im, long col)
         {
-            var rgba = FromRGBA(ConvertAlpha(col,false));
+            var rgba = FromRGBA(col);
 
             return new PhpArray(4)
             {
                 { "red", rgba.R },
                 { "green", rgba.G },
                 { "blue", rgba.B },
-                { "alpha", rgba.A },
+                { "alpha", rgba.ToLong(true) >> 24 },
             };
         }
 
@@ -2032,7 +2034,7 @@ namespace Peachpie.Library.Graphics
 
             var pointsF = GetPointFsFromArray(points, num_points);
 
-            img.Image.Mutate(o => o.DrawLines(new Pen(FromRGBA(color), 1.0f),pointsF));
+            img.Image.Mutate(o => o.DrawLines(new Pen(FromRGBA(color), 1.0f), pointsF));
 
             return true;
         }
@@ -2182,7 +2184,7 @@ namespace Peachpie.Library.Graphics
             {
                 return null;
             }
-            
+
             if (!TryGetRectangle(rect, out Rectangle rectangle))
             {
                 PhpException.Throw(PhpError.Warning, Resources.array_expected, "rect");
@@ -2195,7 +2197,7 @@ namespace Peachpie.Library.Graphics
             {
                 var resized = new PhpGdImageResource(new Image<Rgba32>(
                     Math.Max(rectangle.X + rectangle.Width, img.Image.Width),
-                    Math.Max(rectangle.Y + rectangle.Height, img.Image.Height)), 
+                    Math.Max(rectangle.Y + rectangle.Height, img.Image.Height)),
                     img.Format);
                 resized.Image.Mutate(o => o.DrawImage(img.Image, 1).Crop(rectangle));
                 return resized;
@@ -2249,8 +2251,7 @@ namespace Peachpie.Library.Graphics
                     return null;
             }
 
-            var a = new PhpGdImageResource(img.Image.Clone(o => o.Resize(new_width, new_height, res)), img.Format);
-            return a;
+            return new PhpGdImageResource(img.Image.Clone(o => o.Resize(new_width, new_height, res)), img.Format);
         }
 
         /// <summary>
@@ -2278,23 +2279,23 @@ namespace Peachpie.Library.Graphics
 
 
             // Check Arguments if clip exists
-            if(!TryGetRectangle(clip,out Rectangle sourceBox))
+            if (!TryGetRectangle(clip, out Rectangle sourceBox))
                 sourceBox = new Rectangle(0, 0, img.Image.Width, img.Image.Height);
 
             // Calculate translation
-            PointF[] extent = new PointF[4] 
-            { 
+            var extent = new PointF[4]
+            {
                 new PointF(0, 0),
                 new PointF(sourceBox.Width, 0),
-                new PointF(sourceBox.Width, sourceBox.Height), 
-                new PointF(0, sourceBox.Height) 
+                new PointF(sourceBox.Width, sourceBox.Height),
+                new PointF(0, sourceBox.Height)
             };
 
             for (int i = 0; i < extent.Length; i++)
                 extent[i] = ApplyAffineToPointF(extent[i], affineMatrix);
 
             PointF min = extent[0];
-            for (int i = 1; i < 4; i++) 
+            for (int i = 1; i < 4; i++)
             {
                 if (min.X > extent[i].X)
                     min.X = extent[i].X;
@@ -2343,7 +2344,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="options">If type is IMG_AFFINE_TRANSLATE or IMG_AFFINE_SCALE, options has to be an array with keys x and y, both having float values.
         /// If type is IMG_AFFINE_ROTATE, IMG_AFFINE_SHEAR_HORIZONTAL or IMG_AFFINE_SHEAR_VERTICAL, options has to be a float specifying the angle.</param>
         /// <returns>Returns an affine transformation matrix.</returns>
-        [return:CastToFalse]
+        [return: CastToFalse]
         public static PhpArray imageaffinematrixget(int type, PhpValue options)
         {
             switch (type)
@@ -2355,7 +2356,7 @@ namespace Peachpie.Library.Graphics
                         var arr = options.AsArray();
                         if (!arr.TryGetItemValue("x", out PhpValue xVal))
                         {
-                            PhpException.Throw(PhpError.Warning, Resources.missing_param,"x");
+                            PhpException.Throw(PhpError.Warning, Resources.missing_param, "x");
                             break;
                         }
 
@@ -2371,7 +2372,7 @@ namespace Peachpie.Library.Graphics
                         // If there is another type, coordinates are zero.
                         TryGetFloat(xVal, out float x);
                         TryGetFloat(yVal, out float y);
-                       
+
 
                         return (type == IMG_AFFINE_TRANSLATE) ? GetPhpMatrix(m00: 1, m11: 1, m20: x, m21: y) : GetPhpMatrix(m00: x, m11: y);
                     }
@@ -2387,11 +2388,11 @@ namespace Peachpie.Library.Graphics
                     if (TryGetFloat(options, out float res))
                         angle = Math.PI * res / 180.0;
 
-                    if (type == IMG_AFFINE_ROTATE) 
+                    if (type == IMG_AFFINE_ROTATE)
                     {
                         double cos = Math.Cos(angle);
                         double sin = Math.Sin(angle);
-                        return GetPhpMatrix(m00: cos, m01: sin, m10: -sin, m11:cos);
+                        return GetPhpMatrix(m00: cos, m01: sin, m10: -sin, m11: cos);
                     }
                     else
                     {
@@ -2406,7 +2407,7 @@ namespace Peachpie.Library.Graphics
             return null;
         }
 
-        private static PhpArray GetPhpMatrix(double m00 = 0, double m01 = 0, double m10 = 0, double m11 = 0, double m20 = 0, double m21 = 0) 
+        private static PhpArray GetPhpMatrix(double m00 = 0, double m01 = 0, double m10 = 0, double m11 = 0, double m20 = 0, double m21 = 0)
             => new PhpArray(6) { m00, m01, m10, m11, m20, m21 };
 
         /// <summary>
@@ -2493,7 +2494,7 @@ namespace Peachpie.Library.Graphics
                 result = default;
                 return false;
             }
-        
+
         }
 
         /// <summary>
@@ -2560,7 +2561,7 @@ namespace Peachpie.Library.Graphics
                 return false;
 
             if (res_x < 0 || res_y < 0)
-                throw new NotSupportedException();
+                return false;
 
             if (res_x != 0)
             {
