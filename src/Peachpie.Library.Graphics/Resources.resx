@@ -165,4 +165,13 @@
   <data name="wrong_type" xml:space="preserve">
     <value>Wrong type of one or more parameters</value>
   </data>
+  <data name="array_expected" xml:space="preserve">
+    <value>Array expected as '{0}'</value>
+  </data>
+  <data name="invalid_type" xml:space="preserve">
+    <value>Invalid type for element {0}</value>
+  </data>
+  <data name="missing_param" xml:space="preserve">
+    <value>must have an '{0}' key</value>
+  </data>
 </root>
