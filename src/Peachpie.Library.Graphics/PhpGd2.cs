@@ -672,7 +672,7 @@ namespace Peachpie.Library.Graphics
             return (alpha << 24)
                 | ((red & 0x0000FF) << 16)
                 | ((green & 0x0000FF) << 8)
-                | (blue & 0x0000FF); 
+                | (blue & 0x0000FF);
         }
 
         static Rgba32 FromRGB(long color) => new Rgba32((uint)color | 0xff000000u);
