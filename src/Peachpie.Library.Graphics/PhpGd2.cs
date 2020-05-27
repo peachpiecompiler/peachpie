@@ -667,9 +667,9 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// RGBA values to PHP Color format.
         /// </summary>
-        static long RGBA(long red, long green, long blue, long alpha = 0)
+        static long RGBA(long red, long green, long blue, long transparency = 0)
         {
-            return (alpha << 24)
+            return (transparency << 24)
                 | ((red & 0x0000FF) << 16)
                 | ((green & 0x0000FF) << 8)
                 | (blue & 0x0000FF);
@@ -685,39 +685,36 @@ namespace Peachpie.Library.Graphics
         static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? PHPColorToRgba((uint)color) : (Rgba32)Color.Transparent;
 
         /// <summary>
-        /// Converts Rgba32 to long.
+        /// Converts Rgba32 to PHP color with PHP's alpha format (in range 0-127).
         /// </summary>
-        /// <param name="phpaplha">True if you want to convert to php long format</param>
-        public static long ToLong(this Rgba32 rgba, bool phpaplha)
+        /// <param name="rgba">The color.</param>
+        static long RgbaToPHPColor(this Rgba32 rgba)
         {
-            if (phpaplha)
-            {
-                byte alpha = (byte)(((uint)rgba.Rgba & 0xff000000u) >> 24);
-                byte newAlpha = (alpha == 0x00) ? (byte)0x7f : (byte)((255 - alpha) / 2);
+            byte transparency = GetPhpTransparency(rgba);
 
-
-                return ((uint)rgba.Rgba & 0x00ffffffu) | ((uint)newAlpha << 24);
-            }
-            else
-            {
-                return rgba.Rgba;
-            }
-
+            return (rgba.Rgba & 0x00ffffffu) | ((uint)transparency << 24);
         }
-        
+
+        /// <summary>
+        /// Gets transparency in range of [0..127] where 127 is fully transparent color.
+        /// </summary>
+        static byte GetPhpTransparency(this Rgba32 rgba)
+        {
+            return (byte)((0xff - rgba.A) / 2);
+        }
+
         static Rgba32 PHPColorToRgba(uint color)
         {
-            byte alpha = (byte)((color & 0xff000000u) >> 24);
+            byte transparency = (byte)((color >> 24) & 0xffu);
+            byte alpha = (transparency >= 0x7f) ? (byte)0 : (byte)(255 - transparency * 2);
 
-            byte newAlpha = (alpha == 0x7f) ? (byte)0 : (byte)(255 - alpha * 2);
-            
-            return new Rgba32((color & 0x00ffffffu) | ((uint)newAlpha << 24));
+            return new Rgba32((color & 0x00ffffffu) | ((uint)alpha << 24));
         }
 
-        private static int PHPColorToPHPAlpha(int color) => FromRGBA(color).A;
-        private static int PHPColorToRed(int color) => FromRGBA(color).R;
-        private static int PHPColorToGreen(int color) => FromRGBA(color).G;
-        private static int PHPColorToBlue(long color) => FromRGBA(color).B;
+        //private static int PHPColorToPHPAlpha(int color) => FromRGBA(color).A; // not correct
+        //private static int PHPColorToRed(int color) => FromRGBA(color).R;
+        //private static int PHPColorToGreen(int color) => FromRGBA(color).G;
+        //private static int PHPColorToBlue(long color) => FromRGBA(color).B;
 
         private static Rgba32 GetAlphaColor(PhpGdImageResource img, long col)
         {
@@ -732,8 +729,7 @@ namespace Peachpie.Library.Graphics
             // TODO: cache statically
 
             // Get the first available of specified sans serif system fonts
-            FontFamily fontFamily = null;
-            var result = SystemFonts.TryFind("Consolas", out fontFamily) || SystemFonts.TryFind("Lucida Console", out fontFamily) || SystemFonts.TryFind("Arial", out fontFamily) || SystemFonts.TryFind("Verdana", out fontFamily) || SystemFonts.TryFind("Tahoma", out fontFamily);
+            var result = SystemFonts.TryFind("Consolas", out var fontFamily) || SystemFonts.TryFind("Lucida Console", out fontFamily) || SystemFonts.TryFind("Arial", out fontFamily) || SystemFonts.TryFind("Verdana", out fontFamily) || SystemFonts.TryFind("Tahoma", out fontFamily);
 
             // Counl'd find the system font.
             if (!result)
@@ -858,7 +854,7 @@ namespace Peachpie.Library.Graphics
             }
 
             var image = img.Image;
-            return image[x, y].ToLong(true);
+            return image[x, y].RgbaToPHPColor();
         }
 
         /// <summary>
@@ -1449,7 +1445,7 @@ namespace Peachpie.Library.Graphics
                 { "red", rgba.R },
                 { "green", rgba.G },
                 { "blue", rgba.B },
-                { "alpha", rgba.ToLong(true) >> 24 },
+                { "alpha", rgba.GetPhpTransparency() },
             };
         }
 
@@ -2411,9 +2407,10 @@ namespace Peachpie.Library.Graphics
             => new PhpArray(6) { m00, m01, m10, m11, m20, m21 };
 
         /// <summary>
-        /// Get Matrix 3x2 from a PhpArray.
+        /// Get Matrix 3x2 from a PhpArray. Entries are indexed with integer numbers in range of 0..5.
         /// </summary>
         /// <param name="matrix">Php matrix representation.</param>
+        /// <param name="result">Resulting matrix.</param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         private static bool TryGetTransformMatrix(PhpArray matrix, out Matrix3x2 result)
         {
@@ -2454,20 +2451,21 @@ namespace Peachpie.Library.Graphics
         /// Get Rectangle from a PhpArray.
         /// </summary>
         /// <param name="rectangle">Php rectangle representation.</param>
+        /// <param name="result">Rectangle.</param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         private static bool TryGetRectangle(PhpArray rectangle, out Rectangle result)
         {
+            result = default;
 
             if (rectangle == null)
             {
-                result = default;
                 return false;
             }
 
             if (rectangle.TryGetValue("x", out var x) &
-                    rectangle.TryGetValue("y", out var y) &
-                    rectangle.TryGetValue("width", out var width) &
-                    rectangle.TryGetValue("height", out var height))
+                rectangle.TryGetValue("y", out var y) &
+                rectangle.TryGetValue("width", out var width) &
+                rectangle.TryGetValue("height", out var height))
             {
                 try
                 {
@@ -2484,17 +2482,14 @@ namespace Peachpie.Library.Graphics
                 catch // (Pchp.Library.Spl.TypeError)
                 {
                     PhpException.Throw(PhpError.Warning, Resources.wrong_type);
-                    result = default;
                     return false;
                 }
             }
             else
             {
                 PhpException.Throw(PhpError.Warning, Resources.missing_params);
-                result = default;
                 return false;
             }
-
         }
 
         /// <summary>
