@@ -12,6 +12,7 @@ namespace Peachpie.NET.Sdk
     {
         static readonly Dictionary<string, string> s_spdx_fixes = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
+            { "Apache2", "Apache-2.0" },
             { "Apache 2.0", "Apache-2.0" },
             { "Apache License", "Apache-2.0" },
             { "Apache License 2", "Apache-2.0" },
