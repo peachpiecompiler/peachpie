@@ -169,11 +169,15 @@ namespace Pchp.Library
 
     #region SessionConfiguration
 
-    sealed class SessionConfiguration : IPhpConfiguration
+    sealed class SessionConfiguration : IPhpSessionConfiguration
     {
         public const string DefaultSessionName = "PEACHSESSID";
 
+        string IPhpSessionConfiguration.DefaultSessionName { get; } = DefaultSessionName;
+
         public string ExtensionName => "session";
+
+        public bool AutoStart { get; set; }
 
         public IPhpConfiguration Copy() => (IPhpConfiguration)this.MemberwiseClone();
 
@@ -231,8 +235,13 @@ namespace Pchp.Library
         {
             public Registrator()
             {
-                Context.RegisterConfiguration(new SessionConfiguration());
+                Context.RegisterConfiguration<IPhpSessionConfiguration>(new SessionConfiguration());
             }
+        }
+
+        static SessionConfiguration GetSessionConfiguration(this IPhpConfigurationService config)
+        {
+            return (SessionConfiguration)config.Get<IPhpSessionConfiguration>();
         }
 
         #region Nested class: UserHandlerInternal
@@ -381,7 +390,7 @@ namespace Pchp.Library
             {
                 if (_lazyname == null)
                 {
-                    _lazyname = ((Context)webctx).Configuration.Get<SessionConfiguration>().SessionName ?? SessionConfiguration.DefaultSessionName;
+                    _lazyname = ((Context)webctx).Configuration.GetSessionConfiguration().SessionName ?? SessionConfiguration.DefaultSessionName;
                 }
 
                 return _lazyname;
@@ -498,7 +507,7 @@ namespace Pchp.Library
         /// <returns><see cref="Serializer"/> to be used to serialize and deserialize session data. Cannot be <c>null</c>.</returns>
         static Serializer GetSerializeHandler(Context ctx)
         {
-            //var handlername = ctx.Configuration.Get<SessionConfiguration>().SerializeHandler;
+            //var handlername = ctx.Configuration.GetSessionConfiguration().SerializeHandler;
             //if (handlername != null)
             //{
             //    if (handlername.EqualsOrdinalIgnoreCase("php") ||
@@ -597,7 +606,7 @@ namespace Pchp.Library
             }
 
             ctx.Session = session_array;
-            
+
             //
             return true;
         }
@@ -765,7 +774,7 @@ namespace Pchp.Library
         {
             PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
 
-            var config = ctx.Configuration.Get<SessionConfiguration>();
+            var config = ctx.Configuration.GetSessionConfiguration();
             config.CookieLifetime = lifetime;
             config.CookiePath = path;
 
@@ -779,7 +788,7 @@ namespace Pchp.Library
         {
             PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
 
-            var config = ctx.Configuration.Get<SessionConfiguration>();
+            var config = ctx.Configuration.GetSessionConfiguration();
             config.CookieLifetime = lifetime;
             config.CookiePath = path;
             config.CookieDomain = domain;
@@ -794,7 +803,7 @@ namespace Pchp.Library
         {
             PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
 
-            var config = ctx.Configuration.Get<SessionConfiguration>();
+            var config = ctx.Configuration.GetSessionConfiguration();
             config.CookieLifetime = lifetime;
             config.CookiePath = path;
             config.CookieDomain = domain;
@@ -809,7 +818,7 @@ namespace Pchp.Library
         /// </summary>
         public static PhpArray session_get_cookie_params(Context ctx)
         {
-            var config = ctx.Configuration.Get<SessionConfiguration>();
+            var config = ctx.Configuration.GetSessionConfiguration();
             return new PhpArray(5)
             {
                 { "lifetime", config.CookieLifetime },

@@ -180,7 +180,7 @@ namespace Pchp.Core
                 if (_includePathCache != IncludePaths)
                 {
                     _includePathCache = IncludePaths;
-                    _includePathsArray = IncludePaths.Split(new [] { CurrentPlatform.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
+                    _includePathsArray = IncludePaths.Split(new[] { CurrentPlatform.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
                 }
 
                 return _includePathsArray;
@@ -232,13 +232,33 @@ namespace Pchp.Core
 
     #endregion
 
+    #region IPhpSessionConfiguration
+
+    /// <summary>
+    /// Session handler runtime configuration.
+    /// </summary>
+    public interface IPhpSessionConfiguration : IPhpConfiguration
+    {
+        string DefaultSessionName { get; }
+
+        /// <summary>
+        /// Value specifying whether the session handler will start the session on request begin.
+        /// Default is <c>false</c>.
+        /// </summary>
+        bool AutoStart { get; set; }
+    }
+
+    #endregion
+
     partial class Context
     {
         #region DefaultPhpConfigurationService, PhpConfigurationService
 
-        protected class DefaultPhpConfigurationService : IPhpConfigurationService
+        public class DefaultPhpConfigurationService : IPhpConfigurationService
         {
             public static readonly DefaultPhpConfigurationService Instance = new DefaultPhpConfigurationService();
+
+            private DefaultPhpConfigurationService() { }
 
             public PhpCoreConfiguration Core => Get<PhpCoreConfiguration>();
 
@@ -258,7 +278,7 @@ namespace Pchp.Core
         {
             Dictionary<Type, IPhpConfiguration> _configs;
 
-            public PhpCoreConfiguration Core => _core ?? (_core = Get<PhpCoreConfiguration>());
+            public PhpCoreConfiguration Core => _core ??= Get<PhpCoreConfiguration>();
             PhpCoreConfiguration _core;
 
             public IPhpConfigurationService Parent => DefaultPhpConfigurationService.Instance;
@@ -321,7 +341,7 @@ namespace Pchp.Core
         /// </summary>
         static readonly Dictionary<Type, IPhpConfiguration> s_defaultConfigs = new Dictionary<Type, IPhpConfiguration>()
         {
-            {typeof(PhpCoreConfiguration), new PhpCoreConfiguration()},
+            { typeof(PhpCoreConfiguration), new PhpCoreConfiguration() },
         };
     }
 }
