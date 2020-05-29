@@ -3,10 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http.Headers;
 using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -137,7 +135,7 @@ namespace Peachpie.AspNetCore.Web
 
             foreach (var configservice in services.GetServices<IPostConfigureOptions<IPhpOptions>>())
             {
-                configservice.PostConfigure(Options.DefaultName, options);
+                configservice.PostConfigure(Microsoft.Extensions.Options.Options.DefaultName, options);
             }
 
             //

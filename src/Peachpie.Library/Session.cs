@@ -193,6 +193,18 @@ namespace Pchp.Library
             public Registrator()
             {
                 Context.RegisterConfiguration<IPhpSessionConfiguration>(new SessionConfiguration());
+
+                GetSetDelegate gsrsession = SessionConfiguration.Gsr;
+
+                Register("session.auto_start", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.save_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, gsrsession);
+                Register("session.serialize_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, gsrsession);
+                Register("session.name", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_lifetime", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_path", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_domain", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_secure", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_httponly", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
             }
         }
 
@@ -224,30 +236,47 @@ namespace Pchp.Library
 
             public bool CookieHttpOnly = false;
 
-            internal PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+            public static PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
             {
+                var sessionconfig = config.GetSessionConfiguration();
+
                 switch (option.ToLowerInvariant())
                 {
+                    case "session.auto_start":
+                        if (action != IniAction.Get)
+                        {
+                            PhpException.ArgumentValueNotSupported(option, action);
+                        }
+                        return sessionconfig.AutoStart;
+
+                    case "session.save_handler":
+                        if (action != IniAction.Get)
+                        {
+                            PhpException.ArgumentValueNotSupported(option, action);
+                        }
+                        var handler = ctx.HttpPhpContext?.SessionHandler;
+                        return handler != null ? handler.HandlerName : PhpValue.False;
+
                     case "session.serialize_handler":
-                        return (PhpValue)GetSet(ref SerializeHandler, "php", value, action);
+                        return GetSet(ref sessionconfig.SerializeHandler, "php", value, action);
 
                     case "session.name":
-                        return (PhpValue)GetSet(ref SessionName, DefaultSessionName, value, action);
+                        return GetSet(ref sessionconfig.SessionName, DefaultSessionName, value, action);
 
                     case "session.cookie_lifetime":
-                        return (PhpValue)GetSet(ref CookieLifetime, 0, value, action);
+                        return GetSet(ref sessionconfig.CookieLifetime, 0, value, action);
 
                     case "session.cookie_path":
-                        return (PhpValue)GetSet(ref CookiePath, "/", value, action);
+                        return GetSet(ref sessionconfig.CookiePath, "/", value, action);
 
                     case "session.cookie_domain":
-                        return (PhpValue)GetSet(ref CookieDomain, "", value, action);
+                        return GetSet(ref sessionconfig.CookieDomain, "", value, action);
 
                     case "session.cookie_secure":
-                        return (PhpValue)GetSet(ref CookieSecure, false, value, action);
+                        return GetSet(ref sessionconfig.CookieSecure, false, value, action);
 
                     case "session.cookie_httponly":
-                        return (PhpValue)GetSet(ref CookieHttpOnly, false, value, action);
+                        return GetSet(ref sessionconfig.CookieHttpOnly, false, value, action);
 
                     default:
                         throw new ArgumentOutOfRangeException(nameof(option));
