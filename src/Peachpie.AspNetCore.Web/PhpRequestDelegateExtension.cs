@@ -10,9 +10,18 @@ namespace Microsoft.AspNetCore.Builder
         /// <summary>
         /// Installs request handler to compiled PHP scripts.
         /// </summary>
-        public static IApplicationBuilder UsePhp(this IApplicationBuilder builder, PhpRequestOptions options = null)
+        //[Obsolete("Use 'UsePhp()' instead. Configure options with `AddPhp(IServiceCollection, configureOptions)`.")]
+        public static IApplicationBuilder UsePhp(this IApplicationBuilder builder, PhpRequestOptions options)
         {
-            return builder.UseMiddleware<PhpHandlerMiddleware>(options ?? new PhpRequestOptions());
+            return builder.UseMiddleware<PhpHandlerMiddleware>(options);
+        }
+
+        /// <summary>
+        /// Installs request handler to compiled PHP scripts.
+        /// </summary>
+        public static IApplicationBuilder UsePhp(this IApplicationBuilder builder)
+        {
+            return builder.UseMiddleware<PhpHandlerMiddleware>();
         }
     }
 }
