@@ -167,63 +167,20 @@ namespace Pchp.Library
 
     #endregion
 
-    #region SessionConfiguration
+    #region IPhpSessionConfiguration
 
-    sealed class SessionConfiguration : IPhpSessionConfiguration
+    /// <summary>
+    /// Session handler runtime configuration.
+    /// </summary>
+    public interface IPhpSessionConfiguration : IPhpConfiguration
     {
-        public const string DefaultSessionName = "PEACHSESSID";
+        string DefaultSessionName { get; }
 
-        string IPhpSessionConfiguration.DefaultSessionName { get; } = DefaultSessionName;
-
-        public string ExtensionName => "session";
-
-        public bool AutoStart { get; set; }
-
-        public IPhpConfiguration Copy() => (IPhpConfiguration)this.MemberwiseClone();
-
-        public string SerializeHandler = "php";
-
-        public string SessionName = DefaultSessionName;
-
-        public int CookieLifetime = 0;
-
-        public string CookiePath = "/";
-
-        public string CookieDomain = "";
-
-        public bool CookieSecure = false;
-
-        public bool CookieHttpOnly = false;
-
-        internal PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
-        {
-            switch (option.ToLowerInvariant())
-            {
-                case "session.serialize_handler":
-                    return (PhpValue)GetSet(ref SerializeHandler, "php", value, action);
-
-                case "session.name":
-                    return (PhpValue)GetSet(ref SessionName, DefaultSessionName, value, action);
-
-                case "session.cookie_lifetime":
-                    return (PhpValue)GetSet(ref CookieLifetime, 0, value, action);
-
-                case "session.cookie_path":
-                    return (PhpValue)GetSet(ref CookiePath, "/", value, action);
-
-                case "session.cookie_domain":
-                    return (PhpValue)GetSet(ref CookieDomain, "", value, action);
-
-                case "session.cookie_secure":
-                    return (PhpValue)GetSet(ref CookieSecure, false, value, action);
-
-                case "session.cookie_httponly":
-                    return (PhpValue)GetSet(ref CookieHttpOnly, false, value, action);
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(option));
-            }
-        }
+        /// <summary>
+        /// Value specifying whether the session handler will start the session on request begin.
+        /// Default is <c>false</c>.
+        /// </summary>
+        bool AutoStart { get; set; }
     }
 
     #endregion
@@ -238,6 +195,67 @@ namespace Pchp.Library
                 Context.RegisterConfiguration<IPhpSessionConfiguration>(new SessionConfiguration());
             }
         }
+
+        #region Nested class: SessionConfiguration
+
+        sealed class SessionConfiguration : IPhpSessionConfiguration
+        {
+            public const string DefaultSessionName = "PEACHSESSID";
+
+            string IPhpSessionConfiguration.DefaultSessionName { get; } = DefaultSessionName;
+
+            public string ExtensionName => "session";
+
+            public bool AutoStart { get; set; }
+
+            public IPhpConfiguration Copy() => (IPhpConfiguration)this.MemberwiseClone();
+
+            public string SerializeHandler = "php";
+
+            public string SessionName = DefaultSessionName;
+
+            public int CookieLifetime = 0;
+
+            public string CookiePath = "/";
+
+            public string CookieDomain = "";
+
+            public bool CookieSecure = false;
+
+            public bool CookieHttpOnly = false;
+
+            internal PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+            {
+                switch (option.ToLowerInvariant())
+                {
+                    case "session.serialize_handler":
+                        return (PhpValue)GetSet(ref SerializeHandler, "php", value, action);
+
+                    case "session.name":
+                        return (PhpValue)GetSet(ref SessionName, DefaultSessionName, value, action);
+
+                    case "session.cookie_lifetime":
+                        return (PhpValue)GetSet(ref CookieLifetime, 0, value, action);
+
+                    case "session.cookie_path":
+                        return (PhpValue)GetSet(ref CookiePath, "/", value, action);
+
+                    case "session.cookie_domain":
+                        return (PhpValue)GetSet(ref CookieDomain, "", value, action);
+
+                    case "session.cookie_secure":
+                        return (PhpValue)GetSet(ref CookieSecure, false, value, action);
+
+                    case "session.cookie_httponly":
+                        return (PhpValue)GetSet(ref CookieHttpOnly, false, value, action);
+
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(option));
+                }
+            }
+        }
+
+        #endregion
 
         static SessionConfiguration GetSessionConfiguration(this IPhpConfigurationService config)
         {

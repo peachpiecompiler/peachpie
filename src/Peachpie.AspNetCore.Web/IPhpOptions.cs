@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Pchp.Core;
+using Pchp.Library;
 
 namespace Peachpie.AspNetCore.Web
 {

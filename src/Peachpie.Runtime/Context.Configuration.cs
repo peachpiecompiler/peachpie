@@ -232,24 +232,6 @@ namespace Pchp.Core
 
     #endregion
 
-    #region IPhpSessionConfiguration
-
-    /// <summary>
-    /// Session handler runtime configuration.
-    /// </summary>
-    public interface IPhpSessionConfiguration : IPhpConfiguration
-    {
-        string DefaultSessionName { get; }
-
-        /// <summary>
-        /// Value specifying whether the session handler will start the session on request begin.
-        /// Default is <c>false</c>.
-        /// </summary>
-        bool AutoStart { get; set; }
-    }
-
-    #endregion
-
     partial class Context
     {
         #region DefaultPhpConfigurationService, PhpConfigurationService

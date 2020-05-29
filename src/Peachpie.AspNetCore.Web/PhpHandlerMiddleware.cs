@@ -18,6 +18,7 @@ using Microsoft.Extensions.DependencyModel;
 using Microsoft.Extensions.Options;
 using Pchp.Core;
 using Pchp.Core.Utilities;
+using Pchp.Library;
 
 namespace Peachpie.AspNetCore.Web
 {
