@@ -134,18 +134,18 @@ namespace Pchp.CodeAnalysis
 
         public static Span BodySpanOrInvalid(this AstNode routine)
         {
-            if (routine is FunctionDecl)
+            if (routine is FunctionDecl f)
             {
-                return ((FunctionDecl)routine).Body.Span;
+                return f.Body.Span;
             }
-            if (routine is MethodDecl)
+            if (routine is MethodDecl m)
             {
-                var node = (MethodDecl)routine;
-                return (node.Body != null) ? node.Body.Span : Span.Invalid;
+                return (m.Body != null) ? m.Body.Span : Span.Invalid;
             }
-            if (routine is LambdaFunctionExpr)
+            if (routine is LambdaFunctionExpr lambda)
             {
-                return ((LambdaFunctionExpr)routine).Body.Span;
+                var body = (ILangElement)lambda.Expression ?? lambda.Body;
+                return body.Span;
             }
             else
             {

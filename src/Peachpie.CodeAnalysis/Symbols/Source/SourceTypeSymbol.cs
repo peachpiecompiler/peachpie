@@ -1052,7 +1052,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         IEnumerable<MethodSymbol> LoadMethods()
         {
-            return _syntax.Members.OfType<MethodDecl>().Select(CreateSourceMethod);
+            return _syntax.Members.OfType<MethodDecl>().Select(m => CreateSourceMethod(m));
         }
 
         IEnumerable<FieldSymbol> LoadFields()

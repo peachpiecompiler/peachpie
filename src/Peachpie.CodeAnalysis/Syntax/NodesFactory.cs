@@ -173,6 +173,12 @@ namespace Peachpie.CodeAnalysis.Syntax
                 (LambdaFunctionExpr)base.Lambda(span, headingSpan, aliasReturn, returnType, formalParams, formalParamsSpan, lexicalVars, body));
         }
 
+        public override LangElement ArrowFunc(Span span, Span headingSpan, bool aliasReturn, TypeRef returnType, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, LangElement expression)
+        {
+            return AddAndReturn(ref _lambdas,
+                (ArrowFunctionExpr)base.ArrowFunc(span, headingSpan, aliasReturn, returnType, formalParams, formalParamsSpan, expression));
+        }
+
         public override LangElement Yield(Span span, LangElement keyOpt, LangElement valueOpt)
         {
             return AddAndReturn(ref _yieldNodes, base.Yield(span, keyOpt, valueOpt));

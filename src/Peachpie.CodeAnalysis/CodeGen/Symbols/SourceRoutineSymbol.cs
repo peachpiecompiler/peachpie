@@ -569,7 +569,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var overloads = base.SynthesizeStubs(module, diagnostic);
 
             // synthesize RoutineInfo:
-            var cctor = module.GetStaticCtorBuilder(_container);
+            var cctor = module.GetStaticCtorBuilder(Container);
             lock (cctor)
             {
                 var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);

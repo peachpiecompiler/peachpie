@@ -278,15 +278,22 @@ namespace Pchp.CodeAnalysis.Semantics
             return ImmutableArray.Create(arguments);
         }
 
-        protected ImmutableArray<BoundArgument> BindLambdaUseArguments(IEnumerable<AST.FormalParam> usevars)
+        protected ImmutableArray<BoundArgument> BindLambdaUseArguments(IList<AST.FormalParam> usevars)
         {
-            return usevars.Select(v =>
+            if (usevars != null && usevars.Count != 0)
             {
-                var varuse = new AST.DirectVarUse(v.Name.Span, v.Name.Name);
-                return BindExpression(varuse, v.PassedByRef ? BoundAccess.ReadRef : BoundAccess.Read);
-            })
-            .Select(BoundArgument.Create)
-            .ToImmutableArray();
+                return usevars.SelectAsArray(v =>
+                {
+                    var varuse = new AST.DirectVarUse(v.Name.Span, v.Name.Name);
+                    var boundvar = BindExpression(varuse, v.PassedByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+
+                    return BoundArgument.Create(boundvar);
+                });
+            }
+            else
+            {
+                return ImmutableArray<BoundArgument>.Empty;
+            }
         }
 
         protected Location GetLocation(AST.ILangElement expr) => ContainingFile.GetLocation(expr);
