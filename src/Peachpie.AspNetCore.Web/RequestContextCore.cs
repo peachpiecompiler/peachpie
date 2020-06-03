@@ -347,8 +347,6 @@ namespace Peachpie.AspNetCore.Web
             this.InitOutput(httpcontext.Response.Body, new SynchronizedTextWriter(httpcontext.Response, encoding));
             this.InitSuperglobals();
 
-            // TODO: start session if AutoStart is On
-
             this.SetupHeaders();
         }
 
