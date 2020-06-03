@@ -515,8 +515,34 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundLambda BindLambda(AST.LambdaFunctionExpr expr)
         {
+            IList<AST.FormalParam> useparams;
+
+            // arrow function gets captured variables implicitly
+            if (expr is AST.ArrowFunctionExpr fn)
+            {
+                var captured = new HashSet<VariableName>();
+
+                foreach (var v in fn.Expression.SelectLocalVariables())
+                {
+                    captured.Add(v.VarName);
+                }
+
+                foreach (var p in fn.Signature.FormalParams)
+                {
+                    captured.Remove(p.Name.Name);
+                }
+
+                useparams = captured
+                    .Select(vname => new AST.FormalParam(Span.Invalid, vname.Value, Span.Invalid, null, AST.FormalParam.Flags.Default, null))
+                    .ToList();
+            }
+            else
+            {
+                useparams = expr.UseParams ?? Array.Empty<AST.FormalParam>();
+            }
+
             // Syntax is bound by caller, needed to resolve lambda symbol in analysis
-            return new BoundLambda(BindLambdaUseArguments(expr.UseParams));
+            return new BoundLambda(BindLambdaUseArguments(useparams));
         }
 
         protected BoundExpression BindEval(AST.EvalEx expr)

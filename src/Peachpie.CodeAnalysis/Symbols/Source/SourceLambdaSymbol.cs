@@ -9,6 +9,7 @@ using Devsense.PHP.Syntax;
 using System.Collections.Immutable;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis.Operations;
+using Peachpie.Library.RegularExpressions;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -125,14 +126,38 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             _body = ImmutableArray.Create<Statement>(new JumpStmt(syntax.Expression.Span, JumpStmt.Types.Return, syntax.Expression));
             _useparams = EnumerateCapturedVariables(syntax)
-                .Distinct()
                 .Select(v => new FormalParam(Span.Invalid, v.Value, Span.Invalid, null, FormalParam.Flags.Default, null))
                 .ToArray();
         }
 
-        static IEnumerable<VariableName> EnumerateCapturedVariables(ArrowFunctionExpr fn)
+        static IReadOnlyCollection<VariableName> EnumerateCapturedVariables(ArrowFunctionExpr fn)
         {
-            yield break;
+            var capturedvars = new HashSet<VariableName>();
+
+            // collect all variables in fn
+            foreach (var v in fn.Expression.SelectLocalVariables())
+            {
+                capturedvars.Add(v.VarName);
+            }
+
+            // remove vars specified in parameters
+            foreach (var p in fn.Signature.FormalParams)
+            {
+                capturedvars.Remove(p.Name.Name);
+            }
+
+            //// intersect with variables from parent function scope
+            //var containingvars = new HashSet<VariableName>();
+
+            //foreach (var v in fn.GetContainingRoutine().SelectLocalVariables())
+            //{
+            //    containingvars.Add(v.VarName);
+            //}
+
+            //capturedvars.IntersectWith(containingvars);
+
+            //
+            return capturedvars;
         }
 
         internal override IList<Statement> Statements => _body;

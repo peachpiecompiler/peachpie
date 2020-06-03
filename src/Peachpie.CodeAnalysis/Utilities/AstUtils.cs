@@ -12,6 +12,7 @@ using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using System.Runtime.InteropServices;
 
 namespace Pchp.CodeAnalysis
 {
@@ -373,6 +374,54 @@ namespace Pchp.CodeAnalysis
 
             // spans are not available
             return default;
+        }
+
+        sealed class ElementVisitor<TElement> : TreeVisitor
+            where TElement : LangElement
+        {
+            readonly Func<LangElement, bool> _acceptPredicate;
+
+            public List<TElement> Result { get; } = new List<TElement>();
+
+            public ElementVisitor(Func<LangElement, bool> acceptPredicate)
+            {
+                _acceptPredicate = acceptPredicate;
+            }
+
+            public override void VisitElement(LangElement element)
+            {
+                if (element is TElement x)
+                {
+                    Result.Add(x);
+                }
+
+                if (_acceptPredicate(element))
+                {
+                    base.VisitElement(element);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets all elements of given type.
+        /// </summary>
+        public static List<TElement> SelectElements<TElement>(this LangElement root, Func<LangElement, bool> acceptPredicate)
+            where TElement : LangElement
+        {
+            var visitor = new ElementVisitor<TElement>(acceptPredicate);
+            visitor.VisitElement(root);
+            return visitor.Result;
+        }
+
+        /// <summary>
+        /// Gets all occurences of <see cref="DirectVarUse"/> in given scope.
+        /// Ignores autoglobals and $this.
+        /// </summary>
+        public static IEnumerable<DirectVarUse> SelectLocalVariables(this LangElement root)
+        {
+            return root.SelectElements<DirectVarUse>(
+                scope => !(scope is FunctionDecl || scope is ILambdaExpression || scope is TypeDecl || scope is MethodDecl) || scope == root)
+                .Where(dvar => dvar.IsMemberOf == null && !dvar.VarName.IsAutoGlobal && !dvar.VarName.IsThisVariableName);
         }
     }
 }
