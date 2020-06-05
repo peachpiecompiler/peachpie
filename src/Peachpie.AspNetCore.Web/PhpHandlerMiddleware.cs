@@ -222,7 +222,7 @@ namespace Peachpie.AspNetCore.Web
             _options.InvokeRequestStart(ctx);
         }
 
-        Task InvokeAndDispose(RequestContextCore phpctx, Context.ScriptInfo script)
+        void InvokeAndDispose(RequestContextCore phpctx, Context.ScriptInfo script)
         {
             try
             {
@@ -232,53 +232,55 @@ namespace Peachpie.AspNetCore.Web
             finally
             {
                 phpctx.Dispose();
-                phpctx.RequestEndEvent?.Set();
+                phpctx.RequestCompletionSource.TrySetResult(RequestCompletionReason.Finished);
             }
-
-            //
-            return Task.CompletedTask;
         }
 
-        static TimeSpan GetRequestTimeout(Context phpctx) =>
+        static int GetRequestTimeoutSeconds(Context phpctx) =>
             Debugger.IsAttached
-            ? Timeout.InfiniteTimeSpan
-            : TimeSpan.FromSeconds(phpctx.Configuration.Core.ExecutionTimeout);
+            ? Timeout.Infinite // -1
+            : phpctx.Configuration.Core.ExecutionTimeout;
 
-        public Task Invoke(HttpContext context)
+        public async Task Invoke(HttpContext context)
         {
             var script = RequestContextCore.ResolveScript(context.Request);
             if (script.IsValid)
             {
-                using var endevent = new ManualResetEventSlim(false);
+                var completion = new TaskCompletionSource<RequestCompletionReason>();
                 var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding)
                 {
-                    RequestEndEvent = endevent,
+                    RequestCompletionSource = completion,
                 };
 
+                //
+                // InvokeAndDispose(phpctx, script);
+                //
+
                 // run the script, dispose phpctx when finished
+                // using threadpool since we have to be able to end the request and keep script running
                 var task = Task.Run(() => InvokeAndDispose(phpctx, script));
 
-                // wait for the request to finish
-                if (endevent.Wait(GetRequestTimeout(phpctx)) == false)
+                // wait for the request to finish,
+                // do not block current thread
+                var timeout = GetRequestTimeoutSeconds(phpctx);
+                if (timeout > 0)
                 {
-                    // timeout
-                    // context.Response.StatusCode = HttpStatusCode.RequestTimeout;
+                    await Task.WhenAny(completion.Task, Task.Delay(timeout * 1000));
                 }
-
-                phpctx.RequestEndEvent = null;
+                else
+                {
+                    await completion.Task;
+                }
 
                 if (task.Exception != null)
                 {
                     // rethrow script exception
                     throw task.Exception;
                 }
-
-                //
-                return Task.CompletedTask;
             }
             else
             {
-                return _next(context);
+                await _next(context);
             }
         }
     }
