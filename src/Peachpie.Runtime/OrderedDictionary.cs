@@ -189,14 +189,14 @@ namespace Pchp.Core
             /// </summary>
             public TValue Value;
 
-            public (IntStringKey, TValue) AsTuple() => (Key, Value);
+            public readonly (IntStringKey, TValue) AsTuple() => (Key, Value);
 
-            public KeyValuePair<IntStringKey, TValue> AsKeyValuePair() => new KeyValuePair<IntStringKey, TValue>(Key, Value);
+            public readonly KeyValuePair<IntStringKey, TValue> AsKeyValuePair() => new KeyValuePair<IntStringKey, TValue>(Key, Value);
 
             /// <summary>
             /// The value has been deleted - is not initialized.
             /// </summary>
-            public bool IsDeleted => Value.IsInvalid;
+            public readonly bool IsDeleted => Value.IsInvalid;
         }
 
         /// <summary>Minimal internal table capacity. Must be power of 2.</summary>
@@ -373,7 +373,7 @@ namespace Pchp.Core
             var newdata = new Bucket[size];
             Array.Copy(_data, 0, newdata, 0, _dataUsed); // faster than Memory<T>.CopyTo() and Array.Resize<T>
             _data = newdata;
-            
+
             _mask = size - 1;
             _size = size;
 
@@ -677,14 +677,15 @@ namespace Pchp.Core
             Debug.Assert(!IsShared);
 
             int i = FindIndex(key);
-
-            if (i >= 0)
+            if (i < 0)
+            {
+                // add NULL item:
+                return ref Add_Impl(key, TValue.Null);
+            }
+            else
             {
                 return ref _data[i].Value; // PERF: double array lookup
             }
-
-            // add NULL item:
-            return ref Add_Impl(key, TValue.Null);
         }
 
         /// <summary>
@@ -1777,7 +1778,7 @@ namespace Pchp.Core
             /// <summary>
             /// Gets current key-value pair.
             /// </summary>
-            public KeyValuePair<IntStringKey, TValue> Current => Bucket.AsKeyValuePair();
+            public readonly KeyValuePair<IntStringKey, TValue> Current => Bucket.AsKeyValuePair();
 
             /// <summary>
             /// Gets current key.
@@ -1886,17 +1887,17 @@ namespace Pchp.Core
             /// <summary>
             /// Gets value indicating the value is not initialized.
             /// </summary>
-            public bool IsDefault => ReferenceEquals(_array, null);
+            public readonly bool IsDefault => ReferenceEquals(_array, null);
 
             /// <summary>
             /// Gets value indicating the internal pointer is in bounds.
             /// </summary>
-            public bool IsValid => !IsDefault && _i >= 0 && _i < _array._dataUsed;
+            public readonly bool IsValid => !IsDefault && _i >= 0 && _i < _array._dataUsed;
 
             /// <summary>
             /// Gets value indicating the enumerator reached the end of array.
             /// </summary>
-            public bool AtEnd => _i >= _array._dataUsed;
+            public readonly bool AtEnd => _i >= _array._dataUsed;
 
             /// <summary>
             /// Deletes current entry. Does not move the internal enumerator.
