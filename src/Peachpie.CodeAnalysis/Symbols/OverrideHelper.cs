@@ -257,16 +257,12 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (t.IsAbstract || t == type)
                 {
-                    if (t.Interfaces.IsDefaultOrEmpty)
+                    if (t.GetDeclaredInterfaces(null).IsDefaultOrEmpty)
                     {
                         continue;
                     }
 
-                    if (typesWithInterfaces == null)
-                    {
-                        typesWithInterfaces = new Queue<NamedTypeSymbol>();
-                    }
-
+                    typesWithInterfaces ??= new Queue<NamedTypeSymbol>();
                     typesWithInterfaces.Enqueue(t);
                 }
                 else
@@ -288,7 +284,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     var t = typesWithInterfaces.Dequeue();
                     if (set.Add(t))
                     {
-                        t.Interfaces.ForEach(typesWithInterfaces.Enqueue);
+                        foreach (var iface in t.GetDeclaredInterfaces(null))
+                        {
+                            typesWithInterfaces.Enqueue(iface);
+                        }
                     }
                 }
 

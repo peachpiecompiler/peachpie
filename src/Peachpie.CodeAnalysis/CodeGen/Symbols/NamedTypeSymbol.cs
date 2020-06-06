@@ -131,12 +131,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // resolve overrides of interface methods
-            foreach (var iface in Interfaces)
+            var declaredifaces = GetDeclaredInterfaces(null);
+            foreach (var iface in declaredifaces)
             {
                 // skip interfaces implemented by base type or other interfaces,
                 // we don't want to add redundant override entries:
-                if ((BaseType != null && BaseType.ImplementsInterface(iface)) ||
-                    Interfaces.Any(x => x != iface && x.ImplementsInterface(iface)))
+                if (BaseType?.ImplementsInterface(iface) == true ||
+                    declaredifaces.Any(x => x != iface && x.ImplementsInterface(iface)))
                 {
                     // iface is already handled within overrides => skip
                     // note: iface can be ignored in metadata at all actually

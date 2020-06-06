@@ -375,7 +375,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // (IPhpCallable)
-            if (!from.IsEqualToOrDerivedFrom(CoreTypes.IPhpCallable))
+            if (!from.IsOfType(CoreTypes.IPhpCallable))
             {
                 if (from.SpecialType == SpecialType.System_String)
                 {

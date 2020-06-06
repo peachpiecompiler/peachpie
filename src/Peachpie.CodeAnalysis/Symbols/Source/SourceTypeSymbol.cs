@@ -425,7 +425,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                 }
 
-                foreach (var i in Interfaces)
+                foreach (var i in GetDeclaredInterfaces(null))
                 {
                     if (i is SourceTypeSymbol s && visited.Add(s.FullName) && s.IsUnreachableChecked(ref visited))
                     {
@@ -1308,7 +1308,29 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool MangleName => Arity != 0;
 
-        public override ImmutableArray<NamedTypeSymbol> Interfaces => GetDeclaredInterfaces(null);
+        public override ImmutableArray<NamedTypeSymbol> Interfaces
+        {
+            get
+            {
+                var ifaces = GetDeclaredInterfaces(null);
+
+                //
+                if (TryGetMagicInvoke() != null)
+                {
+                    // __invoke => IPhpCallable
+                    ifaces = ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
+                }
+
+                if (TryGetDestruct() != null)
+                {
+                    // __destruct => IDisposable
+                    ifaces = ifaces.Add(DeclaringCompilation.GetSpecialType(SpecialType.System_IDisposable));
+                }
+
+                //
+                return ifaces;
+            }
+        }
 
         /// <summary>
         /// Bound trait uses.
@@ -1601,22 +1623,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            var ifaces = GetDeclaredInterfaces(null);
-
-            //
-            if (TryGetMagicInvoke() != null)
-            {
-                // __invoke => IPhpCallable
-                ifaces = ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
-            }
-
-            if (TryGetDestruct() != null)
-            {
-                // __destruct => IDisposable
-                ifaces = ifaces.Add(DeclaringCompilation.GetSpecialType(SpecialType.System_IDisposable));
-            }
-
-            return ifaces;
+            return this.Interfaces; // gets declared interfaces + synthesized
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved)
