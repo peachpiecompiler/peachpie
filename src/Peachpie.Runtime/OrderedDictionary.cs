@@ -1778,7 +1778,7 @@ namespace Pchp.Core
             /// <summary>
             /// Gets current key-value pair.
             /// </summary>
-            public readonly KeyValuePair<IntStringKey, TValue> Current => Bucket.AsKeyValuePair();
+            public KeyValuePair<IntStringKey, TValue> Current => Bucket.AsKeyValuePair();
 
             /// <summary>
             /// Gets current key.
