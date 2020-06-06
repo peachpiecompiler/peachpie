@@ -284,7 +284,6 @@ namespace Pchp.Library
 
         #region array_pop, array_push, array_shift, array_unshift, array_reverse
 
-
         /// <summary>
         /// Removes the last item from an array and returns it.
         /// </summary>
@@ -1997,31 +1996,35 @@ namespace Pchp.Library
                 return PhpArray.NewEmpty();
             }
 
-            var result = new PhpArray(arrays[0] != null ? arrays[0].Count : 0);
+            var table = new OrderedDictionary(arrays[0] != null ? (uint)arrays[0].Count : 0);
 
             for (int i = 0; i < arrays.Length; i++)
             {
-                if (arrays[i] == null)
+                var array = arrays[i];
+                if (array == null)
                 {
                     PhpException.Throw(PhpError.Warning, Resources.Resources.argument_not_array, (i + 1).ToString());
                     return null;
                 }
 
-                var enumerator = arrays[i].GetFastEnumerator();
+                var enumerator = array.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    var value = enumerator.CurrentValue.DeepCopy();
-
-                    if (enumerator.CurrentKey.IsString)
-                        result[enumerator.CurrentKey] = value;
+                    var current = enumerator.Current;
+                    if (current.Key.IsString)
+                    {
+                        table[current.Key] = current.Value.DeepCopy();
+                    }
                     else
-                        result.Add(value);
+                    {
+                        table.Add(current.Value.DeepCopy());
+                    }
                 }
             }
 
             // results is inplace deeply copied if returned to PHP code:
             //result.InplaceCopyOnReturn = true;
-            return result;
+            return new PhpArray(table);
         }
 
         /// <summary>
