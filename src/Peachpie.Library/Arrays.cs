@@ -1991,39 +1991,51 @@ namespace Pchp.Library
             // "arrays" argument is PhpArray[] => compiler generates code converting any value to PhpArray.
             // Note, PHP does reject non-array arguments.
 
-            if (arrays == null || arrays.Length == 0)
+            uint count = 0; // count max result size, so we can efficiently preallocate
+
+            if (arrays != null)
+            {
+                // validate and count elements
+                for (int i = 0; i < arrays.Length; i++)
+                {
+                    if (arrays[i] == null)
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.Resources.argument_not_array, (i + 1).ToString());
+                        return null;
+                    }
+
+                    count += (uint)arrays[i].Count;
+                }
+            }
+
+            if (count == 0)
             {
                 return PhpArray.NewEmpty();
             }
 
-            var table = new OrderedDictionary(arrays[0] != null ? (uint)arrays[0].Count : 0);
+            // pre
+            var result = new OrderedDictionary(count);
 
             for (int i = 0; i < arrays.Length; i++)
             {
-                if (arrays[i] == null)
-                {
-                    PhpException.Throw(PhpError.Warning, Resources.Resources.argument_not_array, (i + 1).ToString());
-                    return null;
-                }
-
-                var enumerator = arrays[i].GetFastEnumerator();
+                var enumerator = arrays[i]!.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
                     var value = enumerator.CurrentValue.DeepCopy();
                     var key = enumerator.CurrentKey;
                     if (key.IsString)
                     {
-                        table[key] = value;
+                        result[key] = value;
                     }
                     else
                     {
-                        table.Add(value);
+                        result.Add(value);
                     }
                 }
             }
 
             //
-            return new PhpArray(table);
+            return new PhpArray(result);
         }
 
         /// <summary>
