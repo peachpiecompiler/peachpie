@@ -280,8 +280,9 @@ namespace Pchp.Core
             if (from == null) throw new ArgumentNullException(nameof(from));
 
             _mask = from._mask;
-            _data = (Bucket[])from._data.Clone();
-            _hash = (int[])from._hash?.Clone();
+            _data = from._data.AsSpan().ToArray();
+            if (from._hash != null)
+                _hash = from._hash.AsSpan().ToArray();
             _dataUsed = from._dataUsed;
             _dataDeleted = from._dataDeleted;
             _size = from._size;
@@ -367,13 +368,13 @@ namespace Pchp.Core
             Debug.Assert(size > _size);
             Debug.Assert(_isPowerOfTwo(size));
 
-            //Array.Resize(ref this.arData, (int)size); // slower
+            //Array.Resize(ref this._data, (int)size); // slower
 
-            var newData = new Bucket[size];
-            Array.Copy(this._data, 0, newData, 0, this._dataUsed); // NOTE: faster than Memory<T>.CopyTo() and Array.Resize<T>
-
+            var newdata = new Bucket[size];
+            Array.Copy(_data, 0, newdata, 0, _dataUsed); // faster than Memory<T>.CopyTo() and Array.Resize<T>
+            _data = newdata;
+            
             _mask = size - 1;
-            _data = newData;
             _size = size;
 
             if (this._hash != null)
@@ -779,8 +780,8 @@ namespace Pchp.Core
             Debug.Assert(FindIndex(key) < 0);
             Debug.Assert(!IsShared);
 
-            var i = this._dataUsed;
-            if (i >= this._size)
+            var i = _dataUsed;
+            if (i == _size)
             {
                 _resize();
             }
