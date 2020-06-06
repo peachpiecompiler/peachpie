@@ -768,11 +768,11 @@ namespace Pchp.Library
         /// Gets object pool singleton.
         /// Uses <see cref="StringBuilderPooledObjectPolicy"/> policy (automatically clears the string builder upon return).
         /// </summary>
-        public static ObjectPool<StringBuilder> Pool => s_lazyObjectPool.Value;
+        public static ObjectPool<StringBuilder> Pool { get; } = new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy());
 
-        static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(
-            () => new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy()),
-            System.Threading.LazyThreadSafetyMode.PublicationOnly);
+        //static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(
+        //    () => new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy()),
+        //    System.Threading.LazyThreadSafetyMode.PublicationOnly);
 
         /// <summary>
         /// Gets the <paramref name="sb"/> value as string and return the instance to the <see cref="Pool"/>.
