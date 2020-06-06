@@ -2000,30 +2000,29 @@ namespace Pchp.Library
 
             for (int i = 0; i < arrays.Length; i++)
             {
-                var array = arrays[i];
-                if (array == null)
+                if (arrays[i] == null)
                 {
                     PhpException.Throw(PhpError.Warning, Resources.Resources.argument_not_array, (i + 1).ToString());
                     return null;
                 }
 
-                var enumerator = array.GetFastEnumerator();
+                var enumerator = arrays[i].GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    var current = enumerator.Current;
-                    if (current.Key.IsString)
+                    var value = enumerator.CurrentValue.DeepCopy();
+                    var key = enumerator.CurrentKey;
+                    if (key.IsString)
                     {
-                        table[current.Key] = current.Value.DeepCopy();
+                        table[key] = value;
                     }
                     else
                     {
-                        table.Add(current.Value.DeepCopy());
+                        table.Add(value);
                     }
                 }
             }
 
-            // results is inplace deeply copied if returned to PHP code:
-            //result.InplaceCopyOnReturn = true;
+            //
             return new PhpArray(table);
         }
 
