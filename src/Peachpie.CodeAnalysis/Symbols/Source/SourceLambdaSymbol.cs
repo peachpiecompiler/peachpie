@@ -29,11 +29,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         FieldSymbol _lazyRoutineInfoField;    // internal static RoutineInfo !name;
 
-        public SourceLambdaSymbol(LambdaFunctionExpr syntax, NamedTypeSymbol container, bool useThis)
+        public SourceLambdaSymbol(LambdaFunctionExpr syntax, NamedTypeSymbol container)
         {
             Container = container ?? throw new ArgumentNullException(nameof(container));
             _syntax = syntax;
-            UseThis = useThis;
+            UseThis = !syntax.IsStatic;
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly FormalParam[] _useparams;
 
         public SourceArrowFnSymbol(ArrowFunctionExpr syntax, NamedTypeSymbol container)
-            : base(syntax, container, useThis: true)
+            : base(syntax, container)
         {
             _body = ImmutableArray.Create<Statement>(new JumpStmt(syntax.Expression.Span, JumpStmt.Types.Return, syntax.Expression));
             _useparams = EnumerateCapturedVariables(syntax)
