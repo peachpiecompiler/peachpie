@@ -1,5 +1,6 @@
 ﻿using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 using Pchp.Library.Resources;
 using System;
 using System.Collections.Generic;
@@ -83,7 +84,16 @@ namespace Pchp.Library
         /// <summary>
 		/// Retrieves the number of arguments passed to the current user-function.
 		/// </summary>
-		public static int func_num_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args) => args.Length;
+		public static int func_num_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args)
+        {
+            if (args == null)
+            {
+                //PhpException.Throw(PhpError.Warning, ErrResources.no_function_context);
+                throw new InvalidOperationException(ErrResources.no_function_context);
+            }
+
+            return args.Length;
+        }
 
         /// <summary>
         /// Retrieves an argument passed to the current user-function.
@@ -114,9 +124,17 @@ namespace Pchp.Library
         /// </summary>
         /// <remarks><seealso cref="PhpStack.GetArguments"/>
         /// Also throws warning if called from global scope.</remarks>
+        [return: NotNull]
         public static PhpArray func_get_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args)
         {
-            // TODO: when called from global code, return FALSE
+            // NOTE: when called from global code, we should return FALSE,
+            // but we're reporting it in compile time already
+
+            if (args == null)
+            {
+                //PhpException.Throw(PhpError.Warning, ErrResources.no_function_context);
+                throw new InvalidOperationException(ErrResources.no_function_context);
+            }
 
             var result = new PhpArray(args.Length);
 

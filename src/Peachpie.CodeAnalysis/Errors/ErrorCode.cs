@@ -206,6 +206,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_TypeNameInUse,
         /// <summary>Script file '{0}' could not be resolved, the script inclusion is unbound.</summary>
         WRN_CannotIncludeFile,
+        /// <summary>Called from the global scope</summary>
+        WRN_CalledFromGlobalScope,
 
         //
         // Visible information

@@ -118,9 +118,22 @@ namespace Pchp.Core
 
         public override int GetHashCode() => unchecked((int)_ikey);
 
+        public override bool Equals(object obj) => obj switch
+        {
+            string skey => Equals(skey),
+            long lkey => Equals(lkey),
+            int ikey => Equals(ikey),
+            IntStringKey key => Equals(key),
+            _ => false,
+        };
+
         public bool Equals(IntStringKey other) => _ikey == other._ikey && _skey == other._skey;
 
-        public bool Equals(int ikey) => _ikey == ikey && ReferenceEquals(_skey, null);
+        public bool Equals(int ikey) => _ikey == ikey && IsInteger;
+
+        public bool Equals(long lkey) => _ikey == lkey && IsInteger;
+
+        public bool Equals(string skey) => _skey == skey && IsString;
 
         public override string ToString() => _skey ?? _ikey.ToString();
 
@@ -176,14 +189,14 @@ namespace Pchp.Core
             /// </summary>
             public TValue Value;
 
-            public (IntStringKey, TValue) AsTuple() => (Key, Value);
+            public readonly (IntStringKey, TValue) AsTuple() => (Key, Value);
 
-            public KeyValuePair<IntStringKey, TValue> AsKeyValuePair() => new KeyValuePair<IntStringKey, TValue>(Key, Value);
+            public readonly KeyValuePair<IntStringKey, TValue> AsKeyValuePair() => new KeyValuePair<IntStringKey, TValue>(Key, Value);
 
             /// <summary>
             /// The value has been deleted - is not initialized.
             /// </summary>
-            public bool IsDeleted => Value.IsInvalid;
+            public readonly bool IsDeleted => Value.IsInvalid;
         }
 
         /// <summary>Minimal internal table capacity. Must be power of 2.</summary>
@@ -267,8 +280,9 @@ namespace Pchp.Core
             if (from == null) throw new ArgumentNullException(nameof(from));
 
             _mask = from._mask;
-            _data = (Bucket[])from._data.Clone();
-            _hash = (int[])from._hash?.Clone();
+            _data = from._data.AsSpan().ToArray();
+            if (from._hash != null)
+                _hash = from._hash.AsSpan().ToArray();
             _dataUsed = from._dataUsed;
             _dataDeleted = from._dataDeleted;
             _size = from._size;
@@ -354,13 +368,13 @@ namespace Pchp.Core
             Debug.Assert(size > _size);
             Debug.Assert(_isPowerOfTwo(size));
 
-            //Array.Resize(ref this.arData, (int)size); // slower
+            //Array.Resize(ref this._data, (int)size); // slower
 
-            var newData = new Bucket[size];
-            Array.Copy(this._data, 0, newData, 0, this._dataUsed); // NOTE: faster than Memory<T>.CopyTo() and Array.Resize<T>
+            var newdata = new Bucket[size];
+            Array.Copy(_data, 0, newdata, 0, _dataUsed); // faster than Memory<T>.CopyTo() and Array.Resize<T>
+            _data = newdata;
 
             _mask = size - 1;
-            _data = newData;
             _size = size;
 
             if (this._hash != null)
@@ -663,14 +677,15 @@ namespace Pchp.Core
             Debug.Assert(!IsShared);
 
             int i = FindIndex(key);
-
-            if (i >= 0)
+            if (i < 0)
+            {
+                // add NULL item:
+                return ref Add_Impl(key, TValue.Null);
+            }
+            else
             {
                 return ref _data[i].Value; // PERF: double array lookup
             }
-
-            // add NULL item:
-            return ref Add_Impl(key, TValue.Null);
         }
 
         /// <summary>
@@ -766,8 +781,8 @@ namespace Pchp.Core
             Debug.Assert(FindIndex(key) < 0);
             Debug.Assert(!IsShared);
 
-            var i = this._dataUsed;
-            if (i >= this._size)
+            var i = _dataUsed;
+            if (i == _size)
             {
                 _resize();
             }
@@ -1872,17 +1887,17 @@ namespace Pchp.Core
             /// <summary>
             /// Gets value indicating the value is not initialized.
             /// </summary>
-            public bool IsDefault => ReferenceEquals(_array, null);
+            public readonly bool IsDefault => ReferenceEquals(_array, null);
 
             /// <summary>
             /// Gets value indicating the internal pointer is in bounds.
             /// </summary>
-            public bool IsValid => !IsDefault && _i >= 0 && _i < _array._dataUsed;
+            public readonly bool IsValid => !IsDefault && _i >= 0 && _i < _array._dataUsed;
 
             /// <summary>
             /// Gets value indicating the enumerator reached the end of array.
             /// </summary>
-            public bool AtEnd => _i >= _array._dataUsed;
+            public readonly bool AtEnd => _i >= _array._dataUsed;
 
             /// <summary>
             /// Deletes current entry. Does not move the internal enumerator.

@@ -655,6 +655,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Called from the global scope.
+        /// </summary>
+        internal static string WRN_CalledFromGlobalScope {
+            get {
+                return ResourceManager.GetString("WRN_CalledFromGlobalScope", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Script file &apos;{0}&apos; could not be resolved, the script inclusion is unbound..
         /// </summary>
         internal static string WRN_CannotIncludeFile {

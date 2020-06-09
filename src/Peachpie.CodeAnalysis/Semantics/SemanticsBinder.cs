@@ -278,15 +278,22 @@ namespace Pchp.CodeAnalysis.Semantics
             return ImmutableArray.Create(arguments);
         }
 
-        protected ImmutableArray<BoundArgument> BindLambdaUseArguments(IEnumerable<AST.FormalParam> usevars)
+        protected ImmutableArray<BoundArgument> BindLambdaUseArguments(IList<AST.FormalParam> usevars)
         {
-            return usevars.Select(v =>
+            if (usevars != null && usevars.Count != 0)
             {
-                var varuse = new AST.DirectVarUse(v.Name.Span, v.Name.Name);
-                return BindExpression(varuse, v.PassedByRef ? BoundAccess.ReadRef : BoundAccess.Read);
-            })
-            .Select(BoundArgument.Create)
-            .ToImmutableArray();
+                return usevars.SelectAsArray(v =>
+                {
+                    var varuse = new AST.DirectVarUse(v.Name.Span, v.Name.Name);
+                    var boundvar = BindExpression(varuse, v.PassedByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+
+                    return BoundArgument.Create(boundvar);
+                });
+            }
+            else
+            {
+                return ImmutableArray<BoundArgument>.Empty;
+            }
         }
 
         protected Location GetLocation(AST.ILangElement expr) => ContainingFile.GetLocation(expr);
@@ -508,8 +515,34 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundLambda BindLambda(AST.LambdaFunctionExpr expr)
         {
+            IList<AST.FormalParam> useparams;
+
+            // arrow function gets captured variables implicitly
+            if (expr is AST.ArrowFunctionExpr fn)
+            {
+                var captured = new HashSet<VariableName>();
+
+                foreach (var v in fn.Expression.SelectLocalVariables())
+                {
+                    captured.Add(v.VarName);
+                }
+
+                foreach (var p in fn.Signature.FormalParams)
+                {
+                    captured.Remove(p.Name.Name);
+                }
+
+                useparams = captured
+                    .Select(vname => new AST.FormalParam(Span.Invalid, vname.Value, Span.Invalid, null, AST.FormalParam.Flags.Default, null))
+                    .ToList();
+            }
+            else
+            {
+                useparams = expr.UseParams ?? Array.Empty<AST.FormalParam>();
+            }
+
             // Syntax is bound by caller, needed to resolve lambda symbol in analysis
-            return new BoundLambda(BindLambdaUseArguments(expr.UseParams));
+            return new BoundLambda(BindLambdaUseArguments(useparams));
         }
 
         protected BoundExpression BindEval(AST.EvalEx expr)
@@ -722,6 +755,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         // remember we need varargs:
                         Routine.Flags |= RoutineFlags.UsesArgs;
+
+                        // cannot use in global scope
+                        if (Routine.IsGlobalScope)
+                        {
+                            Diagnostics.Add(GetLocation(x), Errors.ErrorCode.WRN_CalledFromGlobalScope);
+                        }
                     }
 
                     if (fname.IsAssertFunctionName())

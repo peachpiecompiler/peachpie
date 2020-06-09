@@ -143,7 +143,7 @@ namespace Peachpie.AspNetCore.Web
                 InitOutput(null, enableOutputBuffering: IsOutputBuffered);
 
                 // signal to continue request pipeline
-                RequestEndEvent?.Set();
+                RequestCompletionSource?.TrySetResult(RequestCompletionReason.ForceEnd);
             }
         }
 
@@ -234,7 +234,7 @@ namespace Peachpie.AspNetCore.Web
         /// <remarks>
         /// End may occur when request finishes its processing or when event explicitly requested by user's code (See <see cref="IHttpPhpContext.Flush(bool)"/>).
         /// </remarks>
-        public ManualResetEventSlim RequestEndEvent { get; internal set; }
+        public TaskCompletionSource<RequestCompletionReason> RequestCompletionSource { get; internal set; }
 
         /// <summary>
         /// Performs the request lifecycle, invokes given entry script and cleanups the context.
@@ -346,8 +346,6 @@ namespace Peachpie.AspNetCore.Web
 
             this.InitOutput(httpcontext.Response.Body, new SynchronizedTextWriter(httpcontext.Response, encoding));
             this.InitSuperglobals();
-
-            // TODO: start session if AutoStart is On
 
             this.SetupHeaders();
         }

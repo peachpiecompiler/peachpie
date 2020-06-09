@@ -938,9 +938,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (routine.IsGlobalScope)
             {
-                // TODO: warning: use of arguments in global scope
+                // NOTE: this produces warning: Called from the global scope - no function context
                 _il.EmitNullConstant();
-                return (TypeSymbol)DeclaringCompilation.ObjectType;
+                return ArrayTypeSymbol.CreateSZArray(DeclaringCompilation.SourceAssembly, CoreTypes.PhpValue);
             }
 
             if (routine.IsGeneratorMethod())
@@ -1525,14 +1525,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                     case ImportValueAttributeData.ValueSpec.CallerArgs:
                         //Debug.Assert(p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpValue()); // PhpValue[]
                         //return Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
-                        if (FunctionArgsArray != null && p.Type == (Symbol)FunctionArgsArray.Type)
+                        if ((Symbol)FunctionArgsArray?.Type == p.Type)
                         {
                             _il.EmitLocalLoad(FunctionArgsArray);
                             return p.Type;
                         }
-                        throw this.NotImplementedException(
-                            "cannot pass caller arguments, " +
-                            FunctionArgsArray == null ? "arguments not fetched" : "parameter type does not match");
+                        else
+                        {
+                            throw this.NotImplementedException(
+                                "cannot pass caller arguments, " +
+                                FunctionArgsArray == null ? "arguments not fetched" : "parameter type does not match");
+                        }
 
                     case ImportValueAttributeData.ValueSpec.Locals:
                         Debug.Assert(p.Type.Is_PhpArray());

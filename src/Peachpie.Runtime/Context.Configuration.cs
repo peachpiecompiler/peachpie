@@ -72,6 +72,12 @@ namespace Pchp.Core
         #endregion
 
         /// <summary>
+        /// "EGPCS" string.
+        /// Default for <see cref="RegisteringOrder"/> and <see cref="VariablesOrder"/>.
+        /// </summary>
+        const string EGPCS = "EGPCS";
+
+        /// <summary>
         /// The order in which global will be added to <c>$GLOBALS</c> and 
         /// <c>$_REQUEST</c> arrays. Can contain only a permutation of "EGPCS" string.
         /// </summary>
@@ -89,7 +95,7 @@ namespace Pchp.Core
                 }
             }
         }
-        string _registeringOrder = "EGPCS";
+        string _registeringOrder = EGPCS;
 
         /// <summary>
         /// Checks whether a specified value is global valid variables registering order.
@@ -98,28 +104,31 @@ namespace Pchp.Core
         /// <returns>Whether <paramref name="value"/> contains a permutation of "EGPCS".</returns>
         public static bool ValidateRegisteringOrder(string value)
         {
-            if (value == null || value.Length != 5) return false;
+            if (value == null || value.Length != EGPCS.Length)
+            {
+                return false;
+            }
 
-            int present = 0;
+            int present = 0; // bit mask of EGPCS set
+
             for (int i = 0; i < value.Length; i++)
             {
-                switch (value[i])
+                var bit = EGPCS.IndexOf(value[i]);
+                if (bit < 0 || (present & (1 << bit)) != 0)
                 {
-                    case 'E': if ((present & 1) != 0) return false; present |= 1; break;
-                    case 'G': if ((present & 2) != 0) return false; present |= 2; break;
-                    case 'P': if ((present & 4) != 0) return false; present |= 4; break;
-                    case 'C': if ((present & 8) != 0) return false; present |= 8; break;
-                    case 'S': if ((present & 16) != 0) return false; present |= 16; break;
-                    default: return false;
+                    return false;
                 }
+
+                present |= 1 << bit;
             }
+
             return true;
         }
 
         /// <summary>
         /// <c>variables_order</c> directive.
         /// </summary>
-        public string VariablesOrder { get; set; } = "EGPCS";
+        public string VariablesOrder { get; set; } = EGPCS;
 
         #region Request Control
 
@@ -180,7 +189,7 @@ namespace Pchp.Core
                 if (_includePathCache != IncludePaths)
                 {
                     _includePathCache = IncludePaths;
-                    _includePathsArray = IncludePaths.Split(new [] { CurrentPlatform.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
+                    _includePathsArray = IncludePaths.Split(new[] { CurrentPlatform.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
                 }
 
                 return _includePathsArray;
@@ -236,9 +245,11 @@ namespace Pchp.Core
     {
         #region DefaultPhpConfigurationService, PhpConfigurationService
 
-        protected class DefaultPhpConfigurationService : IPhpConfigurationService
+        public class DefaultPhpConfigurationService : IPhpConfigurationService
         {
             public static readonly DefaultPhpConfigurationService Instance = new DefaultPhpConfigurationService();
+
+            private DefaultPhpConfigurationService() { }
 
             public PhpCoreConfiguration Core => Get<PhpCoreConfiguration>();
 
@@ -258,7 +269,7 @@ namespace Pchp.Core
         {
             Dictionary<Type, IPhpConfiguration> _configs;
 
-            public PhpCoreConfiguration Core => _core ?? (_core = Get<PhpCoreConfiguration>());
+            public PhpCoreConfiguration Core => _core ??= Get<PhpCoreConfiguration>();
             PhpCoreConfiguration _core;
 
             public IPhpConfigurationService Parent => DefaultPhpConfigurationService.Instance;
@@ -321,7 +332,7 @@ namespace Pchp.Core
         /// </summary>
         static readonly Dictionary<Type, IPhpConfiguration> s_defaultConfigs = new Dictionary<Type, IPhpConfiguration>()
         {
-            {typeof(PhpCoreConfiguration), new PhpCoreConfiguration()},
+            { typeof(PhpCoreConfiguration), new PhpCoreConfiguration() },
         };
     }
 }

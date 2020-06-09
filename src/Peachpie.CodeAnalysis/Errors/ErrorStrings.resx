@@ -391,4 +391,7 @@
   <data name="WRN_CannotIncludeFile" xml:space="preserve">
     <value>Script file '{0}' could not be resolved, the script inclusion is unbound.</value>
   </data>
+  <data name="WRN_CalledFromGlobalScope" xml:space="preserve">
+    <value>Called from the global scope</value>
+  </data>
 </root>
