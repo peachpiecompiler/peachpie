@@ -52,7 +52,7 @@ namespace Peachpie.Library.PDO
                 case PDO_ATTR.ATTR_AUTOCOMMIT: value = PhpValue.True; return true;
                 case PDO_ATTR.ATTR_PREFETCH: value = 0; return true;
                 case PDO_ATTR.ATTR_TIMEOUT: value = 30; return true;
-                case PDO_ATTR.ATTR_ERRMODE: value = ERRMODE_SILENT; return true;
+                case PDO_ATTR.ATTR_ERRMODE: value = ERRMODE_EXCEPTION; return true;
                 case PDO_ATTR.ATTR_SERVER_INFO: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_CONNECTION_STATUS: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_CASE: value = (int)PDO_CASE.CASE_LOWER; return true;
