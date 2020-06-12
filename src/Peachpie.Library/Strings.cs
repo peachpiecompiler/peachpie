@@ -5423,6 +5423,23 @@ namespace Pchp.Library
 
         #endregion
 
+        #region str_contains
+
+        /// <summary>
+        /// Checks if a string is contained in another string.
+        /// </summary>
+        public static bool str_contains(string haystack, string needle) // CONSIDER: PhpString
+        {
+            if (string.IsNullOrEmpty(needle))
+            {
+                return true;
+            }
+
+            return needle != null && haystack.IndexOf(needle, StringComparison.Ordinal) >= 0;
+        }
+
+        #endregion
+
         #region strstr, stristr, strchr, strrchr
 
         #region Stubs
