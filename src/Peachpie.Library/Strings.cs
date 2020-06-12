@@ -5423,7 +5423,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region str_contains
+        #region str_contains, str_starts_with, str_ends_with
 
         /// <summary>
         /// Checks if a string is contained in another string.
@@ -5436,6 +5436,32 @@ namespace Pchp.Library
             }
 
             return needle != null && haystack.IndexOf(needle, StringComparison.Ordinal) >= 0;
+        }
+
+        /// <summary>
+        /// Checks if a string starts with another string.
+        /// </summary>
+        public static bool str_starts_with(string haystack, string needle) // CONSIDER: PhpString
+        {
+            if (string.IsNullOrEmpty(needle))
+            {
+                return true;
+            }
+
+            return needle != null && haystack.StartsWith(needle, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Checks if a string ends with another string.
+        /// </summary>
+        public static bool str_ends_with(string haystack, string needle) // CONSIDER: PhpString
+        {
+            if (string.IsNullOrEmpty(needle))
+            {
+                return true;
+            }
+
+            return needle != null && haystack.EndsWith(needle, StringComparison.Ordinal);
         }
 
         #endregion
