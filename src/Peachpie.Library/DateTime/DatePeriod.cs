@@ -95,9 +95,9 @@ namespace Pchp.Library.DateTime
             {
                 current = current.add(interval);
 
-                if (end != null)
+                if (end != null && DateTimeFunctions.GetDateTimeFromInterface(end, out var end_datetime, out _))
                 {
-                    if (current.Time > DateTimeFunctions.TimeFromInterface(end))
+                    if (current.Time > end_datetime)
                     {
                         yield break;
                     }
