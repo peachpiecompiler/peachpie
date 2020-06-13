@@ -36,7 +36,7 @@ namespace Peachpie.AspNetCore.Web
 
             public Encoding StringEncoding { get; set; } = Encoding.UTF8;
 
-            public ICollection<Assembly> ScriptAssemblyCollection { get; } = new List<Assembly>();
+            internal ICollection<Assembly> ScriptAssemblyCollection { get; } = new List<Assembly>();
 
             public string RootPath { get; set; }
 
@@ -75,8 +75,13 @@ namespace Peachpie.AspNetCore.Web
                 RootPath = _rootPath,
             };
 
-            // configure global options:
+            // legacy options
             ConfigureOptions(_options, oldoptions);
+
+            // sideload script assemblies
+            LoadScriptAssemblies(_options);
+
+            // regular options
             ConfigureOptions(_options, services);
 
             // determine resulting root Path:
@@ -91,8 +96,7 @@ namespace Peachpie.AspNetCore.Web
 
             // TODO: pass hostingEnv.ContentRootFileProvider to the Context for file system functions
 
-            // sideload script assemblies
-            LoadScriptAssemblies(_options);
+            
         }
 
         static void ConfigureOptions(PhpOptions options, PhpRequestOptions oldoptions)
@@ -166,7 +170,12 @@ namespace Peachpie.AspNetCore.Web
             }
             else
             {
-                var PeachpieRuntime = typeof(Context).Assembly.GetName().Name; // "Peachpie.Runtime"
+                // import libraries that has "Peachpie.App" as a dependency
+                var runtimelibs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "Peachpie.App",
+                    typeof(Context).Assembly.GetName().Name, // "Peachpie.Runtime"
+                };
 
                 // reads dependencies from DependencyContext
                 foreach (var lib in DependencyContext.Default.RuntimeLibraries)
@@ -176,16 +185,11 @@ namespace Peachpie.AspNetCore.Web
                         continue;
                     }
 
-                    if (lib.Name.StartsWith("Peachpie.", StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-
                     // process assembly if it has a dependency to runtime
                     var dependencies = lib.Dependencies;
                     for (int i = 0; i < dependencies.Count; i++)
                     {
-                        if (dependencies[i].Name == PeachpieRuntime)
+                        if (runtimelibs.Contains(dependencies[i].Name))
                         {
                             try
                             {
