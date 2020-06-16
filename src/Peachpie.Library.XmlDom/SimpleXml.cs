@@ -163,7 +163,6 @@ namespace Peachpie.Library.XmlDom
         Traversable, ArrayAccess, Pchp.Library.Spl.Countable,
         IPhpConvertible, IPhpComparable, IPhpCloneable, IEnumerable<(PhpValue Key, PhpValue Value)>
     {
-
         #region enum IterationType
 
         /// <summary>
@@ -1105,6 +1104,11 @@ namespace Peachpie.Library.XmlDom
         #region Operations
 
         /// <summary>
+        /// Alias to <see cref="asXML"/>.
+        /// </summary>
+        public PhpValue saveXML(Context ctx, string fileName = null) => asXML(ctx, fileName);
+
+        /// <summary>
 		/// Return a well-formed XML string based on this <see cref="SimpleXMLElement"/>.
 		/// </summary>
         public PhpValue asXML(Context ctx, string fileName = null)
@@ -1115,44 +1119,43 @@ namespace Peachpie.Library.XmlDom
             if (fileName == null)
             {
                 // return the XML string
-                using (var stream = new MemoryStream())
+                var stream = new MemoryStream();
+
+                // use a XML writer and set its Formatting property to Formatting.Indented
+                using (var writer = System.Xml.XmlWriter.Create(stream, new XmlWriterSettings() { Encoding = encoding }))
                 {
-                    // use a XML writer and set its Formatting property to Formatting.Indented
-                    using (var writer = System.Xml.XmlWriter.Create(stream, new XmlWriterSettings() { Encoding = encoding }))
+                    //writer.Formatting = Formatting.Indented;
+                    if (XmlElement.ParentNode is XmlDocument) XmlElement.ParentNode.WriteTo(writer);
+                    else XmlElement.WriteTo(writer);
+                }
+
+                return PhpValue.Create(new PhpString(stream.ToArray()));
+            }
+            else
+            {
+                // write XML to the file
+                using var stream = PhpStream.Open(_ctx, fileName, StreamOpenMode.WriteText);
+
+                if (stream == null)
+                {
+                    return PhpValue.False;
+                }
+
+                try
+                {
+                    using (var writer = System.Xml.XmlWriter.Create(stream.RawStream, new XmlWriterSettings() { Encoding = encoding }))
                     {
                         //writer.Formatting = Formatting.Indented;
                         if (XmlElement.ParentNode is XmlDocument) XmlElement.ParentNode.WriteTo(writer);
                         else XmlElement.WriteTo(writer);
                     }
-
-                    return PhpValue.Create(new PhpString(stream.ToArray()));
                 }
-            }
-            else
-            {
-                // write XML to the file
-                using (var stream = PhpStream.Open(_ctx, fileName, "wt"))
+                catch (XmlException e)
                 {
-                    if (stream == null)
-                    {
-                        return PhpValue.False;
-                    }
-
-                    try
-                    {
-                        using (var writer = System.Xml.XmlWriter.Create(stream.RawStream, new XmlWriterSettings() { Encoding = encoding }))
-                        {
-                            //writer.Formatting = Formatting.Indented;
-                            if (XmlElement.ParentNode is XmlDocument) XmlElement.ParentNode.WriteTo(writer);
-                            else XmlElement.WriteTo(writer);
-                        }
-                    }
-                    catch (XmlException e)
-                    {
-                        PhpException.Throw(PhpError.Warning, e.Message);
-                        return PhpValue.False;
-                    }
+                    PhpException.Throw(PhpError.Warning, e.Message);
+                    return PhpValue.False;
                 }
+
                 return PhpValue.True;
             }
         }
