@@ -219,11 +219,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // forget finally block
                 cg.ExtraFinallyBlock = nextExtraFinallyBlock;
-                Debug.Assert(cg.ExtraFinallyStateVariable != null);
 
                 //
                 if (_finallyBlock != null)
                 {
+                    Debug.Assert(cg.ExtraFinallyStateVariable != null);
+
                     // emit finally block
                     cg.GenerateScope(_finallyBlock, NextBlock.Ordinal);
                     cg.Builder.AssertStackEmpty();
