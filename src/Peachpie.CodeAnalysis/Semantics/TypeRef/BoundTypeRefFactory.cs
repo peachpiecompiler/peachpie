@@ -9,7 +9,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Pchp.CodeAnalysis.Symbols;
-using Peachpie.CodeAnalysis.Utilities;
+using Roslyn.Utilities;
 using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics
@@ -171,9 +171,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         ImmutableArray<BoundTypeRef> Create(IList<Ast.TypeRef> trefs, SemanticsBinder binder, SourceTypeSymbol self)
         {
-            return trefs
-                .Select(t => CreateFromTypeRef(t, binder, self, objectTypeInfoSemantic: false).WithSyntax(t))
-                .AsImmutable();
+            return trefs.SelectAsArray(t => CreateFromTypeRef(t, binder, self, objectTypeInfoSemantic: false).WithSyntax(t));
         }
 
         public static IBoundTypeRef Create(QualifiedName qname, SourceTypeSymbol self) => new BoundClassTypeRef(qname, null, self);

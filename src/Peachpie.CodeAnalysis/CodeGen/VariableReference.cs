@@ -814,6 +814,7 @@ namespace Pchp.CodeAnalysis.Semantics
         static void EmitTypeCheck(CodeGenerator cg, IPlace valueplace, SourceParameterSymbol srcparam)
         {
             // TODO: check iterable, type if not resolved in ct
+            // TODO: check union types
 
             // check NotNull
             if (srcparam.HasNotNull)
