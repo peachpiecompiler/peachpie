@@ -15,6 +15,7 @@ using AST = Devsense.PHP.Syntax.Ast;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
+using Peachpie.CodeAnalysis.Syntax;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -236,7 +237,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // trim trailing empty parameters (PHP >=7.3)
             var pcount = parameters.Length;
-            while (pcount > 0 && parameters[pcount - 1] == null)
+            while (pcount > 0 && parameters[pcount - 1].Expression == null)
             {
                 pcount--;
             }
@@ -253,7 +254,6 @@ namespace Pchp.CodeAnalysis.Semantics
             for (int i = 0; i < pcount; i++)
             {
                 var p = parameters[i];
-                Debug.Assert(p != null);
                 var arg = BindArgument(p.Expression, p.Ampersand, p.IsUnpack);
 
                 //
@@ -296,7 +296,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        protected Location GetLocation(AST.ILangElement expr) => ContainingFile.GetLocation(expr);
+        protected Location GetLocation(AST.ITreeNode expr) => ContainingFile.GetLocation(expr);
 
         #endregion
 
@@ -318,7 +318,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.GlobalStmt glStmt) return BindGlobalStmt(glStmt);
             if (stmt is AST.StaticStmt staticStm) return BindStaticStmt(staticStm);
             if (stmt is AST.UnsetStmt unsetStm) return BindUnsetStmt(unsetStm);
-            if (stmt is AST.ThrowStmt throwStm) return new BoundThrowStatement(BindExpression(throwStm.Expression, BoundAccess.Read));
             if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
             if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement();
 
@@ -491,6 +490,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.PseudoConstUse) return BindPseudoConst((AST.PseudoConstUse)expr).WithAccess(access);
             if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
+            if (expr is AST.ThrowEx throwEx) return new BoundThrowExpression(BindExpression(throwEx.Expression, BoundAccess.Read));
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
             if (expr is AST.LambdaFunctionExpr) return BindLambda((AST.LambdaFunctionExpr)expr).WithAccess(access);
             if (expr is AST.EvalEx) return BindEval((AST.EvalEx)expr).WithAccess(access);
@@ -813,12 +813,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new NotImplementedException(x.GetType().FullName);
             }
 
-            if (x.CallSignature.GenericParams.Length != 0)
+            var genericparams = x.GetGenericParams();
+            if (genericparams.Count != 0)
             {
                 // bind type arguments (CLR)
-                result.TypeArguments = x.CallSignature.GenericParams
-                    .Select(t => BindTypeRef(t, false))
-                    .AsImmutable();
+                result.TypeArguments = genericparams.SelectAsArray(t => BindTypeRef(t, false));
             }
 
             //

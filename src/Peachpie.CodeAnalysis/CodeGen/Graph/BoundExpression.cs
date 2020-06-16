@@ -3047,6 +3047,21 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundThrowExpression
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            cg.EmitConvert(Thrown, cg.CoreTypes.Exception);
+
+            // throw <stack>;
+            cg.Builder.EmitThrow(false);
+
+            // push a default value (void)
+            // stack is adjusted by caller if necessary
+            return cg.CoreTypes.Void;
+        }
+    }
+
     partial class BoundEcho
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

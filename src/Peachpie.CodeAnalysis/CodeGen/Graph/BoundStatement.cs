@@ -109,20 +109,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
-    partial class BoundThrowStatement
-    {
-        internal override void Emit(CodeGenerator cg)
-        {
-            cg.EmitSequencePoint(this.PhpSyntax);
-
-            //
-            cg.EmitConvert(Thrown, cg.CoreTypes.Exception);
-
-            // throw <stack>;
-            cg.Builder.EmitThrow(false);
-        }
-    }
-
     partial class BoundFunctionDeclStatement
     {
         internal override void Emit(CodeGenerator cg)

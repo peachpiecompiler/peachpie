@@ -2680,13 +2680,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override T VisitThrow(BoundThrowStatement x)
-        {
-            Accept(x.Thrown);
-
-            return default;
-        }
-
         public override T VisitEval(BoundEvalEx x)
         {
             base.VisitEval(x);
