@@ -93,7 +93,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public string host_info => string.Concat(Connection.Server, " via TCP/IP"); // TODO: how to get the protocol?
 
-        //string $protocol_version;
+        //public string protocol_version => Connection.
 
         /// <summary>
         /// Returns the version of the MySQL server.

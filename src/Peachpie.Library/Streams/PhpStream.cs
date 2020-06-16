@@ -121,15 +121,14 @@ namespace Pchp.Library.Streams
         /// <returns></returns>
         public static PhpStream Open(Context ctx, string path, StreamOpenMode mode)
         {
-            string modeStr;
-            switch (mode)
+            var modeStr = mode switch
             {
-                case StreamOpenMode.ReadBinary: modeStr = "rb"; break;
-                case StreamOpenMode.WriteBinary: modeStr = "wb"; break;
-                case StreamOpenMode.ReadText: modeStr = "rt"; break;
-                case StreamOpenMode.WriteText: modeStr = "wt"; break;
-                default: throw new ArgumentException();
-            }
+                StreamOpenMode.ReadBinary => "rb",
+                StreamOpenMode.WriteBinary => "wb",
+                StreamOpenMode.ReadText => "rt",
+                StreamOpenMode.WriteText => "wt",
+                _ => throw new ArgumentException(),
+            };
 
             return Open(ctx, path, modeStr, StreamOpenOptions.Empty, StreamContext.Default);
         }
