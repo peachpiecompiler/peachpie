@@ -38,7 +38,7 @@
   <!-- packages version -->
   <PropertyGroup>
     
-    <PeachpieLibraryRegularExpressionsVersion>1.3.0</PeachpieLibraryRegularExpressionsVersion>
+    <PeachpieLibraryRegularExpressionsVersion>1.4.0</PeachpieLibraryRegularExpressionsVersion>
     
   </PropertyGroup>
 
