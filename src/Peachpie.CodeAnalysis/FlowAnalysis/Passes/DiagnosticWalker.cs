@@ -162,6 +162,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                     _diagnostics.Add(_routine, p.Syntax.InitValue, ErrorCode.ERR_DefaultParameterValueTypeMismatch, p.Name, expectedtype, valuetype);
                 }
+
+                if (p.IsConstructorProperty)
+                {
+                    _diagnostics.Add(_routine, p.Syntax, ErrorCode.ERR_NotYetImplemented, "Constructor property promotion");
+                }
             }
         }
 

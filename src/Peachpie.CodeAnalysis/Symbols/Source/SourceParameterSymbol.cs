@@ -147,6 +147,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public FormalParam Syntax => _syntax;
 
+        /// <summary>
+        /// The parameter is a constructor property.
+        /// </summary>
+        public bool IsConstructorProperty => _syntax.IsConstructorProperty;
+
         internal sealed override TypeSymbol Type
         {
             get
