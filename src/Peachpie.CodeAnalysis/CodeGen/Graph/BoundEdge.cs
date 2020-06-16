@@ -360,7 +360,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         void EmitCatchBlock(CodeGenerator cg, CatchBlock catchBlock)
         {
-            Debug.Assert(catchBlock.Variable.Variable != null);
+            Debug.Assert(catchBlock.Variable == null || catchBlock.Variable.Variable != null);
 
             var il = cg.Builder;
             TypeSymbol extype;

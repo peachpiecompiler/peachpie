@@ -455,9 +455,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundVariableRef BindCatchVariable(AST.CatchItem x)
         {
-            return new BoundVariableRef(new BoundVariableName(x.Variable.VarName))
-                .WithSyntax(x.Variable)
-                .WithAccess(BoundAccess.Write);
+            if (x.Variable == null)
+            {
+                return null;
+            }
+            else
+            {
+                return new BoundVariableRef(new BoundVariableName(x.Variable.VarName))
+                    .WithSyntax(x.Variable)
+                    .WithAccess(BoundAccess.Write);
+            }
         }
 
         public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access) => BindExpression(expr, access);

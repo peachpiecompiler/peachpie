@@ -264,10 +264,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         /// <summary>
         /// A variable where an exception is assigned in.
+        /// Can be <c>null</c> if catch is non-capturing.
         /// </summary>
-        public BoundVariableRef Variable => _variable;
-
-        readonly BoundVariableRef _variable;
+        public BoundVariableRef Variable { get; }
 
         public CatchBlock(IBoundTypeRef typeRef, BoundVariableRef variable)
             : this(typeRef, variable, new List<BoundStatement>())
@@ -277,12 +276,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             : base(statements)
         {
             _typeRef = typeRef;
-            _variable = variable;
+            this.Variable = variable;
         }
 
         internal CatchBlock Update(BoundTypeRef typeRef, BoundVariableRef variable, List<BoundStatement> statements, Edge nextEdge)
         {
-            if (typeRef == _typeRef && variable == _variable && statements == Statements && nextEdge == NextEdge)
+            if (typeRef == _typeRef && variable == Variable && statements == Statements && nextEdge == NextEdge)
             {
                 return this;
             }
@@ -295,7 +294,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         internal override BoundBlock Clone()
         {
-            return new CatchBlock(_typeRef, _variable, new List<BoundStatement>(Statements)) { NextEdge = NextEdge }
+            return new CatchBlock(_typeRef, Variable, new List<BoundStatement>(Statements)) { NextEdge = NextEdge }
                 .WithLocalPropertiesFrom(this);
         }
 
