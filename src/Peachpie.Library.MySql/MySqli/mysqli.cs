@@ -73,7 +73,10 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public string error => Connection.GetLastErrorMessage();
 
-        //int $field_count;
+        /// <summary>
+        /// Returns the number of columns for the most recent query.
+        /// </summary>
+        public int field_count => Connection.LastResult.FieldCount;
 
         /// <summary>
         /// Get MySQL client info.

@@ -184,6 +184,11 @@ namespace Peachpie.Library.MySql.MySqli
         }
 
         /// <summary>
+        /// Returns the number of columns for the most recent query on the connection.
+        /// </summary>
+        public static int mysqli_field_count(mysqli link) => link.field_count;
+
+        /// <summary>
         /// Returns the auto generated id used in the latest query.
         /// </summary>
         public static long mysqli_insert_id(mysqli link) => link.insert_id;
