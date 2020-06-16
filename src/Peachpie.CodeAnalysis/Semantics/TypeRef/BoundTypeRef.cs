@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             _type = type;
 
             //
-            IsNullable = type == PhpTypeCode.Null;
+            IsNullable = type == PhpTypeCode.Null || type == PhpTypeCode.Mixed;
         }
 
         /// <summary>
@@ -66,6 +66,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                 case PhpTypeCode.Null: return ct.Object.Symbol;
                 case PhpTypeCode.Iterable: return ct.PhpValue.Symbol; // array | Traversable
                 case PhpTypeCode.Callable: return ct.PhpValue.Symbol; // array | string | object
+                case PhpTypeCode.Mixed: return ct.PhpValue.Symbol; // mixed
                 default:
                     throw ExceptionUtilities.UnexpectedValue(_type);
             }
@@ -89,6 +90,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                 case PhpTypeCode.Null: return ctx.GetNullTypeMask();
                 case PhpTypeCode.Iterable: result = ctx.GetArrayTypeMask() | ctx.GetTypeMask(ctx.BoundTypeRefFactory.TraversableTypeRef, true); break;   // array | Traversable
                 case PhpTypeCode.Callable: result = ctx.GetArrayTypeMask() | ctx.GetStringTypeMask() | ctx.GetSystemObjectTypeMask(); break;// array | string | object
+                case PhpTypeCode.Mixed: result = TypeRefMask.AnyType; break;
                 default:
                     throw ExceptionUtilities.UnexpectedValue(_type);
             }

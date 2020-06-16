@@ -30,6 +30,7 @@ namespace Pchp.CodeAnalysis.Semantics
         internal readonly BoundPrimitiveTypeRef/*!*/IterableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Iterable);
         internal readonly BoundPrimitiveTypeRef/*!*/CallableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Callable);
         internal readonly BoundPrimitiveTypeRef/*!*/ResourceTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Resource);
+        internal readonly BoundPrimitiveTypeRef/*!*/MixedTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Mixed);
 
         #endregion
 
@@ -112,6 +113,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     case Ast.PrimitiveTypeRef.PrimitiveType.@void: return VoidTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.iterable: return IterableTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.@object: return ObjectTypeRef;
+                    case Ast.PrimitiveTypeRef.PrimitiveType.mixed: return MixedTypeRef;
                     default: throw ExceptionUtilities.UnexpectedValue(pt.PrimitiveTypeName);
                 }
             }

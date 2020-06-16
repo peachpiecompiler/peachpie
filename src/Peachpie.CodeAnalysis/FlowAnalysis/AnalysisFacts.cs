@@ -511,6 +511,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     case PhpTypeCode.String:
                     case PhpTypeCode.WritableString:
                     case PhpTypeCode.Null:
+                    case PhpTypeCode.Mixed:
                         return true;
                 }
             }
