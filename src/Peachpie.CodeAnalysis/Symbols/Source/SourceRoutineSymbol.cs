@@ -157,6 +157,10 @@ namespace Pchp.CodeAnalysis.Symbols
             for (int i = 0; i < ps.Length; i++)
             {
                 var p = ps[i];
+                if (p == null)
+                {
+                    continue;
+                }
 
                 if (p.InitValue == null)
                 {
@@ -188,6 +192,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var p in formalparams)
             {
+                if (p == null)
+                {
+                    continue;
+                }
+
                 var ptag = (phpdocOpt != null) ? PHPDoc.GetParamTag(phpdocOpt, pindex, p.Name.Name.Value) : null;
 
                 yield return new SourceParameterSymbol(this, p, relindex: pindex++, ptagOpt: ptag);
