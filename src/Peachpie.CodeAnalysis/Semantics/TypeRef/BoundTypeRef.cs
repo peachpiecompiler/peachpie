@@ -673,6 +673,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
         public BoundMultipleTypeRef(ImmutableArray<BoundTypeRef> trefs)
         {
             this.TypeRefs = trefs;
+            this.IsNullable = trefs.Any(t => t.IsNullable);
         }
 
         public override ITypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)
@@ -682,7 +683,26 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public override ITypeSymbol ResolveTypeSymbol(PhpCompilation compilation)
         {
-            throw new NotImplementedException();
+            var result = (TypeSymbol)TypeRefs[0].ResolveTypeSymbol(compilation);
+
+            for (int i = 1; i < TypeRefs.Length; i++)
+            {
+                var tref = TypeRefs[i];
+                if (tref is BoundPrimitiveTypeRef pt && pt.TypeCode == PhpTypeCode.Null)
+                {
+                    Debug.Assert(IsNullable);
+                    continue;
+                }
+
+                result = compilation.Merge(result, (TypeSymbol)tref.ResolveTypeSymbol(compilation));
+            }
+
+            //if (IsNullable)
+            //{
+            //    result = compilation.MergeNull(result);
+            //}
+
+            return result;
         }
 
         public override string ToString() => string.Join("|", TypeRefs);
@@ -694,6 +714,11 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             foreach (var t in TypeRefs)
             {
                 result |= t.GetTypeRefMask(ctx);
+            }
+
+            if (IsNullable)
+            {
+                result |= ctx.GetNullTypeMask();
             }
 
             return result;
