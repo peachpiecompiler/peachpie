@@ -4,7 +4,7 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Pchp.Core;
 using static Peachpie.Library.MySql.MySqli.Functions;
 
