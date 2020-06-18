@@ -180,6 +180,40 @@ namespace Pchp.CodeAnalysis.Symbols
                     // Fatal Error: variadic parameter (...) must be the last parameter
                     diagnostic.Add(this, p, Errors.ErrorCode.ERR_VariadicParameterNotLast);
                 }
+
+                // constructor property
+                if (p.IsConstructorProperty)
+                {
+                    if (!string.Equals(this.Name, Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value, StringComparison.InvariantCultureIgnoreCase) ||
+                        !(this is SourceMethodSymbol))
+                    {
+                        // ERR: not a constructor
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_CtorPropertyNotCtor);
+                    }
+                    else if (this.IsAbstract || this.ContainingType.IsInterface)
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_CtorPropertyAbstractCtor);
+                    }
+                    else if (this.IsStatic) // function, static method, static ctor
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_CtorPropertyStaticCtor);
+                    }
+                    else if (p.TypeHint is PrimitiveTypeRef pt && (
+                        pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable ||
+                        pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.iterable))
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_PropertyTypeNotAllowed, this.ContainingType.PhpName(), p.Name, pt.PrimitiveTypeName.ToString());
+                    }
+                    else if (p.TypeHint is ReservedTypeRef rt && (
+                        rt.Type == ReservedTypeRef.ReservedType.@static))
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_PropertyTypeNotAllowed, this.ContainingType.PhpName(), p.Name, rt.Type.ToString());
+                    }
+                    else if (p.IsVariadic)
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_CtorPropertyVariadic);
+                    }
+                }
             }
         }
 

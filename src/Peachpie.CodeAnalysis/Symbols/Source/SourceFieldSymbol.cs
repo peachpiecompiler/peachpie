@@ -243,8 +243,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
         {
-            // TODO: PHP 7.4 typed properties
-            
+            // TODO: PHP 7.4 typed properties // https://github.com/peachpiecompiler/peachpie/issues/766
+
             //
             if ((IsConst || IsReadOnly) && Initializer != null)
             {
