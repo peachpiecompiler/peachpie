@@ -1,4 +1,4 @@
-﻿using MySql.Data.MySqlClient;
+﻿using MySqlConnector;
 using Pchp.Core;
 using Pchp.Library.Database;
 using System;
