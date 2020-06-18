@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using Devsense.PHP.Syntax;
@@ -1180,6 +1181,17 @@ namespace Pchp.CodeAnalysis.Semantics
             Place = lazyPlace ?? (cg.HasUnoptimizedLocals ? null : new ParamPlace(Parameter));
 
             // TODO: ? if (cg.HasUnoptimizedLocals && $this) <locals>["this"] = ...
+
+            if (srcparam.IsConstructorProperty)
+            {
+                var field = srcparam.ContainingType.GetMembers(srcparam.Name).OfType<SourceFieldSymbol>().Single(); // throws if duplicit name
+                var field_place = new FieldPlace(this.Routine.GetThisPlace(), field, cg.Module);
+
+                // $this->{P} = {P};
+                field_place.EmitStorePrepare(cg.Builder);
+                cg.EmitConvert(Place.EmitLoad(cg.Builder), 0, field.Type);
+                field_place.EmitStore(cg.Builder);
+            }
         }
     }
 

@@ -17,6 +17,7 @@ using static Pchp.CodeAnalysis.AstUtils;
 using Pchp.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Errors;
 using System.IO;
+using System.Resources;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -1058,6 +1059,27 @@ namespace Pchp.CodeAnalysis.Symbols
         IEnumerable<FieldSymbol> LoadFields()
         {
             var binder = new SemanticsBinder(DeclaringCompilation, ContainingFile.SyntaxTree, locals: null, routine: null, self: this);
+
+            // constructor properties:
+            var ctor = this.Syntax.Members.OfType<MethodDecl>().FirstOrDefault(m => m.Name.Name.IsConstructName);
+            if (ctor != null)
+            {
+                var ps = ctor.Signature.FormalParams;
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    var p = ps[i];
+                    if (p != null && p.IsConstructorProperty)
+                    {
+                        yield return new SourceFieldSymbol(this, p.Name.Name.Value,
+                            CreateLocation(p.Span),
+                            p.ConstructorPropertyVisibility.GetAccessibility(),
+                            phpdoc: null,
+                            kind: PhpPropertyKind.InstanceField,
+                            initializer: p.InitValue != null ? binder.BindWholeExpression(p.InitValue, BoundAccess.Read).SingleBoundElement() : null,
+                            customAttributes: default);
+                    }
+                }
+            }
 
             // fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
