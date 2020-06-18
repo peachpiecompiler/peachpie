@@ -996,7 +996,9 @@ namespace Peachpie.Library.Graphics
 
             var rect = new RectangleF(x1, y1, x2 - x1, y2 - y1);
 
-            ShapeGraphicsOptions opt = new ShapeGraphicsOptions() { Antialias = img.AntiAlias };
+            var opt = new ShapeGraphicsOptions();
+            opt.GraphicsOptions.Antialias = img.AntiAlias;
+
             img.Image.Mutate(o => o.Draw(opt, FromRGBA(col), 1.0f, rect));
 
             return true;
@@ -1175,7 +1177,8 @@ namespace Peachpie.Library.Graphics
             var img = PhpGdImageResource.ValidImage(im);
             if (img != null)
             {
-                ShapeGraphicsOptions opt = new ShapeGraphicsOptions() { Antialias = img.AntiAlias };
+                var opt = new ShapeGraphicsOptions();
+                opt.GraphicsOptions.Antialias = img.AntiAlias;
                 img.Image.Mutate(o => o.DrawLines(opt, GetAlphaColor(img, color), 1.0f, new PointF[] { new PointF(x1, y1), new PointF(x2, y2) }));
 
                 return true;
@@ -1298,11 +1301,11 @@ namespace Peachpie.Library.Graphics
         /// </summary> 
         public static bool imagepng(Context ctx, PhpResource im, PhpValue to = default(PhpValue), int quality = 6, int filters = 0)
         {
-            quality = Math.Min(Math.Max(quality, 0), 9);    // compression level 0 - 9
+            var compressionlevel = (PngCompressionLevel)Math.Min(Math.Max(quality, 0), 9);    // compression level 0 - 9
 
             return imagesave(ctx, im, to, (img, stream) =>
             {
-                img.SaveAsPng(stream, new PngEncoder() { CompressionLevel = quality });
+                img.SaveAsPng(stream, new PngEncoder() { CompressionLevel = compressionlevel });
             });
         }
 
@@ -1479,7 +1482,8 @@ namespace Peachpie.Library.Graphics
 
             var ellipse = new EllipsePolygon(cx, cy, w, h);
 
-            ShapeGraphicsOptions opt = new ShapeGraphicsOptions() { Antialias = img.AntiAlias };
+            var opt = new ShapeGraphicsOptions();
+            opt.GraphicsOptions.Antialias = img.AntiAlias;
 
             img.Image.Mutate(o => o.Draw(opt, GetAlphaColor(img, col), 1.0f, ellipse));
 
@@ -1496,7 +1500,8 @@ namespace Peachpie.Library.Graphics
                 return false;
 
             var ellipse = new EllipsePolygon(cx, cy, w, h);
-            ShapeGraphicsOptions opt = new ShapeGraphicsOptions() { Antialias = img.AntiAlias };
+            var opt = new ShapeGraphicsOptions();
+            opt.GraphicsOptions.Antialias = img.AntiAlias;
 
             if (img.tiled != null)
             {
@@ -1643,7 +1648,9 @@ namespace Peachpie.Library.Graphics
             var font = CreateFontById(fontInd);
             var color = FromRGBA(col);
 
-            TextGraphicsOptions opt = new TextGraphicsOptions() { Antialias = img.AntiAlias };
+            var opt = new TextGraphicsOptions();
+            opt.GraphicsOptions.Antialias = img.AntiAlias;
+
             if (up)
                 img.Image.Mutate(o => o.Rotate(90).DrawText(opt, text, font, new Color(color), new PointF(img.Image.Height - y, x)).Rotate(-90));
             else
