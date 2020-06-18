@@ -1075,7 +1075,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             p.ConstructorPropertyVisibility.GetAccessibility(),
                             phpdoc: null,
                             kind: PhpPropertyKind.InstanceField,
-                            initializer: p.InitValue != null ? binder.BindWholeExpression(p.InitValue, BoundAccess.Read).SingleBoundElement() : null,
+                            initializer: null, // passed as argument
                             customAttributes: default);
                     }
                 }
