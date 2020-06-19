@@ -385,11 +385,33 @@ namespace Peachpie.Library.XmlDom
 
                     AppendChildElement(
                         containing,
-                        string.IsNullOrWhiteSpace(text) ? (XmlNode)xmldoc.CreateWhitespace(text) : xmldoc.CreateTextNode(text)
+                        IsNullOrWhiteSpaceOnly(text) ? (XmlNode)xmldoc.CreateWhitespace(text) : xmldoc.CreateTextNode(text)
                     );
 
                     break;
             }
+        }
+
+        /// <summary>
+        /// The string must contain only the following characters 0x20; 0x10; 0x13; and 0x9;
+        /// </summary>
+        static bool IsNullOrWhiteSpaceOnly(string str)
+        {
+            // NOTE: String.IsNullOrWhiteSpace() treats all Unicode whitespaces! for use with XmlWhitespace we only allow &#20; &#10; &#13; and &#9;
+
+            if (str != null)
+            {
+                for (int i = 0; i < str.Length; i++)
+                {
+                    var ch = str[i];
+                    if (ch != ' '/*32*/ && ch != '\n' && ch != '\r' && ch != '\t')
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
     }
 
