@@ -532,26 +532,25 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
         public BoundIndirectTypeRef(BoundExpression typeExpression, bool objectTypeInfoSemantic)
         {
             _typeExpression = typeExpression ?? throw ExceptionUtilities.ArgumentNull();
-            _objectTypeInfoSemantic = objectTypeInfoSemantic;
+            ObjectTypeInfoSemantic = objectTypeInfoSemantic;
         }
 
         public BoundIndirectTypeRef Update(BoundExpression typeExpression, bool objectTypeInfoSemantic)
         {
-            if (typeExpression == _typeExpression && objectTypeInfoSemantic == _objectTypeInfoSemantic)
+            if (typeExpression == _typeExpression && objectTypeInfoSemantic == ObjectTypeInfoSemantic)
             {
                 return this;
             }
             else
             {
-                return new BoundIndirectTypeRef(typeExpression, _objectTypeInfoSemantic).WithSyntax(PhpSyntax);
+                return new BoundIndirectTypeRef(typeExpression, ObjectTypeInfoSemantic).WithSyntax(PhpSyntax);
             }
         }
 
         /// <summary>
         /// Gets value determining the indirect type reference can refer to an object instance which type is used to get the type info.
         /// </summary>
-        public bool ObjectTypeInfoSemantic => _objectTypeInfoSemantic;
-        readonly bool _objectTypeInfoSemantic;
+        public bool ObjectTypeInfoSemantic { get; }
 
         /// <summary>
         /// Always <c>false</c>.
@@ -566,7 +565,25 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public void EmitClassName(CodeGenerator cg)
         {
-            cg.EmitConvert(_typeExpression, cg.CoreTypes.String);
+            if (ObjectTypeInfoSemantic)
+            {
+                // Template: (<expr> as object).GetPhpTypeInfo().Name
+                cg.EmitAsObject(_typeExpression.Emit(cg), out var isnull);
+
+                if (isnull)
+                {
+                    // ERR
+                }
+
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_Object); // PhpTypeInfo
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetName_PhpTypeInfo.Getter)
+                    .Expect(SpecialType.System_String);
+            }
+            else
+            {
+                // (string)
+                cg.EmitConvert(_typeExpression, cg.CoreTypes.String);
+            }
         }
 
         /// <summary>
@@ -576,7 +593,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
         {
             get
             {
-                if (_objectTypeInfoSemantic && _typeExpression is BoundVariableRef varref)
+                if (ObjectTypeInfoSemantic && _typeExpression is BoundVariableRef varref)
                 {
                     return varref.Variable is ThisVariableReference;
                 }
