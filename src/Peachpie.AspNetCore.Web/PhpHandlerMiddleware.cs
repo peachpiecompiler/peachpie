@@ -44,7 +44,7 @@ namespace Peachpie.AspNetCore.Web
 
             public void InvokeRequestStart(Context ctx) => RequestStart?.Invoke(ctx);
 
-            IPhpConfigurationService IPhpConfigurationService.Parent => _globalconfiguration.Parent;
+            IPhpConfigurationService IPhpConfigurationService.Parent => _globalconfiguration;
 
             public PhpCoreConfiguration Core => _globalconfiguration.Core;
 
@@ -60,12 +60,18 @@ namespace Peachpie.AspNetCore.Web
         readonly RequestDelegate _next;
         readonly string _rootPath;
         readonly PhpOptions _options;
-
-        public PhpHandlerMiddleware(RequestDelegate next, IHostingEnvironment hostingEnv, IServiceProvider services, PhpRequestOptions oldoptions = null)
+        readonly PathString _prefix;
+        
+        public PhpHandlerMiddleware(RequestDelegate next, IHostingEnvironment hostingEnv, IServiceProvider services, PhpHandlerConfiguration configuration)
         {
             if (hostingEnv == null)
             {
                 throw new ArgumentNullException(nameof(hostingEnv));
+            }
+
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
             }
 
             _next = next ?? throw new ArgumentNullException(nameof(next));
@@ -74,29 +80,39 @@ namespace Peachpie.AspNetCore.Web
             {
                 RootPath = _rootPath,
             };
-
+            _prefix = configuration.PathPrefix;
+            
             // legacy options
-            ConfigureOptions(_options, oldoptions);
+            ConfigureOptions(_options, configuration.LegacyOptions);
 
             // sideload script assemblies
             LoadScriptAssemblies(_options);
 
-            // regular options
+            // global options 
             ConfigureOptions(_options, services);
 
-            // determine resulting root Path:
+            // local options
+            if (configuration.ConfigureContext != null)
+            {
+                _options.RequestStart += configuration.ConfigureContext;
+            }
+
+            // determine application's root path:
             if (_options.RootPath != default && _options.RootPath != _rootPath)
             {
                 // use the root path option, relative to the ASP.NET Core Web Root
                 _rootPath = Path.GetFullPath(Path.Combine(_rootPath, _options.RootPath));
             }
 
+            if (configuration.RootPath != null && configuration.RootPath != _rootPath)
+            {
+                _rootPath = Path.GetFullPath(Path.Combine(_rootPath, configuration.RootPath));
+            }
+
             // normalize slashes
             _rootPath = NormalizeRootPath(_rootPath);
 
             // TODO: pass hostingEnv.ContentRootFileProvider to the Context for file system functions
-
-            
         }
 
         static void ConfigureOptions(PhpOptions options, PhpRequestOptions oldoptions)
@@ -247,45 +263,79 @@ namespace Peachpie.AspNetCore.Web
 
         public async Task Invoke(HttpContext context)
         {
-            var script = RequestContextCore.ResolveScript(context.Request);
-            if (script.IsValid)
+            if (context.Request.Path.StartsWithSegments(_prefix))
             {
-                var completion = new TaskCompletionSource<RequestCompletionReason>();
-                var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding)
+                var script = RequestContextCore.ResolveScript(context.Request);
+                if (script.IsValid)
                 {
-                    RequestCompletionSource = completion,
-                };
+                    var completion = new TaskCompletionSource<RequestCompletionReason>();
+                    var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding)
+                    {
+                        RequestCompletionSource = completion,
+                    };
 
-                //
-                // InvokeAndDispose(phpctx, script);
-                //
+                    //
+                    // InvokeAndDispose(phpctx, script);
+                    //
 
-                // run the script, dispose phpctx when finished
-                // using threadpool since we have to be able to end the request and keep script running
-                var task = Task.Run(() => InvokeAndDispose(phpctx, script));
+                    // run the script, dispose phpctx when finished
+                    // using threadpool since we have to be able to end the request and keep script running
+                    var task = Task.Run(() => InvokeAndDispose(phpctx, script));
 
-                // wait for the request to finish,
-                // do not block current thread
-                var timeout = GetRequestTimeoutSeconds(phpctx);
-                if (timeout > 0)
-                {
-                    await Task.WhenAny(completion.Task, Task.Delay(timeout * 1000));
-                }
-                else
-                {
-                    await completion.Task;
-                }
+                    // wait for the request to finish,
+                    // do not block current thread
+                    var timeout = GetRequestTimeoutSeconds(phpctx);
+                    if (timeout > 0)
+                    {
+                        await Task.WhenAny(completion.Task, Task.Delay(timeout * 1000));
+                    }
+                    else
+                    {
+                        await completion.Task;
+                    }
 
-                if (task.Exception != null)
-                {
-                    // rethrow script exception
-                    throw task.Exception;
+                    if (task.Exception != null)
+                    {
+                        // rethrow script exception
+                        throw task.Exception;
+                    }
+
+                    //
+                    return;
                 }
             }
-            else
-            {
-                await _next(context);
-            }
+
+            //
+            await _next(context);
         }
+    }
+
+    /// <summary>
+    /// Middleware configuration.
+    /// </summary>
+    internal class PhpHandlerConfiguration
+    {
+        /// <summary>
+        /// Prefix of request paths to be processed by the middleware.
+        /// Can be <c>default</c> (empty) which means the middleware handled all requested PHP scripts.
+        /// </summary>
+        public PathString PathPrefix { get; set; }
+
+        /// <summary>
+        /// Configure context and options callback.
+        /// Can be <c>null</c>.
+        /// </summary>
+        public Action<Context> ConfigureContext { get; set; }
+
+        /// <summary>
+        /// Old options object to be applied to the middleware options.
+        /// Can be <c>null</c>.
+        /// </summary>
+        public PhpRequestOptions LegacyOptions { get; set; }
+
+        /// <summary>
+        /// Gets or sets physical path used as root of the PHP scripts.
+        /// </summary>
+        public string RootPath { get; set; }
     }
 }
