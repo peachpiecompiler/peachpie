@@ -997,8 +997,11 @@ namespace Pchp.Library.Spl
                 // Additional appends will be reflected by this enumerator.
                 ArrayIterator._enumerator = _array.GetForeachEnumerator(aliasedValues: true);
 
-                // updade underlaying state
+                // update underlaying state
                 rewindImpl();
+
+                // rewind the current underlying iterator
+                InnerIterator?.rewind();
             }
         }
 
@@ -1015,6 +1018,9 @@ namespace Pchp.Library.Spl
         {
             rewindImpl();
             _index = default;
+
+            // rewind the current underlying iterator
+            InnerIterator?.rewind();
         }
 
         public override void next()
@@ -1035,6 +1041,9 @@ namespace Pchp.Library.Spl
 
                 // reset index
                 _index = default;
+
+                // rewind the current underlying iterator
+                InnerIterator?.rewind();
             }
         }
 
