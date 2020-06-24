@@ -1999,7 +1999,7 @@ namespace Pchp.Library
         /// <returns>The unquoted string.</returns>
         public static string stripslashes(string str)
         {
-            return StringUtils.StripCSlashes(str);
+            return (str != null) ? StringUtils.StripCSlashes(str) : string.Empty;
         }
 
         /// <summary>
