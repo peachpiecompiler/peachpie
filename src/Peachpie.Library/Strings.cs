@@ -4046,8 +4046,7 @@ namespace Pchp.Library
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">The format string. For details, see PHP manual.</param>
         /// <param name="arguments">The arguments.</param>
-        /// <returns>The formatted string.</returns>
-        /// <exception cref="PhpException">Thrown when there is less arguments than expeceted by formatting string.</exception>
+        /// <returns>The formatted string on success, or <c>false</c> if there is less arguments than expeceted by formatting string.</returns>
         [return: CastToFalse]
         public static string vsprintf(Context ctx, string format, PhpArray arguments)
         {
@@ -4067,10 +4066,9 @@ namespace Pchp.Library
             var result = FormatInternal(ctx, format, array);
             if (result == null)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("too_few_arguments"));
-
-                // TODO: return FALSE
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, LibResources.too_few_arguments);
+                
+                return null;
             }
             return result;
         }
