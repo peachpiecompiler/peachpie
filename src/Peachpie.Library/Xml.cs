@@ -537,14 +537,11 @@ namespace Pchp.Library
         /// <param name="data">An ISO-8859-1 string. </param>
         /// <returns>Returns the UTF-8 translation of data.</returns>
         //[return:CastToFalse]
-        public static PhpString utf8_encode(string data)
+        public static PhpString utf8_encode(PhpString data)
         {
-            if (string.IsNullOrEmpty(data))
-            {
-                return string.Empty;
-            } else {
-                return new PhpString(Encoding.UTF8.GetBytes(data));
-            }
+            byte[] isoBytes = data.ToBytes(System.Text.Encoding.UTF8);
+            byte[] utf8Bytes = System.Text.Encoding.Convert(ISO_8859_1_Encoding, System.Text.Encoding.UTF8, isoBytes);
+            return new PhpString(utf8Bytes);
         }
 
         /// <summary>
@@ -554,8 +551,9 @@ namespace Pchp.Library
         /// <returns>Returns the UTF-8 translation of data.</returns>
         public static string utf8_decode(PhpString data)
         {
-            byte[] isoBytes = data.ToBytes(ISO_8859_1_Encoding);
-            return Encoding.UTF8.GetString(isoBytes);
+            byte[] utf8Bytes = data.ToBytes(System.Text.Encoding.UTF8);
+            byte[] isoBytes = System.Text.Encoding.Convert(System.Text.Encoding.UTF8, ISO_8859_1_Encoding, utf8Bytes);
+            return ISO_8859_1_Encoding.GetString(isoBytes);
         }
 
         #endregion
