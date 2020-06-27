@@ -1402,7 +1402,7 @@ namespace Pchp.Library.Streams
                 while (maxLength > 0 && !Eof)
                 {
                     var data = ReadBytes(maxLength);
-                    if (data.Length != 0) break; // EOF or error.
+                    if (data.Length == 0) break; // EOF or error.
                     maxLength -= data.Length;
                     result.Write(data, 0, data.Length);
                 }
