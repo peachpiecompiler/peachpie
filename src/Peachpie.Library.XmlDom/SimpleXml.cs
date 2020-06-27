@@ -1121,11 +1121,16 @@ namespace Peachpie.Library.XmlDom
                 // return the XML string
                 var stream = new MemoryStream();
 
+                bool isParentNode = XmlElement.ParentNode is XmlDocument;
+
                 // use a XML writer and set its Formatting property to Formatting.Indented
-                using (var writer = System.Xml.XmlWriter.Create(stream, new XmlWriterSettings() { Encoding = encoding }))
+                using (var writer = System.Xml.XmlWriter.Create(stream, new XmlWriterSettings() {
+                    Encoding = encoding,
+                    OmitXmlDeclaration = !isParentNode
+                }))
                 {
                     //writer.Formatting = Formatting.Indented;
-                    if (XmlElement.ParentNode is XmlDocument) XmlElement.ParentNode.WriteTo(writer);
+                    if (isParentNode) XmlElement.ParentNode.WriteTo(writer);
                     else XmlElement.WriteTo(writer);
                 }
 
