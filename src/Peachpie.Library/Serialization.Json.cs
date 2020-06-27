@@ -782,7 +782,7 @@ namespace Pchp.Library
             protected override PhpValue CommonDeserialize(Context ctx, Stream data, RuntimeTypeHandle caller)
             {
                 var options = _decodeOptions ?? new DecodeOptions();
-                var scanner = new Json.JsonScanner(new StreamReader(data), options);
+                var scanner = new Json.JsonScanner(new StreamReader(data, ctx.StringEncoding), options);
                 var parser = new Json.Parser(options) { Scanner = scanner };
 
                 if (parser.Parse())
