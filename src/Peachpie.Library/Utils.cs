@@ -282,14 +282,11 @@ namespace Pchp.Library
         /// </summary>
         public static PhpValue JsonDecode(string value)
         {
-            var options = new PhpSerialization.JsonSerializer.DecodeOptions();
-            var scanner = new Json.JsonScanner(new StringReader(value), options);
-            var parser = new Json.Parser(options)
+            return PhpSerialization.JsonSerializer.ObjectReader.Deserialize(Encoding.UTF8.GetBytes(value).AsSpan(), new System.Text.Json.JsonReaderOptions
             {
-                Scanner = scanner,
-            };
-
-            return parser.Parse() ? parser.Result : throw new FormatException();
+                AllowTrailingCommas = true,
+                CommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+            }, JsonSerialization.JsonDecodeOptions.JSON_THROW_ON_ERROR);
         }
 
         /// <summary>
