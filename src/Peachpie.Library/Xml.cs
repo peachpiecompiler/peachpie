@@ -537,11 +537,34 @@ namespace Pchp.Library
         /// <param name="data">An ISO-8859-1 string. </param>
         /// <returns>Returns the UTF-8 translation of data.</returns>
         //[return:CastToFalse]
-        public static PhpString utf8_encode(PhpString data)
+        public static string utf8_encode(string data)
         {
-            byte[] isoBytes = data.ToBytes(System.Text.Encoding.UTF8);
-            byte[] utf8Bytes = System.Text.Encoding.Convert(ISO_8859_1_Encoding, System.Text.Encoding.UTF8, isoBytes);
-            return new PhpString(utf8Bytes);
+            if (string.IsNullOrEmpty(data))
+            {
+                return string.Empty;
+            }
+
+            // this function transforms ISO-8859-1 binary string into UTF8 string
+            // since our internal representation is native CLR string - UTF16, we have changed this semantic
+
+            //string encoded;
+
+            //if (!data.ContainsBinayString)
+            //{
+            //    encoded = (string)data;
+            //}
+            //else
+            //{
+            //    // if we got binary string, assume it's ISO-8859-1 encoded string and convert it to System.String
+            //    encoded = ISO_8859_1_Encoding.GetString((data).ToBytes);
+            //}
+
+            //// return utf8 encoded data
+            //return (Configuration.Application.Globalization.PageEncoding == Encoding.UTF8) ?
+            //    (object)encoded : // PageEncoding is UTF8, we can keep .NET string, which will be converted to UTF8 byte stream as it would be needed
+            //    (object)new PhpBytes(Encoding.UTF8.GetBytes(encoded));   // conversion of string to byte[] would not respect UTF8 encoding, convert it now
+
+            return data;
         }
 
         /// <summary>
@@ -549,11 +572,18 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="data">An ISO-8859-1 string. </param>
         /// <returns>Returns the UTF-8 translation of data.</returns>
-        public static string utf8_decode(PhpString data)
+        public static PhpString utf8_decode(string data)
         {
-            byte[] utf8Bytes = data.ToBytes(System.Text.Encoding.UTF8);
-            byte[] isoBytes = System.Text.Encoding.Convert(System.Text.Encoding.UTF8, ISO_8859_1_Encoding, utf8Bytes);
-            return ISO_8859_1_Encoding.GetString(isoBytes);
+            if (data == null)
+            {
+                return new PhpString();  // empty (binary) string
+            }
+
+            // this function converts the UTF8 representation to ISO-8859-1 representation
+            // we assume CLR string (UTF16) as input as it is our internal representation
+
+            // if we got System.String string, convert it from UTF16 CLR representation into ISO-8859-1 binary representation
+            return new PhpString(ISO_8859_1_Encoding.GetBytes(data));
         }
 
         #endregion
