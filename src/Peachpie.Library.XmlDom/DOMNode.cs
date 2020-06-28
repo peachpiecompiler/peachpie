@@ -627,13 +627,16 @@ namespace Peachpie.Library.XmlDom
         /// <param name="ns_prefixes">An array of namespace prefixes to filter the nodes by.</param>
         /// <returns>Returns canonicalized nodes as a string or FALSE on failure.</returns>
         [return: CastToFalse]
-        public string C14N(
+        public PhpString C14N(
             bool exclusive = false,
             bool with_comments = false,
             PhpArray xpath = null,
             PhpArray ns_prefixes = null)
         {
-            throw new NotImplementedException();
+            System.Security.Cryptography.Xml.XmlDsigC14NTransform transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
+            transform.LoadInput(XmlNode.GetXmlDocument());
+            System.IO.MemoryStream stream = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
+            return new PhpString(stream.ToArray());
         }
 
         /// <summary>
