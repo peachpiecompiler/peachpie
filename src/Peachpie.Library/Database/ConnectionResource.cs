@@ -140,7 +140,7 @@ namespace Pchp.Library.Database
 		/// </summary>
 		public static string BuildConnectionString(string server, string user, string password, string additionalSettings)
         {
-            var result = new StringBuilder(32);
+            var result = StringBuilderUtilities.Pool.Get();
 
             result.Append("server=");
             result.Append(server);
@@ -155,7 +155,7 @@ namespace Pchp.Library.Database
                 result.AppendFormat(additionalSettings);
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>

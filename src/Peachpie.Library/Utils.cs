@@ -34,9 +34,9 @@ namespace Pchp.Library
         /// <exception cref="ArgumentNullException"><paramref name="str"/> is a <B>null</B> reference.</exception>
         public static string/*!*/ AddCSlashes(string/*!*/ str, bool singleQuotes = true, bool doubleQuotes = true, bool nul = true)
         {
-            if (str == null) throw new ArgumentNullException("str");
+            if (str == null) throw new ArgumentNullException(nameof(str));
 
-            StringBuilder result = new StringBuilder(str.Length);
+            var result = StringBuilderUtilities.Pool.Get();
 
             string double_quotes = doubleQuotes ? "\\\"" : "\"";
             string single_quotes = singleQuotes ? @"\'" : "'";
@@ -55,7 +55,7 @@ namespace Pchp.Library
                 }
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -119,9 +119,9 @@ namespace Pchp.Library
         /// <exception cref="ArgumentNullException"><paramref name="str"/> is a <B>null</B> reference.</exception>
         public static string/*!*/ AddDbSlashes(string/*!*/ str)
         {
-            if (str == null) throw new ArgumentNullException("str");
+            if (str == null) throw new ArgumentNullException(nameof(str));
 
-            StringBuilder result = new StringBuilder(str.Length);
+            StringBuilder result = StringBuilderUtilities.Pool.Get();
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -134,7 +134,7 @@ namespace Pchp.Library
                 }
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -144,9 +144,9 @@ namespace Pchp.Library
         /// <returns>String with replaced characters.</returns>
         public static string/*!*/ StripDbSlashes(string/*!*/ str)
         {
-            if (str == null) throw new ArgumentNullException("str");
+            if (str == null) throw new ArgumentNullException(nameof(str));
 
-            StringBuilder result = new StringBuilder(str.Length);
+            var result = StringBuilderUtilities.Pool.Get();
 
             int i = 0;
             while (i < str.Length - 1)
@@ -170,7 +170,7 @@ namespace Pchp.Library
             if (i < str.Length)
                 result.Append(str[i]);
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>

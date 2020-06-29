@@ -226,20 +226,22 @@ namespace Pchp.Library
 
                 if (isFinal)
                 {
-                    if (input == null) input = string.Empty;
-                    StringBuilder sb = new StringBuilder(input.Length);
+                    input ??= string.Empty;
+                    var sb = StringBuilderUtilities.Pool.Get();
 
                     if (_inputQueue != null)
                     {
                         foreach (string s in _inputQueue)
+                        {
                             sb.Append(s);
+                        }
 
                         _inputQueue = null;
                     }
 
                     sb.Append(input);
 
-                    return ParseInternal(sb.ToString(), null, null);
+                    return ParseInternal(StringBuilderUtilities.GetStringAndReturn(sb), null, null);
                 }
                 else
                 {
