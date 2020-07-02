@@ -1111,12 +1111,6 @@ namespace Pchp.Library
         /// </summary>
         public static bool mb_check_encoding(Context ctx, PhpString var = default(PhpString), string encoding = null/*mb_internal_encoding()*/)
         {
-            if (var.IsDefault)
-            {
-                // NS: check all the input from the beginning of the request
-                throw new NotSupportedException();
-            }
-
             if (var.ContainsBinaryData)
             {
                 var enc = GetEncoding(encoding) ?? ctx.StringEncoding;
