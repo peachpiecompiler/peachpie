@@ -40,5 +40,10 @@ namespace Peachpie.Library.PDO
         /// throw exceptions
         /// </summary>
         public const int ERRMODE_EXCEPTION = (int)PDO_ERRMODE.ERRMODE_EXCEPTION;
+
+        /// <summary>
+        /// Corresponds to SQLSTATE '00000' and successful statement. Value returned from <see cref="errorCode()"/>.
+        /// </summary>
+        public const int ERR_NONE = 0;
     }
 }

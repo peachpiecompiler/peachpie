@@ -50,38 +50,68 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (Interfaces.IsEmpty)
+                if (SpecialType == SpecialType.System_Object)
                 {
-                    // get interfaces of base type
-                    return (BaseType != null && BaseType != this)
-                        ? BaseType.AllInterfaces    // TODO: handle circular dependency, stack overflow
-                        : ImmutableArray<NamedTypeSymbol>.Empty;
+                    return ImmutableArray<NamedTypeSymbol>.Empty;
                 }
 
-                // collect all interfaces from this and base types
-
-                var todo = new Queue<NamedTypeSymbol>();
-
-                for (var b = this; b != null; b = b.BaseType)   // TODO: handle circular dependency, stack overflow
+                // Adds the type, its base and all interfaces recursively into the set,
+                // checks for cyclic dependency.
+                // Counts unique interfaces (except for the root type).
+                // In case there is just a single array with interfaces in whole hierarchy, returns it directly.
+                void CollectTypes(NamedTypeSymbol type, HashSet<NamedTypeSymbol> resolved, ref int interfaces, ref ImmutableArray<NamedTypeSymbol> onlyinterfaces)
                 {
-                    b.Interfaces.ForEach(todo.Enqueue);
-                }
-
-                // collect all interfaces and their interfaces,
-                // ignore duplicit items, handle cyclic dependencies
-
-                var result = new HashSet<NamedTypeSymbol>();
-
-                while (todo.Count != 0)
-                {
-                    var t = todo.Dequeue();
-                    if (result.Add(t))
+                    if (type != null && resolved.Add(type))
                     {
-                        t.Interfaces.ForEach(todo.Enqueue);
+                        if (type.IsInterface && resolved.Count != 1) // do not count itself
+                        {
+                            interfaces++;
+                        }
+
+                        var ifaces = type.Interfaces;
+                        if (ifaces.IsDefaultOrEmpty == false)
+                        {
+                            // if interfaces == 0
+                            // TODO: child interfaces might be duplicities, we don't have to drop the array we have
+                            onlyinterfaces = onlyinterfaces.IsDefault ? ifaces : ImmutableArray<NamedTypeSymbol>.Empty; // only if we reach a single array of interfaces in whole hierarchy
+
+                            foreach (var x in ifaces)
+                            {
+                                CollectTypes(x, resolved, ref interfaces, ref onlyinterfaces);
+                            }
+                        }
+
+                        CollectTypes(type.BaseType, resolved, ref interfaces, ref onlyinterfaces);
                     }
                 }
 
-                return result.AsImmutable();
+                var resolved = new HashSet<NamedTypeSymbol>(); // set of types (classes and interfaces) being collected
+                var interfaces = 0;
+                var onlyinterfaces = default(ImmutableArray<NamedTypeSymbol>);
+
+                CollectTypes(this as NamedTypeSymbol, resolved, ref interfaces, ref onlyinterfaces);
+
+                if (interfaces == 0)
+                {
+                    return ImmutableArray<NamedTypeSymbol>.Empty;
+                }
+
+                if (onlyinterfaces.IsDefaultOrEmpty == false) // there is a single array with interfaces
+                {
+                    return onlyinterfaces;
+                }
+
+                //
+                var builder = ImmutableArray.CreateBuilder<NamedTypeSymbol>(interfaces);
+                foreach (var x in resolved)
+                {
+                    if (x != this && x.IsInterface)
+                    {
+                        builder.Add(x);
+                    }
+                }
+
+                return builder.MoveToImmutable();
             }
         }
 

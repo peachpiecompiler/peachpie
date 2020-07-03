@@ -270,7 +270,10 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             foreach (var l in tree.Lambdas)
             {
-                var lambdasymbol = new SourceLambdaSymbol(l, fsymbol, !l.Modifiers.IsStatic());
+                var lambdasymbol = l is ArrowFunctionExpr arrowfn
+                    ? new SourceArrowFnSymbol(arrowfn, fsymbol)
+                    : new SourceLambdaSymbol(l, fsymbol);
+
                 ((ILambdaContainerSymbol)fsymbol).AddLambda(lambdasymbol);
             }
 

@@ -125,7 +125,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal bool CanBePassedTo(ParameterSymbol another)
         {
-            return another != null && this.Type.IsEqualToOrDerivedFrom(another.Type);
+            return another != null && this.Type.IsOfType(another.Type);
         }
     }
 }

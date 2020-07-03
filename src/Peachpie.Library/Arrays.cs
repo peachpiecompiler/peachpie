@@ -284,7 +284,6 @@ namespace Pchp.Library
 
         #region array_pop, array_push, array_shift, array_unshift, array_reverse
 
-
         /// <summary>
         /// Removes the last item from an array and returns it.
         /// </summary>
@@ -1992,36 +1991,51 @@ namespace Pchp.Library
             // "arrays" argument is PhpArray[] => compiler generates code converting any value to PhpArray.
             // Note, PHP does reject non-array arguments.
 
-            if (arrays == null || arrays.Length == 0)
+            uint count = 0; // count max result size, so we can efficiently preallocate
+
+            if (arrays != null)
+            {
+                // validate and count elements
+                for (int i = 0; i < arrays.Length; i++)
+                {
+                    if (arrays[i] == null)
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.Resources.argument_not_array, (i + 1).ToString());
+                        return null;
+                    }
+
+                    count += (uint)arrays[i].Count;
+                }
+            }
+
+            if (count == 0)
             {
                 return PhpArray.NewEmpty();
             }
 
-            var result = new PhpArray(arrays[0] != null ? arrays[0].Count : 0);
+            // pre
+            var result = new OrderedDictionary(count);
 
             for (int i = 0; i < arrays.Length; i++)
             {
-                if (arrays[i] == null)
-                {
-                    PhpException.Throw(PhpError.Warning, Resources.Resources.argument_not_array, (i + 1).ToString());
-                    return null;
-                }
-
-                var enumerator = arrays[i].GetFastEnumerator();
+                var enumerator = arrays[i]!.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
                     var value = enumerator.CurrentValue.DeepCopy();
-
-                    if (enumerator.CurrentKey.IsString)
-                        result[enumerator.CurrentKey] = value;
+                    var key = enumerator.CurrentKey;
+                    if (key.IsString)
+                    {
+                        result[key] = value;
+                    }
                     else
+                    {
                         result.Add(value);
+                    }
                 }
             }
 
-            // results is inplace deeply copied if returned to PHP code:
-            //result.InplaceCopyOnReturn = true;
-            return result;
+            //
+            return new PhpArray(result);
         }
 
         /// <summary>

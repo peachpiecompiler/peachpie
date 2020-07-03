@@ -1087,13 +1087,16 @@ namespace Pchp.Library
             //    return new PhpBytes(result);
             //}
 
-            string unistr = str; // Core.Convert.ObjectToString(str);
+            var unistr = str; // Core.Convert.ObjectToString(str);
             if (unistr != null)
             {
-                StringBuilder result = new StringBuilder(count * unistr.Length);
-                while (count-- > 0) result.Append(unistr);
+                var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(count * unistr.Length);
+                while (count-- > 0)
+                {
+                    result.Append(unistr);
+                }
 
-                return result.ToString();
+                return StringBuilderUtilities.GetStringAndReturn(result);
             }
 
             return null;
@@ -1714,7 +1717,7 @@ namespace Pchp.Library
 
             Encoding encoding = ctx.StringEncoding;
             MemoryStream stream = new MemoryStream();
-            StringBuilder result = new StringBuilder(str.Length / 2);
+            var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(str.Length / 2);
 
             int i = 0;
             while (i < str.Length)
@@ -1783,7 +1786,8 @@ namespace Pchp.Library
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            return result.ToString();
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -1999,7 +2003,7 @@ namespace Pchp.Library
         /// <returns>The unquoted string.</returns>
         public static string stripslashes(string str)
         {
-            return StringUtils.StripCSlashes(str);
+            return (str != null) ? StringUtils.StripCSlashes(str) : string.Empty;
         }
 
         /// <summary>
@@ -2019,9 +2023,9 @@ namespace Pchp.Library
             Encoding encoding = ctx.StringEncoding;
             const char escape = '\\';
             int length = str.Length;
-            StringBuilder result = new StringBuilder(length);
+            var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(length);
             bool state1 = false;
-            byte[] bA1 = new byte[1];
+            byte[] bA1 = new byte[1]; // NETSTANDARD2.1 // stackalloc
 
             for (int i = 0; i < length; i++)
             {
@@ -2091,7 +2095,8 @@ namespace Pchp.Library
                 else result.Append(c);
             }
 
-            return result.ToString();
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         #endregion
@@ -2235,7 +2240,7 @@ namespace Pchp.Library
             int maxi = index + length;
             Debug.Assert(maxi <= str.Length);
 
-            StringBuilder result = new StringBuilder(length);
+            var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(length);
 
             // quote style is anded to emulate PHP behavior (any value is allowed):
             string single_quote = (quoteStyle & QuoteStyle.SingleQuotes) != 0 ? "&#039;" : "'";
@@ -2269,7 +2274,8 @@ namespace Pchp.Library
                 }
             }
 
-            return result.ToString();
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         static string IsAtKnownEntity(string str, int index)
@@ -2323,7 +2329,7 @@ namespace Pchp.Library
         {
             if (str == null) return null;
 
-            StringBuilder result = new StringBuilder(str.Length);
+            var result = StringBuilderUtilities.Pool.Get();
 
             bool dq = (quoteStyle & QuoteStyle.DoubleQuotes) != 0;
             bool sq = (quoteStyle & QuoteStyle.SingleQuotes) != 0;
@@ -2361,7 +2367,8 @@ namespace Pchp.Library
                 result.Append(c);
             }
 
-            return result.ToString();
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -2413,7 +2420,7 @@ namespace Pchp.Library
             string single_quote = (quoteStyle & QuoteStyle.SingleQuotes) != 0 ? "&#039;" : "'";
             string double_quote = (quoteStyle & QuoteStyle.DoubleQuotes) != 0 ? "&quot;" : "\"";
 
-            StringBuilder str_builder = new StringBuilder(str.Length);
+            var str_builder = StringBuilderUtilities.Pool.Get();
             StringWriter result = new StringWriter(str_builder);
 
             // convert ' and " manually, rely on HttpUtility.HtmlEncode for everything else
@@ -2431,7 +2438,7 @@ namespace Pchp.Library
             if (old_index < str.Length) result.Write(System.Net.WebUtility.HtmlEncode(str.Substring(old_index)));
 
             result.Flush();
-            return str_builder.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(str_builder);
         }
 
         /// <summary>
@@ -2505,7 +2512,7 @@ namespace Pchp.Library
                 return System.Net.WebUtility.HtmlDecode(str);
             }
 
-            StringBuilder str_builder = new StringBuilder(str.Length);
+            StringBuilder str_builder = StringBuilderUtilities.Pool.Get();
             StringWriter result = new StringWriter(str_builder);
 
             // convert &#039;, &#39; and &quot; manually, rely on HttpUtility.HtmlDecode for everything else
@@ -2553,7 +2560,7 @@ namespace Pchp.Library
             if (old_index < str.Length) result.Write(System.Net.WebUtility.HtmlDecode(str.Substring(old_index)));
 
             result.Flush();
-            return str_builder.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(str_builder);
         }
 
         #endregion
@@ -4046,8 +4053,7 @@ namespace Pchp.Library
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">The format string. For details, see PHP manual.</param>
         /// <param name="arguments">The arguments.</param>
-        /// <returns>The formatted string.</returns>
-        /// <exception cref="PhpException">Thrown when there is less arguments than expeceted by formatting string.</exception>
+        /// <returns>The formatted string on success, or <c>false</c> if there is less arguments than expeceted by formatting string.</returns>
         [return: CastToFalse]
         public static string vsprintf(Context ctx, string format, PhpArray arguments)
         {
@@ -4067,10 +4073,9 @@ namespace Pchp.Library
             var result = FormatInternal(ctx, format, array);
             if (result == null)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("too_few_arguments"));
+                PhpException.Throw(PhpError.Warning, LibResources.too_few_arguments);
 
-                // TODO: return FALSE
-                throw new ArgumentException();
+                return null;
             }
             return result;
         }
@@ -5008,7 +5013,7 @@ namespace Pchp.Library
             //    return new PhpBytes(result);
             //}
 
-            string unistr = str; // Core.Convert.ObjectToString(str);
+            var unistr = str; // Core.Convert.ObjectToString(str);
             if (unistr != null)
             {
                 string uniPaddingString = paddingString; // Core.Convert.ObjectToString(paddingString);
@@ -5053,7 +5058,7 @@ namespace Pchp.Library
                 }
 
                 // else build the resulting string manually
-                StringBuilder result = new StringBuilder(totalWidth);
+                StringBuilder result = StringBuilderUtilities.Pool.Get();
 
                 // pad left
                 while (padLeft > padStrLength)
@@ -5073,7 +5078,7 @@ namespace Pchp.Library
                 }
                 if (padRight > 0) result.Append(uniPaddingString.Substring(0, padRight));
 
-                return result.ToString();
+                return StringBuilderUtilities.GetStringAndReturn(result);
             }
 
             return null;
@@ -5419,6 +5424,49 @@ namespace Pchp.Library
             {
                 return haystack.LastIndexOf(chr_unicode((int)(needle.ToLong() % 256)), end, end - offset + 1, comparisonType);
             }
+        }
+
+        #endregion
+
+        #region str_contains, str_starts_with, str_ends_with
+
+        /// <summary>
+        /// Checks if a string is contained in another string.
+        /// </summary>
+        public static bool str_contains(string haystack, string needle) // CONSIDER: PhpString
+        {
+            if (string.IsNullOrEmpty(needle))
+            {
+                return true;
+            }
+
+            return needle != null && haystack.IndexOf(needle, StringComparison.Ordinal) >= 0;
+        }
+
+        /// <summary>
+        /// Checks if a string starts with another string.
+        /// </summary>
+        public static bool str_starts_with(string haystack, string needle) // CONSIDER: PhpString
+        {
+            if (string.IsNullOrEmpty(needle))
+            {
+                return true;
+            }
+
+            return needle != null && haystack.StartsWith(needle, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Checks if a string ends with another string.
+        /// </summary>
+        public static bool str_ends_with(string haystack, string needle) // CONSIDER: PhpString
+        {
+            if (string.IsNullOrEmpty(needle))
+            {
+                return true;
+            }
+
+            return needle != null && haystack.EndsWith(needle, StringComparison.Ordinal);
         }
 
         #endregion

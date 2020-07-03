@@ -12,7 +12,7 @@ namespace Pchp.Library.Spl
     public class RuntimeException : Spl.Exception
     {
         [PhpFieldsOnlyCtor]
-        protected RuntimeException() { }
+        protected RuntimeException() : base() { }
 
         public RuntimeException(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -30,7 +30,7 @@ namespace Pchp.Library.Spl
     public class UnexpectedValueException : RuntimeException
     {
         [PhpFieldsOnlyCtor]
-        protected UnexpectedValueException() { }
+        protected UnexpectedValueException() : base() { }
 
         public UnexpectedValueException(string message = "", long code = 0, Throwable previous = null)
         {
@@ -45,7 +45,7 @@ namespace Pchp.Library.Spl
     public class InvalidArgumentException : RuntimeException
     {
         [PhpFieldsOnlyCtor]
-        protected InvalidArgumentException() { }
+        protected InvalidArgumentException() : base() { }
 
         public InvalidArgumentException(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -60,7 +60,7 @@ namespace Pchp.Library.Spl
     public class OutOfBoundsException : RuntimeException
     {
         [PhpFieldsOnlyCtor]
-        protected OutOfBoundsException() { }
+        protected OutOfBoundsException() : base() { }
 
         public OutOfBoundsException(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -75,7 +75,7 @@ namespace Pchp.Library.Spl
     public class OverflowException : RuntimeException
     {
         [PhpFieldsOnlyCtor]
-        protected OverflowException() { }
+        protected OverflowException() : base() { }
 
         public OverflowException(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -90,7 +90,7 @@ namespace Pchp.Library.Spl
     public class UnderflowException : RuntimeException
     {
         [PhpFieldsOnlyCtor]
-        protected UnderflowException() { }
+        protected UnderflowException() : base() { }
 
         public UnderflowException(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
@@ -105,7 +105,7 @@ namespace Pchp.Library.Spl
     public class RangeException : RuntimeException
     {
         [PhpFieldsOnlyCtor]
-        protected RangeException() { }
+        protected RangeException() : base() { }
 
         public RangeException(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)

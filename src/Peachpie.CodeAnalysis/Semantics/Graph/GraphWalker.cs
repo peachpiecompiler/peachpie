@@ -501,6 +501,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
+        public override T VisitThrow(BoundThrowExpression x)
+        {
+            Accept(x.Thrown);
+
+            return default;
+        }
 
         public override T VisitYieldEx(BoundYieldEx boundYieldEx)
         {
@@ -552,13 +558,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override T VisitReturn(BoundReturnStatement x)
         {
             Accept(x.Returned);
-
-            return default;
-        }
-
-        public override T VisitThrow(BoundThrowStatement x)
-        {
-            Accept(x.Thrown);
 
             return default;
         }

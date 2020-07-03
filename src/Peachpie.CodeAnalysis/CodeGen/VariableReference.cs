@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using Devsense.PHP.Syntax;
@@ -814,6 +815,7 @@ namespace Pchp.CodeAnalysis.Semantics
         static void EmitTypeCheck(CodeGenerator cg, IPlace valueplace, SourceParameterSymbol srcparam)
         {
             // TODO: check iterable, type if not resolved in ct
+            // TODO: check union types
 
             // check NotNull
             if (srcparam.HasNotNull)
@@ -1179,6 +1181,17 @@ namespace Pchp.CodeAnalysis.Semantics
             Place = lazyPlace ?? (cg.HasUnoptimizedLocals ? null : new ParamPlace(Parameter));
 
             // TODO: ? if (cg.HasUnoptimizedLocals && $this) <locals>["this"] = ...
+
+            if (srcparam.IsConstructorProperty)
+            {
+                var field = srcparam.ContainingType.GetMembers(srcparam.Name).OfType<SourceFieldSymbol>().Single(); // throws if duplicit name
+                var field_place = new FieldPlace(this.Routine.GetThisPlace(), field, cg.Module);
+
+                // $this->{P} = {P};
+                field_place.EmitStorePrepare(cg.Builder);
+                cg.EmitConvert(Place.EmitLoad(cg.Builder), 0, field.Type);
+                field_place.EmitStore(cg.Builder);
+            }
         }
     }
 
@@ -1193,9 +1206,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override IPlace Place
         {
-            get => Routine.GetPhpThisVariablePlace();
+            get => _boundplace ?? Routine.GetPhpThisVariablePlace();
             protected set => throw ExceptionUtilities.Unreachable;
         }
+
+        IPlace _boundplace;
 
         public override bool HasAddress => false;
 
@@ -1208,7 +1223,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // TODO: <locals>["this"] = this;
             }
 
-            // nada
+            _boundplace = Routine.GetPhpThisVariablePlace(cg.Module);
         }
 
         public override TypeSymbol EmitLoadValue(CodeGenerator cg, ref LhsStack lhs, BoundAccess access)

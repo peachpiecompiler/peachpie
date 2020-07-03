@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Pchp.Core;
 
 namespace Peachpie.Library.MySql.MySqli

@@ -163,7 +163,6 @@ namespace Peachpie.Library.XmlDom
         Traversable, ArrayAccess, Pchp.Library.Spl.Countable,
         IPhpConvertible, IPhpComparable, IPhpCloneable, IEnumerable<(PhpValue Key, PhpValue Value)>
     {
-
         #region enum IterationType
 
         /// <summary>
@@ -1105,55 +1104,77 @@ namespace Peachpie.Library.XmlDom
         #region Operations
 
         /// <summary>
+        /// Alias to <see cref="asXML"/>.
+        /// </summary>
+        public PhpValue saveXML(string fileName = null) => asXML(fileName);
+
+        /// <summary>
 		/// Return a well-formed XML string based on this <see cref="SimpleXMLElement"/>.
 		/// </summary>
-        public PhpValue asXML(Context ctx, string fileName = null)
+        public PhpValue asXML(string fileName = null)
         {
-            // determine output encoding
-            var encoding = Utils.GetNodeEncoding(ctx, XmlElement);
+            bool WriteOperation(Stream stream)
+            {
+                if (stream == null)
+                {
+                    return false;
+                }
+
+                // determine XML settings
+                var isRootNode = XmlElement.ParentNode is XmlDocument; // also (XmlElement.ParentNode.NodeType == XmlNodeType.Document)
+                var settings = new XmlWriterSettings()
+                {
+                    Encoding = Utils.GetNodeEncoding(_ctx, XmlElement),
+                    OmitXmlDeclaration = !isRootNode, // allow XML declaration only if node is root element
+                    // Indent = ???,
+                };
+
+                try
+                {
+                    // use a XML writer and set its Formatting property to Formatting.Indented
+                    using (var writer = System.Xml.XmlWriter.Create(stream, settings))
+                    {
+                        //writer.Formatting = Formatting.Indented;
+                        if (isRootNode) XmlElement.ParentNode.WriteTo(writer);
+                        else XmlElement.WriteTo(writer);
+                    }
+                }
+                catch (XmlException e)
+                {
+                    PhpException.Throw(PhpError.Warning, e.Message);
+                    return false;
+                }
+
+                return true;
+            }
 
             if (fileName == null)
             {
                 // return the XML string
-                using (var stream = new MemoryStream())
-                {
-                    // use a XML writer and set its Formatting property to Formatting.Indented
-                    using (var writer = System.Xml.XmlWriter.Create(stream, new XmlWriterSettings() { Encoding = encoding }))
-                    {
-                        //writer.Formatting = Formatting.Indented;
-                        if (XmlElement.ParentNode is XmlDocument) XmlElement.ParentNode.WriteTo(writer);
-                        else XmlElement.WriteTo(writer);
-                    }
+                var stream = new MemoryStream();
 
+                if (WriteOperation(stream))
+                {
                     return PhpValue.Create(new PhpString(stream.ToArray()));
+                }
+                else
+                {
+                    return PhpValue.False;
                 }
             }
             else
             {
                 // write XML to the file
-                using (var stream = PhpStream.Open(_ctx, fileName, "wt"))
-                {
-                    if (stream == null)
-                    {
-                        return PhpValue.False;
-                    }
+                using var stream = PhpStream.Open(_ctx, fileName, StreamOpenMode.WriteText);
 
-                    try
-                    {
-                        using (var writer = System.Xml.XmlWriter.Create(stream.RawStream, new XmlWriterSettings() { Encoding = encoding }))
-                        {
-                            //writer.Formatting = Formatting.Indented;
-                            if (XmlElement.ParentNode is XmlDocument) XmlElement.ParentNode.WriteTo(writer);
-                            else XmlElement.WriteTo(writer);
-                        }
-                    }
-                    catch (XmlException e)
-                    {
-                        PhpException.Throw(PhpError.Warning, e.Message);
-                        return PhpValue.False;
-                    }
+                if (stream != null && WriteOperation(stream.RawStream))
+                {
+                    return PhpValue.True;
                 }
-                return PhpValue.True;
+                else
+                {
+                    return PhpValue.False;
+                }
             }
         }
 

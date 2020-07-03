@@ -147,6 +147,12 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_ReadOnlyPropertyWritten,
         /// <summary>Only the last parameter can be variadic</summary>
         ERR_VariadicParameterNotLast,
+        ERR_CtorPropertyVariadic,
+        ERR_CtorPropertyAbstractCtor,
+        ERR_CtorPropertyNotCtor,
+        ERR_CtorPropertyStaticCtor,
+        /// <summary>Property {0}::${1} cannot have type {2}</summary>
+        ERR_PropertyTypeNotAllowed,
 
         //
         // Warnings
@@ -202,6 +208,12 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_ArgumentVoid,
         /// <summary>PCRE pattern parse error: {0} at offset {1}</summary>
         WRN_PCRE_Pattern_Error,
+        /// <summary>{0} '{1}' is already defined</summary>
+        WRN_TypeNameInUse,
+        /// <summary>Script file '{0}' could not be resolved, the script inclusion is unbound.</summary>
+        WRN_CannotIncludeFile,
+        /// <summary>Called from the global scope</summary>
+        WRN_CalledFromGlobalScope,
 
         //
         // Visible information

@@ -2430,7 +2430,15 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);
             }
 
-            return this.BindPlace(cg).EmitLoadValue(cg, Access);
+            var boundplace = this.BindPlace(cg);
+            if (boundplace != null)
+            {
+                return boundplace.EmitLoadValue(cg, Access);
+            }
+            else
+            {
+                throw cg.NotImplementedException($"IVariableReference of {this} is null!");
+            }
         }
     }
 
@@ -3039,6 +3047,21 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundThrowExpression
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            cg.EmitConvert(Thrown, cg.CoreTypes.Exception);
+
+            // throw <stack>;
+            cg.Builder.EmitThrow(false);
+
+            // push a default value (void)
+            // stack is adjusted by caller if necessary
+            return cg.CoreTypes.Void;
+        }
+    }
+
     partial class BoundEcho
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
@@ -3161,7 +3184,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(_arguments[0].Value.Access.IsRead);
             Debug.Assert(Access.IsRead || Access.IsNone);
 
-            var method = this.Target;
+            var method = this.TargetMethod;
             if (method != null) // => IsResolved
             {
                 // emit condition for include_once/require_once

@@ -93,6 +93,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return s?.OriginalDefinition switch
             {
+                SourceFileSymbol file => file,
                 SourceRoutineSymbol routine => routine.ContainingFile,
                 SourceTypeSymbol type => type.ContainingFile,
                 _ => s != null ? GetContainingFileSymbol(s.ContainingSymbol) : null,

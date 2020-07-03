@@ -850,7 +850,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region  ceil, floor, round, abs, fmod, max, min, intdiv
+        #region  ceil, floor, round, abs, fmod, max, min, intdiv, fdiv
 
         /// <summary>
         /// Returns the next highest integer value by rounding up <paramref name="x"/> if necessary.
@@ -1271,6 +1271,11 @@ namespace Pchp.Library
         /// <param name="dividend">Number to be divided.</param>
         /// <param name="divisor">Number which divides the <paramref name="dividend"/>.</param>
         public static long intdiv(long dividend, long divisor) => dividend / divisor;
+
+        /// <summary>
+        /// Perform floating-point division of <paramref name="dividend"/> / <paramref name="divisor"/> with IEEE-754 semantics for division by zero.
+        /// </summary>
+        public static double fdiv(double dividend, double divisor) => dividend / divisor; // does not throw, returns +INF, -INF
 
         #endregion
     }

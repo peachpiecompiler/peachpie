@@ -292,17 +292,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        protected override TResult AcceptEdge(BoundBlock fromBlock, Edge edge)
-        {
-            if ((_flags & AnalysisFlags.IsCanceled) == 0)
-            {
-                return base.AcceptEdge(fromBlock, edge);
-            }
-            else
-            {
-                return default;
-            }
-        }
+        //protected override TResult AcceptEdge(BoundBlock fromBlock, Edge edge)
+        //{
+        //    if ((_flags & AnalysisFlags.IsCanceled) == 0)
+        //    {
+        //        return base.AcceptEdge(fromBlock, edge);
+        //    }
+        //    else
+        //    {
+        //        return default;
+        //    }
+        //}
 
         public override TResult VisitCFGBlock(BoundBlock x)
         {

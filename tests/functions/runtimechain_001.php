@@ -29,6 +29,11 @@ function test($x)   // $x does not have a type specified
 
 }
 
+function test2($x, $y, \DateTimeInterface $key)
+{
+	$x->remove( $y->timers[$key] ); // $key must not be converted to IntStringKey
+}
+
 test(new X);
 
 echo "Done.";

@@ -1,4 +1,6 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +15,7 @@ namespace Peachpie.Library.PDO
         /// </summary>
         public struct ErrorInfo
         {
-            /// <summary>SQLSTATE. Can be <c>null</c>.</summary>
+            /// <summary>SQLSTATE.</summary>
             public string SqlState;
 
             /// <summary>Error code.</summary>
@@ -23,21 +25,9 @@ namespace Peachpie.Library.PDO
             public string Message;
 
             /// <summary>
-            /// Error code for own PDO errors.
+            /// Create error info for a general PDO error.
             /// </summary>
-            public static string HY000 => "HY000";
-
-            /// <summary>Gets code as number if possible.</summary>
-            internal int CodeOrZero()
-            {
-                if (string.IsNullOrEmpty(Code) || Code == "0") return 0;
-                return int.TryParse(Code, out var code) ? code : 0;
-            }
-
-            /// <summary>
-            /// Create error infor for own PDO error.
-            /// </summary>
-            public static ErrorInfo Create(string message) => Create(null, HY000, message);
+            public static ErrorInfo Create(string message) => Create(string.Empty, nameof(ErrorCodes.HY000), message);
 
             /// <summary>
             /// Create error info.

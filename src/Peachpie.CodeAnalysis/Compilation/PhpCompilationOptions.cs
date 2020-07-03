@@ -113,6 +113,11 @@ namespace Pchp.CodeAnalysis
         public ISet<string> Autoload_ClassMapFiles { get; internal set; }
 
         /// <summary>
+        /// Set of relative file names to be marked as autoloaded.
+        /// </summary>
+        public ISet<string> Autoload_Files { get; internal set; }
+
+        /// <summary>
         /// Collection of PSR-4 autoload rules.
         /// Matching types (classes, traits and interfaces) will be marked as autoloaded.
         /// </summary>
@@ -283,6 +288,7 @@ namespace Pchp.CodeAnalysis
         {
             EventSources = other.EventSources;
             Autoload_ClassMapFiles = other.Autoload_ClassMapFiles;
+            Autoload_Files = other.Autoload_Files;
             Autoload_PSR4 = other.Autoload_PSR4;
         }
 

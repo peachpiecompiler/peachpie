@@ -125,6 +125,11 @@ namespace Peachpie.CodeAnalysis.Syntax
             (_provider as IDisposable)?.Dispose();
         }
 
+        public void UpdateToken(CompleteToken t)
+        {
+            _buffer[_bufferidx] = t;
+        }
+
         /// <summary>
         /// Gets token information.
         /// </summary>

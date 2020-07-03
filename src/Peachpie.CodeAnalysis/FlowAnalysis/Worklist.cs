@@ -105,6 +105,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             var sourceRoutine = (SourceRoutineSymbol)routine;
+
+            if (sourceRoutine.SyntaxReturnType != null)
+            {
+                // we don't have to wait for return type,
+                // nor reanalyse itself when routine analyses
+                return false;
+            }
+
             _callGraph.AddEdge(caller.FlowState.Routine, sourceRoutine, new CallSite(caller, callExpression));
 
             // ensure caller is subscribed to routine's ExitBlock

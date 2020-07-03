@@ -300,13 +300,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // add catch control variable to the state
             x.TypeRef.Accept(this);
-            x.Variable.Access = BoundAccess.Write.WithWrite(x.TypeRef.GetTypeRefMask(TypeCtx));
-            State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue), x.Variable.Access.WriteMask);
 
-            Accept(x.Variable);
+            if (x.Variable != null)
+            {
+                x.Variable.Access = BoundAccess.Write.WithWrite(x.TypeRef.GetTypeRefMask(TypeCtx));
+                State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue), x.Variable.Access.WriteMask);
+                Accept(x.Variable);
 
-            //
-            x.Variable.ResultType = (Symbols.TypeSymbol)x.TypeRef.Type;
+                //
+                x.Variable.ResultType = (TypeSymbol)x.TypeRef.Type;
+            }
+
 
             //
             DefaultVisitBlock(x);
@@ -2071,12 +2075,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var targetExpr = x.ArgumentsInSourceOrder[0].Value;
 
             //
-            x.Target = null;
+            x.TargetMethod = null;
 
             if (targetExpr.ConstantValue.TryConvertToString(out var path))
             {
                 // include (path)
-                x.Target = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
+                x.TargetMethod = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
             }
             else if (targetExpr is BoundConcatEx concat) // common case
             {
@@ -2091,14 +2095,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // not starting with a directory separator!
                     path = Routine.ContainingFile.DirectoryRelativePath + path;
                     if (path.Length != 0 && PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
-                    x.Target = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
+                    x.TargetMethod = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
                 }
             }
 
             // resolve result type
             if (x.Access.IsRead)
             {
-                var target = x.Target;
+                var target = x.TargetMethod;
                 if (target != null)
                 {
                     x.ResultType = target.ReturnType;
@@ -2676,13 +2680,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var voidMask = State.TypeRefContext.GetTypeMask(BoundTypeRefFactory.VoidTypeRef, false); // NOTE: or remember the routine may return Void
                 State.FlowThroughReturn(voidMask);
             }
-
-            return default;
-        }
-
-        public override T VisitThrow(BoundThrowStatement x)
-        {
-            Accept(x.Thrown);
 
             return default;
         }

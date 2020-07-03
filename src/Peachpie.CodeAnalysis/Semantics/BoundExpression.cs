@@ -778,20 +778,20 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Gets value indicating the target is resolved at compile time,
         /// so it will be called statically.
         /// </summary>
-        public bool IsResolved => !Target.IsErrorMethodOrNull();
+        public bool IsResolved => !TargetMethod.IsErrorMethodOrNull();
 
         /// <summary>
         /// In case the inclusion target is resolved, gets reference to the <c>Main</c> method of the included script.
         /// </summary>
-        internal MethodSymbol Target
+        internal new MethodSymbol TargetMethod
         {
             get
             {
-                return TargetMethod;
+                return base.TargetMethod;
             }
             set
             {
-                TargetMethod = value;
+                base.TargetMethod = value;
             }
         }
 
@@ -883,6 +883,52 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitAssert(this);
+    }
+
+    #endregion
+
+    #region BoundThrowStatement
+
+    /// <summary>
+    /// throw <c>Thrown</c>;
+    /// </summary>
+    public sealed partial class BoundThrowExpression : BoundExpression, IThrowOperation
+    {
+        public override OperationKind Kind => OperationKind.Throw;
+
+        internal BoundExpression Thrown { get; set; }
+
+        IOperation IThrowOperation.Exception => this.Thrown;
+
+        public BoundThrowExpression(BoundExpression thrown)
+            : base()
+        {
+            Debug.Assert(thrown != null);
+            this.Thrown = thrown;
+        }
+
+        public BoundThrowExpression Update(BoundExpression thrown)
+        {
+            if (thrown == Thrown)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundThrowExpression(thrown);
+            }
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitThrow(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitThrow(this, argument);
+
+        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
+        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
+        /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitThrow(this);
     }
 
     #endregion

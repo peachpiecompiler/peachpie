@@ -8,13 +8,19 @@ using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using System.Collections.Immutable;
 using Devsense.PHP.Text;
+using Microsoft.CodeAnalysis.Operations;
+using Peachpie.Library.RegularExpressions;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal sealed partial class SourceLambdaSymbol : SourceRoutineSymbol
+    internal partial class SourceLambdaSymbol : SourceRoutineSymbol
     {
-        readonly NamedTypeSymbol _container;
         readonly LambdaFunctionExpr _syntax;
+
+        /// <summary>
+        /// The type containing declaration of this lambda method.
+        /// </summary>
+        protected NamedTypeSymbol Container { get; }
 
         /// <summary>
         /// Whether <c>$this</c> is pased to the routine (non static lambda).
@@ -23,11 +29,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         FieldSymbol _lazyRoutineInfoField;    // internal static RoutineInfo !name;
 
-        public SourceLambdaSymbol(LambdaFunctionExpr syntax, NamedTypeSymbol containing, bool useThis)
+        public SourceLambdaSymbol(LambdaFunctionExpr syntax, NamedTypeSymbol container)
         {
-            _container = containing;
+            Container = container ?? throw new ArgumentNullException(nameof(container));
             _syntax = syntax;
-            UseThis = useThis;
+            UseThis = !syntax.IsStatic;
         }
 
         /// <summary>
@@ -39,7 +45,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_lazyRoutineInfoField == null)
             {
                 _lazyRoutineInfoField = module.SynthesizedManager
-                    .GetOrCreateSynthesizedField(_container, this.DeclaringCompilation.CoreTypes.RoutineInfo, $"[routine]{this.MetadataName}", Accessibility.Internal, true, true, true);
+                    .GetOrCreateSynthesizedField(Container, this.DeclaringCompilation.CoreTypes.RoutineInfo, $"[routine]{this.MetadataName}", Accessibility.Internal, true, true, true);
             }
 
             return _lazyRoutineInfoField;
@@ -62,14 +68,14 @@ namespace Pchp.CodeAnalysis.Symbols
         protected override IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature, PHPDocBlock phpdocOpt = null)
         {
             // [use params], [formal params]
-            return base.BuildSrcParams(_syntax.UseParams.Concat(signature.FormalParams), phpdocOpt);
+            return base.BuildSrcParams(UseParams.Concat(signature.FormalParams), phpdocOpt);
         }
 
         internal override IList<Statement> Statements => _syntax.Body.Statements;
 
         internal override Signature SyntaxSignature => _syntax.Signature;
 
-        internal IList<FormalParam> UseParams => _syntax.UseParams;
+        internal virtual IList<FormalParam> UseParams => _syntax.UseParams;
 
         internal override TypeRef SyntaxReturnType => _syntax.ReturnType;
 
@@ -77,11 +83,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;
 
-        internal override SourceFileSymbol ContainingFile => (_container as SourceTypeSymbol)?.ContainingFile ?? (_container as SourceFileSymbol);
+        internal override SourceFileSymbol ContainingFile => Container.GetContainingFileSymbol();
 
         public override string Name => WellKnownPchpNames.LambdaMethodName;
 
-        public override Symbol ContainingSymbol => _container;
+        public override Symbol ContainingSymbol => Container;
 
         public override ImmutableArray<Location> Locations
         {
@@ -107,6 +113,55 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSealed => false;
 
-        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(DeclaringCompilation, _container as SourceTypeSymbol, thisType: null);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(DeclaringCompilation, Container as SourceTypeSymbol, thisType: null);
+    }
+
+    internal partial class SourceArrowFnSymbol : SourceLambdaSymbol
+    {
+        readonly ImmutableArray<Statement> _body;
+        readonly FormalParam[] _useparams;
+
+        public SourceArrowFnSymbol(ArrowFunctionExpr syntax, NamedTypeSymbol container)
+            : base(syntax, container)
+        {
+            _body = ImmutableArray.Create<Statement>(new JumpStmt(syntax.Expression.Span, JumpStmt.Types.Return, syntax.Expression));
+            _useparams = EnumerateCapturedVariables(syntax)
+                .Select(v => new FormalParam(Span.Invalid, v.Value, Span.Invalid, null, FormalParam.Flags.Default, null))
+                .ToArray();
+        }
+
+        static IReadOnlyCollection<VariableName> EnumerateCapturedVariables(ArrowFunctionExpr fn)
+        {
+            var capturedvars = new HashSet<VariableName>();
+
+            // collect all variables in fn
+            foreach (var v in fn.Expression.SelectLocalVariables())
+            {
+                capturedvars.Add(v.VarName);
+            }
+
+            // remove vars specified in parameters
+            foreach (var p in fn.Signature.FormalParams)
+            {
+                capturedvars.Remove(p.Name.Name);
+            }
+
+            //// intersect with variables from parent function scope
+            //var containingvars = new HashSet<VariableName>();
+
+            //foreach (var v in fn.GetContainingRoutine().SelectLocalVariables())
+            //{
+            //    containingvars.Add(v.VarName);
+            //}
+
+            //capturedvars.IntersectWith(containingvars);
+
+            //
+            return capturedvars;
+        }
+
+        internal override IList<Statement> Statements => _body;
+
+        internal override IList<FormalParam> UseParams => _useparams;
     }
 }

@@ -561,11 +561,11 @@ namespace Pchp.Core
 
         public static IPhpArray EnsureArray(object obj)
         {
-            // ArrayAccess
-            if (obj is ArrayAccess) return EnsureArray((ArrayAccess)obj);
-
             // IPhpArray
             if (obj is IPhpArray) return (IPhpArray)obj;
+
+            // ArrayAccess
+            if (obj is ArrayAccess) return EnsureArray((ArrayAccess)obj);
 
             // IList
             if (obj is IList) return new ListAsPhpArray((IList)obj);
@@ -870,6 +870,18 @@ namespace Pchp.Core
                 }
 
                 return PhpValue.Null;
+            }
+
+            // TODO: IDictionary
+
+            // get_Item
+            if (obj != null)
+            {
+                var getter = obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item];
+                if (getter != null)
+                {
+                    return getter.Invoke(null, obj, index);
+                }
             }
 
             //

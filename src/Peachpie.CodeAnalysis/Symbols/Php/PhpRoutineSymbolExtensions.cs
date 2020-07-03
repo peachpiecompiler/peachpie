@@ -154,6 +154,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     return callableMask;
                 }
+
+                // TODO: handle union types precisely, now we resolve them mostly as PhpValue which results in AnyType mask
             }
             else
             {

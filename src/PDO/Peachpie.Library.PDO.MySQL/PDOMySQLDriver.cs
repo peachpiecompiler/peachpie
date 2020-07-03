@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using MySql.Data.MySqlClient;
-
+using MySqlConnector;
 using Pchp.Core;
 using Peachpie.Library.PDO.Utilities;
 
@@ -61,6 +60,12 @@ namespace Peachpie.Library.PDO.MySQL
         public override string Quote(string str, PDO.PARAM param)
         {
             return "'" + MySqlHelper.EscapeString(str) + "'";
+        }
+
+        /// <inheritDoc />
+        public override bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
+        {
+            return false;
         }
 
         /// <inheritDoc />

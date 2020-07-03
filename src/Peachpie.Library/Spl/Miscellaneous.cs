@@ -248,32 +248,49 @@ namespace Pchp.Library.Spl
 
         public virtual PhpArray __serialize()
         {
-            // NOTE: _iteratorClass is not preserved through the serialization (at least not in PHP 7.4)
-            var array = new PhpArray(3);
-            array.AddValue(_flags);
-            array.AddValue(PhpValue.FromClr(_underlayingArray ?? _underlayingObject));
-            array.AddValue(__peach__runtimeFields ?? PhpArray.NewEmpty());
-
-            return array;
+            return new PhpArray(4)
+            {
+                _flags,
+                PhpValue.FromClr(_underlayingArray ?? _underlayingObject),
+                __peach__runtimeFields ?? PhpArray.NewEmpty(),
+                _iteratorClass, // = NULL for ArrayIterator
+            };
         }
 
         public virtual void __unserialize(PhpArray array)
         {
-            _flags = array.TryGetValue(0, out var flagsVal) && flagsVal.IsLong(out long flags)
-                ? (int)flags : throw new InvalidDataException();
+            PhpValue value;
 
-            if (!array.TryGetValue(1, out var storageVal))
-                throw new InvalidDataException();
+            // 0: flags:
+            if (array.TryGetValue(0, out value) && value.IsLong(out long flags))
+            {
+                _flags = (int)flags;
 
-            if (storageVal.IsArray)
-                _underlayingArray = storageVal.Array;
-            else if (storageVal.IsObject)
-                _underlayingObject = storageVal.Object;
-            else
-                throw new InvalidDataException();
+                // 1: storage:
+                if (array.TryGetValue(1, out value))
+                {
+                    if (value.IsPhpArray(out _underlayingArray) ||
+                        (_underlayingObject = value.AsObject()) != null)
+                    {
+                        // 2: runtime fields:
+                        if (array.TryGetValue(2, out value) && value.IsPhpArray(out __peach__runtimeFields))
+                        {
+                            // 3: iteratorClass: (optional)
+                            if (array.TryGetValue(3, out value) && value.IsString(out var iteratorClass))
+                            {
+                                // set and check
+                                setIteratorClass(iteratorClass);
+                            }
 
-            __peach__runtimeFields = array.TryGetValue(2, out var propsVal) && propsVal.IsPhpArray(out var propsArray)
-                ? propsArray : throw new InvalidDataException();
+                            // done
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // error
+            throw new UnexpectedValueException();
         }
 
         #endregion

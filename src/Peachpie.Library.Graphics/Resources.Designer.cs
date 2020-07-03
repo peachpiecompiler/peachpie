@@ -70,6 +70,15 @@ namespace Peachpie.Library.Graphics {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Array expected as &apos;{0}&apos;.
+        /// </summary>
+        internal static string array_expected {
+            get {
+                return ResourceManager.GetString("array_expected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Empty string or invalid image.
         /// </summary>
         internal static string empty_string_or_invalid_image {
@@ -138,6 +147,24 @@ namespace Peachpie.Library.Graphics {
         internal static string invalid_image_dimensions {
             get {
                 return ResourceManager.GetString("invalid_image_dimensions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid type for element {0}.
+        /// </summary>
+        internal static string invalid_type {
+            get {
+                return ResourceManager.GetString("invalid_type", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to must have an &apos;{0}&apos; key.
+        /// </summary>
+        internal static string missing_param {
+            get {
+                return ResourceManager.GetString("missing_param", resourceCulture);
             }
         }
         

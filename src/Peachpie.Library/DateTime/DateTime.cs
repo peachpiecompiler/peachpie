@@ -386,6 +386,18 @@ namespace Pchp.Library.DateTime
             return new DateTime(ctx, datetime.Time, datetime.TimeZone);
         }
 
+        public static DateTime createFromInterface(Context ctx, DateTimeInterface datetime)
+        {
+            if (DateTimeFunctions.GetDateTimeFromInterface(datetime, out var dt, out var tz))
+            {
+                return new DateTime(ctx, dt, tz);
+            }
+            else
+            {
+                throw new Spl.InvalidArgumentException();
+            }
+        }
+
         [return: NotNull]
         public virtual DateTime setDate(int year, int month, int day)
         {
@@ -674,6 +686,21 @@ namespace Pchp.Library.DateTime
             {
                 return datetime.AsDateTimeImmutable();
             }
+        }
+
+        public static DateTimeImmutable createFromInterface(Context ctx, DateTimeInterface datetime)
+        {
+            if (datetime is DateTimeImmutable immutable)
+            {
+                return immutable;
+            }
+
+            if (datetime is DateTime dt)
+            {
+                return dt.AsDateTimeImmutable();
+            }
+
+            throw new Spl.InvalidArgumentException();
         }
 
         [return: NotNull]

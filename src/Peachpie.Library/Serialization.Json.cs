@@ -10,6 +10,8 @@ using Pchp.Core.Reflection;
 using static Pchp.Library.JsonSerialization;
 using Microsoft.Extensions.ObjectPool;
 using Pchp.Core.Utilities;
+using System.Text.Json;
+using Pchp.Library.Spl;
 
 namespace Pchp.Library
 {
@@ -25,6 +27,21 @@ namespace Pchp.Library
         internal static int GetLastJsonError(Context ctx)
         {
             return ctx.TryGetStatic<JsonLastError>(out var p) ? p.LastError : 0;
+        }
+
+        internal static void SetLastJsonError(Context ctx, int err = JSON_ERROR_NONE)
+        {
+            if (err == 0)
+            {
+                if (ctx.TryGetStatic<JsonLastError>(out var jsonerror))
+                {
+                    jsonerror.LastError = err;
+                }
+            }
+            else
+            {
+                ctx.GetStatic<JsonLastError>().LastError = err;
+            }
         }
 
         #endregion
@@ -760,45 +777,221 @@ namespace Pchp.Library
 
             #endregion
 
+            #region ObjectReader
+
+            internal sealed class ObjectReader
+            {
+                /// <summary>
+                /// Deserializes the value, sets json_last_error or throws <see cref="JsonException"/> eventually.
+                /// </summary>
+                public static PhpValue DeserializeWithError(Context ctx, ReadOnlySpan<byte> utf8bytes, JsonReaderOptions options, JsonDecodeOptions phpoptions)
+                {
+                    try
+                    {
+                        var value = Deserialize(utf8bytes, options, phpoptions);
+
+                        SetLastJsonError(ctx, JSON_ERROR_NONE);
+
+                        return value;
+                    }
+                    catch (JsonException jsonex)
+                    {
+                        if ((phpoptions & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
+                        {
+                            SetLastJsonError(ctx, jsonex.getCode());
+                            return PhpValue.Null;
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        // internal error,
+                        // treat as syntax error
+
+                        if ((phpoptions & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
+                        {
+                            SetLastJsonError(ctx, JSON_ERROR_SYNTAX);
+                            return PhpValue.Null;
+                        }
+                        else
+                        {
+                            throw new JsonException(ex.Message, JSON_ERROR_SYNTAX, ex as Throwable);
+                        }
+                    }
+                }
+
+                public static PhpValue Deserialize(ReadOnlySpan<byte> utf8bytes, JsonReaderOptions options, JsonDecodeOptions phpoptions)
+                {
+                    var reader = new Utf8JsonReader(utf8bytes, options);
+                    return ReadValue(ref reader, phpoptions);
+                }
+
+                static PhpValue ReadValue(ref Utf8JsonReader reader, JsonDecodeOptions phpoptions)
+                {
+                    if (reader.Read())
+                    {
+                        return GetValue(ref reader, phpoptions);
+                    }
+
+                    // EOF
+                    return PhpValue.Null;
+                }
+
+                static PhpValue GetValue(ref Utf8JsonReader reader, JsonDecodeOptions phpoptions)
+                {
+                    switch (reader.TokenType)
+                    {
+                        case JsonTokenType.StartObject:
+                            var props = new PhpArray(ReadObject(ref reader, phpoptions));
+                            return (phpoptions & JsonDecodeOptions.JSON_OBJECT_AS_ARRAY) != 0
+                                ? PhpValue.Create(props)
+                                : PhpValue.FromClass(props.AsStdClass());
+
+                        case JsonTokenType.StartArray:
+                            return new PhpArray(ReadArray(ref reader, phpoptions));
+
+                        case JsonTokenType.String:
+                            return reader.GetString();
+
+                        case JsonTokenType.Number:
+                            if (reader.TryGetInt64(out var l)) return l;
+                            if ((phpoptions & JsonDecodeOptions.JSON_BIGINT_AS_STRING) != 0 && IsIntegerType(reader.ValueSpan))
+                            {
+                                // big int encode as string
+                                //return Encoding.ASCII.GetString(reader.ValueSpan); // NETSTANDARD2.1: ReadOnlySpan<byte>
+                                return JsonEncodedText.Encode(reader.ValueSpan).ToString();
+                            }
+                            if (reader.TryGetDouble(out var d)) return d;
+                            ThrowError(JSON_ERROR_INF_OR_NAN);
+                            break;
+
+                        case JsonTokenType.True:
+                            return PhpValue.True;
+
+                        case JsonTokenType.False:
+                            return PhpValue.False;
+
+                        case JsonTokenType.Null:
+                            return PhpValue.Null;
+                    }
+
+                    //
+                    ThrowError(JSON_ERROR_SYNTAX);
+                    return PhpValue.Null;
+                }
+
+                static bool IsIntegerType(ReadOnlySpan<byte> value)
+                {
+                    // -?[0-9]
+                    foreach (var c in value)
+                    {
+                        if (c >= '0' && c <= '9')
+                        {
+                            // ok
+                        }
+                        else if (c == '-')
+                        {
+                            // ok
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                static OrderedDictionary ReadObject(ref Utf8JsonReader reader, JsonDecodeOptions phpoptions)
+                {
+                    var props = new OrderedDictionary();
+
+                    // read properties until EndObject
+                    for (; ; )
+                    {
+                        if (reader.Read())
+                        {
+                            if (reader.TokenType == JsonTokenType.PropertyName)
+                            {
+                                props[reader.GetString()] = ReadValue(ref reader, phpoptions);
+                                continue;
+                            }
+                            else if (reader.TokenType == JsonTokenType.EndObject)
+                            {
+                                break;
+                            }
+                        }
+
+                        ThrowError(JSON_ERROR_SYNTAX);
+                    }
+
+                    //
+                    return props;
+                }
+
+                static OrderedDictionary ReadArray(ref Utf8JsonReader reader, JsonDecodeOptions phpoptions)
+                {
+                    var props = new OrderedDictionary();
+
+                    // read values until EndArray
+                    for (; ; )
+                    {
+                        if (reader.Read())
+                        {
+                            if (reader.TokenType == JsonTokenType.EndArray)
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                props.Add(GetValue(ref reader, phpoptions));
+                                continue;
+                            }
+                        }
+
+                        ThrowError(JSON_ERROR_SYNTAX);
+                    }
+
+                    //
+                    return props;
+                }
+
+                static void ThrowError(int code)
+                {
+                    throw new JsonException(string.Empty, code);
+                }
+            }
+
+            #endregion
+
             #region Serializer
 
             public override string Name => "JSON";
 
             protected override PhpValue CommonDeserialize(Context ctx, Stream data, RuntimeTypeHandle caller)
             {
-
-                var options = _decodeOptions ?? new DecodeOptions();
-                var scanner = new Json.JsonScanner(new StreamReader(data), options);
-                var parser = new Json.Parser(options) { Scanner = scanner };
-
-                if (parser.Parse())
+                return ObjectReader.DeserializeWithError(ctx, StreamToSpan(data), new JsonReaderOptions
                 {
-                    if (ctx.TryGetStatic<JsonLastError>(out var jsonerror))
-                    {
-                        jsonerror.LastError = JSON_ERROR_NONE;
-                    }
-                }
-                else
-                {
-                    var errorcode = JSON_ERROR_SYNTAX;
+                    CommentHandling = JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true,
+                    MaxDepth = this._decodeOptions.Depth,
+                }, this._decodeOptions.Options);
+            }
 
-                    if ((options.Options & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
-                    {
-                        ctx.GetStatic<JsonLastError>().LastError = errorcode;
-                        return PhpValue.Null;
-                    }
-                    else
-                    {
-                        throw new JsonException(code: errorcode);
-                    }
-                }
-
-                //
-                return parser.Result;
+            static ReadOnlySpan<byte> StreamToSpan(Stream data)
+            {
+                var ms = new MemoryStream();
+                data.CopyTo(ms);
+                return ms.GetBuffer().AsSpan(0, (int)ms.Length);
             }
 
             protected override PhpString CommonSerialize(Context ctx, PhpValue variable, RuntimeTypeHandle caller)
             {
+                SetLastJsonError(ctx, 0);
+
                 return ObjectWriter.Serialize(ctx, variable, _encodeOptions, caller);
             }
 
@@ -1042,6 +1235,8 @@ namespace Pchp.Library
         {
             // TODO: depth
 
+            PhpSerialization.SetLastJsonError(ctx, 0);
+
             //return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
             return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default);
         }
@@ -1051,26 +1246,41 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="json"></param>
-        /// <param name="assoc">When TRUE, returned object's will be converted into associative array s. </param>
+        /// <param name="assoc">When TRUE, returned objects will be converted into associative arrays. </param>
         /// <param name="depth">User specified recursion depth. </param>
         /// <param name="options"></param>
         /// <returns>Returns the value encoded in json in appropriate PHP type. Values true, false and null are returned as TRUE, FALSE and NULL respectively. NULL is returned if the json cannot be decoded or if the encoded data is deeper than the recursion limit.</returns>
         public static PhpValue json_decode(Context ctx, PhpString json, bool assoc = false, int depth = 512, JsonDecodeOptions options = JsonDecodeOptions.Default)
         {
-            if (json.IsEmpty) return PhpValue.Null;
-
-            var decodeoptions = new PhpSerialization.JsonSerializer.DecodeOptions()
+            if (json.IsEmpty)
             {
-                Depth = depth,
-                Options = options,
-            };
+                return PhpValue.Null;
+            }
 
             if (assoc)
             {
-                decodeoptions.Options |= JsonDecodeOptions.JSON_OBJECT_AS_ARRAY;
+                options |= JsonDecodeOptions.JSON_OBJECT_AS_ARRAY;
             }
 
-            return new PhpSerialization.JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, json, default);
+            //var decodeoptions = new PhpSerialization.JsonSerializer.DecodeOptions()
+            //{
+            //    Depth = depth,
+            //    Options = options,
+            //};
+
+            //return new PhpSerialization.JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, new PhpString(json.ToBytes(Encoding.UTF8)), default);
+
+            //
+            return PhpSerialization.JsonSerializer.ObjectReader.DeserializeWithError(
+                ctx,
+                json.ToBytes(Encoding.UTF8).AsSpan(),
+                new JsonReaderOptions
+                {
+                    AllowTrailingCommas = true,
+                    CommentHandling = JsonCommentHandling.Skip,
+                    MaxDepth = depth,
+                },
+                options);
         }
 
         public static int json_last_error(Context ctx) => PhpSerialization.GetLastJsonError(ctx);
