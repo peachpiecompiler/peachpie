@@ -1617,7 +1617,7 @@ namespace Pchp.Library.Streams
             var httpctx = ctx.HttpPhpContext;
             return (httpctx != null)
                 ? httpctx.InputStream   // HttpContext.Request.InputStream
-                : Console.OpenStandardInput();
+                : Stream.Null;          // Empty stream if not present (e.g. called from console)
         }
 
         /// <summary>
