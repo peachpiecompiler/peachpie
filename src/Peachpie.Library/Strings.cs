@@ -4026,25 +4026,27 @@ namespace Pchp.Library
         /// See <A href="http://www.php.net/manual/en/function.sprintf.php">PHP manual</A> for details.
         /// Besides, a type specifier "%C" is applicable. It converts an integer value to Unicode character.</param>
         /// <returns>The formatted string.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when the <paramref name="arguments"/> parameter is null.</exception>
         /// <exception cref="PhpException">Thrown when there is less arguments than expeceted by formatting string.</exception>
         [return: CastToFalse]
         public static string sprintf(Context ctx, string format, params PhpValue[] arguments)
         {
-            if (format == null) return string.Empty;
+            if (string.IsNullOrEmpty(format))
+            {
+                return string.Empty;
+            }
 
             // null arguments would be compiler's error (or error of the user):
-            if (arguments == null) throw new ArgumentNullException("arguments");
 
-            var result = FormatInternal(ctx, format, arguments);
-            if (result == null)
+            var result = FormatInternal(ctx, format, arguments ?? Array.Empty<PhpValue>());
+            if (result != null)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("too_few_arguments"));
-
-                // TODO: return FALSE
-                throw new ArgumentException();
+                return result;
             }
-            return result;
+            else
+            {
+                PhpException.Throw(PhpError.Warning, LibResources.too_few_arguments);
+                return null;    // FALSE
+            }
         }
 
         /// <summary>
