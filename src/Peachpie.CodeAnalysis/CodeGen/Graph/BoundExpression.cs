@@ -3082,7 +3082,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         static SpecialMember? TryResolveConcatMethod(int stringargs) => stringargs switch
         {
-            2 => SpecialMember.System_String__ConcatStringString,
+            2 => (SpecialMember?)SpecialMember.System_String__ConcatStringString,
             3 => SpecialMember.System_String__ConcatStringStringString,
             4 => SpecialMember.System_String__ConcatStringStringStringString,
             _ => null,
