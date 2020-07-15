@@ -818,6 +818,454 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
     }
+
+    #region MethodsProceduralStyle
+
+    [PhpExtension("xmlwriter")]
+    public static class XMLWriterPS
+    {
+        #region Constants
+
+        private const string DefaultXmlVersion = "1.0";
+
+        #endregion
+
+        internal class XMLWriterResource : PhpResource
+        {
+            public XMLWriter Writer { get; }
+
+            public XMLWriterResource(XMLWriter writer) : base("xmlwriter")
+            {
+                Writer = writer;
+            }
+
+            protected override void FreeManaged()
+            {
+                //TODO: Dispose ??
+                base.FreeManaged();
+            }
+        }
+
+        private static XMLWriterResource ValidateXmlWriterResource(PhpResource context)
+        {
+            if (context is XMLWriterResource h && h.IsValid)
+            {
+                return h;
+            }
+
+            //
+            PhpException.Throw(PhpError.Warning, Pchp.Library.Resources.Resources.invalid_resource, context.TypeName);
+            return null;
+        }
+
+        #region Methods
+
+        [return: CastToFalse]
+        public static PhpResource xmlwriter_open_memory()
+        {
+            var writer = new XMLWriter();
+
+            if (writer.openMemory())
+                return new XMLWriterResource(writer);
+            else
+                return null;
+        }
+
+        [return: CastToFalse]
+        public static PhpResource xmlwriter_open_uri(Context ctx, string uri)
+        {
+            var writer = new XMLWriter();
+
+            if (writer.openUri(ctx, uri))
+                return new XMLWriterResource(writer);
+            else
+                return null;
+        }
+
+        [return: CastToFalse]
+        public static PhpString xmlwriter_output_memory(PhpResource xmlwriter, bool flush = true)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return null;
+
+            return resource.Writer.outputMemory(flush);
+        }
+
+        public static bool xmlwriter_end_attribute(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endAttribute();
+        }
+
+        public static bool xmlwriter_end_cdata(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endCdata();
+        }
+
+        public static bool xmlwriter_end_comment(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endComment();
+        }
+
+        public static bool xmlwriter_end_document(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endDocument();
+        }
+
+        public static bool xmlwriter_end_dtd_attlist(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endDtdAttlist();
+        }
+
+        public static bool xmlwriter_end_dtd_element(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endDtdElement();
+        }
+
+        public static bool xmlwriter_end_dtd_entity(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endDtdEntity();
+        }
+
+        public static bool xmlwriter_end_dtd(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endDtd();
+        }
+
+        public static bool xmlwriter_end_element(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endElement();
+        }
+
+        public static bool xmlwriter_end_pi(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.endPi();
+        }
+
+        public static PhpValue xmlwriter_flush(PhpResource xmlwriter, bool empty = true)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.flush(empty);
+        }
+
+        public static bool xmlwriter_full_end_element(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.fullEndElement();
+        }
+
+        public static bool xmlwriter_set_indent_string(PhpResource xmlwriter, string indentString)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.setIndentString(indentString);
+        }
+
+        public static bool xmlwriter_set_indent(PhpResource xmlwriter, bool indent)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.setIndent(indent);
+        }
+
+        public static bool xmlwriter_start_attribute_ns(PhpResource xmlwriter, string prefix, string name, string uri)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startAttributeNs(prefix, name, uri);
+        }
+
+        public static bool xmlwriter_start_attribute(PhpResource xmlwriter, string name)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startAttribute(name);
+        }
+
+        public static bool xmlwriter_start_cdata(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startCdata();
+        }
+
+        public static bool xmlwriter_start_comment(PhpResource xmlwriter)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startComment();
+        }
+
+        public static bool xmlwriter_start_document(PhpResource xmlwriter, string version = DefaultXmlVersion, string encoding = null, string standalone = null)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startDocument();
+        }
+
+        public static bool xmlwriter_start_dtd_attlist(PhpResource xmlwriter, string name)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startDtdAttlist(name);
+        }
+
+        public static bool xmlwriter_start_dtd_element(PhpResource xmlwriter, string name)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startDtdElement(name);
+        }
+
+        public static bool xmlwriter_start_dtd_entity(PhpResource xmlwriter, string name, bool isparam)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startDtdEntity(name, isparam);
+        }
+
+        public static bool xmlwriter_start_dtd(PhpResource xmlwriter, string qualifiedName, string publicId = null, string systemId = null)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startDtd(qualifiedName, publicId, systemId);
+        }
+
+        public static bool xmlwriter_start_element_ns(PhpResource xmlwriter, string prefix, string name, string uri)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startElementNs(prefix, name, uri);
+        }
+
+        public static bool xmlwriter_start_element(PhpResource xmlwriter, string name)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startElement(name);
+        }
+
+        public static bool xmlwriter_start_pi(PhpResource xmlwriter, string target)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.startPi(target);
+        }
+
+        public static bool xmlwriter_text(PhpResource xmlwriter, string content)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.text(content);
+        }
+
+        public static bool xmlwriter_write_attribute_ns(PhpResource xmlwriter, string prefix, string name, string uri, string content)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeAttributeNs(prefix, name, uri, content);
+        }
+
+        public static bool xmlwriter_write_attribute(PhpResource xmlwriter, string name, string value)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeAttribute(name, value);
+        }
+
+        public static bool xmlwriter_write_cdata(PhpResource xmlwriter, string content)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeCdata(content);
+        }
+
+        public static bool xmlwriter_write_comment(PhpResource xmlwriter, string content)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeComment(content);
+        }
+
+        public static bool xmlwriter_write_dtd_attlist(PhpResource xmlwriter, string name, string content)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeDtdAttlist(name, content);
+        }
+
+        public static bool xmlwriter_write_dtd_element(PhpResource xmlwriter, string name, string content)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeDtdElement(name, content);
+        }
+
+        public static bool xmlwriter_write_dtd_entity(PhpResource xmlwriter, string name, string content, bool pe = false)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeDtdEntity(name, content, pe);
+        }
+
+        public static bool xmlwriter_write_dtd_entity(PhpResource xmlwriter, string name, string content, bool pe, string pubid, string sysid)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeDtdEntity(name, content, pe, pubid, sysid);
+        }
+
+        public static bool xmlwriter_write_dtd_entity(PhpResource xmlwriter, string name, string content, bool pe, string pubid, string sysid, string ndataid)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeDtdEntity(name, content, pe, pubid, sysid, ndataid);
+        }
+
+        public static bool xmlwriter_write_dtd(PhpResource xmlwriter, string name, string publicId = null, string systemId = null, string subset = null)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeDtd(name, publicId, systemId, subset);
+        }
+
+        public static bool xmlwriter_write_element_ns(PhpResource xmlwriter, string prefix, string name, string uri, string content = null)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeElementNs(prefix, name, uri, content);
+        }
+
+        public static bool xmlwriter_write_element(PhpResource xmlwriter, string name, string content = null)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeElement(name, content);
+        }
+
+        public static bool xmlwriter_write_pi(PhpResource xmlwriter, string target, string content)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writePi(target, content);
+        }
+
+        public static bool xmlwriter_write_raw(PhpResource xmlwriter, string content)
+        {
+            var resource = ValidateXmlWriterResource(xmlwriter);
+            if (resource == null)
+                return false;
+
+            return resource.Writer.writeRaw(content);
+        }
+
+        #endregion
+    }
+
+    #endregion
+
     public static class StringExtensions
     {
         public static string Escape(this string source, Dictionary<char, string> characters)
