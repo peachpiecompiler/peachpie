@@ -387,7 +387,10 @@ namespace Peachpie.Library.XmlDom
         public bool startCdata()
         {
             if (section != Section.Default && section != Section.PI)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.XmlWritterCDataWrongContext);
                 return false;
+            }
 
             if (section == Section.PI)
                 section = section | Section.CDATA;
@@ -466,19 +469,16 @@ namespace Peachpie.Library.XmlDom
 
         public bool startDtd(string qualifiedName, string publicId = null, string systemId = null)
         {
-            // Nested DTDs are prohibited
-            if (section != Section.Default)
-                return false;
-
-            if (_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start)
+            if (section != Section.Default ||
+              (_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
             {
-                // TODO: Warning
+                PhpException.Throw(PhpError.Warning, Resources.XmlWritterDtdInProlog);
                 return false;
             }
 
             if (String.IsNullOrEmpty(systemId) && !String.IsNullOrEmpty(publicId))
             {
-                // TODO: Warning
+                PhpException.Throw(PhpError.Warning, Resources.XmlWritterSystemIdentifier);
                 return false;
             }
 
@@ -589,7 +589,10 @@ namespace Peachpie.Library.XmlDom
         public bool writeCdata(string content)
         {
             if (section != Section.Default && section != Section.PI)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.XmlWritterCDataWrongContext);
                 return false;
+            }
 
             return CheckedCall(() => _writer.WriteCData(content));
         }
@@ -660,19 +663,16 @@ namespace Peachpie.Library.XmlDom
 
         public bool writeDtd(string name, string publicId = null, string systemId = null, string subset = null)
         {
-            // Nested DTDs are prohibited
-            if (section != Section.Default)
-                return false;
-
-            if (_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start)
+            if (section != Section.Default ||
+              (_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
             {
-                // TODO: Warning
+                PhpException.Throw(PhpError.Warning, Resources.XmlWritterDtdInProlog);
                 return false;
             }
 
             if (String.IsNullOrEmpty(systemId) && !String.IsNullOrEmpty(publicId))
             {
-                // TODO: Warning
+                PhpException.Throw(PhpError.Warning, Resources.XmlWritterSystemIdentifier);
                 return false;
             }
 
