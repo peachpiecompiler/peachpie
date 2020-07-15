@@ -8,17 +8,16 @@ function normalize($xml) {
 function test() {
   $xw = new \XMLWriter();
   $xw->openMemory();
-  
+  $xw->setIndent(false);
   $xw->startDocument('1.0', 'utf-8', 'no');
-
+  $xw->writeDtd("DTD<");
+  $xw->writeDtd("DTD","public1","<system");
+  $xw->writeDtd("DTD","public","system","<subset");
   $xw->startDtd('foo', NULL, 'urn:bar');
   $xw->startDtdElement("el1");
   $xw->text('<">"');
   $xw->startDtdElement("el2");
   $xw->endDtd();
-  $xw->writeDtd("DTD<");
-  $xw->writeDtd("DTD","public","<system");
-  $xw->writeDtd("DTD","public","system","<subset");
   $xw->startElement("tag");
   $xw->endElement();
   $xw->endDocument();

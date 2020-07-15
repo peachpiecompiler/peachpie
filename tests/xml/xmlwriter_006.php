@@ -9,7 +9,7 @@ function test() {
   $xw = new \XMLWriter();
   $xw->openMemory(); 
   
-  $xw->setIndent(false);
+  $xw->setIndent(true);
   $xw->setIndentString("");
   $xw->startDocument(NULL, "UTF-8");
   $xw->writeDtdEntity("name","a");

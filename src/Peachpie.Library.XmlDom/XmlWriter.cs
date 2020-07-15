@@ -38,7 +38,7 @@ namespace Peachpie.Library.XmlDom
         static XmlWriterSettings DefaultSettings = new XmlWriterSettings()
         {
             Encoding = new UTF8Encoding(false),     // Disable BOM
-            Indent = true,
+            Indent = false,
             NewLineChars = "\n",
             WriteEndDocumentOnClose = true,
             ConformanceLevel = ConformanceLevel.Auto
@@ -158,9 +158,11 @@ namespace Peachpie.Library.XmlDom
             section = Section.Default;
 
             // Ends dtd section.
-            var result = CheckedCall(() => _writer.WriteRaw(dtdStart ? ">" : "]>"));
+            string end = _writer.Settings.Indent ? _writer.Settings.NewLineChars : "";
+            end += dtdStart ? ">" : "]>";
             dtdStart = false;
-            return result;
+
+            return CheckedCall(() => _writer.WriteRaw(end));
         }
 
         public bool endElement()
@@ -309,12 +311,12 @@ namespace Peachpie.Library.XmlDom
 
             var settings = new XmlWriterSettings()
             {
-                Encoding = new UTF8Encoding(false),     // Disable BOM
+                Encoding = _writer.Settings.Encoding,     // Disable BOM
                 Indent = _writer.Settings.Indent,
                 IndentChars = indentString,
-                NewLineChars = "\n",
-                WriteEndDocumentOnClose = true,
-                ConformanceLevel = ConformanceLevel.Auto
+                NewLineChars = _writer.Settings.NewLineChars,
+                WriteEndDocumentOnClose = _writer.Settings.WriteEndDocumentOnClose,
+                ConformanceLevel = _writer.Settings.ConformanceLevel
             };
 
             if (_uriPhpStream == null)
@@ -332,12 +334,12 @@ namespace Peachpie.Library.XmlDom
 
             var settings = new XmlWriterSettings()
             {
-                Encoding = new UTF8Encoding(false),     // Disable BOM
+                Encoding = _writer.Settings.Encoding,     // Disable BOM
                 Indent = indent,
                 IndentChars = _writer.Settings.IndentChars,
-                NewLineChars = "\n",
-                WriteEndDocumentOnClose = true,
-                ConformanceLevel = ConformanceLevel.Auto
+                NewLineChars = _writer.Settings.NewLineChars,
+                WriteEndDocumentOnClose = _writer.Settings.WriteEndDocumentOnClose,
+                ConformanceLevel = _writer.Settings.ConformanceLevel
             };
 
             if (_uriPhpStream == null)
@@ -391,11 +393,12 @@ namespace Peachpie.Library.XmlDom
                 PhpException.Throw(PhpError.Warning, Resources.XmlWritterCDataWrongContext);
                 return false;
             }
-
+      
             if (section == Section.PI)
                 section = section | Section.CDATA;
+            else
+                section = Section.CDATA;
 
-            section = Section.CDATA;
             return CheckedCall(() => _writer.WriteRaw("<![CDATA["));
         }
 
@@ -420,15 +423,21 @@ namespace Peachpie.Library.XmlDom
                 PhpException.ArgumentValueNotSupported(nameof(encoding), encoding);
             }
 
-            dtdStart = true;
-
             if (string.IsNullOrEmpty(standalone))
             {
-                return CheckedCall(() => _writer.WriteStartDocument());
+                bool res = CheckedCall(() => _writer.WriteStartDocument());
+                if (!_writer.Settings.Indent)
+                    res &= CheckedCall(() => _writer.WriteRaw(_writer.Settings.NewLineChars));
+
+                return res;
             }
             else
             {
-                return CheckedCall(() => _writer.WriteStartDocument(standalone == "yes"));
+                bool res = CheckedCall(() => _writer.WriteStartDocument(standalone == "yes"));
+                if (!_writer.Settings.Indent)
+                    res &= CheckedCall(() => _writer.WriteRaw(_writer.Settings.NewLineChars));
+
+                return res;
             }
         }
 
@@ -485,11 +494,10 @@ namespace Peachpie.Library.XmlDom
             // Makes doctype
             string doctype = $"<!DOCTYPE {qualifiedName}";
             if (!String.IsNullOrEmpty(publicId))
-                doctype += $" PUBLIC \"{publicId}\"";
+                doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}PUBLIC \"{publicId}\"" : $" PUBLIC \"{publicId}\"";
             if (!String.IsNullOrEmpty(systemId))
-                doctype += $" SYSTEM \"{systemId}\"";
+                doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}SYSTEM \"{systemId}\"" : $" SYSTEM \"{systemId}\"";
 
-            // Makes new line, if it is first decleration after prolog.
             CheckDtdStart();
             section = Section.DTD;
             dtdStart = true;
@@ -541,8 +549,6 @@ namespace Peachpie.Library.XmlDom
                 ((section == Section.Comment || section == Section.CDATA) && countOfNastedNodes != 0))
             {
                 // Escapes characters
-                string.Format("content");
-
                 return CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
             }
 
@@ -565,8 +571,12 @@ namespace Peachpie.Library.XmlDom
                     endCdata();
                 return false;
             }
-
-            return CheckedCall(() => _writer.WriteAttributeString(prefix, name, uri, content));
+            // WriteAttributeString does not escape "
+            bool res = true;
+            res &= CheckedCall(() => _writer.WriteStartAttribute(prefix, name, uri));
+            res &= CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
+            res &= CheckedCall(() => _writer.WriteEndAttribute());
+            return res;
         }
 
         public bool writeAttribute(string name, string content)
@@ -582,8 +592,12 @@ namespace Peachpie.Library.XmlDom
                     endCdata();
                 return false;
             }
-
-            return CheckedCall(() => _writer.WriteAttributeString(name, content));
+            // WriteAttributeString does not escape "
+            bool res = true;
+            res &= CheckedCall(() => _writer.WriteStartAttribute(name));
+            res &= CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
+            res &= CheckedCall(() => _writer.WriteEndAttribute());
+            return res;
         }
 
         public bool writeCdata(string content)
@@ -679,9 +693,9 @@ namespace Peachpie.Library.XmlDom
             // Makes doctype
             string doctype = $"<!DOCTYPE {name}";
             if (!String.IsNullOrEmpty(publicId))
-                doctype += $" PUBLIC \"{publicId}\"";
+                doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}PUBLIC \"{publicId}\"" : $" PUBLIC \"{publicId}\"";
             if (!String.IsNullOrEmpty(systemId))
-                doctype += $" \"{systemId}\"";
+                doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}       \"{systemId}\"" : $" \"{systemId}\"";
             if (!String.IsNullOrEmpty(subset))
                 doctype += $" [{subset}]";
             doctype += ">";
@@ -705,16 +719,24 @@ namespace Peachpie.Library.XmlDom
 
                 return false;
             }
-
-            return CheckedCall(() => _writer.WriteElementString(prefix, name, uri, content));
+            // WriteElementString does not escape "
+            bool res = true;
+            res &= CheckedCall(() => _writer.WriteStartElement(prefix, name, uri));
+            res &= CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
+            res &= CheckedCall(() => _writer.WriteEndElement());
+            return res;
         }
 
-        public bool writeElement(string name, string content = null)
+        public bool writeElement(string name, string content = null) 
         {
             if ((section & Section.PI) == Section.PI)
                 return false;
-
-            return CheckedCall(() => _writer.WriteElementString(name, content));
+            // WriteElementString does not escape "
+            bool res = true;
+            res &= CheckedCall(() => _writer.WriteStartElement(name));
+            res &= CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
+            res &= CheckedCall(() => _writer.WriteEndElement());
+            return res;
         }
 
         public bool writePi(string target, string content)
@@ -736,13 +758,18 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         private void CheckDtdStart()
         {
-            if (dtdStart)
+            if (dtdStart) // We are first in DTD section
             {
-                if ((section & Section.DTD) == Section.DTD)
-                    _writer.WriteRaw(" [");
-                else
-                    _writer.WriteRaw(_writer.Settings.NewLineChars);
+                _writer.WriteRaw(" [");
                 dtdStart = false;
+            }
+
+            if (_writer.Settings.Indent) 
+            {
+                _writer.WriteRaw(_writer.Settings.NewLineChars);
+
+                if ((section & Section.DTD) == Section.DTD)
+                    _writer.WriteRaw(" ");
             }
         }
 
