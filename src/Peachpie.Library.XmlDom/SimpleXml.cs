@@ -1365,8 +1365,9 @@ namespace Peachpie.Library.XmlDom
         {
             try
             {
-                if (namespaceUri == null) namespaceUri = iterationNamespace.namespaceUri;// this.namespaceUri;
-                XmlAttribute attr = XmlElement.OwnerDocument.CreateAttribute(qualifiedName, namespaceUri);
+                var attr = namespaceUri == null
+                   ? XmlElement.OwnerDocument.CreateAttribute(qualifiedName)
+                   : XmlElement.OwnerDocument.CreateAttribute(qualifiedName, namespaceUri);
 
                 attr.Value = value;
 
