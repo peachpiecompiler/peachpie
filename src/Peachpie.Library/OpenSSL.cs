@@ -276,7 +276,7 @@ namespace Pchp.Library
 
             using MemoryStream msDecrypt = new MemoryStream(encryptedBytes);
             using CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
-            using StreamReader srDecrypt = new StreamReader(csDecrypt);
+            using StreamReader srDecrypt = new StreamReader(csDecrypt, ctx.StringEncoding);
 
             return srDecrypt.ReadToEnd();
         }
