@@ -161,6 +161,33 @@ namespace Peachpie.Library.XmlDom
         }
 
         /// <summary>
+        /// Import a stylesheet.
+        /// </summary>
+        /// <param name="stylesheet">The imported style sheet passed as a <see cref="SimpleXMLElement"/> object.</param>
+        /// <returns><B>True</B> or <B>false</B>.</returns>
+        public bool importStylesheet(SimpleXMLElement stylesheet)
+        {
+            try
+            {
+                if (stylesheet.XmlElement.ParentNode is XmlDocument)
+                {
+                    Load(stylesheet.XmlElement.ParentNode.GetXmlDocument());
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.InvalidDocument);
+                    return false;
+                }
+            }
+            catch (XsltException e)
+            {
+                PhpException.Throw(PhpError.Warning, e.Message);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Transforms the source node to a <see cref="DOMDocument"/> applying the stylesheet given by the
         /// <see cref="importStylesheet(DOMDocument)"/> method.
         /// </summary>
