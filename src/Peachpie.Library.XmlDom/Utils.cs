@@ -9,9 +9,7 @@ using System.Linq;
 using System.Xml.Resolvers;
 using HtmlAgilityPack;
 using Pchp.Core;
-using System.Threading.Tasks;
-using System.IO;
-using System.Reflection;
+using Pchp.Core.Utilities;
 
 namespace Peachpie.Library.XmlDom
 {
@@ -218,6 +216,26 @@ namespace Peachpie.Library.XmlDom
             LoadHtml(xmldoc, htmldoc.DocumentNode);
         }
 
+        static XmlAttribute CreateAttributeFromHtml(XmlDocument xmldoc, HtmlAttribute html_attr)
+        {
+            var name = html_attr.OriginalName;
+
+            // https://github.com/peachpiecompiler/peachpie/issues/791
+            // HtmlAgilityPack may leave closing "/" as a part of attribute name, trim it
+            if (name.LastChar() == '/') name = name.Substring(0, name.Length - 1);
+
+            //
+            var element_attr = xmldoc.CreateAttribute(name);
+
+            var value = html_attr.Value;
+            //if (html_attr.ValueStartIndex != 0 || !string.IsNullOrEmpty(value)) // ValueStartIndex == 0 => no value specified, but XmlAttribute can't specify value-less attributes
+            {
+                element_attr.Value = value;
+            }
+
+            return element_attr;
+        }
+
         static XmlElement EnsureNode(XmlNode root, string elementName, XmlElement? existing = null)
         {
             if (root == null) throw new ArgumentNullException(nameof(root));
@@ -359,10 +377,10 @@ namespace Peachpie.Library.XmlDom
                     var element = AppendChildElement(containing, xmldoc.CreateElement(name));
 
                     // attributes
-                    foreach (var attr in node.Attributes)
+                    var attrs = node.Attributes;
+                    for (int ai = 0; ai < attrs.Count; ai++)
                     {
-                        var element_attr = xmldoc.CreateAttribute(attr.OriginalName);
-                        element_attr.Value = attr.Value;
+                        var element_attr = CreateAttributeFromHtml(xmldoc, attrs[ai]);
 
                         element.Attributes.Append(element_attr);
 
