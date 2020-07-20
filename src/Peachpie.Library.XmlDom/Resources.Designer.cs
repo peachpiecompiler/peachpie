@@ -232,6 +232,15 @@ namespace Peachpie.Library.XmlDom {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid Document.
+        /// </summary>
+        internal static string InvalidDocument {
+            get {
+                return ResourceManager.GetString("InvalidDocument", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid node type.
         /// </summary>
         internal static string InvalidNodeType {
