@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using Pchp.Core;
+using Pchp.Library;
 using Pchp.Library.Streams;
 
 namespace Peachpie.Library.XmlDom
@@ -1268,22 +1269,64 @@ namespace Peachpie.Library.XmlDom
 
     public static class StringExtensions
     {
-        public static string Escape(this string source, Dictionary<char, string> characters)
+        private static string _quoteReplacement = "&quot;";
+        private static string _lessReplacement = "&lt;";
+        private static string _greaterReplacement = "&gt;";
+        private static string _ampresandReplacement = "&amp;";
+
+        /// <summary>
+        /// Escapes characters &quot;, &lt;, &gt;, &amp;.
+        /// </summary>
+        /// <returns>Replaced source with the replacement.</returns>
+        public static string Escape(this string source)
         {
             if (String.IsNullOrEmpty(source))
                 return "";
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder builder = null;
+
+            // Gets a new builder from the pool and appends substring of source, if necessary and appends charReplacement
+            void Replace(int index, string charReplacement)
+            {
+                if (builder == null)
+                {
+                    builder = StringBuilderUtilities.Pool.Get();
+                    builder.Append(source.Substring(0, index));
+                }
+
+                builder.Append(charReplacement);
+            }
 
             for (int i = 0; i < source.Length; i++)
             {
-                if (characters.TryGetValue(source[i], out string replacement))
-                    sb.Append(replacement);
-                else
-                    sb.Append(source[i]);
+                switch (source[i])
+                {
+                    case '"':   
+                        Replace(i, _quoteReplacement);  
+                        break;
+
+                    case '>':
+                        Replace(i, _greaterReplacement);
+                        break;
+
+                    case '<':
+                        Replace(i, _lessReplacement);
+                        break;
+
+                    case '&':
+                        Replace(i, _ampresandReplacement);
+                        break;
+
+                    default:
+                        if (builder == null)
+                            continue;
+                        else
+                            builder.Append(source[i]);
+                        break;
+                }
             }
 
-            return sb.ToString();
+            return (builder != null) ? StringBuilderUtilities.GetStringAndReturn(builder) : source;
         }
     }
 }
