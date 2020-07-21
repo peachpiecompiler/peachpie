@@ -29,12 +29,12 @@ namespace Peachpie.Library.XmlDom
         PhpStream _uriPhpStream;
 
         // Flags for CData, Comment and PISection, DTD
-        private int countOfNastedNodes = 0;
-        private Section section = Section.Default;
-        private bool dtdStart = false;
+        private int _nestedNodesCount = 0;
+        private bool _dtdStart = false;
 
-        [Flags]
-        private enum Section { Default = 0, Comment = 1, PI = 2, CDATA = 4, DTD = 8, DtdElement = 16, DtdEntity = 32, DtdAttribute = 64 }
+        private enum State { Comment, PI, CDATA, DTD, DtdElement, DtdEntity, DtdAttlist }
+
+        Stack<State> _state = new Stack<State>(2);
 
         static XmlWriterSettings DefaultSettings = new XmlWriterSettings()
         {
@@ -57,40 +57,39 @@ namespace Peachpie.Library.XmlDom
 
         public bool endAttribute()
         {
-            if ((section & Section.PI) == Section.PI)
-                return false;
+            if (_state.Count != 0)
+            {
+                // Cannot end attributes in comments, where are not elements
+                if ((_state.Peek()== State.Comment || _state.Peek() == State.CDATA) && _nestedNodesCount != 0)
+                    return CheckedCall(_writer.WriteEndAttribute);
 
-            // Cannot end attributes in comments, where are not elements
-            if ((section == Section.Comment || section == Section.CDATA) && countOfNastedNodes == 0)
                 return false;
+            }
 
             return CheckedCall(_writer.WriteEndAttribute);
         }
 
         public bool endCdata()
         {
-            if ((section & Section.CDATA) != Section.CDATA)
+            if (_state.Count == 0 || _state.Peek() != State.CDATA)
                 return false;
 
-            if ((section & Section.PI) == Section.PI)
-                section = Section.PI;
-            else
-                section = Section.Default;
+            _state.Pop();
 
             return CheckedCall(() => _writer.WriteRaw("]]>"));
         }
 
         public bool endComment()
         {
-            if (section != Section.Comment)
+            if (_state.Count == 0 || _state.Peek() != State.Comment)
                 return false;
 
-            section = Section.Default;
+            _state.Pop();
 
-            if (countOfNastedNodes > 0)
+            if (_nestedNodesCount > 0)
             {
-                while (countOfNastedNodes-- > 0)
-                    _writer.WriteEndElement();
+                while (_nestedNodesCount-- > 0)
+                    CheckedCall(() => _writer.WriteEndElement());
 
                 CheckedCall(() => _writer.WriteRaw("-->"));
                 return false;
@@ -101,86 +100,141 @@ namespace Peachpie.Library.XmlDom
 
         public bool endDocument()
         {
-            EndDtdElements();
-
-            if (section == Section.Comment)
-                endComment();
-            else if ((section & Section.PI) == Section.PI)
-                endPi();
-            else if (section == Section.CDATA)
-                endCdata();
-            else if ((section & Section.DTD) == Section.DTD)
-                endDtd();
-
-            CheckedCall(() => _writer.WriteEndDocument());
+            while (_state.Count != 0)
+            {
+                switch (_state.Peek())
+                {
+                    case State.Comment:
+                        endComment();
+                        break;
+                    case State.PI:
+                        endPi();
+                        break;
+                    case State.CDATA:
+                        endCdata();
+                        break;
+                    case State.DTD:
+                        endDtd();
+                        break;
+                    case State.DtdElement:
+                        endDtdElement();
+                        break;
+                    case State.DtdEntity:
+                        endDtdEntity();
+                        break;
+                    case State.DtdAttlist:
+                        endDtdAttlist();
+                        break;
+                    default:
+                        return false;
+                }
+            }
 
             return CheckedCall(() => _writer.WriteEndDocument());
         }
 
         public bool endDtdAttlist()
         {
-            if ((section & Section.DtdAttribute) != Section.DtdAttribute)
+            if (_state.Count == 0 || _state.Peek() != State.DtdAttlist)
                 return false;
 
-            section = section & Section.DTD;
+            _state.Pop();
 
             return CheckedCall(() => _writer.WriteRaw($">"));
         }
 
         public bool endDtdElement()
         {
-            if ((section & Section.DtdElement) != Section.DtdElement)
+            if (_state.Count == 0 || _state.Peek() != State.DtdElement)
                 return false;
 
-            section = section & Section.DTD;
+            _state.Pop();
 
             return CheckedCall(() => _writer.WriteRaw($">"));
         }
 
         public bool endDtdEntity()
         {
-            if ((section & Section.DtdEntity) != Section.DtdEntity)
+            if (_state.Count == 0 || _state.Peek() != State.DtdEntity)
                 return false;
 
-            section = section & Section.DTD;
+            _state.Pop();
 
             return CheckedCall(() => _writer.WriteRaw($"\">"));
         }
 
         public bool endDtd()
         {
-            if ((section & Section.DTD) != Section.DTD)
+            if (!_state.Contains(State.DTD))
                 return false;
 
-            EndDtdElements();
-            section = Section.Default;
+            switch (_state.Peek())
+            {           
+                case State.DTD:
+                    break;
+                case State.DtdElement:
+                    endDtdElement();
+                    break;
+                case State.DtdEntity:
+                    endDtdEntity();
+                    break;
+                case State.DtdAttlist:
+                    endDtdAttlist();
+                    break;
+                default:
+                    return false;
+            }
+
+            _state.Pop();
 
             // Ends dtd section.
             string end = _writer.Settings.Indent ? _writer.Settings.NewLineChars : "";
-            end += dtdStart ? ">" : "]>";
-            dtdStart = false;
+            end += _dtdStart ? ">" : "]>";
+            _dtdStart = false;
 
             return CheckedCall(() => _writer.WriteRaw(end));
         }
 
-        public bool endElement()
+        private bool CheckStateEnable()
         {
-            if ((section & Section.PI) == Section.PI)
-                return false;
-
-            if ((section == Section.Comment || section == Section.CDATA))
+            if (_state.Count != 0)
             {
-                if (countOfNastedNodes == 0)
+                if (_state.Peek() == State.Comment || _state.Peek() == State.CDATA)
                 {
-                    if (section == Section.Comment)
+                    if (_nestedNodesCount != 0)
+                        return true;
+
+                    if (_state.Peek() == State.Comment)
                         endComment();
                     else
                         endCdata();
-
-                    return false;
                 }
-                else
-                    countOfNastedNodes--;
+
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool endElement()
+        {
+            if (_state.Count != 0)
+            {
+                if (_state.Peek() == State.Comment || _state.Peek() == State.CDATA)
+                {
+                    if (_nestedNodesCount != 0)
+                    {
+                        _nestedNodesCount--;
+                        return CheckedCall(() => _writer.WriteEndElement());
+                    }
+
+                    if (_state.Peek() == State.Comment)
+                        endComment();
+                    else
+                        endCdata();
+                }
+
+                return false;
             }
 
             return CheckedCall(() => _writer.WriteEndElement());
@@ -188,13 +242,13 @@ namespace Peachpie.Library.XmlDom
 
         public bool endPi()
         {
-            if ((section & Section.PI) != Section.PI)
+            if (!_state.Contains(State.PI))
                 return false;
 
-            if ((section & Section.CDATA) == Section.CDATA)
+            if (_state.Peek() == State.CDATA)
                 endCdata();
 
-            section = Section.Default;
+            _state.Pop();
 
             return CheckedCall(() => _writer.WriteRaw("?>"));
         }
@@ -241,16 +295,21 @@ namespace Peachpie.Library.XmlDom
 
         public bool fullEndElement()
         {
-            if ((section & Section.PI) == Section.PI)
-                return false;
-
-            // Cannot start end element in comments or cdata, where are not elements.
-            if ((section == Section.Comment || section == Section.CDATA) && countOfNastedNodes == 0)
+            if (_state.Count != 0)
             {
-                if (section == Section.Comment)
-                    endComment();
-                else
-                    endCdata();
+                if (_state.Peek() == State.Comment || _state.Peek() == State.CDATA)
+                {
+                    if (_nestedNodesCount != 0)
+                    {
+                        _nestedNodesCount--;
+                        return CheckedCall(() => _writer.WriteFullEndElement());
+                    }
+
+                    if (_state.Peek() == State.Comment)
+                        endComment();
+                    else
+                        endCdata();
+                }
 
                 return false;
             }
@@ -338,62 +397,39 @@ namespace Peachpie.Library.XmlDom
 
         public bool startAttributeNs(string prefix, string name, string uri)
         {
-            if ((section & Section.PI) == Section.PI)
+            if (!CheckStateEnable())
                 return false;
-
-            // Cannot start attributes in comments or cdata, where are not elements.
-            if ((section == Section.Comment || (section & Section.CDATA) == Section.CDATA) && countOfNastedNodes == 0)
-            {
-                if (section == Section.Comment)
-                    endComment();
-                else
-                    endCdata();
-                return false;
-            }
 
             return CheckedCall(() => _writer.WriteStartAttribute(prefix, name, uri));
         }
 
         public bool startAttribute(string name)
         {
-            if ((section & Section.PI) == Section.PI)
+            if (!CheckStateEnable())
                 return false;
-
-            // Cannot start attributes in comments or cdata, where are not elements.
-            if ((section == Section.Comment || section == Section.CDATA) && countOfNastedNodes == 0)
-            {
-                if (section == Section.Comment)
-                    endComment();
-                else
-                    endCdata();
-                return false;
-            }
 
             return CheckedCall(() => _writer.WriteStartAttribute(name));
         }
 
         public bool startCdata()
         {
-            if (section != Section.Default && section != Section.PI)
+            if (_state.Count != 0 && _state.Peek() != State.PI)
             {
                 PhpException.Throw(PhpError.Warning, Resources.XmlWritterCDataWrongContext);
                 return false;
             }
-      
-            if (section == Section.PI)
-                section = section | Section.CDATA;
-            else
-                section = Section.CDATA;
+
+            _state.Push(State.CDATA);
 
             return CheckedCall(() => _writer.WriteRaw("<![CDATA["));
         }
 
         public bool startComment()
         {
-            if (section != Section.Default)
+            if (_state.Count != 0)
                 return false;
 
-            section = Section.Comment;
+            _state.Push(State.Comment);
             return CheckedCall(() => _writer.WriteRaw("<!--"));
         }
 
@@ -429,10 +465,10 @@ namespace Peachpie.Library.XmlDom
 
         public bool startDtdAttlist(string name)
         {
-            if (section != Section.DTD && section != Section.Default)
+            if (_state.Count != 0 && _state.Peek() != State.DTD)
                 return false;
 
-            section = section | Section.DtdAttribute;
+            _state.Push(State.DtdAttlist);
 
             CheckDtdStart();
             return CheckedCall(() => _writer.WriteRaw($"<!ATTLIST {name} "));
@@ -441,10 +477,10 @@ namespace Peachpie.Library.XmlDom
         public bool startDtdElement(string qualifiedName)
         {
             // DTD elements can be only in DTD or Default section.
-            if (section != Section.DTD && section != Section.Default)
+            if (_state.Count != 0 && _state.Peek() != State.DTD)
                 return false;
 
-            section = section | Section.DtdElement;
+            _state.Push(State.DtdElement);
 
             CheckDtdStart();
             return CheckedCall(() => _writer.WriteRaw($"<!ELEMENT {qualifiedName} "));
@@ -453,10 +489,10 @@ namespace Peachpie.Library.XmlDom
         public bool startDtdEntity(string name, bool isparam)
         {
             // DTD entity can be only in DTD or Default section.
-            if (section != Section.DTD && section != Section.Default)
+            if (_state.Count != 0 && _state.Peek() != State.DTD)
                 return false;
 
-            section = section | Section.DtdEntity;
+            _state.Push(State.DtdEntity);
 
             CheckDtdStart();
             return CheckedCall(() => _writer.WriteRaw(isparam ? $"<!ENTITY % {name} \"" : $"<!ENTITY {name} \""));
@@ -464,7 +500,7 @@ namespace Peachpie.Library.XmlDom
 
         public bool startDtd(string qualifiedName, string publicId = null, string systemId = null)
         {
-            if (section != Section.Default ||
+            if (_state.Count != 0||
               (_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
             {
                 PhpException.Throw(PhpError.Warning, Resources.XmlWritterDtdInProlog);
@@ -485,24 +521,22 @@ namespace Peachpie.Library.XmlDom
                 doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}SYSTEM \"{systemId}\"" : $" SYSTEM \"{systemId}\"";
 
             CheckDtdStart();
-            section = Section.DTD;
-            dtdStart = true;
+            _state.Push(State.DTD);
+            _dtdStart = true;
 
             return CheckedCall(() => _writer.WriteRaw(doctype));
         }
 
         public bool startElementNs(string prefix, string name, string uri)
         {
-            if ((section & Section.PI) == Section.PI)
-                return false;
-
-            // Cannot start namespace in comments or cdata, where are not elements.
-            if ((section == Section.Comment || section == Section.CDATA) && countOfNastedNodes == 0)
+            if (_state.Count != 0)
             {
-                if (section == Section.Comment)
-                    endComment();
-                else
-                    endCdata();
+                if (_state.Peek() == State.Comment || _state.Peek() == State.CDATA)
+                {
+                    _nestedNodesCount++;
+                    return CheckedCall(() => _writer.WriteStartElement(prefix, name, uri));
+                }
+
                 return false;
             }
 
@@ -511,34 +545,39 @@ namespace Peachpie.Library.XmlDom
 
         public bool startElement(string name)
         {
-            if (section == Section.PI)
-                return false;
+            if (_state.Count != 0)
+            {
+                if (_state.Peek() == State.Comment || _state.Peek() == State.CDATA)
+                {
+                    _nestedNodesCount++;
+                    return CheckedCall(() => _writer.WriteStartElement(name));
+                }
 
-            if (section == Section.Comment || section == Section.CDATA)
-                countOfNastedNodes++;
+                return false;
+            }
 
             return CheckedCall(() => _writer.WriteStartElement(name));
         }
 
         public bool startPi(string target)
         {
-            if (section != Section.Default)
+            if (_state.Count != 0)
                 return false;
 
-            section = Section.PI;
+            _state.Push(State.PI);
             return CheckedCall(() => _writer.WriteRaw($"<?{target} "));
         }
 
         public bool text(string content)
         {
-            if (section == Section.Default ||
-                ((section == Section.Comment || section == Section.CDATA) && countOfNastedNodes != 0))
+            if (_state.Count == 0 ||
+                ((_state.Peek() == State.Comment || _state.Peek() == State.CDATA) && _nestedNodesCount != 0))
             {
                 // Escapes characters
-                return CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
+                return CheckedCall(() => _writer.WriteRaw(content.Escape()));
             }
 
-            if (section == Section.DTD)
+            if (_state.Peek() == State.DTD)
                 CheckDtdStart();
 
             return CheckedCall(() => _writer.WriteRaw(content));
@@ -546,17 +585,9 @@ namespace Peachpie.Library.XmlDom
 
         public bool writeAttributeNs(string prefix, string name, string uri, string content)
         {
-            if ((section & Section.PI) == Section.PI)
+            if (!CheckStateEnable())
                 return false;
 
-            if ((section == Section.Comment || section == Section.CDATA) && countOfNastedNodes == 0)
-            {
-                if (section == Section.Comment)
-                    endComment();
-                else
-                    endCdata();
-                return false;
-            }
             // WriteAttributeString does not escape "
             bool res = true;
             res &= CheckedCall(() => _writer.WriteStartAttribute(prefix, name, uri));
@@ -567,17 +598,9 @@ namespace Peachpie.Library.XmlDom
 
         public bool writeAttribute(string name, string content)
         {
-            if ((section & Section.PI) == Section.PI)
+            if (!CheckStateEnable())
                 return false;
 
-            if ((section == Section.Comment || section == Section.CDATA) && countOfNastedNodes == 0)
-            {
-                if (section == Section.Comment)
-                    endComment();
-                else
-                    endCdata();
-                return false;
-            }
             // WriteAttributeString does not escape "
             bool res = true;
             res &= CheckedCall(() => _writer.WriteStartAttribute(name));
@@ -588,7 +611,7 @@ namespace Peachpie.Library.XmlDom
 
         public bool writeCdata(string content)
         {
-            if (section != Section.Default && section != Section.PI)
+            if (_state.Count != 0 && _state.Peek() != State.PI)
             {
                 PhpException.Throw(PhpError.Warning, Resources.XmlWritterCDataWrongContext);
                 return false;
@@ -599,7 +622,7 @@ namespace Peachpie.Library.XmlDom
 
         public bool writeComment(string content)
         {
-            if (section != Section.Default)
+            if (_state.Count != 0)
                 return false;
 
             return CheckedCall(() => _writer.WriteComment(content));
@@ -608,7 +631,7 @@ namespace Peachpie.Library.XmlDom
         public bool writeDtdAttlist(string name, string content)
         {
             // DTD attlist can be only in DTD or Default section.
-            if (section != Section.DTD && section != Section.Default)
+            if (_state.Count != 0 && _state.Peek() != State.DTD)
                 return false;
 
             CheckDtdStart();
@@ -618,7 +641,7 @@ namespace Peachpie.Library.XmlDom
         public bool writeDtdElement(string name, string content)
         {
             // DTD elements can be only in DTD or Default section.
-            if (section != Section.DTD && section != Section.Default)
+            if (_state.Count != 0 && _state.Peek() != State.DTD)
                 return false;
 
             CheckDtdStart();
@@ -628,7 +651,7 @@ namespace Peachpie.Library.XmlDom
         public bool writeDtdEntity(string name, string content, bool pe, string pubid, string sysid, string ndataid)
         {
             // DTD entity can be only in DTD or Default section.
-            if (section != Section.DTD && section != Section.Default)
+            if (_state.Count != 0 && _state.Peek() != State.DTD)
                 return false;
 
             if (pe)
@@ -641,7 +664,7 @@ namespace Peachpie.Library.XmlDom
         public bool writeDtdEntity(string name, string content, bool pe, string pubid, string sysid)
         {
             // DTD entity can be only in DTD or Default section.
-            if (section != Section.DTD && section != Section.Default)
+            if (_state.Count != 0 && _state.Peek() != State.DTD)
                 return false;
 
             if (pe)
@@ -654,7 +677,7 @@ namespace Peachpie.Library.XmlDom
         public bool writeDtdEntity(string name, string content, bool pe = false)
         {
             // DTD entity can be only in DTD or Default section.
-            if (section != Section.DTD && section != Section.Default)
+            if (_state.Count != 0 && _state.Peek() != State.DTD)
                 return false;
 
             CheckDtdStart();
@@ -663,7 +686,7 @@ namespace Peachpie.Library.XmlDom
 
         public bool writeDtd(string name, string publicId = null, string systemId = null, string subset = null)
         {
-            if (section != Section.Default ||
+            if (_state.Count != 0 ||
               (_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
             {
                 PhpException.Throw(PhpError.Warning, Resources.XmlWritterDtdInProlog);
@@ -693,18 +716,18 @@ namespace Peachpie.Library.XmlDom
 
         public bool writeElementNs(string prefix, string name, string uri, string content = null)
         {
-            if ((section & Section.PI) == Section.PI)
-                return false;
-
-            if ((section == Section.Comment || section == Section.CDATA) && countOfNastedNodes == 0)
+            if (_state.Count != 0)
             {
-                if (section == Section.Comment)
-                    endComment();
+                if (_state.Peek() != State.Comment && _state.Peek() != State.CDATA)
+                {
+                    return false;
+                }
                 else
-                    endCdata();
-
-                return false;
+                {
+                    _nestedNodesCount++;
+                }
             }
+        
             // WriteElementString does not escape "
             bool res = true;
             res &= CheckedCall(() => _writer.WriteStartElement(prefix, name, uri));
@@ -715,8 +738,18 @@ namespace Peachpie.Library.XmlDom
 
         public bool writeElement(string name, string content = null) 
         {
-            if ((section & Section.PI) == Section.PI)
-                return false;
+            if (_state.Count != 0)
+            {
+                if (_state.Peek() != State.Comment && _state.Peek() != State.CDATA)
+                {
+                    return false;
+                }
+                else
+                {
+                    _nestedNodesCount++;
+                }
+            }
+
             // WriteElementString does not escape "
             bool res = true;
             res &= CheckedCall(() => _writer.WriteStartElement(name));
@@ -727,7 +760,7 @@ namespace Peachpie.Library.XmlDom
 
         public bool writePi(string target, string content)
         {
-            if (section != Section.Default)
+            if (_state.Count != 0)
                 return false;
 
             return CheckedCall(() => _writer.WriteProcessingInstruction(target, content));
@@ -744,29 +777,19 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         private void CheckDtdStart()
         {
-            if (dtdStart) // We are first in DTD section
+            if (_dtdStart) // We are first in DTD section
             {
                 _writer.WriteRaw(" [");
-                dtdStart = false;
+                _dtdStart = false;
             }
 
             if (_writer.Settings.Indent) 
             {
                 _writer.WriteRaw(_writer.Settings.NewLineChars);
 
-                if ((section & Section.DTD) == Section.DTD)
+                if (_state.Count !=0 && _state.Peek() == State.DTD)
                     _writer.WriteRaw(" ");
             }
-        }
-
-        /// <summary>
-        /// Ends attribute or entity or element.
-        /// </summary>
-        private void EndDtdElements()
-        {
-            endDtdAttlist();
-            endDtdElement();
-            endDtdEntity();
         }
 
         private void Clear()
@@ -776,6 +799,10 @@ namespace Peachpie.Library.XmlDom
             _uriPhpStream = null;
             _writer?.Dispose();
             _writer = null;
+
+            _state = new Stack<State>(2);
+            _dtdStart = false;
+            _nestedNodesCount = 0;
         }
 
         private bool CheckedCall(Action operation)
