@@ -309,15 +309,8 @@ namespace Peachpie.Library.XmlDom
             if (_writer.WriteState != WriteState.Start)
                 return false;
 
-            var settings = new XmlWriterSettings()
-            {
-                Encoding = _writer.Settings.Encoding,     // Disable BOM
-                Indent = _writer.Settings.Indent,
-                IndentChars = indentString,
-                NewLineChars = _writer.Settings.NewLineChars,
-                WriteEndDocumentOnClose = _writer.Settings.WriteEndDocumentOnClose,
-                ConformanceLevel = _writer.Settings.ConformanceLevel
-            };
+            var settings = _writer.Settings.Clone();
+            settings.IndentChars = indentString;
 
             if (_uriPhpStream == null)
                 _writer = XmlWriter.Create(_memoryStream, settings);
@@ -332,15 +325,8 @@ namespace Peachpie.Library.XmlDom
             if (_writer.WriteState != WriteState.Start)
                 return false;
 
-            var settings = new XmlWriterSettings()
-            {
-                Encoding = _writer.Settings.Encoding,     // Disable BOM
-                Indent = indent,
-                IndentChars = _writer.Settings.IndentChars,
-                NewLineChars = _writer.Settings.NewLineChars,
-                WriteEndDocumentOnClose = _writer.Settings.WriteEndDocumentOnClose,
-                ConformanceLevel = _writer.Settings.ConformanceLevel
-            };
+            var settings = _writer.Settings.Clone();
+            settings.Indent = indent;
 
             if (_uriPhpStream == null)
                 _writer = XmlWriter.Create(_memoryStream, settings);
@@ -574,7 +560,7 @@ namespace Peachpie.Library.XmlDom
             // WriteAttributeString does not escape "
             bool res = true;
             res &= CheckedCall(() => _writer.WriteStartAttribute(prefix, name, uri));
-            res &= CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
+            res &= CheckedCall(() => _writer.WriteRaw(content.Escape()));
             res &= CheckedCall(() => _writer.WriteEndAttribute());
             return res;
         }
@@ -595,7 +581,7 @@ namespace Peachpie.Library.XmlDom
             // WriteAttributeString does not escape "
             bool res = true;
             res &= CheckedCall(() => _writer.WriteStartAttribute(name));
-            res &= CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
+            res &= CheckedCall(() => _writer.WriteRaw(content.Escape()));
             res &= CheckedCall(() => _writer.WriteEndAttribute());
             return res;
         }
@@ -722,7 +708,7 @@ namespace Peachpie.Library.XmlDom
             // WriteElementString does not escape "
             bool res = true;
             res &= CheckedCall(() => _writer.WriteStartElement(prefix, name, uri));
-            res &= CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
+            res &= CheckedCall(() => _writer.WriteRaw(content.Escape()));
             res &= CheckedCall(() => _writer.WriteEndElement());
             return res;
         }
@@ -734,7 +720,7 @@ namespace Peachpie.Library.XmlDom
             // WriteElementString does not escape "
             bool res = true;
             res &= CheckedCall(() => _writer.WriteStartElement(name));
-            res &= CheckedCall(() => _writer.WriteRaw(content.Escape(escapedChars)));
+            res &= CheckedCall(() => _writer.WriteRaw(content.Escape()));
             res &= CheckedCall(() => _writer.WriteEndElement());
             return res;
         }
