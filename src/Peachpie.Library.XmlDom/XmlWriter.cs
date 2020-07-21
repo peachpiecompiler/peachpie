@@ -14,7 +14,7 @@ namespace Peachpie.Library.XmlDom
     /// streams or files containing XML data.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("xmlwriter")]
-    public class XMLWriter
+    public class XMLWriter : IDisposable
     {
         #region Constants
 
@@ -45,16 +45,13 @@ namespace Peachpie.Library.XmlDom
             ConformanceLevel = ConformanceLevel.Auto
         };
 
-        // XML writer does not escape "
-        private static Dictionary<char, string> escapedChars = new Dictionary<char, string>()
-        {
-            { '"' , "&quot;" },
-            { '<' , "&lt;" },
-            { '>' , "&gt;" },
-            { '&',"&amp;"}
-        };
-
         #endregion
+
+        public void Dispose()
+        {
+            _writer?.Dispose();
+            _writer = null;
+        }
 
         #region Methods
 
@@ -261,11 +258,12 @@ namespace Peachpie.Library.XmlDom
             return CheckedCall(() => _writer.WriteFullEndElement());
         }
 
-        public bool openMemory()
+        public bool openMemory(Context ctx)
         {
             Clear();
             _memoryStream = new MemoryStream();
             _writer = System.Xml.XmlWriter.Create(_memoryStream, DefaultSettings);
+            ctx.RegisterDisposable(this);
             return true;
         }
 
@@ -282,6 +280,7 @@ namespace Peachpie.Library.XmlDom
             try
             {
                 _writer = System.Xml.XmlWriter.Create(_uriPhpStream.RawStream, DefaultSettings);
+                ctx.RegisterDisposable(this);
                 return true;
             }
             catch (InvalidCastException)
@@ -823,7 +822,7 @@ namespace Peachpie.Library.XmlDom
     #region MethodsProceduralStyle
 
     [PhpExtension("xmlwriter")]
-    public static class XMLWriterPS
+    public static class XMLWriterFunctions
     {
         #region Constants
 
@@ -842,7 +841,7 @@ namespace Peachpie.Library.XmlDom
 
             protected override void FreeManaged()
             {
-                //TODO: Dispose ??
+                Writer.Dispose();
                 base.FreeManaged();
             }
         }
@@ -862,11 +861,11 @@ namespace Peachpie.Library.XmlDom
         #region Methods
 
         [return: CastToFalse]
-        public static PhpResource xmlwriter_open_memory()
+        public static PhpResource xmlwriter_open_memory(Context ctx)
         {
             var writer = new XMLWriter();
 
-            if (writer.openMemory())
+            if (writer.openMemory(ctx))
                 return new XMLWriterResource(writer);
             else
                 return null;
