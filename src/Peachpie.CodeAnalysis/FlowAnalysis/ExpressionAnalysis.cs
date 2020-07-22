@@ -985,10 +985,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         TypeRefMask GetMinusOperationType(BoundExpression left, BoundExpression right)
         {
-            if (State.IsGreaterThanLongMin(TryGetVariableHandle(left)) && IsLongConstant(right, 1)) // LONG -1, where LONG > long.MinValue
-                return TypeCtx.GetLongTypeMask();
-            else if (IsDoubleOnly(left.TypeRefMask) || IsDoubleOnly(right.TypeRefMask)) // some operand is double and nothing else
+            if (IsDoubleOnly(left.TypeRefMask) || IsDoubleOnly(right.TypeRefMask)) // some operand is double and nothing else
                 return TypeCtx.GetDoubleTypeMask(); // double if we are sure about operands
+            else if (State.IsGreaterThanLongMin(TryGetVariableHandle(left)) && IsLongConstant(right, 1)) // LONG -1, where LONG > long.MinValue
+                return TypeCtx.GetLongTypeMask();
             else
                 return TypeCtx.GetNumberTypeMask();
         }

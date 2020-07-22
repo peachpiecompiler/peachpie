@@ -283,12 +283,8 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentNullException();
             }
 
-            if (timezone._timezone != this.TimeZone)
-            {
-                // convert this.Time from old TZ to new TZ
-                this.Time = TimeZoneInfo.ConvertTime(new System_DateTime(this.Time.Ticks, DateTimeKind.Unspecified), this.TimeZone, timezone._timezone);
-                this.TimeZone = timezone._timezone;
-            }
+            // No need to convert the time as the timezone is stored separately and the time is converted when needed
+            this.TimeZone = timezone._timezone;
 
             return this;
         }

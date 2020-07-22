@@ -361,14 +361,52 @@ namespace Peachpie.Library.Graphics
                 return false;
             }
 
-            //if (src_w == 0 && src_h == 0) return true;
-            //if (dst_w < 0) dst_w = 0;
-            //if (dst_h < 0) dst_h = 0;
-            if (dst_w == 0 || dst_h == 0) return true;
+            if (dst_w == 0 || dst_h == 0)
+            {
+                return true;
+            }
 
-            using (var cropped = src_img.Image.Clone(o => o
-                    .Crop(new Rectangle(src_x, src_y, src_w, src_h))
-                    .Resize(dst_w, dst_h, resampler)))
+            bool flip_w = false;
+            bool flip_h = false;
+
+            // normalize position
+            if (dst_w < 0)
+            {
+                dst_x += dst_w + 1;
+                dst_w = -dst_w;
+                flip_w = !flip_w;
+            }
+
+            if (dst_h < 0)
+            {
+                dst_y += dst_h + 1;
+                dst_h = -dst_h;
+                flip_h = !flip_h;
+            }
+
+            if (src_w < 0)
+            {
+                src_x += src_w + 1;
+                src_w = -src_w;
+                flip_w = !flip_w;
+            }
+
+            if (src_h < 0)
+            {
+                src_y += src_h + 1;
+                src_h = -src_h;
+                flip_h = !flip_h;
+            }
+
+            //
+            using (var cropped = src_img.Image.Clone(o =>
+            {
+                o = o.Crop(new Rectangle(src_x, src_y, src_w, src_h));
+                o = o.Resize(dst_w, dst_h, resampler);
+
+                if (flip_w) o = o.Flip(FlipMode.Horizontal);
+                if (flip_h) o = o.Flip(FlipMode.Vertical);
+            }))
             {
                 dst_img.Image.Mutate(o => o.DrawImage(cropped, new Point(dst_x, dst_y), new GraphicsOptions { /* GraphicsOptions */ }));
             }

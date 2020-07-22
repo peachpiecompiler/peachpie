@@ -170,7 +170,7 @@ namespace Peachpie.Library.XmlDom
             try
             {
                 if (stylesheet.XmlElement.ParentNode is XmlDocument)
-                { 
+                {
                     Load(stylesheet.XmlElement.ParentNode.GetXmlDocument());
                 }
                 else

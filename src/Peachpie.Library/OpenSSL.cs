@@ -276,7 +276,7 @@ namespace Pchp.Library
 
             using MemoryStream msDecrypt = new MemoryStream(encryptedBytes);
             using CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
-            using StreamReader srDecrypt = new StreamReader(csDecrypt);
+            using StreamReader srDecrypt = new StreamReader(csDecrypt, ctx.StringEncoding);
 
             return srDecrypt.ReadToEnd();
         }
@@ -295,7 +295,7 @@ namespace Pchp.Library
         /// <param name="tag_length">The length of the authentication tag. Its value can be between 4 and 16 for GCM mode.</param>
         /// <returns>Returns the encrypted string on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static PhpString openssl_encrypt(Context ctx, string data, string method, byte[] key, Options options, byte[] iv, string tag = "", string aad = "", int tag_length = 16)
+        public static PhpString openssl_encrypt(Context ctx, byte[] data, string method, byte[] key, Options options, byte[] iv, string tag = "", string aad = "", int tag_length = 16)
         {
             if (CiphersAliases.TryGetValue(method, out var aliasName))
             {
@@ -331,25 +331,29 @@ namespace Pchp.Library
             }
         }
 
-        private static PhpString Encrypt(string data, byte[] key, Cipher cipher, byte[] iv, Options options)
+        private static PhpString Encrypt(byte[] data, byte[] key, Cipher cipher, byte[] iv, Options options)
         {
             var aesAlg = PrepareCipher(key, cipher, iv, options);
-            ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+            var encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
-            using MemoryStream msEncrypt = new MemoryStream();
-            using CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
+            var msEncrypt = new MemoryStream();
 
-            using (var swEncrypt = new StreamWriter(csEncrypt))
+            using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
             {
-                swEncrypt.Write(data);
+                csEncrypt.Write(data);
             }
 
+            // TODO: msEncrypt.GetBuffer() // to avoid an unnecessary allocation
             var encrypted = msEncrypt.ToArray();
 
             if ((options & Options.OPENSSL_RAW_DATA) != 0)
+            {
                 return (PhpString)encrypted;
+            }
             else
+            {
                 return System.Convert.ToBase64String(encrypted);
+            }
         }
 
         #endregion
