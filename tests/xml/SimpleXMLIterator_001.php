@@ -1,25 +1,36 @@
 <?php
-$xmlstr = <<<XML
-<?xml version='1.0' standalone='yes'?>
-<numbers>
-    <zero>
-    nula
-    </zero>
-    <one value="1">
-        <oneAndHalf/>
-    </one>
-    <two/>
-    <three/>
-</numbers>
-XML;
+$xml =<<<EOF
+<?xml version='1.0'?>
+<!DOCTYPE sxe SYSTEM "notfound.dtd">
+<sxe id="elem1">
+ <elem1 attr1='first'>
+  <!-- comment -->
+  <elem2>
+   <elem3>
+    <elem4>
+     <?test processing instruction ?>
+    </elem4>
+   </elem3>
+  </elem2>
+ </elem1>
+</sxe>
+EOF;
 
-$sxi = new SimpleXmlIterator($xmlstr);
+function sxiToArray($sxi){
+    $a = array();
+    for( $sxi->rewind(); $sxi->valid(); $sxi->next() ) {
+      if(!array_key_exists($sxi->key(), $a)){
+        $a[$sxi->key()] = array();
+      }
+      if($sxi->hasChildren()){
+        $a[$sxi->key()][] = sxiToArray($sxi->current());
+      }
+      else{
+        $a[$sxi->key()][] = strval($sxi->current());
+      }
+    }
+    return $a;
+  }
 
-foreach($sxi as $el)
-    echo $el->getName();
-
-echo $sxi;
-
-//print_r($sxi);
-
+var_dump(sxiToArray(new SimpleXMLIterator($xml)));
 ?>

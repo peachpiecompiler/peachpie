@@ -1416,7 +1416,7 @@ namespace Peachpie.Library.XmlDom
                 case XmlNodeType.CDATA:
                 case XmlNodeType.SignificantWhitespace:
                 case XmlNodeType.Text:
-                case XmlNodeType.Whitespace: return node.Value;
+                case XmlNodeType.Whitespace: return node.Value.Replace("\r\n", "\n");
             }
 
             return null;
@@ -1792,6 +1792,7 @@ namespace Peachpie.Library.XmlDom
         : SimpleXMLElement, Pchp.Library.Spl.RecursiveIterator
     {
         #region Fields
+
         private SimpleXMLIterator _current = null;
 
         #endregion
@@ -1868,8 +1869,8 @@ namespace Peachpie.Library.XmlDom
             while (next != null && !(next is XmlElement))
                 next = next.NextSibling;
 
-            if (next is XmlElement)
-                _current = new SimpleXMLIterator(_ctx, (XmlElement)next);
+            if (next is XmlElement element)
+                _current = new SimpleXMLIterator(_ctx, element);
             else
                 _current = null;
         }
@@ -1879,14 +1880,14 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public void rewind()
         {
-            if (XmlElement != null && XmlElement.HasChildNodes)
+            if (XmlElement.HasChildNodes)
             { 
                 var firstChild = XmlElement.FirstChild; // Seeks first XmlElement
                 while (firstChild != null && !(firstChild is XmlElement))
                     firstChild = firstChild.NextSibling;
 
-                if (firstChild is XmlElement)
-                    _current = new SimpleXMLIterator(_ctx, (XmlElement)firstChild);
+                if (firstChild is XmlElement element)
+                    _current = new SimpleXMLIterator(_ctx, element);
             }
         }
 
@@ -1900,6 +1901,5 @@ namespace Peachpie.Library.XmlDom
         }
         
         #endregion
-    
     }
 }
