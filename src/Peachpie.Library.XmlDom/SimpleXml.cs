@@ -1782,4 +1782,124 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
     }
+
+    /// <summary>
+    /// The SimpleXMLIterator provides recursive iteration over all nodes of a <see cref="SimpleXMLElement"/> object.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpExtension("simplexml")]
+    public class SimpleXMLIterator
+        : SimpleXMLElement, Pchp.Library.Spl.RecursiveIterator
+    {
+        #region Fields
+        private SimpleXMLIterator _current = null;
+
+        #endregion
+
+
+        public SimpleXMLIterator(Context ctx, string data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false) : base(ctx, data, options, dataIsUrl){}
+
+        private SimpleXMLIterator(Context ctx, XmlElement element) : base(ctx, element) { }
+        
+        #region RecursiveIterator
+
+        /// <summary>
+        /// Returns the current element.
+        /// </summary>
+        /// <returns>Returns a <see cref="SimpleXMLIterator"/> object or NULL on failure.</returns>
+        public PhpValue current()
+        {
+            if (_current == null)
+                return PhpValue.Null;
+            else
+                return PhpValue.FromClass(_current);
+        }
+
+        /// <summary>
+        /// Returns a <see cref="SimpleXMLIterator"/> object containing sub-elements of the current <see cref="SimpleXMLIterator"/> element.
+        /// </summary>
+        public Pchp.Library.Spl.RecursiveIterator getChildren()
+        {
+            if (hasChildren())
+                return new SimpleXMLIterator(_ctx, _current.XmlElement);
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Checks whether the current <see cref="SimpleXMLIterator"/> element has sub-elements.
+        /// </summary>
+        public bool hasChildren()
+        {
+            if (_current != null && _current.XmlElement.HasChildNodes)
+            {
+                XmlNode next = _current.XmlElement.FirstChild;
+                while (next != null && !(next is XmlElement))
+                    next = next.NextSibling;
+
+                return next is XmlElement;
+            }
+            else
+                return false;
+        }
+
+        /// <summary>
+        /// Gets the XML tag name of the current element.
+        /// </summary>
+        /// <returns>Returns the XML tag name of the element referenced by the current <see cref="SimpleXMLIterator"/> object or FALSE.</returns>
+        public PhpValue key()
+        {
+            if (_current == null)
+                return PhpValue.False;
+            else
+                return _current.XmlElement.Name;
+        }
+
+        /// <summary>
+        /// Moves the <see cref="SimpleXMLIterator"/> to the next element.
+        /// </summary>
+        public void next()
+        {
+            if (!valid())
+                return;
+
+            XmlNode next = _current.XmlElement.NextSibling;
+
+            while (next != null && !(next is XmlElement))
+                next = next.NextSibling;
+
+            if (next is XmlElement)
+                _current = new SimpleXMLIterator(_ctx, (XmlElement)next);
+            else
+                _current = null;
+        }
+
+        /// <summary>
+        /// Rewinds the <see cref="SimpleXMLIterator"/> to the first element.
+        /// </summary>
+        public void rewind()
+        {
+            if (XmlElement != null && XmlElement.HasChildNodes)
+            { 
+                var firstChild = XmlElement.FirstChild; // Seeks first XmlElement
+                while (firstChild != null && !(firstChild is XmlElement))
+                    firstChild = firstChild.NextSibling;
+
+                if (firstChild is XmlElement)
+                    _current = new SimpleXMLIterator(_ctx, (XmlElement)firstChild);
+            }
+        }
+
+        /// <summary>
+        /// Checks if the current element is valid after calls to SimpleXMLIterator::rewind() or SimpleXMLIterator::next().
+        /// </summary>
+        /// <returns>Returns TRUE if the current element is valid, otherwise FALSE</returns>
+        public bool valid()
+        {
+            return _current != null;
+        }
+        
+        #endregion
+    
+    }
 }
