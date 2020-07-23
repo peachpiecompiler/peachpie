@@ -358,11 +358,38 @@ namespace Peachpie.Library.XmlDom {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to CDATA not allowed in this context!.
+        /// </summary>
+        internal static string XmlWritterCDataWrongContext {
+            get {
+                return ResourceManager.GetString("XmlWritterCDataWrongContext", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DTD allowed only in prolog!.
+        /// </summary>
+        internal static string XmlWritterDtdInProlog {
+            get {
+                return ResourceManager.GetString("XmlWritterDtdInProlog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Obtaining the number of bytes written to the current type of stream is not supported..
         /// </summary>
         internal static string XmlWritterNumberOfBytesUnsupported {
             get {
                 return ResourceManager.GetString("XmlWritterNumberOfBytesUnsupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to system identifier needed!.
+        /// </summary>
+        internal static string XmlWritterSystemIdentifier {
+            get {
+                return ResourceManager.GetString("XmlWritterSystemIdentifier", resourceCulture);
             }
         }
     }
