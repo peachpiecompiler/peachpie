@@ -1,24 +1,30 @@
 <?php
 $xml =<<<EOF
-<?xml version='1.0'?>
-<sxe>
- <elem1/>
- <elem2/>
- <elem2/>
-</sxe>
+<xml>
+  <fieldset1>
+    <field1/>
+    <field2/>
+  </fieldset1>
+  <fieldset2>
+    <options>
+      <option1/>
+      <option2/>
+      <option3/>
+    </options>
+    <field1/>
+    <field2/>
+  </fieldset2>
+</xml>
 EOF;
 
-class SXETest extends SimpleXMLElement
-{
-    function count()
-    {
-        echo __METHOD__ . "\n";
-        return parent::count();
-    }
+$sxe = new SimpleXMLIterator($xml);
+$rit = new RecursiveIteratorIterator($sxe, RecursiveIteratorIterator::LEAVES_ONLY);
+foreach ($rit as $child) {
+  $path = '';
+  $ancestry = $child->xpath('ancestor-or-self::*');
+  foreach ($ancestry as $ancestor) {
+    $path .= $ancestor->getName() . '/';
+  }
+  $path = substr($path, 0, strlen($path) - 1);
+  echo count($ancestry) . ' steps: ' . $path . PHP_EOL;
 }
-
-$sxe = new SXETest($xml);
-
-var_dump(count($sxe));
-var_dump(count($sxe->elem1));
-var_dump(count($sxe->elem2));
