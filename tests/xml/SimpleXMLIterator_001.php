@@ -16,6 +16,7 @@ $xml =<<<EOF
 </sxe>
 EOF;
 
+
 function sxiToArray($sxi){
     $a = array();
     for( $sxi->rewind(); $sxi->valid(); $sxi->next() ) {
@@ -32,5 +33,11 @@ function sxiToArray($sxi){
     return $a;
   }
 
-var_dump(sxiToArray(new SimpleXMLIterator($xml)));
+
+function normalize($text){
+  return trim(str_replace("\r\n", "\n", $text));
+}
+
+;
+normalize(var_export(sxiToArray(simplexml_load_string($xml, 'SimpleXMLIterator')),true));
 ?>

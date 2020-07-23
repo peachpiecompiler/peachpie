@@ -8,10 +8,11 @@ $xml =<<<EOF
 </sxe>
 EOF;
 
-class SXETest extends SimpleXMLIterator
+class SXETest extends SimpleXMLElement
 {
     function count()
     {
+        echo __METHOD__ . "\n";
         return parent::count();
     }
 }
