@@ -1,4 +1,5 @@
 <?php
+// This test was copied from PHP tests. See https://github.com/php/php-src/search?q=SimpleXMLIterator&unscoped_q=SimpleXMLIterator
 $xml =<<<EOF
 <?xml version='1.0'?>
 <sxe>

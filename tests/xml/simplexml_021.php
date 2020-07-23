@@ -1,7 +1,5 @@
 <?php
-// This XML contains two elements called <child>
-// One is in the namespace http://example.com, with local prefix 'ws'
-// The other has no namespace (no prefix, and no default namespace declared)
+// This test was copied from PHP Manual. See https://www.php.net/manual/en/simplexmlelement.construct.php
 $xml = '<ws:example xmlns:ws="http://example.com"><child>Not in namespace</child><ws:child>In example namespace</ws:child></ws:example>';
 
 $sx0 = new SimpleXMLElement($xml, 0, false);
