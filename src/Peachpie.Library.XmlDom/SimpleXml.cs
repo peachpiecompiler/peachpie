@@ -407,10 +407,12 @@ namespace Peachpie.Library.XmlDom
         /// <param name="data">Xml data.</param>
         /// <param name="options">Options.</param>
         /// <param name="dataIsUrl">Whether data points to URL. Default is false.</param>
-        public SimpleXMLElement(Context ctx, string data, int options = 0, bool dataIsUrl = false)
+        /// <param name="ns">Namespace prefix or URI.</param>
+        /// <param name="is_prefix">TRUE if ns is a prefix, FALSE if it's a URI; defaults to FALSE.</param>
+        public SimpleXMLElement(Context ctx, string data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false)
             : this(ctx)
         {
-            __construct(data, options, dataIsUrl);
+            __construct(data, options, dataIsUrl, ns, is_prefix);
         }
 
         internal SimpleXMLElement(Context ctx, XmlElement xmlElement, IterationType iterationType, IterationNamespace/*!*/iterationNamespace)
@@ -419,6 +421,9 @@ namespace Peachpie.Library.XmlDom
 
             _ctx = ctx;
             _element = xmlElement;
+
+            if (this.GetType() != typeof(SimpleXMLElement))
+                className = this.GetType().Name;
 
             this.iterationType = iterationType;
             this.iterationNamespace = iterationNamespace;
@@ -444,7 +449,7 @@ namespace Peachpie.Library.XmlDom
             this.XmlAttribute = xmlAttribute;
         }
 
-        public void __construct(string data, int options = 0, bool dataIsUrl = false)
+        public void __construct(string data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false)
         {
             var doc = PhpXmlDocument.Create();
 
@@ -473,6 +478,8 @@ namespace Peachpie.Library.XmlDom
             }
 
             this.XmlElement = doc.DocumentElement;
+
+            iterationNamespace = is_prefix ? IterationNamespace.CreateWithPrefix(ns, XmlElement) : IterationNamespace.CreateWithNamespace(ns);
         }
 
         /// <summary>
@@ -1778,7 +1785,7 @@ namespace Peachpie.Library.XmlDom
         /// Count childs in the element.
         /// </summary>
         /// <returns></returns>
-        public long count() => this.Count();
+        public virtual long count() => this.Count();
 
         #endregion
     }
@@ -1798,12 +1805,11 @@ namespace Peachpie.Library.XmlDom
         #endregion
 
         #region Construction
-        
-        public SimpleXMLIterator(Context ctx, string data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false) : base(ctx, data, options, dataIsUrl){}
-        internal SimpleXMLIterator(Context ctx) : base(ctx) { }
+
+        [PhpFieldsOnlyCtor]
+        protected SimpleXMLIterator(Context ctx) : base(ctx) { }
+        public SimpleXMLIterator(Context ctx, string data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false) : base(ctx, data, options, dataIsUrl, ns, is_prefix) { }
         internal SimpleXMLIterator(Context ctx, XmlElement element) : base(ctx, element) { }
-        internal SimpleXMLIterator(Context ctx, XmlElement/*!*/ xmlElement, IterationType iterationType) : base(ctx, xmlElement, iterationType) { }
-        internal SimpleXMLIterator(Context ctx, XmlElement xmlElement, IterationType iterationType, IterationNamespace/*!*/iterationNamespace) : base(ctx, xmlElement, iterationType, iterationNamespace) { }
 
         #endregion
 
