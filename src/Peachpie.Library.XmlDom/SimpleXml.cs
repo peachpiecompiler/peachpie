@@ -1416,7 +1416,7 @@ namespace Peachpie.Library.XmlDom
                 case XmlNodeType.CDATA:
                 case XmlNodeType.SignificantWhitespace:
                 case XmlNodeType.Text:
-                case XmlNodeType.Whitespace: return node.Value.Replace("\r\n", "\n");
+                case XmlNodeType.Whitespace: return node.Value;
             }
 
             return null;
@@ -1797,40 +1797,33 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-
-        public SimpleXMLIterator(Context ctx, string data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false) : base(ctx, data, options, dataIsUrl){}
-
-        private SimpleXMLIterator(Context ctx, XmlElement element) : base(ctx, element) { }
+        #region Construction
         
+        public SimpleXMLIterator(Context ctx, string data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false) : base(ctx, data, options, dataIsUrl){}
+        internal SimpleXMLIterator(Context ctx) : base(ctx) { }
+        internal SimpleXMLIterator(Context ctx, XmlElement element) : base(ctx, element) { }
+        internal SimpleXMLIterator(Context ctx, XmlElement/*!*/ xmlElement, IterationType iterationType) : base(ctx, xmlElement, iterationType) { }
+        internal SimpleXMLIterator(Context ctx, XmlElement xmlElement, IterationType iterationType, IterationNamespace/*!*/iterationNamespace) : base(ctx, xmlElement, iterationType, iterationNamespace) { }
+
+        #endregion
+
         #region RecursiveIterator
 
         /// <summary>
         /// Returns the current element.
         /// </summary>
         /// <returns>Returns a <see cref="SimpleXMLIterator"/> object or NULL on failure.</returns>
-        public PhpValue current()
-        {
-            if (_current == null)
-                return PhpValue.Null;
-            else
-                return PhpValue.FromClass(_current);
-        }
+        public virtual PhpValue current() => (_current == null) ? PhpValue.Null : PhpValue.FromClass(_current);
 
         /// <summary>
         /// Returns a <see cref="SimpleXMLIterator"/> object containing sub-elements of the current <see cref="SimpleXMLIterator"/> element.
         /// </summary>
-        public Pchp.Library.Spl.RecursiveIterator getChildren()
-        {
-            if (hasChildren())
-                return new SimpleXMLIterator(_ctx, _current.XmlElement);
-            else
-                return null;
-        }
+        public virtual Pchp.Library.Spl.RecursiveIterator getChildren() => hasChildren() ? _current : null;
 
         /// <summary>
-        /// Checks whether the current <see cref="SimpleXMLIterator"/> element has sub-elements.
+        /// Checks whether the current <see cref="SimpleXMLIterator"/> element has sub-elements (XmlElement).
         /// </summary>
-        public bool hasChildren()
+        public virtual bool hasChildren()
         {
             if (_current != null && _current.XmlElement.HasChildNodes)
             {
@@ -1848,46 +1841,58 @@ namespace Peachpie.Library.XmlDom
         /// Gets the XML tag name of the current element.
         /// </summary>
         /// <returns>Returns the XML tag name of the element referenced by the current <see cref="SimpleXMLIterator"/> object or FALSE.</returns>
-        public PhpValue key()
-        {
-            if (_current == null)
-                return PhpValue.False;
-            else
-                return _current.XmlElement.Name;
-        }
-
+        public virtual PhpValue key() => (_current == null) ? PhpValue.False : _current.XmlElement.Name;
+        
         /// <summary>
         /// Moves the <see cref="SimpleXMLIterator"/> to the next element.
         /// </summary>
-        public void next()
+        public virtual void next()
         {
-            if (!valid())
-                return;
+            if (_current != null)
+            {
+                var next = _current.XmlElement.NextSibling;
+                while (next != null && !(next is XmlElement))
+                    next = next.NextSibling;
 
-            XmlNode next = _current.XmlElement.NextSibling;
-
-            while (next != null && !(next is XmlElement))
-                next = next.NextSibling;
-
-            if (next is XmlElement element)
-                _current = new SimpleXMLIterator(_ctx, element);
-            else
-                _current = null;
+                _current = (next is XmlElement element) ? GetIterator(element) : _current = null;
+            }
         }
 
         /// <summary>
         /// Rewinds the <see cref="SimpleXMLIterator"/> to the first element.
         /// </summary>
-        public void rewind()
+        public virtual void rewind()
         {
-            if (XmlElement.HasChildNodes)
-            { 
-                var firstChild = XmlElement.FirstChild; // Seeks first XmlElement
+            if (!XmlElement.HasChildNodes)
+            {
+                _current = null;
+            }
+            else
+            {
+                var firstChild = XmlElement.FirstChild; // Seeks the first XmlElement
                 while (firstChild != null && !(firstChild is XmlElement))
                     firstChild = firstChild.NextSibling;
 
-                if (firstChild is XmlElement element)
-                    _current = new SimpleXMLIterator(_ctx, element);
+                _current = (firstChild is XmlElement element) ? GetIterator(element) : _current = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets <see cref="SimpleXMLIterator"/> or devided class.
+        /// </summary>
+        /// <param name="element">XmlElement of the class.</param>
+        /// <returns><see cref="SimpleXMLIterator"/> or devided class.</returns>
+        protected SimpleXMLIterator GetIterator(XmlElement element)
+        {
+            if (this is SimpleXMLIterator)
+            {
+                return new SimpleXMLIterator(_ctx, element);
+            }
+            else
+            {
+                SimpleXMLIterator res = (SimpleXMLIterator)(this.GetPhpTypeInfo().CreateUninitializedInstance(_ctx));
+                res.XmlElement = element;
+                return res;
             }
         }
 
@@ -1895,10 +1900,7 @@ namespace Peachpie.Library.XmlDom
         /// Checks if the current element is valid after calls to SimpleXMLIterator::rewind() or SimpleXMLIterator::next().
         /// </summary>
         /// <returns>Returns TRUE if the current element is valid, otherwise FALSE</returns>
-        public bool valid()
-        {
-            return _current != null;
-        }
+        public virtual bool valid() => _current != null;
         
         #endregion
     }
