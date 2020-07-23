@@ -28,9 +28,9 @@ $xml =<<<EOF
 EOF;
 
 foreach(new RecursiveIteratorIterator(new SimpleXMLIterator($xml), 1) as $name => $data) {
-  var_dump($name);
-  var_dump(get_class($data));
-  var_dump(trim($data));
+  print_r($name);
+  print_r(get_class($data));
+  print_r(trim($data));
 }
 
 ?>
