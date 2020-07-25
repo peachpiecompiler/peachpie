@@ -17,7 +17,7 @@ namespace Pchp.Core
     /// Represents a PHP value.
     /// </summary>
     /// <remarks>
-    /// Note, <c>default(PhpValue)</c> does not represent a valid state of the object.
+    /// Note, <c>default(PhpValue)</c> represents a <c>NULL</c> value, equivalent to <see cref="PhpValue.Null"/>.
     /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
     public readonly partial struct PhpValue : IPhpConvertible, IEquatable<PhpValue> // <T>
