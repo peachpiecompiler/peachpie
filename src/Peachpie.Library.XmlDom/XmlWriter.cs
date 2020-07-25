@@ -59,7 +59,7 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             _writer?.Dispose();
             _writer = null;
