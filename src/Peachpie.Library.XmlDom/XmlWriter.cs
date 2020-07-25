@@ -849,7 +849,7 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-        internal class XMLWriterResource : PhpResource
+        internal sealed class XMLWriterResource : PhpResource
         {
             public XMLWriter Writer { get; }
 
