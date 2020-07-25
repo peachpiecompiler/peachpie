@@ -866,15 +866,22 @@ namespace Peachpie.Library.XmlDom
             }
         }
 
-        private static XMLWriterResource ValidateXmlWriterResource(PhpResource context)
+        private static XMLWriterResource ValidateXmlWriterResource(PhpResource xmlwriter)
         {
-            if (context is XMLWriterResource h && h.IsValid)
+            if (xmlwriter is XMLWriterResource h && h.IsValid)
             {
                 return h;
             }
+            else if (xmlwriter == null)
+            {
+                PhpException.ArgumentNull(nameof(xmlwriter));
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Warning, Pchp.Library.Resources.Resources.invalid_resource, xmlwriter.TypeName);
+            }
 
             //
-            PhpException.Throw(PhpError.Warning, Pchp.Library.Resources.Resources.invalid_resource, context.TypeName);
             return null;
         }
 
