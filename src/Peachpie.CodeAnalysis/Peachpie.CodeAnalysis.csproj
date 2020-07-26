@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Devsense.Php.Parser" Version="8.0.3" />
+    <PackageReference Include="Devsense.Php.Parser" Version="8.0.7" />
     <PackageReference Include="Devsense.Php.Phar" Version="1.0.15" />
     <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.9.3" />
     <PackageReference Include="Peachpie.Library.RegularExpressions" Version="$(PeachpieLibraryRegularExpressionsVersion)" />
