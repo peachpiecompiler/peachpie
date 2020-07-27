@@ -839,6 +839,14 @@ namespace Pchp.Library
     //[PhpExtension("IMAP")] // uncomment when the extension is ready
     public static class Imap
     {
+        #region Variables
+
+        readonly static Encoding ISO_8859_1 = Encoding.GetEncoding("ISO-8859-1");
+
+        #endregion
+
+
+
         /// <summary>
         /// Parses an address string.
         /// </summary>
@@ -870,5 +878,120 @@ namespace Pchp.Library
             //
             return arr;
         }
+
+        #region encode,decode
+
+        /// <summary>
+        /// Transforms bytes to modified UTF-7 text as defined in RFC 2060
+        /// </summary>
+        private static string TransformUTF8ToUTF7Modified(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length == 0)
+                return string.Empty;
+
+            var builder = StringBuilderUtilities.Pool.Get();
+
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                // Chars from 0x20 to 0x7e are unchanged excepts "&" which is replaced by "&-".
+                if (bytes[i] >= 0x20 && bytes[i] <= 0x7e)
+                {
+                    if (bytes[i] == 0x26)
+                        builder.Append("&-");
+                    else
+                        builder.Append((char)bytes[i]);
+                }
+                else // Collects all bytes until Char from 0x20 to 0x7eis reached.
+                {
+                    int index = i;
+                    while ( i < bytes.Length && (bytes[i] < 0x20 || bytes[i] > 0x7e))
+                        i++;
+
+                    //Add bytes to stringbuilder
+                    //builder.Append("&" + Encoding.UTF8.GetString(bytes, index, i - index).Replace("/", ",") + "-");
+                    builder.Append("&" + System.Convert.ToBase64String(bytes, index, i - index).Replace("/", ",") + "-");
+
+                    if (i < bytes.Length)
+                        i--;
+                }
+            }
+
+            return StringBuilderUtilities.GetStringAndReturn(builder);
+        }
+
+        private static string TransformUTF7ModifiedToUTF8(Context ctx, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return null;
+
+            var builder = StringBuilderUtilities.Pool.Get();
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (text[i] == '&')
+                {
+                    if (i == text.Length - 1)
+                        ; // Error
+
+                    if (text[++i] == '-') // Means "&" char.
+                        builder.Append("&");
+                    else // Shift
+                    {
+                        int index = i;
+                        while (i < text.Length && text[i] != '-')
+                            i++;
+
+                        string encode = text.Substring(index, i - index);
+                        if (encode.Length % 4 != 0)
+                            encode = encode.PadRight(encode.Length + (4 - encode.Length % 4), '=');
+       
+                        builder.Append(Encoding.UTF7.GetString(System.Convert.FromBase64String(encode.Replace(",","/"))));
+                    }
+                }
+                else if (text[i] >= 0x20 && text[i] <= 0x7e)
+                {
+                    builder.Append(text[i]);
+                }
+                else
+                { 
+                //Error
+                }
+            }
+
+            return StringBuilderUtilities.GetStringAndReturn(builder);
+        }
+
+
+        /// <summary>
+        /// Converts ISO-8859-1 string to modified UTF-7 text.
+        /// </summary>
+        /// <param name="ctx">The context of script.</param>
+        /// <param name="data">An ISO-8859-1 string.</param>
+        /// <returns>Returns data encoded with the modified UTF-7 encoding as defined in RFC 2060</returns>
+        public static string imap_utf7_encode(Context ctx, PhpString data)
+        {
+            if (data.IsEmpty)
+                return string.Empty;
+
+            return TransformUTF8ToUTF7Modified(data.ToBytes(ctx));
+        }
+
+        /// <summary>
+        /// Decodes modified UTF-7 text into ISO-8859-1 string.
+        /// </summary>
+        /// <param name="text">A modified UTF-7 encoding string, as defined in RFC 2060</param>
+        /// <returns>Returns a string that is encoded in ISO-8859-1 and consists of the same sequence of characters in text,
+        /// or FALSE if text contains invalid modified UTF-7 sequence or
+        /// text contains a character that is not part of ISO-8859-1 character set.</returns>
+        public static PhpString imap_utf7_decode(Context ctx, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return PhpString.Empty;
+
+            return new PhpString(Encoding.Convert(ctx.StringEncoding, ISO_8859_1, ctx.StringEncoding.GetBytes(TransformUTF7ModifiedToUTF8(ctx, text))));
+        }
+
+
+        #endregion
     }
 }
