@@ -1085,7 +1085,30 @@ namespace Pchp.Library
         {
             return UTF7ModifiedToUTF16LE(ctx, text);
         }
+        #endregion
 
+        #region base64
+
+        /// <summary>
+        /// Decodes the given BASE-64 encoded text.
+        /// </summary>
+        /// <param name="ctx">The context of script.</param>
+        /// <param name="text">The encoded text.</param>
+        /// <returns>Returns the decoded message as a string.</returns>
+        public static string imap_base64(Context ctx, string text)
+        {
+            try
+            {
+                
+                return Encoding.Unicode.GetString(Base64Utils.FromBase64(text.AsSpan(), true));
+            }
+            catch (FormatException)
+            {
+
+                return string.Empty;
+            }    
+        }
+        #endregion
 
         #endregion
     }
