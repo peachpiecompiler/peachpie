@@ -3,7 +3,8 @@
 
 // Arrange
 $str = '~peter&/mail/日本語/台北';
-$str_utf7modified = '~peter/mail/&ZeVnLIqe-/&U,BTFw-';
+//$str_utf7modified = '~peter/mail/&ZeVnLIqe-/&U,BTFw-';
+$str_utf7modified = '&ZeVnLIqe-';
 
 // Act
 $str_utf7_test = imap_utf7_encode($str);

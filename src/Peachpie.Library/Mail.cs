@@ -5,6 +5,8 @@ using System.IO;
 using System.Net;
 using System.Net.Mail;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -961,6 +963,105 @@ namespace Pchp.Library
             return StringBuilderUtilities.GetStringAndReturn(builder);
         }
 
+        /// <summary>
+        /// Converts UTF16LE encoding to UTF-7 modified(used in IMAP) see RFC 2060.
+        /// </summary>
+        private static PhpString UTF16LEToUTF7Modified(Context ctx, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return PhpString.Empty;
+
+            var builder = StringBuilderUtilities.Pool.Get();
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                // Chars from 0x20 to 0x7e are unchanged excepts "&" which is replaced by "&-".
+                if (text[i] >= 0x20 && text[i] <= 0x7e)
+                {
+                    if (text[i] == 0x26)
+                        builder.Append("&-");
+                    else
+                        builder.Append(text[i]);
+                }
+                else // Collects all bytes until Char from 0x20 to 0x7e is reached.
+                {
+                    int start = i;
+                    while (i < text.Length && (text[i] < 0x20 || text[i] > 0x7e))
+                        i++;
+
+                    byte[] utf16BE = ctx.StringEncoding.GetBytes(text.ToCharArray(), start, i - start); // Contradiction with RFC.
+                    // byte[] utf16BE = Encoding.BigEndianUnicode.GetBytes(text.ToCharArray(), start, i - start);
+                    string base64Modified = System.Convert.ToBase64String(utf16BE).Replace('/', ',').Trim('=');
+
+                    builder.Append("&" + base64Modified + "-");
+
+                    if (i < text.Length)
+                        i--;
+                }
+            }
+
+            return new PhpString(StringBuilderUtilities.GetStringAndReturn(builder),ctx);
+        }
+
+        /// <summary>
+        /// Converts UTF-7 modified(used in IMAP) see RFC 2060 encoding to UTF16LE.
+        /// </summary>
+        private static PhpString UTF7ModifiedToUTF16LE(Context ctx, PhpString text)
+        {
+            if (text.IsEmpty)
+                return string.Empty;
+
+            byte[] utf7Modified = text.ToBytes(ctx.StringEncoding);
+            var builder = StringBuilderUtilities.Pool.Get();
+
+            for (int i = 0; i < utf7Modified.Length; i++)
+            {
+                if (utf7Modified[i] == '&')
+                {
+                    if (i == utf7Modified.Length - 1)
+                        throw new Exception(); // Error
+
+                    if (utf7Modified[++i] == '-') // Means "&" char.
+                    {
+                        builder.Append("&");
+                    }
+                    else // Shifting
+                    {
+                        var sectionBuilder = StringBuilderUtilities.Pool.Get();
+                        while (i < utf7Modified.Length && utf7Modified[i] != '-')
+                            sectionBuilder.Append((char)utf7Modified[i++]);
+
+                        //int start = i;
+                        //while (i < utf7Modified.Length && utf7Modified[i] != '-')
+                        //    i++;
+                        //string base64Modified = utf7Modified.Substring(start, i - start);
+
+                        string base64Modified = StringBuilderUtilities.GetStringAndReturn(sectionBuilder);
+
+                        if ((base64Modified.Length % 4) != 0) // Adds padding
+                            base64Modified = base64Modified.PadRight(base64Modified.Length + 4 - (base64Modified.Length % 4),'=');
+
+                        base64Modified = base64Modified.Replace(',', '/'); // Replace ,
+
+                        //Decode Base64 and UTF16BE
+                        var a = System.Convert.FromBase64String(base64Modified);
+
+                        builder.Append(ctx.StringEncoding.GetString(System.Convert.FromBase64String(base64Modified)));
+                        //builder.Append(Encoding.BigEndianUnicode.GetString(System.Convert.FromBase64String(base64Modified)));
+                    }
+                }
+                else if (text[i] >= 0x20 && text[i] <= 0x7e)
+                {
+                    builder.Append(text[i]);
+                }
+                else
+                {
+                    throw new Exception(); // Error
+                }
+            }
+            var b = new PhpString(StringBuilderUtilities.GetStringAndReturn(builder),ctx);
+            return b;
+        }
 
         /// <summary>
         /// Converts ISO-8859-1 string to modified UTF-7 text.
@@ -968,12 +1069,9 @@ namespace Pchp.Library
         /// <param name="ctx">The context of script.</param>
         /// <param name="data">An ISO-8859-1 string.</param>
         /// <returns>Returns data encoded with the modified UTF-7 encoding as defined in RFC 2060</returns>
-        public static string imap_utf7_encode(Context ctx, PhpString data)
+        public static PhpString imap_utf7_encode(Context ctx, PhpString data)
         {
-            if (data.IsEmpty)
-                return string.Empty;
-
-            return TransformUTF8ToUTF7Modified(data.ToBytes(ctx));
+            return UTF16LEToUTF7Modified(ctx, data.ToString(ctx));
         }
 
         /// <summary>
@@ -983,12 +1081,9 @@ namespace Pchp.Library
         /// <returns>Returns a string that is encoded in ISO-8859-1 and consists of the same sequence of characters in text,
         /// or FALSE if text contains invalid modified UTF-7 sequence or
         /// text contains a character that is not part of ISO-8859-1 character set.</returns>
-        public static PhpString imap_utf7_decode(Context ctx, string text)
+        public static PhpString imap_utf7_decode(Context ctx, PhpString text)
         {
-            if (string.IsNullOrEmpty(text))
-                return PhpString.Empty;
-
-            return new PhpString(Encoding.Convert(ctx.StringEncoding, ISO_8859_1, ctx.StringEncoding.GetBytes(TransformUTF7ModifiedToUTF8(ctx, text))));
+            return UTF7ModifiedToUTF16LE(ctx, text);
         }
 
 
