@@ -470,7 +470,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="dataIsUrl">Whether data points to URL. Default is false.</param>
         /// <param name="ns">Namespace prefix or URI.</param>
         /// <param name="is_prefix">TRUE if ns is a prefix, FALSE if it's a URI; defaults to FALSE.</param>
-        public SimpleXMLElement(Context ctx, string data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false)
+        public SimpleXMLElement(Context ctx, PhpString data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false)
             : this(ctx)
         {
             __construct(data, options, dataIsUrl, ns, is_prefix);
@@ -507,27 +507,59 @@ namespace Peachpie.Library.XmlDom
             this.XmlAttribute = xmlAttribute;
         }
 
-        public void __construct(string data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false)
+        public void __construct(PhpString data, int options = 0, bool dataIsUrl = false, string ns = "", bool is_prefix = false)
         {
+            // TODO: Merge Load with DOMDocument.loadXMLInternal()
+
             var doc = PhpXmlDocument.Create();
+            PhpStream phpstream = null;
+            XmlReader reader = null;
 
             try
             {
+                var settings = new XmlReaderSettings()
+                {
+                    DtdProcessing = DtdProcessing.Parse,
+                    //CloseInput = true,
+                };
+
                 if (dataIsUrl)
                 {
-                    using (var stream = PhpStream.Open(_ctx, data, StreamOpenMode.ReadText))
+                    if ((phpstream = PhpStream.Open(_ctx, data.ToString(_ctx), StreamOpenMode.ReadText)) != null)
                     {
-                        if (stream != null) doc.Load(stream.RawStream);
+                        reader = XmlReader.Create(phpstream.RawStream, settings);
                     }
                 }
                 else
                 {
-                    doc.LoadXml(data);
+                    if (data.ContainsBinaryData)
+                    {
+                        reader = XmlReader.Create(
+                            new MemoryStream(data.ToBytes(_ctx)),
+                            settings);
+                    }
+                    else
+                    {
+                        reader = XmlReader.Create(
+                            new StringReader(data.ToString(Encoding.UTF8/*not used, string is already encoded*/)),
+                            settings);
+                    }
+                }
+
+                //
+                if (reader != null)
+                {
+                    doc.Load(reader);
                 }
             }
             catch (XmlException e)
             {
                 PhpException.Throw(PhpError.Warning, e.Message);
+            }
+            finally
+            {
+                reader?.Dispose();
+                phpstream?.Dispose();
             }
 
             if (doc.DocumentElement == null)
