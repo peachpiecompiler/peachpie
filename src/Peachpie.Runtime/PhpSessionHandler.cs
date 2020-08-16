@@ -172,13 +172,13 @@ namespace Pchp.Core
             //
             try
             {
-                if (!abandon)
+                if (abandon)
                 {
-                    Persist(webctx, ctx.Session ?? PhpArray.Empty);
+                    Abandon(webctx);
                 }
                 else
                 {
-                    Abandon(webctx);
+                    Persist(webctx, ctx.Session ?? PhpArray.Empty);
                 }
             }
             finally
