@@ -61,8 +61,11 @@ namespace Peachpie.Library.XmlDom
 
         void IDisposable.Dispose()
         {
-            _writer?.Dispose();
-            _writer = null;
+            if (_writer != null)
+            {
+                _writer.Dispose();
+                _writer = null;
+            }
         }
 
         #region Methods
