@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -27,7 +26,13 @@ namespace Peachpie.AspNetCore.Web.Session
         /// <summary>
         /// Gets the session name.
         /// </summary>
-        public override string GetSessionName(IHttpPhpContext webctx) => SessionDefaults.CookieName;
+        public override string GetSessionName(IHttpPhpContext webctx)
+        {
+            // TODO: SessionOptions.CookieName
+            // var config = ((Context)webctx).GetService<IConfigureOptions<Microsoft.AspNetCore.Builder.SessionOptions>>();
+            
+            return SessionDefaults.CookieName;
+        }
 
         /// <summary>
         /// Sets the session name.
@@ -163,7 +168,9 @@ namespace Peachpie.AspNetCore.Web.Session
             }
 
             //
-            isession.CommitAsync();
+            isession.CommitAsync()
+                .GetAwaiter()
+                .GetResult();
 
             //
             return true;
