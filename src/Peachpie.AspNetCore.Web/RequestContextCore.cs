@@ -469,29 +469,33 @@ namespace Peachpie.AspNetCore.Web
 
         protected override PhpArray InitGetVariable()
         {
-            var result = PhpArray.NewEmpty();
-
-            if (_httpctx.Request.Method == "GET" && _httpctx.Request.HasFormContentType)
+            var query = _httpctx.Request.Query;
+            if (query.Count != 0)
             {
-                AddVariables(result, _httpctx.Request.Form);
+                var result = new PhpArray(query.Count);
+                AddVariables(result, query);
+                return result;
             }
-
-            AddVariables(result, _httpctx.Request.Query);
-
-            //
-            return result;
+            else
+            {
+                return PhpArray.NewEmpty();
+            }
         }
 
         protected override PhpArray InitPostVariable()
         {
-            var result = PhpArray.NewEmpty();
-
-            if (_httpctx.Request.Method == "POST" && _httpctx.Request.HasFormContentType)
+            if (_httpctx.Request.HasFormContentType)
             {
-                AddVariables(result, _httpctx.Request.Form);
+                var form = _httpctx.Request.Form;
+                if (form.Count != 0)
+                {
+                    var result = new PhpArray(form.Count);
+                    AddVariables(result, form);
+                    return result;
+                }
             }
 
-            return result;
+            return PhpArray.NewEmpty();
         }
 
         protected override PhpArray InitFilesVariable()
