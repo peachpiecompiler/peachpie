@@ -470,10 +470,20 @@ namespace Peachpie.AspNetCore.Web
         protected override PhpArray InitGetVariable()
         {
             var query = _httpctx.Request.Query;
-            if (query.Count != 0)
+            var form = (_httpctx.Request.Method == HttpMethods.Get && _httpctx.Request.HasFormContentType) ? _httpctx.Request.Form : null;
+
+            if (query.Count != 0 || form != null)
             {
                 var result = new PhpArray(query.Count);
+
+                if (form != null && form.Count != 0)
+                {
+                    // variables passed through GET request using multipart/form-data
+                    AddVariables(result, form);
+                }
+
                 AddVariables(result, query);
+
                 return result;
             }
             else

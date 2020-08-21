@@ -506,9 +506,18 @@ namespace Peachpie.RequestHandler
         protected override PhpArray InitGetVariable()
         {
             var query = _httpctx.Request.QueryString;
-            if (query.Count != 0)
+            var form = _httpctx.Request.RequestType == WebRequestMethods.Http.Get ? _httpctx.Request.Form : null;
+
+            if (query.Count != 0 || form != null)
             {
                 var result = new PhpArray(query.Count);
+
+                if (form != null && form.Count != 0)
+                {
+                    // variables passed through GET request using multipart/form-data
+                    AddVariables(result, form);
+                }
+
                 AddVariables(result, query);
                 return result;
             }
