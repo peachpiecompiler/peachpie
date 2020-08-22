@@ -479,6 +479,11 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ConstantUse) return BindConstUse((AST.ConstantUse)expr).WithAccess(access);
             if (expr is AST.VarLikeConstructUse)
             {
+                if (((AST.VarLikeConstructUse)expr).IsNullSafeObjectOperation)
+                {
+                    Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_NotYetImplemented, $"null-safe object operator");
+                }
+
                 if (expr is AST.SimpleVarUse) return BindSimpleVarUse((AST.SimpleVarUse)expr, access);
                 if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr).WithAccess(access);
                 if (expr is AST.NewEx) return BindNew((AST.NewEx)expr, access);
@@ -504,6 +509,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.YieldEx) return BindYieldEx((AST.YieldEx)expr, access).WithAccess(access);
             if (expr is AST.YieldFromEx) return BindYieldFromEx((AST.YieldFromEx)expr, access).WithAccess(access);
             if (expr is AST.ShellEx) return BindShellEx((AST.ShellEx)expr).WithAccess(access);
+            // if (expr is AST.MatchEx) ...
+            // if (expr is AST.MatchArm) ...
 
             //
             Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
