@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         public SynthesizedManager SynthesizedManager { get; }
 
-        Cci.ICustomAttribute _debuggableAttribute, _phpextensionAttribute, _targetphpversionAttribute, _assemblyinformationalversionAttribute;
+        Cci.ICustomAttribute _debuggableAttribute, _targetFrameworkAttribute, _phpextensionAttribute, _targetphpversionAttribute, _assemblyinformationalversionAttribute;
 
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
         readonly ConcurrentDictionary<Symbol, object> _genericInstanceMap = new ConcurrentDictionary<Symbol, object>();
@@ -148,16 +148,19 @@ namespace Pchp.CodeAnalysis.Emit
 
                 yield return _debuggableAttribute;
             }
-            //if (targetfr == null)
-            //{
-            //    var TargetFrameworkType = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Runtime.Versioning.TargetFrameworkAttribute");
 
-            //    targetfr = new SynthesizedAttributeData(TargetFrameworkType.Constructors[0],
-            //        ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ".NETPortable,Version=v4.5,Profile=Profile7")),
-            //        ImmutableArray.Create(new KeyValuePair<string, TypedConstant>("FrameworkDisplayName", new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ".NET Portable Subset"))));
-            //}
+            // [assembly: TargetFramework(".NETCoreApp,Version=v3.1", FrameworkDisplayName = "")]
+            if (_targetFrameworkAttribute == null)
+            {
+                var targetFrameworkType = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Runtime.Versioning.TargetFrameworkAttribute");
+                string targetFramework = _compilation.Options.TargetFramework;
 
-            //yield return targetfr;
+                _targetFrameworkAttribute = new SynthesizedAttributeData(targetFrameworkType.Constructors[0],
+                    ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, targetFramework)),
+                    ImmutableArray.Create(new KeyValuePair<string, TypedConstant>("FrameworkDisplayName", new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ""))));
+            }
+
+            yield return _targetFrameworkAttribute;
 
             // [assembly: PhpExtension(new string[0])]
             if (_phpextensionAttribute == null)

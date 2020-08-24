@@ -246,7 +246,7 @@
                OutputPath="$(TempOutputDir)%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)"
                OutputName="%(IntermediateAssembly.Filename)"
                TempOutputPath="$(TempOutputDir)"
-               TargetFramework="$(TargetFramework)"
+               TargetFramework="$(TargetFrameworkMoniker)"
                NetFrameworkPath="$(NetFrameworkPath)"
                Optimization="$(Optimize)"
                DebugType="$(DebugType)"
