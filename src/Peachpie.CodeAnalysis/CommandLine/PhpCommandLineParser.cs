@@ -165,6 +165,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             string outputDirectory = baseDirectory;
             string subDirectory = null;
+            string targetFramework = null;
             string outputFileName = null;
             string documentationPath = null;
             string moduleName = null;
@@ -560,6 +561,17 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         continue;
 
+                    case "target-framework":
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
+                        }
+                        else
+                        {
+                            targetFramework = value;
+                        }
+                        continue;
+
                     case "xmldoc":
                     case "doc":
                         documentationPath = value ?? string.Empty;
@@ -808,6 +820,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 baseDirectory: baseDirectory,
                 sdkDirectory: sdkDirectoryOpt,
                 subDirectory: subDirectory,
+                targetFramework: targetFramework,
                 moduleName: moduleName,
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
