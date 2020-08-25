@@ -135,6 +135,13 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         bool EnableAssertExpression => Routine != null && Routine.DeclaringCompilation.Options.DebugPlusMode;
 
+        int _tmpVariableIndex = 0;
+
+        protected string NextTempVariableName()
+        {
+            return "<sm>" + _tmpVariableIndex++;
+        }
+
         #region Construction
 
         /// <summary>
@@ -509,8 +516,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.YieldEx) return BindYieldEx((AST.YieldEx)expr, access).WithAccess(access);
             if (expr is AST.YieldFromEx) return BindYieldFromEx((AST.YieldFromEx)expr, access).WithAccess(access);
             if (expr is AST.ShellEx) return BindShellEx((AST.ShellEx)expr).WithAccess(access);
-            // if (expr is AST.MatchEx) ...
-            // if (expr is AST.MatchArm) ...
+            if (expr is AST.MatchEx) return BindMatchEx((AST.MatchEx)expr, access);
 
             //
             Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
@@ -857,6 +863,69 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return type;
+        }
+
+        protected BoundExpression BindMatchEx(AST.MatchEx expr, BoundAccess access)
+        {
+            Debug.Assert(access.IsRead || access.IsNone);
+            //if (!access.IsRead || access.IsReadRef && !access.IsNone)
+            //{
+            //    // TODO: Diagnostics.Add(GetLocation(expr), "match can only be read");
+            //}
+
+            // Template: match (A) { B => C, D => E, }
+            // ($tmp = A) === B ? C : $tmp === D ? E : throw new UnhandledMatchError
+
+            AST.Expression BindArm(AST.Expression value, AST.MatchArm[] arms)
+            {
+                AST.Expression BindArm(AST.Expression value, AST.MatchArm arm, AST.Expression falseExpr)
+                {
+                    // value === arm.Condition ? arm.Expression : falseExpr
+
+                    AST.Expression condition = null;
+
+                    for (int i = 0; i < arm.ConditionList.Length; i++)
+                    {
+                        // value === condition[i]
+                        var cond = new AST.BinaryEx(arm.ConditionList[i].Span, AST.Operations.Identical, value, arm.ConditionList[i]) { ContainingElement = arm };
+
+                        condition = condition == null
+                            ? cond
+                            : new AST.BinaryEx(Span.Invalid, AST.Operations.Or, condition, cond) { ContainingElement = arm };
+                    }
+
+                    if (condition == null)
+                    {
+                        return arm.Expression;
+                    }
+                    else
+                    {
+                        return new AST.ConditionalEx(condition, arm.Expression, falseExpr) { ContainingElement = arm };
+                    }
+                }
+
+                var tmpname = NextTempVariableName();
+
+                // Template: $tmp = A
+                var tmpvar = new AST.DirectVarUse(value.Span, tmpname) { ContainingElement = value };
+                var assignment = new AST.ValueAssignEx(value.Span, AST.Operations.AssignValue, tmpvar, value) { ContainingElement = value };
+
+                // Template: throw new UnhandledMatchError                 
+                AST.Expression result = new AST.ThrowEx(value.Span,
+                    new AST.NewEx(value.Span,
+                        new AST.ClassTypeRef(Span.Invalid, NameUtils.SpecialNames.UnhandledMatchError),
+                        Array.Empty<AST.ActualParam>(), Span.Invalid));
+
+                for (int i = arms.Length - 1; i >= 0; i--)
+                {
+                    result = BindArm(i == 0 ? (AST.Expression)assignment : tmpvar, arms[i], result);
+                }
+
+                return result;
+            }
+
+            //
+            return BindExpression(BindArm(expr.MatchValue, expr.MatchItems), access);
         }
 
         protected virtual BoundExpression BindConditionalEx(AST.ConditionalEx expr, BoundAccess access)
@@ -1347,7 +1416,6 @@ namespace Pchp.CodeAnalysis.Semantics
         readonly List<BoundYieldStatement> _yields = new List<BoundYieldStatement>();
 
         readonly HashSet<AST.LangElement> _yieldsToStatementRootPath = new HashSet<AST.LangElement>();
-        int _rewriterVariableIndex = 0;
         int _underYieldLikeExLevel = -1;
 
         #endregion
@@ -1375,11 +1443,6 @@ namespace Pchp.CodeAnalysis.Semantics
             _yields.Add(yieldStmt);
 
             return yieldStmt;
-        }
-
-        string GetTempVariableName()
-        {
-            return "<sm>" + _rewriterVariableIndex++;
         }
 
         void InitPreBoundBlocks()
@@ -1643,7 +1706,7 @@ namespace Pchp.CodeAnalysis.Semantics
              * return <tmp>.getReturn()
              */
 
-            string valueVarName = GetTempVariableName();
+            string valueVarName = NextTempVariableName();
             string keyVarName = valueVarName + "k";
 
             var move = NewBlock();
@@ -1701,7 +1764,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // no need to do anything if the expression is constant because neither multiple evaluation nor different order of eval is a problem
             if (boundExpr.IsConstant()) { return boundExpr; }
 
-            var assignVarTouple = CreateAndAssignSynthesizedVariable(boundExpr, access, GetTempVariableName());
+            var assignVarTouple = CreateAndAssignSynthesizedVariable(boundExpr, access, NextTempVariableName());
 
             CurrentPreBoundBlock.Add(new BoundExpressionStatement(assignVarTouple.Assignment)); // assigment
             return assignVarTouple.BoundExpr; // temp variable ref
