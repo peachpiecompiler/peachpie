@@ -655,7 +655,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public virtual void EmitInit(CodeGenerator cg)
         {
-            if (VariableKind == VariableKind.LocalTemporalVariable && cg.TemporalLocalsPlace == null)
+            if (VariableKind == VariableKind.LocalTemporalVariable && cg.Routine != null && (cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == 0)
             {
                 // continue,
                 // create Place
