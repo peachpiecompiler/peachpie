@@ -184,4 +184,16 @@ namespace Pchp.Library.Spl
         {
         }
     }
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    public class UnhandledMatchError : Error
+    {
+        [PhpFieldsOnlyCtor]
+        protected UnhandledMatchError() : base() { }
+
+        public UnhandledMatchError(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
 }
