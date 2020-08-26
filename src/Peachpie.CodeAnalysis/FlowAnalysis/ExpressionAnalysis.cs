@@ -516,7 +516,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // bind variable place
             if (x.Variable == null)
             {
-                x.Variable = (x is BoundTemporalVariableRef)     // synthesized variable constructed by semantic binder
+                x.Variable = x.IsLowerTemp()     // synthesized variable constructed by semantic binder
                     ? Routine.LocalsTable.BindTemporalVariable(local.Name)
                     : Routine.LocalsTable.BindLocalVariable(local.Name, x.PhpSyntax.Span.ToTextSpan());
             }

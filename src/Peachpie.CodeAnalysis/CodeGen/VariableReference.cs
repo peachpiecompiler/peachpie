@@ -623,6 +623,24 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual IPlace Place { get; protected set; }
 
+        protected SynthesizedLocalKind SynthesizedLocalKind
+        {
+            get
+            {
+                if (Symbol is SynthesizedLocalSymbol)
+                {
+                    return SynthesizedLocalKind.EmitterTemp;
+                }
+
+                if (VariableKind == VariableKind.LocalTemporalVariable)
+                {
+                    return SynthesizedLocalKind.LoweringTemp ;
+                }
+
+                return SynthesizedLocalKind.UserDefined;
+            }
+        }
+
         public LocalVariableReference(VariableKind kind, SourceRoutineSymbol routine, Symbol symbol, BoundVariableName name)
         {
             this.VariableKind = kind;
@@ -637,7 +655,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public virtual void EmitInit(CodeGenerator cg)
         {
-            if (IsOptimized == false || cg.InitializedLocals)
+            if (VariableKind == VariableKind.LocalTemporalVariable && cg.TemporalLocalsPlace == null)
+            {
+                // continue,
+                // create Place
+            }
+            else if (IsOptimized == false || cg.InitializedLocals)
             {
                 // do nothing,
                 // Place == null
@@ -650,26 +673,25 @@ namespace Pchp.CodeAnalysis.Semantics
             var il = cg.Builder;
             var def = il.LocalSlotManager.DeclareLocal(
                     (Cci.ITypeReference)Symbol.GetTypeOrReturnType(), Symbol as ILocalSymbolInternal,
-                    this.Name, SynthesizedLocalKind.UserDefined,
+                    this.Name, this.SynthesizedLocalKind,
                     LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
             il.AddLocalToScope(def);
 
             this.Place = new LocalPlace(def);
 
             //
-            if (Symbol is SynthesizedLocalSymbol)
+            if (this.SynthesizedLocalKind == SynthesizedLocalKind.UserDefined)
             {
-                return;
+
+                // Initialize local variable with void.
+                // This is mandatory since even assignments reads the target value to assign properly to PhpAlias.
+
+                // TODO: Once analysis tells us, the target cannot be alias, this step won't be necessary.
+
+                // TODO: only if the local will be used uninitialized
+
+                cg.EmitInitializePlace(Place);
             }
-
-            // Initialize local variable with void.
-            // This is mandatory since even assignments reads the target value to assign properly to PhpAlias.
-
-            // TODO: Once analysis tells us, the target cannot be alias, this step won't be necessary.
-
-            // TODO: only if the local will be used uninitialized
-
-            cg.EmitInitializePlace(Place);
         }
 
         TypeSymbol LoadVariablesArray(CodeGenerator cg)

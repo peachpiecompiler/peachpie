@@ -137,10 +137,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         int _tmpVariableIndex = 0;
 
-        protected string NextTempVariableName()
-        {
-            return "<sm>" + _tmpVariableIndex++;
-        }
+        protected string NextTempVariableName() => "<sm>'" + _tmpVariableIndex++;
+
+        protected string NextMatchVariableName() => "<match>'" + _tmpVariableIndex++;
 
         #region Construction
 
@@ -904,7 +903,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                 }
 
-                var tmpname = NextTempVariableName();
+                var tmpname = NextMatchVariableName();
 
                 // Template: $tmp = A
                 var tmpvar = new AST.DirectVarUse(value.Span, tmpname) { ContainingElement = value };
@@ -1107,10 +1106,14 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         // $this is read-only
                         if (access.IsEnsure)
+                        {
                             access = BoundAccess.Read;
+                        }
 
                         if (access.IsWrite || access.IsUnset)
+                        {
                             Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_CannotAssignToThis);
+                        }
 
                         // $this is only valid in global code and instance methods:
                         if (Routine != null && Routine.IsStatic && !Routine.IsGlobalScope && !(Routine is SourceLambdaSymbol lambda && lambda.UseThis))
@@ -1121,11 +1124,17 @@ namespace Pchp.CodeAnalysis.Semantics
                             // Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_ThisOutOfObjectContext);
                         }
                     }
+                    else if (varname.NameValue.Value.StartsWith("<match>'"))
+                    {
+                        return new BoundTemporalVariableRef(varname.NameValue).WithAccess(access);
+                    }
                 }
                 else
                 {
                     if (Routine != null)
+                    {
                         Routine.Flags |= RoutineFlags.HasIndirectVar;
+                    }
                 }
 
                 return new BoundVariableRef(varname).WithAccess(access);
