@@ -631,15 +631,17 @@ namespace Peachpie.Library.XmlDom
             PhpArray xpath = null,
             PhpArray ns_prefixes = null)
         {
-            System.Security.Cryptography.Xml.XmlDsigC14NTransform transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
+            var transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
             transform.LoadInput(XmlNode.GetXmlDocument());
-            System.IO.MemoryStream stream = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
+            var stream = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
+
             return new PhpString(stream.ToArray());
         }
 
         /// <summary>
         /// Canonicalize nodes to a file.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="uri">Path to write the output to.</param>
         /// <param name="exclusive">Enable exclusive parsing of only the nodes matched by
         /// the provided xpath or namespace prefixes.</param>
