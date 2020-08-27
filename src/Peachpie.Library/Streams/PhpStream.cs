@@ -118,7 +118,7 @@ namespace Pchp.Library.Streams
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="path">URI or filename of the resource to be opened</param>
         /// <param name="mode">File access mode</param>
-        /// <returns></returns>
+        /// <returns>The stream or <c>null</c> in case of error.</returns>
         public static PhpStream Open(Context ctx, string path, StreamOpenMode mode)
         {
             var modeStr = mode switch
@@ -127,7 +127,7 @@ namespace Pchp.Library.Streams
                 StreamOpenMode.WriteBinary => "wb",
                 StreamOpenMode.ReadText => "rt",
                 StreamOpenMode.WriteText => "wt",
-                _ => throw new ArgumentException(),
+                _ => throw new ArgumentException(nameof(mode)),
             };
 
             return Open(ctx, path, modeStr, StreamOpenOptions.Empty, StreamContext.Default);
