@@ -615,8 +615,6 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-        #region Not implemented
-
         /// <summary>
         /// Canonicalize nodes to a string.
         /// </summary>
@@ -650,15 +648,31 @@ namespace Peachpie.Library.XmlDom
         /// <param name="ns_prefixes">An array of namespace prefixes to filter the nodes by.</param>
         /// <returns>Number of bytes written or FALSE on failure </returns>
         [return: CastToFalse]
-        public int? C14NFile(
+        public long C14NFile(
+            Context ctx,
             string uri,
             bool exclusive = false,
             bool with_comments = false,
             PhpArray xpath = null,
             PhpArray ns_prefixes = null)
         {
-            throw new NotImplementedException();
+            using var stream = PhpStream.Open(ctx, uri, StreamOpenMode.WriteBinary);
+
+            if (stream != null)
+            {
+                var transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
+                transform.LoadInput(XmlNode.GetXmlDocument());
+                var output = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
+
+                output.CopyTo(stream.RawStream);
+
+                return output.Length;
+            }
+
+            return -1; // FALSE
         }
+
+        #region Not implemented
 
         /// <summary>
         /// Gets line number for where the node is defined. 
