@@ -46,24 +46,34 @@ namespace Pchp.Library
         /// <summary>
         /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
         /// </summary>
-        public static int ord(PhpString @string) => @string.Ord();
+        public static int ord(PhpString @string) => PhpStringExtension.Ord(@string);
 
         /// <summary>
         /// Converts ordinal number of character to a binary string containing that character.
         /// </summary>
         /// <param name="bytevalue ">The ASCII code.</param>
         /// <returns>The character with <paramref name="bytevalue "/> ASCII code.</returns>
-        public static PhpString chr(int bytevalue) => new PhpString(new byte[] { (byte)bytevalue });
+        public static PhpString chr(int bytevalue)
+        {
+            if (bytevalue < 0xf0)
+            {
+                return ((char)bytevalue).ToString();
+            }
+            else
+            {
+                return new PhpString(new byte[] { (byte)bytevalue });
+            }
+        }
 
         /// <summary>
         /// Converts ordinal number of Unicode character to a string containing that character.
         /// </summary>
-        /// <param name="charCode">The ordinal number of character.</param>
-        /// <returns>The character with <paramref name="charCode"/> ordinal number.</returns>
+        /// <param name="bytevalue">The ordinal number of character.</param>
+        /// <returns>The character with <paramref name="bytevalue"/> ordinal number.</returns>
         /*public*/
-        static string chr_unicode(int charCode)
+        static string chr_unicode(int bytevalue)
         {
-            return unchecked((char)charCode).ToString();
+            return unchecked((char)bytevalue).ToString();
         }
 
         /// <summary>
