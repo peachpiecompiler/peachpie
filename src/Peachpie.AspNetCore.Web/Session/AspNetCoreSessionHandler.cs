@@ -60,8 +60,15 @@ namespace Peachpie.AspNetCore.Web.Session
 
         public override void Abandon(IHttpPhpContext webctx)
         {
-            // TODO: abandon asp.net core session
-            throw new NotImplementedException();
+            // abandon asp.net core session
+            var isession = GeHttpContext(webctx).Session;
+            if (isession != null)
+            {
+                isession.Clear();
+                isession.CommitAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            }
         }
 
         public override string GetSessionId(IHttpPhpContext webctx)
