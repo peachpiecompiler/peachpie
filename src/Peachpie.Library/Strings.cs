@@ -41,19 +41,19 @@ namespace Pchp.Library
         /// <summary>
         /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
         /// </summary>
-        public static int ord(string str) => string.IsNullOrEmpty(str) ? 0 : (int)str[0];
+        public static int ord(string @string) => string.IsNullOrEmpty(@string) ? 0 : (int)@string[0];
 
         /// <summary>
         /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
         /// </summary>
-        public static int ord(PhpString str) => str.Ord();
+        public static int ord(PhpString @string) => @string.Ord();
 
         /// <summary>
         /// Converts ordinal number of character to a binary string containing that character.
         /// </summary>
-        /// <param name="charCode">The ASCII code.</param>
-        /// <returns>The character with <paramref name="charCode"/> ASCII code.</returns>
-        public static PhpString chr(int charCode) => new PhpString(new byte[] { (byte)charCode });
+        /// <param name="bytevalue ">The ASCII code.</param>
+        /// <returns>The character with <paramref name="bytevalue "/> ASCII code.</returns>
+        public static PhpString chr(int bytevalue) => new PhpString(new byte[] { (byte)bytevalue });
 
         /// <summary>
         /// Converts ordinal number of Unicode character to a string containing that character.
