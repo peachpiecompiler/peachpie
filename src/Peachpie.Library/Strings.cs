@@ -38,10 +38,10 @@ namespace Pchp.Library
 
         #region ord, chr, bin2hex, hex2bin
 
-        /// <summary>
-        /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
-        /// </summary>
-        public static int ord(string @string) => string.IsNullOrEmpty(@string) ? 0 : (int)@string[0];
+        ///// <summary>
+        ///// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
+        ///// </summary>
+        //public static int ord(string @string) => string.IsNullOrEmpty(@string) ? 0 : (int)@string[0];
 
         /// <summary>
         /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
