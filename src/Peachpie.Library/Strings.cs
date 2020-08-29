@@ -79,14 +79,13 @@ namespace Pchp.Library
         /// <summary>
         /// Converts a string into hexadecimal representation.
         /// </summary>
-        /// <param name="ctx">Runtime context.</param>
         /// <param name="str">The string to be converted.</param>
         /// <returns>
         /// The concatenated two-characters long hexadecimal numbers each representing one character of <paramref name="str"/>.
         /// </returns>
-        public static string bin2hex(Context ctx, PhpString str)
+        public static string bin2hex(byte[] str)
         {
-            if (str.IsEmpty)
+            if (str == null || str.Length == 0)
             {
                 return string.Empty;
             }
@@ -109,25 +108,25 @@ namespace Pchp.Library
 
             //return result.ToString();
 
-            return StringUtils.BinToHex(str.ToBytes(ctx), null);
+            return StringUtils.BinToHex(str, null);
         }
 
         /// <summary>
         /// Decodes a hexadecimally encoded binary string.
         /// </summary>
-        public static PhpString hex2bin(string str)
+        public static PhpString hex2bin(string data)
         {
-            if ((str.Length % 2) != 0)
+            if ((data.Length % 2) != 0)
             {
                 throw new ArgumentException();
             }
 
-            var result = new byte[str.Length / 2];
+            var result = new byte[data.Length / 2];
 
-            for (int i = 0, b = 0; i < str.Length; i += 2)
+            for (int i = 0, b = 0; i < data.Length; i += 2)
             {
-                var x = StringUtils.HexToNumber(str[i]);
-                var y = StringUtils.HexToNumber(str[i + 1]);
+                var x = StringUtils.HexToNumber(data[i]);
+                var y = StringUtils.HexToNumber(data[i + 1]);
 
                 if ((x | y) < 0)
                 {
