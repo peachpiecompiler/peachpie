@@ -191,6 +191,7 @@ namespace Pchp.Library
         /// <summary>Gets the virtual working directory of the current script.</summary>
         /// <remarks></remarks>
         /// <returns>Absolute path to the current directory.</returns>
+        [return: NotNull]
         public static string getcwd(Context ctx)
         {
             return ctx.WorkingDirectory ?? string.Empty;
@@ -249,6 +250,7 @@ namespace Pchp.Library
         /// <param name="ctx">Runtime context.</param>
         /// <param name="directory">The path to open for listing.</param>
         /// <returns>An instance of <see cref="PHP.Library.Directory"/>.</returns>
+        [return: NotNull]
         public static Directory dir(Context ctx, string directory) => new Directory(ctx, directory);
 
         /// <summary>Returns a directory handle to be used in subsequent 
