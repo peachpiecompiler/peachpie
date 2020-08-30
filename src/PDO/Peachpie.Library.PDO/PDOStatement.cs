@@ -470,6 +470,7 @@ namespace Peachpie.Library.PDO
                     break;
 
                 default:
+                    var hasGroupFlag = (style & PDO_FETCH.FETCH_GROUP) != 0;
 
                     for (; ; )
                     {
@@ -477,7 +478,22 @@ namespace Peachpie.Library.PDO
                         if (value.IsFalse)
                             break;
 
-                        result.Add(value);
+                        // Handle FETCH_GROUP case 
+                        if (hasGroupFlag)
+                        {
+                            var row = value.ToArray();
+
+                            // We remove the first column and use it to group rows
+                            var firstCol = row.RemoveFirst().Value;
+
+                            if (!result.ContainsKey(firstCol))
+                                result.Add(firstCol, new PhpArray());
+
+                            result[firstCol].ToArray().Add(row);
+                        } else
+                        {
+                            result.Add(value);
+                        }
                     }
 
                     break;
