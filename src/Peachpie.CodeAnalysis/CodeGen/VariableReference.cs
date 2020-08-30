@@ -1429,12 +1429,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.EmitLoadConstant(Field.ConstantValue);
             }
 
-            VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);
+            lhs = VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);
 
-            if (access.IsQuiet && Receiver != null && cg.CanBeNull(Receiver.TypeRefMask))
+            if (access.IsQuiet && Receiver != null && (cg.CanBeNull(Receiver.TypeRefMask) || !cg.TypeRefContext.IsObjectOnly(Receiver.TypeRefMask)))
             {
                 // handle nullref in "quiet" mode (e.g. within empty() expression),
-                // emit something like C#'s "?." operator
+                // emit null-safe "?." operator
 
                 //  .dup ? .ldfld : default
 

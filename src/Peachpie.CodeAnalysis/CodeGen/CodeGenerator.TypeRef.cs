@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Gets value indicating the given type represents a long and nothing else.
+        /// Gets value indicating the given type represents a boolean and nothing else.
         /// </summary>
         internal bool IsBooleanOnly(TypeRefMask tmask)
         {
