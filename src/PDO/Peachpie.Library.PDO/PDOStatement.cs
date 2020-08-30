@@ -428,9 +428,10 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public virtual PhpArray fetchAll(PDO_FETCH fetch_style = default, PhpValue fetch_argument = default, PhpArray ctor_args = null)
         {
-            // check parameters
+            var style = fetch_style != PDO_FETCH.Default ? fetch_style : _default_fetch_type;
+            var flags = style & PDO_FETCH.Flags;
 
-            if (fetch_style == PDO_FETCH.FETCH_COLUMN)
+            if (style == PDO_FETCH.FETCH_COLUMN)
             {
                 if (fetch_argument.IsLong(out var l))
                 {
@@ -447,9 +448,6 @@ namespace Peachpie.Library.PDO
             {
                 setFetchMode(fetch_style, fetch_argument, ctor_args);
             }
-
-            var style = fetch_style != PDO_FETCH.Default ? fetch_style : _default_fetch_type;
-            var flags = style & PDO_FETCH.Flags;
 
             var result = new PhpArray();
 
