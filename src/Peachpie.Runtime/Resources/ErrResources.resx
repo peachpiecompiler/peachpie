@@ -718,7 +718,7 @@ Additional information:
     <value>Use of undefined constant {0} - assumed '{0}'</value>
   </data>
   <data name="object_used_as_array" xml:space="preserve">
-    <value>An object of type '{0}' used as an array</value>
+    <value>Cannot use object of type {0} as array</value>
   </data>
   <data name="string_used_as_array" xml:space="preserve">
     <value>A string used as an array</value>
