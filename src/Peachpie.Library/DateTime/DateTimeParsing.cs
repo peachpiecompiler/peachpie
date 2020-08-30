@@ -1826,6 +1826,11 @@ namespace Pchp.Library.DateTime
                 else AddError(ref errors, DateResources.trailing_data);
             }
 
+            if (fi < format.Length)
+            {
+                AddError(ref errors, DateResources.data_missing);
+            }
+
             //
 
             return time;
