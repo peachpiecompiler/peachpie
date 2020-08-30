@@ -7,7 +7,7 @@ Peachpie is continuously tested on build servers. Before any contribution it is 
 1. successfully compiled solution `./Peachpie.sln`
 2. local installation of latest `php` which is used by tests
 
-### Running tests on your favorite shell
+### Running tests on shell
 
 Test projects are maintained in `./src/tests` project directory. Each of the subdirectories contains a test project.
 
@@ -44,3 +44,15 @@ Test execution time: 4,6788 Seconds
 ### Running tests in Visual Studio
 
 After opening `./Peachpie.sln`, the test projects are placed within `Tests` solution folders. Build contained projects and use `Test Explorer` to run and debug test cases.
+
+## Configuration
+
+### PEACHPIE_TEST_PHP
+
+Environment variable `PEACHPIE_TEST_PHP` controls whether *ScriptTests* will compare the results of test cases with actual `php`. 
+
+Setting the variable to `0` will disable the feature.
+
+```
+SET PEACHPIE_TEST_PHP=0
+```
