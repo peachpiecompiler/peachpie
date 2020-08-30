@@ -28,8 +28,8 @@
 
   <ItemGroup>
     <!-- Make the PHP scripts appear in Visual Studio's Solution Explorer -->
-    <None Include="..\..\..\tests\**">
-      <Link>Scripts\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    <None Include="$(MSBuildThisFileDirectory)..\..\..\tests\**\*.php">
+      <Link>tests\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
 
