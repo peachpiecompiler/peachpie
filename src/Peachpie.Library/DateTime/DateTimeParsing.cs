@@ -1554,9 +1554,11 @@ namespace Pchp.Library.DateTime
         /// <returns>Parsed date information.</returns>
         public static DateInfo ParseFromFormat(string format, string str, out DateTimeErrors errors)
         {
-            if (format == null) throw new ArgumentNullException(nameof(format));
-            if (str == null) throw new ArgumentNullException(nameof(str));
+            // `null` is handled in the same way as empty string "" // https://github.com/peachpiecompiler/peachpie/issues/820
+            format ??= string.Empty;
+            str ??= string.Empty;
 
+            //
             errors = null;
 
             var time = new DateInfo();
