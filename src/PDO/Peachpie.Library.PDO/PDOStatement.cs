@@ -477,6 +477,8 @@ namespace Peachpie.Library.PDO
 
                 default:
                     var hasGroupFlag = (style & PDO_FETCH.FETCH_GROUP) != 0;
+                    var hasBothFlag = (style & PDO_FETCH.FETCH_BOTH) != 0
+                            || (style & ~PDO_FETCH.Flags) == PDO_FETCH.Default;
 
                     for (; ; )
                     {
@@ -491,6 +493,13 @@ namespace Peachpie.Library.PDO
 
                             // We remove the first column and use it to group rows
                             var firstCol = row.RemoveFirst().Value;
+
+                            // When values are set twice, we need to remove the numeric one which remains
+                            if (hasBothFlag)
+                            {
+                                row.RemoveKey((IntStringKey)0);
+                            }
+
                             row.ReindexIntegers(0);
 
                             if (!result.ContainsKey(firstCol))
