@@ -48,8 +48,9 @@ function test() {
     $stmt = $pdo->prepare("SELECT * FROM test");
     $stmt->execute();
     $stmt->setFetchMode(\PDO::FETCH_CLASS, $className, array(42));
-    print_r($stmt->fetchAll(\PDO::FETCH_CLASS, $className2));
-    
+    print_r($stmt->fetchAll(\PDO::FETCH_CLASS, $className2)); // should use $className2
+    $stmt->execute();
+    print_r($stmt->fetchAll()); // should use $className again
 }
 
 test();
