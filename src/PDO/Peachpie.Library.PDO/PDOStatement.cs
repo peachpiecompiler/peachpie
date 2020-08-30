@@ -446,7 +446,10 @@ namespace Peachpie.Library.PDO
 
             if ((style & PDO_FETCH.FETCH_CLASS) != 0 && !fetch_argument.IsEmpty)
             {
-                setFetchMode(fetch_style, fetch_argument, ctor_args);
+                if (!setFetchMode(fetch_style, fetch_argument, ctor_args))
+                {
+                    return null;
+                }
             }
 
             var result = new PhpArray();
