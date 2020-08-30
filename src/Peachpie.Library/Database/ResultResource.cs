@@ -362,8 +362,8 @@ namespace Pchp.Library.Database
                 {
                     var quoted = PhpValue.FromClr(oa[i]); //  Core.Utilities.StringUtils.AddDbSlashes(oa[i].ToString());
 
-                    if (intKeys) array[i] = quoted;
                     if (stringKeys) array[names[i]] = quoted;
+                    if (intKeys) array[i] = quoted;
                 }
 
                 return array;

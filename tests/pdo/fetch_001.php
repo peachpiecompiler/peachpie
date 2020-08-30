@@ -16,13 +16,47 @@ function test() {
 
     $pdo->exec("CREATE TABLE test (n INTEGER NULL, i INTEGER, r REAL, t TEXT, b BLOB)");
     $pdo->exec("INSERT INTO test VALUES (NULL, 42, 3.14, 'Lorem Ipsum', 'Dolor sit amet')");
-
+    $pdo->exec("INSERT INTO test VALUES (1, 74, 3.14, 'Foo', 'Bar')");
+    
+    echo "Test with fetch with assoc".PHP_EOL;
     $stmt = $pdo->prepare("SELECT * FROM test");
     $stmt->execute();
+    print_r($stmt->fetch(\PDO::FETCH_ASSOC));
 
-    foreach ($stmt->fetch(\PDO::FETCH_ASSOC) as $val) {
-        echo "{$val}:", gettype($val), PHP_EOL;
-    }
+    echo "Test with fetchAll with assoc".PHP_EOL;
+    $stmt = $pdo->prepare("SELECT * FROM test");
+    $stmt->execute();
+    print_r($stmt->fetchAll(\PDO::FETCH_ASSOC));
+    
+    echo "Test with fetch with num".PHP_EOL;
+    $stmt = $pdo->prepare("SELECT * FROM test");
+    $stmt->execute();
+    print_r($stmt->fetch(\PDO::FETCH_NUM));
+
+    echo "Test with fetchAll with num".PHP_EOL;
+    $stmt = $pdo->prepare("SELECT * FROM test");
+    $stmt->execute();
+    print_r($stmt->fetchAll(\PDO::FETCH_NUM));
+    
+    echo "Test with fetch with both".PHP_EOL;
+    $stmt = $pdo->prepare("SELECT * FROM test");
+    $stmt->execute();
+    print_r($stmt->fetch(\PDO::FETCH_BOTH));
+
+    echo "Test with fetchAll with both".PHP_EOL;
+    $stmt = $pdo->prepare("SELECT * FROM test");
+    $stmt->execute();
+    print_r($stmt->fetchAll(\PDO::FETCH_BOTH));
+    
+    echo "Test with fetch with both (default)".PHP_EOL;
+    $stmt = $pdo->prepare("SELECT * FROM test");
+    $stmt->execute();
+    print_r($stmt->fetch());
+
+    echo "Test with fetchAll with both (default)".PHP_EOL;
+    $stmt = $pdo->prepare("SELECT * FROM test");
+    $stmt->execute();
+    print_r($stmt->fetchAll());
 }
 
 test();
