@@ -76,9 +76,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool CanBeNull(TypeRefMask tmask)
         {
-            return tmask.IsAnyType || tmask.IsRef || tmask.IsUninitialized 
-                || this.TypeRefContext.IsNull(tmask)
-                || this.TypeRefContext.IsBoolean(tmask);    // TODO: other scalar types (string, number)
+            return tmask.IsAnyType  // mixed
+                || tmask.IsRef      // &
+                || tmask.IsUninitialized    // void (???)
+                || this.TypeRefContext.IsNull(tmask); // type analysis determined there might be NULL
         }
 
         /// <summary>

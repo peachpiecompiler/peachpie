@@ -5022,20 +5022,32 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            var il = cg.Builder;
             var t = cg.Emit(this.Operand);
 
             // resolve IsEmpty() operator
             var op = cg.Conversions.ResolveOperator(t, false, new[] { "IsEmpty" }, new[] { cg.CoreTypes.Operators.Symbol }, target: cg.CoreTypes.Boolean);
             if (op != null)
             {
-                // TODO: instance method call and possibly NULL => check (VALUE == NULL) || ...
-
-                cg.EmitConversion(new CommonConversion(true, false, false, false, false, op), t, cg.CoreTypes.Boolean);
+                // {t} reference type and possibly NULL,
+                // emit null check:
+                if (t.IsReferenceType && cg.CanBeNull(this.Operand.TypeRefMask) && !op.IsStatic)
+                {
+                    // https://github.com/peachpiecompiler/peachpie/issues/816
+                    // Template: <STACK> != null ? IsEmpty(STACK) : FALSE
+                    cg.EmitNullCoalescing(
+                        notnullemitter: () => cg.EmitConversion(new CommonConversion(true, false, false, false, false, op), t, cg.CoreTypes.Boolean),
+                        nullemitter: () => cg.Builder.EmitBoolConstant(true)
+                    );
+                }
+                else
+                {
+                    // Template: IsEmpty(STACK)
+                    cg.EmitConversion(new CommonConversion(true, false, false, false, false, op), t, cg.CoreTypes.Boolean);
+                }
             }
             else
             {
-                var il = cg.Builder;
-
                 //
                 switch (t.SpecialType)
                 {
