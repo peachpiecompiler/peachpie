@@ -1429,7 +1429,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.EmitLoadConstant(Field.ConstantValue);
             }
 
-            lhs = VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);
+            VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);
 
             if (access.IsQuiet && Receiver != null && (cg.CanBeNull(Receiver.TypeRefMask) || !cg.TypeRefContext.IsObjectOnly(Receiver.TypeRefMask)))
             {
