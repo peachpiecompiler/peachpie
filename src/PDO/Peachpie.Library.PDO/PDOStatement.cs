@@ -443,6 +443,11 @@ namespace Peachpie.Library.PDO
                 }
             }
 
+            if (fetch_style.HasFlag(PDO_FETCH.FETCH_CLASS) && !fetch_argument.IsEmpty)
+            {
+                setFetchMode(fetch_style, fetch_argument, ctor_args);
+            }
+
             var style = fetch_style != PDO_FETCH.Default ? fetch_style : _default_fetch_type;
             var flags = style & PDO_FETCH.Flags;
 
