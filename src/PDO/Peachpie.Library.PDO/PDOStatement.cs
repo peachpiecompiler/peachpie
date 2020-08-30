@@ -485,6 +485,7 @@ namespace Peachpie.Library.PDO
 
                             // We remove the first column and use it to group rows
                             var firstCol = row.RemoveFirst().Value;
+                            row.ReindexIntegers(0);
 
                             if (!result.ContainsKey(firstCol))
                                 result.Add(firstCol, new PhpArray());

@@ -19,6 +19,16 @@ function test() {
     $stmt = $pdo->prepare("SELECT * FROM test");
     $stmt->execute();
     print_r($stmt->fetchAll(\PDO::FETCH_ASSOC | \PDO::FETCH_GROUP));
+    
+    echo "Test with Fetch with num&group".PHP_EOL;
+    $stmt = $pdo->prepare("SELECT * FROM test");
+    $stmt->execute();
+    print_r($stmt->fetch(\PDO::FETCH_NUM | \PDO::FETCH_GROUP));
+    
+    echo "Test with FetchAll with num&group".PHP_EOL;
+    $stmt = $pdo->prepare("SELECT * FROM test");
+    $stmt->execute();
+    print_r($stmt->fetchAll(\PDO::FETCH_NUM | \PDO::FETCH_GROUP));
 }
 
 test();
