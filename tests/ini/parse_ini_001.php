@@ -28,10 +28,13 @@ quoted="Hello World"
 quoted_with_apos = "it's a wonderful world"
 apostrophed = 'Hello World'
 apostrophed_with_quotes = 'Hello "world"'
-quoted_escaped = "it work's \"fine\"!"
 quoted_multiline = "line1
 line2
 line3"
+quoted_escaped = "it work's \\"fine\\"!"
+quoted_escaped_multiline = "it work's \\"fine\\" !
+this \\"way\\" it work's
+fine!"
 
 [SECTION_TEST_NUMBER]
 testnum=42

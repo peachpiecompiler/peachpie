@@ -311,6 +311,7 @@ namespace Pchp.Library
             internal const char Quote = '"';
             internal const char Apostrophe = '\'';
             internal const char Semicolon = ';';
+            internal const char Slash = '\\';
 
             internal const char Or = '|';
             internal const char And = '&';
@@ -836,16 +837,27 @@ namespace Pchp.Library
         private string QuotedValue(out bool moreLinesFollow)
         {
             char ch;
-            int start = linePos;
+            bool nextQuoteIsEscaped = false;
+            var sb = new StringBuilder();
 
             // reading next line of a multiline quoted string
             while ((ch = Consume()) != Tokens.EndOfLine)
             {
-                if (ch == currentQuoteChar)
+                if (ch == Tokens.Slash)
+                {
+                    // Next quote may be escaped
+                    nextQuoteIsEscaped = true;
+                }
+                else if (ch == currentQuoteChar && nextQuoteIsEscaped)
+                {
+                    // Quote is escaped, remove the escape char and continue
+                    sb.Length--;
+                    nextQuoteIsEscaped = false;
+                }
+                else if (ch == currentQuoteChar)
                 {
                     // right quote
                     moreLinesFollow = false;
-                    int end = linePos - 1;
 
                     ConsumeWhiteSpace();
                     if (LookAhead != Tokens.EndOfLine && LookAhead != Tokens.Semicolon)
@@ -853,13 +865,19 @@ namespace Pchp.Library
                         throw new ParseException(lineNumber);
                     }
 
-                    return line.Substring(start, end - start);
+                    return sb.ToString();
                 }
+                else
+                {
+                    nextQuoteIsEscaped = false;
+                }
+
+                sb.Append(ch);
             }
 
             // the string shall continue on the following line
             moreLinesFollow = true;
-            return (start == 0 ? line : line.Substring(start));
+            return sb.ToString();
         }
 
         /// <summary>
