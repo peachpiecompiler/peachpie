@@ -725,7 +725,9 @@ namespace Pchp.Library
                     }
                 }
 
-                currentQuoteChar = default;
+                // Reset quoted char if not multiline
+                if (!multiline)
+                    currentQuoteChar = default;
             }
 
             // check for an unterminated multi-line value
