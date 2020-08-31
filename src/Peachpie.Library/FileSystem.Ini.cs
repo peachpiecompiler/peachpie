@@ -48,7 +48,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_ini_string(Context ctx, string ini, bool processSections = false, ScannerMode scanner_mode = ScannerMode.Normal)
         {
-            if (!ValidateParseMode(scanner_mode))
+            if (!ValidateScannerMode(scanner_mode))
             {
                 return null; // FALSE
             }
@@ -100,7 +100,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_ini_file(Context ctx, string fileName, bool processSections = false, ScannerMode scanner_mode = ScannerMode.Normal)
         {
-            if (!ValidateParseMode(scanner_mode))
+            if (!ValidateScannerMode(scanner_mode))
             {
                 return null; // FALSE
             }
@@ -216,7 +216,14 @@ namespace Pchp.Library
             /// </summary>
             public void ProcessOption(IntStringKey key, string value)
             {
-                _currentSection[key] = (PhpValue)value;
+                if (key.IsString)
+                {
+                    NameValueCollectionUtils.AddVariable(_currentSection, key.String, value, rawname: true);
+                }
+                else
+                {
+                    _currentSection[key] = value;
+                }
             }
 
             /// <summary>
@@ -240,7 +247,7 @@ namespace Pchp.Library
     /// </remarks>
 	internal sealed class PhpIniParser
     {
-        public static bool ValidateParseMode(ScannerMode scanner_mode)
+        public static bool ValidateScannerMode(ScannerMode scanner_mode)
         {
             switch (scanner_mode)
             {
