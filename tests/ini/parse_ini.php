@@ -24,6 +24,11 @@ testwithcomments2=bar #test
 foo=also bar
 normal=Hello World
 quoted="Hello World"
+apostrophed = 'Hello World'
+quoted_escaped = "it work's \"fine\"!"
+quoted_multiline = "line1
+line2
+line3"
 
 [SECTION_TEST_NUMBER]
 testnum=42
