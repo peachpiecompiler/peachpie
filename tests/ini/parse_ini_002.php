@@ -1,6 +1,6 @@
 <?php
 
-namespace ini\parse_ini;
+namespace ini\parse_ini_002;
 
 function test() {
     $ini_content = <<<INI

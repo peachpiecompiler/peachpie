@@ -1,6 +1,6 @@
 <?php
 
-namespace ini\parse_ini;
+namespace ini\parse_ini_001;
 
 function test() {
     $ini_content = <<<INI
@@ -25,7 +25,9 @@ key with spaces=bar
 foo=also bar
 normal=Hello World
 quoted="Hello World"
+quoted_with_apos = "it's a wonderful world"
 apostrophed = 'Hello World'
+apostrophed_with_quotes = 'Hello "world"'
 quoted_escaped = "it work's \"fine\"!"
 quoted_multiline = "line1
 line2

@@ -309,6 +309,7 @@ namespace Pchp.Library
             internal const char BracketClose = ']';
             internal const char EqualS = '=';
             internal const char Quote = '"';
+            internal const char Apostrophe = '\'';
             internal const char Semicolon = ';';
 
             internal const char Or = '|';
@@ -448,6 +449,11 @@ namespace Pchp.Library
         /// <c>line[linePos]</c> denotes a lookahead symbol.
         /// </remarks>
         private int linePos;
+
+        /// <summary>
+        /// Current character used as quotes (either " or ')
+        /// </remarks>
+        private char currentQuoteChar;
 
         /// <summary>
         /// The current scanner mode (NORMAL, RAW...) to change the way option value are handled
@@ -718,6 +724,8 @@ namespace Pchp.Library
                         }
                     }
                 }
+
+                currentQuoteChar = default;
             }
 
             // check for an unterminated multi-line value
@@ -795,9 +803,10 @@ namespace Pchp.Library
 
             // this is the first line (just after the =)
             ConsumeWhiteSpace();
-            if (LookAhead == Tokens.Quote)
+            if (LookAhead == Tokens.Quote || LookAhead == Tokens.Apostrophe)
             {
                 // quoted string starts here
+                currentQuoteChar = LookAhead;
                 Consume();
                 return QuotedValue(out multiline);
             }
@@ -830,7 +839,7 @@ namespace Pchp.Library
             // reading next line of a multiline quoted string
             while ((ch = Consume()) != Tokens.EndOfLine)
             {
-                if (ch == Tokens.Quote)
+                if (ch == currentQuoteChar)
                 {
                     // right quote
                     moreLinesFollow = false;
@@ -944,7 +953,6 @@ namespace Pchp.Library
                             switch (la)
                             {
                                 case Tokens.EqualS:
-                                case Tokens.Quote:
                                 case Tokens.Or:
                                 case Tokens.And:
                                 case Tokens.Not:
@@ -953,12 +961,17 @@ namespace Pchp.Library
                                 case Tokens.ParClose:
                                 case Tokens.Semicolon:
                                 case Tokens.EndOfLine:
+                                //no case Tokens.Quote / Tokens.Apostrophe, use currentQuoteChar
                                     {
                                         return SubstringToValue(start, end - start);
                                     }
 
                                 default:
                                     {
+                                        // Handle currentQuoteChar
+                                        if (la == currentQuoteChar)
+                                            return SubstringToValue(start, end - start);
+
                                         Consume();
 
                                         // remember the last non-whitespace
