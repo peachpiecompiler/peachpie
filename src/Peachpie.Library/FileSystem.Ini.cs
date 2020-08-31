@@ -48,7 +48,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_ini_string(Context ctx, string ini, bool processSections = false, ScannerMode scanner_mode = ScannerMode.Normal)
         {
-            if (scanner_mode != (int)ScannerMode.Normal)  // TODO: handle value 1
+            if (scanner_mode != ScannerMode.Normal && scanner_mode != ScannerMode.Raw)
                 PhpException.ArgumentValueNotSupported("scanner_mode", scanner_mode);
 
             if (string.IsNullOrEmpty(ini))
@@ -59,7 +59,7 @@ namespace Pchp.Library
             try
             {
                 // parse the stream and let the builder build the resulting array
-                Parse(ctx, ini, builder);
+                Parse(ctx, ini, builder, scanner_mode);
             }
             catch (ParseException e)
             {
@@ -96,7 +96,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_ini_file(Context ctx, string fileName, bool processSections = false, ScannerMode scanner_mode = ScannerMode.Normal)
         {
-            if (scanner_mode != (int)ScannerMode.Normal)  // TODO: handle value 1
+            if (scanner_mode != ScannerMode.Normal && scanner_mode != ScannerMode.Raw)
                 PhpException.ArgumentValueNotSupported("scanner_mode", scanner_mode);
 
             // we're using binary mode because CR/LF stuff should be preserved for multiline values
@@ -108,7 +108,7 @@ namespace Pchp.Library
                 try
                 {
                     // parse the stream and let the builder build the resulting array
-                    Parse(ctx, stream, builder);
+                    Parse(ctx, stream, builder, scanner_mode);
                 }
                 catch (ParseException e)
                 {
@@ -237,10 +237,11 @@ namespace Pchp.Library
         /// <param name="ctx">Runtime context.</param>
         /// <param name="stream">A stream referring to the file to parse. Should be open in binary mode.</param>
         /// <param name="callbacks">Implementation of the parser callbacks invoked during parsing.</param>
+        /// <param name="scanner_mode">Scanner mode to use </param>
         /// <exception cref="ParseException">Parse error.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="callbacks"/> is a <B>null</B> reference.</exception>
         /// <exception cref="ArgumentException">Stream is was not opened as binary.</exception>
-        internal static void Parse(Context ctx, PhpStream stream, IParserCallbacks callbacks)
+        internal static void Parse(Context ctx, PhpStream stream, IParserCallbacks callbacks, ScannerMode scanner_mode)
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
@@ -249,18 +250,18 @@ namespace Pchp.Library
             if (callbacks == null)
                 throw new ArgumentNullException("callbacks");
 
-            PhpIniParser parser = new PhpIniParser(stream, callbacks);
+            PhpIniParser parser = new PhpIniParser(stream, callbacks, scanner_mode);
             parser.TopLevel(ctx);
         }
 
-        internal static void Parse(Context ctx, string ini, IParserCallbacks callbacks)
+        internal static void Parse(Context ctx, string ini, IParserCallbacks callbacks, ScannerMode scanner_mode)
         {
             if (ini == null)
                 throw new ArgumentNullException("ini");
             if (callbacks == null)
                 throw new ArgumentNullException("callbacks");
 
-            PhpIniParser parser = new PhpIniParser(ini, callbacks);
+            PhpIniParser parser = new PhpIniParser(ini, callbacks, scanner_mode);
             parser.TopLevel(ctx);
         }
 
@@ -448,6 +449,11 @@ namespace Pchp.Library
         /// </remarks>
         private int linePos;
 
+        /// <summary>
+        /// The current scanner mode (NORMAL, RAW...) to change the way option value are handled
+        /// </summary>
+        private readonly ScannerMode scanner_mode;
+
         #endregion
 
         #region Construction
@@ -457,10 +463,11 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="stream">The input stream. Should be open in binary mode.</param>
         /// <param name="callbacks">Implementation of the parser callbacks invoked during parsing.</param>
-        private PhpIniParser(PhpStream stream, IParserCallbacks callbacks)
+        private PhpIniParser(PhpStream stream, IParserCallbacks callbacks, ScannerMode scanner_mode)
         {
             this.lineGetter = new LineGetterStream(stream);
             this.callbacks = callbacks;
+            this.scanner_mode = scanner_mode;
         }
 
         /// <summary>
@@ -468,10 +475,11 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="text">The input INI file content.</param>
         /// <param name="callbacks">Implementation of the parser callbacks invoked during parsing.</param>
-        private PhpIniParser(string text, IParserCallbacks callbacks)
+        private PhpIniParser(string text, IParserCallbacks callbacks, ScannerMode scanner_mode)
         {
             this.lineGetter = new LineGetterString(text);
             this.callbacks = callbacks;
+            this.scanner_mode = scanner_mode;
         }
 
         #endregion
@@ -613,7 +621,8 @@ namespace Pchp.Library
         /// <param name="start">The start index of the substring (within the current <see cref="line"/>).</param>
         /// <param name="length">The length of the substring.</param>
         /// <returns>The value found at the position given by <paramref name="start"/> and <paramref name="length"/>.
-        /// This may be either a string or an integer (decimal numbers are decoded and constants are looked up).
+        /// <para>If scanner mode is Normal (default), this may be either a string or an integer (decimal numbers are decoded and constants are looked up).</para>
+        /// <para>If scanner mode is Raw, this is a string</para>
         /// </returns>
         private PhpValue SubstringToValue(int start, int length)
         {
@@ -793,8 +802,10 @@ namespace Pchp.Library
                 return QuotedValue(out multiline);
             }
 
-            // no quotes - let's parse an expression
-            var result = Expression().ToStringOrThrow(ctx);
+            // no quotes - let's get the value
+            var result = scanner_mode == ScannerMode.Raw
+                ? Raw()
+                : Expression().ToStringOrThrow(ctx);
 
             // must have reached end-of-line
             if (LookAhead != Tokens.EndOfLine && LookAhead != Tokens.Semicolon) throw new ParseException(lineNumber);
@@ -863,6 +874,27 @@ namespace Pchp.Library
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Parses an INI option raw value
+        /// </summary>
+        /// <returns>The string value</returns>
+        private string Raw()
+        {
+            int start = linePos, end = linePos;
+            while (LookAhead != Tokens.EndOfLine && LookAhead != Tokens.Semicolon)
+            {
+                char ch = Consume();
+
+                // Ignore ending whitespaces
+                if (!Char.IsWhiteSpace(ch))
+                {
+                    end = linePos;
+                }
+            }
+
+            return line.Substring(start, end - start);
         }
 
         /// <summary>
