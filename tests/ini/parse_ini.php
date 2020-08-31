@@ -19,6 +19,7 @@ testempty=
 testnull=null
 testwithcomments1=bar ;test
 testwithcomments2=bar #test
+key with spaces=bar
 
 [SECTION_TEST_STRING]
 foo=also bar
