@@ -641,9 +641,12 @@ namespace Pchp.Library
             // check for predefined "INI constants"
             switch (val.ToUpperInvariant())
             {
+                case "TRUE":
                 case "ON":
                 case "YES": return (PhpValue)"1";
 
+                case "NULL":
+                case "FALSE":
                 case "OFF":
                 case "NO":
                 case "NONE": return (PhpValue)String.Empty;

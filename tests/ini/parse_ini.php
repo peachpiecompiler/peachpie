@@ -13,6 +13,7 @@ foo=bar
 constant = PHP_CONST_DEFINED_PREVIOUSLY
 result = PHP_CONST_1 | PHP_CONST_2 | PHP_CONST_4
 testempty=   
+testnull=null
 testwithcomments1=bar ;test
 testwithcomments2=bar #test
 
@@ -25,6 +26,17 @@ quoted="Hello World"
 testnum=42
 testfloat1=+1.4E-3
 testfloat2=0.005
+
+[SECTION_TEST_TRUTHY]
+booltrue1=true
+booltrue2=on
+booltrue3=yes
+
+[SECTION_TEST_FALSY]
+boolfalse1=false
+boolfalse2=off
+boolfalse3=no
+boolfalse4=none
 
 INI;
 
