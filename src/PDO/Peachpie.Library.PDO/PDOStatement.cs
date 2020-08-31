@@ -988,7 +988,10 @@ namespace Peachpie.Library.PDO
                 var enumerator = input_parameters.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    bound_params[enumerator.CurrentKey] = new BoundParam { Type = PARAM.PARAM_STR, Variable = enumerator.CurrentValue.ToString(Context), };
+                    bound_params[enumerator.CurrentKey] =
+                        enumerator.CurrentValue.IsNull
+                            ? new BoundParam { Type = PARAM.PARAM_NULL }
+                            : new BoundParam { Type = PARAM.PARAM_STR, Variable = enumerator.CurrentValue.ToString(Context), };
                 }
             }
 
