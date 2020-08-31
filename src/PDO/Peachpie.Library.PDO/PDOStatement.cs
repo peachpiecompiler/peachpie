@@ -428,85 +428,68 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public virtual PhpArray fetchAll(PDO_FETCH fetch_style = default, PhpValue fetch_argument = default, PhpArray ctor_args = null)
         {
-            // Save internal value that could be overriden by setFetchMode
-            var initial_fetch_column = _fetch_column;
-            var initial_default_fetch_type = _default_fetch_type;
-            var initial_default_fetch_class = _default_fetch_class;
-            var initial_default_fetch_class_args = _default_fetch_class_args;
+            var style = fetch_style != PDO_FETCH.Default ? fetch_style : _default_fetch_type;
+            var flags = style & PDO_FETCH.Flags;
 
-            try
+            if (style == PDO_FETCH.FETCH_COLUMN)
             {
-                var style = fetch_style != PDO_FETCH.Default ? fetch_style : _default_fetch_type;
-                var flags = style & PDO_FETCH.Flags;
-
-                if (style == PDO_FETCH.FETCH_COLUMN)
+                if (fetch_argument.IsLong(out var l))
                 {
-                    if (fetch_argument.IsLong(out var l))
-                    {
-                        _fetch_column = (int)l;
-                    }
-                    else
-                    {
-                        HandleError("The fetch_argument must be an integer for FETCH_COLUMN.");
-                        return null;
-                    }
+                    _fetch_column = (int)l;
                 }
-
-                if ((style & PDO_FETCH.FETCH_CLASS) != 0 && !fetch_argument.IsEmpty)
+                else
                 {
-                    if (!setFetchMode(fetch_style, fetch_argument, ctor_args))
-                    {
-                        return null;
-                    }
+                    HandleError("The fetch_argument must be an integer for FETCH_COLUMN.");
+                    return null;
                 }
-
-                var result = new PhpArray();
-
-                switch (style)
-                {
-                    case PDO_FETCH.FETCH_KEY_PAIR:
-
-                        while (Result.TryReadRow(out var oa, out _))
-                        {
-                            // 1st col => 2nd col
-                            result[PhpValue.FromClr(oa[0]).ToIntStringKey()] = PhpValue.FromClr(oa[1]);
-                        }
-                        break;
-
-                    case PDO_FETCH.FETCH_UNIQUE:
-
-                        //Debug.Assert(m_dr.FieldCount >= 1);
-                        while (Result.TryReadRow(out var oa, out var names))
-                        {
-                            // 1st col => [ 2nd col, 3rd col, ... ]
-                            result[PhpValue.FromClr(oa[0]).ToIntStringKey()] = AsAssocArray(oa, names, 1);
-                        }
-                        break;
-
-                    default:
-
-                        for (; ; )
-                        {
-                            var value = fetch(style);
-                            if (value.IsFalse)
-                                break;
-
-                            result.Add(value);
-                        }
-
-                        break;
-                }
-
-                return result;
             }
-            finally
+
+            if ((style & PDO_FETCH.FETCH_CLASS) != 0 && !fetch_argument.IsEmpty)
             {
-                // Restore previous internal values
-                _fetch_column = initial_fetch_column;
-                _default_fetch_type = initial_default_fetch_type;
-                _default_fetch_class = initial_default_fetch_class;
-                _default_fetch_class_args = initial_default_fetch_class_args;
+                if (!setFetchMode(fetch_style, fetch_argument, ctor_args))
+                {
+                    return null;
+                }
             }
+
+            var result = new PhpArray();
+
+            switch (style)
+            {
+                case PDO_FETCH.FETCH_KEY_PAIR:
+
+                    while (Result.TryReadRow(out var oa, out _))
+                    {
+                        // 1st col => 2nd col
+                        result[PhpValue.FromClr(oa[0]).ToIntStringKey()] = PhpValue.FromClr(oa[1]);
+                    }
+                    break;
+
+                case PDO_FETCH.FETCH_UNIQUE:
+
+                    //Debug.Assert(m_dr.FieldCount >= 1);
+                    while (Result.TryReadRow(out var oa, out var names))
+                    {
+                        // 1st col => [ 2nd col, 3rd col, ... ]
+                        result[PhpValue.FromClr(oa[0]).ToIntStringKey()] = AsAssocArray(oa, names, 1);
+                    }
+                    break;
+
+                default:
+
+                    for (; ; )
+                    {
+                        var value = fetch(style);
+                        if (value.IsFalse)
+                            break;
+
+                        result.Add(value);
+                    }
+
+                    break;
+            }
+
+            return result;
         }
 
         /// <summary>
