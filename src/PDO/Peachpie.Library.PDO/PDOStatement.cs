@@ -505,9 +505,11 @@ namespace Peachpie.Library.PDO
             }
 
             // hasNumKeys: when FETCH_NUM or FETCH_BOTH
+            var fetch = style & ~PDO_FETCH.Flags;
             var hasNumKeys =
-                (style & ~PDO_FETCH.Flags) == PDO_FETCH.FETCH_NUM ||
-                (style & ~PDO_FETCH.Flags) == PDO_FETCH.FETCH_BOTH;
+                fetch == PDO_FETCH.FETCH_NUM ||
+                fetch == PDO_FETCH.FETCH_BOTH ||
+                fetch == PDO_FETCH.Default; // == FETCH_BOTH
 
             var grouped_result = new PhpArray();
             var resultenum = result.GetFastEnumerator();
