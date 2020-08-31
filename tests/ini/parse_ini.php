@@ -46,6 +46,11 @@ boolfalse2=off
 boolfalse3=no
 boolfalse4=none
 
+[SECTION_ARRAY]
+arr[] = a
+arr[] = b
+arr[] = c
+
 INI;
 
     define('PHP_CONST_DEFINED_PREVIOUSLY', 'FOOBAR'); 
