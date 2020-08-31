@@ -842,7 +842,7 @@ namespace Pchp.Library
             // prepends items:
             if (length < 0)
             {
-                while (remains-- > 0) result.Add(value);
+                while (remains-- > 0) result.Add(value.DeepCopy());
             }
 
             // inserts items from source array
@@ -860,7 +860,7 @@ namespace Pchp.Library
             // appends items:
             if (length > 0)
             {
-                while (remains-- > 0) result.Add(value);
+                while (remains-- > 0) result.Add(value.DeepCopy());
             }
 
             // the result is inplace deeply copied on return to PHP code:
