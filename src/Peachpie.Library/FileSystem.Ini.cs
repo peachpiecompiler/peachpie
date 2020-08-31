@@ -752,23 +752,15 @@ namespace Pchp.Library
         /// <returns>The option name (either a string or an integer).</returns>
         private IntStringKey? Key()
         {
-            int start = linePos, end = linePos, whitespace = start - 1;
+            int start = linePos, end = linePos;
             char ch;
             while ((ch = Consume()) != Tokens.EqualS)
             {
                 if (ch == Tokens.EndOfLine || ch == Tokens.Semicolon) return null;
 
-                // remember the last non-whitespace and whitespace
                 if (!Char.IsWhiteSpace(ch))
                 {
                     end = linePos;
-
-                    if (linePos == (whitespace + 1))  // new word starts, ignore the words before
-                        start = linePos - 1;
-                }
-                else
-                {
-                    whitespace = linePos;
                 }
             }
 
