@@ -476,9 +476,6 @@ namespace Peachpie.Library.PDO
                     break;
 
                 default:
-                    var hasGroupFlag = (style & PDO_FETCH.FETCH_GROUP) != 0;
-                    var hasBothFlag = (style & PDO_FETCH.FETCH_BOTH) != 0
-                            || (style & ~PDO_FETCH.Flags) == PDO_FETCH.Default;
 
                     for (; ; )
                     {
@@ -486,36 +483,48 @@ namespace Peachpie.Library.PDO
                         if (value.IsFalse)
                             break;
 
-                        // Handle FETCH_GROUP case 
-                        if (hasGroupFlag)
-                        {
-                            var row = value.ToArray();
-
-                            // We remove the first column and use it to group rows
-                            var firstCol = row.RemoveFirst().Value;
-
-                            // When values are set twice, we need to remove the numeric one which remains
-                            if (hasBothFlag)
-                            {
-                                row.RemoveKey((IntStringKey)0);
-                            }
-
-                            row.ReindexIntegers(0);
-
-                            if (!result.ContainsKey(firstCol))
-                                result.Add(firstCol, new PhpArray());
-
-                            result[firstCol].ToArray().Add(row);
-                        } else
-                        {
-                            result.Add(value);
-                        }
+                        result.Add(value);
                     }
 
                     break;
             }
 
-            return result;
+
+            // Handle FETCH_GROUP case 
+            if (flags == PDO_FETCH.FETCH_GROUP && !result.IsEmpty())
+            {
+                // hasNumKeys: when FETCH_NUM or FETCH_BOTH
+                var hasNumKeys = result[0].ToArray().ContainsKey((IntStringKey)0);
+
+                var groupedResult = new PhpArray();
+                foreach (var kp in result)
+                {
+                    var row = kp.Value.ToArray();
+
+                    // We remove the first column and use it to group rows
+                    var firstCol = row.RemoveFirst().Value;
+
+                    // For numeric keys
+                    // => Always remove the 0 key (FETCH_NUM: does nothing, FETCH_BOTH: remove remaining)
+                    // => Reindex starting from 0
+                    if (hasNumKeys)
+                    {
+                        row.RemoveKey((IntStringKey)0);
+                        row.ReindexIntegers(0);
+                    }
+
+                    if (!groupedResult.ContainsKey(firstCol))
+                        groupedResult.Add(firstCol, new PhpArray());
+
+                    groupedResult[firstCol].ToArray().Add(row);
+                }
+
+                return groupedResult;
+            } else
+            {
+                return result;
+            }
+
         }
 
         /// <summary>
