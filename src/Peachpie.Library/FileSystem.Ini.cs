@@ -1,6 +1,7 @@
 ﻿using Pchp.Core;
 using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
+using Pchp.Library.Resources;
 using Pchp.Library.Streams;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static Pchp.Library.PhpIniParser;
-using static Pchp.Library.Streams.PhpStreams;
 
 namespace Pchp.Library
 {
@@ -48,11 +48,15 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_ini_string(Context ctx, string ini, bool processSections = false, ScannerMode scanner_mode = ScannerMode.Normal)
         {
-            if (scanner_mode != ScannerMode.Normal && scanner_mode != ScannerMode.Raw)
-                PhpException.ArgumentValueNotSupported("scanner_mode", scanner_mode);
+            if (!ValidateParseMode(scanner_mode))
+            {
+                return null; // FALSE
+            }
 
             if (string.IsNullOrEmpty(ini))
-                return null;
+            {
+                return new PhpArray();
+            }
 
             var builder = new ArrayBuilder(ctx, processSections);
 
@@ -96,13 +100,18 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_ini_file(Context ctx, string fileName, bool processSections = false, ScannerMode scanner_mode = ScannerMode.Normal)
         {
-            if (scanner_mode != ScannerMode.Normal && scanner_mode != ScannerMode.Raw)
-                PhpException.ArgumentValueNotSupported("scanner_mode", scanner_mode);
+            if (!ValidateParseMode(scanner_mode))
+            {
+                return null; // FALSE
+            }
 
             // we're using binary mode because CR/LF stuff should be preserved for multiline values
             using (PhpStream stream = PhpStream.Open(ctx, fileName, "rb", StreamOpenOptions.ReportErrors, StreamContext.Default))
             {
-                if (stream == null) return null;//new PhpArray();
+                if (stream == null)
+                {
+                    return null;//new PhpArray();
+                }
 
                 ArrayBuilder builder = new ArrayBuilder(ctx, processSections);
                 try
@@ -231,6 +240,22 @@ namespace Pchp.Library
     /// </remarks>
 	internal sealed class PhpIniParser
     {
+        public static bool ValidateParseMode(ScannerMode scanner_mode)
+        {
+            switch (scanner_mode)
+            {
+                case ScannerMode.Normal:
+                case ScannerMode.Raw:
+                case ScannerMode.Typed:
+                    return true;
+
+                default:
+                    // Warning: Invalid scanner mode
+                    PhpException.Throw(PhpError.Warning, LibResources.invalid_scanner_mode);
+                    return false;
+            }
+        }
+
         /// <summary>
         /// Parses an INI-style configuration file.
         /// </summary>
@@ -333,14 +358,9 @@ namespace Pchp.Library
         internal class ParseException : Exception
         {
             /// <summary>
-            /// Number of the line where the parse error occured.
-            /// </summary>
-            int _lineNumber;
-
-            /// <summary>
             /// Returns the number of the line where the parse error occured.
             /// </summary>
-            public int LineNumber => _lineNumber;
+            public int LineNumber { get; }
 
             /// <summary>
             /// Creates a new <see cref="ParseException"/>.
@@ -348,7 +368,7 @@ namespace Pchp.Library
             /// <param name="lineNumber">Number of the line where the parse error occured.</param>
             public ParseException(int lineNumber)
             {
-                _lineNumber = lineNumber;
+                this.LineNumber = lineNumber;
             }
         }
 
@@ -470,11 +490,10 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="stream">The input stream. Should be open in binary mode.</param>
         /// <param name="callbacks">Implementation of the parser callbacks invoked during parsing.</param>
+        /// <param name="scanner_mode">Scanner mode.</param>
         private PhpIniParser(PhpStream stream, IParserCallbacks callbacks, ScannerMode scanner_mode)
+            : this(new LineGetterStream(stream), callbacks, scanner_mode)
         {
-            this.lineGetter = new LineGetterStream(stream);
-            this.callbacks = callbacks;
-            this.scanner_mode = scanner_mode;
         }
 
         /// <summary>
@@ -482,9 +501,15 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="text">The input INI file content.</param>
         /// <param name="callbacks">Implementation of the parser callbacks invoked during parsing.</param>
+        /// <param name="scanner_mode">Scanner mode.</param>
         private PhpIniParser(string text, IParserCallbacks callbacks, ScannerMode scanner_mode)
+            : this(new LineGetterString(text), callbacks, scanner_mode)
         {
-            this.lineGetter = new LineGetterString(text);
+        }
+
+        private PhpIniParser(LineGetter lineGetter, IParserCallbacks callbacks, ScannerMode scanner_mode)
+        {
+            this.lineGetter = lineGetter;
             this.callbacks = callbacks;
             this.scanner_mode = scanner_mode;
         }
@@ -656,16 +681,19 @@ namespace Pchp.Library
                 val.EqualsOrdinalIgnoreCase("on") ||
                 val.EqualsOrdinalIgnoreCase("yes"))
             {
-                return "1";
+                return scanner_mode == ScannerMode.Typed ? PhpValue.True : "1";
             }
 
-            if (val.EqualsOrdinalIgnoreCase("null") ||
-                val.EqualsOrdinalIgnoreCase("false") ||
+            if (val.EqualsOrdinalIgnoreCase("null"))
+            {
+                return scanner_mode == ScannerMode.Typed ? PhpValue.Null : string.Empty;
+            }
+            if (val.EqualsOrdinalIgnoreCase("false") ||
                 val.EqualsOrdinalIgnoreCase("off") ||
                 val.EqualsOrdinalIgnoreCase("no") ||
                 val.EqualsOrdinalIgnoreCase("none"))
             {
-                return string.Empty;
+                return scanner_mode == ScannerMode.Typed ? PhpValue.False : string.Empty;
             }
 
             return callbacks.GetConstantValue(val.ToString());
