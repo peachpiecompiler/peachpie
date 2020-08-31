@@ -36,7 +36,7 @@ namespace Pchp.Library
         public const int INI_SCANNER_TYPED = (int)ScannerMode.Typed;
 
         #region parse_ini_string
-        
+
         /// <summary>
         /// Parse a configuration string.
         /// </summary>
@@ -215,14 +215,7 @@ namespace Pchp.Library
             /// </summary>
             public PhpValue GetConstantValue(string name)
             {
-                if (_ctx.TryGetConstant(name, out PhpValue value))
-                {
-                    return value;
-                }
-                else
-                {
-                    return (PhpValue)name;
-                }
+                return _ctx.TryGetConstant(name, out var value) ? value : name;
             }
 
             #endregion
@@ -626,36 +619,40 @@ namespace Pchp.Library
         {
             Debug.Assert(start >= 0 && start <= line.Length && (start + length) <= line.Length);
 
-            if (length == 0) return (PhpValue)String.Empty;
+            if (length == 0)
+            {
+                return string.Empty;
+            }
 
             // check for decimal number
-            int pos = start;
-            long res = Core.Convert.SubstringToLongInteger(line, length, ref pos);
+            var pos = start;
+            var res = Core.Convert.SubstringToLongInteger(line, length, ref pos);
             if (pos == start + length)
             {
-                return (PhpValue)res;
+                return res;
             }
 
-            string val = line.Substring(start, length);
+            var val = line.AsSpan(start, length);
 
             // check for predefined "INI constants"
-            switch (val.ToUpperInvariant())
+
+            if (val.EqualsOrdinalIgnoreCase("true") ||
+                val.EqualsOrdinalIgnoreCase("on") ||
+                val.EqualsOrdinalIgnoreCase("yes"))
             {
-                case "TRUE":
-                case "ON":
-                case "YES": return (PhpValue)"1";
-
-                case "NULL":
-                case "FALSE":
-                case "OFF":
-                case "NO":
-                case "NONE": return (PhpValue)String.Empty;
-
-                default:
-                    {
-                        return callbacks.GetConstantValue(val);
-                    }
+                return "1";
             }
+
+            if (val.EqualsOrdinalIgnoreCase("null") ||
+                val.EqualsOrdinalIgnoreCase("false") ||
+                val.EqualsOrdinalIgnoreCase("off") ||
+                val.EqualsOrdinalIgnoreCase("no") ||
+                val.EqualsOrdinalIgnoreCase("none"))
+            {
+                return string.Empty;
+            }
+
+            return callbacks.GetConstantValue(val.ToString());
         }
 
         #endregion
