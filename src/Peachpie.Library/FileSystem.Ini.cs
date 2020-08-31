@@ -347,6 +347,7 @@ namespace Pchp.Library
 
             internal const char Or = '|';
             internal const char And = '&';
+            internal const char Xor = '^';
             internal const char Not = '!';
             internal const char Neg = '~';
             internal const char ParOpen = '(';
@@ -480,7 +481,7 @@ namespace Pchp.Library
 
         /// <summary>
         /// Current character used as quotes (either " or ')
-        /// </remarks>
+        /// </summary>
         private char currentQuoteChar;
 
         /// <summary>
@@ -674,7 +675,7 @@ namespace Pchp.Library
 
             // check for decimal number
             var pos = start;
-            var res = Core.Convert.SubstringToLongInteger(line, length, ref pos);
+            var res = Core.Convert.SubstringToLongInteger(line, length, ref pos); // TODO: to number (double as well)
             if (pos == start + length)
             {
                 return res;
@@ -925,16 +926,21 @@ namespace Pchp.Library
 
             while (LookAhead != Tokens.EndOfLine && LookAhead != Tokens.Semicolon && LookAhead != Tokens.ParClose)
             {
-                // expecting either & or |
-                char op = Consume();
-                if (op != Tokens.And && op != Tokens.Or) throw new ParseException(lineNumber);
+                // expecting either & or | or ^
+                var op = Consume();
 
                 // both operands must be converted to an integer
                 var lhs = result.ToLong();
                 var rhs = Literal().ToLong();
 
                 // perform the operation eagerly (like a stupid calculator)
-                result = (PhpValue)(op == Tokens.And ? (lhs & rhs) : (lhs | rhs));
+                result = op switch
+                {
+                    Tokens.And => lhs & rhs,
+                    Tokens.Or => lhs | rhs,
+                    Tokens.Xor => lhs ^ rhs,
+                    _ => throw new ParseException(lineNumber),
+                };
             }
 
             return result;
@@ -1010,6 +1016,7 @@ namespace Pchp.Library
                                 case Tokens.EqualS:
                                 case Tokens.Or:
                                 case Tokens.And:
+                                case Tokens.Xor:
                                 case Tokens.Not:
                                 case Tokens.Neg:
                                 case Tokens.ParOpen:
