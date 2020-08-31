@@ -491,40 +491,63 @@ namespace Peachpie.Library.PDO
 
 
             // Handle FETCH_GROUP case 
-            if (flags == PDO_FETCH.FETCH_GROUP && !result.IsEmpty())
+            if (flags == PDO_FETCH.FETCH_GROUP)
             {
-                // hasNumKeys: when FETCH_NUM or FETCH_BOTH
-                var hasNumKeys = result[0].ToArray().ContainsKey((IntStringKey)0);
+                result = GroupResult(result, style);
+            }
 
-                var groupedResult = new PhpArray();
-                foreach (var kp in result)
-                {
-                    var row = kp.Value.ToArray();
+            //
+            return result;
+        }
 
-                    // We remove the first column and use it to group rows
-                    var firstCol = row.RemoveFirst().Value;
-
-                    // For numeric keys
-                    // => Always remove the 0 key (FETCH_NUM: does nothing, FETCH_BOTH: remove remaining)
-                    // => Reindex starting from 0
-                    if (hasNumKeys)
-                    {
-                        row.RemoveKey((IntStringKey)0);
-                        row.ReindexIntegers(0);
-                    }
-
-                    if (!groupedResult.ContainsKey(firstCol))
-                        groupedResult.Add(firstCol, new PhpArray());
-
-                    groupedResult[firstCol].ToArray().Add(row);
-                }
-
-                return groupedResult;
-            } else
+        /// <summary>
+        /// Create result set grouped by the forst column according to <see cref="PDO.FETCH_GROUP"/>.
+        /// </summary>
+        private protected static PhpArray/*!!*/GroupResult(PhpArray result, PDO_FETCH style)
+        {
+            if (result.IsEmpty())
             {
                 return result;
             }
 
+            // hasNumKeys: when FETCH_NUM or FETCH_BOTH
+            var hasNumKeys =
+                (style & ~PDO_FETCH.Flags) == PDO_FETCH.FETCH_NUM ||
+                (style & ~PDO_FETCH.Flags) == PDO_FETCH.FETCH_BOTH;
+
+            var grouped_result = new PhpArray();
+            var resultenum = result.GetFastEnumerator();
+            while (resultenum.MoveNext())
+            {
+                var row = resultenum.CurrentValue.AsArray();
+                if (row == null) throw new InvalidOperationException(); // row is expected to be array, check flags before grouping results
+
+                // We remove the first column and use it to group rows
+                var firstCol = row.RemoveFirst().Value;
+
+                // For numeric keys
+                // => Always remove the 0 key (FETCH_NUM: does nothing, FETCH_BOTH: remove remaining)
+                // => Reindex starting from 0
+                if (hasNumKeys && row.Remove(0))
+                {
+                    row.ReindexIntegers(0);
+                }
+
+                PhpArray group;
+                if (grouped_result.TryGetValue(firstCol, out var existing))
+                {
+                    group = (PhpArray)existing.Object;
+                }
+                else
+                {
+                    grouped_result.Add(firstCol, group = new PhpArray());
+                }
+
+                group.Add(row);
+            }
+
+            //
+            return grouped_result;
         }
 
         /// <summary>
