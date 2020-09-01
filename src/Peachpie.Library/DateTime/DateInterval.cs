@@ -215,7 +215,6 @@ namespace Pchp.Library.DateTime
         private protected void Initialize(TimeSpan ts)
         {
             _span = ts.Duration(); // absolutize the range
-            days = (int)ts.TotalDays;
             invert = ts.Ticks < 0 ? 1 : 0;
         }
 
