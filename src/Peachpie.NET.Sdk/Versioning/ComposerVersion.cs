@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 
 namespace Peachpie.NET.Sdk.Versioning
@@ -23,6 +24,8 @@ namespace Peachpie.NET.Sdk.Versioning
             Build = build;
             Stability = null;
             PartsCount = parts;
+            StabilityFlags = ImmutableArray<string>.Empty;
+            Ref = null;
         }
 
         /// <summary></summary>
@@ -87,9 +90,19 @@ namespace Peachpie.NET.Sdk.Versioning
         public int Build { get; set; }
 
         /// <summary>
-        /// Stability flag.
+        /// Minimum stability flag.
         /// </summary>
         public string Stability { get; set; }
+
+        /// <summary>
+        /// Version reference.
+        /// </summary>
+        public string Ref { get; private set; }
+
+        /// <summary>
+        /// Explicit stability flags.
+        /// </summary>
+        public ImmutableArray<string> StabilityFlags { get; private set; }
 
         /// <summary>
         /// What parts of the version are specified.
@@ -114,7 +127,7 @@ namespace Peachpie.NET.Sdk.Versioning
         /// <summary>
         /// Gets value indicating the value is specified.
         /// </summary>
-        public bool HasValue => PartsCount != 0 || Stability != null;
+        public bool HasValue => PartsCount != 0 || Stability != null || !StabilityFlags.IsDefaultOrEmpty;
 
         /// <summary>
         /// Returns string representation of the version in format <c>0.0.0</c> or <c>*</c>, depending on <see cref="PartsCount"/>
@@ -147,6 +160,11 @@ namespace Peachpie.NET.Sdk.Versioning
         {
             value = value.Trim();
 
+            const char PRERELEASE_SEPARATOR = '-';
+            const char STABILITY_SEPARATOR = '@';
+            const char REF_SEPARATOR = '#';
+            const char ANY = '*';
+
             if (value.IsEmpty)
             {
                 version = default;
@@ -155,7 +173,7 @@ namespace Peachpie.NET.Sdk.Versioning
 
             var result = Any;
 
-            // A.B.C-<stable>
+            // A.B.C-<stable>@flag
 
             // [0-9]+|\*
             int ConsumeDigitsOrAsterisk(ReadOnlySpan<char> value, out int num)
@@ -177,7 +195,7 @@ namespace Peachpie.NET.Sdk.Versioning
 
                     return i;
                 }
-                else if (value[0] == '*' || value[0] == 'x')
+                else if (value[0] == ANY || value[0] == 'x') // NOTE: 'x' should not be handled here, versions with 'x' are actually tag names
                 {
                     num = Asterisk;
                     return 1;
@@ -186,6 +204,17 @@ namespace Peachpie.NET.Sdk.Versioning
                 {
                     return 0;
                 }
+            }
+
+            ReadOnlySpan<char> ConsumeWord(ReadOnlySpan<char> value, string separatorChars)
+            {
+                int i = 0; // consumed characters
+                while (i < value.Length && !char.IsWhiteSpace(value[i]) && separatorChars.IndexOf(value[i]) < 0)
+                {
+                    i++;
+                }
+
+                return value.Slice(0, i);
             }
 
             bool ConsumeDot(ReadOnlySpan<char> value)
@@ -232,16 +261,47 @@ namespace Peachpie.NET.Sdk.Versioning
                 }
             }
 
-            // -<stability>
-            if (value.Length != 0 && value[0] == '-')
+            while (value.Length != 0)
             {
-                int i = 1;
-                while (i < value.Length && !char.IsWhiteSpace(value[i])) i++;
+                ReadOnlySpan<char> word;
 
-                result.Stability = value.Slice(1, i - 1).ToString();
-                value = value.Slice(i);
+                switch (value[0])
+                {
+                    case PRERELEASE_SEPARATOR: // -
+                    case STABILITY_SEPARATOR: // @
+                    case REF_SEPARATOR: // #
+
+                        word = ConsumeWord(value.Slice(1), "@#");
+
+                        if (word.Length != 0)
+                        {
+                            switch (value[0])
+                            {
+                                case PRERELEASE_SEPARATOR:
+                                    result.Stability = word.ToString();
+                                    break;
+                                case STABILITY_SEPARATOR:
+                                    result.StabilityFlags = result.StabilityFlags.IsDefaultOrEmpty
+                                        ? ImmutableArray.Create(word.ToString())
+                                        : result.StabilityFlags.Add(word.ToString());
+                                    break;
+                                case REF_SEPARATOR:
+                                    result.Ref = word.ToString();
+                                    break;
+                            }
+                        }
+
+                        value = value.Slice(1 + word.Length);
+                        break;
+
+                    default:
+                        // TODO: tag
+                        word = ConsumeWord(value, "@#");
+                        value = value.Slice(word.Length);
+                        break;
+                }
             }
-
+            
             //
             version = result;
             return value.IsEmpty; // all consumed

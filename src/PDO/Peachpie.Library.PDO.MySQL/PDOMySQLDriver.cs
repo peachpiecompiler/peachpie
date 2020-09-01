@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using MySql.Data.MySqlClient;
-
+using MySqlConnector;
 using Pchp.Core;
 using Peachpie.Library.PDO.Utilities;
 
@@ -18,7 +17,7 @@ namespace Peachpie.Library.PDO.MySQL
         public override string Name => "mysql";
 
         /// <inheritDoc />
-        public override DbProviderFactory DbFactory => MySqlClientFactory.Instance;
+        public override DbProviderFactory DbFactory => MySqlConnectorFactory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)

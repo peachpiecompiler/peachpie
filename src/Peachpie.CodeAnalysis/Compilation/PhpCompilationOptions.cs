@@ -65,6 +65,12 @@ namespace Pchp.CodeAnalysis
         public string SdkDirectory { get; private set; }
 
         /// <summary>
+        /// What framework is the compiled assembly supposed to run on,
+        /// e.g. <c>.NETCoreApp,Version=v3.1</c>.
+        /// </summary>
+        public string TargetFramework { get; private set; }
+
+        /// <summary>
         /// Options for getting type information from correspodning PHPDoc comments.
         /// </summary>
         public PhpDocTypes PhpDocTypes { get; private set; }
@@ -136,6 +142,7 @@ namespace Pchp.CodeAnalysis
             string baseDirectory,
             string sdkDirectory,
             string subDirectory = null,
+            string targetFramework = null,
             bool reportSuppressedDiagnostics = false,
             string moduleName = null,
             string mainTypeName = null,
@@ -166,7 +173,7 @@ namespace Pchp.CodeAnalysis
             PhpParseOptions parseOptions = null,
             ImmutableDictionary<string, string> defines = default,
             bool referencesSupersedeLowerVersions = false)
-            : this(outputKind, baseDirectory, sdkDirectory, subDirectory,
+            : this(outputKind, baseDirectory, sdkDirectory, subDirectory, targetFramework,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    versionString,
                    optimizationLevel, checkOverflow,
@@ -197,6 +204,7 @@ namespace Pchp.CodeAnalysis
             string baseDirectory,
             string sdkDirectory,
             string subDirectory,
+            string targetFramework,
             bool reportSuppressedDiagnostics,
             string moduleName,
             string mainTypeName,
@@ -239,6 +247,7 @@ namespace Pchp.CodeAnalysis
             this.BaseDirectory = baseDirectory;
             this.SdkDirectory = sdkDirectory;
             this.SubDirectory = subDirectory;
+            this.TargetFramework = targetFramework;
             this.PhpDocTypes = phpdocTypes;
             this.EmbedSourceMetadata = embedSourceMetadata;
             this.ParseOptions = parseOptions;
@@ -253,6 +262,7 @@ namespace Pchp.CodeAnalysis
             baseDirectory: other.BaseDirectory,
             sdkDirectory: other.SdkDirectory,
             subDirectory: other.SubDirectory,
+            targetFramework: other.TargetFramework,
             moduleName: other.ModuleName,
             mainTypeName: other.MainTypeName,
             scriptClassName: other.ScriptClassName,

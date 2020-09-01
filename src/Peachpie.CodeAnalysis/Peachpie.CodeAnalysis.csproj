@@ -11,11 +11,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Devsense.Php.Parser" Version="1.11.3" />
+    <PackageReference Include="Devsense.Php.Parser" Version="$(ParserVersion)" />
     <PackageReference Include="Devsense.Php.Phar" Version="1.0.15" />
     <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.9.3" />
     <PackageReference Include="Peachpie.Library.RegularExpressions" Version="$(PeachpieLibraryRegularExpressionsVersion)" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
+    <PackageReference Include="System.Memory" Version="4.5.3" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.6.0" />
     <PackageReference Include="Peachpie.Compiler.Diagnostics" Version="1.0.10" Condition=" '$(Configuration)' == 'Release' " />
     

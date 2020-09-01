@@ -175,12 +175,25 @@ namespace Pchp.Library.DateTime
         //[return:CastToFalse]
         public static DateTime date_sub(DateTime @object, DateInterval interval) => @object.sub(interval);
 
-        internal static System_DateTime TimeFromInterface(DateTimeInterface dti)
+        internal static bool GetDateTimeFromInterface(DateTimeInterface dti, out System_DateTime datetime, out TimeZoneInfo timezone)
         {
-            if (dti is Library.DateTime.DateTime dt) return dt.Time;
-            if (dti is DateTimeImmutable dtimmutable) return dtimmutable.Time;
+            if (dti is Library.DateTime.DateTime dt)
+            {
+                datetime = dt.Time;
+                timezone = dt.TimeZone;
+                return true;
+            }
 
-            throw new ArgumentException();
+            if (dti is DateTimeImmutable dtimmutable)
+            {
+                datetime = dtimmutable.Time;
+                timezone = dtimmutable.TimeZone;
+                return true;
+            }
+
+            datetime = default;
+            timezone = default;
+            return false;
         }
 
         /// <summary>
@@ -189,14 +202,21 @@ namespace Pchp.Library.DateTime
         [return: NotNull]
         public static DateInterval date_diff(DateTimeInterface datetime1, DateTimeInterface datetime2, bool absolute = false)
         {
-            var interval = new DateInterval(TimeFromInterface(datetime1), TimeFromInterface(datetime2));
-
-            if (absolute)
+            if (GetDateTimeFromInterface(datetime1, out var dt1, out _) &&
+                GetDateTimeFromInterface(datetime2, out var dt2, out _))
             {
-                interval.invert = 0;
-            }
+                var interval = new DateInterval(dt1, dt2);
+                if (absolute)
+                {
+                    interval.invert = 0;
+                }
 
-            return interval;
+                return interval;
+            }
+            else
+            {
+                throw new Spl.InvalidArgumentException();
+            }
         }
 
         /// <summary>

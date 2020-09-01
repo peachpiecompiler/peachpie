@@ -9,7 +9,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Pchp.CodeAnalysis.Symbols;
-using Peachpie.CodeAnalysis.Utilities;
+using Roslyn.Utilities;
 using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics
@@ -30,6 +30,7 @@ namespace Pchp.CodeAnalysis.Semantics
         internal readonly BoundPrimitiveTypeRef/*!*/IterableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Iterable);
         internal readonly BoundPrimitiveTypeRef/*!*/CallableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Callable);
         internal readonly BoundPrimitiveTypeRef/*!*/ResourceTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Resource);
+        internal readonly BoundPrimitiveTypeRef/*!*/MixedTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Mixed);
 
         #endregion
 
@@ -112,6 +113,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     case Ast.PrimitiveTypeRef.PrimitiveType.@void: return VoidTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.iterable: return IterableTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.@object: return ObjectTypeRef;
+                    case Ast.PrimitiveTypeRef.PrimitiveType.mixed: return MixedTypeRef;
                     default: throw ExceptionUtilities.UnexpectedValue(pt.PrimitiveTypeName);
                 }
             }
@@ -169,9 +171,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         ImmutableArray<BoundTypeRef> Create(IList<Ast.TypeRef> trefs, SemanticsBinder binder, SourceTypeSymbol self)
         {
-            return trefs
-                .Select(t => CreateFromTypeRef(t, binder, self, objectTypeInfoSemantic: false).WithSyntax(t))
-                .AsImmutable();
+            return trefs.SelectAsArray(t => CreateFromTypeRef(t, binder, self, objectTypeInfoSemantic: false).WithSyntax(t));
         }
 
         public static IBoundTypeRef Create(QualifiedName qname, SourceTypeSymbol self) => new BoundClassTypeRef(qname, null, self);

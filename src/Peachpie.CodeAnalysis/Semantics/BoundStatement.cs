@@ -155,48 +155,6 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     /// <summary>
-    /// throw <c>Thrown</c>;
-    /// </summary>
-    public sealed partial class BoundThrowStatement : BoundStatement, IThrowOperation
-    {
-        public override OperationKind Kind => OperationKind.Throw;
-
-        internal BoundExpression Thrown { get; set; }
-
-        IOperation IThrowOperation.Exception => this.Thrown;
-
-        public BoundThrowStatement(BoundExpression thrown)
-            : base()
-        {
-            Debug.Assert(thrown != null);
-            this.Thrown = thrown;
-        }
-
-        public BoundThrowStatement Update(BoundExpression thrown)
-        {
-            if (thrown == Thrown)
-            {
-                return this;
-            }
-            else
-            {
-                return new BoundThrowStatement(thrown);
-            }
-        }
-
-        public override void Accept(OperationVisitor visitor)
-            => visitor.VisitThrow(this);
-
-        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitThrow(this, argument);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
-        /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
-        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitThrow(this);
-    }
-
-    /// <summary>
     /// Conditionally declared functions.
     /// </summary>
     public sealed partial class BoundFunctionDeclStatement : BoundStatement, IInvalidOperation

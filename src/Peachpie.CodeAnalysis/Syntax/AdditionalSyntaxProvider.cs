@@ -39,7 +39,11 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         #region ITokenProvider
 
-        public TValue TokenValue => _provider.TokenValue;
+        public TValue TokenValue
+        {
+            get => _provider.TokenValue;
+            set => _provider.TokenValue = value;
+        }
 
         public TSpan TokenPosition => _provider.TokenPosition;
 
@@ -530,9 +534,10 @@ namespace Peachpie.CodeAnalysis.Syntax
         /// </summary>
         bool MatchGenericTypes(ref int idx, out List<TypeRef> types)
         {
+            types = null;
+
             if (MatchToken(ref idx, Tokens.T_LT))
             {
-                types = null;
 
                 for (; ; )
                 {
@@ -547,7 +552,7 @@ namespace Peachpie.CodeAnalysis.Syntax
                             tref = new GenericTypeRef(tref.Span, tref, nested);
                         }
 
-                        if (types == null) types = new List<TypeRef>(1);
+                        types ??= new List<TypeRef>(1);
                         types.Add(tref);
 
                         if (MatchToken(ref idx, Tokens.T_COMMA))
@@ -568,7 +573,6 @@ namespace Peachpie.CodeAnalysis.Syntax
             }
 
             //
-            types = default;
             return false;
         }
 

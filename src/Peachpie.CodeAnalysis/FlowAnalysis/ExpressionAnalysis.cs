@@ -300,13 +300,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // add catch control variable to the state
             x.TypeRef.Accept(this);
-            x.Variable.Access = BoundAccess.Write.WithWrite(x.TypeRef.GetTypeRefMask(TypeCtx));
-            State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue), x.Variable.Access.WriteMask);
 
-            Accept(x.Variable);
+            if (x.Variable != null)
+            {
+                x.Variable.Access = BoundAccess.Write.WithWrite(x.TypeRef.GetTypeRefMask(TypeCtx));
+                State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue), x.Variable.Access.WriteMask);
+                Accept(x.Variable);
 
-            //
-            x.Variable.ResultType = (Symbols.TypeSymbol)x.TypeRef.Type;
+                //
+                x.Variable.ResultType = (TypeSymbol)x.TypeRef.Type;
+            }
+
 
             //
             DefaultVisitBlock(x);
@@ -512,7 +516,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // bind variable place
             if (x.Variable == null)
             {
-                x.Variable = (x is BoundTemporalVariableRef)     // synthesized variable constructed by semantic binder
+                x.Variable = x.IsLowerTemp()     // synthesized variable constructed by semantic binder
                     ? Routine.LocalsTable.BindTemporalVariable(local.Name)
                     : Routine.LocalsTable.BindLocalVariable(local.Name, x.PhpSyntax.Span.ToTextSpan());
             }
@@ -981,10 +985,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         TypeRefMask GetMinusOperationType(BoundExpression left, BoundExpression right)
         {
-            if (State.IsGreaterThanLongMin(TryGetVariableHandle(left)) && IsLongConstant(right, 1)) // LONG -1, where LONG > long.MinValue
-                return TypeCtx.GetLongTypeMask();
-            else if (IsDoubleOnly(left.TypeRefMask) || IsDoubleOnly(right.TypeRefMask)) // some operand is double and nothing else
+            if (IsDoubleOnly(left.TypeRefMask) || IsDoubleOnly(right.TypeRefMask)) // some operand is double and nothing else
                 return TypeCtx.GetDoubleTypeMask(); // double if we are sure about operands
+            else if (State.IsGreaterThanLongMin(TryGetVariableHandle(left)) && IsLongConstant(right, 1)) // LONG -1, where LONG > long.MinValue
+                return TypeCtx.GetLongTypeMask();
             else
                 return TypeCtx.GetNumberTypeMask();
         }
@@ -2676,13 +2680,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var voidMask = State.TypeRefContext.GetTypeMask(BoundTypeRefFactory.VoidTypeRef, false); // NOTE: or remember the routine may return Void
                 State.FlowThroughReturn(voidMask);
             }
-
-            return default;
-        }
-
-        public override T VisitThrow(BoundThrowStatement x)
-        {
-            Accept(x.Thrown);
 
             return default;
         }

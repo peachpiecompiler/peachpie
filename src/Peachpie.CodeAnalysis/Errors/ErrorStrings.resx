@@ -394,4 +394,19 @@
   <data name="WRN_CalledFromGlobalScope" xml:space="preserve">
     <value>Called from the global scope</value>
   </data>
+  <data name="ERR_CtorPropertyAbstractCtor" xml:space="preserve">
+    <value>Cannot declare promoted property in an abstract constructor</value>
+  </data>
+  <data name="ERR_CtorPropertyNotCtor" xml:space="preserve">
+    <value>Cannot declare promoted property outside a constructor</value>
+  </data>
+  <data name="ERR_CtorPropertyStaticCtor" xml:space="preserve">
+    <value>Cannot declare promoted property in a static constructor</value>
+  </data>
+  <data name="ERR_CtorPropertyVariadic" xml:space="preserve">
+    <value>Cannot declare variadic promoted property</value>
+  </data>
+  <data name="ERR_PropertyTypeNotAllowed" xml:space="preserve">
+    <value>Property {0}::${1} cannot have type {2}</value>
+  </data>
 </root>

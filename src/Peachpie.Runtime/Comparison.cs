@@ -134,7 +134,6 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias: return Compare(dx, y.Alias.Value);
                 case PhpTypeCode.Null: return (dx == 0.0) ? 0 : 1;
                 case PhpTypeCode.Object:
-                    if (y.Object == null) goto case PhpTypeCode.Null;
                     // Notice: Object of class {0} could not be converted to int
                     PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetTypeName(y), PhpVariable.TypeNameDouble));
                     return Compare(dx, 1.0); // object is treated as '1'
@@ -157,9 +156,7 @@ namespace Pchp.Core
                 case PhpTypeCode.PhpArray: return -1;   // - 1 * (array.CompareTo(string))
                 case PhpTypeCode.String: return Compare(sx, y.String);
                 case PhpTypeCode.MutableString: return Compare(sx, y.MutableString.ToString());
-                case PhpTypeCode.Object:
-                    if (y.Object == null) goto case PhpTypeCode.Null;
-                    else return CompareStringToObject(sx, y.Object);
+                case PhpTypeCode.Object: return CompareStringToObject(sx, y.Object);
                 case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
                 case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
             }

@@ -368,7 +368,7 @@ namespace Pchp.Core
                 {
                     // normalize, check it is within root_path
                     path = NormalizeSlashes(Path.GetFullPath(path));
-                    if (path.StartsWith(root_path))
+                    if (path.StartsWith(root_path) && path.Length > root_path.Length)
                     {
                         script = GetDeclaredScript(path.Substring(root_path.Length + 1));
                         // TODO: script may be not loaded yet but exists physically, check it exists and compile

@@ -363,6 +363,8 @@ namespace Pchp.CodeAnalysis
             public static QualifiedName System_Object => new QualifiedName(new Name("Object"), new[] { new Name("System") });
             public static QualifiedName System_DateTime => new QualifiedName(new Name("DateTime"), new[] { new Name("System") });
 
+            public static QualifiedName UnhandledMatchError => new QualifiedName(new Name("UnhandledMatchError"), Name.EmptyNames, true);
+
             public static Name offsetGet { get { return new Name("offsetGet"); } }
             public static Name offsetSet { get { return new Name("offsetSet"); } }
             public static Name current { get { return new Name("current"); } }

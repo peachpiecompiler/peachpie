@@ -283,12 +283,8 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentNullException();
             }
 
-            if (timezone._timezone != this.TimeZone)
-            {
-                // convert this.Time from old TZ to new TZ
-                this.Time = TimeZoneInfo.ConvertTime(new System_DateTime(this.Time.Ticks, DateTimeKind.Unspecified), this.TimeZone, timezone._timezone);
-                this.TimeZone = timezone._timezone;
-            }
+            // No need to convert the time as the timezone is stored separately and the time is converted when needed
+            this.TimeZone = timezone._timezone;
 
             return this;
         }
@@ -384,6 +380,18 @@ namespace Pchp.Library.DateTime
             }
 
             return new DateTime(ctx, datetime.Time, datetime.TimeZone);
+        }
+
+        public static DateTime createFromInterface(Context ctx, DateTimeInterface datetime)
+        {
+            if (DateTimeFunctions.GetDateTimeFromInterface(datetime, out var dt, out var tz))
+            {
+                return new DateTime(ctx, dt, tz);
+            }
+            else
+            {
+                throw new Spl.InvalidArgumentException();
+            }
         }
 
         [return: NotNull]
@@ -674,6 +682,21 @@ namespace Pchp.Library.DateTime
             {
                 return datetime.AsDateTimeImmutable();
             }
+        }
+
+        public static DateTimeImmutable createFromInterface(Context ctx, DateTimeInterface datetime)
+        {
+            if (datetime is DateTimeImmutable immutable)
+            {
+                return immutable;
+            }
+
+            if (datetime is DateTime dt)
+            {
+                return dt.AsDateTimeImmutable();
+            }
+
+            throw new Spl.InvalidArgumentException();
         }
 
         [return: NotNull]

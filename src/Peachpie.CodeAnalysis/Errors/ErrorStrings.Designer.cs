@@ -214,6 +214,42 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot declare promoted property in an abstract constructor.
+        /// </summary>
+        internal static string ERR_CtorPropertyAbstractCtor {
+            get {
+                return ResourceManager.GetString("ERR_CtorPropertyAbstractCtor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot declare promoted property outside a constructor.
+        /// </summary>
+        internal static string ERR_CtorPropertyNotCtor {
+            get {
+                return ResourceManager.GetString("ERR_CtorPropertyNotCtor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot declare promoted property in a static constructor.
+        /// </summary>
+        internal static string ERR_CtorPropertyStaticCtor {
+            get {
+                return ResourceManager.GetString("ERR_CtorPropertyStaticCtor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot declare variadic promoted property.
+        /// </summary>
+        internal static string ERR_CtorPropertyVariadic {
+            get {
+                return ResourceManager.GetString("ERR_CtorPropertyVariadic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Default value for parameter ${0} with a {1} type can only be {1} or NULL, {2} type given.
         /// </summary>
         internal static string ERR_DefaultParameterValueTypeMismatch {
@@ -453,6 +489,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_PropertyAccessibilityError {
             get {
                 return ResourceManager.GetString("ERR_PropertyAccessibilityError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Property {0}::${1} cannot have type {2}.
+        /// </summary>
+        internal static string ERR_PropertyTypeNotAllowed {
+            get {
+                return ResourceManager.GetString("ERR_PropertyTypeNotAllowed", resourceCulture);
             }
         }
         

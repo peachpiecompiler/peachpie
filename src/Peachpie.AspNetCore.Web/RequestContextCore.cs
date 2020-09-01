@@ -469,29 +469,43 @@ namespace Peachpie.AspNetCore.Web
 
         protected override PhpArray InitGetVariable()
         {
-            var result = PhpArray.NewEmpty();
+            var query = _httpctx.Request.Query;
+            var form = (_httpctx.Request.Method == HttpMethods.Get && _httpctx.Request.HasFormContentType) ? _httpctx.Request.Form : null;
 
-            if (_httpctx.Request.Method == "GET" && _httpctx.Request.HasFormContentType)
+            if (query.Count != 0 || form != null)
             {
-                AddVariables(result, _httpctx.Request.Form);
+                var result = new PhpArray(query.Count);
+
+                if (form != null && form.Count != 0)
+                {
+                    // variables passed through GET request using multipart/form-data
+                    AddVariables(result, form);
+                }
+
+                AddVariables(result, query);
+
+                return result;
             }
-
-            AddVariables(result, _httpctx.Request.Query);
-
-            //
-            return result;
+            else
+            {
+                return PhpArray.NewEmpty();
+            }
         }
 
         protected override PhpArray InitPostVariable()
         {
-            var result = PhpArray.NewEmpty();
-
-            if (_httpctx.Request.Method == "POST" && _httpctx.Request.HasFormContentType)
+            if (_httpctx.Request.HasFormContentType)
             {
-                AddVariables(result, _httpctx.Request.Form);
+                var form = _httpctx.Request.Form;
+                if (form.Count != 0)
+                {
+                    var result = new PhpArray(form.Count);
+                    AddVariables(result, form);
+                    return result;
+                }
             }
 
-            return result;
+            return PhpArray.NewEmpty();
         }
 
         protected override PhpArray InitFilesVariable()

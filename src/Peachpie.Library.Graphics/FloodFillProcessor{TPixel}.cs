@@ -32,8 +32,8 @@ namespace Peachpie.Library.Graphics
             if (floodFrom.Equals(_fillColor))
                 return;
 
-            var pixelSpan = source.GetPixelSpan();
-            int rowLength = source.Width;
+            //var pixelSpan = source.GetPixelSpan();
+            //int rowLength = source.Width;
 
             var segmentQueue = new Queue<(Point point, int rightEdge)>();
             segmentQueue.Enqueue((_startPoint, _startPoint.X));
@@ -44,6 +44,8 @@ namespace Peachpie.Library.Graphics
                 var currentY = currentPoint.Y;
                 var currentX = currentPoint.X;
 
+                var rowSpan = source.GetPixelRowSpan(currentY);
+
                 int leftEdge;
                 leftEdge = currentX;
 
@@ -53,7 +55,7 @@ namespace Peachpie.Library.Graphics
                     // Get the row segment to be colored
                     while (rightEdge + 1 < source.Width)
                     {
-                        var edgeColor = GetPixel(pixelSpan, rowLength, rightEdge + 1, currentY);
+                        var edgeColor = GetPixel(rowSpan, rightEdge + 1);
                         if (edgeColor.Equals(_borderColor) || edgeColor.Equals(_fillColor))
                             break;
 
@@ -61,7 +63,7 @@ namespace Peachpie.Library.Graphics
                     }
                     while (leftEdge - 1 < source.Width)
                     {
-                        var edgeColor = GetPixel(pixelSpan, rowLength, leftEdge - 1, currentY);
+                        var edgeColor = GetPixel(rowSpan, leftEdge - 1);
                         if (edgeColor.Equals(_borderColor) || edgeColor.Equals(_fillColor))
                             break;
 
@@ -69,43 +71,42 @@ namespace Peachpie.Library.Graphics
                     }
 
                     // Actually color the row
-                    SetPixelRow(pixelSpan, rowLength, leftEdge, rightEdge, currentY, _fillColor);
+                    SetPixelRow(rowSpan, leftEdge, rightEdge, _fillColor);
 
                     // Add the segments to be filled above and below to the queue
                     if (currentY > 0)
-                        AddFillingSegmentsToQueueWithBorder(floodFrom, pixelSpan, segmentQueue, rowLength, leftEdge, rightEdge, currentY - 1);
+                        AddFillingSegmentsToQueueWithBorder(floodFrom, source.GetPixelRowSpan(currentY - 1), segmentQueue, leftEdge, rightEdge, currentY - 1);
                     if (currentY + 1 < source.Height)
-                        AddFillingSegmentsToQueueWithBorder(floodFrom, pixelSpan, segmentQueue, rowLength, leftEdge, rightEdge, currentY + 1);
+                        AddFillingSegmentsToQueueWithBorder(floodFrom, source.GetPixelRowSpan(currentY + 1), segmentQueue, leftEdge, rightEdge, currentY + 1);
                 }
                 else
                 // Filling whole region of same color
                 {
                     // Get the row segment to be colored
-                    while (rightEdge + 1 < source.Width && GetPixel(pixelSpan, rowLength, rightEdge + 1, currentY).Equals(floodFrom))
+                    while (rightEdge + 1 < source.Width && GetPixel(rowSpan, rightEdge + 1).Equals(floodFrom))
                         rightEdge++;
-                    while (leftEdge > 0 && GetPixel(pixelSpan, rowLength, leftEdge - 1, currentY).Equals(floodFrom))
+                    while (leftEdge > 0 && GetPixel(rowSpan, leftEdge - 1).Equals(floodFrom))
                         leftEdge--;
 
                     // Actually color the row
-                    SetPixelRow(pixelSpan, rowLength, leftEdge, rightEdge, currentY, _fillColor);
+                    SetPixelRow(rowSpan, leftEdge, rightEdge, _fillColor);
 
                     // Add the segments to be filled above and below to the queue
                     if (currentY > 0)
-                        AddFillingSegmentsToQueue(floodFrom, pixelSpan, segmentQueue, rowLength, leftEdge, rightEdge, currentY - 1);
+                        AddFillingSegmentsToQueue(floodFrom, source.GetPixelRowSpan(currentY - 1), segmentQueue, leftEdge, rightEdge, currentY - 1);
                     if (currentY + 1 < source.Height)
-                        AddFillingSegmentsToQueue(floodFrom, pixelSpan, segmentQueue, rowLength, leftEdge, rightEdge, currentY + 1);
+                        AddFillingSegmentsToQueue(floodFrom, source.GetPixelRowSpan(currentY + 1), segmentQueue, leftEdge, rightEdge, currentY + 1);
                 }
             }
         }
 
-        private static void AddFillingSegmentsToQueue(TPixel floodFrom, Span<TPixel> pixelSpan, Queue<(Point, int)> segmentQueue, int rowLength, int xStart, int xEnd, int y)
+        private static void AddFillingSegmentsToQueue(TPixel floodFrom, Span<TPixel> rowSpan, Queue<(Point, int)> segmentQueue, int xStart, int xEnd, int y)
         {
             int? markStart = null;
 
-            int rowStart = y * rowLength;
             for (int x = xStart; x <= xEnd; x++)
             {
-                var color = pixelSpan[rowStart + x];
+                var color = rowSpan[x];
                 if (markStart != null)
                 {
                     if (!color.Equals(floodFrom))
@@ -129,14 +130,13 @@ namespace Peachpie.Library.Graphics
             }
         }
 
-        private void AddFillingSegmentsToQueueWithBorder(TPixel floodFrom, Span<TPixel> pixelSpan, Queue<(Point, int)> segmentQueue, int rowLength, int xStart, int xEnd, int y)
+        private void AddFillingSegmentsToQueueWithBorder(TPixel floodFrom, Span<TPixel> rowSpan, Queue<(Point, int)> segmentQueue, int xStart, int xEnd, int y)
         {
             int? markStart = null;
 
-            int rowStart = y * rowLength;
             for (int x = xStart; x <= xEnd; x++)
             {
-                var color = pixelSpan[rowStart + x];
+                var color = rowSpan[x];
                 if (markStart != null)
                 {
                     if (color.Equals(_borderColor) || color.Equals(_fillColor))
@@ -160,10 +160,8 @@ namespace Peachpie.Library.Graphics
             }
         }
 
-        private static TPixel GetPixel(Span<TPixel> span, int rowLength, int x, int y) => span[y * rowLength + x];
+        private static TPixel GetPixel(Span<TPixel> row, int x) => row[x];
 
-        private static void SetPixel(Span<TPixel> span, int rowLength, int x, int y, TPixel color) => span[y * rowLength + x] = color;
-
-        private static void SetPixelRow(Span<TPixel> span, int rowLength, int xFrom, int xTo, int y, TPixel color) => span.Slice(y * rowLength + xFrom, xTo - xFrom + 1).Fill(color);
+        private static void SetPixelRow(Span<TPixel> row, int xFrom, int xTo, TPixel color) => row.Slice(xFrom, xTo - xFrom + 1).Fill(color);
     }
 }

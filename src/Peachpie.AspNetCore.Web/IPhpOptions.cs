@@ -21,11 +21,11 @@ namespace Peachpie.AspNetCore.Web
         /// </summary>
         Encoding StringEncoding { get; set; }
 
-        /// <summary>
-        /// Collection of assemblies containing compiled PHP scripts to be loaded.
-        /// If the collection is empty, all the referenced assemblies are loaded.
-        /// </summary>
-        ICollection<Assembly> ScriptAssemblyCollection { get; }
+        ///// <summary>
+        ///// Collection of assemblies containing compiled PHP scripts to be loaded.
+        ///// If the collection is empty, all the referenced assemblies are loaded.
+        ///// </summary>
+        //ICollection<Assembly> ScriptAssemblyCollection { get; }
 
         /// <summary>
         /// Application's root directory.

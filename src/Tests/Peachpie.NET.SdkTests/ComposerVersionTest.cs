@@ -64,6 +64,8 @@ namespace Peachpie.NET.SdkTests
 
             AssertFloatingVersion(">=2.0.0, <4.0.0", "[2.0.0-*,4.0.0)");
 
+            AssertFloatingVersion("1.2.3@dev@master", "[1.2.3]"); // ignoring flags for now
+
             // "~2.3, >=2.3.10"
             // "2.0.0a3"
             // "^1.10.0alpha2"

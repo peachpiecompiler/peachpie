@@ -943,6 +943,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid scanner mode.
+        /// </summary>
+        public static string invalid_scanner_mode {
+            get {
+                return ResourceManager.GetString("invalid_scanner_mode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid session save path &apos;{0}&apos;..
         /// </summary>
         public static string invalid_session_save_path {

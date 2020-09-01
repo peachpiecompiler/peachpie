@@ -118,18 +118,17 @@ namespace Pchp.Library.Streams
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="path">URI or filename of the resource to be opened</param>
         /// <param name="mode">File access mode</param>
-        /// <returns></returns>
+        /// <returns>The stream or <c>null</c> in case of error.</returns>
         public static PhpStream Open(Context ctx, string path, StreamOpenMode mode)
         {
-            string modeStr;
-            switch (mode)
+            var modeStr = mode switch
             {
-                case StreamOpenMode.ReadBinary: modeStr = "rb"; break;
-                case StreamOpenMode.WriteBinary: modeStr = "wb"; break;
-                case StreamOpenMode.ReadText: modeStr = "rt"; break;
-                case StreamOpenMode.WriteText: modeStr = "wt"; break;
-                default: throw new ArgumentException();
-            }
+                StreamOpenMode.ReadBinary => "rb",
+                StreamOpenMode.WriteBinary => "wb",
+                StreamOpenMode.ReadText => "rt",
+                StreamOpenMode.WriteText => "wt",
+                _ => throw new ArgumentException(nameof(mode)),
+            };
 
             return Open(ctx, path, modeStr, StreamOpenOptions.Empty, StreamContext.Default);
         }
@@ -1403,7 +1402,7 @@ namespace Pchp.Library.Streams
                 while (maxLength > 0 && !Eof)
                 {
                     var data = ReadBytes(maxLength);
-                    if (data.Length != 0) break; // EOF or error.
+                    if (data.Length == 0) break; // EOF or error.
                     maxLength -= data.Length;
                     result.Write(data, 0, data.Length);
                 }

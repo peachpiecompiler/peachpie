@@ -522,7 +522,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region is_scalar, is_numeric, is_callable, is_countable, get_resource_type
+        #region is_scalar, is_numeric, is_callable, is_countable, get_resource_type, get_resource_id
 
         /// <summary>
         /// Checks whether a dereferenced variable is a scalar.
@@ -625,8 +625,13 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="resource">The resource.</param>
         /// <returns>The resource type name or <c>null</c> if <paramref name="resource"/> is <c>null</c>.</returns>
-        [return: CastToFalse]
-        public static string get_resource_type(PhpResource resource) => resource?.TypeName;
+        public static string get_resource_type(PhpValue resource) => resource.AsResource()?.TypeName;
+
+        /// <summary>
+        /// Get the resource ID for a given resource.
+        /// </summary>
+        /// <exception cref="Spl.TypeError">Argument is not a resource or <c>null</c>.</exception>
+        public static int get_resource_id(PhpResource res) => res != null ? res.Id : throw new Spl.TypeError();
 
         #endregion
 

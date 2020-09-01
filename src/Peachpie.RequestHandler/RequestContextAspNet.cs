@@ -505,29 +505,41 @@ namespace Peachpie.RequestHandler
 
         protected override PhpArray InitGetVariable()
         {
-            var result = PhpArray.NewEmpty();
+            var query = _httpctx.Request.QueryString;
+            var form = _httpctx.Request.RequestType == WebRequestMethods.Http.Get ? _httpctx.Request.Form : null;
 
-            if (_httpctx.Request.RequestType == "GET")
+            if (query.Count != 0 || form != null)
             {
-                AddVariables(result, _httpctx.Request.Form);
+                var result = new PhpArray(query.Count);
+
+                if (form != null && form.Count != 0)
+                {
+                    // variables passed through GET request using multipart/form-data
+                    AddVariables(result, form);
+                }
+
+                AddVariables(result, query);
+                return result;
             }
-
-            AddVariables(result, _httpctx.Request.QueryString);
-
-            //
-            return result;
+            else
+            {
+                return PhpArray.NewEmpty();
+            }
         }
 
         protected override PhpArray InitPostVariable()
         {
-            var result = PhpArray.NewEmpty();
-
-            if (_httpctx.Request.RequestType == "POST")
+            var form = _httpctx.Request.Form;
+            if (form.Count != 0)
             {
-                AddVariables(result, _httpctx.Request.Form);
+                var result = new PhpArray(form.Count);
+                AddVariables(result, form);
+                return result;
             }
-
-            return result;
+            else
+            {
+                return PhpArray.NewEmpty();
+            }
         }
 
         /// <summary>
@@ -605,13 +617,11 @@ namespace Peachpie.RequestHandler
 
         protected override PhpArray InitCookieVariable()
         {
-            PhpArray result;
-
             var cookies = _httpctx.Request.Cookies;
             var count = cookies.Count;
             if (count != 0)
             {
-                result = new PhpArray(count);
+                var result = new PhpArray(count);
                 for (int i = 0; i < count; i++)
                 {
                     HttpCookie cookie = cookies.Get(i);
@@ -624,14 +634,13 @@ namespace Peachpie.RequestHandler
                     //    result[AspNetSessionHandler.AspNetSessionName] = (PhpValue)HttpUtility.UrlDecode(cookie.Value, StringEncoding);
                     //}
                 }
+
+                return result;
             }
             else
             {
-                result = PhpArray.NewEmpty();
+                return PhpArray.NewEmpty();
             }
-
-            //
-            return result;
         }
 
         /// <summary>

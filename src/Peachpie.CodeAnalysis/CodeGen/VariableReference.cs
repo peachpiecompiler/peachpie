@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using Devsense.PHP.Syntax;
@@ -622,6 +623,24 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual IPlace Place { get; protected set; }
 
+        protected SynthesizedLocalKind SynthesizedLocalKind
+        {
+            get
+            {
+                if (Symbol is SynthesizedLocalSymbol)
+                {
+                    return SynthesizedLocalKind.EmitterTemp;
+                }
+
+                if (VariableKind == VariableKind.LocalTemporalVariable)
+                {
+                    return SynthesizedLocalKind.LoweringTemp ;
+                }
+
+                return SynthesizedLocalKind.UserDefined;
+            }
+        }
+
         public LocalVariableReference(VariableKind kind, SourceRoutineSymbol routine, Symbol symbol, BoundVariableName name)
         {
             this.VariableKind = kind;
@@ -636,7 +655,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public virtual void EmitInit(CodeGenerator cg)
         {
-            if (IsOptimized == false || cg.InitializedLocals)
+            if (VariableKind == VariableKind.LocalTemporalVariable && cg.Routine != null && (cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == 0)
+            {
+                // continue,
+                // create Place
+            }
+            else if (IsOptimized == false || cg.InitializedLocals)
             {
                 // do nothing,
                 // Place == null
@@ -649,26 +673,25 @@ namespace Pchp.CodeAnalysis.Semantics
             var il = cg.Builder;
             var def = il.LocalSlotManager.DeclareLocal(
                     (Cci.ITypeReference)Symbol.GetTypeOrReturnType(), Symbol as ILocalSymbolInternal,
-                    this.Name, SynthesizedLocalKind.UserDefined,
+                    this.Name, this.SynthesizedLocalKind,
                     LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
             il.AddLocalToScope(def);
 
             this.Place = new LocalPlace(def);
 
             //
-            if (Symbol is SynthesizedLocalSymbol)
+            if (this.SynthesizedLocalKind == SynthesizedLocalKind.UserDefined)
             {
-                return;
+
+                // Initialize local variable with void.
+                // This is mandatory since even assignments reads the target value to assign properly to PhpAlias.
+
+                // TODO: Once analysis tells us, the target cannot be alias, this step won't be necessary.
+
+                // TODO: only if the local will be used uninitialized
+
+                cg.EmitInitializePlace(Place);
             }
-
-            // Initialize local variable with void.
-            // This is mandatory since even assignments reads the target value to assign properly to PhpAlias.
-
-            // TODO: Once analysis tells us, the target cannot be alias, this step won't be necessary.
-
-            // TODO: only if the local will be used uninitialized
-
-            cg.EmitInitializePlace(Place);
         }
 
         TypeSymbol LoadVariablesArray(CodeGenerator cg)
@@ -814,6 +837,7 @@ namespace Pchp.CodeAnalysis.Semantics
         static void EmitTypeCheck(CodeGenerator cg, IPlace valueplace, SourceParameterSymbol srcparam)
         {
             // TODO: check iterable, type if not resolved in ct
+            // TODO: check union types
 
             // check NotNull
             if (srcparam.HasNotNull)
@@ -1179,6 +1203,17 @@ namespace Pchp.CodeAnalysis.Semantics
             Place = lazyPlace ?? (cg.HasUnoptimizedLocals ? null : new ParamPlace(Parameter));
 
             // TODO: ? if (cg.HasUnoptimizedLocals && $this) <locals>["this"] = ...
+
+            if (srcparam.IsConstructorProperty)
+            {
+                var field = srcparam.ContainingType.GetMembers(srcparam.Name).OfType<SourceFieldSymbol>().Single(); // throws if duplicit name
+                var field_place = new FieldPlace(this.Routine.GetThisPlace(), field, cg.Module);
+
+                // $this->{P} = {P};
+                field_place.EmitStorePrepare(cg.Builder);
+                cg.EmitConvert(Place.EmitLoad(cg.Builder), 0, field.Type);
+                field_place.EmitStore(cg.Builder);
+            }
         }
     }
 
@@ -1396,10 +1431,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
             VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);
 
-            if (access.IsQuiet && Receiver != null && cg.CanBeNull(Receiver.TypeRefMask))
+            if (access.IsQuiet && Receiver != null && (cg.CanBeNull(Receiver.TypeRefMask) || !cg.TypeRefContext.IsObjectOnly(Receiver.TypeRefMask)))
             {
                 // handle nullref in "quiet" mode (e.g. within empty() expression),
-                // emit something like C#'s "?." operator
+                // emit null-safe "?." operator
 
                 //  .dup ? .ldfld : default
 

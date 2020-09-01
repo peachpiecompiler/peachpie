@@ -3058,9 +3058,9 @@ namespace Pchp.Core.Resources {
                 return ResourceManager.GetString("object_could_not_be_converted", resourceCulture);
             }
         }
-        
+
         /// <summary>
-        ///   Looks up a localized string similar to An object of type &apos;{0}&apos; used as an array.
+        ///   Looks up a localized string similar to Cannot use object of type {0} as array.
         /// </summary>
         public static string object_used_as_array {
             get {

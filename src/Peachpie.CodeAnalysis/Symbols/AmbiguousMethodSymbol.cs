@@ -86,6 +86,9 @@ namespace Pchp.CodeAnalysis.Symbols
             _overloadable = overloadable;
         }
 
+        /// <summary>
+        /// Gets a common containing symbol or <c>null</c> if ambiguities have a different parent.
+        /// </summary>
         public override Symbol ContainingSymbol
         {
             get
@@ -93,8 +96,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 Symbol result = null;
                 foreach (var a in _ambiguities)
                 {
-                    if (result == null || result == a.ContainingType) result = a.ContainingType;
-                    else return null;
+                    if (result == null)
+                    {
+                        result = a.ContainingSymbol;
+                    }
+                    else if (result != a.ContainingSymbol)
+                    {
+                        return null;
+                    }
                 }
                 return result;
             }

@@ -20,6 +20,9 @@ namespace Pchp.Core.Utilities
             return name.Replace('.', '_').Replace(' ', '_');
         }
 
+        static readonly Func<string, string> s_rawnamefunc = FuncExtensions.Identity<string>();
+        static readonly Func<string, string> s_encodenamefunc = EncodeTopLevelName;
+
         public static PhpArray EnsureItemArray(PhpArray array, IntStringKey key)
         {
             PhpArray result;
@@ -75,12 +78,15 @@ namespace Pchp.Core.Utilities
         /// <param name="name">A unparsed name of variable.</param>
         /// <param name="value">A value to be added.</param>
         /// <param name="subname">A name of intermediate array inserted before the value.</param>
-        public static void AddVariable(this PhpArray/*!*/ array, string name, PhpValue value, string? subname = null)
+        /// <param name="rawname">If set, the array keys are not sanitized. By default, characters <c>'.'</c> and <c>' '</c> are replaced with <c>'_'</c>.</param>
+        public static void AddVariable(this PhpArray/*!*/ array, string name, PhpValue value, string? subname = null, bool rawname = false)
         {
             if (array == null) throw new ArgumentNullException(nameof(array));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
             Debug.Assert(value != null);
+
+            var namefunc = rawname ? s_rawnamefunc : s_encodenamefunc;
 
             IntStringKey key;
 
@@ -92,7 +98,7 @@ namespace Pchp.Core.Utilities
             if (left > 0 && left < name.Length - 1 && (right = name.IndexOf(']', left + 1)) >= 0)
             {
                 // the variable name is a key to the "array", dots are replaced by underscores in top-level name:
-                key = new IntStringKey(EncodeTopLevelName(name.Substring(0, left)));
+                key = new IntStringKey(namefunc(name.Substring(0, left)));
 
                 // ensures that all [] operators in the chain except for the last one are applied on an array:
                 for (; ; )
@@ -133,7 +139,7 @@ namespace Pchp.Core.Utilities
             else
             {
                 // no array pattern in variable name, "name" is a top-level key:
-                key = new IntStringKey(EncodeTopLevelName(name));
+                key = new IntStringKey(namefunc(name));
 
                 // inserts a subname on the next level:
                 if (subname != null)

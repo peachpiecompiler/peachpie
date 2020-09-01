@@ -117,14 +117,14 @@ namespace Peachpie.CodeAnalysis.Syntax
                 : tref;
         }
 
-        CallSignature WithGenericTypes(CallSignature signature, Span nameSpan)
+        FunctionCall WithGenericTypes(FunctionCall call, Span nameSpan)
         {
             if (TryGetAnotation<List<TypeRef>>(nameSpan.End, out var generics))
             {
-                signature.GenericParams = generics.ToArray();
+                call.SetGenericParams(generics);
             }
 
-            return signature;
+            return call;
         }
 
         public override LangElement GlobalCode(Span span, IEnumerable<LangElement> statements, NamingContext context)
@@ -206,12 +206,14 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public override LangElement Call(Span span, Name name, Span nameSpan, CallSignature signature, TypeRef typeRef)
         {
-            return base.Call(span, name, nameSpan, WithGenericTypes(signature, nameSpan), typeRef);
+            var call = (FunctionCall)base.Call(span, name, nameSpan, signature, typeRef);
+            return WithGenericTypes(call, nameSpan);
         }
 
         public override LangElement Call(Span span, TranslatedQualifiedName name, CallSignature signature, LangElement memberOfOpt)
         {
-            return base.Call(span, name, WithGenericTypes(signature, name.Span), memberOfOpt);
+            var call = (FunctionCall)base.Call(span, name, signature, memberOfOpt);
+            return WithGenericTypes(call, name.Span);
         }
 
         public override TypeRef TypeReference(Span span, QualifiedName className)
@@ -222,6 +224,31 @@ namespace Peachpie.CodeAnalysis.Syntax
         public NodesFactory(SourceUnit sourceUnit)
             : base(sourceUnit)
         {
+        }
+    }
+
+    internal static class FunctionCallExtensions
+    {
+        public static void SetGenericParams(this FunctionCall call, IList<TypeRef> types)
+        {
+            if (types == null || types.Count == 0)
+            {
+                RemoveGenericParams(call);
+            }
+            else
+            {
+                call.Properties.SetProperty<IList<TypeRef>>(types);
+            }
+        }
+
+        public static void RemoveGenericParams(this FunctionCall call)
+        {
+            call.Properties.RemoveProperty<IList<TypeRef>>();
+        }
+
+        public static IList<TypeRef> GetGenericParams(this FunctionCall call)
+        {
+            return call.Properties.GetProperty<IList<TypeRef>>() ?? Array.Empty<TypeRef>();
         }
     }
 }

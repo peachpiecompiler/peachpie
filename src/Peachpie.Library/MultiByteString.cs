@@ -1104,22 +1104,16 @@ namespace Pchp.Library
 
         #endregion
 
-        #region mb_check_encoding
+        #region mb_check_encoding, mb_scrub
 
         /// <summary>
         /// Check if the string is valid for the specified encoding
         /// </summary>
         public static bool mb_check_encoding(Context ctx, PhpString var = default(PhpString), string encoding = null/*mb_internal_encoding()*/)
         {
-            if (var.IsDefault)
-            {
-                // NS: check all the input from the beginning of the request
-                throw new NotSupportedException();
-            }
-
             if (var.ContainsBinaryData)
             {
-                var enc = GetEncoding(encoding) ?? ctx.StringEncoding;
+                var enc = GetEncoding(encoding) ?? GetInternalEncoding(ctx);
 
                 // create encoding with exception fallbacks:
                 enc = Encoding.GetEncoding(enc.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
@@ -1135,6 +1129,29 @@ namespace Pchp.Library
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Replace ill-formed byte sequence with subsitute character.
+        /// Although always returns a valid Unicode string value.
+        /// </summary>
+        /// <returns>A string value where any ill-formed sequence is replaced with <c>'?'</c> character.</returns>
+        [return: NotNull]
+        public static string mb_scrub(Context ctx, PhpString str, string encoding = null)
+        {
+            Encoding enc;
+
+            if (str.ContainsBinaryData)
+            {
+                enc = GetEncoding(encoding) ?? GetInternalEncoding(ctx);
+                enc = Encoding.GetEncoding(enc.CodePage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback);
+            }
+            else
+            {
+                enc = Encoding.UTF8; // does not matter
+            }
+
+            return str.ToString(enc);
         }
 
         #endregion

@@ -219,11 +219,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // forget finally block
                 cg.ExtraFinallyBlock = nextExtraFinallyBlock;
-                Debug.Assert(cg.ExtraFinallyStateVariable != null);
 
                 //
                 if (_finallyBlock != null)
                 {
+                    Debug.Assert(cg.ExtraFinallyStateVariable != null);
+
                     // emit finally block
                     cg.GenerateScope(_finallyBlock, NextBlock.Ordinal);
                     cg.Builder.AssertStackEmpty();
@@ -360,7 +361,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         void EmitCatchBlock(CodeGenerator cg, CatchBlock catchBlock)
         {
-            Debug.Assert(catchBlock.Variable.Variable != null);
+            Debug.Assert(catchBlock.Variable == null || catchBlock.Variable.Variable != null);
 
             var il = cg.Builder;
             TypeSymbol extype;
