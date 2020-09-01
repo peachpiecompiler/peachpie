@@ -58,12 +58,10 @@ namespace Pchp.Library.DateTime
         }
 
         /// <summary>
-        /// </summary>
-        /// <remarks>
         /// If the <see cref="DateInterval"/> object was created by <see cref="DateTime.diff"/>,
         /// then this is the total number of days between the start and end dates.
-        /// </remarks>
-        public int days { get; set; }
+        /// </summary>
+        private readonly int? days = null;
 
         public int invert;
 
@@ -316,6 +314,9 @@ namespace Pchp.Library.DateTime
                             break;
 
                         //a Total number of days as a result of a DateTime::diff() or(unknown) otherwise   4, 18, 8123
+                        case 'a':
+                            result.Append(days?.ToString(CultureInfo.InvariantCulture) ?? "(unknown)");
+                            break;
 
                         //H Hours, numeric, at least 2 digits with leading 0    01, 03, 23
                         case 'H':
