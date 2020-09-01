@@ -16,6 +16,11 @@ namespace Peachpie.AspNetCore.Web
     /// </summary>
     sealed class SynchronizedTextWriter : TextWriter
     {
+
+#if NETSTANDARD2_0
+        private readonly char[] writeChars;
+#endif
+
         HttpResponse HttpResponse { get; }
 
         public override Encoding Encoding { get; }
@@ -27,6 +32,9 @@ namespace Peachpie.AspNetCore.Web
         {
             HttpResponse = response ?? throw new ArgumentNullException(nameof(response));
             Encoding = encoding ?? throw new ArgumentNullException(nameof(encoding));
+#if NETSTANDARD2_0
+            writeChars = new char[1];
+#endif
         }
 
         const int UTF8MaxByteLength = 6;
@@ -83,25 +91,21 @@ namespace Peachpie.AspNetCore.Web
             ArrayPool<byte>.Shared.Return(bytes);
         }
 
+
         public override void Write(char value)
         {
+            _encodedCharBuffer ??= new byte[GetEncodingMaxByteSize(Encoding)];
+
 #if NETSTANDARD2_0
-            var chars = new char[1] { value };
-
-            _encodedCharBuffer ??= new byte[GetEncodingMaxByteSize(Encoding)];
-
-            var nbytes = Encoding.GetBytes(chars, 0, 1, _encodedCharBuffer, 0);
+            // encode the char
+            writeChars[0] = value;
+            var nbytes = Encoding.GetBytes(writeChars, 0, 1, _encodedCharBuffer, 0);
 #else
-            Span<char> chars = stackalloc char[1] { value };
-            // Span<byte> bytes = stackalloc byte[GetEncodingMaxByteSize(Encoding)];
-
-            _encodedCharBuffer ??= new byte[GetEncodingMaxByteSize(Encoding)];
-
             // encode the char on stack
+            Span<char> chars = stackalloc char[1] { value };
             var nbytes = Encoding.GetBytes(chars, _encodedCharBuffer);
 #endif
 
-            //
             Write(_encodedCharBuffer, nbytes); // NOTE: _tmp is copied by the underlaying pipe
         }
 
