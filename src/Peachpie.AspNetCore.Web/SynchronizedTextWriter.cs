@@ -49,7 +49,11 @@ namespace Peachpie.AspNetCore.Web
             Debug.Assert(buffer != null);
             Debug.Assert(count <= buffer.Length);
 
+#if NETSTANDARD2_0
+            HttpResponse.Body.WriteAsync(buffer, 0, count).GetAwaiter().GetResult();
+#else
             HttpResponse.Body.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, count)).GetAwaiter().GetResult();
+#endif
         }
 
         public override void Write(string value)
@@ -81,6 +85,13 @@ namespace Peachpie.AspNetCore.Web
 
         public override void Write(char value)
         {
+#if NETSTANDARD2_0
+            var chars = new char[1] { value };
+
+            _encodedCharBuffer ??= new byte[GetEncodingMaxByteSize(Encoding)];
+
+            var nbytes = Encoding.GetBytes(chars, 0, 1, _encodedCharBuffer, 0);
+#else
             Span<char> chars = stackalloc char[1] { value };
             // Span<byte> bytes = stackalloc byte[GetEncodingMaxByteSize(Encoding)];
 
@@ -88,6 +99,7 @@ namespace Peachpie.AspNetCore.Web
 
             // encode the char on stack
             var nbytes = Encoding.GetBytes(chars, _encodedCharBuffer);
+#endif
 
             //
             Write(_encodedCharBuffer, nbytes); // NOTE: _tmp is copied by the underlaying pipe
