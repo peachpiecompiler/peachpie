@@ -782,7 +782,7 @@ namespace Pchp.Library
                 int last = startIndex + count;
                 for (int i = startIndex; i < last; i++)
                 {
-                    result.Add(i, value);
+                    result.Add(i, value.DeepCopy());
                 }
 
                 return result;
