@@ -79,9 +79,12 @@ namespace Pchp.Library.DateTime
 
         internal DateInterval(System.DateTime date1, System.DateTime date2)
         {
+            // For computing the total number of day, we do this without taking account the time part
+            days = (int)(date2.Date.Subtract(date1.Date)).TotalDays;
+            if (days < 0) days = -days;
+
             var span = date2 - date1;
 
-            days = (int)span.TotalDays;
             invert = span.Ticks < 0 ? 1 : 0;
 
             CalculateDifference(date1, date2, out y, out m, out span);
