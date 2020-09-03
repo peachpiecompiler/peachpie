@@ -119,7 +119,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 if (_lazyExportedTypes == null)
                 {
                     var result = new Dictionary<QualifiedName, NamedTypeSymbol>();
-                    var langVersion = _compilation.Options.ParseOptions?.LanguageVersion;
+                    var langVersion = _compilation.Options.LanguageVersion;
 
                     // lookup extensions and cor library for exported types
                     var libs = GetExtensionLibraries(_compilation).ToList();
@@ -140,7 +140,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                                 continue;
                             }
 
-                            if (minLangVersion != null && langVersion != null && langVersion < minLangVersion)
+                            if (minLangVersion != null && langVersion < minLangVersion)
                             {
                                 // PHP type not valid in current language version:
                                 continue;
@@ -293,8 +293,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                         if (candidate is PENamedTypeSymbol pe &&
                             pe.TryGetPhpTypeAttribute(out _, out var minLangVersion) && minLangVersion != null)
                         {
-                            var langVersion = _compilation.Options.ParseOptions?.LanguageVersion;
-                            if (langVersion != null && langVersion < minLangVersion)
+                            if (minLangVersion > _compilation.Options.LanguageVersion)
                             {
                                 // PHP type not valid in current language version:
                                 continue;

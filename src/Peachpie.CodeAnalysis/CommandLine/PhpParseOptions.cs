@@ -135,12 +135,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public PhpParseOptions WithLanguageVersion(Version version)
         {
-            if (version == null)
-            {
-                throw new ArgumentNullException(nameof(version));
-            }
-
-            if (LanguageVersion != null && LanguageVersion == version)
+            if (ReferenceEquals(LanguageVersion, version) || LanguageVersion == version)
             {
                 return this;
             }

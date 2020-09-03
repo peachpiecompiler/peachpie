@@ -14,6 +14,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     static class AnalysisFacts
     {
+        public static bool IsAutoloadDeprecated(Version langVersion)
+        {
+            // >= 7.2
+            return langVersion != null && langVersion.Major > 7 || (langVersion.Major == 7 && langVersion.Minor >= 2);
+        }
+
+        public static bool IsStringableSupported(PhpCompilation compilation)
+        {
+            // >= 8.0
+            return
+                compilation.CoreTypes.Stringable.Symbol is PENamedTypeSymbol pe &&
+                pe.TryGetPhpTypeAttribute(out _, out var minLangVersion) &&
+                minLangVersion != null &&
+                compilation.Options.LanguageVersion >= minLangVersion;
+
+            //var langVersion = compilation.Options.LanguageVersion;
+            //return langVersion != null && langVersion.Major >= 8;
+        }
+
         /// <summary>
         /// Determines if given global function symbol is unconditionally declared (always declared).
         /// </summary>
