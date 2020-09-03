@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <AssemblyName>Peachpie.Library.ComDotNet</AssemblyName>
+    <PackageId>Peachpie.Library.ComDotNet</PackageId>
+    <PackageTags>peachpie;library;com;dotnet;com_dotnet</PackageTags>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Peachpie PHP language library functions for COM/.Net interoperability on Windows.</Description>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
+    <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
+  </ItemGroup>
+
+</Project>

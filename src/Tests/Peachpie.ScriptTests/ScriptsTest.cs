@@ -29,6 +29,7 @@ namespace ScriptsTest
             typeof(Peachpie.Library.Scripting.Standard).Assembly.Location,
             typeof(Peachpie.Library.XmlDom.XmlDom).Assembly.Location,
             typeof(Peachpie.Library.Network.CURLFunctions).Assembly.Location,
+            typeof(Peachpie.Library.ComDotNet.COM).Assembly.Location,
         };
 
         static readonly Context.IScriptingProvider _provider = Context.DefaultScriptingProvider; // use IScriptingProvider singleton 

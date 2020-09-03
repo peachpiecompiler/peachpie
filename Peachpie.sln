@@ -82,6 +82,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.NET.SdkTests", "sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.App.Tests", "src\Tests\Peachpie.App.Tests\Peachpie.App.Tests.csproj", "{C8A0A533-BB62-4CB5-8861-06522DCF5EC2}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.ComDotNet", "src\Peachpie.Library.ComDotNet\Peachpie.Library.ComDotNet.csproj", "{B9DE827D-79F5-4066-80C5-7535EB66B443}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
