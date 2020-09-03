@@ -96,8 +96,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             // TRUE <=> class is defined unconditionally in a reference library (PE assembly)
                             var class_name = args[0].Value.ConstantValue.Value as string;
-                            if (class_name != null)
-                            {
+                            if (!string.IsNullOrEmpty(class_name))
+                                {
                                 var tmp = (TypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
                                 if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())   // TODO: + SourceTypeSymbol when reachable unconditional declaration
                                 {
