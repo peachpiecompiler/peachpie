@@ -61,7 +61,7 @@ namespace Pchp.Library.DateTime
         /// If the <see cref="DateInterval"/> object was created by <see cref="DateTime.diff"/>,
         /// then this is the total number of days between the start and end dates.
         /// </summary>
-        private readonly int? _days = null;
+        private protected readonly int? _days = null;
 
         /// <summary>
         /// Exposed interface to access the total number of days, see <see cref="_days"/>
