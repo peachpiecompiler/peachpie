@@ -66,11 +66,11 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Exposed interface to access the total number of days, see <see cref="_days"/>
         /// </summary>
-        public PhpValue days { 
-            get {
-                return _days != null
-                    ? PhpValue.FromClr(_days.Value)
-                    : PhpValue.False;
+        public PhpValue days
+        {
+            get
+            {
+                return _days.HasValue ? _days.Value : PhpValue.False;
             }
             set { /* will not throw, but will do nothing */ }
         }
