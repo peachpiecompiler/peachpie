@@ -18,6 +18,7 @@ using Pchp.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Errors;
 using System.IO;
 using System.Resources;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -572,17 +573,17 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (_lazyInterfacesType.IsDefault) // not resolved yet
             {
-                if (_syntax.BaseClass == null && _syntax.ImplementsList.Length == 0 && !HasTraitUses)
-                {
-                    // simple class - no interfaces, no base class, no traits:
-                    _lazyBaseType = ((_syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) == 0) // not static class nor interface
-                        ? DeclaringCompilation.GetSpecialType(SpecialType.System_Object)
-                        : null;
+                //if (_syntax.BaseClass == null && _syntax.ImplementsList.Length == 0 && !HasTraitUses)
+                //{
+                //    // simple class - no interfaces, no base class, no traits:
+                //    _lazyBaseType = ((_syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) == 0) // not static class nor interface
+                //        ? DeclaringCompilation.GetSpecialType(SpecialType.System_Object)
+                //        : null;
 
-                    _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
-                    _lazyInterfacesType = ImmutableArray<NamedTypeSymbol>.Empty;
-                }
-                else
+                //    _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
+                //    _lazyInterfacesType = ImmutableArray<NamedTypeSymbol>.Empty;
+                //}
+                //else
                 {
                     // resolve slowly:
 
@@ -923,6 +924,20 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // base interfaces
+
+            // Stringable:
+            var hasStringable = type.TryGetMagicToString() != null && AnalysisFacts.IsStringableSupported(compilation);
+            if (hasStringable)
+            {
+                // implicitly implemented interface "\Stringable"
+                yield return new TypeRefSymbol()
+                {
+                    Symbol = compilation.CoreTypes.Stringable,
+                    Attributes = PhpMemberAttributes.Interface,
+                };
+            }
+
+            // implements:
             if (syntax.ImplementsList.Length != 0)
             {
                 var visited = new HashSet<QualifiedName>(); // set of visited interfaces
@@ -930,6 +945,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (type.IsInterface)
                 {
                     visited.Add(type.FullName);
+                }
+
+                if (hasStringable)
+                {
+                    visited.Add(NameUtils.SpecialNames.Stringable);
                 }
 
                 foreach (var i in syntax.ImplementsList)
@@ -1133,6 +1153,23 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         protected virtual ImmutableArray<MethodSymbol> CreateInstanceConstructors() => SynthesizedPhpCtorSymbol.CreateCtors(this);
+
+        /// <summary>
+        /// Gets magic <c>__toString</c> method of class or <c>null</c>.
+        /// Gets <c>null</c> if the type is trait or interface or <c>__toString</c> is not defined.
+        /// </summary>
+        MethodSymbol TryGetMagicToString()
+        {
+            if (this.IsInterface || this.IsTrait)
+            {
+                return null;
+            }
+
+            return GetMembersByPhpName(Devsense.PHP.Syntax.Name.SpecialMethodNames.Tostring.Value)
+                .OfType<MethodSymbol>()
+                .Where(m => !m.IsStatic)
+                .SingleOrDefault();
+        }
 
         /// <summary>
         /// Gets magic <c>__invoke</c> method of class or <c>null</c>.
@@ -1650,15 +1687,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved)
         {
-            if (_syntax.ImplementsList.Length == 0)
-            {
-                return ImmutableArray<NamedTypeSymbol>.Empty;
-            }
-            else
-            {
-                ResolveBaseTypes();
-                return _lazyInterfacesType;
-            }
+            ResolveBaseTypes();
+            return _lazyInterfacesType;
         }
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
