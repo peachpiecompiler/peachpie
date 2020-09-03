@@ -835,7 +835,10 @@ namespace Pchp.Library
             int remains = Math.Abs(length) - array.Count;
 
             // returns unchanged array (or its deep copy if called from PHP):
-            if (remains <= 0) return array;
+            if (remains <= 0)
+            {
+                return array;
+            }
 
             PhpArray result = new PhpArray(array.Count + remains);
 
@@ -850,11 +853,11 @@ namespace Pchp.Library
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
             {
-                var key = iterator.CurrentKey;
-                if (key.IsString)
-                    result.Add(key, iterator.CurrentValue);
+                var current = iterator.Current;
+                if (current.Key.IsString)
+                    result.Add(current.Key, current.Value);
                 else
-                    result.Add(iterator.CurrentValue);
+                    result.Add(current.Value);
             }
 
             // appends items:
