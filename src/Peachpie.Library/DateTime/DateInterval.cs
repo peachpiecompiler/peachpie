@@ -91,10 +91,6 @@ namespace Pchp.Library.DateTime
 
         internal DateInterval(System.DateTime date1, System.DateTime date2)
         {
-            // For computing the total number of day, we do this without taking account the time part
-            _days = (int)(date2.Date.Subtract(date1.Date)).TotalDays;
-            if (_days < 0) _days = -_days;
-
             var span = date2 - date1;
 
             invert = span.Ticks < 0 ? 1 : 0;
@@ -103,6 +99,9 @@ namespace Pchp.Library.DateTime
 
             Debug.Assert(span.Ticks >= 0); // absolutized
             _span = span;
+
+            // For computing the total number of day, we do this without taking account the time part
+            _days = Math.Abs((int)date2.Date.Subtract(date1.Date).TotalDays);
         }
 
         internal bool IsZero
