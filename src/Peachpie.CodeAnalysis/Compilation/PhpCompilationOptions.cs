@@ -431,6 +431,16 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { PublicSign = publicSign };
         }
 
+        public PhpCompilationOptions WithParseOptions(PhpParseOptions parseoptions)
+        {
+            if (ReferenceEquals(this.ParseOptions, parseoptions))
+            {
+                return this;
+            }
+
+            return new PhpCompilationOptions(this) { ParseOptions = parseoptions };
+        }
+
         protected override CompilationOptions CommonWithGeneralDiagnosticOption(ReportDiagnostic value) => WithGeneralDiagnosticOption(value);
 
         protected override CompilationOptions CommonWithSpecificDiagnosticOptions(ImmutableDictionary<string, ReportDiagnostic> specificDiagnosticOptions) =>
