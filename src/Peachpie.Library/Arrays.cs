@@ -294,9 +294,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             if (array.Count == 0) return PhpValue.Null;
@@ -319,9 +318,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return 0;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return 0;
             }
 
             // adds copies variables (if called by PHP):
@@ -343,9 +341,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             if (array.Count == 0) return PhpValue.Null;
@@ -370,9 +367,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return 0;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return 0;
             }
 
             // reindexes integer keys starting from the number of items to be prepended:
@@ -398,9 +394,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             PhpArray result;
@@ -439,9 +434,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             int ilength = Operators.IsSet(length) ? (int)length.ToLong() : int.MaxValue;
@@ -488,11 +482,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.Throw(
-                //    PhpError.Warning,
-                //    string.Format(Strings.unexpected_arg_given, "array", PhpArray.PhpTypeName, PhpVariable.TypeNameNull));
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             int ilength = Operators.IsSet(length) ? (int)length.ToLong() : int.MaxValue;
@@ -556,7 +547,7 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                PhpException.ArgumentNull("array");
+                PhpException.ArgumentNull(nameof(array));
                 return false;
             }
 
@@ -793,7 +784,7 @@ namespace Pchp.Library
         {
             if (keys == null)
             {
-                PhpException.ArgumentNull("keys");
+                PhpException.ArgumentNull(nameof(keys));
                 return null;
             }
 
@@ -827,7 +818,7 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                PhpException.ArgumentNull("array");
+                PhpException.ArgumentNull(nameof(array));
                 return null;
             }
 
@@ -1199,9 +1190,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, false));
@@ -1223,9 +1213,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, false));
@@ -1246,9 +1235,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, true));
@@ -1269,9 +1257,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, false));
@@ -1294,9 +1281,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, false));
@@ -1317,9 +1303,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, true));
@@ -1344,9 +1329,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
             if (!PhpVariable.IsValidCallback(compare)) return false;
 
@@ -1371,9 +1355,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
             if (!PhpVariable.IsValidCallback(compare)) return false;
 
@@ -1395,9 +1378,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
             if (!PhpVariable.IsValidCallback(compare)) return false;
 
@@ -1422,9 +1404,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(new ValueComparer(new PhpNaturalComparer(ctx, false), false));
@@ -1591,8 +1572,8 @@ namespace Pchp.Library
 
             if (first == null)
             {
-                //TODO: PhpException.ArgumentNull("first");
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(first));
+                return false;
             }
 
             IComparer<KeyValuePair<IntStringKey, PhpValue>>[] comparers;
@@ -1632,16 +1613,14 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             if (arrays == null || arrays.Length == 0)
             {
-                //PhpException.InvalidArgumentCount(null, null);
-                //return null;
-                throw new ArgumentException();
+                PhpException.ArgumentNull(nameof(arrays));
+                return null;
             }
 
             Debug.Assert(comparer != null);
@@ -2058,18 +2037,16 @@ namespace Pchp.Library
         {
             if (array == null || arrays == null)
             {
-                //PhpException.ArgumentNull((array == null) ? "array" : "arrays");
-                //return null;
-                throw new ArgumentException();
+                PhpException.ArgumentNull(array == null ? nameof(array) : nameof(arrays));
+                return null;
             }
 
             for (int i = 0; i < arrays.Length; i++)
             {
                 if (arrays[i] == null)
                 {
-                    //PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));
-                    //return null;
-                    throw new ArgumentException();
+                    PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));
+                    return null;
                 }
             }
 
@@ -2203,9 +2180,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             PhpArray result = new PhpArray();
@@ -2236,9 +2212,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo; // cache current culture to avoid repetitious CurrentCulture.get
@@ -2331,15 +2306,13 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
             if (size <= 0)
             {
-                //PhpException.InvalidArgument("array", LibResources.GetString("arg_negative_or_zero"));
-                //return null;
-                throw new ArgumentException(nameof(size));
+                PhpException.InvalidArgument("array", LibResources.GetString("arg_negative_or_zero"));
+                return null;
             }
 
             // nothing to do:
@@ -2416,9 +2389,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             PhpArray result = new PhpArray();
@@ -2526,9 +2498,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             PhpArray result = new PhpArray(array.Count);
@@ -2569,7 +2540,7 @@ namespace Pchp.Library
             if (array == null)
             {
                 PhpException.ArgumentNull(nameof(array));
-                return null; // NULL
+                return null;
             }
 
             // no need to make a deep copy since keys are immutable objects (strings, ints):
@@ -2599,7 +2570,7 @@ namespace Pchp.Library
             if (array == null)
             {
                 PhpException.ArgumentNull(nameof(array));
-                return null; // NULL
+                return null;
             }
 
             var result = new PhpArray();
@@ -2677,23 +2648,20 @@ namespace Pchp.Library
         {
             if (keys == null)
             {
-                //PhpException.ArgumentNull("keys");
-                //return null;
-                throw new ArgumentNullException(nameof(keys));
+                PhpException.ArgumentNull(nameof(keys));
+                return null;
             }
 
             if (values == null)
             {
-                //PhpException.ArgumentNull("values");
-                //return null;
-                throw new ArgumentNullException(nameof(values));
+                PhpException.ArgumentNull(nameof(values));
+                return null;
             }
 
             if (keys.Count != values.Count)
             {
-                //PhpException.Throw(PhpError.Warning, CoreResources.GetString("lengths_are_different", "keys", "values"));
-                //return null;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, LibResources.GetString("lengths_are_different", "keys", "values"));
+                return null;
             }
 
             IntStringKey key;
@@ -2733,9 +2701,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return 0.0;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return PhpNumber.Default;
             }
 
             if (array.Count == 0)
@@ -2770,9 +2737,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return 0;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return PhpNumber.Default;
             }
 
             if (array.Count == 0)
@@ -2804,9 +2770,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return PhpValue.Null;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             //if (!PhpArgument.CheckCallback(function, caller, "function", 0, false)) return null;
@@ -3064,9 +3029,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             var result = new PhpArray();
@@ -3101,16 +3065,14 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             if (callback == null)
             {
-                //PhpException.ArgumentNull("callback");
-                //return null;
-                throw new ArgumentNullException(nameof(callback));
+                PhpException.ArgumentNull(nameof(callback));
+                return null;
             }
 
             var result = new PhpArray(array.Count);
