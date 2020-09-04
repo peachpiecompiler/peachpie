@@ -926,7 +926,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // base interfaces
 
             // Stringable:
-            var hasStringable = type.TryGetMagicToString() != null && AnalysisFacts.IsStringableSupported(compilation);
+            var hasStringable = type.HasMagicToString() && AnalysisFacts.IsStringableSupported(compilation);
             if (hasStringable)
             {
                 // implicitly implemented interface "\Stringable"
@@ -1169,6 +1169,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 .OfType<MethodSymbol>()
                 .Where(m => !m.IsStatic)
                 .SingleOrDefault();
+        }
+
+        bool HasMagicToString()
+        {
+            return !this.IsInterface && !this.IsTrait &&
+                this.Syntax.Members.Contains(m =>
+                    m is MethodDecl method &&
+                    method.Name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Tostring &&
+                    !method.Modifiers.IsStatic());
         }
 
         /// <summary>
