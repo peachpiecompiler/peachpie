@@ -835,7 +835,10 @@ namespace Pchp.Library
             int remains = Math.Abs(length) - array.Count;
 
             // returns unchanged array (or its deep copy if called from PHP):
-            if (remains <= 0) return array;
+            if (remains <= 0)
+            {
+                return array;
+            }
 
             PhpArray result = new PhpArray(array.Count + remains);
 
@@ -850,11 +853,11 @@ namespace Pchp.Library
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
             {
-                var key = iterator.CurrentKey;
-                if (key.IsString)
-                    result.Add(key, iterator.CurrentValue);
+                var current = iterator.Current;
+                if (current.Key.IsString)
+                    result.Add(current.Key, current.Value);
                 else
-                    result.Add(iterator.CurrentValue);
+                    result.Add(current.Value);
             }
 
             // appends items:
@@ -2456,46 +2459,38 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
-            IComparer<PhpValue> comparer;
-            switch (sortFlags)
+            IEqualityComparer<PhpValue> comparer = sortFlags switch
             {
-                case ComparisonMethod.Regular:
-                    comparer = PhpComparer.Default; break;
-                case ComparisonMethod.Numeric:
-                    comparer = PhpNumericComparer.Default; break;
-                case ComparisonMethod.String:
-                    comparer = new PhpStringComparer(ctx); break;
-                case ComparisonMethod.String | ComparisonMethod.FlagCase:
-                    goto default;   // NOT IMPLEMENTED
-                case ComparisonMethod.Natural:
-                    comparer = new PhpNaturalComparer(ctx, false); break;
-                case ComparisonMethod.Natural | ComparisonMethod.FlagCase:
-                    comparer = new PhpNaturalComparer(ctx, caseInsensitive: true); break;
-                case ComparisonMethod.LocaleString:
-                    throw new NotImplementedException("array_unique( sortFlags: SORT_NATURAL )");
+                ComparisonMethod.Regular => PhpComparer.Default,
+                ComparisonMethod.Numeric => PhpNumericComparer.Default,
+                ComparisonMethod.String => new PhpStringComparer(ctx),
+                ComparisonMethod.String | ComparisonMethod.FlagCase => throw new NotImplementedException(sortFlags.ToString()),
+                ComparisonMethod.Natural => new PhpNaturalComparer(ctx, false),
+                ComparisonMethod.Natural | ComparisonMethod.FlagCase => new PhpNaturalComparer(ctx, caseInsensitive: true),
+                ComparisonMethod.LocaleString => throw new NotImplementedException(sortFlags.ToString()),
                 //comparer = new PhpLocaleStringComparer(ctx); break;
-                default:
+                _ =>
                     //PhpException.ArgumentValueNotSupported("sortFlags", (int)sortFlags);
                     //return null;
-                    throw new ArgumentException(nameof(sortFlags));
-            }
+                    throw new ArgumentException(nameof(sortFlags)),
+            };
 
             var result = new PhpArray(array.Count);
 
-            var/*!*/identitySet = new HashSet<object>();
+            var/*!*/identitySet = new HashSet<PhpValue>(comparer);
 
             // get only unique values - first found
             var enumerator = array.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
-                if (identitySet.Add(enumerator.CurrentValue.GetValue()))
+                var current = enumerator.Current;
+                if (identitySet.Add(current.Value))
                 {
-                    result.Add(enumerator.Current);
+                    result[current.Key] = current.Value.DeepCopy(); // CONSIDER: or AddRef on result array instead of DeepCopy() ?
                 }
             }
 

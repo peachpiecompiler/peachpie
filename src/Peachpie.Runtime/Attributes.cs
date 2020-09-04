@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.ComponentModel;
 
 namespace Pchp.Core
 {
@@ -230,6 +231,17 @@ namespace Pchp.Core
             /// The name is set explicitly overriding the CLR's type name.
             /// </summary>
             CustomName = 2,
+        }
+
+        /// <summary>
+        /// Named property used annotate the type declaration with minimum language version.
+        /// Used only in compile-time.
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string MinimumLangVersion
+        {
+            get { throw new NotSupportedException(); }
+            set { }
         }
 
         /// <summary>

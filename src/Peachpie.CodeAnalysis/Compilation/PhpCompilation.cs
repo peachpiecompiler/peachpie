@@ -181,6 +181,15 @@ namespace Pchp.CodeAnalysis
             bool reuseReferenceManager = false,
             IEnumerable<PhpSyntaxTree> syntaxTrees = null)
         {
+            if (assemblyName == null &&
+                (options == null || ReferenceEquals(options, _options)) &&
+                references == null &&
+                reuseReferenceManager == true &&
+                syntaxTrees == null)
+            {
+                return this;
+            }
+
             var compilation = new PhpCompilation(
                 assemblyName ?? this.AssemblyName,
                 options ?? _options,
@@ -208,6 +217,11 @@ namespace Pchp.CodeAnalysis
         public PhpCompilation WithPhpOptions(PhpCompilationOptions options)
         {
             return Update(options: options);
+        }
+
+        public PhpCompilation WithLangVersion(Version langVersion)
+        {
+            return Update(options: this.Options.WithParseOptions((this.Options.ParseOptions ?? PhpParseOptions.Default).WithLanguageVersion(langVersion)));
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences

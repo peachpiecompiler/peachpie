@@ -501,7 +501,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <summary>
-        /// Create result set grouped by the forst column according to <see cref="PDO.FETCH_GROUP"/>.
+        /// Create result set grouped by the first column according to <see cref="PDO.FETCH_GROUP"/>.
         /// </summary>
         private protected static PhpArray/*!!*/GroupResult(PhpArray result, PDO_FETCH style)
         {

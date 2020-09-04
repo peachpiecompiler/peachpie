@@ -534,69 +534,34 @@ namespace Pchp.Library
             }
             public sealed class CRC32B : HashPhpResource
             {
-                struct CRC32BValue
+                const uint DefaultPolynomial = 0xedb88320u;
+                const uint DefaultSeed = ~(uint)0;
+
+                static readonly uint[] crc32b_table = InitializeCrc32Table(DefaultPolynomial);
+
+                static uint[] InitializeCrc32Table(uint polynomial)
                 {
-                    const uint DefaultPolynomial = 0xedb88320u;
-                    const uint DefaultSeed = ~(uint)0;
+                    var table = new uint[0x100];
 
-                    public uint state;
-
-                    static readonly uint[] table = InitializeCrc32Table(DefaultPolynomial);
-
-                    static uint[] InitializeCrc32Table(uint polynomial)
+                    for (var i = 0; i < table.Length; i++)
                     {
-                        var table = new uint[0x100];
+                        var entry = (uint)i;
 
-                        for (var i = 0; i < table.Length; i++)
+                        for (var j = 0; j < 8; j++)
                         {
-                            var entry = (uint)i;
-
-                            for (var j = 0; j < 8; j++)
-                            {
-                                if ((entry & 1) == 1)
-                                    entry = (entry >> 1) ^ polynomial;
-                                else
-                                    entry >>= 1;
-                            }
-
-                            table[i] = entry;
+                            if ((entry & 1) == 1)
+                                entry = (entry >> 1) ^ polynomial;
+                            else
+                                entry >>= 1;
                         }
 
-                        return table;
+                        table[i] = entry;
                     }
 
-                    public void Init()
-                    {
-                        state = DefaultSeed;
-                    }
-
-                    public void Update(byte[] data)
-                    {
-                        var hash = state;
-
-                        for (int i = 0; i < data.Length; i++)
-                        {
-                            hash = (hash >> 8) ^ table[data[i] ^ hash & 0xff];
-                        }
-
-                        state = hash;
-                    }
-
-                    public byte[] Final()
-                    {
-                        var h = BitConverter.GetBytes((uint)~state);
-
-                        if (BitConverter.IsLittleEndian)
-                        {
-                            Array.Reverse(h);
-                        }
-
-                        state = 0;
-                        return h;
-                    }
+                    return table;
                 }
 
-                private CRC32BValue state;
+                private uint state;
 
                 public override HashPhpResource Clone()
                 {
@@ -610,26 +575,47 @@ namespace Pchp.Library
 
                 public override void Init()
                 {
-                    state = new CRC32BValue();
+                    state = DefaultSeed;
                 }
 
                 public override bool Update(byte[] data)
                 {
-                    state.Update(data);
+                    state = Update(state, data);
+
                     return true;
+                }
+
+                static uint Update(uint state, byte[] data)
+                {
+                    foreach (byte b in data)
+                    {
+                        state = (state >> 8) ^ crc32b_table[(state ^ b) & 0xff];
+                    }
+
+                    return state;
                 }
 
                 public override byte[] Final()
                 {
-                    return state.Final();
+                    var bytes = BitConverter.GetBytes(Final(state));
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        Array.Reverse(bytes);
+                    }
+
+                    state = 0;
+                    return bytes;
+                }
+
+                static uint Final(uint state)
+                {
+                    return ~state;
                 }
 
                 public static uint ComputeCRC32(byte[] data)
                 {
-                    var value = new CRC32BValue();
-                    value.Init();
-                    value.Update(data);
-                    return ~value.state;
+                    return Final(Update(DefaultSeed, data));
                 }
 
                 public override int BlockSize { get { return 4; } }

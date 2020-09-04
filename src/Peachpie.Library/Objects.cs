@@ -48,6 +48,11 @@ namespace Pchp.Library
 		/// <B>false</B> otherwise.</returns>
 		public static bool class_exists(Context ctx, string className, bool autoload = true)
         {
+            if (className.Length == 0)
+            {
+                return false;
+            }
+
             var info = ctx.GetDeclaredType(className, autoload);
             return info != null && !info.IsInterface;
         }
