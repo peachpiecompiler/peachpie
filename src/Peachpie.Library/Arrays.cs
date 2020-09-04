@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Resources;
 using Pchp.Library.Resources;
 using System;
 using System.Collections;
@@ -760,7 +761,7 @@ namespace Pchp.Library
         {
             if (count < 0)
             {
-                PhpException.InvalidArgument("count", LibResources.arg_negative);
+                PhpException.InvalidArgument(nameof(count), LibResources.arg_negative);
                 return null;
             }
             else if (count == 0)
@@ -2045,7 +2046,7 @@ namespace Pchp.Library
             {
                 if (arrays[i] == null)
                 {
-                    PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));
+                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 2).ToString());
                     return null;
                 }
             }
@@ -2311,7 +2312,7 @@ namespace Pchp.Library
             }
             if (size <= 0)
             {
-                PhpException.InvalidArgument("array", LibResources.GetString("arg_negative_or_zero"));
+                PhpException.InvalidArgument(nameof(size), LibResources.arg_negative_or_zero);
                 return null;
             }
 
@@ -2660,7 +2661,7 @@ namespace Pchp.Library
 
             if (keys.Count != values.Count)
             {
-                PhpException.Throw(PhpError.Warning, LibResources.GetString("lengths_are_different", "keys", "values"));
+                PhpException.Throw(PhpError.Warning, ErrResources.lengths_are_different, nameof(keys), nameof(values));
                 return null;
             }
 
