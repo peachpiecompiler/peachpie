@@ -2,6 +2,10 @@
 namespace com_dotnet\com;
 
 function test() {
+    if (PHP_OS != "WINNT") {
+        exit("***SKIP***");
+    }
+
     if (!extension_loaded("com_dotnet")) {
         echo "Extension com_dotnet not loaded";
         return;
