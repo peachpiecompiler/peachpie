@@ -357,6 +357,12 @@ namespace Pchp.Library
                 return false;
             }
 
+            if (string.IsNullOrEmpty(name))
+            {
+                PhpException.InvalidArgument(nameof(name));
+                return false;
+            }
+
             DateTimeOffset? expires;
             if (expire > 0)
             {
