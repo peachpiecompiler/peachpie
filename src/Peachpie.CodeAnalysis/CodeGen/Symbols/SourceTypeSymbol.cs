@@ -434,7 +434,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return;
             }
 
-            var __tostring = this.GetMembersByPhpName(SpecialMethodNames.Tostring.Value).OfType<MethodSymbol>().FirstOrDefault();
+            var __tostring = TryGetMagicToString();
             if (__tostring != null)    // implement ToString if: there is __toString() function
             {
                 // lookup base string ToString()

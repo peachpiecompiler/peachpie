@@ -104,7 +104,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (this.QualifiedName == new QualifiedName(Devsense.PHP.Syntax.Name.AutoloadName))
             {
-                if (this.DeclaringCompilation.Options.ParseOptions?.LanguageVersion >= new Version(7, 2))
+                if (AnalysisFacts.IsAutoloadDeprecated(this.DeclaringCompilation.Options.LanguageVersion))
                 {
                     // __autoload is deprecated
                     diagnostic.Add(this, _syntax, Errors.ErrorCode.WRN_SymbolDeprecated, string.Empty, this.QualifiedName, Peachpie.CodeAnalysis.Errors.ErrorStrings.AutoloadDeprecatedMessage);

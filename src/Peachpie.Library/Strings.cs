@@ -2232,7 +2232,7 @@ namespace Pchp.Library
         /// <summary>
         /// List of known HTML entities without leading <c>&amp;</c> character when checking double encoded entities.
         /// </summary>
-        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;", "nbsp;", "raquo;" };
+        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;", "nbsp;", "raquo;", "lsaquo;" };
 
         /// <summary>
         /// Converts special characters of substring to HTML entities.
@@ -4571,29 +4571,6 @@ namespace Pchp.Library
         #region number_format, money_format
 
         /// <summary>
-        /// Formats a number with grouped thousands.
-        /// </summary>
-        /// <param name="number">The number to format.</param>
-        /// <returns>String representation of the number without decimals (rounded) with comma between every group
-        /// of thousands.</returns>
-        public static string number_format(double number)
-        {
-            return number_format(number, 0, ".", ",");
-        }
-
-        /// <summary>
-        /// Formats a number with grouped thousands and with given number of decimals.
-        /// </summary>
-        /// <param name="number">The number to format.</param>
-        /// <param name="decimals">The number of decimals.</param>
-        /// <returns>String representation of the number with <paramref name="decimals"/> decimals with a dot in front, and with 
-        /// comma between every group of thousands.</returns>
-        public static string number_format(double number, int decimals)
-        {
-            return number_format(number, decimals, ".", ",");
-        }
-
-        /// <summary>
         /// Formats a number with grouped thousands, with given number of decimals, with given decimal point string
         /// and with given thousand separator.
         /// </summary>
@@ -4612,33 +4589,14 @@ namespace Pchp.Library
         /// not make much sense, this method has no such limitation except for <paramref name="thousandsSeparator"/> of which
         /// only the first character is used (documented feature).
         /// </remarks>
-        public static string number_format(double number, int decimals, string decimalPoint, string thousandsSeparator)
+        public static string number_format(double number, int decimals = 0, string decimalPoint = ".", string thousandsSeparator = ",")
         {
-            System.Globalization.NumberFormatInfo format = new System.Globalization.NumberFormatInfo();
-
-            if ((decimals >= 0) && (decimals <= 99))
+            var format = new System.Globalization.NumberFormatInfo
             {
-                format.NumberDecimalDigits = decimals;
-            }
-            else
-            {
-                //PhpException.InvalidArgument("decimals", LibResources.GetString("arg_out_of_bounds", decimals));
-                throw new ArgumentException();
-            }
-
-            if (!string.IsNullOrEmpty(decimalPoint))
-            {
-                format.NumberDecimalSeparator = decimalPoint;
-            }
-
-            if (thousandsSeparator == null) thousandsSeparator = String.Empty;
-
-            switch (thousandsSeparator.Length)
-            {
-                case 0: format.NumberGroupSeparator = String.Empty; break;
-                case 1: format.NumberGroupSeparator = thousandsSeparator; break;
-                default: format.NumberGroupSeparator = thousandsSeparator.Substring(0, 1); break;
-            }
+                NumberDecimalDigits = Math.Max(decimals, 0), // TODO: .NET throws for decimals > 99
+                NumberDecimalSeparator = decimalPoint ?? ".", // NULL ~ a defalt value
+                NumberGroupSeparator = thousandsSeparator ?? ",", // NULL ~ a default value
+            };
 
             return number.ToString("N", format);
         }
