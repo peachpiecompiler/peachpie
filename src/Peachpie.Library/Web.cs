@@ -354,6 +354,14 @@ namespace Pchp.Library
             var httpctx = ctx.HttpPhpContext;
             if (httpctx == null)
             {
+                // TODO: PHP actually modifies internal headers even on CLI
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                // TODO: "Cookie names must not be empty"
+                PhpException.InvalidArgument(nameof(name), Resources.Resources.arg_empty);
                 return false;
             }
 
