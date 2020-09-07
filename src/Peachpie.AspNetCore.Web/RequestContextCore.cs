@@ -123,7 +123,7 @@ namespace Peachpie.AspNetCore.Web
 
         void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly)
         {
-            _httpctx.Response.Cookies.Append(name, value ?? "", new CookieOptions()
+            _httpctx.Response.Cookies.Append(name, value ?? string.Empty, new CookieOptions()
             {
                 Expires = expires,
                 Path = path,
