@@ -16,9 +16,11 @@ namespace Peachpie.Library.ComDotNet
     {
         #region Private members
 
-        object comObject = null;
+        [PhpHidden]
+        internal protected object comObject = null;
 
-        const BindingFlags MemberAccessCom =
+        [PhpHidden]
+        internal protected const BindingFlags MemberAccessCom =
             BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
 
         #endregion
