@@ -181,6 +181,7 @@ namespace Pchp.Library.DateTime
                 }
                 else if (toMonthDays == date2.Day)
                 {
+                    months++;
                     days += fromMonthDays - date1.Day;
                 }
                 // For all the other cases
