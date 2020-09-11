@@ -17,6 +17,14 @@ namespace Pchp.Core.Utilities
         /// <summary>
         /// Creates a <see cref="Dictionary{TKey, TValue}"/> from given <see cref="PhpArray"/>.
         /// </summary>
+        public static Dictionary<IntStringKey, PhpValue> ToDictionary(this PhpHashtable source)
+        {
+            return ToDictionary(source, FuncExtensions.Identity<IntStringKey>(), FuncExtensions.Identity<PhpValue>(), IntStringKey.EqualityComparer.Default);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Dictionary{TKey, TValue}"/> from given <see cref="PhpArray"/>.
+        /// </summary>
         public static Dictionary<TKey, PhpValue> ToDictionary<TSource, TKey>(this PhpHashtable source, Func<IntStringKey, TKey> keySelector)
         {
             return ToDictionary(source, keySelector, EqualityComparer<TKey>.Default);
