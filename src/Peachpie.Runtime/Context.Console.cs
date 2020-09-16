@@ -51,6 +51,9 @@ namespace Pchp.Core
             {
                 RootPath = WorkingDirectory = rootPath ?? Directory.GetCurrentDirectory();
 
+                // CLI app configuration
+                DefaultPhpConfigurationService.Instance.Core.ExecutionTimeout = 0;
+
                 //
                 if (output != null)
                 {
