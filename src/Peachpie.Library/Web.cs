@@ -1071,9 +1071,15 @@ namespace Pchp.Library
         /// <param name="seconds">The time-out setting for request.</param>
         public static bool set_time_limit(Context ctx, int seconds)
         {
-            //ctx.ApplyExecutionTimeout(seconds);
-
-            return false;
+            try
+            {
+                ctx.ApplyExecutionTimeout(seconds);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>
