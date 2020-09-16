@@ -95,7 +95,11 @@ namespace Pchp.Library
                 DefaultValue;
         }
 
-        static readonly GetSetDelegate s_emptyGsr = new GetSetDelegate((ctx, s, name, value, action) => PhpValue.Null);
+        static readonly GetSetDelegate s_emptyGsr = new GetSetDelegate((ctx, s, name, value, action) =>
+        {
+            Debug.WriteLine($"INI option '{name}' is not implemented.");
+            return PhpValue.Null;
+        });
 
         static void AssertGet(string option, IniAction action)
         {
