@@ -711,6 +711,21 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Sets the request time limit, from now.
+        /// Infinite span causes the pending time limit to be canceled.
+        /// </summary>
+        /// <param name="span"></param>
+        public virtual void ApplyExecutionTimeout(TimeSpan span)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Sets the request time limit, from now.
+        /// </summary>
+        public virtual void ApplyExecutionTimeout(int seconds) => ApplyExecutionTimeout(seconds <= 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(seconds));
+
         #endregion
 
         #region Resources // objects that need dispose

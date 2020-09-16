@@ -240,6 +240,7 @@ namespace Peachpie.AspNetCore.Web
         void OnContextCreated(RequestContextCore ctx)
         {
             _options.InvokeRequestStart(ctx);
+            ctx.TrySetTimeLimit(GetRequestTimeout(ctx));
         }
 
         void InvokeAndDispose(RequestContextCore phpctx, Context.ScriptInfo script)
@@ -256,10 +257,23 @@ namespace Peachpie.AspNetCore.Web
             }
         }
 
-        static int GetRequestTimeoutSeconds(Context phpctx) =>
-            Debugger.IsAttached
-            ? Timeout.Infinite // -1
-            : phpctx.Configuration.Core.ExecutionTimeout;
+        static Exception RequestTimeoutException()
+        {
+            // Note: FatalError in PHP
+            return new TimeoutException();
+        }
+
+        /// <summary>
+        /// Gets the global request time limit.
+        /// </summary>
+        static TimeSpan GetRequestTimeout(Context phpctx)
+        {
+            var seconds = phpctx.Configuration.Core.ExecutionTimeout;
+
+            return seconds <= 0 || Debugger.IsAttached
+                ? Timeout.InfiniteTimeSpan
+                : TimeSpan.FromSeconds(seconds);
+        }
 
         public Task InvokeAsync(HttpContext context)
         {
@@ -280,36 +294,24 @@ namespace Peachpie.AspNetCore.Web
         {
             Debug.Assert(script.IsValid);
 
-            var completion = new TaskCompletionSource<RequestCompletionReason>();
-            var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding)
-            {
-                RequestCompletionSource = completion,
-            };
-
-            //
-            // InvokeAndDispose(phpctx, script);
-            //
+            var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding);
 
             // run the script, dispose phpctx when finished
             // using threadpool since we have to be able to end the request and keep script running
             var task = Task.Run(() => InvokeAndDispose(phpctx, script));
-
+            
             // wait for the request to finish,
             // do not block current thread
-            var timeout = GetRequestTimeoutSeconds(phpctx);
-            if (timeout > 0)
-            {
-                await Task.WhenAny(completion.Task, Task.Delay(timeout * 1000));
-            }
-            else
-            {
-                await completion.Task;
-            }
+            var reason = await phpctx.RequestCompletionSource.Task;
 
             if (task.Exception != null)
             {
                 // rethrow script exception
                 throw task.Exception;
+            }
+            else if (reason == RequestCompletionReason.Timeout)
+            {
+                throw RequestTimeoutException();
             }
         }
     }
