@@ -149,6 +149,18 @@ namespace Pchp.Library
                     Debug.Assert(action == IniAction.Get);
                     return (PhpValue)string.Empty;
 
+                case "max_execution_time":
+                    if (action == IniAction.Set)
+                    {
+                        var oldvalue = config.Core.ExecutionTimeout;
+                        ctx.ApplyExecutionTimeout(config.Core.ExecutionTimeout = Math.Max(0, value.ToInt()));
+                        return oldvalue;
+                    }
+                    else
+                    {
+                        return config.Core.ExecutionTimeout;
+                    }
+
                 default:
                     throw new ArgumentException();
             }
@@ -258,7 +270,7 @@ namespace Pchp.Library
             Register("magic_quotes_gpc", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("magic_quotes_runtime", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("magic_quotes_sybase", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
-            Register("max_execution_time", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("max_execution_time", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("max_input_time", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("memory_limit", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("mime_magic.magicfile", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
