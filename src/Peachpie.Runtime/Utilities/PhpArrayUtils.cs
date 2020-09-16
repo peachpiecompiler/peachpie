@@ -62,5 +62,28 @@ namespace Pchp.Core.Utilities
 
             return result;
         }
+
+        /// <summary>
+        /// Creates array of elements selected from values of given <see cref="PhpArray"/>.
+        /// </summary>
+        public static TElement[] ValuesToArray<TElement>(this PhpArray array, Func<PhpValue, TElement> valueSelector)
+        {
+            var count = array.Count;
+            if (count == 0)
+            {
+                return Array.Empty<TElement>();
+            }
+
+            var result = new TElement[count];
+            var index = 0;
+
+            var e = array.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                result[index++] = valueSelector(e.CurrentValue);
+            }
+
+            return result;
+        }
     }
 }
