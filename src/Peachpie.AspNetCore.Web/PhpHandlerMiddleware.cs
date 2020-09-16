@@ -61,7 +61,7 @@ namespace Peachpie.AspNetCore.Web
         readonly string _rootPath;
         readonly PhpOptions _options;
         readonly PathString _prefix;
-        
+
         public PhpHandlerMiddleware(RequestDelegate next, IHostingEnvironment hostingEnv, IServiceProvider services, PhpHandlerConfiguration configuration)
         {
             if (hostingEnv == null)
@@ -81,7 +81,7 @@ namespace Peachpie.AspNetCore.Web
                 RootPath = _rootPath,
             };
             _prefix = configuration.PathPrefix;
-            
+
             // legacy options
             ConfigureOptions(_options, configuration.LegacyOptions);
 
@@ -261,52 +261,56 @@ namespace Peachpie.AspNetCore.Web
             ? Timeout.Infinite // -1
             : phpctx.Configuration.Core.ExecutionTimeout;
 
-        public async Task Invoke(HttpContext context)
+        public Task InvokeAsync(HttpContext context)
         {
             if (context.Request.Path.StartsWithSegments(_prefix))
             {
                 var script = RequestContextCore.ResolveScript(context.Request);
                 if (script.IsValid)
                 {
-                    var completion = new TaskCompletionSource<RequestCompletionReason>();
-                    var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding)
-                    {
-                        RequestCompletionSource = completion,
-                    };
-
-                    //
-                    // InvokeAndDispose(phpctx, script);
-                    //
-
-                    // run the script, dispose phpctx when finished
-                    // using threadpool since we have to be able to end the request and keep script running
-                    var task = Task.Run(() => InvokeAndDispose(phpctx, script));
-
-                    // wait for the request to finish,
-                    // do not block current thread
-                    var timeout = GetRequestTimeoutSeconds(phpctx);
-                    if (timeout > 0)
-                    {
-                        await Task.WhenAny(completion.Task, Task.Delay(timeout * 1000));
-                    }
-                    else
-                    {
-                        await completion.Task;
-                    }
-
-                    if (task.Exception != null)
-                    {
-                        // rethrow script exception
-                        throw task.Exception;
-                    }
-
-                    //
-                    return;
+                    return InvokeScriptAsync(context, script);
                 }
             }
 
             //
-            await _next(context);
+            return _next(context);
+        }
+
+        async Task InvokeScriptAsync(HttpContext context, Context.ScriptInfo script)
+        {
+            Debug.Assert(script.IsValid);
+
+            var completion = new TaskCompletionSource<RequestCompletionReason>();
+            var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding)
+            {
+                RequestCompletionSource = completion,
+            };
+
+            //
+            // InvokeAndDispose(phpctx, script);
+            //
+
+            // run the script, dispose phpctx when finished
+            // using threadpool since we have to be able to end the request and keep script running
+            var task = Task.Run(() => InvokeAndDispose(phpctx, script));
+
+            // wait for the request to finish,
+            // do not block current thread
+            var timeout = GetRequestTimeoutSeconds(phpctx);
+            if (timeout > 0)
+            {
+                await Task.WhenAny(completion.Task, Task.Delay(timeout * 1000));
+            }
+            else
+            {
+                await completion.Task;
+            }
+
+            if (task.Exception != null)
+            {
+                // rethrow script exception
+                throw task.Exception;
+            }
         }
     }
 
