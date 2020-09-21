@@ -724,7 +724,7 @@ namespace Pchp.Core
         /// <summary>
         /// Sets the request time limit, from now.
         /// </summary>
-        public virtual void ApplyExecutionTimeout(int seconds) => ApplyExecutionTimeout(seconds <= 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(seconds));
+        public void ApplyExecutionTimeout(int seconds) => ApplyExecutionTimeout(seconds <= 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(seconds));
 
         #endregion
 
