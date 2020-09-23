@@ -248,7 +248,7 @@
                TempOutputPath="$(TempOutputDir)"
                TargetFramework="$(TargetFrameworkMoniker)"
                NetFrameworkPath="$(NetFrameworkPath)"
-               BaseDirectory="$(PhpBasePath)"
+               BasePath="$(PhpBasePath)"
                Optimization="$(Optimize)"
                DebugType="$(DebugType)"
                PdbFile="$(PdbFile)"
