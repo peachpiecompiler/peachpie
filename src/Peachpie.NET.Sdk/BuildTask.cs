@@ -36,6 +36,12 @@ namespace Peachpie.NET.Sdk.Tools
         public string NetFrameworkPath { get; set; }
 
         /// <summary>
+        /// The base project directory. Script paths are stored relatively to this path.
+        /// If no value is specified, the current working directory is used.
+        /// </summary>
+        public string BaseDirectory { get; set; }
+
+        /// <summary>
         /// Optimization level.
         /// Can be a boolean value (true/false), an integer specifying the level(0-9), or an optimization name (debug, release).</summary>
         public string Optimization { get; set; } = bool.TrueString;
@@ -228,6 +234,16 @@ namespace Peachpie.NET.Sdk.Tools
                 }
             }
 
+            if (string.IsNullOrWhiteSpace(BaseDirectory))
+            {
+                BaseDirectory = Directory.GetCurrentDirectory();
+            }
+
+            if (!Directory.Exists(BaseDirectory))
+            {
+                this.Log.LogWarning("Specified base directory '{0}' does not exist.", BaseDirectory);
+            }
+
             // sources at the end:
             if (Compile != null)
             {
@@ -238,7 +254,6 @@ namespace Peachpie.NET.Sdk.Tools
             }
 
 #if DEBUG
-            //
             // save the arguments as .rsp file for debugging purposes:
             try
             {
@@ -273,7 +288,7 @@ namespace Peachpie.NET.Sdk.Tools
                     null,
                     args: args.ToArray(),
                     clientDirectory: null,
-                    baseDirectory: Directory.GetCurrentDirectory(),
+                    baseDirectory: BaseDirectory,
                     sdkDirectory: NetFrameworkPath,
                     additionalReferenceDirectories: libs,
                     analyzerLoader: new SimpleAnalyzerAssemblyLoader(),
