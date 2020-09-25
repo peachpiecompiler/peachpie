@@ -229,11 +229,15 @@ namespace Pchp.Library.Streams
         public static bool ResolvePath(Context ctx, ref string path, out StreamWrapper wrapper, CheckAccessMode mode, CheckAccessOptions options)
         {
             // Path will contain the absolute path without file:// or the complete URL; filename is the relative path.
-            string filename, scheme = GetSchemeInternal(path, out filename);
-            wrapper = StreamWrapper.GetWrapper(ctx, scheme, (StreamOptions)options);
-            if (wrapper == null) return false;
+            var scheme = GetSchemeInternal(path, out var filename);
 
-            if (wrapper.IsUrl)
+            wrapper = StreamWrapper.GetWrapper(ctx, scheme, (StreamOptions)options);
+
+            if (wrapper == null)
+            {
+                return false;
+            }
+            else if (wrapper.IsUrl)
             {
                 // Note: path contains the whole URL, filename the same without the scheme:// portion.
                 // What to check more?
@@ -243,11 +247,7 @@ namespace Pchp.Library.Streams
                 try
                 {
                     // Filename contains the original path without the scheme:// portion, check for include path.
-                    bool isInclude = false;
-                    if ((options & CheckAccessOptions.UseIncludePath) > 0)
-                    {
-                        isInclude = CheckIncludePath(ctx, filename, ref path);
-                    }
+                    var isInclude = (options & CheckAccessOptions.UseIncludePath) != 0 && CheckIncludePath(ctx, filename, ref path);
 
                     // Path will now contain an absolute path (either to an include or actual directory).
                     if (!isInclude)
@@ -258,7 +258,9 @@ namespace Pchp.Library.Streams
                 catch (System.Exception)
                 {
                     if ((options & CheckAccessOptions.Quiet) == 0)
+                    {
                         PhpException.Throw(PhpError.Warning, ErrResources.stream_filename_invalid, FileSystemUtils.StripPassword(path));
+                    }
                     return false;
                 }
 
@@ -283,7 +285,7 @@ namespace Pchp.Library.Streams
                 // The file wrapper expects an absolute path w/o the scheme, others expect the scheme://url.
                 if (scheme != "file")
                 {
-                    path = string.Format("{0}://{1}", scheme, path);
+                    path = $"{scheme}://{path}";
                 }
             }
 
@@ -305,19 +307,23 @@ namespace Pchp.Library.Streams
             if (Path.IsPathRooted(relativePath)) return false;
             if (File.Exists(absolutePath)) return false;
 
-            var paths = ctx.IncludePaths;
-            if (paths == null || paths.Length == 0) return false;
+            // TODO: use Core.Context.TryResolveScript()
 
-            foreach (string s in paths)
+            var paths = ctx.IncludePaths;
+            if (paths != null && paths.Length != 0)
             {
-                if (string.IsNullOrEmpty(s)) continue;
-                string abs = Path.GetFullPath(Path.Combine(s, relativePath));
-                if (File.Exists(abs))
+                foreach (var s in paths)
                 {
-                    absolutePath = abs;
-                    return true;
+                    if (string.IsNullOrEmpty(s)) continue;
+                    var abs = Path.GetFullPath(Path.Combine(s, relativePath));
+                    if (File.Exists(abs))
+                    {
+                        absolutePath = abs;
+                        return true;
+                    }
                 }
             }
+
             return false;
         }
 

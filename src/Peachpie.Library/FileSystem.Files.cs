@@ -99,9 +99,7 @@ namespace Pchp.Library
 
         internal static StatStruct ResolveStat(Context ctx, string path, bool quiet)
         {
-            StreamWrapper wrapper;
-
-            return ResolvePath(ctx, ref path, quiet, out wrapper)   // TODO: stat cache
+            return ResolvePath(ctx, ref path, quiet, out var wrapper)   // TODO: stat cache
                 ? wrapper.Stat(path, quiet ? StreamStatOptions.Quiet : StreamStatOptions.Empty, StreamContext.Default, false)
                 : StatStruct.Invalid;
         }
@@ -247,9 +245,10 @@ namespace Pchp.Library
             // Create the file if it does not already exist (performs all checks).
             //PhpStream file = (PhpStream)Open(path, "ab");
             //if (file == null) return false;
-            StreamWrapper wrapper;
-            if (!PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileMayExist, CheckAccessOptions.Quiet))
+            if (!PhpStream.ResolvePath(ctx, ref path, out var wrapper, CheckAccessMode.FileMayExist, CheckAccessOptions.Quiet))
+            {
                 return false;
+            }
 
             if (!file_exists(ctx, path))
             {
