@@ -440,16 +440,16 @@ namespace Pchp.Core
             /// <summary>
             /// Gets scripts in given directory. The path is relative to application root (<see cref="Context.RootPath"/>).
             /// </summary>
-            internal static bool TryGetDirectory(string path, out IEnumerable<ScriptInfo> scripts)
+            internal static bool TryGetDirectory(string path, out ScriptInfo[] scripts)
             {
                 if (s_dirsMap.TryGetValue(path, out var ids))
                 {
-                    scripts = ids.Select(id => s_scripts[id]);
+                    scripts = ids.ToArray(id => s_scripts[id]);
                     return true;
                 }
 
                 //
-                scripts = Enumerable.Empty<ScriptInfo>();
+                scripts = Array.Empty<ScriptInfo>();
                 return false;
             }
         }
