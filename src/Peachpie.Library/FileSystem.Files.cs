@@ -530,7 +530,8 @@ namespace Pchp.Library
 
                 return
                     HandleFileSystemInfo(false, path, (p) => new DirectoryInfo(p).Exists) ||    // filesystem
-                    Context.TryGetScriptsInDirectory(ctx.RootPath, path, out var scripts);      // compiled scripts
+                    Context.TryGetScriptsInDirectory(ctx.RootPath, path, out _);      // compiled scripts
+                // TODO: embedded files
             }
 
             return false;

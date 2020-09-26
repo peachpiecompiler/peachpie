@@ -932,6 +932,9 @@ namespace Pchp.Library.Streams
                     info = new FileInfo(p);
                     if (!info.Exists)
                     {
+                        // TODO: compiled scripts
+                        // TODO: embedded resources
+
                         return StatStruct.Invalid;
                     }
                 }
@@ -978,6 +981,8 @@ namespace Pchp.Library.Streams
             Debug.Assert(Path.IsPathRooted(path));
 
             var isCompiledDir = Context.TryGetScriptsInDirectory(root, path, out var scripts);
+            // TODO: embedded files
+
             var listing = new List<string>();
 
             try
