@@ -12,7 +12,14 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFileInfo
     {
-        private protected string _relativePath;     // Path string supplied in constructor (may be relative, non-cannonical etc.)
+        /// <summary>
+        /// Path string supplied in constructor (may be relative, non-cannonical etc.)
+        /// </summary>
+        private protected string _relativePath;
+
+        /// <summary>
+        /// Real full path.
+        /// </summary>
         private protected string _fullpath;
         private protected FileSystemInfo _entry;
 
@@ -43,13 +50,14 @@ namespace Pchp.Library.Spl
             }
         }
 
-        private protected string _info_class = "SplFileInfo";
-        private protected string _file_class = "SplFileObject";
+        private protected string _info_class = nameof(SplFileInfo);
+
+        private protected string _file_class = nameof(SplFileObject);
 
         private protected SplFileInfo CreateFileInfo(Context ctx, string class_name, string file_name)
         {
             if (string.IsNullOrEmpty(class_name) ||
-                string.Equals(class_name, "SplFileInfo", StringComparison.OrdinalIgnoreCase))
+                string.Equals(class_name, nameof(SplFileInfo), StringComparison.OrdinalIgnoreCase))
             {
                 return new SplFileInfo(ctx, file_name);
             }
@@ -70,11 +78,6 @@ namespace Pchp.Library.Spl
         }
 
         internal SplFileInfo(FileSystemInfo/*!*/entry, string file_name)
-        {
-            __construct(entry, file_name);
-        }
-
-        private protected void __construct(FileSystemInfo/*!*/entry, string file_name)
         {
             _entry = entry;
             _fullpath = entry.FullName;
@@ -186,7 +189,7 @@ namespace Pchp.Library.Spl
         public virtual void setFileClass(string class_name = nameof(SplFileObject)) => _file_class = class_name;
         public virtual void setInfoClass(string class_name = nameof(SplFileInfo)) => _info_class = class_name;
         public virtual string __toString() => _relativePath;
-        public override string ToString() => _relativePath;
+        public override string ToString() => __toString();
     }
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
