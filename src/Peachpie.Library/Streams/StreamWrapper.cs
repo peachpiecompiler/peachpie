@@ -80,7 +80,7 @@ namespace Pchp.Library.Streams
         /// The method can return a <c>null</c> reference.
         /// The method throws PHP warning in case of not supported operation or insufficient permissions.
         /// </summary>
-        public virtual IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
+        public virtual List<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
             // php_stream *(*dir_opener)(php_stream_wrapper *wrapper, char *filename, char *mode, int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC);
             PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Opendir");
@@ -975,7 +975,7 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        public override IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
+        public override List<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
             Debug.Assert(path != null);
             Debug.Assert(Path.IsPathRooted(path));
@@ -1911,7 +1911,7 @@ namespace Pchp.Library.Streams
             return InvokeWrapperMethod(PhpUserStream.USERSTREAM_UNLINK, (PhpValue)path).ToBoolean();
         }
 
-        public override IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
+        public override List<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
             return base.Listing(root, path, options, context);
         }

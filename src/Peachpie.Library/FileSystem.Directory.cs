@@ -400,17 +400,19 @@ namespace Pchp.Library
                 var listing = wrapper.Listing(ctx.RootPath, directory, 0, null);
                 if (listing != null)
                 {
-                    var ret = new PhpArray(listing); // create the array from the system one
                     switch (sorting_order)
                     {
                         case ScanDirSortOrder.Ascending:
-                            Arrays.sort(ctx, ret, ComparisonMethod.String);
+                            listing.Sort();
                             break;
                         case ScanDirSortOrder.Descending:
-                            Arrays.rsort(ctx, ret, ComparisonMethod.String);
+                            listing.Sort();
+                            listing.Reverse();
                             break;
                     }
-                    return ret;
+
+                    //
+                    return new PhpArray(listing);
                 }
             }
             return null; // false
