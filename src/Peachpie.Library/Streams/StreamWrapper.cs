@@ -700,14 +700,13 @@ namespace Pchp.Library.Streams
         internal static StatStruct BuildStatStruct(FileSystemInfo info, FileAttributes attributes, string path)
         {
             StatStruct result;//  = new StatStruct();
-            uint device = unchecked((uint)(char.ToLower(info.FullName[0]) - 'a')); // index of the disk
+            uint device = unchecked((uint)(char.ToLowerInvariant(info.FullName[0]) - 'a')); // index of the disk // TODO: unix
 
             ushort mode = (ushort)BuildMode(info, attributes, path);
 
-            long atime, mtime, ctime;
-            atime = ToStatUnixTimeStamp(info, (_info) => _info.LastAccessTimeUtc);
-            mtime = ToStatUnixTimeStamp(info, (_info) => _info.LastWriteTimeUtc);
-            ctime = ToStatUnixTimeStamp(info, (_info) => _info.CreationTimeUtc);
+            var atime = ToStatUnixTimeStamp(info, (_info) => _info.LastAccessTimeUtc);
+            var mtime = ToStatUnixTimeStamp(info, (_info) => _info.LastWriteTimeUtc);
+            var ctime = ToStatUnixTimeStamp(info, (_info) => _info.CreationTimeUtc);
 
             result.st_dev = device;         // device number 
             result.st_ino = 0;              // inode number 
@@ -718,8 +717,7 @@ namespace Pchp.Library.Streams
             result.st_rdev = device;        // device type, if inode device -1
             result.st_size = 0;             // size in bytes
 
-            FileInfo file_info = info as FileInfo;
-            if (file_info != null)
+            if (info is FileInfo file_info)
             {
                 result.st_size = file_info.Length;
             }
@@ -922,23 +920,27 @@ namespace Pchp.Library.Streams
             // TODO: no cache here
 
             // Note: path is already absolute w/o the scheme, the permissions have already been checked.
-            return PhpPath.HandleFileSystemInfo(StatStruct.Invalid, path, (p) =>
+            return PhpPath.HandleFileSystemInfo(StatStruct.Invalid, path, p =>
             {
-                FileSystemInfo info = null;
+                FileSystemInfo info;
 
-                info = new DirectoryInfo(p);
-                if (!info.Exists)
+                if (File.Exists(p))
                 {
                     info = new FileInfo(p);
-                    if (!info.Exists)
-                    {
-                        // TODO: compiled scripts
-                        // TODO: embedded resources
+                }
+                else if (System.IO.Directory.Exists(p))
+                {
+                    info = new DirectoryInfo(p);
+                }
+                else 
+                {
+                    // TODO: compiled scripts
+                    // TODO: embedded resources
 
-                        return StatStruct.Invalid;
-                    }
+                    return StatStruct.Invalid;
                 }
 
+                //
                 return BuildStatStruct(info, info.Attributes, p);
             });
         }
