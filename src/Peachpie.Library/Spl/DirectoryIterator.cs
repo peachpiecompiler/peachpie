@@ -120,7 +120,7 @@ namespace Pchp.Library.Spl
             _original = entry;
             _originalRelativePath = relativePath;
 
-            _children = children ?? _original.GetFileSystemInfos();
+            _children = children ?? entry.GetFileSystemInfos();
 
             //
             Position = 0;

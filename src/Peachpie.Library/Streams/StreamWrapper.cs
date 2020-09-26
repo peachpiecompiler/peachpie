@@ -972,56 +972,61 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        static readonly string[] s_default_files = new[] { ".", ".." };
-        static readonly Func<Context.ScriptInfo, string> s_script_fname_func = new Func<Context.ScriptInfo, string>(s => Path.GetFileName(s.Path));
-
         public override IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
             Debug.Assert(path != null);
             Debug.Assert(Path.IsPathRooted(path));
 
             var isCompiledDir = Context.TryGetScriptsInDirectory(root, path, out var scripts);
-            string[] listing = Array.Empty<string>();
+            var listing = new List<string>();
 
             try
             {
-                listing = System.IO.Directory.GetFileSystemEntries(path);
+                // entries (files and directories) in the file system directory:
+                foreach (var entry in System.IO.Directory.EnumerateFileSystemEntries(path))
+                {
+                    listing.Add(Path.GetFileName(entry));
+                }
             }
-            catch (DirectoryNotFoundException)
+            catch (DirectoryNotFoundException) when (!isCompiledDir)
             {
-                if (!isCompiledDir)
-                    PhpException.Throw(PhpError.Warning, ErrResources.stream_bad_directory, FileSystemUtils.StripPassword(path));
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_bad_directory, FileSystemUtils.StripPassword(path));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException) when (!isCompiledDir)
             {
-                if (!isCompiledDir)
-                    PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
             }
-            catch (System.Exception e)
+            catch (System.Exception e) when (!isCompiledDir)
             {
-                if (!isCompiledDir)
-                    PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
             }
-
-            // entries (files and directories) in the file system directory:
-            IEnumerable<string> result = listing.Select(Path.GetFileName);
 
             if (isCompiledDir)
             {
+                var fscount = listing.Count;
+
                 // merge with compiled scripts:
-                result = result
-                    .Concat(scripts.Select(s_script_fname_func))
-                    .Distinct(CurrentPlatform.PathComparer);
+                foreach (var script in scripts)
+                {
+                    var fname = Path.GetFileName(script.Path);
+                    if (listing.IndexOf(fname, 0, fscount) < 0)
+                    {
+                        listing.Add(fname);
+                    }
+                }
+
+                // .Distinct(CurrentPlatform.PathComparer);
             }
 
             if (Path.GetPathRoot(path) != path) // => is not root path
             {
                 // .
+                listing.Add(".");
                 // ..
-                result = s_default_files.Concat(result);
+                listing.Add("..");
             }
 
-            return result;
+            return listing;
         }
 
         public override bool Rename(string fromPath, string toPath, StreamRenameOptions options, StreamContext context)
@@ -1649,7 +1654,7 @@ namespace Pchp.Library.Streams
         // EX: cache this as a persistent stream
         static Lazy<PhpStream> s_stdin = new Lazy<PhpStream>(() => new NativeStream(
             Utf8EncodingProvider.Instance, Console.OpenStandardInput(), null,
-            StreamAccessOptions.Read | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, 
+            StreamAccessOptions.Read | StreamAccessOptions.UseText | StreamAccessOptions.Persistent,
             "php://stdin", StreamContext.Default)
         {
             IsReadBuffered = false,
