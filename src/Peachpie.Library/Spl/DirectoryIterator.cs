@@ -105,14 +105,20 @@ namespace Pchp.Library.Spl
 
         private protected void __construct(DirectoryInfo entry, string relativePath, FileSystemInfo[] children = null)
         {
-            _entry = entry;
-            _original = entry ?? throw new ArgumentNullException();
-            _originalRelativePath = relativePath;
-
-            if (!_original.Exists)
+            if (entry == null)
             {
-                throw new UnexpectedValueException();
+                throw new ArgumentNullException(nameof(entry));
             }
+
+            if (!entry.Exists)
+            {
+                // the system cannot find the specified directory
+                throw new UnexpectedValueException(string.Format(Resources.Resources.directory_not_found, entry.FullName));
+            }
+
+            _entry = entry;
+            _original = entry;
+            _originalRelativePath = relativePath;
 
             _children = children ?? _original.GetFileSystemInfos();
 
@@ -132,7 +138,15 @@ namespace Pchp.Library.Spl
 
         public override void __construct(Context ctx, string path)
         {
-            base.__construct(ctx, path); // init _fullpath
+            if (string.IsNullOrEmpty(path))
+            {
+                // Throws a RuntimeException if the path is an empty string.
+                throw new RuntimeException(string.Format(Resources.Resources.arg_null_or_empty, nameof(path)));
+            }
+
+            // init _fullpath
+            base.__construct(ctx, path);
+
             __construct(new DirectoryInfo(_fullpath), path);
         }
 
