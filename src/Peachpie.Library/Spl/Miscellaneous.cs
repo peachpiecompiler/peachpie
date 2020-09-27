@@ -248,13 +248,19 @@ namespace Pchp.Library.Spl
 
         public virtual PhpArray __serialize()
         {
-            return new PhpArray(4)
+            var arr = new PhpArray(4)
             {
                 _flags,
                 PhpValue.FromClr(_underlayingArray ?? _underlayingObject),
                 __peach__runtimeFields ?? PhpArray.NewEmpty(),
-                _iteratorClass, // = NULL for ArrayIterator
             };
+
+            if (_iteratorClass != null)
+            {
+                arr.Add(_iteratorClass); // = NULL for ArrayIterator
+            }
+
+            return arr;
         }
 
         public virtual void __unserialize(PhpArray array)

@@ -463,7 +463,7 @@ namespace Pchp.Library.Spl
                 _flags,
                 PhpValue.FromClr(storage),
                 __peach__runtimeFields ?? PhpArray.NewEmpty(),
-                PhpValue.Null, // NULL for ArrayIterator
+                //PhpValue.Null, // NULL for ArrayIterator, seems in some versions of PHP it is ommited
             };
         }
 
@@ -484,6 +484,8 @@ namespace Pchp.Library.Spl
                     // 2: runtime fields:
                     if (array.TryGetValue(2, out value) && value.IsPhpArray(out __peach__runtimeFields))
                     {
+                        // 3: ignored
+
                         // ok
                         return;
                     }
