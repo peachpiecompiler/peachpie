@@ -409,6 +409,8 @@ namespace Pchp.Core
 
         public static explicit operator ushort(PhpValue value) => checked((ushort)(long)value);
 
+        public static explicit operator short(PhpValue value) => checked((short)(long)value);
+
         public static explicit operator int(PhpValue value) => checked((int)(long)value);
 
         public static explicit operator uint(PhpValue value) => checked((uint)(long)value);
