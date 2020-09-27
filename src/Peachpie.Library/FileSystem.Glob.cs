@@ -168,7 +168,7 @@ namespace Pchp.Library
                 get { return ((_flags & GlobOptions.Mark) != 0); }
             }
 
-            public GlobMatcher(Context ctx, string/*!*/ pattern, GlobOptions flags)
+            public GlobMatcher(Context ctx, string/*!*/pattern, GlobOptions flags)
             {
                 Debug.Assert(ctx != null);
 
@@ -247,11 +247,11 @@ namespace Pchp.Library
                 }
             }
 
-            internal IList<string>/*!*/ DoGlob()
+            internal List<string>/*!*/ DoGlob()
             {
                 if (_pattern.Length == 0)
                 {
-                    return ArrayUtils.EmptyStrings;
+                    return _result;
                 }
 
                 int pos = 0;
@@ -421,7 +421,7 @@ namespace Pchp.Library
                 abstract public GlobNode/*!*/ StartLevel();
                 abstract public GlobNode/*!*/ AddGroup();
                 abstract public GlobNode/*!*/ FinishLevel();
-                abstract public List<StringBuilder>/*!*/ Flatten();
+                abstract public List<string>/*!*/ Flatten();
             }
 
             class TextNode : GlobNode
@@ -458,11 +458,9 @@ namespace Pchp.Library
                     return _parent.FinishLevel();
                 }
 
-                public override List<StringBuilder>/*!*/ Flatten()
+                public override List<string>/*!*/ Flatten()
                 {
-                    List<StringBuilder> result = new List<StringBuilder>(1);
-                    result.Add(_builder);
-                    return result;
+                    return new List<string>(1) { _builder.ToString() };
                 }
             }
 
@@ -478,14 +476,14 @@ namespace Pchp.Library
 
                 public override GlobNode/*!*/ AddChar(char c)
                 {
-                    SequenceNode node = new SequenceNode(this);
+                    var node = new SequenceNode(this);
                     _nodes.Add(node);
                     return node.AddChar(c);
                 }
 
                 public override GlobNode/*!*/ StartLevel()
                 {
-                    SequenceNode node = new SequenceNode(this);
+                    var node = new SequenceNode(this);
                     _nodes.Add(node);
                     return node.StartLevel();
                 }
@@ -502,23 +500,22 @@ namespace Pchp.Library
                     return _parent;
                 }
 
-                public override List<StringBuilder>/*!*/ Flatten()
+                public override List<string>/*!*/ Flatten()
                 {
-                    List<StringBuilder> result = new List<StringBuilder>();
+                    var result = new List<string>();
+
                     foreach (GlobNode node in _nodes)
                     {
-                        foreach (StringBuilder builder in node.Flatten())
-                        {
-                            result.Add(builder);
-                        }
+                        result.AddRange(node.Flatten());
                     }
+
                     return result;
                 }
             }
 
             class SequenceNode : GlobNode
             {
-                readonly List<GlobNode>/*!*/ _nodes;
+                readonly List<GlobNode>/*!*/_nodes;
 
                 public SequenceNode(GlobNode parentNode)
                     : base(parentNode)
@@ -550,25 +547,34 @@ namespace Pchp.Library
                     return _parent._parent;
                 }
 
-                public override List<StringBuilder>/*!*/ Flatten()
+                public override List<string>/*!*/ Flatten()
                 {
-                    List<StringBuilder> result = new List<StringBuilder>();
-                    result.Add(new StringBuilder());
+                    List<string> result = null; // root
+
                     foreach (GlobNode node in _nodes)
                     {
-                        List<StringBuilder> tmp = new List<StringBuilder>();
-                        foreach (StringBuilder builder in node.Flatten())
+                        var node_flattern = node.Flatten();
+
+                        if (result == null)
                         {
-                            foreach (StringBuilder sb in result)
+                            result = node_flattern;
+                            continue;
+                        }
+
+                        var tmp = new List<string>();
+
+                        foreach (var next in node_flattern)
+                        {
+                            foreach (var current in result)
                             {
-                                StringBuilder newsb = new StringBuilder(sb.ToString());
-                                newsb.Append(builder.ToString());
-                                tmp.Add(newsb);
+                                tmp.Add(current + next);
                             }
                         }
+
                         result = tmp;
                     }
-                    return result;
+
+                    return result ?? new List<string>();
                 }
             }
 
@@ -610,19 +616,14 @@ namespace Pchp.Library
                 get { return _level; }
             }
 
-            public string[]/*!*/ Flatten()
+            public IList<string>/*!*/ Flatten()
             {
                 if (_level != 0)
                 {
                     return ArrayUtils.EmptyStrings;
                 }
-                var list = _rootNode.Flatten();
-                var result = new string[list.Count];
-                for (int i = 0; i < list.Count; i++)
-                {
-                    result[i] = list[i].ToString();
-                }
-                return result;
+
+                return _rootNode.Flatten();
             }
         }
 
@@ -650,7 +651,7 @@ namespace Pchp.Library
 
         static string/*!*/ PatternToRegex(string/*!*/ pattern, bool pathName, bool noEscape)
         {
-            StringBuilder result = new StringBuilder(pattern.Length);
+            var result = new StringBuilder(pattern.Length);
             result.Append("\\G");
 
             bool inEscape = false;
@@ -720,9 +721,9 @@ namespace Pchp.Library
             return (charClass == null) ? result.ToString() : string.Empty;
         }
 
-        static string[] UngroupGlobs(string/*!*/ pattern, bool noEscape, bool brace)
+        static IList<string> UngroupGlobs(string/*!*/ pattern, bool noEscape, bool brace)
         {
-            GlobUngrouper ungrouper = new GlobUngrouper(pattern.Length);
+            var ungrouper = new GlobUngrouper(pattern.Length);
 
             bool inEscape = false;
             foreach (char c in pattern)
@@ -782,26 +783,23 @@ namespace Pchp.Library
 
         internal static IEnumerable<string>/*!*/ GetMatches(Context ctx, string/*!*/pattern, GlobOptions flags)
         {
-            if (pattern.Length == 0)
+            if (string.IsNullOrEmpty(pattern))
             {
                 yield break;
             }
 
-            bool noEscape = ((flags & GlobOptions.NoEscape) != 0);
-            bool brace = ((flags & GlobOptions.Brace) != 0);
+            var noEscape = (flags & GlobOptions.NoEscape) != 0;
+            var brace = (flags & GlobOptions.Brace) != 0;
 
-            string[] groups = UngroupGlobs(pattern, noEscape, brace);
-            if (groups.Length == 0)
-            {
-                yield break;
-            }
+            var groups = UngroupGlobs(pattern, noEscape, brace);
 
             foreach (string group in groups)
             {
-                GlobMatcher matcher = new GlobMatcher(ctx, group, flags);
+                var matcher = new GlobMatcher(ctx, group, flags);
+
                 foreach (string filename in matcher.DoGlob())
                 {
-                    yield return filename.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                    yield return CurrentPlatform.NormalizeSlashes(filename);
                 }
             }
         }
@@ -861,10 +859,7 @@ namespace Pchp.Library
 
             if (!string.IsNullOrEmpty(pattern))
             {
-                foreach (var fileName in GetMatches(ctx, pattern, flags))
-                {
-                    result.Add(fileName);
-                }
+                result.AddRange(GetMatches(ctx, pattern, flags));
 
                 if (result.Count == 0 && (flags & GlobOptions.NoCheck) != 0)
                 {
