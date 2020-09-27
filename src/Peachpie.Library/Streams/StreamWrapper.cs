@@ -692,10 +692,9 @@ namespace Pchp.Library.Streams
         /// </remarks>
         /// <param name="info">A <see cref="FileInfo"/> or <see cref="DirectoryInfo"/>
         /// of the <c>stat()</c>ed filesystem entry.</param>
-        /// <param name="attributes">The file or directory attributes.</param>
         /// <param name="path">The path to the file / directory.</param>
         /// <returns>A <see cref="StatStruct"/> for use in the <c>stat()</c> related functions.</returns>    
-        internal static StatStruct BuildStatStruct(FileSystemInfo info, FileAttributes attributes, string path)
+        internal static StatStruct BuildStatStruct(FileSystemInfo info, string path)
         {
             uint device = unchecked((uint)(char.ToLowerInvariant(info.FullName[0]) - 'a')); // index of the disk // TODO: unix
 
@@ -704,7 +703,7 @@ namespace Pchp.Library.Streams
 
             return new StatStruct(
                 st_dev: device,
-                st_mode: BuildMode(info, attributes, path),
+                st_mode: BuildMode(info, path),
                 st_nlink: 1,
                 st_rdev: device,
                 st_size: info is FileInfo finfo ? finfo.Length : 0,
@@ -836,11 +835,12 @@ namespace Pchp.Library.Streams
         /// Creates the UNIX-like file mode depending on the file or directory attributes.
         /// </summary>
         /// <param name="info">Information about file system object.</param>
-        /// <param name="attributes">Attributes of the file.</param>
         /// <param name="path">Paths to the file.</param>
         /// <returns>UNIX-like file mode.</returns>
-        private static FileModeFlags BuildMode(FileSystemInfo/*!*/info, FileAttributes attributes, string path)
+        private static FileModeFlags BuildMode(FileSystemInfo/*!*/info, string path)
         {
+            var attributes = info.Attributes;
+
             // Simulates the UNIX file mode.
             FileModeFlags rv;
 
@@ -901,30 +901,53 @@ namespace Pchp.Library.Streams
             Debug.Assert(path != null);
 
             // TODO: no cache here
-
             // Note: path is already absolute w/o the scheme, the permissions have already been checked.
-            return PhpPath.HandleFileSystemInfo(StatStruct.Invalid, path, p =>
+
+            var info = PhpPath.HandleFileSystemInfo<FileSystemInfo>(null, path, p =>
             {
-                FileSystemInfo info;
-
-                info = new FileInfo(p);
-
-                if (info.Exists == false)
+                var finfo = new FileInfo(p);
+                if (finfo.Exists)
                 {
-                    info = new DirectoryInfo(p);
-
-                    if (info.Exists == false)
-                    {
-                        // TODO: compiled scripts
-                        // TODO: embedded resources
-
-                        return StatStruct.Invalid;
-                    }
+                    return finfo;
                 }
 
-                //
-                return BuildStatStruct(info, info.Attributes, p);
+                var dinfo = new DirectoryInfo(p);
+                if (dinfo.Exists)
+                {
+                    return dinfo;
+                }
+
+                // not found
+                return null;
             });
+
+            if (info != null)
+            {
+                return BuildStatStruct(info, path);
+            }
+
+            // compiled script
+            if (Context.TryGetScriptsInDirectory(root, path, out _))
+            {
+                return new StatStruct(
+                    st_mode: FileModeFlags.Directory | FileModeFlags.Read
+                );
+            }
+
+            var script = Context.TryResolveScript(root, path);
+            if (script.IsValid)
+            {
+                // TODO: get file time from [ScriptAttribute.LastModifiedTime]
+
+                return new StatStruct(
+                    st_mode: FileModeFlags.File | FileModeFlags.Read // CONSIDER: signalize the READ access?
+                );
+            }
+
+            // TODO: embedded files
+
+            //
+            return StatStruct.Invalid;
         }
 
         #endregion
@@ -1881,8 +1904,8 @@ namespace Pchp.Library.Streams
                     st_mtime: (long)(arr["mtime"]),
                     st_ctime: (long)(arr["ctime"])
 
-                    //st_blksize = (long)Convert.ObjectToLongInteger(arr["blksize"]),
-                    //st_blocks = (long)Convert.ObjectToLongInteger(arr["blocks"]),
+                //st_blksize = (long)Convert.ObjectToLongInteger(arr["blksize"]),
+                //st_blocks = (long)Convert.ObjectToLongInteger(arr["blocks"]),
                 );
             }
 
