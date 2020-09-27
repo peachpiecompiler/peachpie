@@ -72,11 +72,17 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// An invalid value.
         /// </summary>
-        internal static StatStruct Invalid => new StatStruct(st_size: -1);
+        internal static StatStruct Invalid => default;
 
         /// <summary>
         /// Gets value indicating the stat is valid (not <see cref="Invalid"/>).
         /// </summary>
-        internal bool IsValid => st_size >= 0;
+        internal bool IsValid => st_mode != 0;
+
+        public bool IsDirectory => ((FileModeFlags)st_mode & FileModeFlags.FileTypeMask) == FileModeFlags.Directory;
+
+        public bool IsFile => ((FileModeFlags)st_mode & FileModeFlags.FileTypeMask) == FileModeFlags.File;
+
+        public bool IsLink => ((FileModeFlags)st_mode & FileModeFlags.Link) != 0;
     }
 }

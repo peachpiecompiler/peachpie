@@ -460,6 +460,11 @@ namespace Pchp.Library.Streams
         }
 
         /// <summary>
+        /// Gets the gobally registered  <see cref="FileStreamWrapper"/> singleton.
+        /// </summary>
+        internal static StreamWrapper GetFileStreamWrapper() => GetWrapperInternal(null, scheme: FileStreamWrapper.scheme);
+
+        /// <summary>
         /// Search the lists of registered StreamWrappers to find the 
         /// appropriate wrapper for a given scheme. When the scheme
         /// is empty, the FileStreamWrapper is returned.
@@ -495,7 +500,7 @@ namespace Pchp.Library.Streams
                         break;
                 }
 
-                if (wrapper == null)
+                if (wrapper == null && ctx != null)
                 {
                     // Next search the user wrappers (if present)
                     var data = ContextData.GetData(ctx);
@@ -892,6 +897,12 @@ namespace Pchp.Library.Streams
                 }
             }
 
+            if ((attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                // symblic link on NTFS
+                rv |= FileModeFlags.Link;
+            }
+
             //
             return rv;
         }
@@ -992,6 +1003,18 @@ namespace Pchp.Library.Streams
 
             var listing = new List<string>();
 
+            if (Path.GetPathRoot(path) != path) // => is not root path
+            {
+                // .
+                listing.Add(".");
+
+                // ..
+                if (Core.Utilities.PathUtils.GetFileName(path.AsSpan()).Length != 0)
+                {
+                    listing.Add("..");
+                }
+            }
+
             try
             {
                 // entries (files and directories) in the file system directory:
@@ -1028,14 +1051,6 @@ namespace Pchp.Library.Streams
                 }
 
                 // .Distinct(CurrentPlatform.PathComparer);
-            }
-
-            if (Path.GetPathRoot(path) != path) // => is not root path
-            {
-                // .
-                listing.Add(".");
-                // ..
-                listing.Add("..");
             }
 
             return listing;
