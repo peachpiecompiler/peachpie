@@ -10,7 +10,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// <see cref="Error"/> is the base class for all internal PHP errors.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class Error : System.Exception, Throwable
     {
         [PhpHidden]
@@ -95,7 +95,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Thrown when an error occurs while performing mathematical operations.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ArithmeticError : Error
     {
         [PhpFieldsOnlyCtor]
@@ -110,7 +110,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Thrown when an attempt is made to divide a number by zero.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class DivisionByZeroError : ArithmeticError
     {
         [PhpFieldsOnlyCtor]
@@ -125,7 +125,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Thrown when <c>assert()</c> fails.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("standard")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public class AssertionError : Error
     {
         [PhpFieldsOnlyCtor]
@@ -137,7 +137,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class TypeError : Error
     {
         [PhpFieldsOnlyCtor]
@@ -149,7 +149,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ArgumentCountError : TypeError
     {
         [PhpFieldsOnlyCtor]
@@ -161,7 +161,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class CompileError : Error
     {
         [PhpFieldsOnlyCtor]
@@ -173,7 +173,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ParseError : CompileError
     {
         [PhpFieldsOnlyCtor]
@@ -185,7 +185,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class UnhandledMatchError : Error
     {
         [PhpFieldsOnlyCtor]

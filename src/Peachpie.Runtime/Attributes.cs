@@ -73,6 +73,19 @@ namespace Pchp.Core
     public class PhpExtensionAttribute : Attribute
     {
         /// <summary>
+        /// Well known PHP extension names.
+        /// </summary>
+        public struct KnownExtensionNames
+        {
+            public const string Core = "Core";
+            public const string Standard = "standard";
+            public const string SPL = "SPL";
+            public const string Date = "date";
+            public const string Reflection = "Reflection";
+            public const string Json = "json";
+        }
+
+        /// <summary>
         /// Extensions name list.
         /// Cannot be <c>null</c>.
         /// </summary>

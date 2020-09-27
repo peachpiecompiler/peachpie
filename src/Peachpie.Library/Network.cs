@@ -13,7 +13,7 @@ namespace Pchp.Library
     /// <summary>
 	/// Socket functions.
 	/// </summary>
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Network
     {
         #region Constants
@@ -270,7 +270,7 @@ namespace Pchp.Library
     }
 
     /// <summary>Functions working with DNS.</summary>
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class PhpDns
     {
         #region dns_check_record, checkdnsrr

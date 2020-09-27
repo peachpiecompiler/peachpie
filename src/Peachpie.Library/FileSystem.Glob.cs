@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static partial class PhpPath
     {
         #region GlobOptions, FnMatchOptions

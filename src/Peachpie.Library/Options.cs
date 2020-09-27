@@ -546,7 +546,7 @@ namespace Pchp.Library
         #endregion
     }
 
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Options
     {
         public const int INI_USER = (int)StandardPhpOptions.IniAccessability.User; // 1

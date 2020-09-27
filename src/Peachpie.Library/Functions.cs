@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
-    [PhpExtension("Core")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Functions
     {
         #region call_user_func, call_user_func_array

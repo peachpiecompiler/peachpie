@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Web
     {
         #region Constants

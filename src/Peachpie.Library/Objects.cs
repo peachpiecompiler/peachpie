@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 namespace Pchp.Library
 {
-    [PhpExtension("Core")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Objects
     {
         /// <summary>
@@ -539,7 +539,7 @@ namespace Pchp.Library
     /// Weak references allow to retain a reference to an object
     /// which does not prevent the object from being garbage collected.
     /// </summary>
-    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public sealed class WeakReference
     {
         [PhpHidden]

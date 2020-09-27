@@ -73,7 +73,7 @@ namespace Pchp.Library
     /// <summary>
     /// Implements PHP array functions.
     /// </summary>
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Arrays
     {
         #region Constants
