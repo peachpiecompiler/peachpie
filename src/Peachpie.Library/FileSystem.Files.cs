@@ -100,7 +100,7 @@ namespace Pchp.Library
         internal static StatStruct ResolveStat(Context ctx, string path, bool quiet)
         {
             return ResolvePath(ctx, ref path, quiet, out var wrapper)   // TODO: stat cache
-                ? wrapper.Stat(path, quiet ? StreamStatOptions.Quiet : StreamStatOptions.Empty, StreamContext.Default, false)
+                ? wrapper.Stat(ctx.RootPath, path, quiet ? StreamStatOptions.Quiet : StreamStatOptions.Empty, StreamContext.Default, false)
                 : StatStruct.Invalid;
         }
 
@@ -350,23 +350,25 @@ namespace Pchp.Library
             var stat = ResolveStat(ctx, path, false);
             if (stat.IsValid)
             {
-                return null;
+                var mode = (FileModeFlags)stat.st_mode & FileModeFlags.FileTypeMask;
+
+                switch (mode)
+                {
+                    case FileModeFlags.Directory:
+                        return "dir";
+
+                    case FileModeFlags.File:
+                        return "file";
+
+                    default:
+                        //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_file_type"));
+                        // TODO: Err unknown_file_type
+                        return "unknown";
+                }
             }
-
-            var mode = (FileModeFlags)stat.st_mode & FileModeFlags.FileTypeMask;
-
-            switch (mode)
+            else
             {
-                case FileModeFlags.Directory:
-                    return "dir";
-
-                case FileModeFlags.File:
-                    return "file";
-
-                default:
-                    //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_file_type"));
-                    // TODO: Err unknown_file_type
-                    return "unknown";
+                return null; // false
             }
         }
 

@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Pchp.Core.Reflection;
 using System.Text;
 using System.Net;
@@ -109,7 +107,7 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        public virtual StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        public virtual StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
         {
             // int (*url_stat)(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC);
             return StatUnsupported();
@@ -699,36 +697,21 @@ namespace Pchp.Library.Streams
         /// <returns>A <see cref="StatStruct"/> for use in the <c>stat()</c> related functions.</returns>    
         internal static StatStruct BuildStatStruct(FileSystemInfo info, FileAttributes attributes, string path)
         {
-            StatStruct result;//  = new StatStruct();
             uint device = unchecked((uint)(char.ToLowerInvariant(info.FullName[0]) - 'a')); // index of the disk // TODO: unix
 
-            ushort mode = (ushort)BuildMode(info, attributes, path);
+            //result.st_blksize = -1;   // blocksize of filesystem IO (-1)
+            //result.st_blocks = -1;    // number of blocks allocated  (-1)
 
-            var atime = ToStatUnixTimeStamp(info, (_info) => _info.LastAccessTimeUtc);
-            var mtime = ToStatUnixTimeStamp(info, (_info) => _info.LastWriteTimeUtc);
-            var ctime = ToStatUnixTimeStamp(info, (_info) => _info.CreationTimeUtc);
-
-            result.st_dev = device;         // device number 
-            result.st_ino = 0;              // inode number 
-            result.st_mode = mode;          // inode protection mode 
-            result.st_nlink = 1;            // number of links 
-            result.st_uid = 0;              // userid of owner 
-            result.st_gid = 0;              // groupid of owner 
-            result.st_rdev = device;        // device type, if inode device -1
-            result.st_size = 0;             // size in bytes
-
-            if (info is FileInfo file_info)
-            {
-                result.st_size = file_info.Length;
-            }
-
-            result.st_atime = atime;        // time of last access (unix timestamp) 
-            result.st_mtime = mtime;        // time of last modification (unix timestamp) 
-            result.st_ctime = ctime;        // time of last change (unix timestamp) 
-                                            //result.st_blksize = -1;   // blocksize of filesystem IO (-1)
-                                            //result.st_blocks = -1;    // number of blocks allocated  (-1)
-
-            return result;
+            return new StatStruct(
+                st_dev: device,
+                st_mode: BuildMode(info, attributes, path),
+                st_nlink: 1,
+                st_rdev: device,
+                st_size: info is FileInfo finfo ? finfo.Length : 0,
+                st_atime: ToStatUnixTimeStamp(info, (_info) => _info.LastAccessTimeUtc),
+                st_mtime: ToStatUnixTimeStamp(info, (_info) => _info.LastWriteTimeUtc),
+                st_ctime: ToStatUnixTimeStamp(info, (_info) => _info.CreationTimeUtc)
+                );
         }
 
         /// <summary>
@@ -913,7 +896,7 @@ namespace Pchp.Library.Streams
             return rv;
         }
 
-        public override StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
         {
             Debug.Assert(path != null);
 
@@ -924,20 +907,19 @@ namespace Pchp.Library.Streams
             {
                 FileSystemInfo info;
 
-                if (File.Exists(p))
-                {
-                    info = new FileInfo(p);
-                }
-                else if (System.IO.Directory.Exists(p))
+                info = new FileInfo(p);
+
+                if (info.Exists == false)
                 {
                     info = new DirectoryInfo(p);
-                }
-                else 
-                {
-                    // TODO: compiled scripts
-                    // TODO: embedded resources
 
-                    return StatStruct.Invalid;
+                    if (info.Exists == false)
+                    {
+                        // TODO: compiled scripts
+                        // TODO: embedded resources
+
+                        return StatStruct.Invalid;
+                    }
                 }
 
                 //
@@ -1877,7 +1859,7 @@ namespace Pchp.Library.Streams
             return base.Rename(fromPath, toPath, options, context);
         }
 
-        public override StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
         {
             PhpArray arr = (streamStat ?
                 InvokeWrapperMethod(PhpUserStream.USERSTREAM_STAT) :
@@ -1885,27 +1867,26 @@ namespace Pchp.Library.Streams
 
             if (arr != null)
             {
-                return new StatStruct()
-                {
-                    st_dev = (uint)(arr["dev"]),
-                    st_ino = (ushort)(arr["ino"]),
-                    st_mode = (ushort)(arr["mode"]),
-                    st_nlink = (short)(arr["nlink"]),
-                    st_uid = (short)(arr["uid"]),
-                    st_gid = (short)(arr["gid"]),
-                    st_rdev = (uint)(arr["rdev"]),
-                    st_size = (long)(arr["size"]),
+                return new StatStruct(
+                    st_dev: (uint)(arr["dev"]),
+                    st_ino: (ushort)(arr["ino"]),
+                    st_mode: (FileModeFlags)(ushort)(arr["mode"]),
+                    st_nlink: (short)(arr["nlink"]),
+                    st_uid: (short)(arr["uid"]),
+                    st_gid: (short)(arr["gid"]),
+                    st_rdev: (uint)(arr["rdev"]),
+                    st_size: (long)(arr["size"]),
 
-                    st_atime = (long)(arr["atime"]),
-                    st_mtime = (long)(arr["mtime"]),
-                    st_ctime = (long)(arr["ctime"]),
+                    st_atime: (long)(arr["atime"]),
+                    st_mtime: (long)(arr["mtime"]),
+                    st_ctime: (long)(arr["ctime"])
 
                     //st_blksize = (long)Convert.ObjectToLongInteger(arr["blksize"]),
                     //st_blocks = (long)Convert.ObjectToLongInteger(arr["blocks"]),
-                };
+                );
             }
 
-            return new StatStruct();
+            return StatStruct.Invalid;
         }
 
         public override bool Unlink(string path, StreamUnlinkOptions options, StreamContext context)

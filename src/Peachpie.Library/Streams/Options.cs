@@ -186,7 +186,7 @@ namespace Pchp.Library.Streams
     /// File attribute flags used in fileperms.
     /// </summary>
     [Flags]
-    public enum FileModeFlags
+    public enum FileModeFlags : ushort
     {
         /// <summary>Mask for file type.</summary>
         FileTypeMask = Directory | File | Character | Pipe,

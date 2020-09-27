@@ -2404,9 +2404,14 @@ namespace Pchp.Library.Streams
 
         public virtual StatStruct Stat()
         {
-            return (this.Wrapper != null)
-                ? this.Wrapper.Stat(OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true)
-                : StreamWrapper.StatUnsupported();
+            if (Wrapper != null)
+            {
+                var root = _encoding is Context ctx ? ctx.RootPath : null;
+
+                return Wrapper.Stat(root, OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true);
+            }
+
+            return StreamWrapper.StatUnsupported();
         }
 
         #endregion
