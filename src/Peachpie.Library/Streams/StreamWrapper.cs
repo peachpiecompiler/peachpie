@@ -1023,17 +1023,20 @@ namespace Pchp.Library.Streams
                     listing.Add(Path.GetFileName(entry));
                 }
             }
-            catch (DirectoryNotFoundException) when (!isCompiledDir)
+            catch (DirectoryNotFoundException)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_bad_directory, FileSystemUtils.StripPassword(path));
+                if (!isCompiledDir)
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_bad_directory, FileSystemUtils.StripPassword(path));
             }
-            catch (UnauthorizedAccessException) when (!isCompiledDir)
+            catch (UnauthorizedAccessException)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
+                if (!isCompiledDir)
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
             }
-            catch (System.Exception e) when (!isCompiledDir)
+            catch (System.Exception e)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
+                if (!isCompiledDir)
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
             }
 
             if (isCompiledDir)
