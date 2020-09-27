@@ -64,11 +64,11 @@ namespace Pchp.Core.Utilities
 
                 if (c == Path.VolumeSeparatorChar)
                 {
-                    break;
+                    return path.Slice(index + 1);
                 }
             }
 
-            return ReadOnlySpan<char>.Empty;
+            return path;
         }
 
         /// <summary>
