@@ -15,16 +15,16 @@ namespace Pchp.Core.Utilities
         /// Windows-style path separator (back slash).
         /// </summary>
         public const char DirectorySeparator = '\\';
-        
+
         /// <summary>
         /// Linux-style path separator (forward slash).
         /// </summary>
         public const char AltDirectorySeparator = '/';
-        
+
         static readonly char[] s_DirectorySeparators = new[] { DirectorySeparator, AltDirectorySeparator };
 
         public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
-        
+
         public static string TrimEndSeparator(this string path)
         {
             return IsDirectorySeparator(path.LastChar())
@@ -38,6 +38,62 @@ namespace Pchp.Core.Utilities
             return (index <= 0)
                 ? ReadOnlySpan<char>.Empty
                 : path.AsSpan(0, index);
+        }
+
+        /// <summary>
+        /// Gets the file name portion of the given path.
+        /// Trailing slashes are trimmed off.
+        /// </summary>
+        public static ReadOnlySpan<char> GetFileName(ReadOnlySpan<char> path)
+        {
+            for (int index = path.Length - 1; index >= 0; index--)
+            {
+                var c = path[index];
+
+                if (c == DirectorySeparator || c == AltDirectorySeparator)
+                {
+                    if (index == path.Length - 1)
+                    {
+                        // trim trailing slashes
+                        path = path.Slice(0, index);
+                        continue;
+                    }
+
+                    return path.Slice(index + 1);
+                }
+
+                if (c == Path.VolumeSeparatorChar)
+                {
+                    break;
+                }
+            }
+
+            return ReadOnlySpan<char>.Empty;
+        }
+
+        /// <summary>
+        /// Gets the file extension excluding the dot (.) character.
+        /// The method does not check for the path validity.
+        /// If path does not have an extension, empty string is returned.
+        /// </summary>
+        public static ReadOnlySpan<char> GetExtension(ReadOnlySpan<char> path)
+        {
+            for (int index = path.Length - 1; index >= 0; index--)
+            {
+                var c = path[index];
+
+                if (c == '.')
+                {
+                    return path.Slice(index + 1);
+                }
+
+                if (c == DirectorySeparator || c == AltDirectorySeparator || c == Path.VolumeSeparatorChar)
+                {
+                    break;
+                }
+            }
+
+            return ReadOnlySpan<char>.Empty;
         }
     }
 
