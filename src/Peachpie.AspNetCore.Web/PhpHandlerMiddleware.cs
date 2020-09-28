@@ -243,20 +243,6 @@ namespace Peachpie.AspNetCore.Web
             ctx.TrySetTimeLimit(GetRequestTimeout(ctx));
         }
 
-        void InvokeAndDispose(RequestContextCore phpctx, Context.ScriptInfo script)
-        {
-            try
-            {
-                OnContextCreated(phpctx);
-                phpctx.ProcessScript(script);
-            }
-            finally
-            {
-                phpctx.Dispose();
-                phpctx.RequestCompletionSource.TrySetResult(RequestCompletionReason.Finished);
-            }
-        }
-
         static Exception RequestTimeoutException()
         {
             // Note: FatalError in PHP
@@ -294,11 +280,23 @@ namespace Peachpie.AspNetCore.Web
         {
             Debug.Assert(script.IsValid);
 
-            var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding);
+            using var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding);
+
+            OnContextCreated(phpctx);
 
             // run the script, dispose phpctx when finished
             // using threadpool since we have to be able to end the request and keep script running
-            var task = Task.Run(() => InvokeAndDispose(phpctx, script));
+            var task = Task.Run(() =>
+            {
+                try
+                {
+                    phpctx.ProcessScript(script);
+                }
+                finally
+                {
+                    phpctx.RequestCompletionSource.TrySetResult(RequestCompletionReason.Finished);
+                }
+            });
             
             // wait for the request to finish,
             // do not block current thread
