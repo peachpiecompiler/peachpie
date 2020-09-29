@@ -2611,12 +2611,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         TypeSymbol IVariableReference.EmitLoadValue(CodeGenerator cg, ref LhsStack lhsStack, BoundAccess access)
         {
-            throw new InvalidOperationException();
+            throw new InvalidOperationException("list() as R-Value at " + ExceptionUtilities.GuessSourceLocation(cg, this));
         }
 
         TypeSymbol IVariableReference.EmitLoadAddress(CodeGenerator cg, ref LhsStack lhsStack)
         {
-            throw new InvalidOperationException();
+            throw new InvalidOperationException("list() as R-Value at " + ExceptionUtilities.GuessSourceLocation(cg, this));
         }
 
         #endregion
