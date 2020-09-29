@@ -1065,13 +1065,11 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Thrown if the <paramref name="step"/> argument is zero (or its absolute value less than 1 in the case 2).</exception>
         public static PhpArray range(Context ctx, PhpValue low, PhpValue high, PhpValue step)
         {
-            PhpNumber num_low, num_high, num_step;
-
             // converts each parameter to a number, determines what type of number it is (int/double)
             // and whether it wholly represents that number:
-            var info_step = step.ToNumber(out num_step);
-            var info_low = low.ToNumber(out num_low);
-            var info_high = high.ToNumber(out num_high);
+            var info_step = step.ToNumber(out var num_step);
+            var info_low = low.ToNumber(out var num_low);
+            var info_high = high.ToNumber(out var num_high);
 
             var is_step_double = (info_step & Core.Convert.NumberInfo.Double) != 0;
             var is_low_double = (info_low & Core.Convert.NumberInfo.Double) != 0;
