@@ -2309,21 +2309,41 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw cg.NotImplementedException(op: this);
             }
 
-            var conv = cg.DeclaringCompilation.ClassifyExplicitConversion(t, target);
-            if (conv.Exists == false)
-            {
-
-            }
-
-            cg.EmitConversion(conv, t, target);
-
-            //
-
             if (Access.IsNone)
             {
-                cg.EmitPop(target);
+                cg.EmitPop(t);
                 return cg.CoreTypes.Void;
             }
+
+            var conv = cg.DeclaringCompilation.ClassifyExplicitConversion(t, target);
+            if (conv.Exists == false && t.IsVoid())
+            {
+                if (target.IsValueType)
+                {
+                    // 0
+                    cg.EmitLoadDefault(target);
+                }
+                else if (target.SpecialType == SpecialType.System_String)
+                {
+                    // ""
+                    cg.Builder.EmitStringConstant(string.Empty);
+                }
+                else if (target.Is_PhpArray())
+                {
+                    // PhpArray(0)
+                    cg.Emit_PhpArray_NewEmpty();
+                }
+                else
+                {
+                    throw cg.NotImplementedException($"Conversion from {t} to {target}");
+                }
+            }
+            else
+            {
+                cg.EmitConversion(conv, t, target);
+            }
+
+            //
 
             return target;
         }
