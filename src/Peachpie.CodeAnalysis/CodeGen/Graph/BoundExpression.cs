@@ -3946,7 +3946,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            TypeSymbol result_type = cg.DeclaringCompilation.GetTypeFromTypeRef(cg.Routine, this.TypeRefMask);
+            TypeSymbol result_type = cg.DeclaringCompilation.GetTypeFromTypeRef(cg.TypeRefContext, this.TypeRefMask);
             bool result_isvoid = result_type.SpecialType == SpecialType.System_Void;
 
             object trueLbl = new object();
