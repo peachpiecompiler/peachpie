@@ -283,6 +283,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitPhpCtors(ImmutableArray<MethodSymbol> instancectors, Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
+            var emitPdb = module.Compilation.Options.OptimizationLevel == PhpOptimizationLevel.Debug; // emit sequence points in debug mode
+
             foreach (SynthesizedPhpCtorSymbol ctor in instancectors)
             {
                 module.SetMethodBody(ctor, MethodGenerator.GenerateMethodBody(module, ctor, il =>
@@ -295,7 +297,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     Debug.Assert(SpecialParameterSymbol.IsContextParameter(ctor.Parameters[0]));
 
-                    var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new ParamPlace(ctor.Parameters[0]), new ArgPlace(this, 0))
+                    var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, emitPdb, this,
+                        new ParamPlace(ctor.Parameters[0]),
+                        new ArgPlace(this, 0))
                     {
                         CallerType = this,
                         ContainingFile = ContainingFile,
@@ -354,7 +358,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     Debug.Assert(ctor.ReturnsVoid);
                     cg.EmitRet(ctor.ReturnType);
 
-                }, null, diagnostics, false));
+                }, null, diagnostics,
+                emittingPdb: emitPdb));
             }
         }
 
