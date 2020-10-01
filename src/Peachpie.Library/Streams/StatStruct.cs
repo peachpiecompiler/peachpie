@@ -14,7 +14,7 @@ namespace Pchp.Library.Streams
         /// <summary>inode number</summary>
         public readonly ushort st_ino;
         /// <summary>inode protection mode</summary>
-        public readonly ushort st_mode;
+        public readonly FileModeFlags st_mode;
         /// <summary>number of links</summary>
         public readonly short st_nlink;
         /// <summary>userid of owner</summary>
@@ -58,7 +58,7 @@ namespace Pchp.Library.Streams
         {
             this.st_dev = st_dev;
             this.st_ino = st_ino;
-            this.st_mode = (ushort)st_mode;
+            this.st_mode = st_mode;
             this.st_nlink = st_nlink;
             this.st_uid = st_uid;
             this.st_gid = st_gid;
@@ -79,10 +79,10 @@ namespace Pchp.Library.Streams
         /// </summary>
         internal bool IsValid => st_mode != 0;
 
-        public bool IsDirectory => ((FileModeFlags)st_mode & FileModeFlags.FileTypeMask) == FileModeFlags.Directory;
+        public bool IsDirectory => (st_mode & FileModeFlags.FileTypeMask) == FileModeFlags.Directory;
 
-        public bool IsFile => ((FileModeFlags)st_mode & FileModeFlags.FileTypeMask) == FileModeFlags.File;
+        public bool IsFile => (st_mode & FileModeFlags.FileTypeMask) == FileModeFlags.File;
 
-        public bool IsLink => ((FileModeFlags)st_mode & FileModeFlags.Link) != 0;
+        public bool IsLink => (st_mode & FileModeFlags.Link) != 0;
     }
 }

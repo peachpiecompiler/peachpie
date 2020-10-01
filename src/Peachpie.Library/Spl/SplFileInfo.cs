@@ -148,7 +148,7 @@ namespace Pchp.Library.Spl
         public virtual string getType()
         {
             // see filetype()
-            return ((FileModeFlags)Stat.st_mode & FileModeFlags.FileTypeMask) switch
+            return (Stat.st_mode & FileModeFlags.FileTypeMask) switch
             {
                 FileModeFlags.Directory => "dir",
                 FileModeFlags.File => "file",
@@ -157,11 +157,11 @@ namespace Pchp.Library.Spl
         }
 
         public virtual bool isDir() => Stat.IsDirectory;
-        public virtual bool isExecutable() => ((FileModeFlags)Stat.st_mode & FileModeFlags.Execute) != 0;
+        public virtual bool isExecutable() => (Stat.st_mode & FileModeFlags.Execute) != 0;
         public virtual bool isFile() => Stat.IsFile;
         public virtual bool isLink() => Stat.IsLink;
-        public virtual bool isReadable() => ((FileModeFlags)Stat.st_mode & FileModeFlags.Read) != 0;
-        public virtual bool isWritable() => ((FileModeFlags)Stat.st_mode & FileModeFlags.Write) != 0;
+        public virtual bool isReadable() => (Stat.st_mode & FileModeFlags.Read) != 0;
+        public virtual bool isWritable() => (Stat.st_mode & FileModeFlags.Write) != 0;
         public virtual SplFileObject openFile(Context ctx, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
         {
             if (string.IsNullOrEmpty(_file_class) ||

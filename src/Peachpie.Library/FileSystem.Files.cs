@@ -111,8 +111,9 @@ namespace Pchp.Library
         /// <param name="invalid">Invalid value.</param>
         /// <param name="path">Path to the resource passed to the <paramref name="action"/>. Also used for error control.</param>
         /// <param name="action">Action to try. The first argument is the path.</param>
+        /// <param name="quiet">True to suppress warning messages.</param>
         /// <returns>The value of <paramref name="action"/>() or <paramref name="invalid"/>.</returns>
-        internal static T HandleFileSystemInfo<T>(T invalid, string path, Func<string, T>/*!*/action)
+        internal static T HandleFileSystemInfo<T>(T invalid, string path, Func<string, T>/*!*/action, bool quiet = false)
         {
             try
             {
@@ -120,15 +121,24 @@ namespace Pchp.Library
             }
             catch (ArgumentException)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
+                if (!quiet)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
+                }
             }
             catch (PathTooLongException)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
+                if (!quiet)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
+                }
             }
             catch (System.Exception e)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
+                if (!quiet)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
+                }
             }
 
             return invalid;
@@ -218,10 +228,23 @@ namespace Pchp.Library
 		/// <returns>True if the file exists.</returns>
 		public static bool file_exists(Context ctx, string path)
         {
-            return !string.IsNullOrEmpty(path) &&  // check empty parameter quietly
-                ResolvePath(ctx, ref path, true, out var wrapper) &&
-                HandleFileSystemInfo(false, path, p => File.Exists(p) || System.IO.Directory.Exists(p)) || // check file system
-                Context.TryResolveScript(ctx.RootPath, path).IsValid;   // check a compiled script
+            if (!string.IsNullOrEmpty(path) && ResolvePath(ctx, ref path, true, out var wrapper))
+            {
+                if (wrapper.Scheme == FileStreamWrapper.scheme && File.Exists(path)) // faster than calling full stat
+                {
+                    return true;
+                }
+
+                var stat = wrapper.Stat(ctx.RootPath, path, StreamStatOptions.Quiet, StreamContext.Default, false);
+                return stat.IsValid; // file or directory
+            }
+
+            return false;
+
+            //return !string.IsNullOrEmpty(path) &&  // check empty parameter quietly
+            //    ResolvePath(ctx, ref path, true, out var wrapper) &&
+            //    HandleFileSystemInfo(false, path, p => File.Exists(p) || System.IO.Directory.Exists(p)) || // check file system
+            //    Context.TryResolveScript(ctx.RootPath, path).IsValid;   // check a compiled script
         }
 
         /// <summary>
@@ -485,7 +508,7 @@ namespace Pchp.Library
         public static int fileperms(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, false);
-            return stat.IsValid ? stat.st_mode : -1;
+            return stat.IsValid ? (int)stat.st_mode : -1;
         }
 
         /// <summary>
@@ -553,7 +576,7 @@ namespace Pchp.Library
         public static bool is_executable(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, true);
-            return ((FileModeFlags)stat.st_mode & FileModeFlags.Execute) > 0;
+            return (stat.st_mode & FileModeFlags.Execute) != 0;
         }
 
         /// <summary>
@@ -564,18 +587,19 @@ namespace Pchp.Library
         /// <returns></returns>
         public static bool is_file(Context ctx, string path)
         {
-            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0 && ResolvePath(ctx, ref path, false, out var wrapper))
+            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0)
             {
-                //string url;
-                //if (StatInternalTryCache(path, out url))
-                //    return ((FileModeFlags)statCache.st_mode & FileModeFlags.File) != 0;
+                if (ResolvePath(ctx, ref path, false, out var wrapper))
+                {
+                    // avoids calling full stat(), since it is slow
+                    if (wrapper.Scheme == FileStreamWrapper.scheme && File.Exists(path))
+                    {
+                        return true;
+                    }
 
-                // we can't just call File.Exists since we have to throw warnings
-                // also we are not calling full stat(), it is slow
-
-                return
-                    HandleFileSystemInfo(false, path, (p) => new FileInfo(p).Exists) || // check file system
-                    Context.TryResolveScript(ctx.RootPath, path).IsValid;   // check a compiled script
+                    // checks the full stat
+                    return wrapper.Stat(ctx.RootPath, path, default, StreamContext.Default, false).IsFile;
+                }
             }
 
             return false;
@@ -587,11 +611,12 @@ namespace Pchp.Library
         /// <remarks>
         /// Returns always <c>false</c>.
         /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="path"></param>
         /// <returns>Always <c>false</c></returns>
-        public static bool is_link(string path)
+        public static bool is_link(Context ctx, string path)
         {
-            return false; // OK
+            return ResolveStat(ctx, path, false).IsLink;
         }
 
         /// <summary>
@@ -603,7 +628,7 @@ namespace Pchp.Library
         public static bool is_readable(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, true);
-            return ((FileModeFlags)stat.st_mode & FileModeFlags.Read) > 0;
+            return (stat.st_mode & FileModeFlags.Read) != 0;
         }
 
         /// <summary>
@@ -623,7 +648,7 @@ namespace Pchp.Library
         public static bool is_writable(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, true);
-            return ((FileModeFlags)stat.st_mode & FileModeFlags.Write) > 0;
+            return (stat.st_mode & FileModeFlags.Write) > 0;
         }
 
         #endregion

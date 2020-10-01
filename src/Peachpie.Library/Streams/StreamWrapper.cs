@@ -930,7 +930,8 @@ namespace Pchp.Library.Streams
 
                 // not found
                 return null;
-            });
+            },
+            quiet: (options & StreamStatOptions.Quiet) != 0);
 
             if (info != null)
             {
@@ -938,13 +939,6 @@ namespace Pchp.Library.Streams
             }
 
             // compiled script
-            if (Context.TryGetScriptsInDirectory(root, path, out _))
-            {
-                return new StatStruct(
-                    st_mode: FileModeFlags.Directory | FileModeFlags.Read
-                );
-            }
-
             var script = Context.TryResolveScript(root, path);
             if (script.IsValid)
             {
@@ -952,6 +946,13 @@ namespace Pchp.Library.Streams
 
                 return new StatStruct(
                     st_mode: FileModeFlags.File | FileModeFlags.Read // CONSIDER: signalize the READ access?
+                );
+            }
+
+            if (Context.TryGetScriptsInDirectory(root, path, out _))
+            {
+                return new StatStruct(
+                    st_mode: FileModeFlags.Directory | FileModeFlags.Read
                 );
             }
 
