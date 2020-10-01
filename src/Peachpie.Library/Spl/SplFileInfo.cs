@@ -131,7 +131,7 @@ namespace Pchp.Library.Spl
         public virtual SplFileInfo getPathInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, PhpPath.dirname(_fullpath));
         /// <summary>Gets the path to the file</summary>
         public virtual string getPathname() => _originalPath;
-        public virtual long getPerms() => throw new NotImplementedException();
+        public virtual long getPerms() => (long)Stat.st_mode;
 
         /// <summary>This method expands all symbolic links, resolves relative references and returns the real path to the file.</summary>
         [return: CastToFalse]
