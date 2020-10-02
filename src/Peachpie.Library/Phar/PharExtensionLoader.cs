@@ -142,6 +142,20 @@ namespace Pchp.Library.Phar
                 return StatStruct.Invalid;
             }
 
+            public override List<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
+            {
+                // path is already normalized using ResolvePath method
+                // phar://{pharFile}/{entry}
+
+                if (TryResolvePhar(pharpath => PharExtensions.TryGetPhar(pharpath), path.AsSpan(), out var phar, out var entry))
+                {
+                    // TODO: list entries in given phar
+
+                }
+
+                return base.Listing(root, path, options, context);
+            }
+
             #endregion
 
             public override bool ResolveInclude(Context ctx, string cd, string path, out Context.ScriptInfo script)
