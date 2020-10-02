@@ -17,8 +17,11 @@ namespace Pchp.Library.Phar
     /// </summary>
     internal static class PharExtensions
     {
+        /// <summary>
+        /// Compiled .phar file internal representation.
+        /// </summary>
         [DebuggerDisplay("{PharFile,nq} ({Scripts.Length} scripts)")]
-        sealed class CachedPhar
+        internal sealed class CachedPhar
         {
             /// <summary>
             /// Containing assembly.
@@ -37,6 +40,7 @@ namespace Pchp.Library.Phar
 
             /// <summary>
             /// Associated resource manager.
+            /// Provides .phar content files.
             /// </summary>
             public ResourceManager Resources { get; }
 
@@ -101,9 +105,9 @@ namespace Pchp.Library.Phar
         /// Gets relative path to the phar entry.
         /// The returned string is in form <c>{relative phar path}{DS}{phar entry path}</c> (e.g. <c>file.phar/dir/file.php</c>).
         /// </summary>
-        public static string PharEntryRelativePath(string pharFile, string pharEntryPath)
+        public static string PharEntryRelativePath(string pharFile, ReadOnlySpan<char> pharEntryPath)
         {
-            return CurrentPlatform.NormalizeSlashes(pharFile + CurrentPlatform.DirectorySeparator.ToString() + pharEntryPath);
+            return $"{pharFile}{CurrentPlatform.DirectorySeparator}{pharEntryPath.ToString()}";
         }
 
         /// <summary>
@@ -167,23 +171,24 @@ namespace Pchp.Library.Phar
         /// Resolves Phar Alias to a PharFile (relative .phar file path).
         /// </summary>
         /// <returns>Relative .phar file path or <c>null</c>.</returns>
-        public static string AliasToPharFile(Context ctx, string alias)
+        public static CachedPhar AliasToPharFile(Context ctx, string alias)
         {
-            return ctx.GetStatic<PharContext>().PharMap.TryGetValue(alias, out var phar)
-                ? phar.PharFile
-                : null;
+            return ctx.GetStatic<PharContext>().PharMap.TryGetValue(alias, out var phar) ? phar : null;
         }
 
         /// <summary>
         /// Gets phar content file stream.
         /// </summary>
-        public static Stream GetResourceStream(string pharFile, string entryName)
+        public static Stream GetResourceStream(CachedPhar phar, ReadOnlySpan<char> entryName)
         {
-            if (s_cachedPhars != null && s_cachedPhars.TryGetValue(pharFile, out var phar) && phar.Resources != null)
+            if (s_cachedPhars != null && phar != null && phar.Resources != null)
             {
                 // TODO: the resource should be embedded as Stream
-                var content = phar.Resources.GetString(entryName.Replace('\\', '/'));
-                return new MemoryStream(Encoding.UTF8.GetBytes(content));
+                var content = phar.Resources.GetString(entryName.ToString().Replace('\\', '/'));
+                if (content != null)
+                {
+                    return new MemoryStream(Encoding.UTF8.GetBytes(content));
+                }
             }
 
             return null;
