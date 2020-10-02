@@ -865,6 +865,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             var obsolete = target?.ObsoleteAttributeData;
             if (obsolete != null)
             {
+                // do not report the deprecation if the containing method itself is deprecated
+                if (_routine?.ObsoleteAttributeData != null)
+                {
+                    return;
+                }
+
                 _diagnostics.Add(_routine, GetMemberNameSpanForDiagnostic(syntax), ErrorCode.WRN_SymbolDeprecated, target.Kind.ToString(), GetMemberNameForDiagnostic(target, isMemberCall), obsolete.Message);
             }
         }
