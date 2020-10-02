@@ -28,6 +28,17 @@ namespace Pchp.Library.Phar
 
             static bool TryResolvePhar(Context ctx, ReadOnlySpan<char> path, out CachedPhar phar, out ReadOnlySpan<char> entry)
             {
+                return TryResolvePhar(pharpath =>
+                {
+                    // NOTE: currently, only mapped phars are resolved!
+                    // TODO: resolve not-mapped phars (resolve path to root ... find .phar in compiled scripts ...)
+
+                    return PharExtensions.AliasToPharFile(ctx, pharpath) ?? PharExtensions.TryGetPhar(pharpath);
+                }, path, out phar, out entry);
+            }
+
+            static bool TryResolvePhar(Func<string, CachedPhar> resolver, ReadOnlySpan<char> path, out CachedPhar phar, out ReadOnlySpan<char> entry)
+            {
                 phar = default;
                 entry = default;
 
@@ -47,9 +58,6 @@ namespace Pchp.Library.Phar
                     return false;
                 }
 
-                // NOTE: currently, only mapped phars are resolved!
-                // TODO: resolve not-mapped phars (ResolvePath ... find .phar in compiled scripts ...)
-
                 // find the phar
                 for (int slash = 0; slash <= path.Length; slash++)
                 {
@@ -57,7 +65,7 @@ namespace Pchp.Library.Phar
                     {
                         var pharpath = path.Slice(0, slash);
 
-                        phar = PharExtensions.AliasToPharFile(ctx, pharpath.ToString());
+                        phar = resolver(pharpath.ToString());
 
                         if (phar != null)
                         {
@@ -93,6 +101,45 @@ namespace Pchp.Library.Phar
                 }
 
                 return null;
+            }
+
+            public override void ResolvePath(Context ctx, ref string path)
+            {
+                // resolve the phar alias or phar relative path
+                // phar://filename.phar/entryname -> phar://resolve_filename.phar/entryname
+                if (TryResolvePhar(ctx, path.AsSpan(), out var phar, out var entry))
+                {
+                    path = $"{scheme}://{phar.PharFile}/{entry.ToString()}";
+                }
+            }
+
+            public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
+            {
+                // path is already normalized using ResolvePath method
+                // phar://{pharFile}/{entry}
+
+                if (TryResolvePhar(pharpath => PharExtensions.TryGetPhar(pharpath), path.AsSpan(), out var phar, out var entry))
+                {
+                    if (entry.IsEmpty)
+                    {
+                        // phar stub itself
+                        return new StatStruct(st_mode: FileModeFlags.File | FileModeFlags.Read);
+                    }
+
+                    if (phar.Scripts.IndexOf(entry.ToString()) >= 0)
+                    {
+                        return new StatStruct(st_mode: FileModeFlags.File | FileModeFlags.Read);
+                    }
+
+                    if (GetResourceContent(phar, entry) != null)
+                    {
+                        return new StatStruct(st_mode: FileModeFlags.File | FileModeFlags.Read);
+                    }
+
+                    // TODO: directory
+                }
+
+                return StatStruct.Invalid;
             }
 
             #endregion
