@@ -241,9 +241,12 @@ namespace Pchp.Library.Streams
             {
                 // Note: path contains the whole URL, filename the same without the scheme:// portion.
                 // What to check more?
+                wrapper.ResolvePath(ctx, ref path);
             }
             else if (scheme != "php")
             {
+                // TODO: move following to StreamWrapper.ResolvePath()
+
                 try
                 {
                     // Filename contains the original path without the scheme:// portion, check for include path.

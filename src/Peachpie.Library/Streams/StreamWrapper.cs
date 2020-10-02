@@ -150,6 +150,14 @@ namespace Pchp.Library.Streams
             return false;
         }
 
+        /// <summary>
+        /// Allows the wrapper to get the full path.
+        /// </summary>
+        public virtual void ResolvePath(Context ctx, ref string path)
+        {
+            // to be overriden
+        }
+
         #endregion
 
         #region Helper methods (ParseMode, FileSystemUtils.StripPassword)
