@@ -182,7 +182,7 @@ namespace Pchp.Core
         /// <summary>
         /// Tries to resolve compiled script according to given path.
         /// </summary>
-        public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, null, null, null);
+        public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, include_path: null, working_dir: root, script_dir: null);
 
         /// <summary>
         /// Gets script according to its relative path as it was declared in <see cref="Context"/>.

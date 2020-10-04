@@ -76,6 +76,15 @@ namespace Pchp.Core
             /// </summary>
             readonly MainDelegate MainMethod;
 
+            /// <summary>
+            /// Gets the type containing the <see cref="MainMethod"/>.
+            /// </summary>
+            /// <returns>The type or <c>null</c>.</returns>
+            internal Type GetScriptType()
+            {
+                return MainMethod != null ? MainMethod.Method.DeclaringType : null;
+            }
+
             public static MainDelegate CreateMain(Type script)
             {
                 var mainmethod =
