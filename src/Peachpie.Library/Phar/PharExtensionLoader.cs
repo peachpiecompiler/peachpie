@@ -30,10 +30,17 @@ namespace Pchp.Library.Phar
             {
                 return TryResolvePhar(pharpath =>
                 {
-                    // NOTE: currently, only mapped phars are resolved!
-                    // TODO: resolve not-mapped phars (resolve path to root ... find .phar in compiled scripts ...)
+                    var result = PharExtensions.AliasToPharFile(ctx, pharpath);
 
-                    return PharExtensions.AliasToPharFile(ctx, pharpath) ?? PharExtensions.TryGetPhar(pharpath);
+                    if (result == null && pharpath.EndsWith(PharExtensions.PharExtension, CurrentPlatform.PathStringComparison))
+                    {
+                        // resolve not-mapped phars (resolve path to root ... find .phar in compiled scripts ...)
+                        var stub = Context.TryResolveScript(ctx.RootPath, pharpath);
+                        result = PharExtensions.TryGetCachedPhar(stub);
+                    }
+
+                    return result;
+
                 }, path, out phar, out entry);
             }
 
@@ -126,7 +133,8 @@ namespace Pchp.Library.Phar
                         return new StatStruct(st_mode: FileModeFlags.File | FileModeFlags.Read);
                     }
 
-                    if (phar.Scripts.IndexOf(entry.ToString()) >= 0)
+                    // pharfile.phar/entryname
+                    if (phar.Scripts.IndexOf($"{phar.PharFile}{CurrentPlatform.DirectorySeparator}{entry.ToString()}") >= 0)
                     {
                         return new StatStruct(st_mode: FileModeFlags.File | FileModeFlags.Read);
                     }

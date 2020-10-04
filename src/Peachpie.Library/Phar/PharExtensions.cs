@@ -45,10 +45,10 @@ namespace Pchp.Library.Phar
             /// </summary>
             public ResourceManager Resources { get; }
 
-            public CachedPhar(Type stubScriptType)
+            public CachedPhar(string pharFile, Type stubScriptType)
             {
                 Assembly = stubScriptType.Assembly;
-                PharFile = GetPharFile(stubScriptType);
+                PharFile = pharFile ?? GetPharFile(stubScriptType);
                 Resources = new ResourceManager($"phar://{PharFile}", Assembly);
 
                 Scripts = EnumeratePharScripts(stubScriptType.Assembly, PharFile)
@@ -56,7 +56,7 @@ namespace Pchp.Library.Phar
                     {
                         var relpath = PharEntryRelativePath(t);
                         Context.DeclareScript(relpath, Context.ScriptInfo.CreateMain(t));
-                        return relpath;
+                        return CurrentPlatform.NormalizeSlashes(relpath);
                     })
                     .ToArray();
             }
@@ -83,8 +83,8 @@ namespace Pchp.Library.Phar
         /// </summary>
         public static string GetPharFile(Type stubScriptType)
         {
-            var attr = ReflectionUtils.GetScriptAttribute(stubScriptType);
-            if (attr != null && attr.Path.EndsWith(PharExtension, StringComparison.OrdinalIgnoreCase))
+            var attr = ReflectionUtils.GetScriptAttribute(stubScriptType ?? throw new ArgumentNullException(nameof(stubScriptType)));
+            if (attr != null && attr.Path.EndsWith(PharExtension, CurrentPlatform.PathStringComparison))
             {
                 return attr.Path;
             }
@@ -132,11 +132,23 @@ namespace Pchp.Library.Phar
             return phar;
         }
 
-        static CachedPhar EnsureCachedPhar(Type stubScriptType)
+        static CachedPhar TryGetCachedPhar(Type stubScriptType)
         {
-            var pharFile = GetPharFile(stubScriptType);
+            if (stubScriptType != null)
+            {
+                var pharFile = GetPharFile(stubScriptType);
+                if (pharFile != null)
+                {
+                    return s_cachedPhars.GetOrAdd(pharFile, _pharFile => new CachedPhar(_pharFile, stubScriptType));
+                }
+            }
 
-            return s_cachedPhars.GetOrAdd(pharFile, _pharFile => new CachedPhar(stubScriptType));
+            return null;
+        }
+
+        public static CachedPhar TryGetCachedPhar(Context.ScriptInfo stubscript)
+        {
+            return TryGetCachedPhar(ContextExtensions.GetScriptTypeFromScript(stubscript));
         }
 
         /// <summary>
@@ -144,7 +156,7 @@ namespace Pchp.Library.Phar
         /// </summary>
         public static bool MapPhar(Context ctx, Type stubScriptType, string alias)
         {
-            var phar = EnsureCachedPhar(stubScriptType);
+            var phar = TryGetCachedPhar(stubScriptType);
             if (phar != null)
             {
                 if (alias != null)
