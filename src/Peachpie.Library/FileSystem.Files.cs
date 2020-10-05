@@ -1,4 +1,5 @@
-﻿using Pchp.Core;
+﻿using Mono.Unix;
+using Pchp.Core;
 using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
@@ -6,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Threading.Tasks;
@@ -749,7 +751,32 @@ namespace Pchp.Library
         {
             if (PhpPath.ResolvePath(ctx, ref filename, false, out var wrapper))
             {
-                var fs = new FileSecurity(filename, AccessControlSections.Owner);   // throws if file does not exist or no permissions
+                try
+                {
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        return WindowsChown(filename, user);
+                    }
+                    else
+                    {
+                        return PosixChown(filename, user);
+                    }
+                }
+                catch (Exception e)
+                {
+                    PhpException.Throw(PhpError.Warning, e.Message);
+                    return false;
+                }
+            }
+
+            //
+            return false;
+
+            static bool WindowsChown(string filename, PhpValue user)
+            {
+                var fileInfo = new FileInfo(filename);
+                var fileSecurity = fileInfo.GetAccessControl(AccessControlSections.Owner); // throws if file does not exist or no permissions
+
                 IdentityReference identity;
                 if (user.IsString(out var uname))
                 {
@@ -760,23 +787,39 @@ namespace Pchp.Library
 
                     identity = new NTAccount(domain_user.Item1, domain_user.Item2);
                 }
-                //else if (user.IsLong(out var uid))
-                //{
+                else
+                {
+                    // There's no UID on Windows (only SID, which is not a pure number)
+                    PhpException.InvalidArgumentType(nameof(user), PhpVariable.TypeNameString);
+                    return false;
+                }
 
-                //}
+                fileSecurity.SetOwner(identity);
+                fileInfo.SetAccessControl(fileSecurity); // throws if no permission or error
+
+                return true;
+            }
+
+            static bool PosixChown(string filename, PhpValue user)
+            {
+                var file = UnixFileInfo.GetFileSystemEntry(filename);
+
+                if (user.IsString(out var uname))
+                {
+                    file.SetOwner(uname);
+                }
+                else if (user.IsLong(out long uid))
+                {
+                    file.SetOwner(new UnixUserInfo(uid));
+                }
                 else
                 {
                     PhpException.InvalidArgumentType(nameof(user), PhpVariable.TypeNameString);
                     return false;
                 }
 
-                //var identity = user.IsString(out var uname) ? new NTAccount(uname) : user.IsLong(out var uid) ? new IdentityReference(...) : null;
-                fs.SetOwner(identity);  // throws if no permission or error
                 return true;
             }
-
-            //
-            return false;
         }
 
         /// <summary>
