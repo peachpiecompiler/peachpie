@@ -155,7 +155,9 @@
 
     <ItemGroup Condition=" '$(ComposerDependencies)'=='true' ">
       <!-- this will be enabled by default -->
-      <PackageReference Include="@(ComposerPackageReference->'%(Name)')" />
+      <PackageReference Include="@(ComposerPackageReference->'%(Name)')">
+        <PrivateAssets>None</PrivateAssets>
+      </PackageReference>
     </ItemGroup>
 
   </Target>
