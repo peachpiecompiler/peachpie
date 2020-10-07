@@ -1612,7 +1612,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         statements.AddRange(ns.Body.Statements);
                     }
-                    else if (stmt is EmptyStmt || stmt is TypeDecl || stmt is DeclareStmt)
+                    else if (stmt is EmptyStmt || stmt is TypeDecl || stmt is DeclareStmt || stmt is PHPDocStmt)
                     {
                         continue;
                     }
