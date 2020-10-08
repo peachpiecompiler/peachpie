@@ -5,9 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
-using static Devsense.PHP.Syntax.Name;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Emit;
@@ -106,7 +103,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     CallerType = this,
                 };
 
-                cg.EmitRet(cg.EmitForwardCall(__invoke, invoke, callvirt: true));
+                var rtype = invoke.ReturnType;
+                // Template: return (T)__invoke()
+                cg.EmitConvert(cg.EmitForwardCall(__invoke, invoke, callvirt: true), default, rtype);
+                cg.EmitRet(rtype);
 
             }, null, diagnostics, false));
 
