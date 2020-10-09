@@ -120,13 +120,15 @@ namespace Pchp.Library
 
             if (buf.Level == 0)
             {
-                //PhpException.Throw(PhpError.Notice, CoreResources.GetString("output_buffering_disabled"));
-                //return false;
-                throw new NotImplementedException();
+                // "failed to delete buffer. No buffer to delete"
+                PhpException.Throw(PhpError.Notice, Core.Resources.ErrResources.output_buffering_disabled);
+                return false;
             }
 
             if (buf.DecreaseLevel(flush) < 0)
+            {
                 ctx.IsOutputBuffered = false;
+            }
 
             return true;
         }
