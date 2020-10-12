@@ -82,6 +82,11 @@ namespace Peachpie.AspNetCore.Web
             };
             _prefix = configuration.PathPrefix;
 
+            if (_prefix.Value == "/")
+            {
+                _prefix = PathString.Empty;
+            }
+
             // legacy options
             ConfigureOptions(_options, configuration.LegacyOptions);
 
@@ -263,7 +268,7 @@ namespace Peachpie.AspNetCore.Web
 
         public Task InvokeAsync(HttpContext context)
         {
-            if (context.Request.Path.StartsWithSegments(_prefix))
+            if (string.IsNullOrEmpty(_prefix.Value) || context.Request.Path.StartsWithSegments(_prefix))
             {
                 var script = RequestContextCore.ResolveScript(context.Request);
                 if (script.IsValid)
@@ -297,7 +302,7 @@ namespace Peachpie.AspNetCore.Web
                     phpctx.RequestCompletionSource.TrySetResult(RequestCompletionReason.Finished);
                 }
             });
-            
+
             // wait for the request to finish,
             // do not block current thread
             var reason = await phpctx.RequestCompletionSource.Task;
