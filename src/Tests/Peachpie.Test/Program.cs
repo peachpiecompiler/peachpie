@@ -12,7 +12,7 @@ namespace Peachpie.Test
         {
             // bootstrapper that compiles, loads and runs our script file
 
-            var fullpath = Path.Combine(Directory.GetCurrentDirectory(), ScriptPath);
+            var fullpath = Path.GetFullPath(args.Length != 0 ? args[0] : ScriptPath);
 
             using (var ctx = Context.CreateConsole(string.Empty, args))
             {

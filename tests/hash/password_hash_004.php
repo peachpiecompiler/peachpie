@@ -4,7 +4,7 @@ namespace hash\password_hash_004;
 $password = "rasmuslerdorf";
 $memory_cost = 512;
 $time_cost = 4.3;
-$threads = "1";
+$threads = "3";
 
 $options = [
     'threads' => $threads,

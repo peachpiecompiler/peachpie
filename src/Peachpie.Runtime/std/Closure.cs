@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 
 [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
 public sealed class Closure : IPhpCallable, IPhpPrintable
@@ -86,18 +85,18 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     /// </summary>
     public static Closure fromCallable(Context ctx, IPhpCallable callable)
     {
-        if (callable == null)
+        if (callable is Closure closure)
         {
-            throw new ArgumentNullException(nameof(callable));
+            return closure;
         }
 
-        if (callable is Closure)
+        if (callable != null && PhpVariable.IsValidBoundCallback(ctx, callable))
         {
-            return (Closure)callable;
+            return new Closure(ctx, callable, null, default, null, PhpArray.Empty, PhpArray.Empty);
         }
 
-        //
-        return new Closure(ctx, callable, null, default, null, PhpArray.Empty, PhpArray.Empty);
+        // TypeError: Failed to create closure from callable
+        throw PhpException.TypeErrorException(ErrResources.cannot_create_closure_from_callable);
     }
 
     /// <summary>
@@ -107,7 +106,7 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     {
         // create new Closure with updated '$this' and `scope`
 
-        return new Closure(_ctx, _callable, newthis, ResolveNewScope(newthis, newscope), null/*static is replaced with mew scope*/, parameter, @static);
+        return new Closure(_ctx, _callable, newthis, ResolveNewScope(newthis, newscope), null/*static is replaced with new scope*/, parameter, @static);
     }
 
     internal RuntimeTypeHandle ResolveNewScope(object newthis, PhpValue? newscope = default)

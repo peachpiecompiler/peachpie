@@ -1,6 +1,7 @@
 ﻿using Pchp.Core;
 using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
+using Pchp.Library.Resources;
 using Pchp.Library.Streams;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static Pchp.Library.PhpIniParser;
-using static Pchp.Library.Streams.PhpStreams;
 
 namespace Pchp.Library
 {
@@ -28,7 +28,7 @@ namespace Pchp.Library
         Typed = 2,
     };
 
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class PhpIni
     {
         public const int INI_SCANNER_NORMAL = (int)ScannerMode.Normal;
@@ -36,7 +36,7 @@ namespace Pchp.Library
         public const int INI_SCANNER_TYPED = (int)ScannerMode.Typed;
 
         #region parse_ini_string
-        
+
         /// <summary>
         /// Parse a configuration string.
         /// </summary>
@@ -48,18 +48,22 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_ini_string(Context ctx, string ini, bool processSections = false, ScannerMode scanner_mode = ScannerMode.Normal)
         {
-            if (scanner_mode != (int)ScannerMode.Normal)  // TODO: handle value 1
-                PhpException.ArgumentValueNotSupported("scanner_mode", scanner_mode);
+            if (!ValidateScannerMode(scanner_mode))
+            {
+                return null; // FALSE
+            }
 
             if (string.IsNullOrEmpty(ini))
-                return null;
+            {
+                return new PhpArray();
+            }
 
             var builder = new ArrayBuilder(ctx, processSections);
 
             try
             {
                 // parse the stream and let the builder build the resulting array
-                Parse(ctx, ini, builder);
+                Parse(ctx, ini, builder, scanner_mode);
             }
             catch (ParseException e)
             {
@@ -96,19 +100,24 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray parse_ini_file(Context ctx, string fileName, bool processSections = false, ScannerMode scanner_mode = ScannerMode.Normal)
         {
-            if (scanner_mode != (int)ScannerMode.Normal)  // TODO: handle value 1
-                PhpException.ArgumentValueNotSupported("scanner_mode", scanner_mode);
+            if (!ValidateScannerMode(scanner_mode))
+            {
+                return null; // FALSE
+            }
 
             // we're using binary mode because CR/LF stuff should be preserved for multiline values
             using (PhpStream stream = PhpStream.Open(ctx, fileName, "rb", StreamOpenOptions.ReportErrors, StreamContext.Default))
             {
-                if (stream == null) return null;//new PhpArray();
+                if (stream == null)
+                {
+                    return null;//new PhpArray();
+                }
 
                 ArrayBuilder builder = new ArrayBuilder(ctx, processSections);
                 try
                 {
                     // parse the stream and let the builder build the resulting array
-                    Parse(ctx, stream, builder);
+                    Parse(ctx, stream, builder, scanner_mode);
                 }
                 catch (ParseException e)
                 {
@@ -207,7 +216,14 @@ namespace Pchp.Library
             /// </summary>
             public void ProcessOption(IntStringKey key, string value)
             {
-                _currentSection[key] = (PhpValue)value;
+                if (key.IsString)
+                {
+                    NameValueCollectionUtils.AddVariable(_currentSection, key.String, value, rawname: true);
+                }
+                else
+                {
+                    _currentSection[key] = value;
+                }
             }
 
             /// <summary>
@@ -215,14 +231,7 @@ namespace Pchp.Library
             /// </summary>
             public PhpValue GetConstantValue(string name)
             {
-                if (_ctx.TryGetConstant(name, out PhpValue value))
-                {
-                    return value;
-                }
-                else
-                {
-                    return (PhpValue)name;
-                }
+                return _ctx.TryGetConstant(name, out var value) ? value : name;
             }
 
             #endregion
@@ -238,16 +247,33 @@ namespace Pchp.Library
     /// </remarks>
 	internal sealed class PhpIniParser
     {
+        public static bool ValidateScannerMode(ScannerMode scanner_mode)
+        {
+            switch (scanner_mode)
+            {
+                case ScannerMode.Normal:
+                case ScannerMode.Raw:
+                case ScannerMode.Typed:
+                    return true;
+
+                default:
+                    // Warning: Invalid scanner mode
+                    PhpException.Throw(PhpError.Warning, LibResources.invalid_scanner_mode);
+                    return false;
+            }
+        }
+
         /// <summary>
         /// Parses an INI-style configuration file.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="stream">A stream referring to the file to parse. Should be open in binary mode.</param>
         /// <param name="callbacks">Implementation of the parser callbacks invoked during parsing.</param>
+        /// <param name="scanner_mode">Scanner mode to use </param>
         /// <exception cref="ParseException">Parse error.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="callbacks"/> is a <B>null</B> reference.</exception>
         /// <exception cref="ArgumentException">Stream is was not opened as binary.</exception>
-        internal static void Parse(Context ctx, PhpStream stream, IParserCallbacks callbacks)
+        internal static void Parse(Context ctx, PhpStream stream, IParserCallbacks callbacks, ScannerMode scanner_mode)
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
@@ -256,18 +282,18 @@ namespace Pchp.Library
             if (callbacks == null)
                 throw new ArgumentNullException("callbacks");
 
-            PhpIniParser parser = new PhpIniParser(stream, callbacks);
+            PhpIniParser parser = new PhpIniParser(stream, callbacks, scanner_mode);
             parser.TopLevel(ctx);
         }
 
-        internal static void Parse(Context ctx, string ini, IParserCallbacks callbacks)
+        internal static void Parse(Context ctx, string ini, IParserCallbacks callbacks, ScannerMode scanner_mode)
         {
             if (ini == null)
                 throw new ArgumentNullException("ini");
             if (callbacks == null)
                 throw new ArgumentNullException("callbacks");
 
-            PhpIniParser parser = new PhpIniParser(ini, callbacks);
+            PhpIniParser parser = new PhpIniParser(ini, callbacks, scanner_mode);
             parser.TopLevel(ctx);
         }
 
@@ -315,10 +341,13 @@ namespace Pchp.Library
             internal const char BracketClose = ']';
             internal const char EqualS = '=';
             internal const char Quote = '"';
+            internal const char Apostrophe = '\'';
             internal const char Semicolon = ';';
+            internal const char Slash = '\\';
 
             internal const char Or = '|';
             internal const char And = '&';
+            internal const char Xor = '^';
             internal const char Not = '!';
             internal const char Neg = '~';
             internal const char ParOpen = '(';
@@ -337,14 +366,9 @@ namespace Pchp.Library
         internal class ParseException : Exception
         {
             /// <summary>
-            /// Number of the line where the parse error occured.
-            /// </summary>
-            int _lineNumber;
-
-            /// <summary>
             /// Returns the number of the line where the parse error occured.
             /// </summary>
-            public int LineNumber => _lineNumber;
+            public int LineNumber { get; }
 
             /// <summary>
             /// Creates a new <see cref="ParseException"/>.
@@ -352,7 +376,7 @@ namespace Pchp.Library
             /// <param name="lineNumber">Number of the line where the parse error occured.</param>
             public ParseException(int lineNumber)
             {
-                _lineNumber = lineNumber;
+                this.LineNumber = lineNumber;
             }
         }
 
@@ -455,6 +479,16 @@ namespace Pchp.Library
         /// </remarks>
         private int linePos;
 
+        /// <summary>
+        /// Current character used as quotes (either " or ')
+        /// </summary>
+        private char currentQuoteChar;
+
+        /// <summary>
+        /// The current scanner mode (NORMAL, RAW...) to change the way option value are handled
+        /// </summary>
+        private readonly ScannerMode scanner_mode;
+
         #endregion
 
         #region Construction
@@ -464,10 +498,10 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="stream">The input stream. Should be open in binary mode.</param>
         /// <param name="callbacks">Implementation of the parser callbacks invoked during parsing.</param>
-        private PhpIniParser(PhpStream stream, IParserCallbacks callbacks)
+        /// <param name="scanner_mode">Scanner mode.</param>
+        private PhpIniParser(PhpStream stream, IParserCallbacks callbacks, ScannerMode scanner_mode)
+            : this(new LineGetterStream(stream), callbacks, scanner_mode)
         {
-            this.lineGetter = new LineGetterStream(stream);
-            this.callbacks = callbacks;
         }
 
         /// <summary>
@@ -475,10 +509,17 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="text">The input INI file content.</param>
         /// <param name="callbacks">Implementation of the parser callbacks invoked during parsing.</param>
-        private PhpIniParser(string text, IParserCallbacks callbacks)
+        /// <param name="scanner_mode">Scanner mode.</param>
+        private PhpIniParser(string text, IParserCallbacks callbacks, ScannerMode scanner_mode)
+            : this(new LineGetterString(text), callbacks, scanner_mode)
         {
-            this.lineGetter = new LineGetterString(text);
+        }
+
+        private PhpIniParser(LineGetter lineGetter, IParserCallbacks callbacks, ScannerMode scanner_mode)
+        {
+            this.lineGetter = lineGetter;
             this.callbacks = callbacks;
+            this.scanner_mode = scanner_mode;
         }
 
         #endregion
@@ -620,39 +661,50 @@ namespace Pchp.Library
         /// <param name="start">The start index of the substring (within the current <see cref="line"/>).</param>
         /// <param name="length">The length of the substring.</param>
         /// <returns>The value found at the position given by <paramref name="start"/> and <paramref name="length"/>.
-        /// This may be either a string or an integer (decimal numbers are decoded and constants are looked up).
+        /// <para>If scanner mode is Normal (default), this may be either a string or an integer (decimal numbers are decoded and constants are looked up).</para>
+        /// <para>If scanner mode is Raw, this is a string</para>
         /// </returns>
         private PhpValue SubstringToValue(int start, int length)
         {
             Debug.Assert(start >= 0 && start <= line.Length && (start + length) <= line.Length);
 
-            if (length == 0) return (PhpValue)String.Empty;
+            if (length == 0)
+            {
+                return string.Empty;
+            }
 
             // check for decimal number
-            int pos = start;
-            long res = Core.Convert.SubstringToLongInteger(line, length, ref pos);
+            var pos = start;
+            var res = Core.Convert.SubstringToLongInteger(line, length, ref pos); // TODO: to number (double as well)
             if (pos == start + length)
             {
-                return (PhpValue)res;
+                return res;
             }
 
-            string val = line.Substring(start, length);
+            var val = line.AsSpan(start, length);
 
             // check for predefined "INI constants"
-            switch (val.ToUpperInvariant())
+
+            if (val.EqualsOrdinalIgnoreCase("true") ||
+                val.EqualsOrdinalIgnoreCase("on") ||
+                val.EqualsOrdinalIgnoreCase("yes"))
             {
-                case "ON":
-                case "YES": return (PhpValue)"1";
-
-                case "OFF":
-                case "NO":
-                case "NONE": return (PhpValue)String.Empty;
-
-                default:
-                    {
-                        return callbacks.GetConstantValue(val);
-                    }
+                return scanner_mode == ScannerMode.Typed ? PhpValue.True : "1";
             }
+
+            if (val.EqualsOrdinalIgnoreCase("null"))
+            {
+                return scanner_mode == ScannerMode.Typed ? PhpValue.Null : string.Empty;
+            }
+            if (val.EqualsOrdinalIgnoreCase("false") ||
+                val.EqualsOrdinalIgnoreCase("off") ||
+                val.EqualsOrdinalIgnoreCase("no") ||
+                val.EqualsOrdinalIgnoreCase("none"))
+            {
+                return scanner_mode == ScannerMode.Typed ? PhpValue.False : string.Empty;
+            }
+
+            return callbacks.GetConstantValue(val.ToString());
         }
 
         #endregion
@@ -709,6 +761,10 @@ namespace Pchp.Library
                         }
                     }
                 }
+
+                // Reset quoted char if not multiline
+                if (!multiline)
+                    currentQuoteChar = default;
             }
 
             // check for an unterminated multi-line value
@@ -752,23 +808,15 @@ namespace Pchp.Library
         /// <returns>The option name (either a string or an integer).</returns>
         private IntStringKey? Key()
         {
-            int start = linePos, end = linePos, whitespace = start - 1;
+            int start = linePos, end = linePos;
             char ch;
             while ((ch = Consume()) != Tokens.EqualS)
             {
                 if (ch == Tokens.EndOfLine || ch == Tokens.Semicolon) return null;
 
-                // remember the last non-whitespace and whitespace
                 if (!Char.IsWhiteSpace(ch))
                 {
                     end = linePos;
-
-                    if (linePos == (whitespace + 1))  // new word starts, ignore the words before
-                        start = linePos - 1;
-                }
-                else
-                {
-                    whitespace = linePos;
                 }
             }
 
@@ -794,15 +842,18 @@ namespace Pchp.Library
 
             // this is the first line (just after the =)
             ConsumeWhiteSpace();
-            if (LookAhead == Tokens.Quote)
+            if (LookAhead == Tokens.Quote || LookAhead == Tokens.Apostrophe)
             {
                 // quoted string starts here
+                currentQuoteChar = LookAhead;
                 Consume();
                 return QuotedValue(out multiline);
             }
 
-            // no quotes - let's parse an expression
-            var result = Expression().ToStringOrThrow(ctx);
+            // no quotes - let's get the value
+            var result = scanner_mode == ScannerMode.Raw
+                ? Raw()
+                : Expression().ToStringOrThrow(ctx);
 
             // must have reached end-of-line
             if (LookAhead != Tokens.EndOfLine && LookAhead != Tokens.Semicolon) throw new ParseException(lineNumber);
@@ -822,16 +873,27 @@ namespace Pchp.Library
         private string QuotedValue(out bool moreLinesFollow)
         {
             char ch;
-            int start = linePos;
+            bool nextQuoteIsEscaped = false;
+            var sb = new StringBuilder();
 
             // reading next line of a multiline quoted string
             while ((ch = Consume()) != Tokens.EndOfLine)
             {
-                if (ch == Tokens.Quote)
+                if (ch == Tokens.Slash)
+                {
+                    // Next quote may be escaped
+                    nextQuoteIsEscaped = true;
+                }
+                else if (ch == currentQuoteChar && nextQuoteIsEscaped)
+                {
+                    // Quote is escaped, remove the escape char and continue
+                    sb.Length--;
+                    nextQuoteIsEscaped = false;
+                }
+                else if (ch == currentQuoteChar)
                 {
                     // right quote
                     moreLinesFollow = false;
-                    int end = linePos - 1;
 
                     ConsumeWhiteSpace();
                     if (LookAhead != Tokens.EndOfLine && LookAhead != Tokens.Semicolon)
@@ -839,13 +901,19 @@ namespace Pchp.Library
                         throw new ParseException(lineNumber);
                     }
 
-                    return line.Substring(start, end - start);
+                    return sb.ToString();
                 }
+                else
+                {
+                    nextQuoteIsEscaped = false;
+                }
+
+                sb.Append(ch);
             }
 
             // the string shall continue on the following line
             moreLinesFollow = true;
-            return (start == 0 ? line : line.Substring(start));
+            return sb.ToString();
         }
 
         /// <summary>
@@ -858,19 +926,45 @@ namespace Pchp.Library
 
             while (LookAhead != Tokens.EndOfLine && LookAhead != Tokens.Semicolon && LookAhead != Tokens.ParClose)
             {
-                // expecting either & or |
-                char op = Consume();
-                if (op != Tokens.And && op != Tokens.Or) throw new ParseException(lineNumber);
+                // expecting either & or | or ^
+                var op = Consume();
 
                 // both operands must be converted to an integer
                 var lhs = result.ToLong();
                 var rhs = Literal().ToLong();
 
                 // perform the operation eagerly (like a stupid calculator)
-                result = (PhpValue)(op == Tokens.And ? (lhs & rhs) : (lhs | rhs));
+                result = op switch
+                {
+                    Tokens.And => lhs & rhs,
+                    Tokens.Or => lhs | rhs,
+                    Tokens.Xor => lhs ^ rhs,
+                    _ => throw new ParseException(lineNumber),
+                };
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Parses an INI option raw value
+        /// </summary>
+        /// <returns>The string value</returns>
+        private string Raw()
+        {
+            int start = linePos, end = linePos;
+            while (LookAhead != Tokens.EndOfLine && LookAhead != Tokens.Semicolon)
+            {
+                char ch = Consume();
+
+                // Ignore ending whitespaces
+                if (!Char.IsWhiteSpace(ch))
+                {
+                    end = linePos;
+                }
+            }
+
+            return line.Substring(start, end - start);
         }
 
         /// <summary>
@@ -920,21 +1014,26 @@ namespace Pchp.Library
                             switch (la)
                             {
                                 case Tokens.EqualS:
-                                case Tokens.Quote:
                                 case Tokens.Or:
                                 case Tokens.And:
+                                case Tokens.Xor:
                                 case Tokens.Not:
                                 case Tokens.Neg:
                                 case Tokens.ParOpen:
                                 case Tokens.ParClose:
                                 case Tokens.Semicolon:
                                 case Tokens.EndOfLine:
+                                //no case Tokens.Quote / Tokens.Apostrophe, use currentQuoteChar
                                     {
                                         return SubstringToValue(start, end - start);
                                     }
 
                                 default:
                                     {
+                                        // Handle currentQuoteChar
+                                        if (la == currentQuoteChar)
+                                            return SubstringToValue(start, end - start);
+
                                         Consume();
 
                                         // remember the last non-whitespace

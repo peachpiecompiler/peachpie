@@ -155,7 +155,9 @@
 
     <ItemGroup Condition=" '$(ComposerDependencies)'=='true' ">
       <!-- this will be enabled by default -->
-      <PackageReference Include="@(ComposerPackageReference->'%(Name)')" />
+      <PackageReference Include="@(ComposerPackageReference->'%(Name)')">
+        <PrivateAssets>None</PrivateAssets>
+      </PackageReference>
     </ItemGroup>
 
   </Target>
@@ -246,8 +248,9 @@
                OutputPath="$(TempOutputDir)%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)"
                OutputName="%(IntermediateAssembly.Filename)"
                TempOutputPath="$(TempOutputDir)"
-               TargetFramework="$(TargetFramework)"
+               TargetFramework="$(TargetFrameworkMoniker)"
                NetFrameworkPath="$(NetFrameworkPath)"
+               BasePath="$(PhpBasePath)"
                Optimization="$(Optimize)"
                DebugType="$(DebugType)"
                PdbFile="$(PdbFile)"

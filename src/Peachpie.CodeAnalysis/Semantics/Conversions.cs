@@ -445,6 +445,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 return IdentityConversion;
             }
 
+            //
+            if (from.SpecialType == SpecialType.System_Void)
+            {
+                // TODO: explicit casts from void defined in Core.Conversions
+                return NoConversion;
+            }
+
             // object cast possible implicitly:
             if ((kinds & ConversionKind.Reference) == ConversionKind.Reference)
             {

@@ -1726,6 +1726,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.LocalReference;
 
+        internal bool IsLowerTemp() => this is BoundTemporalVariableRef || (_name.IsDirect && _name.NameValue.Value.StartsWith("<match>'"));
+
         /// <summary>
         /// The type of variable before it gets accessed by this expression.
         /// </summary>
@@ -1788,7 +1790,15 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitTemporalVariableRef(this);
 
-        public BoundTemporalVariableRef(string name) : base(new BoundVariableName(new VariableName(name))) { }
+        public BoundTemporalVariableRef(VariableName name)
+            : base(new BoundVariableName(name))
+        {
+        }
+
+        public BoundTemporalVariableRef(string name)
+            : this(new VariableName(name))
+        {
+        }
 
         public BoundTemporalVariableRef Update(string name)
         {

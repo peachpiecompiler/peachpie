@@ -11,7 +11,7 @@ using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Strings
     {
         #region Character map
@@ -38,45 +38,54 @@ namespace Pchp.Library
 
         #region ord, chr, bin2hex, hex2bin
 
-        /// <summary>
-        /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
-        /// </summary>
-        public static int ord(string str) => string.IsNullOrEmpty(str) ? 0 : (int)str[0];
+        ///// <summary>
+        ///// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
+        ///// </summary>
+        //public static int ord(string @string) => string.IsNullOrEmpty(@string) ? 0 : (int)@string[0];
 
         /// <summary>
         /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
         /// </summary>
-        public static int ord(PhpString str) => str.Ord();
+        public static int ord(PhpString @string) => PhpStringExtension.Ord(@string);
 
         /// <summary>
         /// Converts ordinal number of character to a binary string containing that character.
         /// </summary>
-        /// <param name="charCode">The ASCII code.</param>
-        /// <returns>The character with <paramref name="charCode"/> ASCII code.</returns>
-        public static PhpString chr(int charCode) => new PhpString(new byte[] { (byte)charCode });
+        /// <param name="bytevalue ">The ASCII code.</param>
+        /// <returns>The character with <paramref name="bytevalue "/> ASCII code.</returns>
+        public static PhpString chr(int bytevalue)
+        {
+            if (bytevalue < 0xf0)
+            {
+                return ((char)bytevalue).ToString();
+            }
+            else
+            {
+                return new PhpString(new byte[] { (byte)bytevalue });
+            }
+        }
 
         /// <summary>
         /// Converts ordinal number of Unicode character to a string containing that character.
         /// </summary>
-        /// <param name="charCode">The ordinal number of character.</param>
-        /// <returns>The character with <paramref name="charCode"/> ordinal number.</returns>
+        /// <param name="bytevalue">The ordinal number of character.</param>
+        /// <returns>The character with <paramref name="bytevalue"/> ordinal number.</returns>
         /*public*/
-        static string chr_unicode(int charCode)
+        static string chr_unicode(int bytevalue)
         {
-            return unchecked((char)charCode).ToString();
+            return unchecked((char)bytevalue).ToString();
         }
 
         /// <summary>
         /// Converts a string into hexadecimal representation.
         /// </summary>
-        /// <param name="ctx">Runtime context.</param>
         /// <param name="str">The string to be converted.</param>
         /// <returns>
         /// The concatenated two-characters long hexadecimal numbers each representing one character of <paramref name="str"/>.
         /// </returns>
-        public static string bin2hex(Context ctx, PhpString str)
+        public static string bin2hex(byte[] str)
         {
-            if (str.IsEmpty)
+            if (str == null || str.Length == 0)
             {
                 return string.Empty;
             }
@@ -99,25 +108,25 @@ namespace Pchp.Library
 
             //return result.ToString();
 
-            return StringUtils.BinToHex(str.ToBytes(ctx), null);
+            return StringUtils.BinToHex(str, null);
         }
 
         /// <summary>
         /// Decodes a hexadecimally encoded binary string.
         /// </summary>
-        public static PhpString hex2bin(string str)
+        public static PhpString hex2bin(string data)
         {
-            if ((str.Length % 2) != 0)
+            if ((data.Length % 2) != 0)
             {
                 throw new ArgumentException();
             }
 
-            var result = new byte[str.Length / 2];
+            var result = new byte[data.Length / 2];
 
-            for (int i = 0, b = 0; i < str.Length; i += 2)
+            for (int i = 0, b = 0; i < data.Length; i += 2)
             {
-                var x = StringUtils.HexToNumber(str[i]);
-                var y = StringUtils.HexToNumber(str[i + 1]);
+                var x = StringUtils.HexToNumber(data[i]);
+                var y = StringUtils.HexToNumber(data[i + 1]);
 
                 if ((x | y) < 0)
                 {
@@ -2223,7 +2232,7 @@ namespace Pchp.Library
         /// <summary>
         /// List of known HTML entities without leading <c>&amp;</c> character when checking double encoded entities.
         /// </summary>
-        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;", "nbsp;", "raquo;" };
+        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;", "nbsp;", "raquo;", "lsaquo;" };
 
         /// <summary>
         /// Converts special characters of substring to HTML entities.
@@ -4562,29 +4571,6 @@ namespace Pchp.Library
         #region number_format, money_format
 
         /// <summary>
-        /// Formats a number with grouped thousands.
-        /// </summary>
-        /// <param name="number">The number to format.</param>
-        /// <returns>String representation of the number without decimals (rounded) with comma between every group
-        /// of thousands.</returns>
-        public static string number_format(double number)
-        {
-            return number_format(number, 0, ".", ",");
-        }
-
-        /// <summary>
-        /// Formats a number with grouped thousands and with given number of decimals.
-        /// </summary>
-        /// <param name="number">The number to format.</param>
-        /// <param name="decimals">The number of decimals.</param>
-        /// <returns>String representation of the number with <paramref name="decimals"/> decimals with a dot in front, and with 
-        /// comma between every group of thousands.</returns>
-        public static string number_format(double number, int decimals)
-        {
-            return number_format(number, decimals, ".", ",");
-        }
-
-        /// <summary>
         /// Formats a number with grouped thousands, with given number of decimals, with given decimal point string
         /// and with given thousand separator.
         /// </summary>
@@ -4603,33 +4589,14 @@ namespace Pchp.Library
         /// not make much sense, this method has no such limitation except for <paramref name="thousandsSeparator"/> of which
         /// only the first character is used (documented feature).
         /// </remarks>
-        public static string number_format(double number, int decimals, string decimalPoint, string thousandsSeparator)
+        public static string number_format(double number, int decimals = 0, string decimalPoint = ".", string thousandsSeparator = ",")
         {
-            System.Globalization.NumberFormatInfo format = new System.Globalization.NumberFormatInfo();
-
-            if ((decimals >= 0) && (decimals <= 99))
+            var format = new System.Globalization.NumberFormatInfo
             {
-                format.NumberDecimalDigits = decimals;
-            }
-            else
-            {
-                //PhpException.InvalidArgument("decimals", LibResources.GetString("arg_out_of_bounds", decimals));
-                throw new ArgumentException();
-            }
-
-            if (!string.IsNullOrEmpty(decimalPoint))
-            {
-                format.NumberDecimalSeparator = decimalPoint;
-            }
-
-            if (thousandsSeparator == null) thousandsSeparator = String.Empty;
-
-            switch (thousandsSeparator.Length)
-            {
-                case 0: format.NumberGroupSeparator = String.Empty; break;
-                case 1: format.NumberGroupSeparator = thousandsSeparator; break;
-                default: format.NumberGroupSeparator = thousandsSeparator.Substring(0, 1); break;
-            }
+                NumberDecimalDigits = Math.Max(decimals, 0), // TODO: .NET throws for decimals > 99
+                NumberDecimalSeparator = decimalPoint ?? ".", // NULL ~ a defalt value
+                NumberGroupSeparator = thousandsSeparator ?? ",", // NULL ~ a default value
+            };
 
             return number.ToString("N", format);
         }

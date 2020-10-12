@@ -17,7 +17,7 @@ namespace Pchp.Library.Streams
 	/// Gives access to various network-based stream properties.
 	/// </summary>
 	/// <threadsafety static="true"/>
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class StreamSocket
     {
         #region Enums

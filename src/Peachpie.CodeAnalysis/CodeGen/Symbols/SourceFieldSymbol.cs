@@ -45,8 +45,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (this.Initializer != null)
             {
+                cg.EmitSequencePoint(this.Initializer.PhpSyntax);
+                
                 // INITIALIZER
                 cg.EmitConvert(this.Initializer, fldplace.Type);
+
+                if (cg.EmitPdbSequencePoints)
+                {
+                    cg.Builder.EmitOpCode(ILOpCode.Nop);
+                }
             }
             else
             {

@@ -293,5 +293,55 @@ namespace Peachpie.Library.PDO
         public const int SQLITE_ATTR_EXTENDED_RESULT_CODES = 1002;
 
         #endregion
+
+        #region SQLSRV_ATTR
+
+        ///<summary></summary>
+        public enum SQLSRV_ATTR
+        {
+            ///<summary></summary>
+            ENCODING = SQLSRV_ATTR_ENCODING,
+            ///<summary></summary>
+            ENCODING_DEFAULT = SQLSRV_ENCODING_DEFAULT,
+            ///<summary></summary>
+            ENCODING_BINARY = SQLSRV_ENCODING_BINARY,
+            ///<summary></summary>
+            ENCODING_SYSTEM = SQLSRV_ENCODING_SYSTEM,
+            ///<summary></summary>
+            ENCODING_UTF8 = SQLSRV_ENCODING_UTF8,
+            ///<summary></summary>
+            CURSOR_SCROLL_TYPE = SQLSRV_ATTR_CURSOR_SCROLL_TYPE,
+            ///<summary></summary>
+            DIRECT_QUERY = SQLSRV_ATTR_DIRECT_QUERY,
+            ///<summary></summary>
+            FETCHES_NUMERIC_TYPE = SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
+            ///<summary></summary>
+            QUERY_TIMEOUT = SQLSRV_ATTR_QUERY_TIMEOUT,
+            ///<summary></summary>
+            PARAM_OUT_DEFAULT_SIZE = SQLSRV_PARAM_OUT_DEFAULT_SIZE,
+        }
+
+        ///<summary></summary>
+        public const int SQLSRV_ENCODING_DEFAULT = 1;
+        ///<summary></summary>
+        public const int SQLSRV_ENCODING_BINARY = 2;
+        ///<summary></summary>
+        public const int SQLSRV_ENCODING_SYSTEM = 3;
+        ///<summary></summary>
+        public const int SQLSRV_ENCODING_UTF8 = 65001;
+        ///<summary></summary>
+        public const int SQLSRV_ATTR_ENCODING = 1000;
+        ///<summary></summary>
+        public const int SQLSRV_ATTR_QUERY_TIMEOUT = 1001;
+        ///<summary></summary>
+        public const int SQLSRV_ATTR_DIRECT_QUERY = 1002;
+        ///<summary></summary>
+        public const int SQLSRV_ATTR_CURSOR_SCROLL_TYPE = 1003;
+        ///<summary></summary>
+        public const int SQLSRV_ATTR_FETCHES_NUMERIC_TYPE = 1005;
+        ///<summary></summary>
+        public const int SQLSRV_PARAM_OUT_DEFAULT_SIZE = -1;
+
+        #endregion
     }
 }

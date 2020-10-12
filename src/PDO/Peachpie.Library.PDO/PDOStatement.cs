@@ -428,9 +428,10 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public virtual PhpArray fetchAll(PDO_FETCH fetch_style = default, PhpValue fetch_argument = default, PhpArray ctor_args = null)
         {
-            // check parameters
+            var style = fetch_style != PDO_FETCH.Default ? fetch_style : _default_fetch_type;
+            var flags = style & PDO_FETCH.Flags;
 
-            if (fetch_style == PDO_FETCH.FETCH_COLUMN)
+            if (style == PDO_FETCH.FETCH_COLUMN)
             {
                 if (fetch_argument.IsLong(out var l))
                 {
@@ -443,8 +444,13 @@ namespace Peachpie.Library.PDO
                 }
             }
 
-            var style = fetch_style != PDO_FETCH.Default ? fetch_style : _default_fetch_type;
-            var flags = style & PDO_FETCH.Flags;
+            if ((style & PDO_FETCH.FETCH_CLASS) != 0 && !fetch_argument.IsEmpty)
+            {
+                if (!setFetchMode(fetch_style, fetch_argument, ctor_args))
+                {
+                    return null;
+                }
+            }
 
             var result = new PhpArray();
 
@@ -483,7 +489,67 @@ namespace Peachpie.Library.PDO
                     break;
             }
 
+
+            // Handle FETCH_GROUP case 
+            if (flags == PDO_FETCH.FETCH_GROUP)
+            {
+                result = GroupResult(result, style);
+            }
+
+            //
             return result;
+        }
+
+        /// <summary>
+        /// Create result set grouped by the first column according to <see cref="PDO.FETCH_GROUP"/>.
+        /// </summary>
+        private protected static PhpArray/*!!*/GroupResult(PhpArray result, PDO_FETCH style)
+        {
+            if (result.IsEmpty())
+            {
+                return result;
+            }
+
+            // hasNumKeys: when FETCH_NUM or FETCH_BOTH
+            var fetch = style & ~PDO_FETCH.Flags;
+            var hasNumKeys =
+                fetch == PDO_FETCH.FETCH_NUM ||
+                fetch == PDO_FETCH.FETCH_BOTH ||
+                fetch == PDO_FETCH.Default; // == FETCH_BOTH
+
+            var grouped_result = new PhpArray();
+            var resultenum = result.GetFastEnumerator();
+            while (resultenum.MoveNext())
+            {
+                var row = resultenum.CurrentValue.AsArray();
+                if (row == null) throw new InvalidOperationException(); // row is expected to be array, check flags before grouping results
+
+                // We remove the first column and use it to group rows
+                var firstCol = row.RemoveFirst().Value;
+
+                // For numeric keys
+                // => Always remove the 0 key (FETCH_NUM: does nothing, FETCH_BOTH: remove remaining)
+                // => Reindex starting from 0
+                if (hasNumKeys && row.Remove(0))
+                {
+                    row.ReindexIntegers(0);
+                }
+
+                PhpArray group;
+                if (grouped_result.TryGetValue(firstCol, out var existing))
+                {
+                    group = (PhpArray)existing.Object;
+                }
+                else
+                {
+                    grouped_result.Add(firstCol, group = new PhpArray());
+                }
+
+                group.Add(row);
+            }
+
+            //
+            return grouped_result;
         }
 
         /// <summary>
@@ -922,7 +988,12 @@ namespace Peachpie.Library.PDO
                 var enumerator = input_parameters.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    bound_params[enumerator.CurrentKey] = new BoundParam { Type = PARAM.PARAM_STR, Variable = enumerator.CurrentValue.ToString(Context), };
+                    var current = enumerator.Current;
+
+                    bound_params[current.Key] =
+                        current.Value.IsNull
+                            ? new BoundParam { Type = PARAM.PARAM_NULL }
+                            : new BoundParam { Type = PARAM.PARAM_STR, Variable = current.Value.ToString(Context), };
                 }
             }
 

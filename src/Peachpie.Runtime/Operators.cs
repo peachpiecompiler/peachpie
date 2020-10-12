@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 
 namespace Pchp.Core
 {
@@ -191,9 +192,7 @@ namespace Pchp.Core
 
             if ((info & Convert.NumberInfo.IsPhpArray) != 0)
             {
-                //PhpException.UnsupportedOperandTypes();
-                //return PhpNumber.Create(0.0);
-                throw new NotImplementedException();     // PhpException
+                throw PhpException.ErrorException(ErrResources.unsupported_operand_types);
             }
 
             // TODO: // division by zero:

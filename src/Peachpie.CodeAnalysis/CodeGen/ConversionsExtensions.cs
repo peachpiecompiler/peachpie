@@ -161,7 +161,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (from.IsValueType)
                     {
-                        if (op != null)
+                        if (op != null || from.IsVoid())
                         {
                             throw new ArgumentException(nameof(op));
                         }

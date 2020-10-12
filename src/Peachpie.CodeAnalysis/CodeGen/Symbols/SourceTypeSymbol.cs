@@ -5,9 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
-using static Devsense.PHP.Syntax.Name;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Emit;
@@ -106,7 +103,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     CallerType = this,
                 };
 
-                cg.EmitRet(cg.EmitForwardCall(__invoke, invoke, callvirt: true));
+                var rtype = invoke.ReturnType;
+                // Template: return (T)__invoke()
+                cg.EmitConvert(cg.EmitForwardCall(__invoke, invoke, callvirt: true), default, rtype);
+                cg.EmitRet(rtype);
 
             }, null, diagnostics, false));
 
@@ -283,6 +283,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitPhpCtors(ImmutableArray<MethodSymbol> instancectors, Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
+            var emitPdb = module.Compilation.Options.OptimizationLevel == PhpOptimizationLevel.Debug; // emit sequence points in debug mode
+
             foreach (SynthesizedPhpCtorSymbol ctor in instancectors)
             {
                 module.SetMethodBody(ctor, MethodGenerator.GenerateMethodBody(module, ctor, il =>
@@ -295,7 +297,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     Debug.Assert(SpecialParameterSymbol.IsContextParameter(ctor.Parameters[0]));
 
-                    var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new ParamPlace(ctor.Parameters[0]), new ArgPlace(this, 0))
+                    var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, emitPdb, this,
+                        new ParamPlace(ctor.Parameters[0]),
+                        new ArgPlace(this, 0))
                     {
                         CallerType = this,
                         ContainingFile = ContainingFile,
@@ -354,7 +358,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     Debug.Assert(ctor.ReturnsVoid);
                     cg.EmitRet(ctor.ReturnType);
 
-                }, null, diagnostics, false));
+                }, null, diagnostics,
+                emittingPdb: emitPdb));
             }
         }
 
@@ -434,7 +439,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return;
             }
 
-            var __tostring = this.GetMembersByPhpName(SpecialMethodNames.Tostring.Value).OfType<MethodSymbol>().FirstOrDefault();
+            var __tostring = TryGetMagicToString();
             if (__tostring != null)    // implement ToString if: there is __toString() function
             {
                 // lookup base string ToString()

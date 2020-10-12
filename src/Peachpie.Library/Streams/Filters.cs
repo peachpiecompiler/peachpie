@@ -522,7 +522,7 @@ namespace Pchp.Library.Streams
     /// <summary>
     /// User filter base class, the derived classes to be used by <see cref="PhpFilters.stream_filter_register"/>.
     /// </summary>
-    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly), PhpExtension("standard")]
+    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public class php_user_filter : PhpFilter
     {
         /// <summary>

@@ -39,7 +39,7 @@ namespace Pchp.Core.Resources {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Peachpie.Runtime.Resources.ErrResources", typeof(ErrResources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Pchp.Core.Resources.ErrResources", typeof(ErrResources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -444,6 +444,15 @@ namespace Pchp.Core.Resources {
         public static string cannot_change_target_instance {
             get {
                 return ResourceManager.GetString("cannot_change_target_instance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to create closure from callable.
+        /// </summary>
+        public static string cannot_create_closure_from_callable {
+            get {
+                return ResourceManager.GetString("cannot_create_closure_from_callable", resourceCulture);
             }
         }
         
@@ -3058,9 +3067,9 @@ namespace Pchp.Core.Resources {
                 return ResourceManager.GetString("object_could_not_be_converted", resourceCulture);
             }
         }
-        
+
         /// <summary>
-        ///   Looks up a localized string similar to An object of type &apos;{0}&apos; used as an array.
+        ///   Looks up a localized string similar to Cannot use object of type {0} as array.
         /// </summary>
         public static string object_used_as_array {
             get {

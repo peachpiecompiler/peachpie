@@ -37,17 +37,17 @@ namespace Peachpie.NET.Sdk.Tools
         private static Assembly AssemblyResolve(object sender, ResolveEventArgs args)
         {
             // try to resolve assemblies within our task directory
+            // we'll ignore the minor version of the requested assembly
+            var assname = new AssemblyName(args.Name);
 
             try
             {
 
-                if (args.RequestingAssembly != null && Path.GetFullPath(args.RequestingAssembly.Location).StartsWith(s_path))
+                var hintpath = Path.Combine(s_path, assname.Name + ".dll");
+                if (File.Exists(hintpath))
                 {
-                    var assname = new AssemblyName(args.Name);
-                    var fname = Path.Combine(s_path, assname.Name + ".dll");
-
                     // try to load the assembly:
-                    return Assembly.LoadFile(fname);
+                    return Assembly.LoadFile(hintpath);
                 }
             }
             catch

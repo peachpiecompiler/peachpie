@@ -9,7 +9,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
     /// A date period allows iteration over a set of dates and times, recurring at regular intervals, over a given period.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Date)]
     public class DatePeriod : Traversable, IEnumerable<DateTimeInterface>
     {
         /// <summary>
