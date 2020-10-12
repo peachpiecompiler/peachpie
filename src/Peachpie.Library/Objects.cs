@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 namespace Pchp.Library
 {
-    [PhpExtension("Core")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Objects
     {
         /// <summary>
@@ -48,6 +48,11 @@ namespace Pchp.Library
 		/// <B>false</B> otherwise.</returns>
 		public static bool class_exists(Context ctx, string className, bool autoload = true)
         {
+            if (className.Length == 0)
+            {
+                return false;
+            }
+
             var info = ctx.GetDeclaredType(className, autoload);
             return info != null && !info.IsInterface;
         }
@@ -534,7 +539,7 @@ namespace Pchp.Library
     /// Weak references allow to retain a reference to an object
     /// which does not prevent the object from being garbage collected.
     /// </summary>
-    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public sealed class WeakReference
     {
         [PhpHidden]

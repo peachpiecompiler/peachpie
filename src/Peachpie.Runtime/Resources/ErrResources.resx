@@ -718,7 +718,7 @@ Additional information:
     <value>Use of undefined constant {0} - assumed '{0}'</value>
   </data>
   <data name="object_used_as_array" xml:space="preserve">
-    <value>An object of type '{0}' used as an array</value>
+    <value>Cannot use object of type {0} as array</value>
   </data>
   <data name="string_used_as_array" xml:space="preserve">
     <value>A string used as an array</value>
@@ -1642,5 +1642,8 @@ Additional information:
   </data>
   <data name="invalid_socket_resource" xml:space="preserve">
     <value>Supplied resource is not a valid 'stream' resource</value>
+  </data>
+  <data name="cannot_create_closure_from_callable" xml:space="preserve">
+    <value>Failed to create closure from callable</value>
   </data>
 </root>

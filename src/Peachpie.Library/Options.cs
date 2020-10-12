@@ -95,7 +95,11 @@ namespace Pchp.Library
                 DefaultValue;
         }
 
-        static readonly GetSetDelegate s_emptyGsr = new GetSetDelegate((ctx, s, name, value, action) => PhpValue.Null);
+        static readonly GetSetDelegate s_emptyGsr = new GetSetDelegate((ctx, s, name, value, action) =>
+        {
+            Debug.WriteLine($"INI option '{name}' is not implemented.");
+            return PhpValue.Null;
+        });
 
         static void AssertGet(string option, IniAction action)
         {
@@ -148,6 +152,18 @@ namespace Pchp.Library
                 case "open_basedir":
                     Debug.Assert(action == IniAction.Get);
                     return (PhpValue)string.Empty;
+
+                case "max_execution_time":
+                    if (action == IniAction.Set)
+                    {
+                        var oldvalue = config.Core.ExecutionTimeout;
+                        ctx.ApplyExecutionTimeout(config.Core.ExecutionTimeout = Math.Max(0, value.ToInt()));
+                        return oldvalue;
+                    }
+                    else
+                    {
+                        return config.Core.ExecutionTimeout;
+                    }
 
                 default:
                     throw new ArgumentException();
@@ -258,7 +274,7 @@ namespace Pchp.Library
             Register("magic_quotes_gpc", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("magic_quotes_runtime", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("magic_quotes_sybase", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
-            Register("max_execution_time", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("max_execution_time", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("max_input_time", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("memory_limit", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("mime_magic.magicfile", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
@@ -530,7 +546,7 @@ namespace Pchp.Library
         #endregion
     }
 
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Options
     {
         public const int INI_USER = (int)StandardPhpOptions.IniAccessability.User; // 1

@@ -38,8 +38,9 @@
   <!-- packages version -->
   <PropertyGroup>
     
-    <PeachpieLibraryRegularExpressionsVersion>1.4.0</PeachpieLibraryRegularExpressionsVersion>
-    <MySqlConnectorVersion>1.0.0</MySqlConnectorVersion>
+    <PeachpieLibraryRegularExpressionsVersion>1.4.1</PeachpieLibraryRegularExpressionsVersion>
+    <MySqlConnectorVersion>1.0.1</MySqlConnectorVersion>
+    <ParserVersion>8.0.11</ParserVersion>
     
   </PropertyGroup>
 

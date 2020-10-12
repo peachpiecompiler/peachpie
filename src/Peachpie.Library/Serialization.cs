@@ -13,7 +13,7 @@ using System.Reflection;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static partial class PhpSerialization
     {
         #region Serializer

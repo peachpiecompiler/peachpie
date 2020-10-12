@@ -524,6 +524,12 @@ namespace Pchp.Core.Dynamic
                 if (source == typeof(uint)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), Expression.Convert(expr, typeof(long)));
                 if (source == typeof(ulong)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.UInt64), expr);
 
+                if (source.IsEnum)
+                {
+                    // (PhpValue)(int)enum
+                    return BindToValue(Expression.Convert(expr, source.GetEnumUnderlyingType()));
+                }
+
                 throw new NotImplementedException(source.FullName);
             }
             else if (
@@ -734,19 +740,44 @@ namespace Pchp.Core.Dynamic
             if (t == typeof(PhpArray)) return BindCostFromPhpArray(arg, target);
 
             // other types
-            if (target.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
+            if (target.IsAssignableFrom(t)) return Expression.Constant(ConversionCost.Pass);
 
             // attempt to cast object:
-            if (!t.IsValueType && ReflectionUtils.IsPhpClassType(target))
+            if (!t.IsValueType)
             {
-                if (!t.IsInterface && !target.IsInterface && !target.IsAssignableFrom(t) && !t.IsAssignableFrom(target))
+                if (typeof(PhpResource).IsAssignableFrom(t)) // resource -> {target}
                 {
-                    // no way
-                    return Expression.Constant(ConversionCost.NoConversion);
+                    return Expression.Constant(ConversionCost.NoConversion); // if value can be converted, it would be handled above
                 }
 
-                var toclass_T = typeof(CostOf).GetMethod("ToClass", Cache.Types.Object).MakeGenericMethod(target);
-                return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(object)
+                if (ReflectionUtils.IsPhpClassType(target))
+                {
+                    if (!t.IsInterface && !target.IsInterface && !target.IsAssignableFrom(t) && !t.IsAssignableFrom(target))
+                    {
+                        // no way
+                        return Expression.Constant(ConversionCost.NoConversion);
+                    }
+
+                    var toclass_T = typeof(CostOf).GetMethod("ToClass", Cache.Types.Object).MakeGenericMethod(target);
+                    return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(object)
+                }
+
+                // object -> string
+                if (target == typeof(string) || target == typeof(PhpString))
+                {
+                    if (t.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.__tostring] != null)
+                        return Expression.Constant(ConversionCost.ImplicitCast);
+
+                    return Expression.Constant(ConversionCost.Warning); // conversion to string is always possible /w warning
+                }
+
+                // object -> array|bool|resource
+                if (target == typeof(PhpArray) ||
+                    target == typeof(bool) ||
+                    target == typeof(PhpResource))
+                {
+                    return Expression.Constant(ConversionCost.NoConversion);
+                }
             }
 
             // return Expression.Constant(ConversionCost.AttemptConvert);

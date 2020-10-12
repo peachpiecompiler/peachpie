@@ -327,25 +327,25 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string realpath(Context ctx, string path)
         {
-            if (path == null)
-                return null;
-
-            if (path.Length == 0)
+            if (string.IsNullOrEmpty(path))
+            {
                 return ctx.WorkingDirectory;
+            }
 
             // string ending slash
-            if (path[path.Length - 1].IsDirectorySeparator())
+            path = path.TrimEndSeparator();
+
+            //
+            var realpath = FileSystemUtils.AbsolutePath(ctx, path);
+
+            if (File.Exists(realpath) ||
+                System.IO.Directory.Exists(realpath) ||
+                Context.TryResolveScript(ctx.RootPath, realpath).IsValid)   // check a compiled script
             {
-                path = path.Substring(0, path.Length - 1);
+                return realpath;
             }
 
-            string realpath = FileSystemUtils.AbsolutePath(ctx, path);
-            if (!File.Exists(realpath) && !System.IO.Directory.Exists(realpath))
-            {
-                return null;
-            }
-
-            return realpath;
+            return null;
         }
 
         #endregion

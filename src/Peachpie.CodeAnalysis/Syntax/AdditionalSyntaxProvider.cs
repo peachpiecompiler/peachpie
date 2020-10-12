@@ -39,7 +39,11 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         #region ITokenProvider
 
-        public TValue TokenValue => _provider.TokenValue;
+        public TValue TokenValue
+        {
+            get => _provider.TokenValue;
+            set => _provider.TokenValue = value;
+        }
 
         public TSpan TokenPosition => _provider.TokenPosition;
 

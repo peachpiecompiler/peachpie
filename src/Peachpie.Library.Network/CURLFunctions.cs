@@ -32,22 +32,36 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Close a cURL session.
         /// </summary>
-        public static void curl_close(Context ctx, CURLResource resource)
+        public static void curl_close(Context ctx, CURLResource ch)
         {
-            if (resource != null)
+            if (ch != null)
             {
-                if (resource.TryGetOption<CurlOption_CookieJar>(out var jar))
+                if (ch.TryGetOption<CurlOption_CookieJar>(out var jar))
                 {
-                    jar.PrintCookies(ctx, resource);
+                    jar.PrintCookies(ctx, ch);
                 }
 
                 //
-                resource.Dispose();
+                ch.Dispose();
             }
             else
             {
-                PhpException.ArgumentNull(nameof(resource));
+                PhpException.ArgumentNull(nameof(ch));
             }
+        }
+
+        /// <summary>
+        /// Reset all options set on the given cURL handle to the default values.
+        /// </summary>
+        public static void curl_reset(CURLResource ch)
+        {
+            if (ch == null)
+            {
+                PhpException.ArgumentNull(nameof(ch));
+                return;
+            }
+
+            ch.ResetOptions();
         }
 
         /// <summary>

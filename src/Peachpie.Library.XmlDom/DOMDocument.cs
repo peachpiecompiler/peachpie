@@ -304,12 +304,12 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Creates an element with the specified name and inner text.
         /// </summary>
-        /// <param name="tagName">The qualified name of the element.</param>
+        /// <param name="name">The qualified name of the element.</param>
         /// <param name="value">The inner text (value) of the element.</param>
         /// <returns>A new <see cref="DOMElement"/>.</returns>
-        public virtual DOMElement createElement(string tagName, string value = null)
+        public virtual DOMElement createElement(string name, string value = null)
         {
-            XmlElement element = XmlDocument.CreateElement(tagName);
+            XmlElement element = XmlDocument.CreateElement(name);
             if (value != null) element.InnerText = value;
             return new DOMElement(element);
         }
@@ -394,13 +394,13 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Creates an element with the specified namespace URI and qualified name.
         /// </summary>
-        /// <param name="namespaceUri">The namespace URI of the element.</param>
+        /// <param name="namespaceURI">The namespace URI of the element.</param>
         /// <param name="qualifiedName">The qualified name of the element.</param>
         /// <param name="value">The inner text (value) of the element.</param>
         /// <returns>A new <see cref="DOMElement"/>.</returns>
-        public virtual DOMElement createElementNS(string namespaceUri, string qualifiedName, string value = null)
+        public virtual DOMElement createElementNS(string namespaceURI, string qualifiedName, string value = null)
         {
-            XmlElement element = XmlDocument.CreateElement(qualifiedName, namespaceUri);
+            XmlElement element = XmlDocument.CreateElement(qualifiedName, namespaceURI);
             if (value != null) element.InnerText = value;
             return new DOMElement(element);
         }
@@ -408,12 +408,12 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Creates an attribute with the specified namespace URI and qualified name.
         /// </summary>
-        /// <param name="namespaceUri">The namespace URI of the attribute.</param>
+        /// <param name="namespaceURI">The namespace URI of the attribute.</param>
         /// <param name="qualifiedName">The qualified name of the attribute.</param>
         /// <returns>A new <see cref="DOMAttr"/>.</returns>
-        public virtual DOMAttr createAttributeNS(string namespaceUri, string qualifiedName)
+        public virtual DOMAttr createAttributeNS(string namespaceURI, string qualifiedName)
         {
-            XmlAttribute attribute = XmlDocument.CreateAttribute(qualifiedName, namespaceUri);
+            XmlAttribute attribute = XmlDocument.CreateAttribute(qualifiedName, namespaceURI);
             return new DOMAttr(attribute);
         }
 
@@ -575,22 +575,24 @@ namespace Peachpie.Library.XmlDom
         /// Loads the XML document from the specified URL.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="fileName">URL for the file containing the XML document to load.</param>
+        /// <param name="filename">URL for the file containing the XML document to load.</param>
         /// <param name="options">Undocumented.</param>
         /// <returns><b>True</b> on success or <b>false</b> on failure.</returns>
-        public virtual bool load(Context ctx, string fileName, int options = 0)
+        public virtual bool load(Context ctx, string filename, int options = 0)
         {
             // TODO: this method can be called both statically and via an instance
 
             _isHtmlDocument = false;
 
-            using (PhpStream stream = PhpStream.Open(ctx, fileName, "rt"))
+            using (PhpStream stream = PhpStream.Open(ctx, filename, "rt"))
             {
                 if (stream == null) return false;
 
                 try
                 {
-                    XmlReaderSettings settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse };
+                    var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse };
+
+                    // TODO: options
 
                     // validating XML reader
                     if (this._validateOnParse)
@@ -599,16 +601,16 @@ namespace Peachpie.Library.XmlDom
                         settings.ValidationType = ValidationType.Auto;
 #pragma warning restore 618
                     }
-                    XmlDocument.Load(XmlReader.Create(stream.RawStream, settings, XIncludeHelper.UriResolver(fileName, ctx.WorkingDirectory)));
+                    XmlDocument.Load(XmlReader.Create(stream.RawStream, settings, XIncludeHelper.UriResolver(filename, ctx.WorkingDirectory)));
                 }
                 catch (XmlException e)
                 {
-                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, filename);
                     return false;
                 }
                 catch (IOException e)
                 {
-                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, filename);
                     return false;
                 }
             }
@@ -620,33 +622,33 @@ namespace Peachpie.Library.XmlDom
         /// Loads the XML document from the specified string.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="xmlString">The XML string.</param>
+        /// <param name="source">The XML string.</param>
         /// <param name="options">Undocumented.</param>
         /// <returns><b>True</b> on success or <b>false</b> on failure.</returns>
-        public virtual bool loadXML(Context ctx, string xmlString, int options = 0)
+        public virtual bool loadXML(Context ctx, string source, int options = 0)
         {
             // TODO: this method can be called both statically and via an instance
 
-            return loadXMLInternal(ctx, xmlString, options, false);
+            return loadXMLInternal(ctx, source, options, false);
         }
 
         /// <summary>
         /// Loads provided XML string into this <see cref="DOMDocument"/>.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="xmlString">String representing XML document.</param>
+        /// <param name="source">String representing XML document.</param>
         /// <param name="options">PHP options.</param>
-        /// <param name="isHtml">Whether the <paramref name="xmlString"/> represents XML generated from HTML document (then it may contain some invalid XML characters).</param>
+        /// <param name="isHtml">Whether the <paramref name="source"/> represents XML generated from HTML document (then it may contain some invalid XML characters).</param>
         /// <returns></returns>
-        private bool loadXMLInternal(Context ctx, string xmlString, int options, bool isHtml)
+        private bool loadXMLInternal(Context ctx, PhpString source, int options, bool isHtml)
         {
             this._isHtmlDocument = isHtml;
 
-            var stream = new StringReader(xmlString);
-
             try
             {
-                XmlReaderSettings settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse };
+                var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse };
+
+                // TODO: options
 
                 // validating XML reader
                 if (this._validateOnParse)
@@ -662,8 +664,12 @@ namespace Peachpie.Library.XmlDom
                     settings.CheckCharacters = false;
                 }
 
+                var reader = source.ContainsBinaryData
+                    ? XmlReader.Create(new MemoryStream(source.ToBytes(ctx)), settings)
+                    : XmlReader.Create(new StringReader(source.ToString()/*faster*/), settings);
+
                 // load the document
-                this.XmlDocument.Load(XmlReader.Create(stream, settings));
+                this.XmlDocument.Load(reader);
 
                 // done
                 return true;
@@ -684,12 +690,12 @@ namespace Peachpie.Library.XmlDom
         /// Saves the XML document to the specified stream.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="fileName">The location of the file where the document should be saved.</param>
+        /// <param name="filename">The location of the file where the document should be saved.</param>
         /// <param name="options">Unsupported.</param>
         /// <returns>The number of bytes written or <B>false</B> on error.</returns>
-        public virtual PhpValue save(Context ctx, string fileName, int options = 0)
+        public virtual PhpValue save(Context ctx, string filename, int options = 0)
         {
-            using (PhpStream stream = PhpStream.Open(ctx, fileName, StreamOpenMode.WriteText))
+            using (PhpStream stream = PhpStream.Open(ctx, filename, StreamOpenMode.WriteText))
             {
                 if (stream == null) return PhpValue.Create(false);
 
@@ -715,12 +721,12 @@ namespace Peachpie.Library.XmlDom
                 }
                 catch (XmlException e)
                 {
-                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, filename);
                     return PhpValue.False;
                 }
                 catch (IOException e)
                 {
-                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, filename);
                     return PhpValue.False;
                 }
 
@@ -866,15 +872,15 @@ namespace Peachpie.Library.XmlDom
         /// Loads HTML from a file.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="sourceFile">Path to a file containing HTML document.</param>
+        /// <param name="filename">Path to a file containing HTML document.</param>
         /// <param name="options">Unsupported.</param>
-        public virtual bool loadHTMLFile(Context ctx, string sourceFile, int options = 0)
+        public virtual bool loadHTMLFile(Context ctx, string filename, int options = 0)
         {
-            using (PhpStream stream = PhpStream.Open(ctx, sourceFile, "rt"))
+            using (PhpStream stream = PhpStream.Open(ctx, filename, "rt"))
             {
                 if (stream == null) return false;
 
-                return loadHTML(ctx, new StreamReader(stream.RawStream), sourceFile);
+                return loadHTML(ctx, new StreamReader(stream.RawStream), filename);
             }
         }
 
@@ -939,10 +945,10 @@ namespace Peachpie.Library.XmlDom
         /// Dumps the internal document into a file using HTML formatting.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="file">The path to the saved HTML document.</param>
-        public virtual PhpValue saveHTMLFile(Context ctx, string file)
+        /// <param name="filename">The path to the saved HTML document.</param>
+        public virtual PhpValue saveHTMLFile(Context ctx, string filename)
         {
-            using (PhpStream stream = PhpStream.Open(ctx, file, "wt"))
+            using (PhpStream stream = PhpStream.Open(ctx, filename, "wt"))
             {
                 if (stream == null)
                 {
@@ -1007,11 +1013,6 @@ namespace Peachpie.Library.XmlDom
         /// <returns><B>True</B> or <B>false</B>.</returns>
         public virtual bool schemaValidate(Context ctx, string schemaFile, int flags = 0)
         {
-            if ((flags & PhpLibXml.LIBXML_SCHEMA_CREATE) == PhpLibXml.LIBXML_SCHEMA_CREATE)
-            {
-                PhpException.Throw(PhpError.Warning, Resources.SchemaCreateUnsupported);
-            }
-
             XmlSchema schema;
 
             using (PhpStream stream = PhpStream.Open(ctx, schemaFile, "rt"))
@@ -1034,20 +1035,7 @@ namespace Peachpie.Library.XmlDom
                 }
             }
 
-            XmlDocument.Schemas.Add(schema);
-            try
-            {
-                XmlDocument.Validate(null);
-            }
-            catch (XmlException)
-            {
-                return false;
-            }
-            finally
-            {
-                XmlDocument.Schemas.Remove(schema);
-            }
-            return true;
+            return ValidateSchemaInternal(schema, flags);
         }
 
         /// <summary>
@@ -1059,11 +1047,6 @@ namespace Peachpie.Library.XmlDom
         /// <returns><B>True</B> or <B>false</B>.</returns>
         public virtual bool schemaValidateSource(Context ctx, string schemaString, int flags = 0)
         {
-            if ((flags & PhpLibXml.LIBXML_SCHEMA_CREATE) == PhpLibXml.LIBXML_SCHEMA_CREATE)
-            {
-                PhpException.Throw(PhpError.Warning, Resources.SchemaCreateUnsupported);
-            }
-
             XmlSchema schema;
 
             try
@@ -1076,18 +1059,41 @@ namespace Peachpie.Library.XmlDom
                 return false;
             }
 
-            XmlDocument.Schemas.Add(schema);
+            return ValidateSchemaInternal(schema, flags);
+        }
+
+        private bool ValidateSchemaInternal(XmlSchema schema, int flags)
+        {
+            bool createDefaults = (flags & PhpLibXml.LIBXML_SCHEMA_CREATE) == PhpLibXml.LIBXML_SCHEMA_CREATE;
+
             try
             {
-                XmlDocument.Validate(null);
+                if (createDefaults)
+                {
+                    // This way causes the default values to be created (even if the schema is later removed)
+                    XmlDocument.Schemas.Add(schema);
+                    XmlDocument.Validate(null);
+                }
+                else
+                {
+                    var schemaSet = new XmlSchemaSet();
+                    schemaSet.Add(schema);
+
+                    // By validating externally we prevent the default values from being created
+                    var xpathNavigator = XmlDocument.CreateNavigator();
+                    xpathNavigator.CheckValidity(schemaSet, null); 
+                }
             }
-            catch (XmlException)
+            catch (XmlSchemaException)
             {
                 return false;
             }
             finally
             {
-                XmlDocument.Schemas.Remove(schema);
+                if (createDefaults)
+                {
+                    XmlDocument.Schemas.Remove(schema);
+                }
             }
             return true;
         }

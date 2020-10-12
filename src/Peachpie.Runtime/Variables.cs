@@ -419,9 +419,9 @@ namespace Pchp.Core
         /// </summary>
         public static bool IsValidCallback(IPhpCallable? callable)
         {
-            PhpCallback? tmp;
-
-            return callable != null && ((tmp = callable as PhpCallback) == null || tmp.IsValid);
+            return callable is PhpCallback phpcallback
+                ? phpcallback.IsValid
+                : callable != null;
         }
 
         /// <summary>

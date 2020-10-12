@@ -470,7 +470,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // declare PhpArray <locals>
                 var symbol = new SynthesizedLocalSymbol(Routine, "<locals>", CoreTypes.PhpArray);
-                var localsDef = this.Builder.LocalSlotManager.DeclareLocal((Cci.ITypeReference)symbol.Type, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
+                var localsDef = this.Builder.LocalSlotManager.DeclareLocal((Cci.ITypeReference)symbol.Type, symbol, symbol.Name, SynthesizedLocalKind.EmitterTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
 
                 localsAlreadyInitialized = false;
                 return new LocalPlace(localsDef);
