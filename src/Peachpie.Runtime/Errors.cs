@@ -187,6 +187,10 @@ namespace Pchp.Core
             }
         }
 
+        public static void Throw(PhpError error, string formatString, string arg0) => Throw(error, string.Format(formatString, arg0));
+
+        public static void Throw(PhpError error, string formatString, string arg0, string arg1) => Throw(error, string.Format(formatString, arg0, arg1));
+
         public static void Throw(PhpError error, string formatString, params string[] args) => Throw(error, string.Format(formatString, args));
 
         /// <summary>
