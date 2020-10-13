@@ -270,10 +270,10 @@ namespace Peachpie.AspNetCore.Web
         {
             if (string.IsNullOrEmpty(_prefix.Value) || context.Request.Path.StartsWithSegments(_prefix))
             {
-                var script = RequestContextCore.ResolveScript(context.Request);
+                var script = RequestContextCore.ResolveScript(context.Request, out var path_info);
                 if (script.IsValid)
                 {
-                    return InvokeScriptAsync(context, script);
+                    return InvokeScriptAsync(context, script, path_info);
                 }
             }
 
@@ -281,7 +281,7 @@ namespace Peachpie.AspNetCore.Web
             return _next(context);
         }
 
-        async Task InvokeScriptAsync(HttpContext context, Context.ScriptInfo script)
+        async Task InvokeScriptAsync(HttpContext context, Context.ScriptInfo script, string path_info)
         {
             Debug.Assert(script.IsValid);
 
@@ -295,7 +295,7 @@ namespace Peachpie.AspNetCore.Web
             {
                 try
                 {
-                    phpctx.ProcessScript(script);
+                    phpctx.ProcessScript(script, path_info);
                 }
                 finally
                 {
