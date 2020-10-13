@@ -307,9 +307,11 @@ namespace Pchp.Core
                 return s_scripts[ScriptIndexHolder<TScript>.Index];
             }
 
-            public static ScriptInfo GetDeclaredScript(string path)
+            public static ScriptInfo GetDeclaredScript(string path) => GetDeclaredScript(path.AsSpan());
+
+            public static ScriptInfo GetDeclaredScript(ReadOnlySpan<char> path)
             {
-                if (string.IsNullOrEmpty(path))
+                if (path.IsEmpty)
                 {
                     return default;
                 }
@@ -317,26 +319,21 @@ namespace Pchp.Core
                 // trim leading slash
                 if (path[0].IsDirectorySeparator())
                 {
-                    path = path.Substring(1);
+                    path = path.Slice(1);
                 }
 
                 //
-                int index;
-
                 s_lock.EnterReadLock();
                 try
                 {
-                    if (!s_scriptsMap.TryGetValue(NormalizeSlashes(path), out index))
-                    {
-                        return default;
-                    }
+                    return s_scriptsMap.TryGetValue(NormalizeSlashes(path.ToString()), out var index)
+                        ? s_scripts[index]
+                        : default;
                 }
                 finally
                 {
                     s_lock.ExitReadLock();
                 }
-
-                return s_scripts[index];
             }
 
             internal static int GetScriptIndex(Type script)
@@ -379,7 +376,7 @@ namespace Pchp.Core
                     path = NormalizeSlashes(Path.GetFullPath(path));
                     if (path.StartsWith(root_path) && path.Length > root_path.Length)
                     {
-                        script = GetDeclaredScript(path.Substring(root_path.Length + 1));
+                        script = GetDeclaredScript(path.AsSpan(root_path.Length + 1));
                         // TODO: script may be not loaded yet but exists physically, check it exists and compile
                     }
 
