@@ -377,7 +377,7 @@ namespace Peachpie.Library.XmlDom
         /// Non-<B>null</B> except for construction (between ctor and <see cref="__construct(string,int,bool)"/>
         /// or <see cref="XmlElement"/> setter invocation).
         /// </summary>
-        private XmlElement _element;
+        private protected XmlElement _element;
 
         internal XmlElement XmlElement
         {
@@ -399,8 +399,9 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Lazily created namespace manager used for XPath queries.
         /// </summary>
-        private XmlNamespaceManager _namespaceManager;
-        private XmlNamespaceManager namespaceManager
+        private protected XmlNamespaceManager _namespaceManager;
+
+        private protected XmlNamespaceManager namespaceManager
         {
             get
             {
@@ -424,17 +425,17 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// The attribute (if this instance represents an individual attribute).
         /// </summary>
-        private XmlAttribute XmlAttribute;
+        private protected XmlAttribute XmlAttribute;
 
         /// <summary>
         /// Specifies iteration behavior of this instance (what it actually represents).
         /// </summary>
-        private IterationType iterationType;
+        private protected IterationType iterationType;
 
         /// <summary>
 		/// The prefix or namespace URI of the elements/attributes that should be iterated and dumped.
 		/// </summary>
-        private IterationNamespace/*!*/ iterationNamespace;
+        private protected IterationNamespace/*!*/ iterationNamespace;
 
         /// <summary>
         /// A list of names of elements representing the path in the document that should be added
@@ -445,10 +446,10 @@ namespace Peachpie.Library.XmlDom
         /// <c>elem2</c>, and <c>elem3</c> if they do not already exist. Becomes non-<B>null</B> when
         /// an unknown element is read.
         /// </remarks>
-        List<string> intermediateElements;
+        private protected List<string> intermediateElements;
 
-        const string textPropertyName = "0";
-        const string attributesPropertyName = "@attributes";
+        private protected const string textPropertyName = "0";
+        private protected const string attributesPropertyName = "@attributes";
 
         #endregion
 
@@ -1127,7 +1128,7 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         /// <param name="child"></param>
         /// <returns></returns>
-        private string GetPhpInnerText(XmlNode child)
+        private protected string GetPhpInnerText(XmlNode child)
         {
             string NodeValue = null;
 
@@ -1144,7 +1145,7 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         /// <param name="child"></param>
         /// <returns></returns>
-        private PhpValue GetPhpChildElement(XmlNode child)
+        private protected PhpValue GetPhpChildElement(XmlNode child)
         {
             if (child == null || child.NodeType != XmlNodeType.Element || !iterationNamespace.IsIn(child)/*child.NamespaceURI != namespaceUri*/)
                 return PhpValue.Null;
