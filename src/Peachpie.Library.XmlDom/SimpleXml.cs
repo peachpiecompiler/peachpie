@@ -10,6 +10,7 @@ using System.Xml;
 using System.Xml.XPath;
 using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Library;
 using Pchp.Library.Streams;
 
 namespace Peachpie.Library.XmlDom
@@ -215,7 +216,9 @@ namespace Peachpie.Library.XmlDom
     [PhpExtension("simplexml")]
     public partial class SimpleXMLElement :
         Traversable, ArrayAccess, Pchp.Library.Spl.Countable,
-        IPhpConvertible, IPhpComparable, IPhpCloneable, IEnumerable<(PhpValue Key, PhpValue Value)>
+        IPhpConvertible, IPhpComparable, IPhpCloneable, IEnumerable<(PhpValue Key, PhpValue Value)>,
+        IPhpJsonSerializable, IPhpPrintable
+    // , Serializable // NOTE: this would be exposed to PHP reflection and type cast
     {
         #region enum IterationType
 
@@ -739,7 +742,7 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-        #region Internal overrides: Conversions, Dump, and Cloning
+        #region Internal: IPhpConvertible, IPhpCloneable, IPhpJsonSerializable, IPhpPrintable
 
         string IPhpConvertible.ToString(Context ctx) => ToString();
 
@@ -830,105 +833,105 @@ namespace Peachpie.Library.XmlDom
 
         object IPhpConvertible.ToClass() => this;
 
-        ///// <summary>
-        ///// Internal dump enumeration.
-        ///// </summary>
-        //protected override IEnumerable<KeyValuePair<VariableName, AttributedValue>> PropertyIterator()
-        //{
-        //    switch (iterationType)
-        //    {
-        //        case IterationType.None: yield break;
-        //        case IterationType.Attribute:
-        //            {
-        //                yield return new KeyValuePair<VariableName, AttributedValue>
-        //                    (textPropertyName, new AttributedValue(XmlAttribute.Value));
-        //                yield break;
-        //            }
-        //    }
+        private protected IEnumerable<KeyValuePair<string, PhpValue>> Properties
+        {
+            get
+            {
+                switch (iterationType)
+                {
+                    case IterationType.None:
+                        yield break;
+                    case IterationType.Attribute:
+                        yield return new KeyValuePair<string, PhpValue>(textPropertyName, XmlAttribute.Value);
+                        yield break;
+                }
 
-        //    OrderedHashtable<string> properties = new OrderedHashtable<string>(XmlElement.ChildNodes.Count);
-        //    StringBuilder text = null;
+                var properties = new OrderedDictionary((uint)XmlElement.ChildNodes.Count);
+                StringBuilder text = null;
 
-        //    foreach (XmlNode child in XmlElement.ChildNodes)
-        //    {
-        //        if (properties.Count == 0)
-        //        {
-        //            string text_data = GetNodeText(child);
-        //            if (text_data != null)
-        //            {
-        //                if (text == null) text = new StringBuilder(text_data);
-        //                else text.Append(text_data);
-        //            }
-        //        }
+                foreach (XmlNode child in XmlElement.ChildNodes)
+                {
+                    if (properties.Count == 0)
+                    {
+                        string text_data = GetNodeText(child);
+                        if (text_data != null)
+                        {
+                            if (text == null) text = new StringBuilder(text_data);
+                            else text.Append(text_data);
+                        }
+                    }
 
-        //        if (child.NodeType == XmlNodeType.Element)
-        //        {
-        //            if ((iterationType == IterationType.ChildElements || iterationType == IterationType.Element) &&
-        //                iterationNamespace.IsIn(child))
-        //            {
-        //                text = null;
-        //                object child_value = GetChildElementValue(className, (XmlElement)child);
+                    if (child.NodeType == XmlNodeType.Element)
+                    {
+                        if ((iterationType == IterationType.ChildElements || iterationType == IterationType.Element) &&
+                            iterationNamespace.IsIn(child))
+                        {
+                            text = null;
+                            var child_value = GetChildElementValue(_ctx, _class, (XmlElement)child);
 
-        //                OrderedHashtable<string>.Element element = properties.GetElement(child.LocalName);
-        //                if (element == null)
-        //                {
-        //                    // the first element of this name
-        //                    properties.Add(child.LocalName, child_value);
-        //                }
-        //                else
-        //                {
-        //                    // a next element of this name -> create/add to array
-        //                    PhpArray array = element.Value as PhpArray;
-        //                    if (array == null)
-        //                    {
-        //                        array = new PhpArray(2);
-        //                        array.Add(element.Value);
-        //                    }
-        //                    array.Add(child_value);
+                            if (properties.TryGetValue(child.LocalName, out var element))
+                            {
+                                // a next element of this name -> create/add to array
+                                if (!element.IsPhpArray(out var array))
+                                {
+                                    properties[child.LocalName] = array = new PhpArray()
+                                    {
+                                        element,
+                                    };
+                                }
 
-        //                    element.Value = array;
-        //                }
-        //            }
-        //        }
+                                array.Add(child_value);
+                            }
+                            else
+                            {
+                                // the first element of this name
+                                properties[child.LocalName] = child_value;
+                            }
+                            
+                        }
+                    }
 
-        //    }
+                }
 
-        //    // yield return attributes (if present)
-        //    XmlAttributeCollection attributes = XmlElement.Attributes;
-        //    if (attributes != null && attributes.Count > 0)
-        //    {
-        //        PhpArray attr_array = new PhpArray(0, attributes.Count);
-        //        foreach (XmlAttribute attribute in attributes)
-        //        {
-        //            if (iterationNamespace.IsIn(attribute) && attribute.Name != "xmlns")
-        //            {
-        //                attr_array.Add(attribute.LocalName, attribute.Value);
-        //            }
-        //        }
+                // yield return attributes (if present)
+                var attributes = XmlElement.Attributes;
+                if (attributes != null && attributes.Count != 0)
+                {
+                    var attr_array = new PhpArray(attributes.Count);
 
-        //        if (attr_array.Count > 0)
-        //        {
-        //            yield return new KeyValuePair<VariableName, AttributedValue>
-        //                (attributesPropertyName, new AttributedValue(attr_array));
-        //        }
-        //    }
+                    foreach (XmlAttribute attribute in attributes)
+                    {
+                        if (iterationNamespace.IsIn(attribute) && attribute.Name != "xmlns")
+                        {
+                            attr_array[attribute.LocalName] = attribute.Value;
+                        }
+                    }
 
-        //    // yield return the inner text
-        //    if (text != null)
-        //    {
-        //        yield return new KeyValuePair<VariableName, AttributedValue>
-        //            (textPropertyName, new AttributedValue(text.ToString()));
-        //    }
-        //    else
-        //    {
-        //        // yield return all child elements
-        //        foreach (KeyValuePair<string, object> pair in properties)
-        //        {
-        //            yield return new KeyValuePair<VariableName, AttributedValue>
-        //                (new VariableName(pair.Key), new AttributedValue(pair.Value));
-        //        }
-        //    }
-        //}
+                    if (attr_array.Count != 0)
+                    {
+                        yield return new KeyValuePair<string, PhpValue>(attributesPropertyName, attr_array);
+                    }
+                }
+
+                // yield return the inner text
+                if (text != null)
+                {
+                    yield return new KeyValuePair<string, PhpValue>(textPropertyName, text.ToString());
+                }
+                else
+                {
+                    // yield return all child elements
+                    foreach (var pair in properties)
+                    {
+                        yield return new KeyValuePair<string, PhpValue>(pair.Key.ToString(), pair.Value);
+                    }
+                }
+            }
+        }
+
+        IEnumerable<KeyValuePair<string, PhpValue>> IPhpJsonSerializable.Properties => Properties;
+
+        IEnumerable<KeyValuePair<string, PhpValue>> IPhpPrintable.Properties => Properties;
 
         /// <summary>
         /// Invoked when the instance is being cloned.
@@ -1893,6 +1896,20 @@ namespace Peachpie.Library.XmlDom
         public virtual long count() => this.Count();
 
         #endregion
+
+        //#region Serializable
+
+        //PhpString Serializable.serialize()
+        //{
+        //    throw new Pchp.Library.Spl.Exception(string.Format(Pchp.Library.Resources.Resources.serialization_unsupported_type, nameof(SimpleXMLElement)));
+        //}
+
+        //void Serializable.unserialize(PhpString serialized)
+        //{
+        //    throw new Pchp.Library.Spl.Exception(string.Format(Pchp.Library.Resources.Resources.serialization_unsupported_type, nameof(SimpleXMLElement)));
+        //}
+
+        //#endregion
     }
 
     /// <summary>
