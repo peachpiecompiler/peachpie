@@ -27,7 +27,25 @@ namespace Pchp.Core
         /// <summary>
         /// Gets number format used for converting <see cref="double"/> to <see cref="string"/>.
         /// </summary>
-        public virtual NumberFormatInfo NumberFormat => NumberFormatInfo.InvariantInfo;
+        public virtual NumberFormatInfo NumberFormat => InvariantNumberFormatInfo;
+
+        /// <summary>
+        /// Gets invariant number format info for PHP semantic.
+        /// </summary>
+        public static NumberFormatInfo InvariantNumberFormatInfo
+        {
+            get
+            {
+                return s_invariantNumberFormatInfo ??= new NumberFormatInfo
+                {
+                    NegativeInfinitySymbol = "-INF",
+                    PositiveInfinitySymbol = "INF",
+                    NaNSymbol = "NAN",
+                };
+            }
+        }
+
+        static NumberFormatInfo? s_invariantNumberFormatInfo;
 
         /// <summary>
         /// Gets value indicating whether the application is a web application.
