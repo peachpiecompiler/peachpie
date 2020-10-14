@@ -1,5 +1,5 @@
-﻿using System.ComponentModel;
-using Pchp.Core;
+﻿using Pchp.Core;
+using static Pchp.Core.PhpExtensionAttribute;
 
 /// <summary>
 /// Interface for customized serializing.
@@ -16,7 +16,7 @@ using Pchp.Core;
 /// which had been serialized before the class implemeted the interface, is unserialized,
 /// __wakeup() is called instead of the serialize method, what might be useful for migration purposes.
 /// </remarks>
-[PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension(KnownExtensionNames.Core)]
 public interface Serializable
 {
     /// <summary>
