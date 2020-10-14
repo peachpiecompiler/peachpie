@@ -201,22 +201,18 @@ namespace Peachpie.AspNetCore.Web
 
             var req_path = req.Path.Value.AsSpan();
             var path = req_path.TrimEnd(UrlSeparator);
+            var script = ScriptInfo.Empty;
 
-            ScriptInfo script;
-
-            for (; ; )
+            for (int level = 0; ; level++)
             {
                 // /a/b/file.php
-                if (PathUtils.GetExtension(path).Length != 0)
+                if (PathUtils.GetExtension(path).Length != 0 && (script = ScriptsMap.GetDeclaredScript(path)).IsValid)
                 {
-                    if ((script = ScriptsMap.GetDeclaredScript(path)).IsValid)
-                    {
-                        break;
-                    }
+                    break;
                 }
 
                 // default document
-                if ((script = ScriptsMap.GetDeclaredScript(path.ToString() + DefaultDocument)).IsValid) // TODO: NETSTANDARD2.1: string.concat
+                if (level == 0 && (script = ScriptsMap.GetDeclaredScript(path.ToString() + DefaultDocument)).IsValid) // TODO: NETSTANDARD2.1: string.concat
                 {
                     break;
                 }
