@@ -307,6 +307,14 @@ namespace Pchp.Core
             }
         }
 
+        public static void TooFewArguments(string function, /*bool funcUser,*/ int actual, int expected)
+        {
+            // TODO: TargetPhpLanguage.Version >= 7.1
+
+            // "Too few arguments to function {function}(), {actual} passed and exactly {expected} expected"
+            throw ArgumentCountErrorException(string.Format(ErrResources.too_few_arguments, function, actual.ToString(), expected.ToString()));
+        }
+
         /// <summary>
         /// Emitted to the foreach statement if the variable to be enumerated doesn't implement 
         /// the <see cref="IPhpEnumerable"/> interface.

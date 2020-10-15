@@ -3067,7 +3067,7 @@ namespace Pchp.Core.Resources {
                 return ResourceManager.GetString("object_could_not_be_converted", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Cannot use object of type {0} as array.
         /// </summary>
@@ -4127,6 +4127,15 @@ namespace Pchp.Core.Resources {
         public static string too_big_int_conversion {
             get {
                 return ResourceManager.GetString("too_big_int_conversion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Too few arguments to function {0}(), {1} passed and exactly {2} expected.
+        /// </summary>
+        public static string too_few_arguments {
+            get {
+                return ResourceManager.GetString("too_few_arguments", resourceCulture);
             }
         }
         
