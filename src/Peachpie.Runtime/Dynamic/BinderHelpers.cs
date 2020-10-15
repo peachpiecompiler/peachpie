@@ -1099,6 +1099,8 @@ namespace Pchp.Core.Dynamic
                     else if (p.IsDummyFieldsOnlyCtor())
                     {
                         boundargs[i] = Expression.Default(p.ParameterType);
+
+                        continue;
                     }
                     else if (p.IsLateStaticParameter())
                     {
@@ -1115,7 +1117,7 @@ namespace Pchp.Core.Dynamic
 
                                 // unk
                                 _ => throw new ArgumentException(),
-                            }; 
+                            };
                         }
                         else
                         {
@@ -1137,9 +1139,7 @@ namespace Pchp.Core.Dynamic
 
                 if (i == ps.Length - 1 && p.IsParamsParameter())
                 {
-                    var element_type = p.ParameterType.GetElementType();
-                    boundargs[i] = args.BindParams(argi, element_type);
-                    break;
+                    boundargs[i] = args.BindParams(argi, p.ParameterType.GetElementType());
                 }
                 else
                 {
