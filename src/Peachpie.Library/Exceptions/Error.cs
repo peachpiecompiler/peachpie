@@ -149,6 +149,10 @@ namespace Pchp.Library.Spl
         }
     }
 
+    /// <summary>
+    /// The exception is thrown when too few arguments are passed to a user-defined function or method.<br/>
+    /// This should apply to built-in functions as well if the code is in strict mode.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ArgumentCountError : TypeError
     {

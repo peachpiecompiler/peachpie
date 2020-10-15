@@ -519,24 +519,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                 }
 
-                var expectsmax = x.TargetMethod.HasParamsParameter()
+                var expectsmax = ps.Length != 0 && ps.Last().IsParams
                     ? int.MaxValue
                     : ps.Length - skippedps;
 
                 //
-                var routineName =
-                    (x is BoundNewEx)
-                    ? "new " + x.TargetMethod.ContainingType.PhpQualifiedName().ToString()
-                    : GetMemberNameForDiagnostic(x.TargetMethod, (x.Instance != null || x is BoundStaticFunctionCall));
-
-                //
                 if (x.ArgumentsInSourceOrder.Length < expectsmin)
                 {
-                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, routineName, expectsmin, x.ArgumentsInSourceOrder.Length);
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, GetMemberNameForDiagnostic(x), expectsmin, x.ArgumentsInSourceOrder.Length);
                 }
                 else if (x.ArgumentsInSourceOrder.Length > expectsmax)
                 {
-                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments, routineName, expectsmax, x.ArgumentsInSourceOrder.Length);
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments, GetMemberNameForDiagnostic(x), expectsmax, x.ArgumentsInSourceOrder.Length);
                 }
             }
 
@@ -835,9 +829,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
         }
 
-        static string GetMemberNameForDiagnostic(Symbol target, bool isMemberName)
+        static string GetMemberNameForDiagnostic(BoundRoutineCall x)
         {
-            string name = target.PhpName();
+            if (x.TargetMethod.IsValidMethod())
+            {
+                if (x is BoundNewEx)
+                {
+                    return "new " + x.TargetMethod.ContainingType.PhpName();
+                }
+                else
+                {
+                    return GetMemberNameForDiagnostic(x.TargetMethod, x.Instance != null || x is BoundStaticFunctionCall);
+                }
+            }
+            else
+            {
+                throw ExceptionUtilities.Unreachable;
+            }
+        }
+
+        static string GetMemberNameForDiagnostic(Symbol target, bool isMemberName = false)
+        {
+            var name = target.PhpName();
 
             if (isMemberName)
             {
