@@ -44,8 +44,8 @@ namespace Pchp.Core.Dynamic
              * return NULL;
             */
             var throwcall = bound.TargetType != null
-                ? Expression.Call(typeof(PhpException), "UndefinedMethodCalled", Array.Empty<Type>(), Expression.Constant(bound.TargetType.Name), bound.IndirectName ?? Expression.Constant(bound.Name))
-                : Expression.Call(typeof(PhpException), "UndefinedFunctionCalled", Array.Empty<Type>(), bound.IndirectName ?? Expression.Constant(bound.Name));
+                ? Expression.Call(Cache.Exceptions.UndefinedMethodCalled_String_String, Expression.Constant(bound.TargetType.Name), bound.IndirectName ?? Expression.Constant(bound.Name))
+                : Expression.Call(Cache.Exceptions.UndefinedFunctionCalled_String, bound.IndirectName ?? Expression.Constant(bound.Name));
 
             return Expression.Block(throwcall, ConvertExpression.BindDefault(this.ReturnType));
         }
@@ -169,11 +169,10 @@ namespace Pchp.Core.Dynamic
             {
                 Debug.Assert(routine.Index != 0);
 
-                // restriction: ctx.CheckFunctionDeclared(index, routine.GetHashCode())
+                // restriction: CheckFunctionDeclared(ctx, index, routine.GetHashCode())
                 var checkExpr = Expression.Call(
-                    bound.Context,
-                    typeof(Context).GetMethod("CheckFunctionDeclared", typeof(int), typeof(int)),
-                    Expression.Constant(routine.Index), Expression.Constant(routine.GetHashCode()));
+                    Cache.Operators.CheckFunctionDeclared_Context_Int_Int,
+                    bound.Context, Expression.Constant(routine.Index), Expression.Constant(routine.GetHashCode()));
 
                 bound.AddRestriction(checkExpr);
             }
@@ -255,7 +254,7 @@ namespace Pchp.Core.Dynamic
                  * PhpException.MethodOnNonObject(name_expr);
                  * return NULL;
                  */
-                var throwcall = Expression.Call(typeof(PhpException), "MethodOnNonObject", Array.Empty<Type>(), ConvertExpression.Bind(name_expr, typeof(string), bound.Context));
+                var throwcall = Expression.Call(Cache.Exceptions.MethodOnNonObject_String, ConvertExpression.Bind(name_expr, typeof(string), bound.Context));
                 return Expression.Block(throwcall, ConvertExpression.BindDefault(this.ReturnType));
             }
 

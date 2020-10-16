@@ -292,9 +292,9 @@ namespace Pchp.Core.Dynamic
         public static Expression VariableMisusedAsObject(Expression var, bool reference)
         {
             return Expression.Call(
-                typeof(PhpException), "VariableMisusedAsObject", Array.Empty<Type>(),
-                   ConvertExpression.BindToValue(var),
-                   Expression.Constant(reference));
+                Cache.Exceptions.VariableMisusedAsObject_PhpValue_Bool,
+                ConvertExpression.BindToValue(var),
+                Expression.Constant(reference));
         }
 
         public static Expression EnsureNotNullPhpArray(Expression variable)
@@ -950,7 +950,7 @@ namespace Pchp.Core.Dynamic
                     // = target->field
 
                     // Template: Operators.GetRuntimeProperty(ctx, PhpTypeInfo, instance, propertyName)
-                    return Expression.Call(Cache.Operators.RuntimePropertyGetValue.Method, ctx, Expression.Constant(type), target, Expression.Constant(field));
+                    return Expression.Call(Cache.Operators.RuntimePropertyGetValue, ctx, Expression.Constant(type), target, Expression.Constant(field));
                 }
 
                 //
