@@ -82,7 +82,6 @@ namespace Pchp.Core.Dynamic
         {
             var bound = CreateContext().ProcessArgs(target, args, HasTarget);
 
-
             Expression invocation;
 
             //
@@ -103,12 +102,17 @@ namespace Pchp.Core.Dynamic
 
                     invocation = Expression.Block(new[] { args_var },
                             Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments, bound.Context, bound.ClassContext)),
-                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, bound.IsStaticSyntax, lateStaticType: lateStaticTypeArg)
+                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var,
+                                isStaticCallSyntax: bound.IsStaticSyntax,
+                                lateStaticType: lateStaticTypeArg)
                         );
                 }
                 else
                 {
-                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, bound.IsStaticSyntax, lateStaticType: lateStaticTypeArg, classContext: bound.ClassContext);
+                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments,
+                        isStaticCallSyntax: bound.IsStaticSyntax,
+                        lateStaticType: lateStaticTypeArg,
+                        classContext: bound.ClassContext);
                 }
             }
             else

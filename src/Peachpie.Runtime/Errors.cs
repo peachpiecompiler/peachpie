@@ -311,7 +311,7 @@ namespace Pchp.Core
         {
             // TODO: TargetPhpLanguage.Version >= 7.1
 
-            // "Too few arguments to function {function}(), {actual} passed and exactly {expected} expected"
+            // "Too few arguments to function {function}(), {actual} passed and at least {expected} expected"
             throw ArgumentCountErrorException(string.Format(ErrResources.too_few_arguments, function, actual.ToString(), expected.ToString()));
         }
 

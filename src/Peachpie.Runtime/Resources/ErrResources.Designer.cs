@@ -4131,7 +4131,7 @@ namespace Pchp.Core.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Too few arguments to function {0}(), {1} passed and exactly {2} expected.
+        ///   Looks up a localized string similar to Too few arguments to function {0}(), {1} passed and at least {2} expected.
         /// </summary>
         public static string too_few_arguments {
             get {

@@ -154,6 +154,32 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
+        /// Determines whether the method is declared in user's PHP code (within a user type or within a source script).
+        /// </summary>
+        public static bool IsUserRoutine(this MethodBase method)
+        {
+            Debug.Assert(method != null);
+
+            var type = method.DeclaringType;
+            if (type != null)
+            {
+                var phptype = type.GetCustomAttribute<PhpTypeAttribute>();
+                if (phptype != null)
+                {
+                    return phptype.FileName != null;
+                }
+
+                var script = type.GetCustomAttribute<ScriptAttribute>();
+                if (script != null)
+                {
+                    return script.Path != null; // always true
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Types that we do not expose in reflection.
         /// </summary>
         static readonly HashSet<Type> s_hiddenTypes = new HashSet<Type>()
