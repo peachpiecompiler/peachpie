@@ -72,6 +72,8 @@ namespace Pchp.Core.Dynamic
             return p.ParameterType == typeof(Closure) && p.Name == "<closure>";
         }
 
+        public static bool IsPhpOptionalParameter(this ParameterInfo p) => p.HasDefaultValue || p.GetCustomAttribute<DefaultValueAttribute>() != null;
+
         /// <summary>
         /// Gets value indicating the given type is of type <c>Nullable&lt;T&gt;</c>.
         /// </summary>
@@ -689,11 +691,15 @@ namespace Pchp.Core.Dynamic
                     {
                         case TypeMethods.MagicMethods.__set:
                             // __set(name, value)
-                            return OverloadBinder.BindOverloadCall(typeof(void), target, methods, ctx, new Expression[] { Expression.Constant(field), rvalue }, false);
+                            return OverloadBinder.BindOverloadCall(typeof(void), target, methods, ctx, new Expression[] { Expression.Constant(field), rvalue },
+                                isStaticCallSyntax: false,
+                                classContext: classCtx);
 
                         default:
                             // __get(name), __unset(name), __isset(name)
-                            return OverloadBinder.BindOverloadCall(methods[0].ReturnType, target, methods, ctx, new Expression[] { Expression.Constant(field) }, false);
+                            return OverloadBinder.BindOverloadCall(methods[0].ReturnType, target, methods, ctx, new Expression[] { Expression.Constant(field) },
+                                isStaticCallSyntax: false,
+                                classContext: classCtx);
                     }
                 }
                 else
@@ -1046,8 +1052,10 @@ namespace Pchp.Core.Dynamic
 
             var ps = method.GetParameters();
             var boundargs = new Expression[ps.Length];
+            var isUserRoutine = ReflectionUtils.IsUserRoutine(method);
 
             int argi = 0;
+            int minargs = 0;
 
             for (int i = 0; i < ps.Length; i++)
             {
@@ -1144,6 +1152,11 @@ namespace Pchp.Core.Dynamic
                 else
                 {
                     boundargs[i] = args.BindArgument(argi, p);
+
+                    if (!IsPhpOptionalParameter(p)) // mandatory argument
+                    {
+                        minargs = argi + 1;
+                    }
                 }
 
                 //
@@ -1159,40 +1172,76 @@ namespace Pchp.Core.Dynamic
                 instance = null;
             }
 
+            Expression methodcall;
+            string methodname = method.Name;
+
             //
             if (method.IsConstructor)
             {
-                return Expression.New((ConstructorInfo)method, boundargs);
+                methodcall = Expression.New((ConstructorInfo)method, boundargs);
+                methodname = method.DeclaringType.GetPhpTypeInfo().Name + "::" + methodname;
             }
-
-            if (HasToBeCalledNonVirtually(instance, method, isStaticCallSyntax))
+            else
             {
-                // Ugly hack here,
-                // we NEED to call the method nonvirtually, but LambdaCompiler emits .callvirt always and there is no way how to change it (except we can emit all the stuff by ourselfs).
-                // We use DynamicMethod to emit .call inside, and use its MethodInfo which is static.
-                // LambdaCompiler generates .call to static DynamicMethod which calls our method via .call as well,
-                // after all the inlining, there should be no overhead.
+                if (HasToBeCalledNonVirtually(instance, method, isStaticCallSyntax))
+                {
+                    // Ugly hack here,
+                    // we NEED to call the method nonvirtually, but LambdaCompiler emits .callvirt always and there is no way how to change it (except we can emit all the stuff by ourselves).
+                    // We use DynamicMethod to emit .call inside, and use its MethodInfo which is static.
+                    // LambdaCompiler generates .call to static DynamicMethod which calls our method via .call as well,
+                    // after all the inlining, there should be no overhead.
 
-                instance = Expression.Convert(instance, method.DeclaringType);
-                method = WrapInstanceMethodToStatic((MethodInfo)method);
+                    instance = Expression.Convert(instance, method.DeclaringType);
+                    method = WrapInstanceMethodToStatic((MethodInfo)method);
+
+                    //
+                    var newargs = new Expression[boundargs.Length + 1];
+                    newargs[0] = instance;
+                    Array.Copy(boundargs, 0, newargs, 1, boundargs.Length);
+                    boundargs = newargs;
+                    instance = null;
+                }
+
+                if (instance != null && !method.DeclaringType.IsAssignableFrom(instance.Type))
+                {
+                    instance = Expression.Convert(instance, method.DeclaringType);
+                }
+
+                // NOTE: instead of "HasToBeCalledNonVirtually" magic above, it would be great to just use ".call" opcode always (as of now Linq cannot do that)
 
                 //
-                var newargs = new Expression[boundargs.Length + 1];
-                newargs[0] = instance;
-                Array.Copy(boundargs, 0, newargs, 1, boundargs.Length);
-                boundargs = newargs;
-                instance = null;
+                methodcall = Expression.Call(instance, (MethodInfo)method, boundargs);
             }
 
-            if (instance != null && !method.DeclaringType.IsAssignableFrom(instance.Type))
+            if (isUserRoutine) // TODO: or in strict mode
             {
-                instance = Expression.Convert(instance, method.DeclaringType);
-            }
+                // throw ArgumentCountError in case:
+                var argc_expr = args.BindArgsCount();
+                // var argc_check = argc < minargs && method is UserRoutine
+                // PhpException.TooFewArguments( method.Name, argc, minargs )
+                var errorexpr = Expression.Call(Cache.Exceptions.TooFewArguments_String_Int_Int,
+                    Expression.Constant(methodname), argc_expr, Expression.Constant(minargs));
 
-            // NOTE: instead of "HasToBeCalledNonVirtually" magic above, it would be great to just use ".call" opcode always (as of now Linq cannot do that)
+                if (argc_expr is ConstantExpression argc_const)
+                {
+                    if ((int)argc_const.Value < minargs)
+                    {
+                        return errorexpr;
+                    }
+                }
+                else
+                {
+                    // Template:
+                    // if (argc < mimnargs) PhpException.TooFewArguments;
+                    // return methodcall();
+                    methodcall = Expression.Block(
+                        Expression.IfThen(Expression.LessThan(argc_expr, Expression.Constant(minargs)), errorexpr),
+                        methodcall);
+                }
+            }
 
             //
-            return Expression.Call(instance, (MethodInfo)method, boundargs);
+            return methodcall;
         }
 
         /// <summary>
