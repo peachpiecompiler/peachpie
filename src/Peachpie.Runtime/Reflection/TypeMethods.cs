@@ -87,8 +87,11 @@ namespace Pchp.Core.Reflection
                 // ignore methods in base classes that has been "overriden" in current class
                 // in PHP we do override even if signature does not match (e.g. __construct)
                 SelectVisibleOverrides(ref overrides);
+                
+                // TODO: negative {index} in case of non-user method
 
                 var info = PhpMethodInfo.Create(++index, m.Key, overrides, type);
+
                 MagicMethods magic;
 
                 if (IsSpecialName(overrides))

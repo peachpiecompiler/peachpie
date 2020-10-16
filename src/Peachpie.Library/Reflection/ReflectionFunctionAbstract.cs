@@ -158,7 +158,7 @@ namespace Pchp.Library.Reflection
         public virtual bool isClosure() { throw new NotImplementedException(); }
         public virtual bool isDeprecated() { throw new NotImplementedException(); }
         public bool isGenerator() { throw new NotImplementedException(); }
-        public bool isInternal() => !isUserDefined();
+        public bool isInternal() => !isUserDefined(); // CONSIDER: rather check MethodInfo Assembly PublicKeyToken
         public bool isUserDefined() => _routine.IsUserFunction;
         public bool isVariadic() => _routine.Methods.Any(m => m.GetParameters().Any(p => p.GetCustomAttribute<ParamArrayAttribute>() != null));
         public bool returnsReference() => _routine.Methods.Any(m => m.ReturnType == typeof(PhpAlias));
