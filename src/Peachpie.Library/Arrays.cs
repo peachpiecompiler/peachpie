@@ -3315,9 +3315,9 @@ namespace Pchp.Library
         }
 
         /// <remarks>Performs deep copy of array, return array with replacements.</remarks>
-        internal static PhpArray ArrayReplaceImpl(PhpArray array, PhpArray[] arrays, bool recursive)
+        static PhpArray ArrayReplaceImpl(PhpArray array, PhpArray[] arrays, bool recursive)
         {
-            PhpArray result = array.DeepCopy();
+            var result = array.DeepCopy();
 
             if (arrays != null)
             {
@@ -3335,20 +3335,24 @@ namespace Pchp.Library
         /// <summary>
         /// Performs replacements on deeply-copied array. Performs deep copies of replace values.
         /// </summary>
-        internal static void ArrayReplaceImpl(PhpArray array, PhpArray replaceWith, bool recursive)
+        static void ArrayReplaceImpl(PhpArray array, PhpArray replaceWith, bool recursive)
         {
-            if (array != null && replaceWith != null)
+            Debug.Assert(array != null);
+
+            if (replaceWith != null)
             {
                 var iterator = replaceWith.GetFastEnumerator();
                 while (iterator.MoveNext())
                 {
-                    PhpValue tmp;
                     var entry = iterator.Current;
-                    if (recursive && entry.Value.IsArray && (tmp = array[entry.Key]).IsArray)
+
+                    if (recursive &&
+                        entry.Value.IsPhpArray(out var arrReplacement) &&
+                        array[entry.Key].IsPhpArray(out var arrOriginal))
                     {
-                        var tmpArray = tmp.Array.DeepCopy();
-                        ArrayReplaceImpl(tmpArray, entry.Value.Array, true);
-                        array[entry.Key] = tmpArray;
+                        arrOriginal = arrOriginal.DeepCopy();
+                        ArrayReplaceImpl(arrOriginal, arrReplacement, true);
+                        array[entry.Key] = arrOriginal;
                     }
                     else
                     {
