@@ -3346,7 +3346,9 @@ namespace Pchp.Library
                     var entry = iterator.Current;
                     if (recursive && entry.Value.IsArray && (tmp = array[entry.Key]).IsArray)
                     {
-                        ArrayReplaceImpl(tmp.Array, entry.Value.Array, true);
+                        var tmpArray = tmp.Array.DeepCopy();
+                        ArrayReplaceImpl(tmpArray, entry.Value.Array, true);
+                        array[entry.Key] = tmpArray;
                     }
                     else
                     {
