@@ -571,7 +571,7 @@ namespace Pchp.Core
         /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
         /// Single-byte strings are decoded using <c>UTF-8</c>.
         /// </summary>
-        public static bool IsPhpArray(this PhpValue value, /*[MaybeNullWhen(false)]*/out PhpArray? array) => (array = value.AsArray()) != null; // TODO: STANDARD21
+        public static bool IsPhpArray(this PhpValue value, /*[MaybeNullWhen(false)]*/out PhpArray? array) => (array = value.AsArray()) != null; // TODO: NETSTANDARD2.1
 
         /// <summary>
         /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
