@@ -833,17 +833,22 @@ namespace Pchp.Core
         public void AddTo(PhpHashtable/*!*/dst, bool deepCopy)
         {
             if (dst == null)
-                throw new ArgumentNullException("dst");
+                throw new ArgumentNullException(nameof(dst));
 
             var enumerator = this.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
-                var val = deepCopy ? enumerator.CurrentValue.DeepCopy() : enumerator.CurrentValue;
-                var key = enumerator.CurrentKey;
-                if (key.IsInteger)
+                var entry = enumerator.Current;
+                var val = deepCopy ? entry.Value.DeepCopy() : entry.Value;
+
+                if (entry.Key.IsInteger)
+                {
                     dst.Add(val);
+                }
                 else
-                    dst.Add(key, val);
+                {
+                    dst.Add(entry.Key, val);
+                }
             }
         }
 
