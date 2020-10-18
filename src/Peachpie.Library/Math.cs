@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -236,11 +237,26 @@ namespace Pchp.Library
         {
             if (max < min)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new Spl.Error(Resources.LibResources.min_must_be_less_or_equal_to_max);
+            }
+            else if (max == min)
+            {
+                return min;
             }
 
-            // TODO: use mcrypt, int64
-            return rand((int)min, (int)max);
+            var bytes = new byte[sizeof(long)]; // TODO: NETSTANDARD2.1 // Span<byte> bytes = stackalloc byte[sizeof(long)];
+
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(bytes);
+            }
+
+            var value = (decimal)BitConverter.ToUInt64(bytes, 0);
+
+            // adjust to min/max
+            var length = (decimal)max - min + 1;
+            value = min + (value % length);
+            return (long)value;
         }
 
         /// <summary>
@@ -255,8 +271,10 @@ namespace Pchp.Library
 
             var bytes = new byte[length];
 
-            // TODO: System.Security.Cryptography.RNGCryptoServiceProvider
-            System.Security.Cryptography.RandomNumberGenerator.Create().GetBytes(bytes);
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(bytes);
+            }
 
             return new PhpString(bytes);
         }
@@ -275,7 +293,7 @@ namespace Pchp.Library
             return MTGenerator.Next();
         }
 
-        public static int mt_rand(int min, int max)
+        public static int mt_rand(int min, int max) // TODO: long min, long max, mt_getrandmax
         {
             return (min < max) ? MTGenerator.Next(min, max) : MTGenerator.Next(max, min);
         }
