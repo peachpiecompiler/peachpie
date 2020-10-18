@@ -69,6 +69,26 @@ namespace Pchp.Library.Streams
             this.st_ctime = st_ctime;
         }
 
+        internal StatStruct(Mono.Unix.Native.Stat stat)
+        {
+            st_dev = (uint)stat.st_dev;
+            st_ctime = stat.st_ctime_nsec;
+            st_mtime = stat.st_mtime_nsec;
+            st_atime = stat.st_atime_nsec;
+            st_ctime = stat.st_ctime;
+            st_atime = stat.st_atime;
+            //stat.st_blocks;
+            //stat.st_blksize;
+            st_mtime = stat.st_mtime;
+            st_rdev = (uint)stat.st_rdev;
+            st_gid = (short)stat.st_gid;
+            st_uid = (short)stat.st_uid;
+            st_nlink = (short)stat.st_nlink;
+            st_mode = (FileModeFlags)stat.st_mode;
+            st_ino = (ushort)stat.st_ino;
+            st_size = stat.st_size;
+        }
+
         /// <summary>
         /// An invalid value.
         /// </summary>
