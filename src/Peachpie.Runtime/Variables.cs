@@ -565,6 +565,7 @@ namespace Pchp.Core
         public static PhpArray? AsArray(this PhpValue value)
         {
             return (value.Object is PhpAlias alias ? alias.Value.Object : value.Object) as PhpArray;
+            //return value.Object as PhpArray ?? (value.Object is PhpAlias alias ? alias.Value.Object as PhpArray : null);
         }
 
         /// <summary>

@@ -2034,10 +2034,15 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Some array is a <B>null</B> reference (Warning).</exception>
         public static PhpArray array_merge_recursive(PhpArray array, params PhpArray[] arrays)
         {
-            if (array == null || arrays == null)
+            if (array == null)
             {
-                PhpException.ArgumentNull(array == null ? nameof(array) : nameof(arrays));
+                PhpException.ArgumentNull(nameof(array));
                 return null;
+            }
+
+            if (arrays == null)
+            {
+                throw new ArgumentNullException(nameof(arrays));    // cannot happen
             }
 
             for (int i = 0; i < arrays.Length; i++)
@@ -2058,25 +2063,20 @@ namespace Pchp.Library
         /// <param name="array">The first array to merge.</param>
         /// <param name="arrays">The next arrays to merge.</param>
         /// <returns>An array containing items of all specified arrays.</returns>
-        private static PhpArray MergeRecursive(PhpArray array, params PhpArray[] arrays)
+        private static PhpArray MergeRecursive(PhpArray/*!*/array, params PhpArray[]/*!!*/arrays)
         {
-            if (array == null) return null;
+            Debug.Assert(array != null);    // already checked
+            Debug.Assert(arrays != null);   // already checked
 
-            PhpArray result = new PhpArray();
+            var result = new PhpArray();
+
             array.AddTo(result, deepCopy: true);
 
-            if (arrays != null)
+            for (int i = 0; i < arrays.Length; i++)
             {
-                for (int i = 0; i < arrays.Length; i++)
+                if (!MergeRecursiveInternal(result, arrays[i], wasDeepCopied: true))
                 {
-                    if (arrays[i] != null)
-                    {
-                        if (!MergeRecursiveInternal(result, arrays[i], wasDeepCopied: true))
-                        {
-                            //PhpException.Throw(PhpError.Warning, LibResources.GetString("recursion_detected"));
-                            throw new ArgumentException();
-                        }
-                    }
+                    PhpException.Throw(PhpError.Warning, LibResources.recursion_detected);
                 }
             }
 
@@ -2088,7 +2088,7 @@ namespace Pchp.Library
         /// </summary>
         private static bool MergeRecursiveInternal(PhpArray/*!*/ result, PhpArray/*!*/ array, bool wasDeepCopied)
         {
-            var visited = new HashSet<object>();    // marks arrays that are being visited
+            var visited = new HashSet<PhpArray>();    // marks arrays that are being visited
 
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
@@ -2096,25 +2096,23 @@ namespace Pchp.Library
                 var entry = iterator.Current;
                 if (entry.Key.IsString)
                 {
-                    if (result.ContainsKey(entry.Key))
+                    if (result.TryGetValue(entry.Key, out var xv))
                     {
-                        // the result array already contains the item => merging take place
-                        var xv = result[entry.Key];
-                        var y = entry.Value.GetValue();
-
                         // source item:
-                        PhpValue x = xv.GetValue();
+                        var x = xv.GetValue();
+                        var ax = x.AsArray();
+
+                        // the result array already contains the item => merging take place
+                        var y = entry.Value.GetValue();
+                        var ay = y.AsArray();
 
                         // if x is not a reference then we can reuse the ax array for the result
                         // since on the top level (indicated by wasDeepCopied) it has been deeply
                         // copied when added to the resulting array:
-                        PhpArray item_result = (wasDeepCopied && x.IsArray && !xv.IsAlias) ? x.Array : new PhpArray();
+                        PhpArray item_result = (wasDeepCopied && ax != null && !xv.IsAlias) ? ax : new PhpArray();
 
-                        if (x.IsArray && y.IsArray)
+                        if (ax != null && ay != null)
                         {
-                            var ax = x.Array;
-                            var ay = y.Array;
-
                             if (ax != item_result)
                                 ax.AddTo(item_result, deepCopy: true);
 
@@ -2132,10 +2130,10 @@ namespace Pchp.Library
                         }
                         else
                         {
-                            if (x.IsArray)
+                            if (ax != null)
                             {
-                                if (x.Array != item_result)
-                                    x.Array.AddTo(item_result, deepCopy: true);
+                                if (ax != item_result)
+                                    ax.AddTo(item_result, deepCopy: true);
                             }
                             else
                             {
@@ -2143,7 +2141,7 @@ namespace Pchp.Library
                                 item_result.Add(x.DeepCopy());
                             }
 
-                            if (y.IsArray) y.Array.AddTo(item_result, deepCopy: true);
+                            if (ay != null) ay.AddTo(item_result, deepCopy: true);
                             else /*if (y != null)*/ item_result.Add(y.DeepCopy());
                         }
 
