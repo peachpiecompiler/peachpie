@@ -1,12 +1,16 @@
 ﻿using System;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Mail;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.Security.Authentication;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -841,13 +845,243 @@ namespace Pchp.Library
     //[PhpExtension("IMAP")] // uncomment when the extension is ready
     public static class Imap
     {
-        #region Variables
-
+        #region Constants
         readonly static Encoding ISO_8859_1 = Encoding.GetEncoding("ISO-8859-1");
-
         #endregion
 
+        #region ImapResource
+        internal abstract class MailResource : PhpResource
+        {
+            protected TcpClient _client;
+            protected SslStream _ssl;
 
+            protected MailResource() : base("imap") {}
+
+            public static MailResource Create(MailBoxInfo info) 
+            {
+                if (String.IsNullOrEmpty(info.Service))
+                {
+                    if (info.NameFlags.Contains("imap") || info.NameFlags.Contains("imap2") || info.NameFlags.Contains("imap2bis")
+                        || info.NameFlags.Contains("imap4") || info.NameFlags.Contains("imap4rev1"))
+                    {
+                        var a  = GetStream(info);
+                        a.Write(Encoding.ASCII.GetBytes("A\r\n"));
+
+                        return ImapResource.Create(info.Hostname, info.Port);
+                    }
+                    else if (info.NameFlags.Contains("pop3"))
+                    {
+                        throw new NotImplementedException();
+                    }
+                    else if (info.NameFlags.Contains("nntp"))
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    // Default is imap
+                    return ImapResource.Create(info.Hostname, info.Port);
+                }
+                else
+                {
+                    switch (info.Service)
+                    {
+                        case "pop3":
+                            throw new NotImplementedException();
+                        case "nntp":
+                            throw new NotImplementedException();
+                        default: // Default is imap
+                            return ImapResource.Create(info.Hostname, info.Port);
+                    }
+                }
+            }
+
+            private static Stream GetStream(MailBoxInfo info)
+            {
+                if (info.NameFlags.Contains("ssl"))
+                {
+                    var client = new TcpClient(info.Hostname, info.Port);
+                    var r = new SslStream(client.GetStream(), false, (sender, cert, chain, sslPolicyErrors) => true);
+                    r.AuthenticateAsClient(info.Hostname);
+                    return r;
+                }
+                return null;
+
+            }
+
+            public abstract bool Login(string username, string password);
+        }
+
+        /// <summary>
+        /// Context of POP3 session.
+        /// </summary>
+        internal class POP3Resource : MailResource
+        {
+            public static POP3Resource Create(string hostname, int port)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool Login(string username, string password)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Context of NNTP session.
+        /// </summary>
+        internal class NNTPResource : MailResource
+        {
+            public override bool Login(string username, string password)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Context of IMAP session.
+        /// </summary>
+        internal class ImapResource : MailResource
+        {
+            private enum Status { OK, NO, BAD, None };
+            struct ImapResponse
+            {
+                public string Tag { get; set; }
+                public Status Status { get; set; }
+                public string Body { get; set; }
+                public byte[] Raw { get; set; }
+            }
+
+            #region Constants
+            const char UnTaggedTag = '*';
+            const char ContinousTag = '+';
+            const char TagPrefix = 'A';
+            #endregion
+
+            #region Props
+            private int _tag = 0;
+            #endregion
+
+            #region Constructors
+            private ImapResource() {}
+
+            public static ImapResource Create(string hostname, int port)
+            {
+                ImapResource result = new ImapResource();
+                result._client = new TcpClient(hostname, port);
+
+                ImapResponse handshake = result.Receive();
+
+                return result;
+            }
+            #endregion
+
+            #region Methods
+            private void Write(string command)
+            {
+                _client.Client.Send(Encoding.ASCII.GetBytes(command));
+            }
+
+            private ImapResponse Receive()
+            {
+                byte[] buffer = new byte[2];
+                int length = _client.Client.Receive(buffer);
+
+                //Wait for complete message.
+                while (buffer[buffer.Length - 2] != '\r' || buffer[buffer.Length - 1] != '\n')
+                {
+                    Task.Delay(1);
+
+                    if (_client.Available != 0)
+                    {
+                        int size = _client.Available;
+                        byte[] newBuffer = new byte[buffer.Length + size];
+                        _client.Client.Receive(newBuffer, buffer.Length, size, SocketFlags.None);
+                        Buffer.BlockCopy(buffer, 0, newBuffer, 0, buffer.Length);
+                        buffer = newBuffer;
+                    }
+                }
+
+                ImapResponse response = new ImapResponse();
+
+                int index = 0;
+                
+                //Tag
+                if (buffer[index] == UnTaggedTag)
+                {
+                    response.Tag = UnTaggedTag.ToString();
+                    index++;
+                }
+                else if (buffer[index] == ContinousTag)
+                {
+                    response.Tag = ContinousTag.ToString();
+                    index++;
+                }
+                else if (buffer[index] == TagPrefix)
+                {
+                    index++;
+                    while (index < length && buffer[index] >= '0' && buffer[index] <= '0')
+                        index++;
+
+                    response.Tag = Encoding.ASCII.GetString(buffer, 0, index);
+                }
+
+                if (index < buffer.Length && buffer[index] == ' ')
+                    index++;
+
+                //Status
+                if (index + 1 < buffer.Length)
+                {
+                    if (buffer[index] == 'N' && buffer[index + 1] == 'O')
+                    {
+                        response.Status = Status.NO;
+                        index += 2;
+                    }
+                    else if (buffer[index] == 'O' && buffer[index + 1] == 'K')
+                    {
+                        response.Status = Status.OK;
+                        index += 2;
+                    }
+                    else if (buffer.Length + 2 < length && buffer[index] == 'D' && buffer[index + 1] == 'A' && buffer[index + 1] == 'D')
+                    {
+                        response.Status = Status.BAD;
+                        index += 3;
+                    }
+                    else
+                        response.Status = Status.None;
+                }
+
+                //Body
+                response.Body = Encoding.ASCII.GetString(buffer, index, buffer.Length - index);
+                response.Raw = buffer.Slice(0, buffer.Length);
+
+                return response;
+            }
+
+            public override bool Login(string username, string password)
+            {
+                string messageTag = $"{TagPrefix}{_tag.ToString()}";
+                _tag++;
+
+                Write($"{messageTag} LOGIN {username} {password}\r\n");
+
+                ImapResponse response = Receive();
+                if (response.Tag == messageTag)
+                {
+                    if (response.Status == Status.OK)
+                        return true;
+                    else
+                        return false;
+                }
+                else
+                {
+                    // TODO: Corner case
+                    return false;
+                }
+            }
+            #endregion
+        }
+        #endregion
 
         /// <summary>
         /// Parses an address string.
@@ -883,6 +1117,7 @@ namespace Pchp.Library
 
         #region encode,decode
 
+        #region utf7
         /// <summary>
         /// Transforms bytes to modified UTF-7 text as defined in RFC 2060
         /// </summary>
@@ -932,8 +1167,8 @@ namespace Pchp.Library
             {
                 if (text[i] == '&')
                 {
-                    if (i == text.Length - 1)
-                        ; // Error
+                    //if (i == text.Length - 1)
+                    //    ; // Error
 
                     if (text[++i] == '-') // Means "&" char.
                         builder.Append("&");
@@ -964,14 +1199,17 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Converts UTF16LE encoding to UTF-7 modified(used in IMAP) see RFC 2060.
+        /// Converts ctx.StringEncoding encoding to UTF-7 modified(used in IMAP) see RFC 2060.
         /// </summary>
-        private static PhpString UTF16LEToUTF7Modified(Context ctx, string text)
+        private static PhpString ToUTF7Modified(Context ctx, string text)
         {
             if (string.IsNullOrEmpty(text))
                 return PhpString.Empty;
 
-            var builder = StringBuilderUtilities.Pool.Get();
+            using MemoryStream stream = new MemoryStream();
+            using BinaryWriter writer = new BinaryWriter(stream);
+
+            byte[] ampSequence = new byte[] { 0x26, 0x2D }; // Means characters '&' and '-'.
 
             for (int i = 0; i < text.Length; i++)
             {
@@ -979,9 +1217,9 @@ namespace Pchp.Library
                 if (text[i] >= 0x20 && text[i] <= 0x7e)
                 {
                     if (text[i] == 0x26)
-                        builder.Append("&-");
+                        writer.Write(ampSequence);
                     else
-                        builder.Append(text[i]);
+                        writer.Write(text[i]);
                 }
                 else // Collects all bytes until Char from 0x20 to 0x7e is reached.
                 {
@@ -989,78 +1227,77 @@ namespace Pchp.Library
                     while (i < text.Length && (text[i] < 0x20 || text[i] > 0x7e))
                         i++;
 
-                    byte[] utf16BE = ctx.StringEncoding.GetBytes(text.ToCharArray(), start, i - start); // Contradiction with RFC.
-                    // byte[] utf16BE = Encoding.BigEndianUnicode.GetBytes(text.ToCharArray(), start, i - start);
-                    string base64Modified = System.Convert.ToBase64String(utf16BE).Replace('/', ',').Trim('=');
+                    string sequence = text.Substring(start, i - start);
+                    // By RFC it shloud be encoded by UTF16BE, but PHP behaves in a different way.
+                    byte[] sequenceEncoded = ctx.StringEncoding.GetBytes(sequence);
 
-                    builder.Append("&" + base64Modified + "-");
+                    string base64Modified = System.Convert.ToBase64String(sequenceEncoded).Replace('/', ',').Trim('=');
+
+                    writer.Write('&');
+                    writer.Write(Encoding.ASCII.GetBytes(base64Modified));
+                    writer.Write('-');
 
                     if (i < text.Length)
                         i--;
                 }
             }
 
-            return new PhpString(StringBuilderUtilities.GetStringAndReturn(builder),ctx);
+            writer.Flush();
+            return new PhpString(stream.ToArray());
         }
 
         /// <summary>
-        /// Converts UTF-7 modified(used in IMAP) see RFC 2060 encoding to UTF16LE.
+        /// Converts UTF-7 modified(used in IMAP) see RFC 2060 encoding to .
         /// </summary>
-        private static PhpString UTF7ModifiedToUTF16LE(Context ctx, PhpString text)
+        private static PhpString FromUTF7Modified(Context ctx, PhpString text)
         {
             if (text.IsEmpty)
                 return string.Empty;
 
             byte[] utf7Modified = text.ToBytes(ctx.StringEncoding);
-            var builder = StringBuilderUtilities.Pool.Get();
+
+            using MemoryStream stream = new MemoryStream();
+            using BinaryWriter writer = new BinaryWriter(stream);
 
             for (int i = 0; i < utf7Modified.Length; i++)
             {
                 if (utf7Modified[i] == '&')
                 {
                     if (i == utf7Modified.Length - 1)
-                        throw new Exception(); // Error
+                        throw new FormatException(); // Error
 
                     if (utf7Modified[++i] == '-') // Means "&" char.
                     {
-                        builder.Append("&");
+                        writer.Write((byte)'&');
                     }
                     else // Shifting
-                    {
-                        var sectionBuilder = StringBuilderUtilities.Pool.Get();
+                    {       
+                        int start = i;
                         while (i < utf7Modified.Length && utf7Modified[i] != '-')
-                            sectionBuilder.Append((char)utf7Modified[i++]);
+                            i++;
 
-                        //int start = i;
-                        //while (i < utf7Modified.Length && utf7Modified[i] != '-')
-                        //    i++;
-                        //string base64Modified = utf7Modified.Substring(start, i - start);
+                        string sequence = Encoding.ASCII.GetString(utf7Modified, start, i - start).Replace(',','/');
 
-                        string base64Modified = StringBuilderUtilities.GetStringAndReturn(sectionBuilder);
+                        if ((sequence.Length % 4) != 0) // Adds padding
+                            sequence = sequence.PadRight(sequence.Length + 4 - (sequence.Length % 4),'=');
 
-                        if ((base64Modified.Length % 4) != 0) // Adds padding
-                            base64Modified = base64Modified.PadRight(base64Modified.Length + 4 - (base64Modified.Length % 4),'=');
+                        byte[] base64Decoded = System.Convert.FromBase64String(sequence);
 
-                        base64Modified = base64Modified.Replace(',', '/'); // Replace ,
-
-                        //Decode Base64 and UTF16BE
-                        var a = System.Convert.FromBase64String(base64Modified);
-
-                        builder.Append(ctx.StringEncoding.GetString(System.Convert.FromBase64String(base64Modified)));
-                        //builder.Append(Encoding.BigEndianUnicode.GetString(System.Convert.FromBase64String(base64Modified)));
+                        writer.Write(base64Decoded);
                     }
                 }
                 else if (text[i] >= 0x20 && text[i] <= 0x7e)
                 {
-                    builder.Append(text[i]);
+                    writer.Write((byte)text[i]);
                 }
                 else
                 {
-                    throw new Exception(); // Error
+                    throw new FormatException(); // Error
                 }
             }
-            var b = new PhpString(StringBuilderUtilities.GetStringAndReturn(builder),ctx);
-            return b;
+
+            writer.Flush();
+            return new PhpString(stream.ToArray());
         }
 
         /// <summary>
@@ -1071,19 +1308,33 @@ namespace Pchp.Library
         /// <returns>Returns data encoded with the modified UTF-7 encoding as defined in RFC 2060</returns>
         public static PhpString imap_utf7_encode(Context ctx, PhpString data)
         {
-            return UTF16LEToUTF7Modified(ctx, data.ToString(ctx));
+
+
+
+
+
+
+
+
+
+
+
+
+
+            return ToUTF7Modified(ctx, data.ToString(ctx));
         }
 
         /// <summary>
         /// Decodes modified UTF-7 text into ISO-8859-1 string.
         /// </summary>
+        /// <param name="ctx"></param>
         /// <param name="text">A modified UTF-7 encoding string, as defined in RFC 2060</param>
         /// <returns>Returns a string that is encoded in ISO-8859-1 and consists of the same sequence of characters in text,
         /// or FALSE if text contains invalid modified UTF-7 sequence or
         /// text contains a character that is not part of ISO-8859-1 character set.</returns>
         public static PhpString imap_utf7_decode(Context ctx, PhpString text)
         {
-            return UTF7ModifiedToUTF16LE(ctx, text);
+            return FromUTF7Modified(ctx, text);
         }
         #endregion
 
@@ -1099,8 +1350,7 @@ namespace Pchp.Library
         {
             try
             {
-                
-                return Encoding.Unicode.GetString(Base64Utils.FromBase64(text.AsSpan(), true));
+                return ctx.StringEncoding.GetString(Base64Utils.FromBase64(text.AsSpan(), true));
             }
             catch (FormatException)
             {
@@ -1108,8 +1358,169 @@ namespace Pchp.Library
                 return string.Empty;
             }    
         }
+
         #endregion
 
+        #endregion
+
+        #region connection, errors, quotas
+
+        internal class MailBoxInfo
+        {
+            public string Hostname { get; set; }
+            public int Port { get; set; }
+            public string MailBoxName { get; set; }
+            public HashSet<string> NameFlags { get; set; } = new HashSet<string>();
+            public string Service { get; set; }
+            public string User { get; set; }
+            public string Authuser { get; set; }
+        }
+
+        /// <summary>
+        /// Parses mailbox.
+        /// </summary>
+        /// <param name="mailbox">The mailbox has the format: "{" remote_system_name [":" port] [flags] "}" [mailbox_name]</param>
+        /// <param name="info">Parsed information about mailbox.</param>
+        /// <returns>True on Success, False on failure.</returns>
+        private static bool TryParseHostName(string mailbox, out MailBoxInfo info)
+        {
+            info = new MailBoxInfo();
+            if (String.IsNullOrEmpty(mailbox))
+                return false;
+
+            int index = 0;
+            int startSection = index;
+
+            string GetName(string mailbox)
+            {
+                int startIndex = index;
+                while (mailbox.Length > index && ((mailbox[index] >= 'a' && mailbox[index] <= 'z')
+                  || (mailbox[index] >= 'A' && mailbox[index] <= 'Z') || (mailbox[index] >= '0' && mailbox[index] <= '9')) || mailbox[index] == '-')
+                    index++;
+
+                return (index == startIndex) ? null : mailbox.Substring(startIndex, index - startIndex);
+            }
+
+            // Mandatory char '{' 
+            if (mailbox[index++] != '{') 
+                return false;
+
+            // Finds remote_system_name
+            startSection = index;
+            while (mailbox.Length > index && mailbox[index] != '/' && mailbox[index] != ':' && mailbox[index] != '}')
+                index++;
+
+            if (startSection == index)
+                return false;
+            else
+                info.Hostname = mailbox.Substring(1, index - 1);
+
+            // Finds port number
+            startSection = index + 1;
+            if (mailbox[index++] == ':')
+            {
+                while (mailbox.Length > index && mailbox[index] >= '0' && mailbox[index] <= '9')
+                    index++;
+
+                if (mailbox[index] != '/' && mailbox[index] != '}' && index == startSection)
+                    return false;
+                else
+                    info.Port = int.Parse(mailbox.Substring(startSection, index - startSection));
+            }
+
+            // Finds flags
+            startSection = index + 1;
+            if (mailbox[index] == '/')
+            {
+                index++;
+                while (true)
+                {
+                    string flag = GetName(mailbox);
+
+                    if (String.IsNullOrEmpty(flag))
+                        return false;
+
+                    if (flag == "service" || flag == "user" || flag == "authuser")
+                    {
+                        if (mailbox[index++] != '=')
+                            return false;
+
+                        string name = GetName(mailbox);
+                        if (String.IsNullOrEmpty(name))
+                            return false;
+
+                        switch (flag)
+                        {
+                            case "service":
+                                info.Authuser = name;
+                                break;
+                            case "user":
+                                info.User = name;
+                                break;
+                            case "authuser":
+                                info.Authuser = name;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        info.NameFlags.Add(flag);
+                    }
+
+                    if (mailbox.Length <= index || mailbox[index] == '}')
+                        break;
+                    else
+                        startSection = ++index;
+                }
+            }
+
+            // Mandatory char '{' 
+            if (mailbox.Length <= index || mailbox[index] != '}')
+                return false;
+
+            // Finds mailbox box directory.
+            if (mailbox.Length > ++index)
+                info.MailBoxName = mailbox.Substring(index, mailbox.Length - index);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Open an IMAP stream to a mailbox. This function can also be used to open streams to POP3 and NNTP servers, but some functions and features are only available on IMAP servers.
+        /// </summary>
+        /// <param name="mailbox">A mailbox name consists of a server and a mailbox path on this server.</param>
+        /// <param name="username">The user name.</param>
+        /// <param name="password">The password associated with the username.</param>
+        /// <param name="options">The options are a bit mask of connection options.</param>
+        /// <param name="n_retries">Number of maximum connect attempts.</param>
+        /// <param name="params">Connection parameters.</param>
+        /// <returns>Returns an IMAP stream on success or FALSE on error.</returns>
+        [return: CastToFalse]
+        public static PhpResource imap_open(string mailbox, string username , string password, int options, int n_retries, PhpArray @params)
+        {
+            //TODO: options, n_retires, params
+            
+            if (!TryParseHostName(mailbox, out MailBoxInfo info))
+            {
+                return null;
+            }
+
+            try
+            {
+                MailResource resource = MailResource.Create(info);
+                
+                if (resource == null)
+                    return null;
+                if (!resource.Login(username, password))
+                    return null;
+
+                return resource;
+            }
+            catch (SocketException)
+            {
+                return null;
+            }
+        }
         #endregion
     }
 }
