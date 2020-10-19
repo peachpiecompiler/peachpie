@@ -147,20 +147,22 @@ namespace Pchp.Core
         /// <summary>
         /// Whether short open tags were enabled to compile the sources.
         /// </summary>
-        public bool ShortOpenTag { get; set; }
+        public bool ShortOpenTag { get; }
 
         /// <summary>
         /// The language version of compiled sources.
         /// </summary>
-        public string LanguageVersion { get; set; }
+        public Version LanguageVersion { get; }
 
         /// <summary>
         /// Construct the attribute.
         /// </summary>
+        /// <exception cref="FormatException"><paramref name="langVersion"/> is an invalid version string.</exception>
+        /// <exception cref="ArgumentException"><paramref name="langVersion"/> is empty or invalid version string.</exception>
         public TargetPhpLanguageAttribute(string langVersion, bool shortOpenTag)
         {
             this.ShortOpenTag = shortOpenTag;
-            this.LanguageVersion = langVersion;
+            this.LanguageVersion = Version.Parse(langVersion);
         }
     }
 

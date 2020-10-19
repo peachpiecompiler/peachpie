@@ -188,17 +188,14 @@ namespace Peachpie.Library.Scripting
         public static Script Create(Context.ScriptOptions options, string code, PhpCompilationFactory builder, IEnumerable<Script> previousSubmissions)
         {
             // use the language version of the requesting context
-            Version languageVersion = options.LanguageVersion;
+            var languageVersion = options.LanguageVersion;
             bool shortOpenTags = false;
 
-            if (languageVersion == null)
+            var language = options.Context.TargetPhpLanguage;
+            if (language != null)
             {
-                var language = options.Context.TargetPhpLanguage;
-                if (language != null)
-                {
-                    shortOpenTags = language.ShortOpenTag;
-                    Version.TryParse(language.LanguageVersion, out languageVersion);
-                }
+                shortOpenTags = language.ShortOpenTag;
+                languageVersion ??= language.LanguageVersion;
             }
 
             // unique in-memory assembly name
