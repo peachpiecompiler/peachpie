@@ -12,7 +12,7 @@ namespace Pchp.Library
     /// <summary>
     /// Environment constants and functions.
     /// </summary>
-    [PhpExtension("Core")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Environment
     {
         public const int PHP_MAJOR_VERSION = 7;

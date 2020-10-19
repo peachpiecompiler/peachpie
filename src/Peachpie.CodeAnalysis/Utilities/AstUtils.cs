@@ -166,6 +166,19 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Gets value indicating this entry will be skipped.
+        /// </summary>
+        public static bool IsIgnoredEntry(this Devsense.PHP.Phar.Entry entry)
+        {
+            if (entry.Name.EndsWith(".phpstorm.meta.php"))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Determines whether to treat given PHAR entry as a PHP source file (whether to compile it).
         /// </summary>
         public static bool IsCompileEntry(this Devsense.PHP.Phar.Entry entry)

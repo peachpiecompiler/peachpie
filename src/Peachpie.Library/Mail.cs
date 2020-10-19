@@ -19,7 +19,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Mail
     {
         public static bool mail(Context ctx, string to, string subject, string message, string additional_headers = null, string additional_parameters = null)

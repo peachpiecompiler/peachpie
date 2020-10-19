@@ -7,7 +7,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// <see cref="Exception"/> is the base class for all Exceptions in PHP 5, and the base class for all user exceptions in PHP 7.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class Exception : System.Exception, Throwable
     {
         /// <summary>
@@ -111,7 +111,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// An Error Exception.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ErrorException : Spl.Exception
     {
         protected long severity;

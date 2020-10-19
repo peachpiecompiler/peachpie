@@ -34,15 +34,15 @@ namespace Peachpie.Library.XmlDom
         private bool _dtdStart = false;
 
         // The State represents a section, where the xmlwriter is situated. e.g. When you call startComment, the xmlwriter changes its state to Comment
-        private enum State 
+        private enum State
         {
-            Comment, 
+            Comment,
             PI, // Processing instruction
-            CDATA, 
-            DTD, 
-            DtdElement, 
-            DtdEntity, 
-            DtdAttlist 
+            CDATA,
+            DTD,
+            DtdElement,
+            DtdEntity,
+            DtdAttlist
         }
 
         // There can be actually two levels, where the state of xmlwriter can be situated. You can move to DtdElement if you are in DTD and you can move to CDATA if you are in PI.
@@ -59,10 +59,13 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
-            _writer?.Dispose();
-            _writer = null;
+            if (_writer != null)
+            {
+                _writer.Dispose();
+                _writer = null;
+            }
         }
 
         #region Methods
@@ -72,7 +75,7 @@ namespace Peachpie.Library.XmlDom
             if (_state.Count != 0)
             {
                 // You can end an attribute in these states if and only if there are incomplete nodes.
-                if ((_state.Peek()== State.Comment || _state.Peek() == State.CDATA) && _unclosedNodesCount != 0)
+                if ((_state.Peek() == State.Comment || _state.Peek() == State.CDATA) && _unclosedNodesCount != 0)
                     return CheckedCall(_writer.WriteEndAttribute);
 
                 return false;
@@ -190,7 +193,7 @@ namespace Peachpie.Library.XmlDom
                 return false;
 
             switch (_state.Peek()) // Closes all open Dtd elements. There can't be common elements like tags..
-            {           
+            {
                 case State.DTD:
                     break;
                 case State.DtdElement:
@@ -688,9 +691,9 @@ namespace Peachpie.Library.XmlDom
 
         public bool writeElementNs(string prefix, string name, string uri, string content = null)
         {
-            if (_state.Count != 0 && _state.Peek() != State.Comment  && _state.Peek() != State.CDATA)
-                 return false;
-        
+            if (_state.Count != 0 && _state.Peek() != State.Comment && _state.Peek() != State.CDATA)
+                return false;
+
             // WriteElementString does not escape "
             bool res = true;
             res &= CheckedCall(() => _writer.WriteStartElement(prefix, name, uri));
@@ -699,7 +702,7 @@ namespace Peachpie.Library.XmlDom
             return res;
         }
 
-        public bool writeElement(string name, string content = null) 
+        public bool writeElement(string name, string content = null)
         {
             if (_state.Count != 0 && _state.Peek() != State.Comment && _state.Peek() != State.CDATA)
                 return false;
@@ -737,11 +740,11 @@ namespace Peachpie.Library.XmlDom
                 _dtdStart = false;
             }
 
-            if (_writer.Settings.Indent) 
+            if (_writer.Settings.Indent)
             {
                 _writer.WriteRaw(_writer.Settings.NewLineChars);
 
-                if (_state.Count !=0 && _state.Peek() == State.DTD)
+                if (_state.Count != 0 && _state.Peek() == State.DTD)
                     _writer.WriteRaw(" ");
             }
         }
@@ -849,31 +852,39 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-        internal class XMLWriterResource : PhpResource
+        internal sealed class XMLWriterResource : PhpResource
         {
             public XMLWriter Writer { get; }
 
-            public XMLWriterResource(XMLWriter writer) : base("xmlwriter")
+            public XMLWriterResource(XMLWriter writer)
+                : base("xmlwriter")
             {
-                Writer = writer;
+                Writer = writer ?? throw new ArgumentNullException(nameof(writer));
             }
 
             protected override void FreeManaged()
             {
-                Writer.Dispose();
+                ((IDisposable)Writer).Dispose();
                 base.FreeManaged();
             }
         }
 
-        private static XMLWriterResource ValidateXmlWriterResource(PhpResource context)
+        private static XMLWriterResource ValidateXmlWriterResource(PhpResource xmlwriter)
         {
-            if (context is XMLWriterResource h && h.IsValid)
+            if (xmlwriter is XMLWriterResource h && h.IsValid)
             {
                 return h;
             }
+            else if (xmlwriter == null)
+            {
+                PhpException.ArgumentNull(nameof(xmlwriter));
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Warning, Pchp.Library.Resources.Resources.invalid_resource, xmlwriter.TypeName);
+            }
 
             //
-            PhpException.Throw(PhpError.Warning, Pchp.Library.Resources.Resources.invalid_resource, context.TypeName);
             return null;
         }
 
@@ -1319,8 +1330,8 @@ namespace Peachpie.Library.XmlDom
             {
                 switch (source[i])
                 {
-                    case '"':   
-                        Replace(i, _quoteReplacement);  
+                    case '"':
+                        Replace(i, _quoteReplacement);
                         break;
 
                     case '>':

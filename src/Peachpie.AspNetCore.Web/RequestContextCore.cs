@@ -11,8 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
-using System.Reflection;
 using Peachpie.AspNetCore.Web.Session;
+using System.Xml.Schema;
 
 namespace Peachpie.AspNetCore.Web
 {
@@ -123,7 +123,7 @@ namespace Peachpie.AspNetCore.Web
 
         void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly)
         {
-            _httpctx.Response.Cookies.Append(name, value, new CookieOptions()
+            _httpctx.Response.Cookies.Append(name, value ?? string.Empty, new CookieOptions()
             {
                 Expires = expires,
                 Path = path,
@@ -234,7 +234,52 @@ namespace Peachpie.AspNetCore.Web
         /// <remarks>
         /// End may occur when request finishes its processing or when event explicitly requested by user's code (See <see cref="IHttpPhpContext.Flush(bool)"/>).
         /// </remarks>
-        public TaskCompletionSource<RequestCompletionReason> RequestCompletionSource { get; internal set; }
+        public TaskCompletionSource<RequestCompletionReason> RequestCompletionSource { get; } = new TaskCompletionSource<RequestCompletionReason>();
+
+        /// <summary>
+        /// Internal timer used to signalize the request has timeouted.
+        /// </summary>
+        private Timer _requestLimitTimer = null;
+
+        /// <summary>
+        /// Set the time limit of the request, from now. Any pending time limit will be cancelled.
+        /// After the specified time span, <see cref="RequestCompletionSource"/> will be signaled with the state <see cref="RequestCompletionReason.Timeout"/>.
+        /// </summary>
+        /// <param name="span">
+        /// Time span of the time limit.
+        /// Use <see cref="Timeout.InfiniteTimeSpan"/> (or <c>-1</c> miliseconds) to cancel the pending time limit.
+        /// </param>
+        internal void TrySetTimeLimit(TimeSpan span)
+        {
+            if (_requestLimitTimer == null)
+            {
+                if (span != Timeout.InfiniteTimeSpan)
+                {
+                    _requestLimitTimer = new Timer(
+                        state =>
+                        {
+                            var self = (RequestContextCore)state;
+                            self.RequestCompletionSource.TrySetResult(RequestCompletionReason.Timeout);
+                        },
+                        this, span, Timeout.InfiniteTimeSpan);
+                }
+            }
+            else
+            {
+                if (span != Timeout.InfiniteTimeSpan)
+                {
+                    _requestLimitTimer.Change(span, Timeout.InfiniteTimeSpan);
+                }
+                else
+                {
+                    _requestLimitTimer.Dispose();
+                    _requestLimitTimer = null;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public override void ApplyExecutionTimeout(TimeSpan span) => TrySetTimeLimit(span);
 
         /// <summary>
         /// Performs the request lifecycle, invokes given entry script and cleanups the context.
@@ -283,6 +328,12 @@ namespace Peachpie.AspNetCore.Web
         /// </summary>
         public override void Dispose()
         {
+            if (_requestLimitTimer != null)
+            {
+                _requestLimitTimer.Dispose();
+                _requestLimitTimer = null;
+            }
+
             base.Dispose();
         }
 
@@ -469,29 +520,43 @@ namespace Peachpie.AspNetCore.Web
 
         protected override PhpArray InitGetVariable()
         {
-            var result = PhpArray.NewEmpty();
+            var query = _httpctx.Request.Query;
+            var form = (_httpctx.Request.Method == HttpMethods.Get && _httpctx.Request.HasFormContentType) ? _httpctx.Request.Form : null;
 
-            if (_httpctx.Request.Method == "GET" && _httpctx.Request.HasFormContentType)
+            if (query.Count != 0 || form != null)
             {
-                AddVariables(result, _httpctx.Request.Form);
+                var result = new PhpArray(query.Count);
+
+                if (form != null && form.Count != 0)
+                {
+                    // variables passed through GET request using multipart/form-data
+                    AddVariables(result, form);
+                }
+
+                AddVariables(result, query);
+
+                return result;
             }
-
-            AddVariables(result, _httpctx.Request.Query);
-
-            //
-            return result;
+            else
+            {
+                return PhpArray.NewEmpty();
+            }
         }
 
         protected override PhpArray InitPostVariable()
         {
-            var result = PhpArray.NewEmpty();
-
-            if (_httpctx.Request.Method == "POST" && _httpctx.Request.HasFormContentType)
+            if (_httpctx.Request.HasFormContentType)
             {
-                AddVariables(result, _httpctx.Request.Form);
+                var form = _httpctx.Request.Form;
+                if (form.Count != 0)
+                {
+                    var result = new PhpArray(form.Count);
+                    AddVariables(result, form);
+                    return result;
+                }
             }
 
-            return result;
+            return PhpArray.NewEmpty();
         }
 
         protected override PhpArray InitFilesVariable()

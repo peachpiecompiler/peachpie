@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Web
     {
         #region Constants
@@ -354,6 +354,14 @@ namespace Pchp.Library
             var httpctx = ctx.HttpPhpContext;
             if (httpctx == null)
             {
+                // TODO: PHP actually modifies internal headers even on CLI
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                // TODO: "Cookie names must not be empty"
+                PhpException.InvalidArgument(nameof(name), Resources.Resources.arg_empty);
                 return false;
             }
 
@@ -1063,9 +1071,15 @@ namespace Pchp.Library
         /// <param name="seconds">The time-out setting for request.</param>
         public static bool set_time_limit(Context ctx, int seconds)
         {
-            //ctx.ApplyExecutionTimeout(seconds);
-
-            return false;
+            try
+            {
+                ctx.ApplyExecutionTimeout(seconds);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>

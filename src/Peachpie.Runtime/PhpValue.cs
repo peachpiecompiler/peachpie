@@ -17,7 +17,7 @@ namespace Pchp.Core
     /// Represents a PHP value.
     /// </summary>
     /// <remarks>
-    /// Note, <c>default(PhpValue)</c> does not represent a valid state of the object.
+    /// Note, <c>default(PhpValue)</c> represents a <c>NULL</c> value, equivalent to <see cref="PhpValue.Null"/>.
     /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
     public readonly partial struct PhpValue : IPhpConvertible, IEquatable<PhpValue> // <T>
@@ -408,6 +408,8 @@ namespace Pchp.Core
         public static explicit operator long(PhpValue value) => value.ToLong();
 
         public static explicit operator ushort(PhpValue value) => checked((ushort)(long)value);
+
+        public static explicit operator short(PhpValue value) => checked((short)(long)value);
 
         public static explicit operator int(PhpValue value) => checked((int)(long)value);
 

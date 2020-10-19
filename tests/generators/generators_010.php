@@ -14,9 +14,3 @@ echo "s:".$gen->send(4)."\n";
 echo "s:".$gen->send(8)."\n";
 
 echo "Done.";
-
-
-
-
-
-

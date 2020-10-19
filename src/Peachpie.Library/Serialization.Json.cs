@@ -1034,7 +1034,7 @@ namespace Pchp.Library
         #endregion
     }
 
-    [PhpExtension("json")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]
     public static class JsonSerialization
     {
         #region Constants
@@ -1320,7 +1320,7 @@ namespace Pchp.Library
     /// if <see cref="JSON_THROW_ON_ERROR"/> flag is specified.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    [PhpExtension("json")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]
     public class JsonException : Spl.Exception
     {
         [PhpFieldsOnlyCtor]
@@ -1337,7 +1337,7 @@ namespace Pchp.Library
 /// Objects implementing JsonSerializable can customize their JSON representation when encoded with <see cref="Pchp.Library.JsonSerialization.json_encode"/>.
 /// </summary>
 [PhpType(PhpTypeAttribute.InheritName)]
-[PhpExtension("json")]
+[PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]
 public interface JsonSerializable
 {
     /// <summary>

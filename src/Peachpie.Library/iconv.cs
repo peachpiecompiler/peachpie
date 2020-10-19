@@ -259,16 +259,15 @@ namespace Pchp.Library
                         var t2 = line.IndexOf('\t', t1 + 1);
                         Debug.Assert(t2 > 0);
 
-                        string
-                            strChar = line.Substring(0, t1),
-                            str = line.Substring(t1 + 1, t2 - t1);
+                        var strHex = line.Substring(0, t1);
+                        var strTranslit = line.Substring(t1 + 1, t2 - t1 - 1);
 
-                        int charNumber = int.Parse(strChar, System.Globalization.NumberStyles.HexNumber);
+                        int charNumber = int.Parse(strHex, System.Globalization.NumberStyles.HexNumber);
 
-                        if (transliterationsMaxCharCount < str.Length)
-                            transliterationsMaxCharCount = str.Length;
+                        if (transliterationsMaxCharCount < strTranslit.Length)
+                            transliterationsMaxCharCount = strTranslit.Length;
 
-                        transliterations[(char)charNumber] = str;
+                        transliterations[(char)charNumber] = strTranslit;
                     }
                 }
             }

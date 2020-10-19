@@ -125,15 +125,12 @@ namespace Pchp.Library
             /// </summary>
             internal bool InputQueueIsEmpty { get { return _inputQueue == null || _inputQueue.Count == 0; } }
 
-            public int CurrentLineNumber { get { return _lastLineNumber; } }
-            private int _lastLineNumber;
-
-            public int CurrentColumnNumber { get { return _lastColumnNumber; } }
-            private int _lastColumnNumber;
-
-            public int CurrentByteIndex { get { return _lastByteIndex; } }
-            private int _lastByteIndex;
-
+            public int CurrentLineNumber { get; private set; }
+            
+            public int CurrentColumnNumber { get; private set; }
+            
+            public int CurrentByteIndex { get; private set; }
+            
             public IPhpCallable DefaultHandler { get; set; }
 
             public IPhpCallable StartElementHandler { get; set; }
@@ -154,8 +151,7 @@ namespace Pchp.Library
 
             public bool EnableSkipWhitespace { get; set; }
 
-            public int ErrorCode { get { return _errorCode; } }
-            private int _errorCode;
+            public int ErrorCode { get; private set; }
 
             #endregion
 
@@ -168,8 +164,7 @@ namespace Pchp.Library
 
             internal static XmlParserResource ValidResource(PhpResource handle)
             {
-                var xmlParserResource = handle as XmlParserResource;
-                if (xmlParserResource != null && xmlParserResource.IsValid)
+                if (handle is XmlParserResource xmlParserResource && xmlParserResource.IsValid)
                 {
                     return xmlParserResource;
                 }
@@ -246,9 +241,8 @@ namespace Pchp.Library
                 else
                 {
                     //just reset these values - we are still in the beginning
-                    _lastLineNumber = 0;
-                    _lastColumnNumber = 0;
-                    _lastLineNumber = 0;
+                    CurrentLineNumber = 0;
+                    CurrentColumnNumber = 0;
 
                     if (!string.IsNullOrEmpty(input))
                     {
@@ -267,6 +261,18 @@ namespace Pchp.Library
                 return ParseInternal(input, values, indices);
             }
 
+            private bool HandleException(XmlException exception)
+            {
+                CurrentLineNumber = exception.LineNumber; // ((IXmlLineInfo)reader).LineNumber;
+                CurrentColumnNumber = exception.LinePosition; // ((IXmlLineInfo)reader).LinePosition;
+                CurrentByteIndex = -1; // dunno
+                ErrorCode = (int)XmlParserError.XML_ERROR_GENERIC;
+
+                PhpException.Throw(PhpError.E_NOTICE, exception.Message); // TODO: is it the same as in PHP ?
+
+                return false;
+            }
+
             private bool ParseInternal(string xml, PhpArray values, PhpArray indices)
             {
                 var stringReader = new StringReader(xml);
@@ -280,22 +286,17 @@ namespace Pchp.Library
                     {
                         reader.Read();
                     }
-                    catch (XmlException)
+                    catch (XmlException exception)
                     {
-                        _lastLineNumber = ((IXmlLineInfo)reader).LineNumber;
-                        _lastColumnNumber = ((IXmlLineInfo)reader).LinePosition;
-                        _lastByteIndex = -1;
-                        _errorCode = (int)XmlParserError.XML_ERROR_GENERIC;
-                        return false;
+                        return HandleException(exception);
                     }
 
                     //these are usually required
-                    _lastLineNumber = ((IXmlLineInfo)reader).LineNumber;
-                    _lastColumnNumber = ((IXmlLineInfo)reader).LinePosition;
+                    CurrentLineNumber = ((IXmlLineInfo)reader).LineNumber;
+                    CurrentColumnNumber = ((IXmlLineInfo)reader).LinePosition;
 
                     // we cannot do this - we could if we had underlying stream, but that would require
                     // encoding string -> byte[] which is pointless
-
 
                     switch (reader.ReadState)
                     {
@@ -313,7 +314,16 @@ namespace Pchp.Library
                         case ReadState.Interactive:
                             //debug step, that prints out the current state of the parser (pretty printed)
                             //Debug_ParseStep(reader);
-                            ParseStep(reader, elementStack, ref textChunk, values, indices);
+
+                            try
+                            {
+                                ParseStep(reader, elementStack, ref textChunk, values, indices);
+                            }
+                            catch (XmlException exception)
+                            {
+                                return HandleException(exception);
+                            }
+
                             break;
                     }
 

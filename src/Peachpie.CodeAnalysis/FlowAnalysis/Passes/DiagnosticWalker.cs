@@ -543,24 +543,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
-        //public override T VisitArgument(BoundArgument x)
-        //{
-        //    base.VisitArgument(x);
+        public override T VisitArgument(BoundArgument x)
+        {
+            base.VisitArgument(x);
 
-        //    if (!x.Value.TypeRefMask.IsRef && NOT PASSED BY REF) // if value is referenced, we dunno
-        //    {
-        //        // argument should not be 'void' (NULL in PHP)
-        //        if ((x.Type != null && x.Type.SpecialType == SpecialType.System_Void) ||
-        //            x.Value.TypeRefMask.IsVoid(TypeCtx))
-        //        {
-        //            // WRN: Argument has no value, parameter will be always NULL
-        //            _diagnostics.Add(_routine, x.Value.PhpSyntax, ErrorCode.WRN_ArgumentVoid);
-        //        }
-        //    }
+            //if (!x.Value.TypeRefMask.IsRef && NOT PASSED BY REF) // if value is referenced, we dunno
+            //{
+            //    // argument should not be 'void' (NULL in PHP)
+            //    if ((x.Type != null && x.Type.SpecialType == SpecialType.System_Void) ||
+            //        x.Value.TypeRefMask.IsVoid(TypeCtx))
+            //    {
+            //        // WRN: Argument has no value, parameter will be always NULL
+            //        _diagnostics.Add(_routine, x.Value.PhpSyntax, ErrorCode.WRN_ArgumentVoid);
+            //    }
+            //}
 
-        //    //
-        //    return default;
-        //}
+            //
+            return default;
+        }
 
         public override T VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
@@ -865,6 +865,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             var obsolete = target?.ObsoleteAttributeData;
             if (obsolete != null)
             {
+                // do not report the deprecation if the containing method itself is deprecated
+                if (_routine?.ObsoleteAttributeData != null)
+                {
+                    return;
+                }
+
                 _diagnostics.Add(_routine, GetMemberNameSpanForDiagnostic(syntax), ErrorCode.WRN_SymbolDeprecated, target.Kind.ToString(), GetMemberNameForDiagnostic(target, isMemberCall), obsolete.Message);
             }
         }

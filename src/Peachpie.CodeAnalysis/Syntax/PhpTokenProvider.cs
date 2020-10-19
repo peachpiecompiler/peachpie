@@ -40,7 +40,22 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public Tokens Token => (_bufferidx < _buffer.Count) ? _buffer[_bufferidx].Token : default;
 
-        public TValue TokenValue => (_bufferidx < _buffer.Count) ? _buffer[_bufferidx].TokenValue : _provider.TokenValue;
+        public TValue TokenValue
+        {
+            get => (_bufferidx < _buffer.Count) ? _buffer[_bufferidx].TokenValue : _provider.TokenValue;
+            set
+            {
+                if (_bufferidx < _buffer.Count)
+                {
+                    var previous = _buffer[_bufferidx];
+                    _buffer[_bufferidx] = new CompleteToken(previous.Token, value, previous.TokenPosition, previous.TokenText);
+                }
+                else
+                {
+                    _provider.TokenValue = value;
+                }
+            }
+        }
 
         public TSpan TokenPosition => (_bufferidx < _buffer.Count) ? _buffer[_bufferidx].TokenPosition : _provider.TokenPosition;
 

@@ -5,6 +5,7 @@ using System.Text;
 using System.Xml;
 using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Library.Streams;
 
 namespace Peachpie.Library.XmlDom
 {
@@ -423,17 +424,17 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Adds a new child before a reference node.
         /// </summary>
-        /// <param name="newNode">The new node.</param>
-        /// <param name="refNode">The reference node. If not supplied, <paramref name="newNode"/> is appended
+        /// <param name="newnode">The new node.</param>
+        /// <param name="refnode">The reference node. If not supplied, <paramref name="newnode"/> is appended
         /// to the children.</param>
         /// <returns>The inserted node.</returns>
         [return: CastToFalse]
-        public virtual DOMNode insertBefore(DOMNode newNode, DOMNode refNode = null)
+        public virtual DOMNode insertBefore(DOMNode newnode, DOMNode refnode = null)
         {
             bool is_fragment;
-            if (newNode is DOMDocumentFragment)
+            if (newnode is DOMDocumentFragment)
             {
-                if (!newNode.IsAssociated || !newNode.XmlNode.HasChildNodes)
+                if (!newnode.IsAssociated || !newnode.XmlNode.HasChildNodes)
                 {
                     PhpException.Throw(PhpError.Warning, Resources.DocumentFragmentEmpty);
                     return null;
@@ -442,47 +443,47 @@ namespace Peachpie.Library.XmlDom
             }
             else is_fragment = false;
 
-            XmlNode result = CheckedChildOperation(newNode, refNode, delegate (DOMNode _newNode, DOMNode _refNode)
+            XmlNode result = CheckedChildOperation(newnode, refnode, delegate (DOMNode _newNode, DOMNode _refNode)
             {
                 return XmlNode.InsertBefore(_newNode.XmlNode, (_refNode == null ? null : _refNode.XmlNode));
             });
 
             if (result == null) return null;
             if (is_fragment) return Create(result);
-            else return newNode;
+            else return newnode;
         }
 
         /// <summary>
         /// Replaces a child node.
         /// </summary>
-        /// <param name="newNode">The new node.</param>
-        /// <param name="oldNode">The old node.</param>
+        /// <param name="newnode">The new node.</param>
+        /// <param name="oldnode">The old node.</param>
         /// <returns>The inserted node.</returns>
         [return: CastToFalse]
-        public virtual DOMNode replaceChild(DOMNode newNode, DOMNode oldNode)
+        public virtual DOMNode replaceChild(DOMNode newnode, DOMNode oldnode)
         {
-            XmlNode result = CheckedChildOperation(newNode, oldNode, delegate (DOMNode _newNode, DOMNode _oldNode)
+            XmlNode result = CheckedChildOperation(newnode, oldnode, delegate (DOMNode _newNode, DOMNode _oldNode)
             {
                 return XmlNode.ReplaceChild(_newNode.XmlNode, _oldNode.XmlNode);
             });
 
             if (result == null) return null;
-            if (newNode is DOMDocumentFragment) return Create(result);
-            else return newNode;
+            if (newnode is DOMDocumentFragment) return Create(result);
+            else return newnode;
         }
 
         /// <summary>
         /// Adds a new child at the end of the children.
         /// </summary>
-        /// <param name="newNode">The node to add.</param>
+        /// <param name="newnode">The node to add.</param>
         /// <returns>The node added.</returns>
         [return: CastToFalse]
-        public virtual DOMNode appendChild(DOMNode newNode)
+        public virtual DOMNode appendChild(DOMNode newnode)
         {
             bool is_fragment;
-            if (newNode is DOMDocumentFragment)
+            if (newnode is DOMDocumentFragment)
             {
-                if (!newNode.IsAssociated || !newNode.XmlNode.HasChildNodes)
+                if (!newnode.IsAssociated || !newnode.XmlNode.HasChildNodes)
                 {
                     PhpException.Throw(PhpError.Warning, Resources.DocumentFragmentEmpty);
                     return null;
@@ -491,23 +492,23 @@ namespace Peachpie.Library.XmlDom
             }
             else is_fragment = false;
 
-            XmlNode result = CheckedChildOperation(newNode, null, delegate (DOMNode _newNode, DOMNode _)
+            XmlNode result = CheckedChildOperation(newnode, null, delegate (DOMNode _newNode, DOMNode _)
             {
                 return XmlNode.AppendChild(_newNode.XmlNode);
             });
 
             if (result == null) return null;
             if (is_fragment) return Create(result);
-            else return newNode;
+            else return newnode;
         }
 
         /// <summary>
         /// Removes a child from the list of children.
         /// </summary>
-        /// <param name="oldNode">The node to remove.</param>
+        /// <param name="oldnode">The node to remove.</param>
         /// <returns>The removed node.</returns>
         [return: CastToFalse]
-        public virtual DOMNode removeChild(DOMNode oldNode)
+        public virtual DOMNode removeChild(DOMNode oldnode)
         {
             // check for readonly node
             if (XmlNode.IsReadOnly)
@@ -518,7 +519,7 @@ namespace Peachpie.Library.XmlDom
 
             try
             {
-                XmlNode.RemoveChild(oldNode.XmlNode);
+                XmlNode.RemoveChild(oldnode.XmlNode);
             }
             catch (ArgumentException)
             {
@@ -526,7 +527,7 @@ namespace Peachpie.Library.XmlDom
                 return null;
             }
 
-            return oldNode;
+            return oldnode;
         }
 
         /// <summary>
@@ -552,9 +553,9 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Gets the namespace prefix of the node based on the namespace URI.
         /// </summary>
-        /// <param name="namespaceUri">The namespace URI.</param>
+        /// <param name="namespaceURI">The namespace URI.</param>
         /// <returns>The prefix of the namespace or <B>null</B>.</returns>
-        public virtual string lookupPrefix(string namespaceUri) => XmlNode.GetPrefixOfNamespace(namespaceUri);
+        public virtual string lookupPrefix(string namespaceURI) => XmlNode.GetPrefixOfNamespace(namespaceURI);
 
         /// <summary>
         /// Gets the namespace URI of the node based on the prefix.
@@ -566,13 +567,13 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Determines whether the given URI is the default namespace.
         /// </summary>
-        /// <param name="namespaceUri">The namespace URI.</param>
+        /// <param name="namespaceURI">The namespace URI.</param>
         /// <returns><B>True</B> or <B>false</B>.</returns>
-        public virtual bool isDefaultNamespace(string namespaceUri)
+        public virtual bool isDefaultNamespace(string namespaceURI)
         {
-            if (namespaceUri.Length > 0)
+            if (namespaceURI.Length > 0)
             {
-                return (XmlNode.GetPrefixOfNamespace(namespaceUri).Length == 0);
+                return (XmlNode.GetPrefixOfNamespace(namespaceURI).Length == 0);
             }
             else return false;
         }
@@ -615,8 +616,6 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-        #region Not implemented
-
         /// <summary>
         /// Canonicalize nodes to a string.
         /// </summary>
@@ -633,15 +632,17 @@ namespace Peachpie.Library.XmlDom
             PhpArray xpath = null,
             PhpArray ns_prefixes = null)
         {
-            System.Security.Cryptography.Xml.XmlDsigC14NTransform transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
+            var transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
             transform.LoadInput(XmlNode.GetXmlDocument());
-            System.IO.MemoryStream stream = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
+            var stream = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
+
             return new PhpString(stream.ToArray());
         }
 
         /// <summary>
         /// Canonicalize nodes to a file.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="uri">Path to write the output to.</param>
         /// <param name="exclusive">Enable exclusive parsing of only the nodes matched by
         /// the provided xpath or namespace prefixes.</param>
@@ -650,15 +651,31 @@ namespace Peachpie.Library.XmlDom
         /// <param name="ns_prefixes">An array of namespace prefixes to filter the nodes by.</param>
         /// <returns>Number of bytes written or FALSE on failure </returns>
         [return: CastToFalse]
-        public int? C14NFile(
+        public long C14NFile(
+            Context ctx,
             string uri,
             bool exclusive = false,
             bool with_comments = false,
             PhpArray xpath = null,
             PhpArray ns_prefixes = null)
         {
-            throw new NotImplementedException();
+            using var stream = PhpStream.Open(ctx, uri, StreamOpenMode.WriteBinary);
+
+            if (stream != null)
+            {
+                var transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
+                transform.LoadInput(XmlNode.GetXmlDocument());
+                var output = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
+
+                output.CopyTo(stream.RawStream);
+
+                return output.Length;
+            }
+
+            return -1; // FALSE
         }
+
+        #region Not implemented
 
         /// <summary>
         /// Gets line number for where the node is defined. 

@@ -13,7 +13,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
     /// Representation of time zone.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Date)]
     public class DateTimeZone : IPhpCloneable
     {
         internal TimeZoneInfo _timezone;

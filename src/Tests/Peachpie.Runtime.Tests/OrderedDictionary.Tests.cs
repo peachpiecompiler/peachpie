@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 
 namespace Peachpie.Runtime.Tests
 {
@@ -293,6 +294,32 @@ namespace Peachpie.Runtime.Tests
             Assert.AreEqual(4, array.Count);
 
             Assert.AreEqual("-2-101", ToString(array));
+        }
+
+        [TestMethod]
+        public void TestUtils()
+        {
+            var array = new PhpArray()
+            {
+                { 1, "Hello" },
+                { 2, "World" },
+                { 3, "!" },
+            };
+
+            // array of values
+            var values = array.ValuesToArray(value => value.ToString());
+            
+            Assert.IsInstanceOfType(values, typeof(string[]));
+            Assert.AreEqual("!", values[2]);
+            Assert.AreEqual(3, values.Length);
+
+            // empty array of values
+            Assert.AreSame(new PhpArray().ValuesToArray(value => value), Array.Empty<PhpValue>());
+
+            // dictionary
+            var dict = array.ToDictionary(key => key.ToString(), value => value.ToClr());
+            Assert.IsInstanceOfType(dict, typeof(Dictionary<string, object>));
+            Assert.IsTrue(dict.ContainsKey("3"));
         }
     }
 }

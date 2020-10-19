@@ -681,12 +681,12 @@ namespace Pchp.Library
 
                 if (encoding_mode == (int)ForceConstants.FORCE_GZIP)
                 {
-                    byte[] crc = new PhpHash.HashPhpResource.CRC32().ComputeHash(data);
-
-                    output[output_length - 8] = crc[0];
-                    output[output_length - 7] = crc[1];
-                    output[output_length - 6] = crc[2];
-                    output[output_length - 5] = crc[3];
+                    uint crc = PhpHash.HashPhpResource.CRC32B.ComputeCRC32(data); // 4-bytes
+                    
+                    output[output_length - 8] = (byte)(crc);
+                    output[output_length - 7] = (byte)(crc >> 8);
+                    output[output_length - 6] = (byte)(crc >> 16);
+                    output[output_length - 5] = (byte)(crc >> 24);
                     output[output_length - 4] = (byte)(zs.total_in & 0xFF);
                     output[output_length - 3] = (byte)((zs.total_in >> 8) & 0xFF);
                     output[output_length - 2] = (byte)((zs.total_in >> 16) & 0xFF);

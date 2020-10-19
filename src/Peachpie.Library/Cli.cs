@@ -10,7 +10,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class CLI
     {
         ///// <summary>

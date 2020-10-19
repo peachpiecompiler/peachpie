@@ -69,7 +69,6 @@ namespace Pchp.Library.Spl
             _iterator.rewind(); // rewind level 0 iterator
             beginIteration();
 
-
             for (; ; )
             {
                 if (it.valid())

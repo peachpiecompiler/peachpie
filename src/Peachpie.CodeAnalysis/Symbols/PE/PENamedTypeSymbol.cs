@@ -33,13 +33,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var phpname = this.GetPhpTypeNameOrNull();
-                if (phpname.IsEmpty())
-                {
-                    phpname = this.MakeQualifiedName();
-                }
-
-                return phpname;
+                return this.TryGetPhpTypeAttribute(out var fullname, out _) ? fullname : this.MakeQualifiedName();
             }
         }
 

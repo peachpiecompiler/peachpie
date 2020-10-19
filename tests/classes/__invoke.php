@@ -15,5 +15,13 @@ class Y extends X {
 	}
 }
 
+class A {
+    function __invoke() : int // invoke with type hint
+    {
+        return 3;
+    }
+}
+
 echo (new X)(1, 2);
 echo (new Y)(1, 2);
+echo (new A)();

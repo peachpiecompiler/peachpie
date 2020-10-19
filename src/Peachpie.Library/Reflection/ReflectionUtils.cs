@@ -17,7 +17,7 @@ namespace Pchp.Library.Reflection
     {
         public const char NameSeparator = '\\';
 
-        public const string ExtensionName = "Reflection";
+        public const string ExtensionName = PhpExtensionAttribute.KnownExtensionNames.Reflection;
 
         /// <summary>
         /// Resolves type of <paramref name="class"/>.

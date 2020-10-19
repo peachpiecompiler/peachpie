@@ -2485,7 +2485,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    throw new ArgumentException("Argument must be passed as a variable.");
+                    // TODO: report as a diagnostic before this happens!
+                    throw this.NotImplementedException("Argument must be passed as a variable.");
                 }
             }
         }

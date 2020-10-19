@@ -57,7 +57,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
     /// Representation of date and time.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Date)]
     [DebuggerDisplay(nameof(DateTime), Type = PhpVariable.TypeNameObject)]
     public class DateTime : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
@@ -532,7 +532,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
     /// Representation of date and time.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Date)]
     [DebuggerDisplay(nameof(DateTimeImmutable), Type = PhpVariable.TypeNameObject)]
     public class DateTimeImmutable : DateTimeInterface, IPhpComparable, IPhpCloneable
     {

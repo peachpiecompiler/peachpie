@@ -233,6 +233,30 @@ namespace Pchp.Core.Utilities
         /// Gets value indicating the array is null or with no elements.
         /// </summary>
         public static bool IsNullOrEmpty<T>(T[] array) => array == null || array.Length == 0;
+
+        /// <summary>
+        /// Select elements from given list to a new array.
+        /// </summary>
+        public static TElement[] ToArray<T, TElement>(this List<T> list, Func<T, TElement> selector)
+        {
+            if (list == null || list.Count == 0)
+            {
+                return Array.Empty<TElement>();
+            }
+
+            if (selector == null)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            var arr = new TElement[list.Count];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i] = selector(list[i]);
+            }
+
+            return arr;
+        }
     }
 
     /// <summary>

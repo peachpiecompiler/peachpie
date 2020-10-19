@@ -1372,10 +1372,12 @@ namespace Pchp.Library
             return false;
         }
 
-        #region mb_send_mail(), TODO: use mb_language
+        #region mb_send_mail()
 
         public static bool mb_send_mail(Context ctx, string to, string subject, string message, string additional_headers = null, string additional_parameter = null)
         {
+            // TODO: use mb_language
+
             return Mail.mail(
                 ctx,
                 to,
