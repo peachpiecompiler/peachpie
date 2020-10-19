@@ -3340,10 +3340,8 @@ namespace Pchp.Library
         /// <returns>The number of matching characters in both strings.</returns>
         /// <remarks>Algorithm description is supposed to be found 
         /// <A href="http://citeseer.nj.nec.com/oliver93decision.html">here</A>.</remarks>
-        internal static int SimilarTextInternal(string first, string second)
+        internal static int SimilarTextInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
-            Debug.Assert(first != null && second != null);
-
             int posF = 0, lengthF = first.Length;
             int posS = 0, lengthS = second.Length;
             int maxK = 0;
@@ -3368,11 +3366,11 @@ namespace Pchp.Library
             {
                 if (posF > 0 && posS > 0)
                 {
-                    sum += SimilarTextInternal(first.Substring(0, posF), second.Substring(0, posS));
+                    sum += SimilarTextInternal(first.Slice(0, posF), second.Slice(0, posS));
                 }
                 if (posF + maxK < lengthF && posS + maxK < lengthS)
                 {
-                    sum += SimilarTextInternal(first.Substring(posF + maxK), second.Substring(posS + maxK));
+                    sum += SimilarTextInternal(first.Slice(posF + maxK), second.Slice(posS + maxK));
                 }
             }
 
@@ -3387,8 +3385,12 @@ namespace Pchp.Library
         /// <returns>The number of matching characters in both strings.</returns>
         public static int similar_text(string first, string second)
         {
-            if (first == null || second == null) return 0;
-            return SimilarTextInternal(first, second);
+            if (first == null || second == null)
+            {
+                return 0;
+            }
+
+            return SimilarTextInternal(first.AsSpan(), second.AsSpan());
         }
 
         /// <summary>
@@ -3400,9 +3402,13 @@ namespace Pchp.Library
         /// <returns>The number of matching characters in both strings.</returns>
         public static int similar_text(string first, string second, out double percent)
         {
-            if (first == null || second == null) { percent = 0; return 0; }
+            if (first == null || second == null)
+            {
+                percent = 0;
+                return 0;
+            }
 
-            int sum = SimilarTextInternal(first, second);
+            int sum = SimilarTextInternal(first.AsSpan(), second.AsSpan());
             percent = (200.0 * sum) / (first.Length + second.Length);
 
             return sum;
