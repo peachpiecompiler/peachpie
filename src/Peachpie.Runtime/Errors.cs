@@ -178,9 +178,8 @@ namespace Pchp.Core
             {
                 LogEventSource.Log.HandleFatal(message);
 
-                // terminate the script
-                // TODO: throw PhpFatalException (a CLR exception)
-                throw new InvalidOperationException(message);
+                // terminate the script with exception
+                throw new PhpFatalErrorException(message, innerException: null);
             }
             else
             {
