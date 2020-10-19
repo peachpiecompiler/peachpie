@@ -11,6 +11,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -934,26 +935,37 @@ namespace Pchp.Library
                     return client.GetStream();
 
                 if (info.NameFlags.Contains("ssl"))
-                {    
+                {
+                    SslStream stream;
                     if (info.NameFlags.Contains("novalidate-cert"))
-                    {
-                        SslStream stream = new SslStream(client.GetStream(), false, (sender, certificate, chain, sslPolicyErrors) => true);
-                        stream.AuthenticateAsClient(info.Hostname);
-                        return stream;
-                    }
+                        stream = new SslStream(client.GetStream(), false, (sender, certificate, chain, sslPolicyErrors) => true);       
                     else // Validate Certificate
-                    {
-                        throw new NotImplementedException();
-                    }
+                        stream = new SslStream(client.GetStream(), false, ValidateServerCertificate);
+
+                    stream.AuthenticateAsClient(info.Hostname);
+                    return stream;
                 }
 
                 return client.GetStream();
+            }
+
+            protected static bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+            {
+                if (sslPolicyErrors == SslPolicyErrors.None)
+                {
+                    return true;
+                }
+
+                Console.WriteLine("Certificate error: {0}", sslPolicyErrors);
+
+                // refuse connection
+                return false;
             }
             #endregion
 
             #region Methods
             public abstract bool Login(string username, string password);
-
+            public abstract bool Select(string path);
             public abstract void Close();
             #endregion
         }
@@ -977,6 +989,11 @@ namespace Pchp.Library
             {
                 throw new NotImplementedException();
             }
+
+            public override bool Select(string path)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         /// <summary>
@@ -990,6 +1007,11 @@ namespace Pchp.Library
             }
 
             public override bool Login(string username, string password)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool Select(string path)
             {
                 throw new NotImplementedException();
             }
@@ -1007,6 +1029,64 @@ namespace Pchp.Library
                 public Status Status { get; set; }
                 public string Body { get; set; }
                 public byte[] Raw { get; set; }
+
+                public static bool TryParse(byte[] buffer, out ImapResponse response)
+                {
+                    response = new ImapResponse();
+
+                    int index = 0;
+
+                    //Tag
+                    if (buffer[index] == UnTaggedTag)
+                    {
+                        response.Tag = UnTaggedTag.ToString();
+                        index++;
+                    }
+                    else if (buffer[index] == ContinousTag)
+                    {
+                        response.Tag = ContinousTag.ToString();
+                        index++;
+                    }
+                    else if (buffer[index] == TagPrefix)
+                    {
+                        index++;
+                        while (index < buffer.Length && buffer[index] >= '0' && buffer[index] <= '9')
+                            index++;
+
+                        response.Tag = Encoding.ASCII.GetString(buffer, 0, index);
+                    }
+
+                    if (index < buffer.Length && buffer[index] == ' ')
+                        index++;
+
+                    //Status
+                    if (index + 1 < buffer.Length)
+                    {
+                        if (buffer[index] == 'N' && buffer[index + 1] == 'O')
+                        {
+                            response.Status = Status.NO;
+                            index += 2;
+                        }
+                        else if (buffer[index] == 'O' && buffer[index + 1] == 'K')
+                        {
+                            response.Status = Status.OK;
+                            index += 2;
+                        }
+                        else if (index + 2 < buffer.Length && buffer[index] == 'D' && buffer[index + 1] == 'A' && buffer[index + 2] == 'D')
+                        {
+                            response.Status = Status.BAD;
+                            index += 3;
+                        }
+                        else
+                            response.Status = Status.None;
+                    }
+
+                    //Body
+                    response.Body = Encoding.ASCII.GetString(buffer, index, buffer.Length - index);
+                    response.Raw = buffer.Slice(0, buffer.Length);
+
+                    return true;
+                }
             }
 
             #region Constants
@@ -1027,9 +1107,9 @@ namespace Pchp.Library
                 ImapResource resource = new ImapResource();
                 resource._stream = stream;
 
-                ImapResponse response = resource.Receive();
+                List<ImapResponse> responses = resource.Receive();
 
-                return (response.Status == Status.OK) ? resource : null;
+                return (responses[0].Status == Status.OK) ? resource : null;
             }
             #endregion
 
@@ -1041,24 +1121,27 @@ namespace Pchp.Library
                 
                 Write(command);
 
-                ImapResponse response = Receive();
-                while (response.Tag != messageTag)
-                    response = Receive();
+                bool completed = false;
+                while (!completed)
+                {
+                    List<ImapResponse> responses = Receive();
+                    foreach (var response in responses)
+                        if (response.Tag == messageTag)
+                            if (response.Status != Status.OK)
+                                return false;
+                            else
+                                completed = true;
+                }
 
-                if (response.Status != Status.OK)
-                    return false;
-
+                SslStream stream;
                 if (sslValidation)
-                {
-                    throw new NotImplementedException();
-                }
+                    stream = new SslStream(_stream, false, ValidateServerCertificate);
                 else
-                {
-                    SslStream stream = new SslStream(_stream, false, (sender, certificate, chain, sslPolicyErrors) => true);
-                    stream.AuthenticateAsClient(info.Hostname);
-                    _stream = stream;
-                    return true;
-                }
+                    stream = new SslStream(_stream, false, (sender, certificate, chain, sslPolicyErrors) => true);
+
+                stream.AuthenticateAsClient(info.Hostname);
+                _stream = stream;
+                return true;
             }
 
             private void Write(string command)
@@ -1067,7 +1150,7 @@ namespace Pchp.Library
                 _tag++;
             }
 
-            private ImapResponse Receive(bool wait = true)
+            private List<ImapResponse> Receive(bool wait = true)
             {
                 byte[] buffer = new byte[2];
                 int length = 0;
@@ -1106,60 +1189,22 @@ namespace Pchp.Library
                     buffer = newBuffer;
                 }
 
-                ImapResponse response = new ImapResponse();
-
-                int index = 0;
-
-                //Tag
-                if (buffer[index] == UnTaggedTag)
+                List<ImapResponse> responses = new List<ImapResponse>();
+                int startIndex = 0;
+                for (int i = 1; i < buffer.Length; i++)
                 {
-                    response.Tag = UnTaggedTag.ToString();
-                    index++;
-                }
-                else if (buffer[index] == ContinousTag)
-                {
-                    response.Tag = ContinousTag.ToString();
-                    index++;
-                }
-                else if (buffer[index] == TagPrefix)
-                {
-                    index++;
-                    while (index < length && buffer[index] >= '0' && buffer[index] <= '0')
-                        index++;
-
-                    response.Tag = Encoding.ASCII.GetString(buffer, 0, index);
-                }
-
-                if (index < buffer.Length && buffer[index] == ' ')
-                    index++;
-
-                //Status
-                if (index + 1 < buffer.Length)
-                {
-                    if (buffer[index] == 'N' && buffer[index + 1] == 'O')
+                    if (buffer[i] == '\n' && buffer[i - 1] == '\r') // Split
                     {
-                        response.Status = Status.NO;
-                        index += 2;
+                        if (!ImapResponse.TryParse(buffer.Slice(startIndex, i - startIndex + 1), out ImapResponse imap))
+                            return null;
+                        else
+                            responses.Add(imap);
+
+                        startIndex = i + 1;
                     }
-                    else if (buffer[index] == 'O' && buffer[index + 1] == 'K')
-                    {
-                        response.Status = Status.OK;
-                        index += 2;
-                    }
-                    else if (buffer.Length + 2 < length && buffer[index] == 'D' && buffer[index + 1] == 'A' && buffer[index + 1] == 'D')
-                    {
-                        response.Status = Status.BAD;
-                        index += 3;
-                    }
-                    else
-                        response.Status = Status.None;
                 }
 
-                //Body
-                response.Body = Encoding.ASCII.GetString(buffer, index, length - index);
-                response.Raw = buffer.Slice(0, length);
-
-                return response;
+                return responses;
             }
 
             public override bool Login(string username, string password)
@@ -1168,15 +1213,29 @@ namespace Pchp.Library
 
                 Write($"{messageTag} LOGIN {username} {password}\r\n");
 
-                ImapResponse response = Receive();
-                while (response.Tag != messageTag)
+                while (true)
                 {
-                    response = Receive();
+                    List<ImapResponse> responses = Receive();
+                    foreach (var response in responses)
+                        if (response.Tag == messageTag)
+                            return response.Status == Status.OK;
                 }
-
-                return response.Status == Status.OK;
             }
 
+            public override bool Select(string path)
+            {
+                string messageTag = $"{TagPrefix}{_tag.ToString()}";
+
+                Write($"{messageTag} SELECT {path}\r\n");
+
+                while (true)
+                {
+                    List<ImapResponse> responses = Receive();
+                    foreach (var response in responses)
+                        if (response.Tag == messageTag)
+                            return response.Status == Status.OK;
+                }
+            }
 
             public override void Close() => FreeManaged();
 
@@ -1644,6 +1703,15 @@ namespace Pchp.Library
                     return null;
                 if (!resource.Login(username, password))
                     return null;
+                
+                if (String.IsNullOrEmpty(info.MailBoxName))
+                {
+                    resource.Select("INBOX");
+                }
+                else
+                {
+                    resource.Select(info.MailBoxName);
+                }
 
                 return resource;
             }
