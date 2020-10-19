@@ -3228,7 +3228,17 @@ namespace Pchp.Library
             l = (final[4] << 16) | (final[10] << 8) | final[5]; MD5MapASCII(output, length, l, 4); length += 4;
             l = final[11]; MD5MapASCII(output, length, l, 2); length += 2;
 
-            return Encoding.ASCII.GetString(output.Take(length).ToArray()).Trim('\0'); ;
+            // output[0..length]
+            var from = 0;
+            var to = length;
+
+            // trim \0
+            while (from < to && output[from] == 0) from++;
+            while (from < to && output[to - 1] == 0) to--;
+
+            return from < to
+                ? Encoding.ASCII.GetString(output, from, to - from) // TODO: NETSTANDARD2.1 ReadOnleSpan<byte>
+                : string.Empty;
         }
         #endregion
 
