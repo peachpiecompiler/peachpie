@@ -45,8 +45,7 @@ namespace Pchp.Core
         /// <summary>
         /// The exist status.
         /// </summary>
-        public PhpValue Status => _status;
-        PhpValue _status;
+        public PhpValue Status { get; }
 
         /// <summary>
         /// Gets exit code from the status code.
@@ -55,7 +54,7 @@ namespace Pchp.Core
 
         public ScriptDiedException(PhpValue status)
         {
-            _status = status;
+            Status = status;
         }
 
         public ScriptDiedException(string status)
@@ -73,29 +72,26 @@ namespace Pchp.Core
         {
         }
 
-        public override string Message => _status.DisplayString;
+        public override string Message => Status.DisplayString;
 
         /// <summary>
         /// Status of a different type than integer is printed,
         /// exit code according to PHP semantic is returned.
         /// </summary>
-        public int ProcessStatus(Context ctx) => ProcessStatus(ctx, ref _status);
+        public int ProcessStatus(Context ctx) => ProcessStatus(ctx, Status);
 
-        int ProcessStatus(Context ctx, ref PhpValue status)
+        static int ProcessStatus(Context ctx, PhpValue status)
         {
             switch (status.TypeCode)
             {
                 case PhpTypeCode.Alias:
-                    return ProcessStatus(ctx, ref status.Alias.Value);
+                    return ProcessStatus(ctx, status.Alias.Value);
 
                 case PhpTypeCode.Long:
                     return (int)status.ToLong();
 
                 default:
-                    if (ctx != null)
-                    {
-                        ctx.Echo(status);
-                    }
+                    ctx?.Echo(status);
                     return 0;
             }
         }
