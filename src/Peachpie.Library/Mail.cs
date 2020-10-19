@@ -847,68 +847,115 @@ namespace Pchp.Library
     {
         #region Constants
         readonly static Encoding ISO_8859_1 = Encoding.GetEncoding("ISO-8859-1");
+
+        public const int CL_EXPUNGE = 32768;
         #endregion
 
         #region ImapResource
+        /// <summary>
+        /// Base of protocols POP3, IMAP and NNTP.
+        /// </summary>
         internal abstract class MailResource : PhpResource
         {
-            protected TcpClient _client;
-            protected SslStream _ssl;
+            private enum Service { IMAP, NNTP, POP3};
 
-            protected MailResource() : base("imap") {}
+            protected Stream _stream;
 
-            public static MailResource Create(MailBoxInfo info) 
+            #region Contructors
+            protected MailResource() : base("imap") { }
+
+            public static MailResource Create(MailBoxInfo info)
             {
                 if (String.IsNullOrEmpty(info.Service))
                 {
                     if (info.NameFlags.Contains("imap") || info.NameFlags.Contains("imap2") || info.NameFlags.Contains("imap2bis")
                         || info.NameFlags.Contains("imap4") || info.NameFlags.Contains("imap4rev1"))
                     {
-                        var a  = GetStream(info);
-                        a.Write(Encoding.ASCII.GetBytes("A\r\n"));
-
-                        return ImapResource.Create(info.Hostname, info.Port);
+                        return CreateImap(info, GetStream(info));
                     }
                     else if (info.NameFlags.Contains("pop3"))
                     {
-                        throw new NotImplementedException();
+                        return CreatePop3(info, GetStream(info));
                     }
                     else if (info.NameFlags.Contains("nntp"))
                     {
-                        throw new NotImplementedException();
+                        return CreateNntp(info, GetStream(info));
                     }
 
                     // Default is imap
-                    return ImapResource.Create(info.Hostname, info.Port);
+                    return CreateImap(info, GetStream(info));
                 }
                 else
                 {
                     switch (info.Service)
                     {
                         case "pop3":
-                            throw new NotImplementedException();
+                            return CreatePop3(info, GetStream(info));
                         case "nntp":
-                            throw new NotImplementedException();
+                            return CreateNntp(info, GetStream(info));
                         default: // Default is imap
-                            return ImapResource.Create(info.Hostname, info.Port);
+                            return CreateImap(info, GetStream(info));
                     }
                 }
             }
 
-            private static Stream GetStream(MailBoxInfo info)
+            private static ImapResource CreateImap(MailBoxInfo info, Stream stream)
             {
-                if (info.NameFlags.Contains("ssl"))
-                {
-                    var client = new TcpClient(info.Hostname, info.Port);
-                    var r = new SslStream(client.GetStream(), false, (sender, cert, chain, sslPolicyErrors) => true);
-                    r.AuthenticateAsClient(info.Hostname);
-                    return r;
-                }
-                return null;
+                ImapResource resource = ImapResource.Create(info, GetStream(info));
 
+                if (info.NameFlags.Contains("secure")) // StartTLS with validation
+                {
+                    resource.StartTLS(true, info);
+                }
+
+                if (info.NameFlags.Contains("tls"))// StartTLS
+                {
+                    resource.StartTLS(!info.NameFlags.Contains("novalidate-cert"), info);
+                }
+
+                return resource;
             }
 
+            private static ImapResource CreatePop3(MailBoxInfo info, Stream stream)
+            {
+                throw new NotImplementedException();
+            }
+
+            private static ImapResource CreateNntp(MailBoxInfo info, Stream stream)
+            {
+                throw new NotImplementedException();
+            }
+
+            private static Stream GetStream(MailBoxInfo info)
+            {
+                TcpClient client = new TcpClient(info.Hostname, info.Port);
+
+                if (info.NameFlags.Contains("notls"))
+                    return client.GetStream();
+
+                if (info.NameFlags.Contains("ssl"))
+                {    
+                    if (info.NameFlags.Contains("novalidate-cert"))
+                    {
+                        SslStream stream = new SslStream(client.GetStream(), false, (sender, certificate, chain, sslPolicyErrors) => true);
+                        stream.AuthenticateAsClient(info.Hostname);
+                        return stream;
+                    }
+                    else // Validate Certificate
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+
+                return client.GetStream();
+            }
+            #endregion
+
+            #region Methods
             public abstract bool Login(string username, string password);
+
+            public abstract void Close();
+            #endregion
         }
 
         /// <summary>
@@ -917,6 +964,11 @@ namespace Pchp.Library
         internal class POP3Resource : MailResource
         {
             public static POP3Resource Create(string hostname, int port)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Close()
             {
                 throw new NotImplementedException();
             }
@@ -932,6 +984,11 @@ namespace Pchp.Library
         /// </summary>
         internal class NNTPResource : MailResource
         {
+            public override void Close()
+            {
+                throw new NotImplementedException();
+            }
+
             public override bool Login(string username, string password)
             {
                 throw new NotImplementedException();
@@ -944,7 +1001,7 @@ namespace Pchp.Library
         internal class ImapResource : MailResource
         {
             private enum Status { OK, NO, BAD, None };
-            struct ImapResponse
+            class ImapResponse
             {
                 public string Tag { get; set; }
                 public Status Status { get; set; }
@@ -963,49 +1020,96 @@ namespace Pchp.Library
             #endregion
 
             #region Constructors
-            private ImapResource() {}
+            private ImapResource() { }
 
-            public static ImapResource Create(string hostname, int port)
+            public static ImapResource Create(MailBoxInfo info, Stream stream)
             {
-                ImapResource result = new ImapResource();
-                result._client = new TcpClient(hostname, port);
+                ImapResource resource = new ImapResource();
+                resource._stream = stream;
 
-                ImapResponse handshake = result.Receive();
+                ImapResponse response = resource.Receive();
 
-                return result;
+                return (response.Status == Status.OK) ? resource : null;
             }
             #endregion
 
             #region Methods
-            private void Write(string command)
+            public bool StartTLS(bool sslValidation, MailBoxInfo info)
             {
-                _client.Client.Send(Encoding.ASCII.GetBytes(command));
+                string messageTag = $"{TagPrefix}{_tag.ToString()}";
+                string command = $"{messageTag} STARTTLS\r\n";
+                
+                Write(command);
+
+                ImapResponse response = Receive();
+                while (response.Tag != messageTag)
+                    response = Receive();
+
+                if (response.Status != Status.OK)
+                    return false;
+
+                if (sslValidation)
+                {
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    SslStream stream = new SslStream(_stream, false, (sender, certificate, chain, sslPolicyErrors) => true);
+                    stream.AuthenticateAsClient(info.Hostname);
+                    _stream = stream;
+                    return true;
+                }
             }
 
-            private ImapResponse Receive()
+            private void Write(string command)
+            {
+                _stream.Write(Encoding.ASCII.GetBytes(command));
+                _tag++;
+            }
+
+            private ImapResponse Receive(bool wait = true)
             {
                 byte[] buffer = new byte[2];
-                int length = _client.Client.Receive(buffer);
+                int length = 0;
+
+                if (!wait)
+                {
+                    _stream.ReadTimeout = 2;
+                    try
+                    {
+                        length = _stream.Read(buffer, 0, buffer.Length);
+                    }
+                    catch (TimeoutException)
+                    {
+                        return null;
+                    }
+                    finally
+                    {
+                        _stream.ReadTimeout = -1;
+                    }
+                }
+                else
+                {
+                    length = _stream.Read(buffer, 0, buffer.Length);
+                }
 
                 //Wait for complete message.
-                while (buffer[buffer.Length - 2] != '\r' || buffer[buffer.Length - 1] != '\n')
+                while (buffer[length - 2] != '\r' || buffer[length - 1] != '\n')
                 {
                     Task.Delay(1);
+                    int bufferSize = 1024;
 
-                    if (_client.Available != 0)
-                    {
-                        int size = _client.Available;
-                        byte[] newBuffer = new byte[buffer.Length + size];
-                        _client.Client.Receive(newBuffer, buffer.Length, size, SocketFlags.None);
-                        Buffer.BlockCopy(buffer, 0, newBuffer, 0, buffer.Length);
-                        buffer = newBuffer;
-                    }
+                    byte[] newBuffer = new byte[buffer.Length + bufferSize];
+                    length = _stream.Read(newBuffer, buffer.Length, bufferSize);
+                    Buffer.BlockCopy(buffer, 0, newBuffer, 0, buffer.Length);
+                    length = length + buffer.Length;
+                    buffer = newBuffer;
                 }
 
                 ImapResponse response = new ImapResponse();
 
                 int index = 0;
-                
+
                 //Tag
                 if (buffer[index] == UnTaggedTag)
                 {
@@ -1052,8 +1156,8 @@ namespace Pchp.Library
                 }
 
                 //Body
-                response.Body = Encoding.ASCII.GetString(buffer, index, buffer.Length - index);
-                response.Raw = buffer.Slice(0, buffer.Length);
+                response.Body = Encoding.ASCII.GetString(buffer, index, length - index);
+                response.Raw = buffer.Slice(0, length);
 
                 return response;
             }
@@ -1061,27 +1165,47 @@ namespace Pchp.Library
             public override bool Login(string username, string password)
             {
                 string messageTag = $"{TagPrefix}{_tag.ToString()}";
-                _tag++;
 
                 Write($"{messageTag} LOGIN {username} {password}\r\n");
 
                 ImapResponse response = Receive();
-                if (response.Tag == messageTag)
+                while (response.Tag != messageTag)
                 {
-                    if (response.Status == Status.OK)
-                        return true;
-                    else
-                        return false;
+                    response = Receive();
                 }
-                else
-                {
-                    // TODO: Corner case
-                    return false;
-                }
+
+                return response.Status == Status.OK;
+            }
+
+
+            public override void Close() => FreeManaged();
+
+            protected override void FreeManaged()
+            {
+                _stream.Close();
+                _stream.Dispose();
+                base.FreeManaged();
             }
             #endregion
         }
         #endregion
+
+        #region Unsorted
+        /// <summary>
+        /// Gets instance of <see cref="MailResource"/> or <c>null</c>.
+        /// If given argument is not an instance of <see cref="MailResource"/>, PHP warning is reported.
+        /// </summary>
+        static MailResource ValidateMailResource(PhpResource context)
+        {
+            if (context is MailResource h && h.IsValid)
+            {
+                return h;
+            }
+
+            //
+            PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_context_resource);
+            return null;
+        }
 
         /// <summary>
         /// Parses an address string.
@@ -1114,6 +1238,7 @@ namespace Pchp.Library
             //
             return arr;
         }
+        #endregion
 
         #region encode,decode
 
@@ -1382,7 +1507,7 @@ namespace Pchp.Library
         /// <param name="mailbox">The mailbox has the format: "{" remote_system_name [":" port] [flags] "}" [mailbox_name]</param>
         /// <param name="info">Parsed information about mailbox.</param>
         /// <returns>True on Success, False on failure.</returns>
-        private static bool TryParseHostName(string mailbox, out MailBoxInfo info)
+        static bool TryParseHostName(string mailbox, out MailBoxInfo info)
         {
             info = new MailBoxInfo();
             if (String.IsNullOrEmpty(mailbox))
@@ -1498,12 +1623,18 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpResource imap_open(string mailbox, string username , string password, int options, int n_retries, PhpArray @params)
         {
-            //TODO: options, n_retires, params
-            
+            // Unsupported flags: authuser, debug, (nntp, pop3 - can be done), (validate-cert - maybe can be done), readonly
+            // Unsupported options: OP_SECURE, OP_PROTOTYPE, OP_SILENT, OP_SHORTCACHE, OP_DEBUG, OP_READONLY, OP_ANONYMOUS, OP_HALFOPEN, CL_EXPUNGE
+            // Unsupported n_retries, params
+
             if (!TryParseHostName(mailbox, out MailBoxInfo info))
-            {
                 return null;
-            }
+
+            if (!String.IsNullOrEmpty(info.User))
+                username = info.User;
+
+            if (info.NameFlags.Contains("anonymous"))
+                username = "ANONYMOUS";
 
             try
             {
@@ -1520,6 +1651,28 @@ namespace Pchp.Library
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Closes the imap stream.
+        /// </summary>
+        /// <param name="imap_stream">An IMAP stream returned by imap_open().</param>
+        /// <param name="flag">If set to CL_EXPUNGE, the function will silently expunge the mailbox before closing, removing all messages marked for deletion. You can achieve the same thing by using imap_expunge()</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool imap_close(PhpResource imap_stream, int flag = 0)
+        {
+            MailResource resource = ValidateMailResource(imap_stream);
+            if (resource == null)
+                return false;
+
+            if ((flag & CL_EXPUNGE) == CL_EXPUNGE)
+            {
+                //TODO: Call imap_expunge
+                throw new NotImplementedException();
+            }
+
+            resource.Close();
+            return true;
         }
         #endregion
     }
