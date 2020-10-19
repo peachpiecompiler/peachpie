@@ -747,6 +747,34 @@ namespace Pchp.Library.DateTime
             }
         }
 
+        struct LookupValue
+        {
+            public int Value;
+            public int Type;
+
+            public static implicit operator LookupValue(int value) => new LookupValue { Value = value, };
+        }
+
+        static readonly Dictionary<string, LookupValue> s_reltext = new Dictionary<string, LookupValue>(16, StringComparer.OrdinalIgnoreCase)
+        {
+            { "first", 1 },
+            { "next", 1 },
+            { "second", 2 },
+            { "third", 3 },
+            { "fourth", 4 },
+            { "fifth", 5 },
+            { "sixth", 6 },
+            { "seventh", 7 },
+            { "eight", 8 },
+            { "ninth", 9 },
+            { "tenth", 10 },
+            { "eleventh", 11 },
+            { "twelfth", 12 },
+            { "last", -1 },
+            { "previous", -1 },
+            { "this", new LookupValue { Value = 0, Type = /*behavior*/1, } },
+        };
+
         /// <summary>
         /// Parses text defining ordinal number.
         /// </summary>
@@ -763,28 +791,16 @@ namespace Pchp.Library.DateTime
                 pos++;
             }
 
-            behavior = 0;
-            switch (str.Substring(begin, pos - begin))
+            if (s_reltext.TryGetValue(str.Substring(begin, pos - begin), out var value))
             {
-                case "last": return -1;
-                case "previous": return -1;
-                case "this": behavior = 1; return 0;
-                case "first": return 1;
-                case "next": return 1;
-                case "second": return 2;
-                case "third": return 3;
-                case "fourth": return 4;
-                case "fifth": return 5;
-                case "sixth": return 6;
-                case "seventh": return 7;
-                case "eight": return 8;
-                case "ninth": return 9;
-                case "tenth": return 10;
-                case "eleventh": return 11;
-                case "twelfth": return 12;
+                behavior = value.Type;
+                return value.Value;
             }
-
-            return 0;
+            else
+            {
+                behavior = 0;
+                return 0;
+            }
         }
 
         static void SkipSpaces(string str, ref int pos) // timelib_eat_spaces
