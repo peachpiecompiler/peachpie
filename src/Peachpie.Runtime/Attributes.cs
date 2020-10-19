@@ -151,8 +151,9 @@ namespace Pchp.Core
 
         /// <summary>
         /// The language version of compiled sources.
+        /// Can be <c>null</c> in case the version was not specified.
         /// </summary>
-        public Version LanguageVersion { get; }
+        public Version? LanguageVersion { get; }
 
         /// <summary>
         /// Construct the attribute.
@@ -162,7 +163,7 @@ namespace Pchp.Core
         public TargetPhpLanguageAttribute(string langVersion, bool shortOpenTag)
         {
             this.ShortOpenTag = shortOpenTag;
-            this.LanguageVersion = Version.Parse(langVersion);
+            this.LanguageVersion = langVersion != null ? Version.Parse(langVersion) : null;
         }
     }
 
