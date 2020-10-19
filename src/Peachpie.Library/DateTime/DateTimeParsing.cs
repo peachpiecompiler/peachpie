@@ -1383,23 +1383,22 @@ namespace Pchp.Library.DateTime
 
         /// <summary>
         /// Parses interval string according to ISO8601 Duration.
-        /// C# implementation: <see cref="System.Xml.XmlConvert.ToTimeSpan"/>; but it does not recognize <c>'W'</c> speification.
+        /// C# implementation: <see cref="System.Xml.XmlConvert.ToTimeSpan"/>; but it does not recognize <c>'W'</c> specification.
         /// </summary>
-        internal static bool TryParseIso8601Duration(string s, out DateInfo result, out bool negative)
+        internal static bool TryParseIso8601Duration(string str, out DateInfo result, out bool negative)
         {
-            int length;
-            int value, pos, numDigits;
+            int value;
+            int numDigits;
 
             int years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0;
             uint nanoseconds = 0;
 
             negative = false;
 
-            s = s.Trim();
-            length = s.Length;
+            var s = str.AsSpan().Trim();
+            var length = s.Length;
 
-            pos = 0;
-            numDigits = 0;
+            var pos = 0;
 
             if (pos >= length) goto InvalidFormat;
 

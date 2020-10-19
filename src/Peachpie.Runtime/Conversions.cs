@@ -1185,7 +1185,7 @@ namespace Pchp.Core
 		public static long SubstringToLongStrict(string str, int length, int @base, long maxValue, ref int position)
         {
             if (maxValue <= 0)
-                throw new ArgumentOutOfRangeException("maxValue");
+                throw new ArgumentOutOfRangeException(nameof(maxValue));
 
             if (@base < 2 || @base > 'Z' - 'A' + 1)
             {
@@ -1243,18 +1243,18 @@ namespace Pchp.Core
         ///   1. If eatDigits is true, then additional digits will be silently discarded (don't count towards numDigits)
         ///   2. If eatDigits is false, an overflow exception is thrown
         /// </summary>
-        public static bool TryParseDigits(string s, ref int offset, bool eatDigits, out int result, out int numDigits)
+        public static bool TryParseDigits(ReadOnlySpan<char> s, ref int offset, bool eatDigits, out int result, out int numDigits)
         {
+            Debug.Assert(offset >= 0);
+
             int offsetStart = offset;
-            int offsetEnd = s.Length;
-            int digit;
 
             result = 0;
             numDigits = 0;
 
-            while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+            while (offset < s.Length && s[offset] >= '0' && s[offset] <= '9')
             {
-                digit = s[offset] - '0';
+                var digit = s[offset] - '0';
 
                 if (result > (int.MaxValue - digit) / 10)
                 {
@@ -1268,7 +1268,7 @@ namespace Pchp.Core
                     // Skip past any remaining digits
                     numDigits = offset - offsetStart;
 
-                    while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+                    while (offset < s.Length && s[offset] >= '0' && s[offset] <= '9')
                     {
                         offset++;
                     }
