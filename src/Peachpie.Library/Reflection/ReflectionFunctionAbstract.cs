@@ -95,15 +95,39 @@ namespace Pchp.Library.Reflection
         
         public long getNumberOfParameters()
         {
-            return ReflectionUtils.ResolvePhpParameters(_routine.Methods).Count;
+            var parameters = ReflectionUtils.ResolvePhpParameters(_routine.Methods);
+            int count = 0;
+
+            for (; count < parameters.Count; count++)
+            {
+                var p = parameters[count];
+                
+                if (p.GetCustomAttribute<ParamArrayAttribute>() != null)
+                {
+                    // variadic is the last one
+                    return count + 1;
+                }
+            }
+
+            return count;
         }
 
         public long getNumberOfRequiredParameters()
         {
-            return ReflectionUtils
-                .ResolvePhpParameters(_routine.Methods)
-                .TakeWhile(p => p.HasDefaultValue == false && p.GetCustomAttribute<DefaultValueAttribute>() == null && p.GetCustomAttribute<ParamArrayAttribute>() == null)
-                .Count();
+            var parameters = ReflectionUtils.ResolvePhpParameters(_routine.Methods);
+            int count = 0;
+
+            for (; count < parameters.Count; count++)
+            {
+                var p = parameters[count];
+                if (p.HasDefaultValue || p.GetCustomAttribute<DefaultValueAttribute>() != null) // is optional argument
+                    break;
+
+                if (p.GetCustomAttribute<ParamArrayAttribute>() != null) // is optional, variadic
+                    break;
+            }
+
+            return count;
         }
 
         /// <summary>
@@ -119,9 +143,11 @@ namespace Pchp.Library.Reflection
             var arr = new PhpArray(parameters.Count);
             for (int i = 0; i < parameters.Count; i++)
             {
-                Debug.Assert(!parameters[i]._isVariadic || i == parameters.Count - 1, "Variadic can be only last parameter");
+                var p = parameters[i];
 
-                arr.Add(PhpValue.FromClass(parameters[i]));
+                arr.Add(PhpValue.FromClass(p));
+
+                if (p.isVariadic()) break; // variadic must be the last one
             }
 
             return arr;
