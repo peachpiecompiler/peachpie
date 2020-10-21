@@ -169,7 +169,7 @@ namespace Pchp.Library
         /// Retrieves the parent class name for current object from which this function is called.
         /// </summary>
         [return: CastToFalse]
-        public static string get_parent_class([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller)
+        public static string get_parent_class([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller)
         {
             if (caller.Equals(default))
             {
@@ -224,7 +224,7 @@ namespace Pchp.Library
         /// <param name="obj"></param>
         /// <returns>Returns an associative array of defined object accessible non-static properties for the specified object in scope.
         /// If a property has not been assigned a value, it will be returned with a NULL value.</returns>
-        public static PhpArray get_object_vars([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, object obj)
+        public static PhpArray get_object_vars([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, object obj)
         {
             Debug.Assert(!(obj is PhpAlias), "obj must be dereferenced");
 
@@ -288,7 +288,7 @@ namespace Pchp.Library
         /// <returns>Returns an associative array of declared properties visible from the current scope, with their default value. The resulting array elements are in the form of varname => value.
         /// In case of an error, it returns <c>FALSE</c>.</returns>
         [return: CastToFalse]
-        public static PhpArray get_class_vars(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, string class_name)
+        public static PhpArray get_class_vars(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, string class_name)
         {
             var tinfo = ctx.GetDeclaredType(class_name, true);
             if (tinfo != null)
@@ -397,7 +397,7 @@ namespace Pchp.Library
 		/// <param name="classNameOrObject">The object (<see cref="DObject"/>) or the name of a class
 		/// (<see cref="String"/>).</param>
 		/// <returns>Array of all methods defined in <paramref name="classNameOrObject"/>.</returns>
-		public static PhpArray get_class_methods(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpValue classNameOrObject)
+		public static PhpArray get_class_methods(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpValue classNameOrObject)
         {
             var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
             if (tinfo == null)
@@ -463,7 +463,7 @@ namespace Pchp.Library
 		/// <param name="useAutoload"><B>True</B> if autoloading should be used.</param>
 		/// <returns>The <see cref="PhpArray"/> with base class names.</returns>
 		[return: CastToFalse]
-        public static PhpArray class_parents(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
+        public static PhpArray class_parents(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
         {
             var tinfo = Objects.TypeNameOrObjectToType(ctx, classNameOrObject, caller, useAutoload);
 
@@ -485,7 +485,7 @@ namespace Pchp.Library
         /// This function returns an array with the names of the interfaces that the given class and its parents implement.
         /// </summary>
         [return: CastToFalse]
-        public static PhpArray class_implements(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
+        public static PhpArray class_implements(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
         {
             PhpArray result = null;
 
@@ -511,7 +511,7 @@ namespace Pchp.Library
         /// This does however not include any traits used by a parent class.
         /// </summary>
         [return: CastToFalse]
-        public static PhpArray class_uses(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
+        public static PhpArray class_uses(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
         {
             PhpArray result = null;
 
