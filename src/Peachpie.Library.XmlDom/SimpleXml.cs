@@ -750,6 +750,7 @@ namespace Peachpie.Library.XmlDom
         /// String representation of the XML element.
         /// </summary>
         /// <returns>XML element content.</returns>
+        [PhpHidden]
         public override string ToString()
         {
             if (XmlAttribute != null) return XmlAttribute.Value;
