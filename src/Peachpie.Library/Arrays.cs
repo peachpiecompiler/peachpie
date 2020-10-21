@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static Pchp.Core.PhpExtensionAttribute;
 
-namespace Pchp.Library
+namespace Pchp.Library.Standard
 {
     #region Enumerations
 
@@ -3320,12 +3320,15 @@ namespace Pchp.Library
 
         #endregion
     }
+}
 
+namespace Pchp.Library
+{
     /// <summary>
     /// Implements PHP array functions.
     /// </summary>
     [PhpExtension(KnownExtensionNames.Core)]
-    public static class ArraysCore
+    public static class Arrays
     {
         /// <summary>
         /// Retrieves the current entry and advances array intrinsic enumerator one item forward.
@@ -3368,6 +3371,5 @@ namespace Pchp.Library
                 { "key", key },
             };
         }
-
     }
 }
