@@ -156,15 +156,15 @@ namespace Pchp.Library.Standard
         /// Retrieves a value of a constant.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="callerCtx">type of caller class. Used to resolve reserved type names if used in <paramref name="name"/>.</param>
-        /// <param name="name">The name of the constant.</param>
+        /// <param name="callerCtx">type of caller class. Used to resolve reserved type names if used in <paramref name="const_name"/>.</param>
+        /// <param name="const_name">The name of the constant.</param>
         /// <param name="this">Optional. Reference to <c>$this</c> object. Used to resolve <c>static::</c> type reference.</param>
         /// <returns>The value.</returns>
-        public static PhpValue constant(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle callerCtx, [ImportValue(ImportValueAttribute.ValueSpec.This)] object @this, string name)
+        public static PhpValue constant(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle callerCtx, [ImportValue(ImportValueAttribute.ValueSpec.This)] object @this, string const_name)
         {
-            if (!TryGetConstant(ctx, callerCtx, @this, name, out var value))
+            if (!TryGetConstant(ctx, callerCtx, @this, const_name, out var value))
             {
-                PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.constant_not_found, name);
+                PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.constant_not_found, const_name);
             }
 
             //

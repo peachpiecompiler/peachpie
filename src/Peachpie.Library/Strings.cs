@@ -80,13 +80,13 @@ namespace Pchp.Library
         /// <summary>
         /// Converts a string into hexadecimal representation.
         /// </summary>
-        /// <param name="str">The string to be converted.</param>
+        /// <param name="data">The string to be converted.</param>
         /// <returns>
-        /// The concatenated two-characters long hexadecimal numbers each representing one character of <paramref name="str"/>.
+        /// The concatenated two-characters long hexadecimal numbers each representing one character of <paramref name="data"/>.
         /// </returns>
-        public static string bin2hex(byte[] str)
+        public static string bin2hex(byte[] data)
         {
-            if (str == null || str.Length == 0)
+            if (data == null || data.Length == 0)
             {
                 return string.Empty;
             }
@@ -109,7 +109,7 @@ namespace Pchp.Library
 
             //return result.ToString();
 
-            return StringUtils.BinToHex(str, null);
+            return StringUtils.BinToHex(data, null);
         }
 
         /// <summary>
@@ -2455,16 +2455,16 @@ namespace Pchp.Library
         /// Returns the translation table used by <see cref="HtmlSpecialChars"/> and <see cref="EncodeHtmlEntities"/>. 
         /// </summary>
         /// <param name="table">Type of the table that should be returned.</param>
-        /// <param name="quoteStyle">Quote conversion.</param>
+        /// <param name="quote_style">Quote conversion.</param>
         /// <returns>The table.</returns>
-        public static PhpArray get_html_translation_table(HtmlEntitiesTable table, QuoteStyle quoteStyle = QuoteStyle.Compatible)
+        public static PhpArray get_html_translation_table(HtmlEntitiesTable table, QuoteStyle quote_style = QuoteStyle.Compatible)
         {
             PhpArray result = new PhpArray();
             if (table == HtmlEntitiesTable.SpecialChars)
             {
                 // return the table used with HtmlSpecialChars
-                if ((quoteStyle & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
-                if ((quoteStyle & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
+                if ((quote_style & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
+                if ((quote_style & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
 
                 result.Add("&", "&amp;");
                 result.Add("<", "&lt;");
@@ -2473,8 +2473,8 @@ namespace Pchp.Library
             else
             {
                 // return the table used with HtmlEntities
-                if ((quoteStyle & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
-                if ((quoteStyle & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
+                if ((quote_style & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
+                if ((quote_style & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
 
                 for (char ch = (char)0; ch < 0x100; ch++)
                 {
@@ -2496,14 +2496,14 @@ namespace Pchp.Library
         /// Converts all HTML entities to their applicable characters.
         /// </summary>
         /// <param name="str">The string to convert.</param>
-        /// <param name="quoteStyle">Quote conversion.</param>
-        /// <param name="charSet">The character set used in conversion.</param>
+        /// <param name="quote_style">Quote conversion.</param>
+        /// <param name="encoding">The character set used in conversion.</param>
         /// <returns>The converted string.</returns>
-        public static string html_entity_decode(PhpString str, QuoteStyle quoteStyle = QuoteStyle.Compatible, string charSet = DefaultHtmlEntitiesCharset)
+        public static string html_entity_decode(PhpString str, QuoteStyle quote_style = QuoteStyle.Compatible, string encoding = DefaultHtmlEntitiesCharset)
         {
             try
             {
-                return DecodeHtmlEntities(str.ToString(charSet), quoteStyle);
+                return DecodeHtmlEntities(str.ToString(encoding), quote_style);
             }
             catch (ArgumentException ex)
             {
@@ -4582,27 +4582,27 @@ namespace Pchp.Library
         /// and with given thousand separator.
         /// </summary>
         /// <param name="number">The number to format.</param>
-        /// <param name="decimals">The number of decimals within range 0 to 99.</param>
-        /// <param name="decimalPoint">The string to separate integer part and decimals.</param>
-        /// <param name="thousandsSeparator">The character to separate groups of thousands. Only the first character
-        /// of <paramref name="thousandsSeparator"/> is used.</param>
+        /// <param name="num_decimal_places">The number of decimals within range 0 to 99.</param>
+        /// <param name="dec_separator">The string to separate integer part and decimals.</param>
+        /// <param name="thousands_separator">The character to separate groups of thousands. Only the first character
+        /// of <paramref name="thousands_separator"/> is used.</param>
         /// <returns>
-        /// String representation of the number with <paramref name="decimals"/> decimals with <paramref name="decimalPoint"/> in 
-        /// front, and with <paramref name="thousandsSeparator"/> between every group of thousands.
+        /// String representation of the number with <paramref name="num_decimal_places"/> decimals with <paramref name="dec_separator"/> in 
+        /// front, and with <paramref name="thousands_separator"/> between every group of thousands.
         /// </returns>
         /// <remarks>
-        /// The <b>number_format</b> (<see cref="FormatNumber"/>) PHP function requires <paramref name="decimalPoint"/> and <paramref name="thousandsSeparator"/>
+        /// The <b>number_format</b> (<see cref="FormatNumber"/>) PHP function requires <paramref name="dec_separator"/> and <paramref name="thousands_separator"/>
         /// to be of length 1 otherwise it uses default values (dot and comma respectively). As this behavior does
-        /// not make much sense, this method has no such limitation except for <paramref name="thousandsSeparator"/> of which
+        /// not make much sense, this method has no such limitation except for <paramref name="thousands_separator"/> of which
         /// only the first character is used (documented feature).
         /// </remarks>
-        public static string number_format(double number, int decimals = 0, string decimalPoint = ".", string thousandsSeparator = ",")
+        public static string number_format(double number, int num_decimal_places = 0, string dec_separator = ".", string thousands_separator = ",")
         {
             var format = new System.Globalization.NumberFormatInfo
             {
-                NumberDecimalDigits = Math.Max(decimals, 0), // TODO: .NET throws for decimals > 99
-                NumberDecimalSeparator = decimalPoint ?? ".", // NULL ~ a defalt value
-                NumberGroupSeparator = thousandsSeparator ?? ",", // NULL ~ a default value
+                NumberDecimalDigits = Math.Max(num_decimal_places, 0), // TODO: .NET throws for decimals > 99
+                NumberDecimalSeparator = dec_separator ?? ".", // NULL ~ a defalt value
+                NumberGroupSeparator = thousands_separator ?? ",", // NULL ~ a default value
             };
 
             return number.ToString("N", format);

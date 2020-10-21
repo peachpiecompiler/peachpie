@@ -407,14 +407,14 @@ namespace Pchp.Library
         /// Returns the decimal equivalent of the binary number represented by the binary_string argument.
         /// bindec() converts a binary number to an integer or, if needed for size reasons, double.
         /// </summary>
-        /// <param name="str">The binary string to convert.</param>
-        /// <returns>The decimal value of <paramref name="str"/>.</returns>
-        public static PhpNumber bindec(string str)
+        /// <param name="binary_number">The binary string to convert.</param>
+        /// <returns>The decimal value of <paramref name="binary_number"/>.</returns>
+        public static PhpNumber bindec(string binary_number)
         {
-            if (str == null)
+            if (binary_number == null)
                 return PhpNumber.Default;
 
-            return ConvertToLong(BaseToDouble(str, 2));
+            return ConvertToLong(BaseToDouble(binary_number, 2));
         }
 
 
@@ -428,24 +428,24 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a string containing an octal representation of the given number argument.
         /// </summary>
-        /// <param name="number">Decimal value to convert.</param>
-        /// <returns>Octal string representation of <paramref name="number"/>.</returns>
-        public static string decoct(int number)
+        /// <param name="decimal_number">Decimal value to convert.</param>
+        /// <returns>Octal string representation of <paramref name="decimal_number"/>.</returns>
+        public static string decoct(int decimal_number)
         {
-            return System.Convert.ToString(number, 8);
+            return System.Convert.ToString(decimal_number, 8);
         }
 
         /// <summary>
-        /// Returns the decimal equivalent of the octal number represented by the <paramref name="str"/> argument.
+        /// Returns the decimal equivalent of the octal number represented by the <paramref name="octal_number"/> argument.
         /// </summary>
-        /// <param name="str">The octal string to convert.</param>
-        /// <returns>The decimal representation of <paramref name="str"/>.</returns>
-        public static PhpNumber octdec(string str)
+        /// <param name="octal_number">The octal string to convert.</param>
+        /// <returns>The decimal representation of <paramref name="octal_number"/>.</returns>
+        public static PhpNumber octdec(string octal_number)
         {
-            if (str == null)
+            if (octal_number == null)
                 return PhpNumber.Default;
 
-            return ConvertToLong(BaseToDouble(str, 8));
+            return ConvertToLong(BaseToDouble(octal_number, 8));
         }
 
         //public static object octdec_unicode(string str)
@@ -457,11 +457,11 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a string containing a hexadecimal representation of the given number argument.
         /// </summary>
-        /// <param name="number">Decimal value to convert.</param>
-        /// <returns>Hexadecimal string representation of <paramref name="number"/>.</returns>
-        public static string dechex(long number)
+        /// <param name="decimal_number">Decimal value to convert.</param>
+        /// <returns>Hexadecimal string representation of <paramref name="decimal_number"/>.</returns>
+        public static string dechex(long decimal_number)
         {
-            return System.Convert.ToString(number, 16);
+            return System.Convert.ToString(decimal_number, 16);
         }
 
         //public static string dechex_unicode(int number)
@@ -474,14 +474,14 @@ namespace Pchp.Library
         /// Returns the decimal equivalent of the hexadecimal number represented by the hex_string argument. hexdec() converts a hexadecimal string to a decimal number.
         /// hexdec() will ignore any non-hexadecimal characters it encounters.
         /// </summary>
-        /// <param name="str">The hexadecimal string to convert.</param>
-        /// <returns>The decimal representation of <paramref name="str"/>.</returns>
-        public static PhpNumber hexdec(string str)
+        /// <param name="hexadecimal_number">The hexadecimal string to convert.</param>
+        /// <returns>The decimal representation of <paramref name="hexadecimal_number"/>.</returns>
+        public static PhpNumber hexdec(string hexadecimal_number)
         {
-            if (str == null)
+            if (hexadecimal_number == null)
                 return PhpNumber.Default;
 
-            return ConvertToLong(BaseToDouble(str, 16));
+            return ConvertToLong(BaseToDouble(hexadecimal_number, 16));
         }
 
         //public static object hexdec_unicode(string str)
@@ -616,21 +616,21 @@ namespace Pchp.Library
         /// <summary>
         /// Degrees to radians.
         /// </summary>
-        /// <param name="degrees"></param>
+        /// <param name="number"></param>
         /// <returns></returns>
-        public static double deg2rad(double degrees)
+        public static double deg2rad(double number)
         {
-            return degrees / 180 * Math.PI;
+            return number / 180 * Math.PI;
         }
 
         /// <summary>
         /// Radians to degrees.
         /// </summary>
-        /// <param name="radians"></param>
+        /// <param name="number"></param>
         /// <returns></returns>
-        public static double rad2deg(double radians)
+        public static double rad2deg(double number)
         {
-            return radians / Math.PI * 180;
+            return number / Math.PI * 180;
         }
 
         /// <summary>
@@ -783,9 +783,9 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Returns <paramref name="base"/> raised to the power of <paramref name="exp"/>.
+        /// Returns <paramref name="base"/> raised to the power of <paramref name="exponent"/>.
         /// </summary>
-        public static PhpNumber pow(PhpNumber @base, PhpNumber exp) => PhpNumber.Pow(@base, exp);
+        public static PhpNumber pow(PhpNumber @base, PhpNumber exponent) => PhpNumber.Pow(@base, exponent);
 
         //public static PhpNumber pow(PhpNumber @base, PhpNumber exp)
         //{
