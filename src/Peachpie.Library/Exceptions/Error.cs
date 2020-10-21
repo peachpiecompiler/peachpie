@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
@@ -89,7 +90,14 @@ namespace Pchp.Library.Spl
 
         public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, this.Message);   // TODO: _trace
 
+        [PhpHidden]
         public sealed override string ToString() => __toString();
+
+        [PhpHidden]
+        public override System.Exception GetBaseException() => base.GetBaseException();
+
+        [PhpHidden]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context) => base.GetObjectData(info, context);
     }
 
     /// <summary>

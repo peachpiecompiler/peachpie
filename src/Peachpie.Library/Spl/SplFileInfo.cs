@@ -177,6 +177,8 @@ namespace Pchp.Library.Spl
         public virtual void setFileClass(string class_name = nameof(SplFileObject)) => _file_class = class_name;
         public virtual void setInfoClass(string class_name = nameof(SplFileInfo)) => _info_class = class_name;
         public virtual string __toString() => _originalPath;
+
+        [PhpHidden]
         public override string ToString() => __toString();
     }
 
