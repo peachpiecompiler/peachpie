@@ -623,9 +623,9 @@ namespace Pchp.Library
         /// <summary>
         /// Returns the type of a resource.
         /// </summary>
-        /// <param name="resource">The resource.</param>
-        /// <returns>The resource type name or <c>null</c> if <paramref name="resource"/> is <c>null</c>.</returns>
-        public static string get_resource_type(PhpValue resource) => resource.AsResource()?.TypeName;
+        /// <param name="res">The resource.</param>
+        /// <returns>The resource type name or <c>null</c> if <paramref name="res"/> is <c>null</c>.</returns>
+        public static string get_resource_type(PhpValue res) => res.AsResource()?.TypeName;
 
         /// <summary>
         /// Get the resource ID for a given resource.

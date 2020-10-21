@@ -5219,19 +5219,19 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str1">The lesser string.</param>
         /// <param name="str2">The greater string.</param>
-        /// <param name="length">The upper limit of the length of parts to be compared.</param>
+        /// <param name="len">The upper limit of the length of parts to be compared.</param>
         /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
         /// and 0 if they are equal.</returns>
-        public static PhpValue strncmp(string str1, string str2, int length)
+        public static PhpValue strncmp(string str1, string str2, int len)
         {
-            if (length < 0)
+            if (len < 0)
             {
                 throw new ArgumentException();
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
                 //return PhpValue.False;
             }
 
-            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, length));
+            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, len));
         }
 
         /// <summary>
@@ -5239,22 +5239,22 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str1">A string.</param>
         /// <param name="str2">A string.</param>
-        /// <param name="length">The upper limit of the length of parts to be compared.</param>
+        /// <param name="len">The upper limit of the length of parts to be compared.</param>
         /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
         /// and 0 if they are equal.</returns>
-        public static PhpValue strncasecmp(string str1, string str2, int length)
+        public static PhpValue strncasecmp(string str1, string str2, int len)
         {
-            if (length < 0)
+            if (len < 0)
             {
                 throw new ArgumentException();
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
                 //return PhpValue.False;
             }
 
-            length = Math.Max(Math.Max(length, str1.Length), str2.Length);
+            len = Math.Max(Math.Max(len, str1.Length), str2.Length);
 
             return PhpValue.Create(System.Globalization.CultureInfo.InvariantCulture.CompareInfo
-                .Compare(str1, 0, length, str2, 0, length, System.Globalization.CompareOptions.OrdinalIgnoreCase));
+                .Compare(str1, 0, len, str2, 0, len, System.Globalization.CompareOptions.OrdinalIgnoreCase));
         }
 
         #endregion
@@ -5624,7 +5624,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns the length of a string.
         /// </summary>
-        public static int strlen(PhpString x) => x.Length;
+        public static int strlen(PhpString str) => str.Length;
 
         #endregion
 

@@ -15,21 +15,21 @@ namespace Pchp.Library
     public static class Objects
     {
         /// <summary>
-		/// Tests whether the class given by <paramref name="classNameOrObject"/> is derived from a class given by <paramref name="baseClassName"/>.
+		/// Tests whether the class given by <paramref name="object"/> is derived from a class given by <paramref name="class_name"/>.
 		/// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="classNameOrObject">The object or the name of a class (<see cref="string"/>).</param>
-		/// <param name="baseClassName">The name of a base class or interface.</param>
-        /// <param name="allow_string">Whether class name can be used as <paramref name="classNameOrObject"/>. Otherwise only an object instance is allowed.
+        /// <param name="object">The object or the name of a class (<see cref="string"/>).</param>
+		/// <param name="class_name">The name of a base class or interface.</param>
+        /// <param name="allow_string">Whether class name can be used as <paramref name="object"/>. Otherwise only an object instance is allowed.
         /// This can be used to prevent from calling autoloader if the class doesn't exist.</param>
-		/// <returns><B>true</B> if <paramref name="classNameOrObject"/> implements or extends <paramref name="baseClassName"/>, <B>false</B> otherwise.</returns>
-		public static bool is_subclass_of(Context ctx, PhpValue classNameOrObject, string baseClassName, bool allow_string = true)
+		/// <returns><B>true</B> if <paramref name="object"/> implements or extends <paramref name="class_name"/>, <B>false</B> otherwise.</returns>
+		public static bool is_subclass_of(Context ctx, PhpValue @object, string class_name, bool allow_string = true)
         {
-            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject, allowName: allow_string);
+            var tinfo = TypeNameOrObjectToType(ctx, @object, allowName: allow_string);
             if (tinfo == null) return false;
 
             // look for the class, do not use autoload (since PHP 5.1):
-            var base_tinfo = ctx.GetDeclaredType(baseClassName, false);
+            var base_tinfo = ctx.GetDeclaredType(class_name, false);
             if (base_tinfo == null) return false;
 
             //
@@ -61,13 +61,13 @@ namespace Pchp.Library
 		/// Tests whether a given interface is defined.
 		/// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="ifaceName">The name of the interface.</param>
+        /// <param name="classname">The name of the interface.</param>
 		/// <param name="autoload">Whether to attempt to call <c>__autoload</c>.</param>
-		/// <returns><B>true</B> if the interface given by <paramref name="ifaceName"/> has been defined,
+		/// <returns><B>true</B> if the interface given by <paramref name="classname"/> has been defined,
 		/// <B>false</B> otherwise.</returns>
-		public static bool interface_exists(Context ctx, string ifaceName, bool autoload = true)
+		public static bool interface_exists(Context ctx, string classname, bool autoload = true)
         {
-            var info = ctx.GetDeclaredType(ifaceName, autoload);
+            var info = ctx.GetDeclaredType(classname, autoload);
             return info != null && info.IsInterface;
         }
 
@@ -181,34 +181,34 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Gets the name of the class from which class given by <paramref name="classNameOrObject"/>
+        /// Gets the name of the class from which class given by <paramref name="object"/>
         /// inherits.
         /// </summary>
         /// <remarks>
-        /// If the class given by <paramref name="classNameOrObject"/> has no parent in PHP class hierarchy, this method returns <B>false</B>.
+        /// If the class given by <paramref name="object"/> has no parent in PHP class hierarchy, this method returns <B>false</B>.
         /// </remarks>
         [return: CastToFalse]
-        public static string get_parent_class(Context ctx, PhpValue classNameOrObject)
+        public static string get_parent_class(Context ctx, PhpValue @object)
         {
-            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
+            var tinfo = TypeNameOrObjectToType(ctx, @object);
 
             //
             return tinfo?.BaseType?.Name;
         }
 
         /// <summary>
-		/// Tests whether <paramref name="value"/>'s class is derived from a class given by <paramref name="class_name"/>.
+		/// Tests whether <paramref name="object"/>'s class is derived from a class given by <paramref name="class_name"/>.
 		/// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="value">The object to test.</param>
+        /// <param name="object">The object to test.</param>
 		/// <param name="class_name">The name of the class.</param>
         /// <param name="allow_string">If this parameter set to FALSE, string class name as object is not allowed. This also prevents from calling autoloader if the class doesn't exist.</param>
-        /// <returns><B>true</B> if the object <paramref name="value"/> belongs to <paramref name="class_name"/> class or
+        /// <returns><B>true</B> if the object <paramref name="object"/> belongs to <paramref name="class_name"/> class or
 		/// a class which is a subclass of <paramref name="class_name"/>, <B>false</B> otherwise.</returns>
-        public static bool is_a(Context ctx, PhpValue value, string class_name, bool allow_string = false)
+        public static bool is_a(Context ctx, PhpValue @object, string class_name, bool allow_string = false)
         {
             // first load type of {value}
-            PhpTypeInfo tvalue = TypeNameOrObjectToType(ctx, value, autoload: true, allowName: allow_string);
+            PhpTypeInfo tvalue = TypeNameOrObjectToType(ctx, @object, autoload: true, allowName: allow_string);
 
             // second, load type of {class_name}
             var ctype = ctx.GetDeclaredType(class_name, false);
@@ -340,18 +340,18 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="object">An object instance or a class name.</param>
-        /// <param name="methodName">The method name.</param>
-        /// <returns>Returns <c>TRUE</c> if the method given by <paramref name="methodName"/> has been defined for the given object, <c>FALSE</c> otherwise.</returns>
-        public static bool method_exists(Context ctx, PhpValue @object, string methodName)
+        /// <param name="method">The method name.</param>
+        /// <returns>Returns <c>TRUE</c> if the method given by <paramref name="method"/> has been defined for the given object, <c>FALSE</c> otherwise.</returns>
+        public static bool method_exists(Context ctx, PhpValue @object, string method)
         {
-            if (@object.IsEmpty || string.IsNullOrEmpty(methodName))
+            if (@object.IsEmpty || string.IsNullOrEmpty(method))
             {
                 return false;
             }
 
             var tinfo = TypeNameOrObjectToType(ctx, @object);
 
-            return tinfo != null && tinfo.RuntimeMethods[methodName] != null;
+            return tinfo != null && tinfo.RuntimeMethods[method] != null;
         }
 
         /// <summary>
@@ -360,25 +360,25 @@ namespace Pchp.Library
         /// <remarks>
 		/// If an object is passed in the first parameter, the property is searched among runtime fields as well.
 		/// </remarks>
-		public static bool property_exists(Context ctx, PhpValue classNameOrObject, string propertyName)
+		public static bool property_exists(Context ctx, PhpValue object_or_class, string property_name)
         {
-            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
+            var tinfo = TypeNameOrObjectToType(ctx, object_or_class);
             if (tinfo == null)
             {
                 return false;
             }
 
-            if (tinfo.GetDeclaredProperty(propertyName) != null)
+            if (tinfo.GetDeclaredProperty(property_name) != null)
             {
                 // CT property found
                 return true;
             }
 
-            var instance = classNameOrObject.AsObject();
+            var instance = object_or_class.AsObject();
             if (instance != null)
             {
                 var rt = tinfo.GetRuntimeFields(instance);
-                if (rt != null && rt.ContainsKey(propertyName))
+                if (rt != null && rt.ContainsKey(property_name))
                 {
                     // RT property found
                     return true;
@@ -394,12 +394,12 @@ namespace Pchp.Library
 		/// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="caller">The caller of the method to resolve visible properties properly. Can be UnknownTypeDesc.</param>
-		/// <param name="classNameOrObject">The object (<see cref="DObject"/>) or the name of a class
+		/// <param name="class">The object (<see cref="DObject"/>) or the name of a class
 		/// (<see cref="String"/>).</param>
-		/// <returns>Array of all methods defined in <paramref name="classNameOrObject"/>.</returns>
-		public static PhpArray get_class_methods(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpValue classNameOrObject)
+		/// <returns>Array of all methods defined in <paramref name="class"/>.</returns>
+		public static PhpArray get_class_methods(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpValue @class)
         {
-            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
+            var tinfo = TypeNameOrObjectToType(ctx, @class);
             if (tinfo == null)
             {
                 return null;
@@ -418,28 +418,28 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Creates an alias named <paramref name="alias"/> based on the user defined class <paramref name="original"/>.
+        /// Creates an alias named <paramref name="alias_name"/> based on the user defined class <paramref name="user_class_name"/>.
         /// The aliased class is exactly the same as the original class.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="original">Existing original class name.</param>
-        /// <param name="alias">The alias name for the class.</param>
+        /// <param name="user_class_name">Existing original class name.</param>
+        /// <param name="alias_name">The alias name for the class.</param>
         /// <param name="autoload">Whether to autoload if the original class is not found. </param>
         /// <returns><c>true</c> on success.</returns>
-        public static bool class_alias(Context ctx, string original, string alias, bool autoload = true)
+        public static bool class_alias(Context ctx, string user_class_name, string alias_name, bool autoload = true)
         {
-            if (!string.IsNullOrEmpty(original))
+            if (!string.IsNullOrEmpty(user_class_name))
             {
-                var type = ctx.GetDeclaredType(original, autoload);
-                if (type != null && type.Name != alias)
+                var type = ctx.GetDeclaredType(user_class_name, autoload);
+                if (type != null && type.Name != alias_name)
                 {
-                    ctx.DeclareType(type, alias);
-                    return ctx.GetDeclaredType(alias, false) == type;
+                    ctx.DeclareType(type, alias_name);
+                    return ctx.GetDeclaredType(alias_name, false) == type;
                 }
             }
             else
             {
-                PhpException.InvalidArgument(nameof(original), LibResources.arg_null_or_empty);
+                PhpException.InvalidArgument(nameof(user_class_name), LibResources.arg_null_or_empty);
             }
 
             return false;
