@@ -672,10 +672,10 @@ namespace Pchp.Library.Standard
         /// <summary>
         /// Delay execution in microseconds.
         /// </summary>
-        public static void usleep(long microseconds)
+        public static void usleep(long micro_seconds)
         {
-            if (microseconds < 0) throw new ArgumentOutOfRangeException();
-            System.Threading.Thread.Sleep((int)(microseconds / 1000L));
+            if (micro_seconds < 0) throw new ArgumentOutOfRangeException();
+            System.Threading.Thread.Sleep((int)(micro_seconds / 1000L));
         }
 
         /// <summary>
