@@ -241,44 +241,43 @@ namespace Pchp.Library
         /// <summary>
         /// Retrieves the current entry and advances array intrinsic enumerator one item forward.
         /// </summary>
-        /// <param name="array">The array which entry get and which intrinsic enumerator to advance.</param>
+        /// <param name="arr">The array which entry get and which intrinsic enumerator to advance.</param>
         /// <returns>
         /// The instance of <see cref="PhpArray"/>(0 =&gt; key, 1 =&gt; value, "key" =&gt; key, "value" =&gt; value)
         /// where key and value are pointed by the enumerator before it is advanced
-        /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="array"/>
+        /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="arr"/>
         /// before the call.
         /// </returns>
         [Obsolete]
         [return: CastToFalse]
-        public static PhpArray each(PhpArray array)
+        public static PhpArray each(PhpArray arr)
         {
-            if (array == null)
+            if (arr == null)
             {
-                //PhpException.ReferenceNull("array");
+                PhpException.ArgumentNull(nameof(arr));
                 return null;
             }
 
-            if (array.IntrinsicEnumerator.AtEnd)
+            if (arr.IntrinsicEnumerator.AtEnd)
             {
                 return null;
             }
 
-            var entry = array.IntrinsicEnumerator.Current;
-            array.IntrinsicEnumerator.MoveNext();
+            var entry = arr.IntrinsicEnumerator.Current;
+            arr.IntrinsicEnumerator.MoveNext();
 
             // dereferences result since enumerator doesn't do so:
             var key = entry.Key;
-            var value = entry.Value.GetValue().DeepCopy();
+            var value = entry.Value.GetValue();
 
             // creates the resulting array:
-            var result = new PhpArray(4);
-            result.Add(1, value);
-            result.Add("value", value);
-            result.Add(0, key);
-            result.Add("key", key);
-
-            // keys and values should be inplace deeply copied:
-            return result;
+            return new PhpArray(4)
+            {
+                { 1, value.DeepCopy() },
+                { "value", value.DeepCopy() },
+                { 0, key },
+                { "key", key },
+            };
         }
 
         #endregion
