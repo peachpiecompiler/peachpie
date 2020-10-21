@@ -17,179 +17,10 @@ namespace Pchp.Library
     [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Miscellaneous
     {
-        // [return: CastToFalse] // once $extension will be supported
-        public static string phpversion(string? extension = null)
-        {
-            if (extension != null)
-            {
-                throw new NotImplementedException(nameof(extension));
-            }
-
-            return Environment.PHP_MAJOR_VERSION + "." + Environment.PHP_MINOR_VERSION + "." + Environment.PHP_RELEASE_VERSION;
-        }
-
         /// <summary>
         /// Gets "zend" engine version compatible version string.
         /// </summary>
-        public static string zend_version() => "3." + Environment.PHP_MINOR_VERSION + ".0" + Core.Utilities.ContextExtensions.GetRuntimeVersionSuffix();
-
-        #region Helpers
-
-        /// <summary>
-        /// Compares parts of varsions delimited by '.'.
-        /// </summary>
-        /// <param name="part1">A part of the first version.</param>
-        /// <param name="part2">A part of the second version.</param>
-        /// <returns>The result of parts comparison (-1,0,+1).</returns>
-        static int CompareParts(string part1, string part2)
-        {
-            string[] parts = { "dev", "alpha", "a", "beta", "b", "RC", " ", "#", "pl", "p" };
-            int[] order = { -1, 0, 1, 1, 2, 2, 3, 4, 5, 6, 6 };
-
-            int i = Array.IndexOf(parts, part1);
-            int j = Array.IndexOf(parts, part2);
-            return Math.Sign(order[i + 1] - order[j + 1]);
-        }
-
-        /// <summary>
-		/// Parses a version and splits it into an array of parts.
-		/// </summary>
-		/// <param name="version">The version to be parsed (can be a <B>null</B> reference).</param>
-		/// <returns>An array of parts.</returns>
-		/// <remarks>
-		/// Non-alphanumeric characters are eliminated.
-		/// The version is split in between a digit following a non-digit and by   
-		/// characters '.', '-', '+', '_'. 
-		/// </remarks>
-		static string[] VersionToArray(string version)
-        {
-            if (string.IsNullOrEmpty(version))
-            {
-                return Array.Empty<string>();
-            }
-
-            var sb = new StringBuilder(version.Length);
-            char last = '\0';
-
-            for (int i = 0; i < version.Length; i++)
-            {
-                var ch = version[i];
-                if (ch == '-' || ch == '+' || ch == '_' || ch == '.')
-                {
-                    if (last != '.')
-                    {
-                        if (sb.Length == 0)
-                        {
-                            sb.Append('0'); // prepend leading '.' with '0' // TODO: test case and rewrite 'version_compare()'
-                        }
-
-                        sb.Append(last = '.');
-                    }
-                }
-                else if (i > 0 && (char.IsDigit(ch) ^ char.IsDigit(version[i - 1])))
-                {
-                    if (last != '.')
-                    {
-                        sb.Append('.');
-                    }
-                    sb.Append(last = ch);
-                }
-                else if (char.IsLetterOrDigit(ch))
-                {
-                    sb.Append(last = ch);
-                }
-                else
-                {
-                    if (last != '.')
-                    {
-                        sb.Append(last = '.');
-                    }
-                }
-            }
-
-            if (last == '.')
-            {
-                sb.Length--;
-            }
-
-            return sb.ToString().Split('.');
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Compares two "PHP-standardized" version number strings.
-        /// </summary>
-        public static int version_compare(string version1, string version2)
-        {
-            string[] v1 = VersionToArray(version1);
-            string[] v2 = VersionToArray(version2);
-            int result;
-
-            for (int i = 0; i < Math.Max(v1.Length, v2.Length); i++)
-            {
-                string item1 = (i < v1.Length) ? v1[i] : " ";
-                string item2 = (i < v2.Length) ? v2[i] : " ";
-
-                if (char.IsDigit(item1[0]) && char.IsDigit(item2[0]))
-                {
-                    result = Comparison.Compare(Core.Convert.StringToLongInteger(item1), Core.Convert.StringToLongInteger(item2));
-                }
-                else
-                {
-                    result = CompareParts(char.IsDigit(item1[0]) ? "#" : item1, char.IsDigit(item2[0]) ? "#" : item2);
-                }
-
-                if (result != 0)
-                {
-                    return result;
-                }
-            }
-
-            return 0;
-        }
-
-        /// <summary>
-        /// Compares two "PHP-standardized" version number strings.
-        /// </summary>
-        public static bool version_compare(string version1, string version2, string op)
-        {
-            var compare = version_compare(version1, version2);
-
-            switch (op)
-            {
-                case "<":
-                case "lt": return compare < 0;
-
-                case "<=":
-                case "le": return compare <= 0;
-
-                case ">":
-                case "gt": return compare > 0;
-
-                case ">=":
-                case "ge": return compare >= 0;
-
-                case "==":
-                case "=":
-                case "eq": return compare == 0;
-
-                case "!=":
-                case "<>":
-                case "ne": return compare != 0;
-            }
-
-            throw new ArgumentException();  // TODO: return NULL
-        }
-
-        /// <summary>
-        /// Loads extension dynamically.
-        /// </summary>
-        public static bool dl(string library)
-        {
-            PhpException.FunctionNotSupported("dl");
-            return false;
-        }
+        public static string zend_version() => "3." + Environment.PHP_MINOR_VERSION + ".0" + ContextExtensions.GetRuntimeVersionSuffix();
 
         /// <summary>
         /// Find out whether an extension is loaded.
@@ -238,26 +69,6 @@ namespace Pchp.Library
             return result.Count != 0 ? result : null;
         }
 
-        /// <summary>
-        /// Checks the given <paramref name="assertion"/> and take appropriate action if its result is <c>FALSE</c>.
-        /// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="assertion"></param>
-        /// <param name="action"></param>
-        /// <returns>Assertion value.</returns>
-        public static bool assert(Context ctx, PhpValue assertion, PhpValue action = default)
-        {
-            // TODO: check assertion is enabled
-
-            if (assertion.IsString())
-            {
-                PhpException.InvalidArgumentType(nameof(assertion), PhpVariable.TypeNameBoolean);
-                return true;
-            }
-
-            return ctx.Assert(assertion, action);
-        }
-
         ///// <summary>
         ///// Returns an array of all currently active resources, optionally filtered by resource type.
         ///// </summary>
@@ -274,27 +85,208 @@ namespace Pchp.Library
         //    throw new NotSupportedException();
         //}
 
-        #region gethostname, php_uname, memory_get_usage, php_sapi_name
+        #region get_required_files, get_included_files
 
         /// <summary>
-        /// gethostname() gets the standard host name for the local machine. 
+        /// Returns an array of included file paths.
         /// </summary>
-        /// <returns>Returns a string with the hostname on success, otherwise FALSE is returned. </returns>
-        [return: CastToFalse]
-        public static string? gethostname()
+        /// <returns>The array of paths to included files (without duplicates).</returns>
+        public static PhpArray get_required_files(Context ctx) => get_included_files(ctx);
+
+        /// <summary>
+        /// Returns an array of included file paths.
+        /// </summary>
+        /// <returns>The array of paths to included files (without duplicates).</returns>
+        public static PhpArray get_included_files(Context ctx)
         {
-            string? host;
-            try
+            var result = new PhpArray();
+
+            foreach (var script in ctx.GetIncludedScripts())
             {
-                host = System.Net.Dns.GetHostName();
-            }
-            catch
-            {
-                host = null;
+                result.Add((PhpValue)System.IO.Path.GetFullPath(System.IO.Path.Combine(ctx.RootPath, script.Path)));
             }
 
-            return host;
+            //
+            return result;
         }
+
+        #endregion
+
+        public static bool gc_enabled()
+        {
+            return true;    // status of the circular reference collector
+        }
+
+        /// <summary>
+        /// Forces collection of any existing garbage cycles.
+        /// </summary>
+        public static void gc_collect_cycles() => GC.Collect();
+
+        /// <summary>Ignored.</summary>
+        public static void gc_enable() { }
+
+        /// <summary>Ignored.</summary>
+        public static void gc_disable() { }
+
+        /// <summary>Ignored.</summary>
+        public static int gc_mem_caches() => 0;
+
+    }
+}
+
+namespace Pchp.Library.Standard
+{
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
+    public static class Miscellaneous
+    {
+        #region microtime, hrtime
+
+        /// <summary>
+        /// Returns the string "msec sec" where sec is the current time measured in the number of seconds
+        /// since the Unix Epoch (0:00:00 January 1, 1970 GMT), and msec is the microseconds part.
+        /// </summary>
+        /// <returns>String containing number of miliseconds, space and number of seconds.</returns>
+        public static string microtime()
+        {
+            // time from 1970
+            TimeSpan fromUnixEpoch = System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch;
+
+            // seconds part to return
+            long seconds = (long)fromUnixEpoch.TotalSeconds;
+
+            // only remaining time less than one second
+            TimeSpan mSec = fromUnixEpoch.Subtract(new TimeSpan(seconds * 10000000)); // convert seconds to 100 ns
+            double remaining = ((double)mSec.Ticks) / 10000000; // convert from 100ns to seconds
+
+            return remaining.ToString("G", NumberFormatInfo.InvariantInfo) + " " + seconds.ToString();
+        }
+
+        /// <summary>
+        /// Returns the fractional time in seconds from the start of the UNIX epoch.
+        /// </summary>
+        /// <param name="returnDouble"><c>true</c> to return the double, <c>false</c> to return string.</param>
+        /// <returns><see cref="string"/> containing number of miliseconds, space and number of seconds
+        /// if <paramref name="returnDouble"/> is <c>false</c> and <see cref="double"/>
+        /// containing the fractional count of seconds otherwise.</returns>
+        public static PhpValue microtime(bool returnDouble)
+        {
+            if (returnDouble)
+                return PhpValue.Create((System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds);
+            else
+                return PhpValue.Create(microtime());
+        }
+
+        /// <summary>
+        /// Get the system's high resolution time.
+        /// </summary>
+        /// <param name="get_as_number">
+        /// Whether the high resolution time should be returned as array or number.
+        /// Default is to return the value as array.
+        /// </param>
+        /// <returns>
+        /// Returns nanoseconds of internal system counter.
+        /// If <paramref name="get_as_number"/> is <c>false</c>, the return value is split to array <code>[seconds, nanoseconds]</code>.
+        /// </returns>
+        /// <remarks>Internally the function uses <see cref="Stopwatch"/> which depends on the current platform implementation.</remarks>
+        public static PhpValue hrtime(bool get_as_number = false)
+        {
+            var ticks = Stopwatch.GetTimestamp();
+
+            const long ns = 1_000_000_000;
+
+            // convert ticks to nanoseconds
+            var seconds = ticks / Stopwatch.Frequency;
+            var nanoseconds = (ticks - (seconds * Stopwatch.Frequency)) * ns / Stopwatch.Frequency;
+
+            if (get_as_number)
+            {
+                return seconds * ns + nanoseconds;
+            }
+            else
+            {
+                // [seconds, nanoseconds]
+                return new PhpArray(2) { seconds, nanoseconds };
+            }
+        }
+
+        #endregion
+
+        #region gettimeofday
+
+        /// <summary>
+        /// Gets time information.
+        /// </summary>
+        /// <remarks>
+        /// It returns <see cref="PhpArray"/> containing the following 4 entries:
+        /// <list type="table">
+        /// <item><term><c>"sec"</c></term><description>Unix timestamp (seconds since the Unix Epoch)</description></item>
+        /// <item><term><c>"usec"</c></term><description>microseconds</description></item>
+        /// <item><term><c>"minuteswest"</c></term><description>minutes west of Greenwich (doesn't take daylight savings time in consideration)</description></item>
+        /// <item><term><c>"dsttime"</c></term><description>type of DST correction (+1 or 0, determined only by the current time zone not by the time)</description></item>
+        /// </list>
+        /// </remarks>
+        /// <returns>Associative array</returns>
+        public static PhpArray gettimeofday(Context ctx)
+        {
+            return GetTimeOfDay(System_DateTime.UtcNow, DateTime.PhpTimeZone.GetCurrentTimeZone(ctx));
+        }
+
+        public static object gettimeofday(Context ctx, bool returnDouble)
+        {
+            if (returnDouble)
+            {
+                return (DateTime.DateTimeFunctions.GetNow(ctx) - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds;
+            }
+            else
+            {
+                return gettimeofday(ctx);
+            }
+        }
+
+        internal static PhpArray GetTimeOfDay(System_DateTime utc, TimeZoneInfo/*!*/ zone)
+        {
+            var local = TimeZoneInfo.ConvertTime(utc, zone);
+
+            //int current_dst = 0;
+            if (zone.IsDaylightSavingTime(local))
+            {
+                // TODO: current_dst
+                //var rules = zone.GetAdjustmentRules();
+                //for (int i = 0; i < rules.Length; i++)
+                //{
+                //    if (rules[i].DateStart <= local && rules[i].DateEnd >= local)
+                //    {
+                //        current_dst = (int)rules[i].DaylightDelta.TotalHours;
+                //        break;
+                //    }
+                //}
+            }
+
+            const int ticks_per_microsecond = (int)TimeSpan.TicksPerMillisecond / 1000;
+
+            var result = new PhpArray(4);
+
+            result["sec"] = PhpValue.Create(DateTimeUtils.UtcToUnixTimeStamp(utc));
+            result["usec"] = PhpValue.Create((int)(local.Ticks % TimeSpan.TicksPerSecond) / ticks_per_microsecond);
+            result["minuteswest"] = PhpValue.Create((int)(utc - local).TotalMinutes);
+            //result["dsttime"] = PhpValue.Create(current_dst);
+
+            return result;
+        }
+
+        #endregion
+
+        #region get_current_user
+
+        /// <summary>
+        /// Gets the name of the current user.
+        /// </summary>
+        /// <returns>The name of the current user.</returns>
+        public static string get_current_user() => System.Environment.UserName;
+
+        #endregion
+
+        #region php_uname, memory_get_usage, php_sapi_name
 
         /// <summary>
         /// Retrieves specific version information about OS.
@@ -449,38 +441,31 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int getmyuid()
         {
-            PhpException.FunctionNotSupported("getmyuid");
+            PhpException.FunctionNotSupported(nameof(getmyuid));
             return -1;
         }
 
         #endregion
 
-        #region get_required_files, get_included_files
-
         /// <summary>
-        /// Returns an array of included file paths.
+        /// gethostname() gets the standard host name for the local machine. 
         /// </summary>
-        /// <returns>The array of paths to included files (without duplicates).</returns>
-        public static PhpArray get_required_files(Context ctx) => get_included_files(ctx);
-
-        /// <summary>
-        /// Returns an array of included file paths.
-        /// </summary>
-        /// <returns>The array of paths to included files (without duplicates).</returns>
-        public static PhpArray get_included_files(Context ctx)
+        /// <returns>Returns a string with the hostname on success, otherwise FALSE is returned. </returns>
+        [return: CastToFalse]
+        public static string? gethostname()
         {
-            var result = new PhpArray();
-
-            foreach (var script in ctx.GetIncludedScripts())
+            string? host;
+            try
             {
-                result.Add((PhpValue)System.IO.Path.GetFullPath(System.IO.Path.Combine(ctx.RootPath, script.Path)));
+                host = System.Net.Dns.GetHostName();
+            }
+            catch
+            {
+                host = null;
             }
 
-            //
-            return result;
+            return host;
         }
-
-        #endregion
 
         /// <summary>
         /// This function flushes all response data to the client and finishes the request.
@@ -508,29 +493,179 @@ namespace Pchp.Library
             return false;
         }
 
-        public static bool gc_enabled()
-        {
-            return true;    // status of the circular reference collector
-        }
-
-        /// <summary>
-        /// Forces collection of any existing garbage cycles.
-        /// </summary>
-        public static void gc_collect_cycles() => GC.Collect();
-
-        /// <summary>Ignored.</summary>
-        public static void gc_enable() { }
-
-        /// <summary>Ignored.</summary>
-        public static void gc_disable() { }
-
-        /// <summary>Ignored.</summary>
-        public static int gc_mem_caches() => 0;
-
         /// <summary>
         /// Returns a unique identifier for the current thread.
         /// </summary>
         public static int zend_thread_id() => System.Threading.Thread.CurrentThread.ManagedThreadId;
+
+        #region Helpers
+
+        /// <summary>
+        /// Compares parts of varsions delimited by '.'.
+        /// </summary>
+        /// <param name="part1">A part of the first version.</param>
+        /// <param name="part2">A part of the second version.</param>
+        /// <returns>The result of parts comparison (-1,0,+1).</returns>
+        static int CompareParts(string part1, string part2)
+        {
+            string[] parts = { "dev", "alpha", "a", "beta", "b", "RC", " ", "#", "pl", "p" };
+            int[] order = { -1, 0, 1, 1, 2, 2, 3, 4, 5, 6, 6 };
+
+            int i = Array.IndexOf(parts, part1);
+            int j = Array.IndexOf(parts, part2);
+            return Math.Sign(order[i + 1] - order[j + 1]);
+        }
+
+        /// <summary>
+		/// Parses a version and splits it into an array of parts.
+		/// </summary>
+		/// <param name="version">The version to be parsed (can be a <B>null</B> reference).</param>
+		/// <returns>An array of parts.</returns>
+		/// <remarks>
+		/// Non-alphanumeric characters are eliminated.
+		/// The version is split in between a digit following a non-digit and by   
+		/// characters '.', '-', '+', '_'. 
+		/// </remarks>
+		static string[] VersionToArray(string version)
+        {
+            if (string.IsNullOrEmpty(version))
+            {
+                return Array.Empty<string>();
+            }
+
+            var sb = new StringBuilder(version.Length);
+            char last = '\0';
+
+            for (int i = 0; i < version.Length; i++)
+            {
+                var ch = version[i];
+                if (ch == '-' || ch == '+' || ch == '_' || ch == '.')
+                {
+                    if (last != '.')
+                    {
+                        if (sb.Length == 0)
+                        {
+                            sb.Append('0'); // prepend leading '.' with '0' // TODO: test case and rewrite 'version_compare()'
+                        }
+
+                        sb.Append(last = '.');
+                    }
+                }
+                else if (i > 0 && (char.IsDigit(ch) ^ char.IsDigit(version[i - 1])))
+                {
+                    if (last != '.')
+                    {
+                        sb.Append('.');
+                    }
+                    sb.Append(last = ch);
+                }
+                else if (char.IsLetterOrDigit(ch))
+                {
+                    sb.Append(last = ch);
+                }
+                else
+                {
+                    if (last != '.')
+                    {
+                        sb.Append(last = '.');
+                    }
+                }
+            }
+
+            if (last == '.')
+            {
+                sb.Length--;
+            }
+
+            return sb.ToString().Split('.');
+        }
+
+        #endregion
+
+        // [return: CastToFalse] // once $extension will be supported
+        public static string phpversion(string? extension = null)
+        {
+            if (extension != null)
+            {
+                throw new NotImplementedException(nameof(extension));
+            }
+
+            return Environment.PHP_MAJOR_VERSION + "." + Environment.PHP_MINOR_VERSION + "." + Environment.PHP_RELEASE_VERSION;
+        }
+
+        /// <summary>
+        /// Compares two "PHP-standardized" version number strings.
+        /// </summary>
+        public static int version_compare(string version1, string version2)
+        {
+            string[] v1 = VersionToArray(version1);
+            string[] v2 = VersionToArray(version2);
+            int result;
+
+            for (int i = 0; i < Math.Max(v1.Length, v2.Length); i++)
+            {
+                string item1 = (i < v1.Length) ? v1[i] : " ";
+                string item2 = (i < v2.Length) ? v2[i] : " ";
+
+                if (char.IsDigit(item1[0]) && char.IsDigit(item2[0]))
+                {
+                    result = Comparison.Compare(Pchp.Core.Convert.StringToLongInteger(item1), Pchp.Core.Convert.StringToLongInteger(item2));
+                }
+                else
+                {
+                    result = CompareParts(char.IsDigit(item1[0]) ? "#" : item1, char.IsDigit(item2[0]) ? "#" : item2);
+                }
+
+                if (result != 0)
+                {
+                    return result;
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Compares two "PHP-standardized" version number strings.
+        /// </summary>
+        public static bool version_compare(string version1, string version2, string op)
+        {
+            var compare = version_compare(version1, version2);
+
+            switch (op)
+            {
+                case "<":
+                case "lt": return compare < 0;
+
+                case "<=":
+                case "le": return compare <= 0;
+
+                case ">":
+                case "gt": return compare > 0;
+
+                case ">=":
+                case "ge": return compare >= 0;
+
+                case "==":
+                case "=":
+                case "eq": return compare == 0;
+
+                case "!=":
+                case "<>":
+                case "ne": return compare != 0;
+            }
+
+            throw new ArgumentException();  // TODO: return NULL
+        }
+
+        /// <summary>
+        /// Loads extension dynamically.
+        /// </summary>
+        public static bool dl(string library)
+        {
+            PhpException.FunctionNotSupported(nameof(dl));
+            return false;
+        }
 
         #region usleep, sleep
 
@@ -591,156 +726,25 @@ namespace Pchp.Library
         }
 
         #endregion
-    }
-
-    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
-    public static class MiscellaneousSt
-    {
-        #region microtime, hrtime
 
         /// <summary>
-        /// Returns the string "msec sec" where sec is the current time measured in the number of seconds
-        /// since the Unix Epoch (0:00:00 January 1, 1970 GMT), and msec is the microseconds part.
+        /// Checks the given <paramref name="assertion"/> and take appropriate action if its result is <c>FALSE</c>.
         /// </summary>
-        /// <returns>String containing number of miliseconds, space and number of seconds.</returns>
-        public static string microtime()
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="assertion"></param>
+        /// <param name="action"></param>
+        /// <returns>Assertion value.</returns>
+        public static bool assert(Context ctx, PhpValue assertion, PhpValue action = default)
         {
-            // time from 1970
-            TimeSpan fromUnixEpoch = System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch;
+            // TODO: check assertion is enabled
 
-            // seconds part to return
-            long seconds = (long)fromUnixEpoch.TotalSeconds;
-
-            // only remaining time less than one second
-            TimeSpan mSec = fromUnixEpoch.Subtract(new TimeSpan(seconds * 10000000)); // convert seconds to 100 ns
-            double remaining = ((double)mSec.Ticks) / 10000000; // convert from 100ns to seconds
-
-            return remaining.ToString("G", NumberFormatInfo.InvariantInfo) + " " + seconds.ToString();
-        }
-
-        /// <summary>
-        /// Returns the fractional time in seconds from the start of the UNIX epoch.
-        /// </summary>
-        /// <param name="returnDouble"><c>true</c> to return the double, <c>false</c> to return string.</param>
-        /// <returns><see cref="string"/> containing number of miliseconds, space and number of seconds
-        /// if <paramref name="returnDouble"/> is <c>false</c> and <see cref="double"/>
-        /// containing the fractional count of seconds otherwise.</returns>
-        public static PhpValue microtime(bool returnDouble)
-        {
-            if (returnDouble)
-                return PhpValue.Create((System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds);
-            else
-                return PhpValue.Create(microtime());
-        }
-
-        /// <summary>
-        /// Get the system's high resolution time.
-        /// </summary>
-        /// <param name="get_as_number">
-        /// Whether the high resolution time should be returned as array or number.
-        /// Default is to return the value as array.
-        /// </param>
-        /// <returns>
-        /// Returns nanoseconds of internal system counter.
-        /// If <paramref name="get_as_number"/> is <c>false</c>, the return value is split to array <code>[seconds, nanoseconds]</code>.
-        /// </returns>
-        /// <remarks>Internally the function uses <see cref="Stopwatch"/> which depends on the current platform implementation.</remarks>
-        public static PhpValue hrtime(bool get_as_number = false)
-        {
-            var ticks = Stopwatch.GetTimestamp();
-
-            const long ns = 1_000_000_000;
-
-            // convert ticks to nanoseconds
-            var seconds = ticks / Stopwatch.Frequency;
-            var nanoseconds = (ticks - (seconds * Stopwatch.Frequency)) * ns / Stopwatch.Frequency;
-
-            if (get_as_number)
+            if (assertion.IsString())
             {
-                return seconds * ns + nanoseconds;
-            }
-            else
-            {
-                // [seconds, nanoseconds]
-                return new PhpArray(2) { seconds, nanoseconds };
-            }
-        }
-
-        #endregion
-
-        #region gettimeofday
-
-        /// <summary>
-        /// Gets time information.
-        /// </summary>
-        /// <remarks>
-        /// It returns <see cref="PhpArray"/> containing the following 4 entries:
-        /// <list type="table">
-        /// <item><term><c>"sec"</c></term><description>Unix timestamp (seconds since the Unix Epoch)</description></item>
-        /// <item><term><c>"usec"</c></term><description>microseconds</description></item>
-        /// <item><term><c>"minuteswest"</c></term><description>minutes west of Greenwich (doesn't take daylight savings time in consideration)</description></item>
-        /// <item><term><c>"dsttime"</c></term><description>type of DST correction (+1 or 0, determined only by the current time zone not by the time)</description></item>
-        /// </list>
-        /// </remarks>
-        /// <returns>Associative array</returns>
-        public static PhpArray gettimeofday(Context ctx)
-        {
-            return GetTimeOfDay(System_DateTime.UtcNow, DateTime.PhpTimeZone.GetCurrentTimeZone(ctx));
-        }
-
-        public static object gettimeofday(Context ctx, bool returnDouble)
-        {
-            if (returnDouble)
-            {
-                return (DateTime.DateTimeFunctions.GetNow(ctx) - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds;
-            }
-            else
-            {
-                return gettimeofday(ctx);
-            }
-        }
-
-        internal static PhpArray GetTimeOfDay(System_DateTime utc, TimeZoneInfo/*!*/ zone)
-        {
-            var local = TimeZoneInfo.ConvertTime(utc, zone);
-
-            //int current_dst = 0;
-            if (zone.IsDaylightSavingTime(local))
-            {
-                // TODO: current_dst
-                //var rules = zone.GetAdjustmentRules();
-                //for (int i = 0; i < rules.Length; i++)
-                //{
-                //    if (rules[i].DateStart <= local && rules[i].DateEnd >= local)
-                //    {
-                //        current_dst = (int)rules[i].DaylightDelta.TotalHours;
-                //        break;
-                //    }
-                //}
+                PhpException.InvalidArgumentType(nameof(assertion), PhpVariable.TypeNameBoolean);
+                return true;
             }
 
-            const int ticks_per_microsecond = (int)TimeSpan.TicksPerMillisecond / 1000;
-
-            var result = new PhpArray(4);
-
-            result["sec"] = PhpValue.Create(DateTimeUtils.UtcToUnixTimeStamp(utc));
-            result["usec"] = PhpValue.Create((int)(local.Ticks % TimeSpan.TicksPerSecond) / ticks_per_microsecond);
-            result["minuteswest"] = PhpValue.Create((int)(utc - local).TotalMinutes);
-            //result["dsttime"] = PhpValue.Create(current_dst);
-
-            return result;
+            return ctx.Assert(assertion, action);
         }
-
-        #endregion
-
-        #region get_current_user
-
-        /// <summary>
-        /// Gets the name of the current user.
-        /// </summary>
-        /// <returns>The name of the current user.</returns>
-        public static string get_current_user() => System.Environment.UserName;
-
-        #endregion
     }
 }
