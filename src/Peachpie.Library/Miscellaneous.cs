@@ -8,6 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using Pchp.Core.Utilities;
+using System.Diagnostics;
+using System_DateTime = System.DateTime;
+using System.Globalization;
 
 namespace Pchp.Library
 {
@@ -382,7 +385,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region getmypid, getlastmod, get_current_user, getmyuid, posix_getpid
+        #region getmypid, getlastmod, getmyuid, posix_getpid
 
         /// <summary>
         /// Returns the PID of the current process. 
@@ -438,13 +441,6 @@ namespace Pchp.Library
                 return -1;
             }
         }
-
-
-        /// <summary>
-        /// Gets the name of the current user.
-        /// </summary>
-        /// <returns>The name of the current user.</returns>
-        public static string get_current_user() => System.Environment.UserName;
 
         /// <summary>
         /// Not supported.
@@ -507,7 +503,7 @@ namespace Pchp.Library
                     // already ended
                 }
             }
-            
+
             //
             return false;
         }
@@ -593,6 +589,157 @@ namespace Pchp.Library
                 return false;
             }
         }
+
+        #endregion
+    }
+
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
+    public static class MiscellaneousSt
+    {
+        #region microtime, hrtime
+
+        /// <summary>
+        /// Returns the string "msec sec" where sec is the current time measured in the number of seconds
+        /// since the Unix Epoch (0:00:00 January 1, 1970 GMT), and msec is the microseconds part.
+        /// </summary>
+        /// <returns>String containing number of miliseconds, space and number of seconds.</returns>
+        public static string microtime()
+        {
+            // time from 1970
+            TimeSpan fromUnixEpoch = System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch;
+
+            // seconds part to return
+            long seconds = (long)fromUnixEpoch.TotalSeconds;
+
+            // only remaining time less than one second
+            TimeSpan mSec = fromUnixEpoch.Subtract(new TimeSpan(seconds * 10000000)); // convert seconds to 100 ns
+            double remaining = ((double)mSec.Ticks) / 10000000; // convert from 100ns to seconds
+
+            return remaining.ToString("G", NumberFormatInfo.InvariantInfo) + " " + seconds.ToString();
+        }
+
+        /// <summary>
+        /// Returns the fractional time in seconds from the start of the UNIX epoch.
+        /// </summary>
+        /// <param name="returnDouble"><c>true</c> to return the double, <c>false</c> to return string.</param>
+        /// <returns><see cref="string"/> containing number of miliseconds, space and number of seconds
+        /// if <paramref name="returnDouble"/> is <c>false</c> and <see cref="double"/>
+        /// containing the fractional count of seconds otherwise.</returns>
+        public static PhpValue microtime(bool returnDouble)
+        {
+            if (returnDouble)
+                return PhpValue.Create((System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds);
+            else
+                return PhpValue.Create(microtime());
+        }
+
+        /// <summary>
+        /// Get the system's high resolution time.
+        /// </summary>
+        /// <param name="get_as_number">
+        /// Whether the high resolution time should be returned as array or number.
+        /// Default is to return the value as array.
+        /// </param>
+        /// <returns>
+        /// Returns nanoseconds of internal system counter.
+        /// If <paramref name="get_as_number"/> is <c>false</c>, the return value is split to array <code>[seconds, nanoseconds]</code>.
+        /// </returns>
+        /// <remarks>Internally the function uses <see cref="Stopwatch"/> which depends on the current platform implementation.</remarks>
+        public static PhpValue hrtime(bool get_as_number = false)
+        {
+            var ticks = Stopwatch.GetTimestamp();
+
+            const long ns = 1_000_000_000;
+
+            // convert ticks to nanoseconds
+            var seconds = ticks / Stopwatch.Frequency;
+            var nanoseconds = (ticks - (seconds * Stopwatch.Frequency)) * ns / Stopwatch.Frequency;
+
+            if (get_as_number)
+            {
+                return seconds * ns + nanoseconds;
+            }
+            else
+            {
+                // [seconds, nanoseconds]
+                return new PhpArray(2) { seconds, nanoseconds };
+            }
+        }
+
+        #endregion
+
+        #region gettimeofday
+
+        /// <summary>
+        /// Gets time information.
+        /// </summary>
+        /// <remarks>
+        /// It returns <see cref="PhpArray"/> containing the following 4 entries:
+        /// <list type="table">
+        /// <item><term><c>"sec"</c></term><description>Unix timestamp (seconds since the Unix Epoch)</description></item>
+        /// <item><term><c>"usec"</c></term><description>microseconds</description></item>
+        /// <item><term><c>"minuteswest"</c></term><description>minutes west of Greenwich (doesn't take daylight savings time in consideration)</description></item>
+        /// <item><term><c>"dsttime"</c></term><description>type of DST correction (+1 or 0, determined only by the current time zone not by the time)</description></item>
+        /// </list>
+        /// </remarks>
+        /// <returns>Associative array</returns>
+        public static PhpArray gettimeofday(Context ctx)
+        {
+            return GetTimeOfDay(System_DateTime.UtcNow, DateTime.PhpTimeZone.GetCurrentTimeZone(ctx));
+        }
+
+        public static object gettimeofday(Context ctx, bool returnDouble)
+        {
+            if (returnDouble)
+            {
+                return (DateTime.DateTimeFunctions.GetNow(ctx) - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds;
+            }
+            else
+            {
+                return gettimeofday(ctx);
+            }
+        }
+
+        internal static PhpArray GetTimeOfDay(System_DateTime utc, TimeZoneInfo/*!*/ zone)
+        {
+            var local = TimeZoneInfo.ConvertTime(utc, zone);
+
+            //int current_dst = 0;
+            if (zone.IsDaylightSavingTime(local))
+            {
+                // TODO: current_dst
+                //var rules = zone.GetAdjustmentRules();
+                //for (int i = 0; i < rules.Length; i++)
+                //{
+                //    if (rules[i].DateStart <= local && rules[i].DateEnd >= local)
+                //    {
+                //        current_dst = (int)rules[i].DaylightDelta.TotalHours;
+                //        break;
+                //    }
+                //}
+            }
+
+            const int ticks_per_microsecond = (int)TimeSpan.TicksPerMillisecond / 1000;
+
+            var result = new PhpArray(4);
+
+            result["sec"] = PhpValue.Create(DateTimeUtils.UtcToUnixTimeStamp(utc));
+            result["usec"] = PhpValue.Create((int)(local.Ticks % TimeSpan.TicksPerSecond) / ticks_per_microsecond);
+            result["minuteswest"] = PhpValue.Create((int)(utc - local).TotalMinutes);
+            //result["dsttime"] = PhpValue.Create(current_dst);
+
+            return result;
+        }
+
+        #endregion
+
+        #region get_current_user
+
+        /// <summary>
+        /// Gets the name of the current user.
+        /// </summary>
+        /// <returns>The name of the current user.</returns>
+        public static string get_current_user() => System.Environment.UserName;
 
         #endregion
     }

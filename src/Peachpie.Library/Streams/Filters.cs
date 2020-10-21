@@ -410,7 +410,7 @@ namespace Pchp.Library.Streams
         /// <param name="where">What position in the chains.</param>
         /// <param name="parameters">Additional parameters for the filter.</param>
         /// <returns>Filters that have been added.</returns>
-        public static (PhpFilter readFilter, PhpFilter writeFilter) AddToStream(Context ctx, PhpStream stream, string filter, FilterChainOptions where, PhpValue parameters)
+        internal static (PhpFilter readFilter, PhpFilter writeFilter) AddToStream(Context ctx, PhpStream stream, string filter, FilterChainOptions where, PhpValue parameters)
         {
             if ((stream.Options & StreamAccessOptions.Read) == 0) where &= ~FilterChainOptions.Read;
             if ((stream.Options & StreamAccessOptions.Write) == 0) where &= ~FilterChainOptions.Write;
@@ -489,6 +489,7 @@ namespace Pchp.Library.Streams
         /// Register a built-in stream filter factory.
         /// </summary>
         /// <param name="factory">The filter factory. Must not be <c>null</c>.</param>
+        [PhpHidden]
         public static void AddFilterFactory(IFilterFactory factory)
         {
             _filterFactories.Add(factory ?? throw new ArgumentNullException(nameof(factory)));
@@ -498,6 +499,7 @@ namespace Pchp.Library.Streams
         /// Retrieves the list of registered filters.
         /// </summary>
         /// <returns>A <see cref="PhpArray"/> containing the names of available filters.</returns>
+        [PhpHidden]
         public static IEnumerable<string> GetFilterNames(Context ctx)
         {
             var set = new HashSet<string>();
