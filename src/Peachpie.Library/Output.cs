@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Pchp.Core.PhpExtensionAttribute;
 
 namespace Pchp.Library
 {
@@ -11,7 +12,7 @@ namespace Pchp.Library
 	/// PHP output control functions implementation. 
 	/// </summary>
 	/// <threadsafety static="true"/>
-    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
+    [PhpExtension(KnownExtensionNames.Standard)]
     public static class Output
     {
         public const int PHP_OUTPUT_HANDLER_START = (int)BufferedOutput.ChunkPosition.First;

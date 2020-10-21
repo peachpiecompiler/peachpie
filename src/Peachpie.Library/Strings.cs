@@ -8,10 +8,11 @@ using Pchp.Core;
 using Pchp.Core.Text;
 using Pchp.Core.Utilities;
 using Pchp.Library.Resources;
+using static Pchp.Core.PhpExtensionAttribute;
 
 namespace Pchp.Library
 {
-    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
+    [PhpExtension(KnownExtensionNames.Standard)]
     public static class Strings
     {
         #region Character map
@@ -3096,22 +3097,22 @@ namespace Pchp.Library
         /// <summary>
         /// Calculates the metaphone key of a string.
         /// </summary>
-        /// <param name="str">The string to calculate metaphone key of.</param>
-        /// <returns>The metaphone key of <paramref name="str"/>.</returns>
-        public static string metaphone(string str)
+        /// <param name="text">The string to calculate metaphone key of.</param>
+        /// <returns>The metaphone key of <paramref name="text"/>.</returns>
+        public static string metaphone(string text)
         {
-            if (str == null) return String.Empty;
+            if (text == null) return String.Empty;
 
-            int length = str.Length;
+            int length = text.Length;
             const int padL = 4, padR = 3;
 
-            StringBuilder sb = new StringBuilder(str.Length + padL + padR);
+            StringBuilder sb = new StringBuilder(text.Length + padL + padR);
             StringBuilder result = new StringBuilder();
 
             // avoid index out of bounds problem when looking at previous and following characters
             // by padding the string at both sides
             sb.Append('\0', padL);
-            sb.Append(str.ToUpper());
+            sb.Append(text.ToUpper());
             sb.Append('\0', padR);
 
             int i = padL;
@@ -5190,75 +5191,6 @@ namespace Pchp.Library
 
         #endregion
 
-        #region strcmp, strcasecmp, strncmp, strncasecmp
-
-        /// <summary>
-        /// Compares two specified strings, honoring their case, using culture invariant comparison.
-        /// </summary>
-        /// <param name="str1">A string.</param>
-        /// <param name="str2">A string.</param>
-        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
-        /// and 0 if they are equal.</returns>
-        public static int strcmp(string str1, string str2) => string.CompareOrdinal(str1, str2);
-
-        /// <summary>
-        /// Compares two specified strings, ignoring their case, using culture invariant comparison.
-        /// </summary>
-        /// <param name="str1">A string.</param>
-        /// <param name="str2">A string.</param>
-        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
-        /// and 0 if they are equal.</returns>
-        public static int strcasecmp(string str1, string str2)
-        {
-            return System.Globalization.CultureInfo.InvariantCulture.CompareInfo
-                .Compare(str1, str2, System.Globalization.CompareOptions.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
-        /// </summary>
-        /// <param name="str1">The lesser string.</param>
-        /// <param name="str2">The greater string.</param>
-        /// <param name="len">The upper limit of the length of parts to be compared.</param>
-        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
-        /// and 0 if they are equal.</returns>
-        public static PhpValue strncmp(string str1, string str2, int len)
-        {
-            if (len < 0)
-            {
-                throw new ArgumentException();
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
-                //return PhpValue.False;
-            }
-
-            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, len));
-        }
-
-        /// <summary>
-        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
-        /// </summary>
-        /// <param name="str1">A string.</param>
-        /// <param name="str2">A string.</param>
-        /// <param name="len">The upper limit of the length of parts to be compared.</param>
-        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
-        /// and 0 if they are equal.</returns>
-        public static PhpValue strncasecmp(string str1, string str2, int len)
-        {
-            if (len < 0)
-            {
-                throw new ArgumentException();
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
-                //return PhpValue.False;
-            }
-
-            len = Math.Max(Math.Max(len, str1.Length), str2.Length);
-
-            return PhpValue.Create(System.Globalization.CultureInfo.InvariantCulture.CompareInfo
-                .Compare(str1, 0, len, str2, 0, len, System.Globalization.CompareOptions.OrdinalIgnoreCase));
-        }
-
-        #endregion
-
         #region strpos, strrpos, stripos, strripos
 
         /// <summary>
@@ -5595,7 +5527,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region strtolower, strtoupper, strlen
+        #region strtolower, strtoupper
 
         /// <summary>
         /// Returns string with all alphabetic characters converted to lowercase. 
@@ -5621,6 +5553,14 @@ namespace Pchp.Library
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));
         //}
 
+        #endregion
+    }
+
+    [PhpExtension(KnownExtensionNames.Core)]
+    public static class StringsCore
+    {
+        #region strlen
+
         /// <summary>
         /// Returns the length of a string.
         /// </summary>
@@ -5628,7 +5568,80 @@ namespace Pchp.Library
 
         #endregion
 
-        #region ctype_*
+        #region strcmp, strcasecmp, strncmp, strncasecmp
+
+        /// <summary>
+        /// Compares two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static int strcmp(string str1, string str2) => string.CompareOrdinal(str1, str2);
+
+        /// <summary>
+        /// Compares two specified strings, ignoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static int strcasecmp(string str1, string str2)
+        {
+            return System.Globalization.CultureInfo.InvariantCulture.CompareInfo
+                .Compare(str1, str2, System.Globalization.CompareOptions.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">The lesser string.</param>
+        /// <param name="str2">The greater string.</param>
+        /// <param name="len">The upper limit of the length of parts to be compared.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static PhpValue strncmp(string str1, string str2, int len)
+        {
+            if (len < 0)
+            {
+                throw new ArgumentException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
+                //return PhpValue.False;
+            }
+
+            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, len));
+        }
+
+        /// <summary>
+        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <param name="len">The upper limit of the length of parts to be compared.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static PhpValue strncasecmp(string str1, string str2, int len)
+        {
+            if (len < 0)
+            {
+                throw new ArgumentException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
+                //return PhpValue.False;
+            }
+
+            len = Math.Max(Math.Max(len, str1.Length), str2.Length);
+
+            return PhpValue.Create(System.Globalization.CultureInfo.InvariantCulture.CompareInfo
+                .Compare(str1, 0, len, str2, 0, len, System.Globalization.CompareOptions.OrdinalIgnoreCase));
+        }
+
+        #endregion
+    }
+
+    [PhpExtension(KnownExtensionNames.Ctype)]
+    public static class StringsCtype
+    {
+         #region ctype_*
 
         public static bool ctype_alnum(string text)
         {
