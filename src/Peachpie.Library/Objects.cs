@@ -91,44 +91,40 @@ namespace Pchp.Library
         /// <param name="tctx">Current class context.</param>
         /// <returns>Current class name.</returns>
         [return: CastToFalse]
-        public static string get_class([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]string tctx)
+        public static string get_class([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] string tctx)
         {
+            if (tctx == null)
+            {
+                // Warning: get_class() called without object from outside a class
+            }
+
             return tctx;
         }
 
         /// <summary>
-        /// Returns the name of the class of which the object <paramref name="obj"/> is an instance.
+        /// Returns the name of the class of which the object <paramref name="object"/> is an instance.
         /// </summary>
-        /// <param name="tctx">Current class context.</param>
-        /// <param name="obj">The object whose class is requested.</param>
-        /// <returns><paramref name="obj"/>'s class name or current class name if <paramref name="obj"/> is <B>null</B>.</returns>
+        /// <param name="object">The object whose class is requested.</param>
+        /// <returns><paramref name="object"/>'s class name.</returns>
         [return: CastToFalse]
-        public static string get_class([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]string tctx, PhpValue obj)
+        public static string get_class(PhpValue @object)
         {
-            if (obj.IsNull)
+            var obj = @object.AsObject();
+            if (obj == null || obj is PhpResource)
             {
-                return tctx;
+                // TODO: Warning: get_class() expects parameter 1 to be object, {PhpVariable.GetTypeName(@object)} given 
+                PhpException.InvalidArgumentType(nameof(@object), PhpVariable.TypeNameObject);
+                return null; // FALSE
             }
-            else if (obj.IsObject)
-            {
-                return obj.Object.GetPhpTypeInfo().Name;
-            }
-            else if (obj.IsAlias)
-            {
-                return get_class(tctx, obj.Alias.Value);
-            }
-            else
-            {
-                // TODO: E_WARNING
-                throw new ArgumentException(nameof(obj));
-            }
+
+            return PhpVariable.GetClassName(obj);
         }
 
         /// <summary>
         /// Gets the name of the class the static method is called in.
         /// </summary>
         [return: CastToFalse]
-        public static string get_called_class([ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)]PhpTypeInfo @static) => @static?.Name;
+        public static string get_called_class([ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)] PhpTypeInfo @static) => @static?.Name;
 
         /// <summary>
         /// Helper getting declared classes or interfaces.

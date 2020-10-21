@@ -131,7 +131,15 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating the value represents an object.
         /// </summary>
+        /// <remarks>
+        /// Note, the object instance may be a <see cref="PhpResource"/> (<c>resource</c>) instance as well.
+        /// </remarks>
         public bool IsObject => _type == PhpTypeCode.Object;
+
+        /// <summary>
+        /// Gets value indicating the value represents a <c>resource</c> object.
+        /// </summary>
+        public bool IsResource => _obj.@object is PhpResource;
 
         /// <summary>
         /// Gets value indicating the value represents PHP array.
