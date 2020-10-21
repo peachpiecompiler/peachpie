@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Resources;
 using Pchp.Library.Resources;
 using System;
 using System.Collections;
@@ -72,7 +73,7 @@ namespace Pchp.Library
     /// <summary>
     /// Implements PHP array functions.
     /// </summary>
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Arrays
     {
         #region Constants
@@ -240,44 +241,43 @@ namespace Pchp.Library
         /// <summary>
         /// Retrieves the current entry and advances array intrinsic enumerator one item forward.
         /// </summary>
-        /// <param name="array">The array which entry get and which intrinsic enumerator to advance.</param>
+        /// <param name="arr">The array which entry get and which intrinsic enumerator to advance.</param>
         /// <returns>
         /// The instance of <see cref="PhpArray"/>(0 =&gt; key, 1 =&gt; value, "key" =&gt; key, "value" =&gt; value)
         /// where key and value are pointed by the enumerator before it is advanced
-        /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="array"/>
+        /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="arr"/>
         /// before the call.
         /// </returns>
         [Obsolete]
         [return: CastToFalse]
-        public static PhpArray each(PhpArray array)
+        public static PhpArray each(PhpArray arr)
         {
-            if (array == null)
+            if (arr == null)
             {
-                //PhpException.ReferenceNull("array");
+                PhpException.ArgumentNull(nameof(arr));
                 return null;
             }
 
-            if (array.IntrinsicEnumerator.AtEnd)
+            if (arr.IntrinsicEnumerator.AtEnd)
             {
                 return null;
             }
 
-            var entry = array.IntrinsicEnumerator.Current;
-            array.IntrinsicEnumerator.MoveNext();
+            var entry = arr.IntrinsicEnumerator.Current;
+            arr.IntrinsicEnumerator.MoveNext();
 
             // dereferences result since enumerator doesn't do so:
             var key = entry.Key;
-            var value = entry.Value.GetValue().DeepCopy();
+            var value = entry.Value.GetValue();
 
             // creates the resulting array:
-            var result = new PhpArray(4);
-            result.Add(1, value);
-            result.Add("value", value);
-            result.Add(0, key);
-            result.Add("key", key);
-
-            // keys and values should be inplace deeply copied:
-            return result;
+            return new PhpArray(4)
+            {
+                { 1, value.DeepCopy() },
+                { "value", value.DeepCopy() },
+                { 0, key },
+                { "key", key },
+            };
         }
 
         #endregion
@@ -294,9 +294,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             if (array.Count == 0) return PhpValue.Null;
@@ -319,9 +318,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return 0;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return 0;
             }
 
             // adds copies variables (if called by PHP):
@@ -343,9 +341,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             if (array.Count == 0) return PhpValue.Null;
@@ -370,9 +367,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return 0;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return 0;
             }
 
             // reindexes integer keys starting from the number of items to be prepended:
@@ -398,9 +394,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             PhpArray result;
@@ -439,9 +434,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             int ilength = Operators.IsSet(length) ? (int)length.ToLong() : int.MaxValue;
@@ -488,11 +482,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.Throw(
-                //    PhpError.Warning,
-                //    string.Format(Strings.unexpected_arg_given, "array", PhpArray.PhpTypeName, PhpVariable.TypeNameNull));
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             int ilength = Operators.IsSet(length) ? (int)length.ToLong() : int.MaxValue;
@@ -556,7 +547,7 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                PhpException.ArgumentNull("array");
+                PhpException.ArgumentNull(nameof(array));
                 return false;
             }
 
@@ -769,7 +760,7 @@ namespace Pchp.Library
         {
             if (count < 0)
             {
-                PhpException.InvalidArgument("count", LibResources.arg_negative);
+                PhpException.InvalidArgument(nameof(count), LibResources.arg_negative);
                 return null;
             }
             else if (count == 0)
@@ -793,7 +784,7 @@ namespace Pchp.Library
         {
             if (keys == null)
             {
-                PhpException.ArgumentNull("keys");
+                PhpException.ArgumentNull(nameof(keys));
                 return null;
             }
 
@@ -827,7 +818,7 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                PhpException.ArgumentNull("array");
+                PhpException.ArgumentNull(nameof(array));
                 return null;
             }
 
@@ -835,7 +826,10 @@ namespace Pchp.Library
             int remains = Math.Abs(length) - array.Count;
 
             // returns unchanged array (or its deep copy if called from PHP):
-            if (remains <= 0) return array;
+            if (remains <= 0)
+            {
+                return array;
+            }
 
             PhpArray result = new PhpArray(array.Count + remains);
 
@@ -850,11 +844,11 @@ namespace Pchp.Library
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
             {
-                var key = iterator.CurrentKey;
-                if (key.IsString)
-                    result.Add(key, iterator.CurrentValue);
+                var current = iterator.Current;
+                if (current.Key.IsString)
+                    result.Add(current.Key, current.Value);
                 else
-                    result.Add(iterator.CurrentValue);
+                    result.Add(current.Value);
             }
 
             // appends items:
@@ -1070,13 +1064,11 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Thrown if the <paramref name="step"/> argument is zero (or its absolute value less than 1 in the case 2).</exception>
         public static PhpArray range(Context ctx, PhpValue low, PhpValue high, PhpValue step)
         {
-            PhpNumber num_low, num_high, num_step;
-
             // converts each parameter to a number, determines what type of number it is (int/double)
             // and whether it wholly represents that number:
-            var info_step = step.ToNumber(out num_step);
-            var info_low = low.ToNumber(out num_low);
-            var info_high = high.ToNumber(out num_high);
+            var info_step = step.ToNumber(out var num_step);
+            var info_low = low.ToNumber(out var num_low);
+            var info_high = high.ToNumber(out var num_high);
 
             var is_step_double = (info_step & Core.Convert.NumberInfo.Double) != 0;
             var is_low_double = (info_low & Core.Convert.NumberInfo.Double) != 0;
@@ -1196,9 +1188,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, false));
@@ -1220,9 +1211,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, false));
@@ -1243,9 +1233,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, true));
@@ -1266,9 +1255,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, false));
@@ -1291,9 +1279,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, false));
@@ -1314,9 +1301,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, true));
@@ -1341,9 +1327,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
             if (!PhpVariable.IsValidCallback(compare)) return false;
 
@@ -1368,9 +1353,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
             if (!PhpVariable.IsValidCallback(compare)) return false;
 
@@ -1392,9 +1376,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
             if (!PhpVariable.IsValidCallback(compare)) return false;
 
@@ -1419,9 +1402,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(new ValueComparer(new PhpNaturalComparer(ctx, false), false));
@@ -1588,8 +1570,8 @@ namespace Pchp.Library
 
             if (first == null)
             {
-                //TODO: PhpException.ArgumentNull("first");
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(first));
+                return false;
             }
 
             IComparer<KeyValuePair<IntStringKey, PhpValue>>[] comparers;
@@ -1629,16 +1611,14 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             if (arrays == null || arrays.Length == 0)
             {
-                //PhpException.InvalidArgumentCount(null, null);
-                //return null;
-                throw new ArgumentException();
+                PhpException.ArgumentNull(nameof(arrays));
+                return null;
             }
 
             Debug.Assert(comparer != null);
@@ -2053,24 +2033,27 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Some array is a <B>null</B> reference (Warning).</exception>
         public static PhpArray array_merge_recursive(PhpArray array, params PhpArray[] arrays)
         {
-            if (array == null || arrays == null)
+            if (array == null)
             {
-                //PhpException.ArgumentNull((array == null) ? "array" : "arrays");
-                //return null;
-                throw new ArgumentException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
+            }
+
+            if (arrays == null)
+            {
+                throw new ArgumentNullException(nameof(arrays));    // cannot happen
             }
 
             for (int i = 0; i < arrays.Length; i++)
             {
                 if (arrays[i] == null)
                 {
-                    //PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));
-                    //return null;
-                    throw new ArgumentException();
+                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 2).ToString());
+                    return null;
                 }
             }
 
-            return MergeRecursive(array, true, arrays);
+            return MergeRecursive(array, arrays);
         }
 
         /// <summary>
@@ -2078,27 +2061,21 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="array">The first array to merge.</param>
         /// <param name="arrays">The next arrays to merge.</param>
-        /// <param name="deepCopy">Whether to deep copy merged items.</param>
         /// <returns>An array containing items of all specified arrays.</returns>
-        private static PhpArray MergeRecursive(PhpArray array, bool deepCopy, params PhpArray[] arrays)
+        private static PhpArray MergeRecursive(PhpArray/*!*/array, params PhpArray[]/*!!*/arrays)
         {
-            if (array == null) return null;
+            Debug.Assert(array != null);    // already checked
+            Debug.Assert(arrays != null);   // already checked
 
-            PhpArray result = new PhpArray();
-            array.AddTo(result, deepCopy);
+            var result = new PhpArray();
 
-            if (arrays != null)
+            array.AddTo(result, deepCopy: true);
+
+            for (int i = 0; i < arrays.Length; i++)
             {
-                for (int i = 0; i < arrays.Length; i++)
+                if (!MergeRecursiveInternal(result, arrays[i], wasDeepCopied: true))
                 {
-                    if (arrays[i] != null)
-                    {
-                        if (!MergeRecursiveInternal(result, arrays[i], deepCopy))
-                        {
-                            //PhpException.Throw(PhpError.Warning, LibResources.GetString("recursion_detected"));
-                            throw new ArgumentException();
-                        }
-                    }
+                    PhpException.Throw(PhpError.Warning, LibResources.recursion_detected);
                 }
             }
 
@@ -2108,9 +2085,9 @@ namespace Pchp.Library
         /// <summary>
         /// Adds items of "array" to "result" merging those whose string keys are the same.
         /// </summary>
-        private static bool MergeRecursiveInternal(PhpArray/*!*/ result, PhpArray/*!*/ array, bool deepCopy)
+        private static bool MergeRecursiveInternal(PhpArray/*!*/ result, PhpArray/*!*/ array, bool wasDeepCopied)
         {
-            var visited = new HashSet<object>();    // marks arrays that are being visited
+            var visited = new HashSet<PhpArray>();    // marks arrays that are being visited
 
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
@@ -2118,33 +2095,32 @@ namespace Pchp.Library
                 var entry = iterator.Current;
                 if (entry.Key.IsString)
                 {
-                    if (result.ContainsKey(entry.Key))
+                    if (result.TryGetValue(entry.Key, out var xv))
                     {
-                        // the result array already contains the item => merging take place
-                        var xv = result[entry.Key];
-                        var y = entry.Value.GetValue();
-
                         // source item:
-                        PhpValue x = xv.GetValue();
+                        var x = xv.GetValue();
+                        var ax = x.AsArray();
+
+                        // the result array already contains the item => merging take place
+                        var y = entry.Value.GetValue();
+                        var ay = y.AsArray();
 
                         // if x is not a reference then we can reuse the ax array for the result
-                        // since it has been deeply copied when added to the resulting array:
-                        PhpArray item_result = (deepCopy && x.IsArray && !xv.IsAlias) ? x.Array : new PhpArray();
+                        // since on the top level (indicated by wasDeepCopied) it has been deeply
+                        // copied when added to the resulting array:
+                        PhpArray item_result = (wasDeepCopied && ax != null && !xv.IsAlias) ? ax : new PhpArray();
 
-                        if (x.IsArray && y.IsArray)
+                        if (ax != null && ay != null)
                         {
-                            var ax = x.Array;
-                            var ay = y.Array;
-
                             if (ax != item_result)
-                                ax.AddTo(item_result, deepCopy);
+                                ax.AddTo(item_result, deepCopy: true);
 
                             if (visited.Add(ax) == false && visited.Add(ay) == false)
                                 return false;
 
                             // merges ay to the item result (may lead to stack overflow, 
                             // but only with both arrays recursively referencing themselves - who cares?):
-                            bool finite = MergeRecursiveInternal(item_result, ay, deepCopy);
+                            bool finite = MergeRecursiveInternal(item_result, ay, wasDeepCopied: false);     // Nested array items were not deeply copied previously
 
                             visited.Remove(ax);
                             visited.Remove(ay);
@@ -2153,19 +2129,19 @@ namespace Pchp.Library
                         }
                         else
                         {
-                            if (x.IsArray)
+                            if (ax != null)
                             {
-                                if (x.Array != item_result)
-                                    x.Array.AddTo(item_result, deepCopy);
+                                if (ax != item_result)
+                                    ax.AddTo(item_result, deepCopy: true);
                             }
                             else
                             {
                                 /*if (x != null)*/
-                                item_result.Add(deepCopy ? x.DeepCopy() : x);
+                                item_result.Add(x.DeepCopy());
                             }
 
-                            if (y.IsArray) y.Array.AddTo(item_result, deepCopy);
-                            else /*if (y != null)*/ item_result.Add(deepCopy ? y.DeepCopy() : y);
+                            if (ay != null) ay.AddTo(item_result, deepCopy: true);
+                            else /*if (y != null)*/ item_result.Add(y.DeepCopy());
                         }
 
                         result[entry.Key] = PhpValue.Create(item_result);
@@ -2173,13 +2149,13 @@ namespace Pchp.Library
                     else
                     {
                         // PHP does no dereferencing when items are not merged:
-                        result.Add(entry.Key, (deepCopy) ? entry.Value.DeepCopy() : entry.Value);
+                        result.Add(entry.Key, entry.Value.DeepCopy());
                     }
                 }
                 else
                 {
                     // PHP does no dereferencing when items are not merged:
-                    result.Add((deepCopy) ? entry.Value.DeepCopy() : entry.Value);
+                    result.Add(entry.Value.DeepCopy());
                 }
             }
 
@@ -2200,9 +2176,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             PhpArray result = new PhpArray();
@@ -2233,9 +2208,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo; // cache current culture to avoid repetitious CurrentCulture.get
@@ -2328,15 +2302,13 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
             if (size <= 0)
             {
-                //PhpException.InvalidArgument("array", LibResources.GetString("arg_negative_or_zero"));
-                //return null;
-                throw new ArgumentException(nameof(size));
+                PhpException.InvalidArgument(nameof(size), LibResources.arg_negative_or_zero);
+                return null;
             }
 
             // nothing to do:
@@ -2413,9 +2385,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             PhpArray result = new PhpArray();
@@ -2456,46 +2427,38 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
-            IComparer<PhpValue> comparer;
-            switch (sortFlags)
+            IEqualityComparer<PhpValue> comparer = sortFlags switch
             {
-                case ComparisonMethod.Regular:
-                    comparer = PhpComparer.Default; break;
-                case ComparisonMethod.Numeric:
-                    comparer = PhpNumericComparer.Default; break;
-                case ComparisonMethod.String:
-                    comparer = new PhpStringComparer(ctx); break;
-                case ComparisonMethod.String | ComparisonMethod.FlagCase:
-                    goto default;   // NOT IMPLEMENTED
-                case ComparisonMethod.Natural:
-                    comparer = new PhpNaturalComparer(ctx, false); break;
-                case ComparisonMethod.Natural | ComparisonMethod.FlagCase:
-                    comparer = new PhpNaturalComparer(ctx, caseInsensitive: true); break;
-                case ComparisonMethod.LocaleString:
-                    throw new NotImplementedException("array_unique( sortFlags: SORT_NATURAL )");
+                ComparisonMethod.Regular => PhpComparer.Default,
+                ComparisonMethod.Numeric => PhpNumericComparer.Default,
+                ComparisonMethod.String => new PhpStringComparer(ctx),
+                ComparisonMethod.String | ComparisonMethod.FlagCase => throw new NotImplementedException(sortFlags.ToString()),
+                ComparisonMethod.Natural => new PhpNaturalComparer(ctx, false),
+                ComparisonMethod.Natural | ComparisonMethod.FlagCase => new PhpNaturalComparer(ctx, caseInsensitive: true),
+                ComparisonMethod.LocaleString => throw new NotImplementedException(sortFlags.ToString()),
                 //comparer = new PhpLocaleStringComparer(ctx); break;
-                default:
+                _ =>
                     //PhpException.ArgumentValueNotSupported("sortFlags", (int)sortFlags);
                     //return null;
-                    throw new ArgumentException(nameof(sortFlags));
-            }
+                    throw new ArgumentException(nameof(sortFlags)),
+            };
 
             var result = new PhpArray(array.Count);
 
-            var/*!*/identitySet = new HashSet<object>();
+            var/*!*/identitySet = new HashSet<PhpValue>(comparer);
 
             // get only unique values - first found
             var enumerator = array.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
-                if (identitySet.Add(enumerator.CurrentValue.GetValue()))
+                var current = enumerator.Current;
+                if (identitySet.Add(current.Value))
                 {
-                    result.Add(enumerator.Current);
+                    result[current.Key] = current.Value.DeepCopy(); // CONSIDER: or AddRef on result array instead of DeepCopy() ?
                 }
             }
 
@@ -2531,9 +2494,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             PhpArray result = new PhpArray(array.Count);
@@ -2574,7 +2536,7 @@ namespace Pchp.Library
             if (array == null)
             {
                 PhpException.ArgumentNull(nameof(array));
-                return null; // NULL
+                return null;
             }
 
             // no need to make a deep copy since keys are immutable objects (strings, ints):
@@ -2604,7 +2566,7 @@ namespace Pchp.Library
             if (array == null)
             {
                 PhpException.ArgumentNull(nameof(array));
-                return null; // NULL
+                return null;
             }
 
             var result = new PhpArray();
@@ -2682,23 +2644,20 @@ namespace Pchp.Library
         {
             if (keys == null)
             {
-                //PhpException.ArgumentNull("keys");
-                //return null;
-                throw new ArgumentNullException(nameof(keys));
+                PhpException.ArgumentNull(nameof(keys));
+                return null;
             }
 
             if (values == null)
             {
-                //PhpException.ArgumentNull("values");
-                //return null;
-                throw new ArgumentNullException(nameof(values));
+                PhpException.ArgumentNull(nameof(values));
+                return null;
             }
 
             if (keys.Count != values.Count)
             {
-                //PhpException.Throw(PhpError.Warning, CoreResources.GetString("lengths_are_different", "keys", "values"));
-                //return null;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, ErrResources.lengths_are_different, nameof(keys), nameof(values));
+                return null;
             }
 
             IntStringKey key;
@@ -2738,9 +2697,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return 0.0;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return PhpNumber.Default;
             }
 
             if (array.Count == 0)
@@ -2775,9 +2733,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return 0;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return PhpNumber.Default;
             }
 
             if (array.Count == 0)
@@ -2809,9 +2766,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return PhpValue.Null;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return PhpValue.Null;
             }
 
             //if (!PhpArgument.CheckCallback(function, caller, "function", 0, false)) return null;
@@ -3069,9 +3025,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             var result = new PhpArray();
@@ -3106,16 +3061,14 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException(nameof(array));
+                PhpException.ArgumentNull(nameof(array));
+                return null;
             }
 
             if (callback == null)
             {
-                //PhpException.ArgumentNull("callback");
-                //return null;
-                throw new ArgumentNullException(nameof(callback));
+                PhpException.ArgumentNull(nameof(callback));
+                return null;
             }
 
             var result = new PhpArray(array.Count);
@@ -3359,9 +3312,9 @@ namespace Pchp.Library
         }
 
         /// <remarks>Performs deep copy of array, return array with replacements.</remarks>
-        internal static PhpArray ArrayReplaceImpl(PhpArray array, PhpArray[] arrays, bool recursive)
+        static PhpArray ArrayReplaceImpl(PhpArray array, PhpArray[] arrays, bool recursive)
         {
-            PhpArray result = array.DeepCopy();
+            var result = array.DeepCopy();
 
             if (arrays != null)
             {
@@ -3379,18 +3332,24 @@ namespace Pchp.Library
         /// <summary>
         /// Performs replacements on deeply-copied array. Performs deep copies of replace values.
         /// </summary>
-        internal static void ArrayReplaceImpl(PhpArray array, PhpArray replaceWith, bool recursive)
+        static void ArrayReplaceImpl(PhpArray array, PhpArray replaceWith, bool recursive)
         {
-            if (array != null && replaceWith != null)
+            Debug.Assert(array != null);
+
+            if (replaceWith != null)
             {
                 var iterator = replaceWith.GetFastEnumerator();
                 while (iterator.MoveNext())
                 {
-                    PhpValue tmp;
                     var entry = iterator.Current;
-                    if (recursive && entry.Value.IsArray && (tmp = array[entry.Key]).IsArray)
+
+                    if (recursive &&
+                        entry.Value.IsPhpArray(out var arrReplacement) &&
+                        array[entry.Key].IsPhpArray(out var arrOriginal))
                     {
-                        ArrayReplaceImpl(tmp.Array, entry.Value.Array, true);
+                        arrOriginal = arrOriginal.DeepCopy();
+                        ArrayReplaceImpl(arrOriginal, arrReplacement, true);
+                        array[entry.Key] = arrOriginal;
                     }
                     else
                     {

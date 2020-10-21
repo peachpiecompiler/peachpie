@@ -191,38 +191,35 @@ namespace Pchp.Core
         #endregion
     }
 
-    /// <summary>
-    /// Implements equality comparer of objects, using given <see cref="IComparer"/>.
-    /// </summary>
-    public sealed class PhpEqualityComparer : IEqualityComparer<PhpValue>
-    {
-        /// <summary>
-        /// <see cref="IComparer"/> to use.
-        /// </summary>
-        private readonly IComparer<PhpValue>/*!*/ comparer;
+    ///// <summary>
+    ///// Implements equality comparer of objects, using given <see cref="IComparer"/>.
+    ///// </summary>
+    //public sealed class PhpEqualityComparer : IEqualityComparer<PhpValue>
+    //{
+    //    /// <summary>
+    //    /// <see cref="IComparer"/> to use.
+    //    /// </summary>
+    //    private readonly IComparer<PhpValue>/*!*/ comparer;
 
-        public PhpEqualityComparer(IComparer<PhpValue>/*!*/ comparer)
-        {
-            if (comparer == null)
-                throw new ArgumentNullException(nameof(comparer));
+    //    public PhpEqualityComparer(IComparer<PhpValue>/*!*/ comparer)
+    //    {
+    //        this.comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
+    //    }
 
-            this.comparer = comparer;
-        }
+    //    #region IEqualityComparer<PhpValue>
 
-        #region IEqualityComparer<PhpValue>
+    //    bool IEqualityComparer<PhpValue>.Equals(PhpValue x, PhpValue y)
+    //    {
+    //        return comparer.Compare(x, y) == 0;
+    //    }
 
-        bool IEqualityComparer<PhpValue>.Equals(PhpValue x, PhpValue y)
-        {
-            return comparer.Compare(x, y) == 0;
-        }
+    //    int IEqualityComparer<PhpValue>.GetHashCode(PhpValue obj)
+    //    {
+    //        return obj.GetHashCode(); // NOTICE: can't return regular HashCode here, it depends on actual comparer
+    //    }
 
-        int IEqualityComparer<PhpValue>.GetHashCode(PhpValue obj)
-        {
-            return obj.GetHashCode();
-        }
-
-        #endregion
-    }
+    //    #endregion
+    //}
 
     #endregion
 
@@ -231,7 +228,7 @@ namespace Pchp.Core
     /// <summary>
     /// Implements PHP regular comparison.
     /// </summary>
-    public sealed class PhpComparer : IComparer<PhpValue>
+    public sealed class PhpComparer : IComparer<PhpValue>, IEqualityComparer<PhpValue>
     {
         /// <summary>Prevents from creating instances of this class.</summary>
         private PhpComparer() { }
@@ -242,6 +239,29 @@ namespace Pchp.Core
         public static readonly PhpComparer/*!*/ Default = new PhpComparer();
 
         public int Compare(PhpValue x, PhpValue y) => x.Compare(y);
+
+        public bool Equals(PhpValue x, PhpValue y) => x.Equals(y);
+
+        internal static int GetHashCodeInternal(PhpValue obj)
+        {
+            // in PHP, two totally different values can be considered equal,
+            // therefore hashcode is tricky to resolve in order to return the same hashcode for two equal values
+            // let's return certain numbers denoting values that can't be equal to each other (?)
+
+            if (obj.IsEmpty)
+            {
+                return 0;
+            }
+
+            if (obj.Object is PhpResource)
+            {
+                return 2;
+            }
+
+            return 1; // anything else can be equal to anything
+        }
+
+        public int GetHashCode(PhpValue obj) => GetHashCodeInternal(obj);
     }
 
     #endregion
@@ -251,7 +271,7 @@ namespace Pchp.Core
     /// <summary>
     /// Implements PHP numeric comparison.
     /// </summary>
-    public sealed class PhpNumericComparer : IComparer<PhpValue>
+    public sealed class PhpNumericComparer : IComparer<PhpValue>, IEqualityComparer<PhpValue>
     {
         /// <summary>Prevents from creating instances of this class.</summary>
         private PhpNumericComparer() { }
@@ -278,6 +298,14 @@ namespace Pchp.Core
             // compare integers:
             return Comparison.Compare(numx.ToLong(), numy.ToLong());
         }
+
+        public bool Equals(PhpValue x, PhpValue y) => Compare(x, y) == 0;
+
+        public int GetHashCode(PhpValue obj)
+        {
+            obj.ToNumber(out var num);
+            return (int)num.ToLong();
+        }
     }
 
     #endregion
@@ -287,7 +315,7 @@ namespace Pchp.Core
     /// <summary>
     /// Implements PHP string comparison.
     /// </summary>
-    public sealed class PhpStringComparer : IComparer<PhpValue>
+    public sealed class PhpStringComparer : IComparer<PhpValue>, IEqualityComparer<PhpValue>
     {
         readonly Context _ctx;
 
@@ -304,6 +332,10 @@ namespace Pchp.Core
         {
             return string.CompareOrdinal(x.ToString(_ctx), y.ToString(_ctx));
         }
+
+        public bool Equals(PhpValue x, PhpValue y) => string.Equals(x.ToString(_ctx), y.ToString(_ctx), StringComparison.Ordinal);
+
+        public int GetHashCode(PhpValue obj) => StringComparer.Ordinal.GetHashCode(obj.ToString(_ctx));
     }
 
     #endregion
@@ -396,7 +428,7 @@ namespace Pchp.Core
     /// <summary>
     /// Implements PHP natural comparison.
     /// </summary>
-    public sealed class PhpNaturalComparer : IComparer<PhpValue>
+    public sealed class PhpNaturalComparer : IComparer<PhpValue>, IEqualityComparer<PhpValue>
     {
         readonly Context _ctx;
 
@@ -562,6 +594,30 @@ namespace Pchp.Core
             }
         }
 
+        public bool Equals(PhpValue x, PhpValue y) => Compare(x, y) == 0;
+
+        public int GetHashCode(PhpValue obj)
+        {
+            // take only letters into account,
+            // ignoring case
+
+            int hashcode = 0;
+
+            var str = obj.ToString(_ctx);
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                var ch = str[i];
+                if (char.IsWhiteSpace(ch) || char.IsDigit(ch))
+                {
+                    continue;
+                }
+
+                hashcode ^= ((int)char.ToLowerInvariant(ch) << (i % 32));
+            }
+
+            return hashcode;
+        }
     }
 
     #endregion

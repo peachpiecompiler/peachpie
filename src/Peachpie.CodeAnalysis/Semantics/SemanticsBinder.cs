@@ -1105,7 +1105,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (varname.NameValue.IsThisVariableName)
                     {
                         // $this is read-only
-                        if (access.IsEnsure)
+                        if (access.EnsureObject || access.EnsureArray)
                         {
                             access = BoundAccess.Read;
                         }

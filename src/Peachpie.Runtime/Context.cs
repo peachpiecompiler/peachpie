@@ -373,7 +373,7 @@ namespace Pchp.Core
         /// <summary>
         /// Internal. Used by callsites cache to check whether called function is the same as the one declared.
         /// </summary>
-        internal bool CheckFunctionDeclared(int index, int expectedHashCode) => AssertFunction(_functions.GetDeclaredRoutine(index - 1), expectedHashCode);
+        internal static bool CheckFunctionDeclared(Context ctx, int index, int expectedHashCode) => AssertFunction(ctx._functions.GetDeclaredRoutine(index - 1), expectedHashCode);
 
         /// <summary>
         /// Checks the routine has expected hash code. The routine can be null.
@@ -710,6 +710,21 @@ namespace Pchp.Core
                 return false;
             }
         }
+
+        /// <summary>
+        /// Sets the request time limit, from now.
+        /// Infinite span causes the pending time limit to be canceled.
+        /// </summary>
+        /// <param name="span"></param>
+        public virtual void ApplyExecutionTimeout(TimeSpan span)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Sets the request time limit, from now.
+        /// </summary>
+        public void ApplyExecutionTimeout(int seconds) => ApplyExecutionTimeout(seconds <= 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(seconds));
 
         #endregion
 

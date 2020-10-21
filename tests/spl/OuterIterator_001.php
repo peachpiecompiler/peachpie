@@ -11,9 +11,8 @@ class NoDotFilterIterator extends \FilterIterator
 
 function test() {
   $dirIt = new \DirectoryIterator("subdir");
-  $recDirIt = new \RecursiveDirectoryIterator("subdir");
-
   $filtIt = new NoDotFilterIterator($dirIt);
+
   foreach ($filtIt as $file) {
     echo $file ."\n";
   }
@@ -26,7 +25,9 @@ function test() {
   }
   echo "-----\n";
 
+  $recDirIt = new \RecursiveDirectoryIterator("subdir");
   $recDirItIt = new \RecursiveIteratorIterator($recDirIt);
+
   foreach ($recDirItIt as $file) {
     if (!$recDirItIt->isDot()) {
       echo $recDirItIt->getFilename() ."\n";

@@ -76,6 +76,7 @@ namespace Pchp.Library.Reflection
             {
                 if (Core.Reflection.ReflectionUtils.IsAllowedPhpName(name))
                 {
+                    _name = name; // override the name from the variadic version
                     _isVariadic |= isVariadic;
                 }
             }

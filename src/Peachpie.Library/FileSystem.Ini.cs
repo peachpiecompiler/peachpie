@@ -28,7 +28,7 @@ namespace Pchp.Library
         Typed = 2,
     };
 
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class PhpIni
     {
         public const int INI_SCANNER_NORMAL = (int)ScannerMode.Normal;

@@ -30,7 +30,25 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Well known assembly token key of Peachpie assemblies.
         /// </summary>
-        public const string PeachpieAssemblyTokenKey = "5b4bee2bf1f98593";
+        public static string PeachpieAssemblyTokenKey => _lazyPeachpieAssemblyTokenKey ??= GetPublicKeyTokenString(typeof(Context).Assembly);
+        static string _lazyPeachpieAssemblyTokenKey;
+
+        /// <summary>
+        /// Gets assembly public key token as string.
+        /// </summary>
+        public static string GetPublicKeyTokenString(this Assembly assembly)
+        {
+            if (assembly != null)
+            {
+                var token = assembly.GetName().GetPublicKeyToken();
+                if (token != null)
+                {
+                    return Utilities.StringUtils.BinToHex(token);
+                }
+            }
+
+            return null;
+        }
 
         readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!', '?', '$', '-' };
 
@@ -133,6 +151,32 @@ namespace Pchp.Core.Reflection
                 // NULL is explicitly disallowed?
                 return p.GetCustomAttribute<NotNullAttribute>() == null;
             }
+        }
+
+        /// <summary>
+        /// Determines whether the method is declared in user's PHP code (within a user type or within a source script).
+        /// </summary>
+        public static bool IsUserRoutine(this MethodBase method)
+        {
+            Debug.Assert(method != null);
+
+            var type = method.DeclaringType;
+            if (type != null)
+            {
+                var phptype = type.GetCustomAttribute<PhpTypeAttribute>();
+                if (phptype != null)
+                {
+                    return phptype.FileName != null;
+                }
+
+                var script = type.GetCustomAttribute<ScriptAttribute>();
+                if (script != null)
+                {
+                    return script.Path != null; // always true
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

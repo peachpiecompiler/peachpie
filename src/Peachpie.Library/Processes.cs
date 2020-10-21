@@ -48,7 +48,7 @@ namespace Pchp.Library
 
     #endregion
 
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Processes
     {
         #region popen, pclose

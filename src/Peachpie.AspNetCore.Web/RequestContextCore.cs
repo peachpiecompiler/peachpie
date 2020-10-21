@@ -11,8 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
-using System.Reflection;
 using Peachpie.AspNetCore.Web.Session;
+using System.Xml.Schema;
 
 namespace Peachpie.AspNetCore.Web
 {
@@ -123,7 +123,7 @@ namespace Peachpie.AspNetCore.Web
 
         void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly)
         {
-            _httpctx.Response.Cookies.Append(name, value, new CookieOptions()
+            _httpctx.Response.Cookies.Append(name, value ?? string.Empty, new CookieOptions()
             {
                 Expires = expires,
                 Path = path,
@@ -193,38 +193,50 @@ namespace Peachpie.AspNetCore.Web
 
         #region Request Lifecycle
 
-        /// <summary>
-        /// The default document.
-        /// </summary>
-        const string DefaultDocument = "index.php";
-
-        public static ScriptInfo ResolveScript(HttpRequest req)
+        public static ScriptInfo ResolveScript(HttpRequest req, out string path_info)
         {
-            var path = req.Path.Value;
-            var script = ScriptsMap.GetDeclaredScript(path);    // path: "filename"
+            // The default document.
+            const string DefaultDocument = "/index.php";
+            const char UrlSeparator = '/';
 
-            if (!script.IsValid)
+            var req_path = req.Path.Value.AsSpan();
+            var path = req_path.TrimEnd(UrlSeparator);
+            var script = ScriptInfo.Empty;
+
+            for (int level = 0; ; level++)
             {
-                if (path.LastChar().IsDirectorySeparator())
+                // /a/b/file.php
+                if (PathUtils.GetExtension(path).Length != 0 && (script = ScriptsMap.GetDeclaredScript(path)).IsValid)
                 {
-                    // path: "filename/"
-                    if ((script = ScriptsMap.GetDeclaredScript(path.Substring(0, path.Length - 1))).IsValid == false) // "filename"
-                    {
-                        // path: "directory/"
-                        script = ScriptsMap.GetDeclaredScript(path + DefaultDocument); // "directory/index.php"
-                    }
+                    break;
+                }
+
+                // default document
+                if (level == 0 && (script = ScriptsMap.GetDeclaredScript(path.ToString() + DefaultDocument)).IsValid) // TODO: NETSTANDARD2.1: string.concat
+                {
+                    break;
+                }
+
+                // ""
+                // "/a"
+                // "/a/b"
+                var slash = path.LastIndexOf(UrlSeparator);
+                if (slash >= 0)
+                {
+                    path = path.Slice(0, slash);
                 }
                 else
                 {
-                    // path: "directory"
-                    script = ScriptsMap.GetDeclaredScript(
-                        path.Length == 0
-                        ? DefaultDocument                       // "index.php"
-                        : (path + ("/" + DefaultDocument)));    // "directory/index.php"
+                    path = ReadOnlySpan<char>.Empty;
+                    break;
                 }
             }
 
             //
+            path_info = path.Length < req_path.Length && req_path != "/".AsSpan()
+                ? req_path.Slice(path.Length).ToString()
+                : null;
+
             return script;
         }
 
@@ -234,18 +246,64 @@ namespace Peachpie.AspNetCore.Web
         /// <remarks>
         /// End may occur when request finishes its processing or when event explicitly requested by user's code (See <see cref="IHttpPhpContext.Flush(bool)"/>).
         /// </remarks>
-        public TaskCompletionSource<RequestCompletionReason> RequestCompletionSource { get; internal set; }
+        public TaskCompletionSource<RequestCompletionReason> RequestCompletionSource { get; } = new TaskCompletionSource<RequestCompletionReason>();
+
+        /// <summary>
+        /// Internal timer used to signalize the request has timeouted.
+        /// </summary>
+        private Timer _requestLimitTimer = null;
+
+        /// <summary>
+        /// Set the time limit of the request, from now. Any pending time limit will be cancelled.
+        /// After the specified time span, <see cref="RequestCompletionSource"/> will be signaled with the state <see cref="RequestCompletionReason.Timeout"/>.
+        /// </summary>
+        /// <param name="span">
+        /// Time span of the time limit.
+        /// Use <see cref="Timeout.InfiniteTimeSpan"/> (or <c>-1</c> miliseconds) to cancel the pending time limit.
+        /// </param>
+        internal void TrySetTimeLimit(TimeSpan span)
+        {
+            if (_requestLimitTimer == null)
+            {
+                if (span != Timeout.InfiniteTimeSpan)
+                {
+                    _requestLimitTimer = new Timer(
+                        state =>
+                        {
+                            var self = (RequestContextCore)state;
+                            self.RequestCompletionSource.TrySetResult(RequestCompletionReason.Timeout);
+                        },
+                        this, span, Timeout.InfiniteTimeSpan);
+                }
+            }
+            else
+            {
+                if (span != Timeout.InfiniteTimeSpan)
+                {
+                    _requestLimitTimer.Change(span, Timeout.InfiniteTimeSpan);
+                }
+                else
+                {
+                    _requestLimitTimer.Dispose();
+                    _requestLimitTimer = null;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public override void ApplyExecutionTimeout(TimeSpan span) => TrySetTimeLimit(span);
 
         /// <summary>
         /// Performs the request lifecycle, invokes given entry script and cleanups the context.
         /// </summary>
         /// <param name="script">Entry script.</param>
-        public void ProcessScript(ScriptInfo script)
+        /// <param name="path_info">The <c>PATH_INFO</c> component.</param>
+        public void ProcessScript(ScriptInfo script, string path_info = null)
         {
             Debug.Assert(script.IsValid);
 
             // set additional $_SERVER items
-            AddServerScriptItems(script);
+            AddServerScriptItems(script, path_info);
 
             // remember the initial script file
             this.MainScriptFile = script;
@@ -268,14 +326,20 @@ namespace Peachpie.AspNetCore.Web
             }
         }
 
-        void AddServerScriptItems(ScriptInfo script)
+        void AddServerScriptItems(ScriptInfo script, string path_info)
         {
             var array = this.Server;
 
-            var path = script.Path.Replace('\\', '/');  // address of the script
+            var script_name = "/" + script.Path.Replace('\\', '/');  // address of the script;
 
-            array[CommonPhpArrayKeys.SCRIPT_FILENAME] = (PhpValue)string.Concat(this.RootPath, "/", path);
-            array[CommonPhpArrayKeys.PHP_SELF] = (PhpValue)string.Concat("/", path);
+            array[CommonPhpArrayKeys.SCRIPT_NAME] = script_name;
+            array[CommonPhpArrayKeys.SCRIPT_FILENAME] = RootPath + CurrentPlatform.NormalizeSlashes("/" + script.Path);
+            array[CommonPhpArrayKeys.PHP_SELF] = script_name + path_info;
+
+            if (path_info != null)
+            {
+                array[CommonPhpArrayKeys.PATH_INFO] = path_info;
+            }
         }
 
         /// <summary>
@@ -283,6 +347,12 @@ namespace Peachpie.AspNetCore.Web
         /// </summary>
         public override void Dispose()
         {
+            if (_requestLimitTimer != null)
+            {
+                _requestLimitTimer.Dispose();
+                _requestLimitTimer = null;
+            }
+
             base.Dispose();
         }
 
@@ -446,7 +516,7 @@ namespace Peachpie.AspNetCore.Web
             array[CommonPhpArrayKeys.SERVER_PORT] = (PhpValue)(host.Port ?? connection.LocalPort);
             array[CommonPhpArrayKeys.REQUEST_URI] = (PhpValue)request.RawTarget;
             array[CommonPhpArrayKeys.REQUEST_METHOD] = (PhpValue)request.Method;
-            array[CommonPhpArrayKeys.SCRIPT_NAME] = (PhpValue)request.Path.ToString();
+            array[CommonPhpArrayKeys.SCRIPT_NAME] = PhpValue.Null;  // set in ProcessScript // "/path_to_script.php"
             array[CommonPhpArrayKeys.SCRIPT_FILENAME] = PhpValue.Null; // set in ProcessScript
             array[CommonPhpArrayKeys.PHP_SELF] = PhpValue.Null; // set in ProcessScript
             array[CommonPhpArrayKeys.QUERY_STRING] = (PhpValue)(!string.IsNullOrEmpty(request.QueryString) ? request.QueryString.Substring(1) : string.Empty);

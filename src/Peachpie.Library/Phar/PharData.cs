@@ -16,12 +16,12 @@ namespace Pchp.Library.Phar
     {
         #region .ctor
 
-        public PharData(string fname, int flags = 0, string alias = default, int format = 0)
+        public PharData(string filename, int flags = 0, string alias = default, int fileformat = 0)
         {
-            __construct(fname, flags, alias, format);
+            __construct(filename, flags, alias, fileformat);
         }
 
-        public void __construct(string fname, int flags = 0, string alias = default, int format = 0)
+        public void __construct(string filename, int flags = 0, string alias = default, int fileformat = 0)
         {
             throw new NotImplementedException();
         }

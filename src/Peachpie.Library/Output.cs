@@ -11,7 +11,7 @@ namespace Pchp.Library
 	/// PHP output control functions implementation. 
 	/// </summary>
 	/// <threadsafety static="true"/>
-    [PhpExtension("Core")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Output
     {
         public const int PHP_OUTPUT_HANDLER_START = (int)BufferedOutput.ChunkPosition.First;
@@ -120,13 +120,15 @@ namespace Pchp.Library
 
             if (buf.Level == 0)
             {
-                //PhpException.Throw(PhpError.Notice, CoreResources.GetString("output_buffering_disabled"));
-                //return false;
-                throw new NotImplementedException();
+                // "failed to delete buffer. No buffer to delete"
+                PhpException.Throw(PhpError.Notice, Core.Resources.ErrResources.output_buffering_disabled);
+                return false;
             }
 
             if (buf.DecreaseLevel(flush) < 0)
+            {
                 ctx.IsOutputBuffered = false;
+            }
 
             return true;
         }

@@ -15,6 +15,16 @@ namespace Peachpie.Library.Network
     /// </summary>
     public sealed class CURLResource : PhpResource
     {
+        const Flags DefaultFlags = default; // 0
+        static string DefaultMethod => WebRequestMethods.Http.Get;
+        const string DefaultScheme = "http";
+        const int DefaultMaxRedirects = -1;
+        const int DefaultTimeout = 0;
+        const int DefaultContinueTimeout = 1000;
+        const int DefaultBufferSize = 2048;
+        const int DefaultProxyPort = 1080;
+        const string DefaultProxyType = "http";
+
         #region Flags
 
         /// <summary>
@@ -67,7 +77,7 @@ namespace Peachpie.Library.Network
 
         public string Url { get; set; }
 
-        public string DefaultSheme { get; set; } = "http";
+        public string DefaultSheme { get; set; } = DefaultScheme;
 
         public bool FollowLocation
         {
@@ -79,21 +89,23 @@ namespace Peachpie.Library.Network
             }
         }
 
-        // default is -1 for an infinite number of redirects in curl
-        public int MaxRedirects { get; set; } = -1;
+        /// <summary>
+        /// default is -1 for an infinite number of redirects in curl
+        /// </summary>
+        public int MaxRedirects { get; set; } = DefaultMaxRedirects;
 
         /// <summary>
         /// The maximum number of milliseconds to allow cURL functions to execute.
         /// </summary>
-        public int Timeout { get; set; } = 0; // default of curl is 0 which means it never times out during transfer
+        public int Timeout { get; set; } = DefaultTimeout; // default of curl is 0 which means it never times out during transfer
 
         /// <summary>
         /// Gets or sets a timeout, in milliseconds, to wait until the 100-Continue is received from the server.
         /// </summary>
-        public int ContinueTimeout { get; set; } = 1000; // libcurl default
+        public int ContinueTimeout { get; set; } = DefaultContinueTimeout; // libcurl default
 
         /// <summary>If set, specifies the size of internal buffer used for read when passing response content to user's function.</summary>
-        public int BufferSize { get; set; } = 2048;
+        public int BufferSize { get; set; } = DefaultBufferSize;
 
         /// <summary>
         /// Alternative output for <see cref="Verbose"/>.
@@ -128,7 +140,7 @@ namespace Peachpie.Library.Network
             }
         }
 
-        public string Method { get; set; } = WebRequestMethods.Http.Get;
+        public string Method { get; set; } = DefaultMethod;
 
         /// <summary>
         /// The full data to post in a HTTP "POST" operation.
@@ -154,11 +166,11 @@ namespace Peachpie.Library.Network
 
         public string Password { get; set; }
 
-        public string ProxyType { get; set; } = "http";
+        public string ProxyType { get; set; } = DefaultProxyType;
 
         public string ProxyHost { get; set; }
 
-        public int ProxyPort { get; set; } = 1080;
+        public int ProxyPort { get; set; } = DefaultProxyPort;
 
         public string ProxyUsername { get; set; }
 
@@ -223,6 +235,36 @@ namespace Peachpie.Library.Network
 
             //
             base.FreeManaged();
+        }
+
+        /// <summary>
+        /// Resets the options to default values.
+        /// </summary>
+        public void ResetOptions()
+        {
+            this.ProcessingHeaders = ProcessMethod.Ignore;
+            this.ProcessingResponse = ProcessMethod.StdOut;
+            this.ProcessingRequest = new ProcessMethod { Method = ProcessMethodEnum.FILE };
+            this.PostFields = default;
+            this.VerboseOutput = null;
+
+            this._options.Clear();
+            this._flags = DefaultFlags;
+            this.BufferSize = DefaultBufferSize;
+            this.ContinueTimeout = DefaultContinueTimeout;
+            this.MaxRedirects = DefaultMaxRedirects;
+            this.Method = DefaultMethod;
+            this.Password = null;
+            this.PostFields = default;
+            this.Protocols = CURLConstants.CURLPROTO_ALL;
+            this.ProxyHost = null;
+            this.ProxyPassword = null;
+            this.ProxyPort = DefaultProxyPort;
+            this.ProxyType = DefaultProxyType;
+            this.ProxyUsername = null;
+            this.Timeout = DefaultTimeout;
+            this.Url = null;
+            this.Username = null;
         }
 
         /// <summary>

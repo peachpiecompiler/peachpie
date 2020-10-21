@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.ComponentModel;
 
 namespace Pchp.Core
 {
@@ -72,6 +73,19 @@ namespace Pchp.Core
     public class PhpExtensionAttribute : Attribute
     {
         /// <summary>
+        /// Well known PHP extension names.
+        /// </summary>
+        public struct KnownExtensionNames
+        {
+            public const string Core = "Core";
+            public const string Standard = "standard";
+            public const string SPL = "SPL";
+            public const string Date = "date";
+            public const string Reflection = "Reflection";
+            public const string Json = "json";
+        }
+
+        /// <summary>
         /// Extensions name list.
         /// Cannot be <c>null</c>.
         /// </summary>
@@ -133,20 +147,23 @@ namespace Pchp.Core
         /// <summary>
         /// Whether short open tags were enabled to compile the sources.
         /// </summary>
-        public bool ShortOpenTag { get; set; }
+        public bool ShortOpenTag { get; }
 
         /// <summary>
         /// The language version of compiled sources.
+        /// Can be <c>null</c> in case the version was not specified.
         /// </summary>
-        public string LanguageVersion { get; set; }
+        public Version? LanguageVersion { get; }
 
         /// <summary>
         /// Construct the attribute.
         /// </summary>
+        /// <exception cref="FormatException"><paramref name="langVersion"/> is an invalid version string.</exception>
+        /// <exception cref="ArgumentException"><paramref name="langVersion"/> is empty or invalid version string.</exception>
         public TargetPhpLanguageAttribute(string langVersion, bool shortOpenTag)
         {
             this.ShortOpenTag = shortOpenTag;
-            this.LanguageVersion = langVersion;
+            this.LanguageVersion = langVersion != null ? Version.Parse(langVersion) : null;
         }
     }
 
@@ -230,6 +247,17 @@ namespace Pchp.Core
             /// The name is set explicitly overriding the CLR's type name.
             /// </summary>
             CustomName = 2,
+        }
+
+        /// <summary>
+        /// Named property used annotate the type declaration with minimum language version.
+        /// Used only in compile-time.
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string MinimumLangVersion
+        {
+            get { throw new NotSupportedException(); }
+            set { }
         }
 
         /// <summary>

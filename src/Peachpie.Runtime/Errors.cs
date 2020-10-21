@@ -178,14 +178,18 @@ namespace Pchp.Core
             {
                 LogEventSource.Log.HandleFatal(message);
 
-                // terminate the script
-                throw new InvalidOperationException(message);
+                // terminate the script with exception
+                throw new PhpFatalErrorException(message, innerException: null);
             }
             else
             {
                 LogEventSource.Log.HandleWarning(message);
             }
         }
+
+        public static void Throw(PhpError error, string formatString, string arg0) => Throw(error, string.Format(formatString, arg0));
+
+        public static void Throw(PhpError error, string formatString, string arg0, string arg1) => Throw(error, string.Format(formatString, arg0, arg1));
 
         public static void Throw(PhpError error, string formatString, params string[] args) => Throw(error, string.Format(formatString, args));
 
@@ -303,6 +307,14 @@ namespace Pchp.Core
             }
         }
 
+        public static void TooFewArguments(string function, /*bool funcUser,*/ int actual, int expected)
+        {
+            // TODO: TargetPhpLanguage.Version >= 7.1
+
+            // "Too few arguments to function {function}(), {actual} passed and at least {expected} expected"
+            throw ArgumentCountErrorException(string.Format(ErrResources.too_few_arguments, function, actual.ToString(), expected.ToString()));
+        }
+
         /// <summary>
         /// Emitted to the foreach statement if the variable to be enumerated doesn't implement 
         /// the <see cref="IPhpEnumerable"/> interface.
@@ -408,6 +420,11 @@ namespace Pchp.Core
             {
                 Throw(PhpError.Warning, ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(var));
             }
+        }
+
+        public static void ObjectUsedAsArray(string typename)
+        {
+            throw ErrorException(ErrResources.object_used_as_array, typename);
         }
 
         /// <summary>

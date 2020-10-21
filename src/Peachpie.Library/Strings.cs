@@ -11,7 +11,7 @@ using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Strings
     {
         #region Character map
@@ -2232,7 +2232,7 @@ namespace Pchp.Library
         /// <summary>
         /// List of known HTML entities without leading <c>&amp;</c> character when checking double encoded entities.
         /// </summary>
-        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;", "nbsp;", "raquo;" };
+        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;", "nbsp;", "raquo;", "lsaquo;" };
 
         /// <summary>
         /// Converts special characters of substring to HTML entities.
@@ -3340,10 +3340,8 @@ namespace Pchp.Library
         /// <returns>The number of matching characters in both strings.</returns>
         /// <remarks>Algorithm description is supposed to be found 
         /// <A href="http://citeseer.nj.nec.com/oliver93decision.html">here</A>.</remarks>
-        internal static int SimilarTextInternal(string first, string second)
+        internal static int SimilarTextInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
-            Debug.Assert(first != null && second != null);
-
             int posF = 0, lengthF = first.Length;
             int posS = 0, lengthS = second.Length;
             int maxK = 0;
@@ -3368,11 +3366,11 @@ namespace Pchp.Library
             {
                 if (posF > 0 && posS > 0)
                 {
-                    sum += SimilarTextInternal(first.Substring(0, posF), second.Substring(0, posS));
+                    sum += SimilarTextInternal(first.Slice(0, posF), second.Slice(0, posS));
                 }
                 if (posF + maxK < lengthF && posS + maxK < lengthS)
                 {
-                    sum += SimilarTextInternal(first.Substring(posF + maxK), second.Substring(posS + maxK));
+                    sum += SimilarTextInternal(first.Slice(posF + maxK), second.Slice(posS + maxK));
                 }
             }
 
@@ -3387,8 +3385,12 @@ namespace Pchp.Library
         /// <returns>The number of matching characters in both strings.</returns>
         public static int similar_text(string first, string second)
         {
-            if (first == null || second == null) return 0;
-            return SimilarTextInternal(first, second);
+            if (first == null || second == null)
+            {
+                return 0;
+            }
+
+            return SimilarTextInternal(first.AsSpan(), second.AsSpan());
         }
 
         /// <summary>
@@ -3400,9 +3402,13 @@ namespace Pchp.Library
         /// <returns>The number of matching characters in both strings.</returns>
         public static int similar_text(string first, string second, out double percent)
         {
-            if (first == null || second == null) { percent = 0; return 0; }
+            if (first == null || second == null)
+            {
+                percent = 0;
+                return 0;
+            }
 
-            int sum = SimilarTextInternal(first, second);
+            int sum = SimilarTextInternal(first.AsSpan(), second.AsSpan());
             percent = (200.0 * sum) / (first.Length + second.Length);
 
             return sum;
@@ -4571,29 +4577,6 @@ namespace Pchp.Library
         #region number_format, money_format
 
         /// <summary>
-        /// Formats a number with grouped thousands.
-        /// </summary>
-        /// <param name="number">The number to format.</param>
-        /// <returns>String representation of the number without decimals (rounded) with comma between every group
-        /// of thousands.</returns>
-        public static string number_format(double number)
-        {
-            return number_format(number, 0, ".", ",");
-        }
-
-        /// <summary>
-        /// Formats a number with grouped thousands and with given number of decimals.
-        /// </summary>
-        /// <param name="number">The number to format.</param>
-        /// <param name="decimals">The number of decimals.</param>
-        /// <returns>String representation of the number with <paramref name="decimals"/> decimals with a dot in front, and with 
-        /// comma between every group of thousands.</returns>
-        public static string number_format(double number, int decimals)
-        {
-            return number_format(number, decimals, ".", ",");
-        }
-
-        /// <summary>
         /// Formats a number with grouped thousands, with given number of decimals, with given decimal point string
         /// and with given thousand separator.
         /// </summary>
@@ -4612,33 +4595,14 @@ namespace Pchp.Library
         /// not make much sense, this method has no such limitation except for <paramref name="thousandsSeparator"/> of which
         /// only the first character is used (documented feature).
         /// </remarks>
-        public static string number_format(double number, int decimals, string decimalPoint, string thousandsSeparator)
+        public static string number_format(double number, int decimals = 0, string decimalPoint = ".", string thousandsSeparator = ",")
         {
-            System.Globalization.NumberFormatInfo format = new System.Globalization.NumberFormatInfo();
-
-            if ((decimals >= 0) && (decimals <= 99))
+            var format = new System.Globalization.NumberFormatInfo
             {
-                format.NumberDecimalDigits = decimals;
-            }
-            else
-            {
-                //PhpException.InvalidArgument("decimals", LibResources.GetString("arg_out_of_bounds", decimals));
-                throw new ArgumentException();
-            }
-
-            if (!string.IsNullOrEmpty(decimalPoint))
-            {
-                format.NumberDecimalSeparator = decimalPoint;
-            }
-
-            if (thousandsSeparator == null) thousandsSeparator = String.Empty;
-
-            switch (thousandsSeparator.Length)
-            {
-                case 0: format.NumberGroupSeparator = String.Empty; break;
-                case 1: format.NumberGroupSeparator = thousandsSeparator; break;
-                default: format.NumberGroupSeparator = thousandsSeparator.Substring(0, 1); break;
-            }
+                NumberDecimalDigits = Math.Max(decimals, 0), // TODO: .NET throws for decimals > 99
+                NumberDecimalSeparator = decimalPoint ?? ".", // NULL ~ a defalt value
+                NumberGroupSeparator = thousandsSeparator ?? ",", // NULL ~ a default value
+            };
 
             return number.ToString("N", format);
         }
@@ -5255,19 +5219,19 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str1">The lesser string.</param>
         /// <param name="str2">The greater string.</param>
-        /// <param name="length">The upper limit of the length of parts to be compared.</param>
+        /// <param name="len">The upper limit of the length of parts to be compared.</param>
         /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
         /// and 0 if they are equal.</returns>
-        public static PhpValue strncmp(string str1, string str2, int length)
+        public static PhpValue strncmp(string str1, string str2, int len)
         {
-            if (length < 0)
+            if (len < 0)
             {
                 throw new ArgumentException();
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
                 //return PhpValue.False;
             }
 
-            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, length));
+            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, len));
         }
 
         /// <summary>
@@ -5275,22 +5239,22 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str1">A string.</param>
         /// <param name="str2">A string.</param>
-        /// <param name="length">The upper limit of the length of parts to be compared.</param>
+        /// <param name="len">The upper limit of the length of parts to be compared.</param>
         /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
         /// and 0 if they are equal.</returns>
-        public static PhpValue strncasecmp(string str1, string str2, int length)
+        public static PhpValue strncasecmp(string str1, string str2, int len)
         {
-            if (length < 0)
+            if (len < 0)
             {
                 throw new ArgumentException();
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
                 //return PhpValue.False;
             }
 
-            length = Math.Max(Math.Max(length, str1.Length), str2.Length);
+            len = Math.Max(Math.Max(len, str1.Length), str2.Length);
 
             return PhpValue.Create(System.Globalization.CultureInfo.InvariantCulture.CompareInfo
-                .Compare(str1, 0, length, str2, 0, length, System.Globalization.CompareOptions.OrdinalIgnoreCase));
+                .Compare(str1, 0, len, str2, 0, len, System.Globalization.CompareOptions.OrdinalIgnoreCase));
         }
 
         #endregion
@@ -5660,7 +5624,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns the length of a string.
         /// </summary>
-        public static int strlen(PhpString x) => x.Length;
+        public static int strlen(PhpString str) => str.Length;
 
         #endregion
 

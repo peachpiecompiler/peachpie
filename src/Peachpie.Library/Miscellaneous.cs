@@ -11,7 +11,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
-    [PhpExtension("Core")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Miscellaneous
     {
         // [return: CastToFalse] // once $extension will be supported
@@ -191,9 +191,9 @@ namespace Pchp.Library
         /// <summary>
         /// Find out whether an extension is loaded.
         /// </summary>
-        /// <param name="name">The extension name.</param>
+        /// <param name="extension_name">The extension name.</param>
         /// <returns>Returns <c>TRUE</c> if the extension identified by name is loaded, <c>FALSE</c> otherwise.</returns>
-        public static bool extension_loaded(string name) => Context.IsExtensionLoaded(name);
+        public static bool extension_loaded(string extension_name) => Context.IsExtensionLoaded(extension_name);
 
         /// <summary>
         /// Returns an array with names of all loaded native extensions.
@@ -220,13 +220,13 @@ namespace Pchp.Library
         /// <summary>
 		/// Returns an array with names of the functions of a native extension.
 		/// </summary>
-        /// <param name="extension">Internal extension name (e.g. <c>sockets</c>).</param>
-        /// <returns>The array of function names or <c>null</c> if the <paramref name="extension"/> is not loaded.</returns>
+        /// <param name="extension_name">Internal extension name (e.g. <c>sockets</c>).</param>
+        /// <returns>The array of function names or <c>null</c> if the <paramref name="extension_name"/> is not loaded.</returns>
         [return: CastToFalse]
-        public static PhpArray? get_extension_funcs(string extension)
+        public static PhpArray? get_extension_funcs(string extension_name)
         {
             var result = new PhpArray();
-            foreach (var e in Context.GetRoutinesByExtension(extension))
+            foreach (var e in Context.GetRoutinesByExtension(extension_name))
             {
                 result.Add(PhpValue.Create(e.Name));
             }

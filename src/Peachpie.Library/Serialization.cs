@@ -13,7 +13,7 @@ using System.Reflection;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static partial class PhpSerialization
     {
         #region Serializer
@@ -401,7 +401,7 @@ namespace Pchp.Library
                     if (obj is __PHP_Incomplete_Class)
                     {
                         // classname = ((__PHP_Incomplete_Class)obj).ClassName ?? classname;
-                        throw new NotImplementedException("__PHP_Incomplete_Class");
+                        throw new NotImplementedException(nameof(__PHP_Incomplete_Class));
                     }
 
                     var classnameBytes = Encoding.GetBytes(classname);

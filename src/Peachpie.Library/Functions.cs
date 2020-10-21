@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
-    [PhpExtension("Core")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Functions
     {
         #region call_user_func, call_user_func_array
@@ -99,24 +99,24 @@ namespace Pchp.Library
         /// Retrieves an argument passed to the current user-function.
         /// </summary>
         /// <remarks><seealso cref="PhpStack.GetArgument"/></remarks>
-        public static PhpValue func_get_arg([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args, int index)
+        public static PhpValue func_get_arg([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args, int arg_num)
         {
             // checks correctness of the argument:
-            if (index < 0)
+            if (arg_num < 0)
             {
-                PhpException.InvalidArgument(nameof(index), LibResources.arg_negative);
+                PhpException.InvalidArgument(nameof(arg_num), LibResources.arg_negative);
                 return PhpValue.False;
             }
 
-            if (args == null || index >= args.Length)
+            if (args == null || arg_num >= args.Length)
             {
                 // Argument #{0} not passed to the function/method
-                PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.argument_not_passed_to_function, index.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.argument_not_passed_to_function, arg_num.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 return PhpValue.False;
             }
 
             //
-            return args[index].DeepCopy();
+            return args[arg_num].DeepCopy();
         }
 
         /// <summary>
@@ -155,9 +155,9 @@ namespace Pchp.Library
         /// Checks the list of defined functions, both built-in and user-defined.
         /// </summary>
         /// <returns>Whether the function is declared.</returns>
-        public static bool function_exists(Context ctx, string name)
+        public static bool function_exists(Context ctx, string function_name)
         {
-            return ctx.GetDeclaredFunction(name) != null;
+            return ctx.GetDeclaredFunction(function_name) != null;
         }
 
         /// <summary>

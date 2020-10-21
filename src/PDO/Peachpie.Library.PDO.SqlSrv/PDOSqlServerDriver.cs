@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlClient;
 using Pchp.Core;
@@ -58,6 +59,12 @@ namespace Peachpie.Library.PDO.SqlSrv
             if (password != null) csb.Password = password;
 
             return csb.ConnectionString;
+        }
+
+        /// <inheritDoc />
+        public override bool TrySetAttribute(PDO pdo, Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
+        {
+            return false;
         }
     }
 }

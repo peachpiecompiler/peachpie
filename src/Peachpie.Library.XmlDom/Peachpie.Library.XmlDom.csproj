@@ -11,7 +11,7 @@
     <NetStandardImplicitPackageVersion></NetStandardImplicitPackageVersion><!-- Clean up the default value -->
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.24" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.25" />
     <PackageReference Include="Mvp.Xml.NetStandard" Version="1.1.1" />
     <PackageReference Include="System.Xml.ReaderWriter" Version="4.3.0" />
     <PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ namespace Pchp.Library
 	/// Implements PHP mathematical functions and constants.
 	/// </summary>
 	/// <threadsafety static="true"/>
-	[PhpExtension("standard")]
+	[PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class PhpMath
     {
         #region Per-request Random Number Generators
@@ -236,11 +237,26 @@ namespace Pchp.Library
         {
             if (max < min)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new Spl.Error(Resources.LibResources.min_must_be_less_or_equal_to_max);
+            }
+            else if (max == min)
+            {
+                return min;
             }
 
-            // TODO: use mcrypt, int64
-            return rand((int)min, (int)max);
+            var bytes = new byte[sizeof(long)]; // TODO: NETSTANDARD2.1 // Span<byte> bytes = stackalloc byte[sizeof(long)];
+
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(bytes);
+            }
+
+            var value = (decimal)BitConverter.ToUInt64(bytes, 0);
+
+            // adjust to min/max
+            var length = (decimal)max - min + 1;
+            value = min + (value % length);
+            return (long)value;
         }
 
         /// <summary>
@@ -255,8 +271,10 @@ namespace Pchp.Library
 
             var bytes = new byte[length];
 
-            // TODO: System.Security.Cryptography.RNGCryptoServiceProvider
-            System.Security.Cryptography.RandomNumberGenerator.Create().GetBytes(bytes);
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(bytes);
+            }
 
             return new PhpString(bytes);
         }
@@ -275,7 +293,7 @@ namespace Pchp.Library
             return MTGenerator.Next();
         }
 
-        public static int mt_rand(int min, int max)
+        public static int mt_rand(int min, int max) // TODO: long min, long max, mt_getrandmax
         {
             return (min < max) ? MTGenerator.Next(min, max) : MTGenerator.Next(max, min);
         }
@@ -1183,12 +1201,12 @@ namespace Pchp.Library
         /// <summary>
         /// Find highest value.
         /// </summary>
-        public static PhpValue max(PhpArray array) => FindExtreme(array.Values, true);
+        public static PhpValue max(PhpArray values) => FindExtreme(values.Values, true);
 
         /// <summary>
         /// Find lowest value.
         /// </summary>
-        public static PhpValue min(PhpArray array) => FindExtreme(array.Values, false);
+        public static PhpValue min(PhpArray values) => FindExtreme(values.Values, false);
 
         /// <summary>
         /// Find highest value.
@@ -1204,19 +1222,19 @@ namespace Pchp.Library
         /// Find highest value.
         /// If the first and only parameter is an array, max() returns the highest value in that array. If at least two parameters are provided, max() returns the biggest of these values.
         /// </summary>
-        /// <param name="numbers">An array containing the values or values separately.</param>
+        /// <param name="args">An array containing the values or values separately.</param>
         /// <returns>max() returns the numerically highest of the parameter values. If multiple values can be considered of the same size, the one that is listed first will be returned.
         /// When max() is given multiple arrays, the longest array is returned. If all the arrays have the same length, max() will use lexicographic ordering to find the return value.
         /// When given a string it will be cast as an integer when comparing.</returns>
-		public static PhpValue max(params PhpValue[] numbers) => GetExtreme(numbers, true);
+		public static PhpValue max(params PhpValue[] args) => GetExtreme(args, true);
 
         /// <summary>
         /// Find lowest value.
         /// If the first and only parameter is an array, min() returns the lowest value in that array. If at least two parameters are provided, min() returns the smallest of these values.
         /// </summary>
-        /// <param name="numbers">An array containing the values or values separately.</param>
+        /// <param name="args">An array containing the values or values separately.</param>
         /// <returns>min() returns the numerically lowest of the parameter values.</returns>
-		public static PhpValue min(params PhpValue[] numbers) => GetExtreme(numbers, false);
+		public static PhpValue min(params PhpValue[] args) => GetExtreme(args, false);
 
         internal static PhpValue GetExtreme(PhpValue[] numbers, bool maximum)
         {

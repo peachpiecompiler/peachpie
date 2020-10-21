@@ -1114,6 +1114,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Minimum value must be less than or equal to the maximum value.
+        /// </summary>
+        public static string min_must_be_less_or_equal_to_max {
+            get {
+                return ResourceManager.GetString("min_must_be_less_or_equal_to_max", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Type &apos;{0}&apos;: multi-byte characters are not supported.
         /// </summary>
         public static string multibyte_chars_unsupported {

@@ -92,9 +92,20 @@ namespace Pchp.Core.Dynamic
 
             public static MethodInfo RuntimeTypeHandle_Equals_RuntimeTypeHandle = typeof(RuntimeTypeHandle).GetMethod("Equals", typeof(RuntimeTypeHandle));
 
-            public static readonly Func<Context, PhpTypeInfo, object, string, PhpValue> RuntimePropertyGetValue = new Func<Context, PhpTypeInfo, object, string, PhpValue>(Core.Operators.RuntimePropertyGetValue);
+            public static readonly MethodInfo RuntimePropertyGetValue = new Func<Context, PhpTypeInfo, object, string, PhpValue>(Core.Operators.RuntimePropertyGetValue).Method;
 
             public static MethodInfo Or_ConversionCost_ConversionCost = typeof(CostOf).GetMethod("Or", typeof(ConversionCost), typeof(ConversionCost));
+
+            public static MethodInfo CheckFunctionDeclared_Context_Int_Int = new Func<Context, int, int, bool>(Context.CheckFunctionDeclared).Method;
+        }
+
+        public static class Exceptions
+        {
+            public static readonly MethodInfo UndefinedFunctionCalled_String = new Action<string>(PhpException.UndefinedFunctionCalled).Method;
+            public static readonly MethodInfo UndefinedMethodCalled_String_String = new Action<string, string>(PhpException.UndefinedMethodCalled).Method;
+            public static readonly MethodInfo MethodOnNonObject_String = new Action<string>(PhpException.MethodOnNonObject).Method;
+            public static readonly MethodInfo TooFewArguments_String_Int_Int = new Action<string, int, int>(PhpException.TooFewArguments).Method;
+            public static readonly MethodInfo VariableMisusedAsObject_PhpValue_Bool = new Action<PhpValue, bool>(PhpException.VariableMisusedAsObject).Method;
         }
 
         public static class Properties
@@ -165,12 +176,12 @@ namespace Pchp.Core.Dynamic
             {
                 return result;
             }
-            
+
             foreach (var m in type.GetTypeInfo().GetDeclaredMethods(name))  // non public methods
-                {
-                    if (ParamsMatch(m.GetParameters(), ptypes))
-                        return m;
-                }
+            {
+                if (ParamsMatch(m.GetParameters(), ptypes))
+                    return m;
+            }
 
             throw new InvalidOperationException($"{type.Name}.{name}({string.Join<Type>(", ", ptypes)}) was not resolved.");
         }

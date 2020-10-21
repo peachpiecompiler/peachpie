@@ -188,14 +188,14 @@ namespace Peachpie.Library.Scripting
         public static Script Create(Context.ScriptOptions options, string code, PhpCompilationFactory builder, IEnumerable<Script> previousSubmissions)
         {
             // use the language version of the requesting context
-            Version languageVersion = null;
+            var languageVersion = options.LanguageVersion;
             bool shortOpenTags = false;
 
             var language = options.Context.TargetPhpLanguage;
             if (language != null)
             {
                 shortOpenTags = language.ShortOpenTag;
-                Version.TryParse(language.LanguageVersion, out languageVersion);
+                languageVersion ??= language.LanguageVersion;
             }
 
             // unique in-memory assembly name
@@ -244,6 +244,7 @@ namespace Peachpie.Library.Scripting
                 // create the compilation object
                 // TODO: add conditionally declared types into the compilation tables
                 var compilation = (PhpCompilation)builder.CoreCompilation
+                    .WithLangVersion(languageVersion)
                     .WithAssemblyName(name.Name)
                     .AddSyntaxTrees(tree)
                     .AddReferences(metadatareferences);

@@ -20,12 +20,12 @@ namespace Pchp.Library
         /// Defines a constant.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="name">The name of the constant. Can be arbitrary string.</param>
+        /// <param name="constant_name">The name of the constant. Can be arbitrary string.</param>
         /// <param name="value">The value of the constant. Can be <B>null</B> or a scalar or array.</param>
-        /// <param name="caseInsensitive">Whether the name is case insensitive.</param>
+        /// <param name="case_insensitive">Whether the name is case insensitive.</param>
         /// <returns>Whether the new constant has been defined.</returns>
-        public static bool define(Context ctx, string name, PhpValue value, bool caseInsensitive = false)
-            => ctx.DefineConstant(name, value, caseInsensitive);
+        public static bool define(Context ctx, string constant_name, PhpValue value, bool case_insensitive = false)
+            => ctx.DefineConstant(constant_name, value, case_insensitive);
 
         /// <summary>
         /// Resolves the constant and gets its value if possible.
@@ -95,13 +95,13 @@ namespace Pchp.Library
         /// Determines whether a constant is defined.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="callerCtx">type of caller class. Used to resolve reserved type names if used in <paramref name="name"/>.</param>
+        /// <param name="callerCtx">type of caller class. Used to resolve reserved type names if used in <paramref name="constant_name"/>.</param>
         /// <param name="this">Optional. Reference to <c>$this</c> object. Used to resolve <c>static::</c> type reference.</param>
-        /// <param name="name">The name of the constant. Might be a class constant.</param>
+        /// <param name="constant_name">The name of the constant. Might be a class constant.</param>
         /// <returns>Whether the constant is defined.</returns>
-        public static bool defined(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle callerCtx, [ImportValue(ImportValueAttribute.ValueSpec.This)] object @this, string name)
+        public static bool defined(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle callerCtx, [ImportValue(ImportValueAttribute.ValueSpec.This)] object @this, string constant_name)
         {
-            return TryGetConstant(ctx, callerCtx, @this, name, out _);
+            return TryGetConstant(ctx, callerCtx, @this, constant_name, out _);
         }
 
         /// <summary>

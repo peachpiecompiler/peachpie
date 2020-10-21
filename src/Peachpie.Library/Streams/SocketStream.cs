@@ -17,9 +17,26 @@ namespace Pchp.Library.Streams
 	/// </summary>
 	public class SocketStream : PhpStream
     {
-        public override bool CanReadWithoutLock => Socket.Available > 0;
+        public override bool CanReadWithoutLock
+        {
+            get
+            {
+                // NOTE:
+                // when using SslStream, it has already read data from underlaying Socket
+                // so Poll always returns FALSE and Socket.Available is almost always 0
 
-        public override bool CanWriteWithoutLock => true;
+                return Socket.Poll(0, SelectMode.SelectRead) || (SslStream != null);
+            }
+        }
+
+        public override bool CanWriteWithoutLock
+        {
+            get
+            {
+                return Socket.Poll(0, SelectMode.SelectWrite);
+            }
+        }
+
 
         /// <summary>
         /// The encapsulated network socket.

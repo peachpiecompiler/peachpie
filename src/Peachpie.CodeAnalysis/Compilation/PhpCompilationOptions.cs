@@ -88,6 +88,12 @@ namespace Pchp.CodeAnalysis
         public PhpParseOptions ParseOptions { get; private set; }
 
         /// <summary>
+        /// The compilation language version.
+        /// Gets <see cref="PhpParseOptions.LanguageVersion"/> or default language version if not specified.
+        /// </summary>
+        public Version LanguageVersion => ParseOptions?.LanguageVersion ?? PhpSyntaxTree.DefaultLanguageVersion;
+
+        /// <summary>
         /// Options diagnostics.
         /// </summary>
         public ImmutableArray<Diagnostic> Diagnostics { get; private set; }
@@ -429,6 +435,16 @@ namespace Pchp.CodeAnalysis
             }
 
             return new PhpCompilationOptions(this) { PublicSign = publicSign };
+        }
+
+        public PhpCompilationOptions WithParseOptions(PhpParseOptions parseoptions)
+        {
+            if (ReferenceEquals(this.ParseOptions, parseoptions))
+            {
+                return this;
+            }
+
+            return new PhpCompilationOptions(this) { ParseOptions = parseoptions };
         }
 
         protected override CompilationOptions CommonWithGeneralDiagnosticOption(ReportDiagnostic value) => WithGeneralDiagnosticOption(value);

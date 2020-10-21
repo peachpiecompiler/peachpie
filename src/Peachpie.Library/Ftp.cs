@@ -712,7 +712,7 @@ namespace Pchp.Library
 
             try
             {
-                return DateTimeUtils.UtcToUnixTimeStamp(resource.Client.GetModifiedTime(remote_file, FtpDate.Original).ToUniversalTime());
+                return DateTimeUtils.UtcToUnixTimeStamp(resource.Client.GetModifiedTime(remote_file).ToUniversalTime());
             }
             catch (FtpCommandException ex)
             {

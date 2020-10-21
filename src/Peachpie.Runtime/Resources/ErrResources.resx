@@ -1643,4 +1643,10 @@ Additional information:
   <data name="invalid_socket_resource" xml:space="preserve">
     <value>Supplied resource is not a valid 'stream' resource</value>
   </data>
+  <data name="cannot_create_closure_from_callable" xml:space="preserve">
+    <value>Failed to create closure from callable</value>
+  </data>
+  <data name="too_few_arguments" xml:space="preserve">
+    <value>Too few arguments to function {0}(), {1} passed and at least {2} expected</value>
+  </data>
 </root>

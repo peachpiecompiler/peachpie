@@ -771,7 +771,14 @@ namespace Pchp.Library
 
                 static IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(object/*!*/obj)
                 {
-                    return TypeMembersUtils.EnumerateInstanceFields(obj, TypeMembersUtils.s_propertyName, TypeMembersUtils.s_keyToString);
+                    if (obj is IPhpJsonSerializable serializable_internal)
+                    {
+                        return serializable_internal.Properties;
+                    }
+                    else
+                    {
+                        return TypeMembersUtils.EnumerateInstanceFields(obj, TypeMembersUtils.s_propertyName, TypeMembersUtils.s_keyToString);
+                    }
                 }
             }
 
@@ -1034,7 +1041,18 @@ namespace Pchp.Library
         #endregion
     }
 
-    [PhpExtension("json")]
+    /// <summary>
+    /// Provides explicit object behavior for <see cref="JsonSerialization.json_encode"/>.
+    /// </summary>
+    public interface IPhpJsonSerializable
+    {
+        /// <summary>
+        /// Returns properties to be serialized.
+        /// </summary>
+        IEnumerable<KeyValuePair<string, PhpValue>> Properties { get; }
+    }
+
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]
     public static class JsonSerialization
     {
         #region Constants
@@ -1320,7 +1338,7 @@ namespace Pchp.Library
     /// if <see cref="JSON_THROW_ON_ERROR"/> flag is specified.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    [PhpExtension("json")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]
     public class JsonException : Spl.Exception
     {
         [PhpFieldsOnlyCtor]
@@ -1337,7 +1355,7 @@ namespace Pchp.Library
 /// Objects implementing JsonSerializable can customize their JSON representation when encoded with <see cref="Pchp.Library.JsonSerialization.json_encode"/>.
 /// </summary>
 [PhpType(PhpTypeAttribute.InheritName)]
-[PhpExtension("json")]
+[PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]
 public interface JsonSerializable
 {
     /// <summary>

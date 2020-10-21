@@ -1013,11 +1013,6 @@ namespace Peachpie.Library.XmlDom
         /// <returns><B>True</B> or <B>false</B>.</returns>
         public virtual bool schemaValidate(Context ctx, string schemaFile, int flags = 0)
         {
-            if ((flags & PhpLibXml.LIBXML_SCHEMA_CREATE) == PhpLibXml.LIBXML_SCHEMA_CREATE)
-            {
-                PhpException.Throw(PhpError.Warning, Resources.SchemaCreateUnsupported);
-            }
-
             XmlSchema schema;
 
             using (PhpStream stream = PhpStream.Open(ctx, schemaFile, "rt"))
@@ -1040,20 +1035,7 @@ namespace Peachpie.Library.XmlDom
                 }
             }
 
-            XmlDocument.Schemas.Add(schema);
-            try
-            {
-                XmlDocument.Validate(null);
-            }
-            catch (XmlException)
-            {
-                return false;
-            }
-            finally
-            {
-                XmlDocument.Schemas.Remove(schema);
-            }
-            return true;
+            return ValidateSchemaInternal(schema, flags);
         }
 
         /// <summary>
@@ -1065,11 +1047,6 @@ namespace Peachpie.Library.XmlDom
         /// <returns><B>True</B> or <B>false</B>.</returns>
         public virtual bool schemaValidateSource(Context ctx, string schemaString, int flags = 0)
         {
-            if ((flags & PhpLibXml.LIBXML_SCHEMA_CREATE) == PhpLibXml.LIBXML_SCHEMA_CREATE)
-            {
-                PhpException.Throw(PhpError.Warning, Resources.SchemaCreateUnsupported);
-            }
-
             XmlSchema schema;
 
             try
@@ -1082,18 +1059,41 @@ namespace Peachpie.Library.XmlDom
                 return false;
             }
 
-            XmlDocument.Schemas.Add(schema);
+            return ValidateSchemaInternal(schema, flags);
+        }
+
+        private bool ValidateSchemaInternal(XmlSchema schema, int flags)
+        {
+            bool createDefaults = (flags & PhpLibXml.LIBXML_SCHEMA_CREATE) == PhpLibXml.LIBXML_SCHEMA_CREATE;
+
             try
             {
-                XmlDocument.Validate(null);
+                if (createDefaults)
+                {
+                    // This way causes the default values to be created (even if the schema is later removed)
+                    XmlDocument.Schemas.Add(schema);
+                    XmlDocument.Validate(null);
+                }
+                else
+                {
+                    var schemaSet = new XmlSchemaSet();
+                    schemaSet.Add(schema);
+
+                    // By validating externally we prevent the default values from being created
+                    var xpathNavigator = XmlDocument.CreateNavigator();
+                    xpathNavigator.CheckValidity(schemaSet, null); 
+                }
             }
-            catch (XmlException)
+            catch (XmlSchemaException)
             {
                 return false;
             }
             finally
             {
-                XmlDocument.Schemas.Remove(schema);
+                if (createDefaults)
+                {
+                    XmlDocument.Schemas.Remove(schema);
+                }
             }
             return true;
         }

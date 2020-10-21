@@ -83,27 +83,6 @@ namespace Pchp.Core.Utilities
         public static char Last(this string str) => StringUtils.LastChar(str);
 
         /// <summary>
-        /// Fast trim of a specified character.
-        /// </summary>
-        public static string Trim(string str, char ch)
-        {
-            if (!string.IsNullOrEmpty(str))
-            {
-                int i = 0;
-                int j = str.Length - 1;
-
-                //
-                while (i < str.Length && str[i] == ch) i++;
-                while (j > i && str[j] == ch) j--;
-
-                //
-                return i < j ? str.Substring(i, j - i + 1) : string.Empty;
-            }
-
-            return str;
-        }
-
-        /// <summary>
         /// Fills a portion of an array of bytes by specified byte.
         /// </summary>
         /// <param name="array">The array to fill.</param>
@@ -233,6 +212,30 @@ namespace Pchp.Core.Utilities
         /// Gets value indicating the array is null or with no elements.
         /// </summary>
         public static bool IsNullOrEmpty<T>(T[] array) => array == null || array.Length == 0;
+
+        /// <summary>
+        /// Select elements from given list to a new array.
+        /// </summary>
+        public static TElement[] ToArray<T, TElement>(this List<T> list, Func<T, TElement> selector)
+        {
+            if (list == null || list.Count == 0)
+            {
+                return Array.Empty<TElement>();
+            }
+
+            if (selector == null)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            var arr = new TElement[list.Count];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i] = selector(list[i]);
+            }
+
+            return arr;
+        }
     }
 
     /// <summary>

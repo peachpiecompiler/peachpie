@@ -63,7 +63,7 @@ namespace Peachpie.Library.PDO.MySQL
         }
 
         /// <inheritDoc />
-        public override bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
+        public override bool TrySetAttribute(PDO pdo, Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
         {
             return false;
         }
