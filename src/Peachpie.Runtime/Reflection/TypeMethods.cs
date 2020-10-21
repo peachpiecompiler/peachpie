@@ -143,6 +143,7 @@ namespace Pchp.Core.Reflection
             return
                 access != MethodAttributes.Assembly &&
                 access != MethodAttributes.FamANDAssem &&
+                !m.IsSpecialName &&
                 !ReflectionUtils.IsPhpHidden(m);
         };
 
