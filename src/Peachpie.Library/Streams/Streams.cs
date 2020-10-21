@@ -522,7 +522,7 @@ namespace Pchp.Library.Streams
 	/// Class containing implementations of PHP functions accessing the <see cref="StreamWrapper"/>s.
 	/// </summary>
 	/// <threadsafety static="true"/>
-    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class PhpWrappers
     {
         #region stream_wrapper_register, stream_register_wrapper, stream_get_wrappers
