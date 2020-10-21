@@ -1317,6 +1317,7 @@ namespace Pchp.Library.Spl
             }
         }
 
+        [PhpHidden]
         public override string ToString() => __toString();
 
         protected private virtual void NextImpl()
