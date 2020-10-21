@@ -87,14 +87,14 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Gets cURL version information.
         /// </summary>
-        /// <param name="age">Ignored.
+        /// <param name="version">Ignored.
         /// Should be set to the version of this functionality by the time you write your program.
         /// This way, libcurl will always return a proper struct that your program understands, while programs
         /// in the future might get a different struct.
         /// <c>CURLVERSION_NOW</c> will be the most recent one for the library you have installed.</param>
         /// <returns>Array with version information.</returns>
         [return: NotNull]
-        public static PhpArray curl_version(int age = CURLConstants.CURLVERSION_NOW)
+        public static PhpArray curl_version(int version = CURLConstants.CURLVERSION_NOW)
         {
             // version_number       cURL 24 bit version number
             // version              cURL version number, as a string
@@ -184,7 +184,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Get information regarding a specific transfer.
         /// </summary>
-        public static PhpValue curl_getinfo(CURLResource ch, int opt = 0)
+        public static PhpValue curl_getinfo(CURLResource ch, int option = 0)
         {
             if (ch == null)
             {
@@ -194,7 +194,7 @@ namespace Peachpie.Library.Network
 
             var r = ch.Result ?? CURLResponse.Empty;
 
-            switch (opt)
+            switch (option)
             {
                 case 0:
                     // array of all information
@@ -242,7 +242,7 @@ namespace Peachpie.Library.Network
                 case CURLConstants.CURLINFO_HEADER_OUT:
                     return r.RequestHeaders ?? PhpValue.False;
                 default:
-                    PhpException.ArgumentValueNotSupported(nameof(opt), opt);
+                    PhpException.ArgumentValueNotSupported(nameof(option), option);
                     return PhpValue.False;
             }
         }
@@ -865,7 +865,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Set an option for the cURL multi handle.
         /// </summary>
-        public static bool curl_multi_setopt(CURLMultiResource mh, int option, PhpValue value)
+        public static bool curl_multi_setopt(CURLMultiResource sh, int option, PhpValue value)
         {
             // We keep the responsibility of multiple request handling completely on .NET framework
             PhpException.FunctionNotSupported(nameof(curl_multi_setopt));
