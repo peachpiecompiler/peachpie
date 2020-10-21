@@ -422,6 +422,11 @@ namespace Pchp.Core
             }
         }
 
+        public static void ObjectUsedAsArray(string typename)
+        {
+            throw ErrorException(ErrResources.object_used_as_array, typename);
+        }
+
         /// <summary>
         /// Recoverable fatal error: Object of class X could not be converted to string.
         /// </summary>

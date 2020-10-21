@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
@@ -374,6 +375,15 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias: return GetTypeName(value.Alias.Value);
                 default: throw new ArgumentException();
             }
+        }
+
+        /// <summary>
+        /// Gets the PHP class name of given object instance.
+        /// Returns <see cref="TypeNameNull"/> in case of argument is <c>null</c>.
+        /// </summary>
+        public static string GetClassName(object value)
+        {
+            return value != null ? value.GetPhpTypeInfo().Name : TypeNameNull;
         }
 
         #endregion
