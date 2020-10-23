@@ -40,7 +40,7 @@ namespace Pchp.Library.Spl
         
         protected int line;
 
-        internal protected void InitializeInternal()
+        private protected void InitializeInternal()
         {
             this.file = _stacktrace.GetFilename();
             this.line = _stacktrace.GetLine();
@@ -114,6 +114,9 @@ namespace Pchp.Library.Spl
 
         [PhpHidden]
         public override void GetObjectData(SerializationInfo info, StreamingContext context) => base.GetObjectData(info, context);
+
+        [PhpHidden]
+        public new Type GetType() => base.GetType();
     }
 
     /// <summary>
