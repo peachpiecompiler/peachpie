@@ -469,10 +469,8 @@ namespace Pchp.Library.Spl
 
         public virtual void __unserialize(PhpArray array)
         {
-            PhpValue value;
-
             // 0: flags:
-            if (array.TryGetValue(0, out value) && value.IsLong(out long flags))
+            if (array.TryGetValue(0, out var value) && value.IsLong(out var flags))
             {
                 _flags = (int)flags;
 
