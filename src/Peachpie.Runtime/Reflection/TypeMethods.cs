@@ -66,7 +66,7 @@ namespace Pchp.Core.Reflection
             int index = 0;
 
             // skip members of {System.Object} if we are in a PHP type
-            if (type.Type.AsType() != typeof(object))
+            if (type.Type != typeof(object))
             {
                 methods = methods.Where(s_notObjectMember);
             }
@@ -144,8 +144,20 @@ namespace Pchp.Core.Reflection
                 access != MethodAttributes.Assembly &&
                 access != MethodAttributes.FamANDAssem &&
                 !m.IsSpecialName &&
+                !IsSpecialHidden(m) &&
                 !ReflectionUtils.IsPhpHidden(m);
         };
+
+        static bool IsSpecialHidden(MethodInfo method)
+        {
+            if (method.DeclaringType == typeof(Exception) && method.Name == nameof(Exception.GetType))
+            {
+                // ignore Exception::GetType()
+                return true;
+            }
+
+            return false;
+        }
 
         static bool IsSpecialName(MethodInfo[] methods)
         {
