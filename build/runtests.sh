@@ -3,7 +3,7 @@
 
 # Absolute paths - https://stackoverflow.com/a/246128/2105235
 TESTS_DIR=$PWD/tests
-OUTPUT_DIR="$TESTS_DIR/bin/Release/netcoreapp3.0"
+OUTPUT_DIR="$TESTS_DIR/bin/Release/netcoreapp3.1"
 
 PHP_TMP_FILE=$OUTPUT_DIR/php.out
 PEACH_TMP_FILE=$OUTPUT_DIR/peach.out
@@ -19,9 +19,8 @@ for PHP_FILE in $(find $TESTS_DIR -name *.php)
 do
   # Run each file in the directory it is contained in (in order for relative paths to work)
   PHP_FILE_DIR=$(dirname $PHP_FILE)
-  cd $PHP_FILE_DIR
 
-  # Obtain the relative path to the PHP file so that the inclusion in Peachpie works properly
+  # Obtain the relative path for the log
   CUT_START=$((${#TESTS_DIR} + 2))
   PHP_FILE_REL=$(echo $PHP_FILE | cut -c $CUT_START-)
 
@@ -34,8 +33,10 @@ do
     continue;
   fi
 
+  cd TESTS_DIR
+
   PHP_OUTPUT="$(php -d display_errors=Off -d log_errors=Off $PHP_FILE)"
-  PEACH_OUTPUT="$(dotnet $OUTPUT_DIR/Tests.dll $PHP_FILE_REL)"
+  PEACH_OUTPUT="$(dotnet $OUTPUT_DIR/Tests.dll $PHP_FILE_DIR $PHP_FILE)"
 
   # .. or if either Peachpie or PHP returned a special string
   if [ "$PHP_OUTPUT" = "***SKIP***" -o "$PEACH_OUTPUT" = "***SKIP***" ] ; then
