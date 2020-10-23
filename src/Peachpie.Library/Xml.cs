@@ -907,18 +907,18 @@ namespace Pchp.Library
         /// <param name="parser">
         /// A reference to the XML parser to set up unparsed entity declaration handler function. 
         /// </param>
-        /// <param name="unparsed_entity_decl_handler">
+        /// <param name="hdl">
         /// String (or array) containing the name of a function that must exist when xml_parse() is 
         /// called for parser. 
         /// </param>
         /// <returns>Returns TRUE on success or FALSE on failure. </returns>
-        public static bool SetUnparsedEntityDeclHandler(PhpResource parser, PhpValue unparsed_entity_decl_handler)
+        public static bool xml_set_unparsed_entity_decl_handler(PhpResource parser, PhpValue hdl)
         {
             var xmlParser = XmlParserResource.ValidResource(parser);
             if (xmlParser == null)
                 return false;
 
-            PhpException.FunctionNotSupported("xml_set_unparsed_entity_decl_handler");
+            PhpException.FunctionNotSupported(nameof(xml_set_unparsed_entity_decl_handler));
             return false;
         }
 
