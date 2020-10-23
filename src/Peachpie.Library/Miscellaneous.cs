@@ -130,7 +130,6 @@ namespace Pchp.Library
 
         /// <summary>Ignored.</summary>
         public static int gc_mem_caches() => 0;
-
     }
 }
 
@@ -590,7 +589,7 @@ namespace Pchp.Library.Standard
                 throw new NotImplementedException(nameof(extension));
             }
 
-            return Environment.PHP_MAJOR_VERSION + "." + Environment.PHP_MINOR_VERSION + "." + Environment.PHP_RELEASE_VERSION;
+            return Library.Environment.PHP_MAJOR_VERSION + "." + Library.Environment.PHP_MINOR_VERSION + "." + Library.Environment.PHP_RELEASE_VERSION;
         }
 
         /// <summary>

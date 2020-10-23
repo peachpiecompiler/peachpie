@@ -13,7 +13,7 @@ using static Pchp.Core.PhpExtensionAttribute;
 namespace Pchp.Library
 {
     [PhpExtension(KnownExtensionNames.Standard)]
-    public static class Strings
+    public static partial class Strings
     {
         #region Character map
 
@@ -4114,9 +4114,10 @@ namespace Pchp.Library
         public static int sscanf(string str, string format, PhpAlias arg, params PhpAlias[] arguments)
         {
             if (arg == null)
-                throw new ArgumentNullException("arg");
+                throw new ArgumentNullException(nameof(arg));
+
             if (arguments == null)
-                throw new ArgumentNullException("arguments");
+                throw new ArgumentNullException(nameof(arguments));
 
             // assumes capacity same as the number of arguments:
             var result = new List<PhpValue>(arguments.Length + 1);
@@ -4127,7 +4128,7 @@ namespace Pchp.Library
             // the number of specifiers differs from the number of arguments:
             if (result.Count != arguments.Length + 1)
             {
-                PhpException.Throw(PhpError.Warning, LibResources.GetString("different_variables_and_specifiers", arguments.Length + 1, result.Count));
+                PhpException.Throw(PhpError.Warning, LibResources.different_variables_and_specifiers, (arguments.Length + 1).ToString(), result.Count.ToString());
                 return -1;
             }
 
@@ -4161,7 +4162,7 @@ namespace Pchp.Library
         /// <remarks><seealso cref="ParseString"/>.</remarks>
         public static PhpArray sscanf(string str, string format)
         {
-            return (PhpArray)ParseString(str, format, new PhpArray());
+            return ParseString(str, format, new PhpArray());
         }
 
         /// <summary>
@@ -4173,7 +4174,7 @@ namespace Pchp.Library
         /// <returns><paramref name="result"/> for convenience.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is a <B>null</B> reference.</exception>
         /// <exception cref="PhpException">Invalid formatting specifier.</exception>
-        public static IList<PhpValue> ParseString(string str, string format, IList<PhpValue> result)
+        static T ParseString<T>(string str, string format, T result) where T : IList<PhpValue>
         {
             if (result == null)
                 throw new ArgumentNullException(nameof(result));
@@ -4218,7 +4219,7 @@ namespace Pchp.Library
                         if (f == format.Length)
                         {
                             PhpException.Throw(PhpError.Warning, LibResources.invalid_scan_conversion_character, "null");
-                            return null;
+                            return default;
                         }
                     }
                     else
@@ -4271,13 +4272,13 @@ namespace Pchp.Library
                             else
                             {
                                 PhpException.Throw(PhpError.Warning, LibResources.unmathed_format_bracket);
-                                return null;
+                                return default;
                             }
                         }
                         else
                         {
                             PhpException.Throw(PhpError.Warning, LibResources.invalid_scan_conversion_character, c.ToString());
-                            return null;
+                            return default;
                         }
                     }
 
@@ -4319,7 +4320,7 @@ namespace Pchp.Library
         /// Specifier should be enclosed to brackets '[', ']' and can contain complement character '^' at the beginning.
         /// The first character after '[' or '^' can be ']'. In such a case the specifier continues to the next ']'.
         /// </remarks>
-        private static CharMap ParseRangeSpecifier(string format, ref int f, out bool complement)
+        static CharMap ParseRangeSpecifier(string format, ref int f, out bool complement)
         {
             Debug.Assert(format != null && f > 0 && f < format.Length && format[f] == '[');
 
@@ -5554,6 +5555,79 @@ namespace Pchp.Library
         //}
 
         #endregion
+
+        #region utf8_encode, utf8_decode
+
+        /// <summary>
+        /// ISO-8859-1 <see cref="Encoding"/>.
+        /// </summary>
+        static Encoding/*!*/ISO_8859_1_Encoding
+        {
+            get
+            {
+                if (_ISO_8859_1_Encoding == null)
+                {
+                    _ISO_8859_1_Encoding = Encoding.GetEncoding("ISO-8859-1");
+                    Debug.Assert(_ISO_8859_1_Encoding != null);
+                }
+
+                return _ISO_8859_1_Encoding;
+            }
+        }
+        static Encoding _ISO_8859_1_Encoding;
+
+        /// <summary>
+        /// This function encodes the string data to UTF-8, and returns the encoded version. UTF-8 is
+        /// a standard mechanism used by Unicode for encoding wide character values into a byte stream.
+        /// UTF-8 is transparent to plain ASCII characters, is self-synchronized (meaning it is 
+        /// possible for a program to figure out where in the bytestream characters start) and can be
+        /// used with normal string comparison functions for sorting and such. PHP encodes UTF-8
+        /// characters in up to four bytes.
+        /// </summary>
+        /// <param name="data">An ISO-8859-1 string. </param>
+        /// <returns>Returns the UTF-8 translation of data.</returns>
+        //[return:CastToFalse]
+        public static string utf8_encode(PhpString data)
+        {
+            if (data.IsEmpty)
+            {
+                return string.Empty;
+            }
+
+            // this function transforms ISO-8859-1 binary string into UTF8 string
+            // since our internal representation is native CLR string - UTF16, we have changed this semantic for Unicode input.
+            // - Any native String is not modified. The string was already encoded into a valid UTF16 sequence.
+            // - byte[] is treated as ISO-8859-1 encoded, and will be decoded to UTF16
+
+            // This behavior has two reasons:
+            // - compatibility with Unicode behavior; already encoded string should not be decoded/encoded again
+            // - performance; instances of already encoded immutable strings are simply reused
+
+            // ISO-8859-1 is 8bit encoding so we don't have to concatenate the byte[] segments into a single array
+            // Any segments already encoded as System.String are returned as it is;
+            return data.ToString(ISO_8859_1_Encoding);
+        }
+
+        /// <summary>
+        /// This function decodes data, assumed to be UTF-8 encoded, to ISO-8859-1.
+        /// </summary>
+        /// <param name="data">An ISO-8859-1 string. </param>
+        /// <returns>Returns the UTF-8 translation of data.</returns>
+        public static PhpString utf8_decode(string data)
+        {
+            if (data == null)
+            {
+                return new PhpString();  // empty (binary) string
+            }
+
+            // this function converts the UTF8 representation to ISO-8859-1 representation
+            // we assume CLR string (UTF16) as input as it is our internal representation
+
+            // if we got System.String string, convert it from UTF16 CLR representation into ISO-8859-1 binary representation
+            return new PhpString(ISO_8859_1_Encoding.GetBytes(data));
+        }
+
+        #endregion
     }
 
     [PhpExtension(KnownExtensionNames.Core)]
@@ -5641,7 +5715,7 @@ namespace Pchp.Library
     [PhpExtension(KnownExtensionNames.Ctype)]
     public static class StringsCtype
     {
-         #region ctype_*
+        #region ctype_*
 
         public static bool ctype_alnum(string text)
         {
