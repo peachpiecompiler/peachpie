@@ -33,7 +33,7 @@ do
     continue;
   fi
 
-  cd TESTS_DIR
+  cd $TESTS_DIR
 
   PHP_OUTPUT="$(php -d display_errors=Off -d log_errors=Off $PHP_FILE)"
   PEACH_OUTPUT="$(dotnet $OUTPUT_DIR/Tests.dll $PHP_FILE_DIR $PHP_FILE)"
