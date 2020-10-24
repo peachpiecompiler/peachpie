@@ -463,7 +463,7 @@ namespace Pchp.Library.Spl
                 _flags,
                 PhpValue.FromClr(storage),
                 __peach__runtimeFields ?? PhpArray.NewEmpty(),
-                //PhpValue.Null, // NULL for ArrayIterator, seems in some versions of PHP it is ommited
+                PhpValue.Null, // NULL for ArrayIterator, seems in some versions of PHP it is ommited
             };
         }
 

@@ -253,12 +253,8 @@ namespace Pchp.Library.Spl
                 _flags,
                 PhpValue.FromClr(_underlayingArray ?? _underlayingObject),
                 __peach__runtimeFields ?? PhpArray.NewEmpty(),
+                _iteratorClass, // = NULL for ArrayIterator
             };
-
-            if (_iteratorClass != null)
-            {
-                arr.Add(_iteratorClass); // = NULL for ArrayIterator
-            }
 
             return arr;
         }
