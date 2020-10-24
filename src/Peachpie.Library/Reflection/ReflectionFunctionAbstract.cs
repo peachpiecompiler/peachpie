@@ -191,6 +191,7 @@ namespace Pchp.Library.Reflection
 
         public virtual string __toString() { throw new NotImplementedException(); }
 
+        [PhpHidden]
         public override string ToString() => __toString();
     }
 }

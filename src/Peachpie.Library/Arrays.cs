@@ -9,8 +9,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using static Pchp.Core.PhpExtensionAttribute;
 
-namespace Pchp.Library
+namespace Pchp.Library.Standard
 {
     #region Enumerations
 
@@ -73,7 +74,7 @@ namespace Pchp.Library
     /// <summary>
     /// Implements PHP array functions.
     /// </summary>
-    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
+    [PhpExtension(KnownExtensionNames.Standard)]
     public static class Arrays
     {
         #region Constants
@@ -97,7 +98,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region reset, pos, prev, next, key, end, each
+        #region reset, pos, prev, next, key, end
 
         /// <summary>
         /// Retrieves a value being pointed by an array intrinsic enumerator.
@@ -236,48 +237,6 @@ namespace Pchp.Library
             return (array.IntrinsicEnumerator.MoveFirst())
                 ? array.IntrinsicEnumerator.CurrentValue.GetValue()
                 : PhpValue.False;
-        }
-
-        /// <summary>
-        /// Retrieves the current entry and advances array intrinsic enumerator one item forward.
-        /// </summary>
-        /// <param name="arr">The array which entry get and which intrinsic enumerator to advance.</param>
-        /// <returns>
-        /// The instance of <see cref="PhpArray"/>(0 =&gt; key, 1 =&gt; value, "key" =&gt; key, "value" =&gt; value)
-        /// where key and value are pointed by the enumerator before it is advanced
-        /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="arr"/>
-        /// before the call.
-        /// </returns>
-        [Obsolete]
-        [return: CastToFalse]
-        public static PhpArray each(PhpArray arr)
-        {
-            if (arr == null)
-            {
-                PhpException.ArgumentNull(nameof(arr));
-                return null;
-            }
-
-            if (arr.IntrinsicEnumerator.AtEnd)
-            {
-                return null;
-            }
-
-            var entry = arr.IntrinsicEnumerator.Current;
-            arr.IntrinsicEnumerator.MoveNext();
-
-            // dereferences result since enumerator doesn't do so:
-            var key = entry.Key;
-            var value = entry.Value.GetValue();
-
-            // creates the resulting array:
-            return new PhpArray(4)
-            {
-                { 1, value.DeepCopy() },
-                { "value", value.DeepCopy() },
-                { 0, key },
-                { "key", key },
-            };
         }
 
         #endregion
@@ -3360,5 +3319,57 @@ namespace Pchp.Library
         }
 
         #endregion
+    }
+}
+
+namespace Pchp.Library
+{
+    /// <summary>
+    /// Implements PHP array functions.
+    /// </summary>
+    [PhpExtension(KnownExtensionNames.Core)]
+    public static class Arrays
+    {
+        /// <summary>
+        /// Retrieves the current entry and advances array intrinsic enumerator one item forward.
+        /// </summary>
+        /// <param name="arr">The array which entry get and which intrinsic enumerator to advance.</param>
+        /// <returns>
+        /// The instance of <see cref="PhpArray"/>(0 =&gt; key, 1 =&gt; value, "key" =&gt; key, "value" =&gt; value)
+        /// where key and value are pointed by the enumerator before it is advanced
+        /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="arr"/>
+        /// before the call.
+        /// </returns>
+        [Obsolete]
+        [return: CastToFalse]
+        public static PhpArray each(PhpArray arr)
+        {
+            if (arr == null)
+            {
+                PhpException.ArgumentNull(nameof(arr));
+                return null;
+            }
+
+            if (arr.IntrinsicEnumerator.AtEnd)
+            {
+                return null;
+            }
+
+            var entry = arr.IntrinsicEnumerator.Current;
+            arr.IntrinsicEnumerator.MoveNext();
+
+            // dereferences result since enumerator doesn't do so:
+            var key = entry.Key;
+            var value = entry.Value.GetValue();
+
+            // creates the resulting array:
+            return new PhpArray(4)
+            {
+                { 1, value.DeepCopy() },
+                { "value", value.DeepCopy() },
+                { 0, key },
+                { "key", key },
+            };
+        }
     }
 }

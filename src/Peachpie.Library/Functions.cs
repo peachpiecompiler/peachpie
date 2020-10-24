@@ -14,71 +14,6 @@ namespace Pchp.Library
     [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Functions
     {
-        #region call_user_func, call_user_func_array
-
-        /// <summary>
-		/// Calls a function or a method defined by callback with given arguments.
-		/// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="function">Target callback.</param>
-		/// <param name="args">The arguments.</param>
-		/// <returns>The return value.</returns>
-		public static PhpValue call_user_func(Context ctx, IPhpCallable function, params PhpValue[] args)
-        {
-            if (function == null)
-            {
-                PhpException.ArgumentNull("function");
-                return PhpValue.Null;
-            }
-            else if (!PhpVariable.IsValidBoundCallback(ctx, function))
-            {
-                PhpException.InvalidArgument(nameof(function));
-                return PhpValue.Null;
-            }
-
-            Debug.Assert(args != null);
-
-            // invoke the callback:
-            return function.Invoke(ctx, args);
-        }
-
-        /// <summary>
-        /// Calls a function or a method defined by callback with arguments stored in an array.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="function">Target callback.</param>
-        /// <param name="args">Arguments. Can be null.</param>
-        /// <returns>The returned value.</returns>
-        public static PhpValue call_user_func_array(Context ctx, IPhpCallable function, PhpArray args)
-        {
-            return call_user_func(ctx, function, args.GetValues());
-        }
-
-        /// <summary>
-        /// Calls a user defined function or method given by the function parameter, with the following arguments.
-        /// This function must be called within a method context, it can't be used outside a class.
-        /// It uses the late static binding.
-        /// </summary>
-        public static PhpValue forward_static_call(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)]PhpTypeInfo @static, IPhpCallable function, params PhpValue[] args)
-        {
-            return (function is PhpCallback phpc)
-                ? phpc.BindToStatic(ctx, @static)(ctx, args)
-                : call_user_func(ctx, function, args);
-        }
-
-        /// <summary>
-        /// Calls a user defined function or method given by the function parameter.
-        /// This function must be called within a method context, it can't be used outside a class.
-        /// It uses the late static binding.
-        /// All arguments of the forwarded method are passed as values, and as an array, similarly to <see cref="call_user_func_array"/>.
-        /// </summary>
-        public static PhpValue forward_static_call_array(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)]PhpTypeInfo @static, IPhpCallable function, PhpArray args)
-        {
-            return forward_static_call(ctx, @static, function, args.GetValues());
-        }
-
-        #endregion
-
         #region func_num_args, func_get_arg, func_get_args
 
         /// <summary>
@@ -188,6 +123,78 @@ namespace Pchp.Library
 
             //
             return result;
+        }
+
+        #endregion        
+    }
+}
+
+namespace Pchp.Library.Standard
+{
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
+    public static class Functions
+    {
+        #region call_user_func, call_user_func_array
+
+        /// <summary>
+		/// Calls a function or a method defined by callback with given arguments.
+		/// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="function">Target callback.</param>
+		/// <param name="args">The arguments.</param>
+		/// <returns>The return value.</returns>
+		public static PhpValue call_user_func(Context ctx, IPhpCallable function, params PhpValue[] args)
+        {
+            if (function == null)
+            {
+                PhpException.ArgumentNull("function");
+                return PhpValue.Null;
+            }
+            else if (!PhpVariable.IsValidBoundCallback(ctx, function))
+            {
+                PhpException.InvalidArgument(nameof(function));
+                return PhpValue.Null;
+            }
+
+            Debug.Assert(args != null);
+
+            // invoke the callback:
+            return function.Invoke(ctx, args);
+        }
+
+        /// <summary>
+        /// Calls a function or a method defined by callback with arguments stored in an array.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="function">Target callback.</param>
+        /// <param name="args">Arguments. Can be null.</param>
+        /// <returns>The returned value.</returns>
+        public static PhpValue call_user_func_array(Context ctx, IPhpCallable function, PhpArray args)
+        {
+            return call_user_func(ctx, function, args.GetValues());
+        }
+
+        /// <summary>
+        /// Calls a user defined function or method given by the function parameter, with the following arguments.
+        /// This function must be called within a method context, it can't be used outside a class.
+        /// It uses the late static binding.
+        /// </summary>
+        public static PhpValue forward_static_call(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)] PhpTypeInfo @static, IPhpCallable function, params PhpValue[] args)
+        {
+            return (function is PhpCallback phpc)
+                ? phpc.BindToStatic(ctx, @static)(ctx, args)
+                : call_user_func(ctx, function, args);
+        }
+
+        /// <summary>
+        /// Calls a user defined function or method given by the function parameter.
+        /// This function must be called within a method context, it can't be used outside a class.
+        /// It uses the late static binding.
+        /// All arguments of the forwarded method are passed as values, and as an array, similarly to <see cref="call_user_func_array"/>.
+        /// </summary>
+        public static PhpValue forward_static_call_array(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)] PhpTypeInfo @static, IPhpCallable function, PhpArray args)
+        {
+            return forward_static_call(ctx, @static, function, args.GetValues());
         }
 
         #endregion

@@ -140,7 +140,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 var tmp = (NamedTypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
                                 if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())
                                 {
-                                    if (tmp.LookupMethods(str).Any())
+                                    if (tmp.LookupMethods(str).Count != 0) // TODO: why not User Types // TODO: why not resolve FALSE as well below?
                                     {
                                         call.ConstantValue = ConstantValueExtensions.AsOptional(true);
                                     }

@@ -83,6 +83,7 @@ namespace Pchp.Core
             public const string Date = "date";
             public const string Reflection = "Reflection";
             public const string Json = "json";
+            public const string Ctype = "ctype";
         }
 
         /// <summary>

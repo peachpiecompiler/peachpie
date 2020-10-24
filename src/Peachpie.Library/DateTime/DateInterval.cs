@@ -95,13 +95,18 @@ namespace Pchp.Library.DateTime
 
             invert = span.Ticks < 0 ? 1 : 0;
 
+            // For computing the total number of day, we do this without taking account the time part
+            //_days = Math.Abs((int)date2.Date.Subtract(date1.Date).TotalDays); // gives different results than in PHP
+
+            // this seems to work as expected:
+            var days = span.TotalDays;
+            //_days = days >= 0.0 ? (int)days : (int)(1.0 - days);
+            _days = (int)Math.Abs(days);
+
             CalculateDifference(date1, date2, out y, out m, out span);
 
             Debug.Assert(span.Ticks >= 0); // absolutized
             _span = span;
-
-            // For computing the total number of day, we do this without taking account the time part
-            _days = Math.Abs((int)date2.Date.Subtract(date1.Date).TotalDays);
         }
 
         internal bool IsZero

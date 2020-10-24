@@ -21,7 +21,7 @@ namespace Peachpie.Library.XmlDom
         Always = -1
     }
 
-    [PhpExtension("dom")]
+    [PhpExtension("xsl")]
     public static class XsltConstants
     {
         public const int XSL_CLONE_AUTO = (int)CloneType.Auto;
@@ -54,7 +54,7 @@ namespace Peachpie.Library.XmlDom
         private XsltArgumentList xsltArgumentList;
         private XsltUserFunctionHandler xsltUserFunctionHandler;
 
-        private const string PhpNameSpaceUri = "http://php.net/xsl";
+        private protected const string PhpNameSpaceUri = "http://php.net/xsl";
 
         private static bool mvpXmlAvailable;
         private static Type mvpXmlType;

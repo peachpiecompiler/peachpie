@@ -183,7 +183,7 @@ namespace Pchp.Core
                     {
                         foreach (var m in t.ContainerType.GetMethods())
                         {
-                            if (m.IsPublic && m.IsStatic && !m.IsPhpHidden())
+                            if (m.IsPublic && m.IsStatic && !m.IsSpecialName && !m.IsPhpHidden())
                             {
                                 ExtensionsAppContext.ExtensionsTable.AddRoutine(attr, RoutinesTable.DeclareAppRoutine(m.Name, m));
                             }

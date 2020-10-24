@@ -1,3 +1,4 @@
 <?php
 
-include $argv[1];
+chdir($argv[1]);
+include $argv[2];

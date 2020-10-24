@@ -43,16 +43,16 @@ namespace Pchp.Library
         #region base64_decode, base64_encode
 
         [return: CastToFalse]
-        public static PhpString base64_decode(string encoded_data, bool strict = false)
+        public static PhpString base64_decode(string str, bool strict = false)
         {
-            if (string.IsNullOrEmpty(encoded_data))
+            if (string.IsNullOrEmpty(str))
             {
                 return default; // FALSE
             }
 
             try
             {
-                return new PhpString(Base64Utils.FromBase64(encoded_data.AsSpan(), strict));
+                return new PhpString(Base64Utils.FromBase64(str.AsSpan(), strict));
             }
             catch (FormatException)
             {
@@ -62,9 +62,9 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public static string base64_encode(Context ctx, PhpString data_to_encode)
+        public static string base64_encode(Context ctx, PhpString str)
         {
-            return System.Convert.ToBase64String(data_to_encode.ToBytes(ctx.StringEncoding));
+            return System.Convert.ToBase64String(str.ToBytes(ctx.StringEncoding));
         }
 
         #endregion

@@ -12,6 +12,7 @@ using BCrypt.Net;
 using Isopoh.Cryptography.SecureArray;
 using System.Text.RegularExpressions;
 using System.Threading;
+using static Pchp.Library.PhpHash;
 
 namespace Pchp.Library
 {
@@ -45,6 +46,1035 @@ namespace Pchp.Library
         {
 
         }
+    }
+
+    // PhpExtension "standard"
+    public static partial class Strings
+    {
+        #region crc32, md5, md5_file, sha1, sha1_file, sha256, sha256_file
+
+        /// <summary>
+        /// Calculates the crc32 polynomial of a string of bytes.
+        /// </summary>
+        /// <param name="bytes">The string of bytes to compute crc32 of.</param>
+        /// <returns>The CRC32 of <paramref name="bytes"/>.</returns>
+        /// <remarks>
+        /// Generates the cyclic redundancy checksum polynomial of 32-bit lengths of the str. This is usually used to validate the integrity of data being transmitted.
+        /// On 64bit installations all crc32() results will be positive integers.
+        /// </remarks>
+        public static long crc32(byte[] bytes)
+        {
+            return HashPhpResource.CRC32B.ComputeCRC32(bytes);
+        }
+
+        /// <summary>
+        /// Calculate the md5 hash of a string.
+        /// </summary>
+        /// <param name="bytes">Input string.</param>
+        /// <param name="raw_output">If the optional raw_output is set to TRUE, then the md5 digest is instead returned in raw binary format with a length of 16.</param>
+        /// <returns>Returns the hash as a 32-character hexadecimal number.</returns>
+        public static PhpString md5(byte[] bytes, bool raw_output = false)
+        {
+            var hash = MD5.Create().ComputeHash(bytes);
+            return raw_output
+                ? new PhpString(hash)
+                : new PhpString(StringUtils.BinToHex(hash, string.Empty));
+        }
+
+        /// <summary>
+        /// Calculates the md5 hash of a given file.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>MD5 of given <paramref name="fileName"/> content.</returns>
+        public static PhpString md5_file(Context ctx, string fileName, bool rawOutput = false)
+        {
+            return HashFromFile(ctx, MD5.Create(), fileName, rawOutput);
+        }
+
+        /// <summary>
+        /// Calculate the SHA1 hash of a string of bytes.
+        /// </summary>
+        /// <param name="ctx">Runtime context used for unicode conversions.
+        /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>md5 of <paramref name="bytes"/>.</returns>
+        public static string sha1(Context ctx, byte[] bytes)
+        {
+            return StringUtils.BinToHex(SHA1.Create().ComputeHash(bytes));
+        }
+
+        /// <summary>
+        /// Calculate the SHA1 hash of a string of bytes.
+        /// </summary>
+        /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
+        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>md5 of <paramref name="bytes"/>.</returns>
+        public static PhpString sha1(byte[] bytes, bool rawOutput = false)
+        {
+            return HashBytes(SHA1.Create(), bytes, rawOutput);
+        }
+
+        /// <summary>
+        /// Calculates the SHA1 hash of a given file.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>SHA1 of <paramref name="fileName"/> content.</returns>
+        public static PhpString sha1_file(Context ctx, string fileName, bool rawOutput = false)
+        {
+            return HashFromFile(ctx, SHA1.Create(), fileName, rawOutput);
+        }
+
+        /// <summary>
+        /// Calculate the SHA256 hash of a string of bytes.
+        /// </summary>
+        /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
+        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>md5 of <paramref name="bytes"/>.</returns>
+        public static PhpString sha256(byte[] bytes, bool rawOutput = false)
+        {
+            return HashBytes(SHA256.Create(), bytes, rawOutput);
+        }
+
+        /// <summary>
+        /// Calculates the SHA256 hash of a given file.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>SHA1 of <paramref name="fileName"/> content.</returns>
+        public static PhpString sha256_file(Context ctx, string fileName, bool rawOutput = false)
+        {
+            return HashFromFile(ctx, SHA256.Create(), fileName, rawOutput);
+        }
+
+        /// <summary>
+        /// Computes a hash of a string of bytes using specified algorithm.
+        /// </summary>
+        static PhpString HashBytes(HashAlgorithm/*!*/ algorithm, byte[] bytes, bool rawOutput = false)
+        {
+            if (bytes == null)
+            {
+                return default(PhpString);
+            }
+
+            byte[] hash = algorithm.ComputeHash(bytes);
+
+            return (rawOutput)
+                ? new PhpString(hash)
+                : new PhpString(StringUtils.BinToHex(hash, null));
+        }
+
+        /// <summary>
+        /// Computes a hash of a file using specified algorithm.
+        /// </summary>
+        static PhpString HashFromFile(Context ctx, HashAlgorithm/*!*/ algorithm, string fileName, bool rawOutput = false)
+        {
+            byte[] hash;
+
+            try
+            {
+                using (PhpStream stream = PhpStream.Open(ctx, fileName, "rb", StreamOpenOptions.Empty, StreamContext.Default))
+                //using (FileStream file = new FileStream(ctx, fileName, FileMode.Open, FileAccess.Read))
+                {
+                    if (stream == null)
+                        return default(PhpString);
+
+                    var data = stream.ReadContents();
+                    if (data.IsNull)
+                    {
+                        return default(PhpString);
+                    }
+
+                    var bytes = data.AsBytes(ctx.StringEncoding);
+                    if (bytes == null)
+                    {
+                        return default(PhpString);
+                    }
+
+                    hash = algorithm.ComputeHash(bytes);
+                }
+            }
+            catch (System.Exception)
+            {
+                return default(PhpString);
+            }
+
+            return rawOutput
+                ? new PhpString(hash)
+                : new PhpString(StringUtils.BinToHex(hash));
+        }
+
+        #endregion
+
+        #region password_hash (Constants)
+
+        private const int costDefault = 10;
+        private const int threadsDefault = 1;
+        private const int memory_costDefault = 4;
+
+        public const string PASSWORD_DEFAULT = null;
+        public const string PASSWORD_BCRYPT = "2y";
+        public const string PASSWORD_ARGON2I = "argon2i";
+        public const string PASSWORD_ARGON2ID = "argon2id";
+
+        /// <summary>
+        /// Internal password type for <c>password_*</c> functions.
+        /// </summary>
+        private enum PasswordType
+        {
+            Default = 0,
+            BCrypt = 1,
+            Argon2i = 2,
+            Argon2id = 3,
+            Unknown = 4
+        }
+
+        #endregion
+
+        #region password_hash, password_verify, password_needs_rehash, password_get_info
+
+        /// <summary>
+        /// Since PHP 7.4, the <c>PASSWORD_*</c> constants were changed to nullable strings, but the functions still support the original ints.
+        /// See https://wiki.php.net/rfc/password_registry
+        /// </summary>
+        private static PasswordType ParsePasswordType(PhpValue value)
+        {
+            if (value.IsString(out string str))
+            {
+                return str switch
+                {
+                    PASSWORD_BCRYPT => PasswordType.BCrypt,
+                    PASSWORD_ARGON2I => PasswordType.Argon2i,
+                    PASSWORD_ARGON2ID => PasswordType.Argon2id,
+                    _ => PasswordType.Unknown
+                };
+            }
+            else if (value.IsNull)
+            {
+                return PasswordType.Default;
+            }
+            else if (value.IsLong(out long i))
+            {
+                return (i >= (long)PasswordType.Default && i < (long)PasswordType.Unknown) ? (PasswordType)i : PasswordType.Unknown;
+            }
+            else
+            {
+                return PasswordType.Unknown;
+            }
+        }
+
+        static PasswordType GetPasswordType(string name)
+        {
+            if (name != null)
+            {
+                if (name.EqualsOrdinalIgnoreCase("argon2i")) return PasswordType.Argon2i;
+                if (name.EqualsOrdinalIgnoreCase("argon2id")) return PasswordType.Argon2id;
+            }
+
+            return PasswordType.Default;
+        }
+
+        private static bool CheckCost(PhpValue value, int lowerBound, int upperBound, string warnBoundFail, out int checkedValue)
+        {
+            checkedValue = value.ToInt();
+            if (checkedValue >= lowerBound && checkedValue <= upperBound)
+            {
+                return true;
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Warning, warnBoundFail);
+                return false;
+            }
+        }
+
+        private static PhpValue HashPasswordArgon2(string password, PhpArray opt, bool argon2i_id)
+        {
+
+            // Default setting for argon2
+            int memory_cost = memory_costDefault;
+            int time_cost = costDefault;
+            int threads = threadsDefault;
+
+            if (opt != null)
+            {
+                PhpValue value;
+
+                // Argument memory cost for argon2
+                if (opt.TryGetValue("memory_cost", out value) && !CheckCost(value, 4, int.MaxValue, Resources.LibResources.argon2_memory, out memory_cost))
+                    return PhpValue.False;
+
+                // Argument time cost for argon2
+                if (opt.TryGetValue("time_cost", out value) && !CheckCost(value, 1, int.MaxValue, Resources.LibResources.argon2_time, out time_cost))
+                    return PhpValue.False;
+
+                // Argument threads for argon2
+                if (opt.TryGetValue("threads", out value) && !CheckCost(value, 1, int.MaxValue, Resources.LibResources.argon2_threads, out threads))
+                    return PhpValue.False;
+            }
+
+            return HashArgon2(password ?? string.Empty, time_cost, memory_cost, threads, argon2i_id);
+        }
+
+        private static PhpValue HashPasswordBlowfish(string password, PhpArray opt)
+        {
+            // Default setting for bcrypt
+            int cost = costDefault;
+            string salt = BCrypt.Net.BCrypt.GenerateSalt(cost);
+
+            if (opt != null)
+            {
+                // Argument cost for bcrypt
+                if (opt.TryGetValue("cost", out var costValue))
+                {
+                    int costInt = costValue.ToInt();
+
+                    if (costInt >= 4 && costInt <= 31) // Check  right value
+                    {
+                        cost = costInt;
+                    }
+                    else
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_invalid_cost, costInt.ToString());
+                        return PhpValue.False;
+                    }
+                }
+
+                // Argument salt for bcrypt
+                if (opt.TryGetValue("salt", out var saltValue))
+                {
+                    PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_deprecated);
+                    if (saltValue.IsString(out salt)) // Check value
+                    {
+                        if (salt.Length < 22)
+                        {
+                            PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_too_short, salt.Length.ToString());
+                            return PhpValue.False;
+                        }
+                        else if (salt.Length > 22)
+                        {
+                            salt = salt.Remove(22);
+                        }
+
+                        //
+                        salt = $"$2y${cost}${salt}";
+                    }
+                    else
+                    {
+                        PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_nonstring_salt);
+                        return PhpValue.False;
+                    }
+                }
+            }
+
+            return PhpValue.Create(BCrypt.Net.BCrypt.HashPassword(password ?? string.Empty, salt));
+        }
+
+        /// <summary>
+        /// Creates a password hash
+        /// </summary>
+        /// <param name="password">The user's password.</param>
+        /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
+        /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
+        /// <returns>Returns the hashed password, or FALSE on failure.</returns>
+        public static PhpValue password_hash(string password, PhpValue algo, PhpArray opt = null)
+        {
+            var algoType = ParsePasswordType(algo);
+
+            switch (algoType)
+            {
+                // Default
+                case PasswordType.Default:
+                // Blowfish
+                case PasswordType.BCrypt:
+                    return HashPasswordBlowfish(password, opt);
+                // Argon2i
+                case PasswordType.Argon2i:
+                case PasswordType.Argon2id:
+                    return HashPasswordArgon2(password, opt, algoType == PasswordType.Argon2i);
+                // Unknown algorithm
+                default:
+                    return PhpValue.False;
+            }
+        }
+
+        /// <summary>
+        /// Verifies that a password matches a hash.
+        /// </summary>
+        public static bool password_verify(string password, string hash)
+        {
+            return !string.IsNullOrEmpty(hash) && (hash.StartsWith("$argon2i", StringComparison.Ordinal) ? Argon2.Verify(hash, password) : crypt(password, hash) == hash);
+        }
+
+        readonly static Regex s_expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2i)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// This function checks to see if the supplied hash implements the algorithm and options provided. If not, it is assumed that the hash needs to be rehashed.
+        /// </summary>
+        /// <param name="hash">A hash created by password_hash()</param>
+        /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
+        /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
+        /// <returns>Returns TRUE if the hash should be rehashed to match the given algo and options, or FALSE otherwise.</returns>
+        public static bool password_needs_rehash(string hash, PhpValue algo, PhpArray opt = null)
+        {
+            if (string.IsNullOrEmpty(hash))
+            {
+                return true;
+            }
+
+            var result = false;
+
+            var algoType = ParsePasswordType(algo);
+
+            switch (algoType)
+            {
+                // Default
+                case PasswordType.Default:
+                // BCrypt
+                case PasswordType.BCrypt:
+                    string[] hashParts = hash.Split('$');
+
+                    if (hashParts.Length >= 3 && hashParts[1].Length >= 2 && hashParts[1][0] == '2') // $2 $ Right algorithm
+                    {
+                        if (opt != null && opt.TryGetValue("cost", out var costValue)) // Check options
+                        {
+                            result = !(hashParts[2] == costValue.ToLong().ToString());
+                        }
+                    }
+                    else
+                    {
+                        result = true;
+                    }
+                    break;
+                // Argon2i
+                case PasswordType.Argon2i:
+                // Argon2id
+                case PasswordType.Argon2id:
+
+                    var match = s_expressionHashArgon2.Match(hash);
+                    if (match.Success && algoType == GetPasswordType(match.Groups[1].Value)) // Check right algorithm
+                    {
+                        if (opt != null) // Check options
+                        {
+                            if (opt.TryGetValue("memory_cost", out var memoryValue))
+                                result |= memoryValue.ToLong() != long.Parse(match.Groups[2].Value);
+
+                            if (opt.TryGetValue("time_cost", out var timeValue))
+                                result |= timeValue.ToLong() != long.Parse(match.Groups[3].Value);
+
+                            if (opt.TryGetValue("threads", out var threadsValue))
+                                result |= threadsValue.ToLong() != long.Parse(match.Groups[4].Value);
+                        }
+                    }
+                    else
+                    {
+                        result = true;
+                    }
+                    break;
+                // Unknown algorithm
+                default:
+                    result = true;
+                    break;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// When passed in a valid hash created by an algorithm supported by password_hash(), this function will return an array of information about that hash.
+        /// </summary>
+        /// <param name="hash">A hash created by password_hash().</param>
+        /// <returns>Returns an associative array with three elements:algo, algoName, options</returns>
+        public static PhpArray password_get_info(string hash)
+        {
+            if (!string.IsNullOrEmpty(hash))
+            {
+                try
+                {
+                    // try BCrypt, may throw if fails
+                    var info = BCrypt.Net.BCrypt.InterrogateHash(hash);
+
+                    return new PhpArray(3)
+                    {
+                        { "algo", PASSWORD_BCRYPT },
+                        { "algoName", "bcrypt" },
+                        { "options", new PhpArray() { { "cost", int.Parse(info.WorkFactor) } } },
+                    };
+                }
+                catch (HashInformationException) // If fail, test argon2i
+                {
+                    var argon = s_expressionHashArgon2.Match(hash);
+                    if (argon.Success)
+                    {
+                        var opt = new PhpArray(3)
+                        {
+                            { "memory_cost", int.Parse(argon.Groups[2].Value) },
+                            { "time_cost", int.Parse(argon.Groups[3].Value) },
+                            { "threads", int.Parse(argon.Groups[4].Value) },
+                        };
+
+                        return new PhpArray(3)
+                        {
+                            { "algo", argon.Groups[1].Value },
+                            { "algoName", argon.Groups[1].Value },
+                            { "options", opt },
+                        };
+                    }
+                }
+            }
+
+            // unknown
+            return new PhpArray(3)
+            {
+                { "algo", PASSWORD_DEFAULT },
+                { "algoName", "unknown" },
+                { "options", new PhpArray() },
+            };
+        }
+
+        #endregion
+
+        #region crypt (Constants)
+
+        /// <summary>
+        /// sha512 crypt has the maximal salt length of 123 characters
+        /// </summary>
+        public const int CRYPT_SALT_LENGTH = 123;
+        public const int CRYPT_STD_DES = 0;
+        public const int CRYPT_EXT_DES = 0;
+        public const int CRYPT_MD5 = 0;
+        public const int CRYPT_BLOWFISH = 0;
+        public const int CRYPT_SHA256 = 0;
+        public const int CRYPT_SHA512 = 0;
+
+        #endregion
+
+        #region crypt
+
+        /// <summary>
+        /// One-way string hashing.
+        /// </summary>
+        /// <returns>Returns the hashed string or a string that is shorter than 13 characters and is guaranteed to differ from the salt on failure.</returns>
+        public static string crypt(string str, string salt/* mandatory since 5.6 */)
+        {
+            if (string.IsNullOrEmpty(salt))
+            {
+                // Generate salt with MD5
+                var generatedSalt = new byte[12];
+
+                using (var rnd = RandomNumberGenerator.Create())
+                {
+                    rnd.GetBytes(generatedSalt);
+                }
+
+                MD5MapASCII(generatedSalt, generatedSalt.Length);
+
+                generatedSalt[0] = generatedSalt[2] = generatedSalt[11] = (byte)'$';
+                generatedSalt[1] = (byte)'1';
+
+                salt = Encoding.ASCII.GetString(generatedSalt);
+            }
+
+            if (salt.Length >= 3)
+            {
+                if (salt[0] == '$')
+                {
+                    if (salt[2] == '$')
+                    {
+                        if (salt[1] == '1') // $1$
+                        {
+                            // MD5
+                            return CryptMD5(str, salt);
+                        }
+
+                        if (salt[1] == '5') // $5$
+                        {
+                            // SHA256
+                            return CryptSHA(str, salt, true);
+                        }
+
+                        if (salt[1] == '6') // $6$
+                        {
+                            // SHA512
+                            return CryptSHA(str, salt, false);
+                        }
+                    }
+                    if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
+                    {
+                        // bcrypt
+                        try
+                        {
+                            return (salt[5] == '$') ? BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 28)) : BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 29));
+                        }
+                        catch (Exception) { } // failure
+                    }
+                }
+            }
+
+            if (salt.Length >= 2 && salt[0] == '*' && (salt[1] == '0' || salt[1] == '1'))
+            {
+                // failure
+            }
+            else
+            {
+                // DES
+                return DES.Crypt(str, salt);
+            }
+
+            // failure
+            return salt.StartsWith("*0") ? "*1" : "*0";
+        }
+
+        #region md5 hash in crypt function
+        // This code in region was copied and modified from The PHP Interpreter (https://github.com/php/php-src/blob/master/ext/standard/md5.c) 
+        private const int MD5MaxLength = 120;
+        private const string MD5Name = "md5";
+        private const string MD5Magic = "$1$";
+        private const string itoa64 =     /* 0 ... 63 => ascii - 64 */
+        "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+        /// <summary>
+        /// Internal funcion of php to map hash symbols to itoa64 set.
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="s">Position, where mapping starts.</param>
+        /// <param name="v"></param>
+        /// <param name="n">Length of mapping sequence.</param>
+        private static void MD5MapASCII(byte[] hash, int s, int v, int n)
+        {
+            while (--n >= 0)
+            {
+                hash[s++] = (byte)itoa64[v & 0x3f];
+                v >>= 6;
+            }
+        }
+
+        /// <summary>
+        /// Internal funcion of php to map hash symbols to itoa64 set.
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="n">Length of mapping sequence.</param>
+        private static void MD5MapASCII(byte[] hash, int n)
+        {
+            int s = 0;
+            while (--n >= 0)
+            {
+                hash[s] = (byte)itoa64[hash[s] & 0x3f];
+                s++;
+            }
+        }
+
+        /// <summary>
+        /// Part of cypt function in php. 
+        /// </summary>
+        private static string CryptMD5(string password, string salt)
+        {
+            int indexOfSaltBegin = 0;
+            int indexOfSaltEnd = 0;
+
+            if (salt.StartsWith(MD5Magic))
+                indexOfSaltBegin = 3;
+
+            for (indexOfSaltEnd = 0; indexOfSaltEnd < salt.Length && indexOfSaltEnd < 8 && salt[indexOfSaltEnd + indexOfSaltBegin] != '$'; indexOfSaltEnd++) ;
+
+            byte[] saltInBytes = Encoding.ASCII.GetBytes(salt.ToCharArray(), indexOfSaltBegin, indexOfSaltEnd);
+            byte[] passwd = Encoding.ASCII.GetBytes(password);
+            byte[] magic = Encoding.ASCII.GetBytes(MD5Magic);
+
+            var md5 = new HashPhpResource.MD5();
+
+            md5.Init();
+
+            md5.Update(passwd);
+
+            md5.Update(magic);
+
+            md5.Update(saltInBytes);
+
+            var md5Alt = new HashPhpResource.MD5();
+
+            md5Alt.Init();
+
+            md5Alt.Update(passwd);
+
+            md5Alt.Update(saltInBytes);
+
+            md5Alt.Update(passwd);
+
+            byte[] final = md5Alt.Final();
+
+            for (int i = passwd.Length; i > 0; i -= 16)
+                md5.Update(i > 16 ? final : final.Take(i).ToArray());
+
+            byte[] fieldhelper = new byte[1];
+
+            for (int i = passwd.Length; i != 0; i >>= 1)
+            {
+                if ((i & 1) != 0)
+                {
+                    fieldhelper[0] = 0;
+                    md5.Update(fieldhelper);
+                }
+                else
+                {
+                    fieldhelper[0] = passwd[0];
+                    md5.Update(fieldhelper);
+                }
+            }
+
+            byte[] output = new byte[MD5MaxLength];
+            Array.Copy(magic, 0, output, 0, magic.Length);
+            Array.Copy(saltInBytes, 0, output, magic.Length, saltInBytes.Length);
+            output[magic.Length + saltInBytes.Length] = (byte)'$';
+
+            final = md5.Final();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                md5Alt = new HashPhpResource.MD5();
+                md5Alt.Init();
+
+                if ((i & 1) != 0)
+                    md5Alt.Update(passwd);
+                else
+                    md5Alt.Update(final);
+
+                if ((i % 3) != 0)
+                    md5Alt.Update(saltInBytes);
+
+                if ((i % 7) != 0)
+                    md5Alt.Update(passwd);
+
+                if ((i & 1) != 0)
+                    md5Alt.Update(final);
+                else
+                    md5Alt.Update(passwd);
+
+                final = md5Alt.Final();
+            }
+
+            int length = magic.Length + saltInBytes.Length + 1;
+
+            int l;
+            l = (final[0] << 16) | (final[6] << 8) | final[12]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[1] << 16) | (final[7] << 8) | final[13]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[2] << 16) | (final[8] << 8) | final[14]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[3] << 16) | (final[9] << 8) | final[15]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = (final[4] << 16) | (final[10] << 8) | final[5]; MD5MapASCII(output, length, l, 4); length += 4;
+            l = final[11]; MD5MapASCII(output, length, l, 2); length += 2;
+
+            // output[0..length]
+            var from = 0;
+            var to = length;
+
+            // trim \0
+            while (from < to && output[from] == 0) from++;
+            while (from < to && output[to - 1] == 0) to--;
+
+            return from < to
+                ? Encoding.ASCII.GetString(output, from, to - from) // TODO: NETSTANDARD2.1 ReadOnleSpan<byte>
+                : string.Empty;
+        }
+        #endregion
+
+        #region sha512/256 hash in crypt function
+        // This code in region was copied and modified from The PHP Interpreter (https://github.com/php/php-src/blob/master/ext/standard/crypt_sha256.c and crypt_sha512.c) 
+        private const string prefixRoundsSHA = "rounds=";
+        private const string prefixSaltSHA512 = "$6$";
+        private const string prefixSaltSHA256 = "$5$";
+        private const int saltMaxLength = 16;
+        private const int roundsDefault = 5000;
+        private const int roundsMin = 1000;
+        private const int roundsMax = 999999999;
+        // Table with characters for base64 transformation.
+        private const string b64t = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+        /// <summary>
+        /// Part of cypt function in php. if sha 512 is false, sha 256 is used.
+        /// </summary>
+        private static string CryptSHA(string password, string salt, bool sha256)
+        {
+            int outputLength = 0;
+            if (sha256)
+                outputLength = prefixSaltSHA256.Length - 1 + prefixRoundsSHA.Length + 9 + 1 + salt.Length + 1 + 43 + 1;
+            else
+                outputLength = prefixSaltSHA512.Length - 1 + prefixRoundsSHA.Length + 9 + 1 + salt.Length + 1 + 86 + 1;
+
+            // Default number of rounds.
+            int rounds = roundsDefault;
+            bool roundsCustom = false;
+            int bytesUsage = sha256 ? 32 : 64;
+            string prefixSalt = sha256 ? prefixSaltSHA256 : prefixSaltSHA512;
+
+            int saltPartsIndex = 0;
+            string[] saltParts = salt.Split('$');
+
+            /* Find beginning of salt string.  The prefix should normally always
+	         be present.  Just in case it is not.  */
+            if (saltParts[1] == prefixSalt.Trim('$'))
+                saltPartsIndex = 2;
+
+            if (saltParts[saltPartsIndex].StartsWith(prefixRoundsSHA))
+            {
+                int srounds;
+                if (int.TryParse(saltParts[saltPartsIndex].Split('=')[1], out srounds))
+                {
+                    saltPartsIndex = 3;
+                    rounds = Math.Min(roundsMax, Math.Max(srounds, roundsMin));
+                    roundsCustom = true;
+                }
+            }
+
+            int endOfSAlt;
+            for (endOfSAlt = 0; endOfSAlt < saltParts[saltPartsIndex].Length && endOfSAlt < saltMaxLength && saltParts[saltPartsIndex][endOfSAlt] != '$'; endOfSAlt++) ;
+
+            byte[] saltInBytes = Encoding.ASCII.GetBytes(saltParts[saltPartsIndex].ToCharArray(), 0, endOfSAlt);
+            byte[] passwd = Encoding.ASCII.GetBytes(password);
+
+            // Prepare for the real work.
+
+            HashPhpResource sha = null;
+            if (sha256)
+                sha = new HashPhpResource.SHA256();
+            else
+                sha = new HashPhpResource.SHA512();
+
+            sha.Init();
+            sha.Update(passwd);
+            sha.Update(saltInBytes);
+
+            /*Compute alternate SHA512 sum with input KEY, SALT, and KEY.The
+             final result will be added to the first context.  */
+            HashPhpResource shaAlt = null;
+            if (sha256)
+                shaAlt = new HashPhpResource.SHA256();
+            else
+                shaAlt = new HashPhpResource.SHA512();
+
+            shaAlt.Init();
+            shaAlt.Update(passwd);
+            shaAlt.Update(saltInBytes);
+            shaAlt.Update(passwd);
+
+            /*Now get result of this(64 bytes) and add it to the other
+             context.  */
+            byte[] altResult = shaAlt.Final();
+
+            int cnt;
+            for (cnt = passwd.Length; cnt > bytesUsage; cnt -= bytesUsage)
+            {
+                sha.Update(altResult);
+            }
+            sha.Update(altResult.Take(cnt).ToArray());
+
+            /* Take the binary representation of the length of the key and for every
+	         1 add the alternate sum, for every 0 the key.  */
+            for (cnt = passwd.Length; cnt > 0; cnt >>= 1)
+            {
+                if ((cnt & 1) != 0)
+                {
+                    sha.Update(altResult);
+                }
+                else
+                {
+                    sha.Update(passwd);
+                }
+            }
+            altResult = sha.Final();
+
+            if (sha256)
+                shaAlt = new HashPhpResource.SHA256();
+            else
+                shaAlt = new HashPhpResource.SHA512();
+
+            shaAlt.Init();
+
+            for (cnt = 0; cnt < passwd.Length; ++cnt)
+                shaAlt.Update(passwd);
+
+            byte[] tempResult = shaAlt.Final();
+
+            // Start computation of P byte sequence.
+            byte[] pbytes = new byte[passwd.Length];
+
+            for (cnt = passwd.Length; cnt >= bytesUsage; cnt -= bytesUsage)
+            {
+                Array.Copy(tempResult, 0, pbytes, 0, bytesUsage);
+            }
+            Array.Copy(tempResult, 0, pbytes, 0, cnt);
+
+            if (sha256)
+                shaAlt = new HashPhpResource.SHA256();
+            else
+                shaAlt = new HashPhpResource.SHA512();
+
+            shaAlt.Init();
+
+            for (cnt = 0; cnt < 16 + (int)altResult[0]; ++cnt)
+                shaAlt.Update(saltInBytes);
+
+            tempResult = shaAlt.Final();
+
+            // Create byte sequence P.
+            byte[] sbytes = new byte[saltInBytes.Length];
+
+            for (cnt = saltInBytes.Length; cnt >= bytesUsage; cnt -= bytesUsage)
+            {
+                Array.Copy(tempResult, 0, sbytes, 0, bytesUsage);
+            }
+            Array.Copy(tempResult, 0, sbytes, 0, cnt);
+
+            for (cnt = 0; cnt < rounds; ++cnt)
+            {
+                // New context. 
+                if (sha256)
+                    shaAlt = new HashPhpResource.SHA256();
+                else
+                    shaAlt = new HashPhpResource.SHA512();
+
+                sha.Init();
+
+                // Add key or last result.
+                if ((cnt & 1) != 0)
+                    sha.Update(pbytes);
+                else
+                    sha.Update(altResult);
+
+                // Add salt for numbers not divisible by 3.
+                if (cnt % 3 != 0)
+                    sha.Update(sbytes);
+
+                // Add key for numbers not divisible by 7.
+                if (cnt % 7 != 0)
+                    sha.Update(pbytes);
+
+                // Add key or last result.
+                if ((cnt & 1) != 0)
+                    sha.Update(altResult);
+                else
+                    sha.Update(pbytes);
+
+                // Create intermediate result.
+                altResult = sha.Final();
+            }
+
+            /* Now we can construct the result string.  It consists of three
+	         parts.  */
+
+            byte[] output = new byte[outputLength];
+            // Salt prefix.
+            int indexOfOutput = 0;
+            Array.Copy(Encoding.ASCII.GetBytes(prefixSalt), 0, output, indexOfOutput, prefixSalt.Length);
+            indexOfOutput += prefixSaltSHA512.Length;
+            // Rounds prefix
+            if (roundsCustom)
+            {
+                string part = $"{prefixRoundsSHA}{rounds}$";
+                Array.Copy(Encoding.ASCII.GetBytes(part), 0, output, indexOfOutput, part.Length);
+                indexOfOutput += part.Length;
+            }
+            // Salt prefix
+            Array.Copy(saltInBytes, 0, output, indexOfOutput, saltInBytes.Length);
+            indexOfOutput += saltInBytes.Length;
+
+            output[indexOfOutput] = (byte)'$';
+            indexOfOutput++;
+
+            // Convert to base 64 
+            if (sha256)
+            {
+                B64From24bit(altResult[0], altResult[10], altResult[20], 4, output, ref indexOfOutput);
+
+                for (int i = 21; i != 0; i = (i + 21) % 30)
+                    B64From24bit(altResult[i], altResult[(i + 10) % 30], altResult[(i + 20) % 30], 4, output, ref indexOfOutput);
+
+                B64From24bit(0, altResult[31], altResult[30], 3, output, ref indexOfOutput);
+            }
+            else
+            {
+                B64From24bit(altResult[0], altResult[21], altResult[42], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[22], altResult[43], altResult[1], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[44], altResult[2], altResult[23], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[3], altResult[24], altResult[45], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[25], altResult[46], altResult[4], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[47], altResult[5], altResult[26], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[6], altResult[27], altResult[48], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[28], altResult[49], altResult[7], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[50], altResult[8], altResult[29], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[9], altResult[30], altResult[51], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[31], altResult[52], altResult[10], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[53], altResult[11], altResult[32], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[12], altResult[33], altResult[54], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[34], altResult[55], altResult[13], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[56], altResult[14], altResult[35], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[15], altResult[36], altResult[57], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[37], altResult[58], altResult[16], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[59], altResult[17], altResult[38], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[18], altResult[39], altResult[60], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[40], altResult[61], altResult[19], 4, output, ref indexOfOutput);
+                B64From24bit(altResult[62], altResult[20], altResult[41], 4, output, ref indexOfOutput);
+                B64From24bit(0, 0, altResult[63], 2, output, ref indexOfOutput);
+            }
+
+            return Encoding.ASCII.GetString(output).Trim('\0'); ;
+        }
+
+        private static void B64From24bit(int B2, int B1, int B0, int N, byte[] output, ref int indexOfOutput)
+        {
+            int buflen = output.Length - indexOfOutput;
+            int w = ((B2) << 16) | ((B1) << 8) | (B0);
+            int n = N;
+            while (n-- > 0 && buflen > 0)
+            {
+                output[indexOfOutput++] = (byte)b64t[w & 0x3f];
+                --buflen;
+                w >>= 6;
+            }
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Argon2
+
+        static string HashArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
+        {
+            var passwordBytes = Encoding.UTF8.GetBytes(password);
+            var salt = new byte[16];
+
+            using (var rnd = RandomNumberGenerator.Create())
+            {
+                rnd.GetBytes(salt);
+            }
+
+            var config = new Argon2Config
+            {
+                Type = argon2i_id ? Argon2Type.DataIndependentAddressing : Argon2Type.HybridAddressing,
+                Version = Argon2Version.Nineteen,
+                TimeCost = time_cost,
+                MemoryCost = memory_cost,
+                Lanes = threads,
+                Password = passwordBytes,
+                Salt = salt
+            };
+
+            using var argon = new Argon2(config);
+            using var hash = argon.Hash();
+
+            return config.EncodeString(hash.Buffer);
+        }
+
+        #endregion
     }
 
     /// <summary>
@@ -2059,170 +3089,6 @@ namespace Pchp.Library
 
         #endregion
 
-        #region crc32, md5, md5_file, sha1, sha1_file, sha256, sha256_file
-
-        /// <summary>
-        /// Calculates the crc32 polynomial of a string of bytes.
-        /// </summary>
-        /// <param name="bytes">The string of bytes to compute crc32 of.</param>
-        /// <returns>The CRC32 of <paramref name="bytes"/>.</returns>
-        /// <remarks>
-        /// Generates the cyclic redundancy checksum polynomial of 32-bit lengths of the str. This is usually used to validate the integrity of data being transmitted.
-        /// On 64bit installations all crc32() results will be positive integers.
-        /// </remarks>
-        public static long crc32(byte[] bytes)
-        {
-            return HashPhpResource.CRC32B.ComputeCRC32(bytes);
-        }
-
-        /// <summary>
-        /// Calculate the md5 hash of a string.
-        /// </summary>
-        /// <param name="bytes">Input string.</param>
-        /// <param name="raw_output">If the optional raw_output is set to TRUE, then the md5 digest is instead returned in raw binary format with a length of 16.</param>
-        /// <returns>Returns the hash as a 32-character hexadecimal number.</returns>
-        public static PhpString md5(byte[] bytes, bool raw_output = false)
-        {
-            var hash = MD5.Create().ComputeHash(bytes);
-            return raw_output
-                ? new PhpString(hash)
-                : new PhpString(StringUtils.BinToHex(hash, string.Empty));
-        }
-
-        /// <summary>
-        /// Calculates the md5 hash of a given file.
-        /// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="fileName">The file name.</param>
-        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
-        /// a sequence of hexadecimal numbers.</param>
-        /// <returns>MD5 of given <paramref name="fileName"/> content.</returns>
-        public static PhpString md5_file(Context ctx, string fileName, bool rawOutput = false)
-        {
-            return HashFromFile(ctx, MD5.Create(), fileName, rawOutput);
-        }
-
-        /// <summary>
-        /// Calculate the SHA1 hash of a string of bytes.
-        /// </summary>
-        /// <param name="ctx">Runtime context used for unicode conversions.
-        /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
-        /// a sequence of hexadecimal numbers.</param>
-        /// <returns>md5 of <paramref name="bytes"/>.</returns>
-        public static string sha1(Context ctx, byte[] bytes)
-        {
-            return StringUtils.BinToHex(SHA1.Create().ComputeHash(bytes));
-        }
-
-        /// <summary>
-        /// Calculate the SHA1 hash of a string of bytes.
-        /// </summary>
-        /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
-        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
-        /// a sequence of hexadecimal numbers.</param>
-        /// <returns>md5 of <paramref name="bytes"/>.</returns>
-        public static PhpString sha1(byte[] bytes, bool rawOutput = false)
-        {
-            return HashBytes(SHA1.Create(), bytes, rawOutput);
-        }
-
-        /// <summary>
-        /// Calculates the SHA1 hash of a given file.
-        /// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="fileName">The file name.</param>
-        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
-        /// a sequence of hexadecimal numbers.</param>
-        /// <returns>SHA1 of <paramref name="fileName"/> content.</returns>
-        public static PhpString sha1_file(Context ctx, string fileName, bool rawOutput = false)
-        {
-            return HashFromFile(ctx, SHA1.Create(), fileName, rawOutput);
-        }
-
-        /// <summary>
-        /// Calculate the SHA256 hash of a string of bytes.
-        /// </summary>
-        /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
-        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
-        /// a sequence of hexadecimal numbers.</param>
-        /// <returns>md5 of <paramref name="bytes"/>.</returns>
-        public static PhpString sha256(byte[] bytes, bool rawOutput = false)
-        {
-            return HashBytes(SHA256.Create(), bytes, rawOutput);
-        }
-
-        /// <summary>
-        /// Calculates the SHA256 hash of a given file.
-        /// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="fileName">The file name.</param>
-        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
-        /// a sequence of hexadecimal numbers.</param>
-        /// <returns>SHA1 of <paramref name="fileName"/> content.</returns>
-        public static PhpString sha256_file(Context ctx, string fileName, bool rawOutput = false)
-        {
-            return HashFromFile(ctx, SHA256.Create(), fileName, rawOutput);
-        }
-
-        /// <summary>
-        /// Computes a hash of a string of bytes using specified algorithm.
-        /// </summary>
-        static PhpString HashBytes(HashAlgorithm/*!*/ algorithm, byte[] bytes, bool rawOutput = false)
-        {
-            if (bytes == null)
-            {
-                return default(PhpString);
-            }
-
-            byte[] hash = algorithm.ComputeHash(bytes);
-
-            return (rawOutput)
-                ? new PhpString(hash)
-                : new PhpString(StringUtils.BinToHex(hash, null));
-        }
-
-        /// <summary>
-        /// Computes a hash of a file using specified algorithm.
-        /// </summary>
-        static PhpString HashFromFile(Context ctx, HashAlgorithm/*!*/ algorithm, string fileName, bool rawOutput = false)
-        {
-            byte[] hash;
-
-            try
-            {
-                using (PhpStream stream = PhpStream.Open(ctx, fileName, "rb", StreamOpenOptions.Empty, StreamContext.Default))
-                //using (FileStream file = new FileStream(ctx, fileName, FileMode.Open, FileAccess.Read))
-                {
-                    if (stream == null)
-                        return default(PhpString);
-
-                    var data = stream.ReadContents();
-                    if (data.IsNull)
-                    {
-                        return default(PhpString);
-                    }
-
-                    var bytes = data.AsBytes(ctx.StringEncoding);
-                    if (bytes == null)
-                    {
-                        return default(PhpString);
-                    }
-
-                    hash = algorithm.ComputeHash(bytes);
-                }
-            }
-            catch (System.Exception)
-            {
-                return default(PhpString);
-            }
-
-            return rawOutput
-                ? new PhpString(hash)
-                : new PhpString(StringUtils.BinToHex(hash));
-        }
-
-        #endregion
-
         #region hash_algos
 
         /// <summary>
@@ -2639,864 +3505,6 @@ namespace Pchp.Library
                 ? new PhpString(hash)
                 : new PhpString(StringUtils.BinToHex(hash));
         }
-
-        #endregion
-
-        #region Argon2
-
-        static RandomNumberGenerator RandomGenerator => s_lazyRandomGenerator.Value;
-
-        static readonly ThreadLocal<RandomNumberGenerator> s_lazyRandomGenerator = new ThreadLocal<RandomNumberGenerator>(() => RandomNumberGenerator.Create());
-
-        private static string HashArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
-        {
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
-            byte[] salt = new byte[16];
-
-            RandomGenerator.GetBytes(salt);
-
-            var config = new Argon2Config
-            {
-                Type = argon2i_id ? Argon2Type.DataIndependentAddressing : Argon2Type.HybridAddressing,
-                Version = Argon2Version.Nineteen,
-                TimeCost = time_cost,
-                MemoryCost = memory_cost,
-                Lanes = threads,
-                Password = passwordBytes,
-                Salt = salt
-            };
-
-            using (var argon = new Argon2(config))
-            using (var hash = argon.Hash())
-            {
-                return config.EncodeString(hash.Buffer);
-            }
-        }
-
-        #endregion
-
-        #region password_hash (Constants)
-
-        private const int costDefault = 10;
-        private const int threadsDefault = 1;
-        private const int memory_costDefault = 4;
-
-        public const string PASSWORD_DEFAULT = null;
-        public const string PASSWORD_BCRYPT = "2y";
-        public const string PASSWORD_ARGON2I = "argon2i";
-        public const string PASSWORD_ARGON2ID = "argon2id";
-
-        /// <summary>
-        /// Internal password type for <c>password_*</c> functions.
-        /// </summary>
-        private enum PasswordType
-        {
-            Default = 0,
-            BCrypt = 1,
-            Argon2i = 2,
-            Argon2id = 3,
-            Unknown = 4
-        }
-
-        #endregion
-
-        #region password_hash, password_verify, password_needs_rehash, password_get_info
-
-        /// <summary>
-        /// Since PHP 7.4, the <c>PASSWORD_*</c> constants were changed to nullable strings, but the functions still support the original ints.
-        /// See https://wiki.php.net/rfc/password_registry
-        /// </summary>
-        private static PasswordType ParsePasswordType(PhpValue value)
-        {
-            if (value.IsString(out string str))
-            {
-                return str switch
-                {
-                    PASSWORD_BCRYPT => PasswordType.BCrypt,
-                    PASSWORD_ARGON2I => PasswordType.Argon2i,
-                    PASSWORD_ARGON2ID => PasswordType.Argon2id,
-                    _ => PasswordType.Unknown
-                };
-            }
-            else if (value.IsNull)
-            {
-                return PasswordType.Default;
-            }
-            else if (value.IsLong(out long i))
-            {
-                return (i >= (long)PasswordType.Default && i < (long)PasswordType.Unknown) ? (PasswordType)i : PasswordType.Unknown;
-            }
-            else
-            {
-                return PasswordType.Unknown;
-            }
-        }
-
-        static PasswordType GetPasswordType(string name)
-        {
-            if (name != null)
-            {
-                if (name.EqualsOrdinalIgnoreCase("argon2i")) return PasswordType.Argon2i;
-                if (name.EqualsOrdinalIgnoreCase("argon2id")) return PasswordType.Argon2id;
-            }
-
-            return PasswordType.Default;
-        }
-
-        private static bool CheckCost(PhpValue value, int lowerBound, int upperBound, string warnBoundFail, out int checkedValue)
-        {
-            checkedValue = value.ToInt();
-            if (checkedValue >= lowerBound && checkedValue <= upperBound)
-            {
-                return true;
-            }
-            else
-            {
-                PhpException.Throw(PhpError.Warning, warnBoundFail);
-                return false;
-            }
-        }
-
-        private static PhpValue HashPasswordArgon2(string password, PhpArray opt, bool argon2i_id)
-        {
-
-            // Default setting for argon2
-            int memory_cost = memory_costDefault;
-            int time_cost = costDefault;
-            int threads = threadsDefault;
-
-            if (opt != null)
-            {
-                PhpValue value;
-
-                // Argument memory cost for argon2
-                if (opt.TryGetValue("memory_cost", out value) && !CheckCost(value, 4, int.MaxValue, Resources.LibResources.argon2_memory, out memory_cost))
-                    return PhpValue.False;
-
-                // Argument time cost for argon2
-                if (opt.TryGetValue("time_cost", out value) && !CheckCost(value, 1, int.MaxValue, Resources.LibResources.argon2_time, out time_cost))
-                    return PhpValue.False;
-
-                // Argument threads for argon2
-                if (opt.TryGetValue("threads", out value) && !CheckCost(value, 1, int.MaxValue, Resources.LibResources.argon2_threads, out threads))
-                    return PhpValue.False;
-            }
-
-            return HashArgon2(password ?? string.Empty, time_cost, memory_cost, threads, argon2i_id);
-        }
-
-        private static PhpValue HashPasswordBlowfish(string password, PhpArray opt)
-        {
-            // Default setting for bcrypt
-            int cost = costDefault;
-            string salt = BCrypt.Net.BCrypt.GenerateSalt(cost);
-
-            if (opt != null)
-            {
-                // Argument cost for bcrypt
-                if (opt.TryGetValue("cost", out var costValue))
-                {
-                    int costInt = costValue.ToInt();
-
-                    if (costInt >= 4 && costInt <= 31) // Check  right value
-                    {
-                        cost = costInt;
-                    }
-                    else
-                    {
-                        PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_invalid_cost, costInt.ToString());
-                        return PhpValue.False;
-                    }
-                }
-
-                // Argument salt for bcrypt
-                if (opt.TryGetValue("salt", out var saltValue))
-                {
-                    PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_deprecated);
-                    if (saltValue.IsString(out salt)) // Check value
-                    {
-                        if (salt.Length < 22)
-                        {
-                            PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_too_short, salt.Length.ToString());
-                            return PhpValue.False;
-                        }
-                        else if (salt.Length > 22)
-                        {
-                            salt = salt.Remove(22);
-                        }
-
-                        //
-                        salt = $"$2y${cost}${salt}";
-                    }
-                    else
-                    {
-                        PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_nonstring_salt);
-                        return PhpValue.False;
-                    }
-                }
-            }
-
-            return PhpValue.Create(BCrypt.Net.BCrypt.HashPassword(password ?? string.Empty, salt));
-        }
-
-        /// <summary>
-        /// Creates a password hash
-        /// </summary>
-        /// <param name="password">The user's password.</param>
-        /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
-        /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
-        /// <returns>Returns the hashed password, or FALSE on failure.</returns>
-        public static PhpValue password_hash(string password, PhpValue algo, PhpArray opt = null)
-        {
-            var algoType = ParsePasswordType(algo);
-
-            switch (algoType)
-            {
-                // Default
-                case PasswordType.Default:
-                // Blowfish
-                case PasswordType.BCrypt:
-                    return HashPasswordBlowfish(password, opt);
-                // Argon2i
-                case PasswordType.Argon2i:
-                case PasswordType.Argon2id:
-                    return HashPasswordArgon2(password, opt, algoType == PasswordType.Argon2i);
-                // Unknown algorithm
-                default:
-                    return PhpValue.False;
-            }
-        }
-
-        /// <summary>
-        /// Verifies that a password matches a hash.
-        /// </summary>
-        public static bool password_verify(string password, string hash)
-        {
-            return !string.IsNullOrEmpty(hash) && (hash.StartsWith("$argon2i", StringComparison.Ordinal) ? Argon2.Verify(hash, password) : crypt(password, hash) == hash);
-        }
-
-        readonly static Regex s_expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2i)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-
-        /// <summary>
-        /// This function checks to see if the supplied hash implements the algorithm and options provided. If not, it is assumed that the hash needs to be rehashed.
-        /// </summary>
-        /// <param name="hash">A hash created by password_hash()</param>
-        /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
-        /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
-        /// <returns>Returns TRUE if the hash should be rehashed to match the given algo and options, or FALSE otherwise.</returns>
-        public static bool password_needs_rehash(string hash, PhpValue algo, PhpArray opt = null)
-        {
-            if (string.IsNullOrEmpty(hash))
-            {
-                return true;
-            }
-
-            var result = false;
-
-            var algoType = ParsePasswordType(algo);
-
-            switch (algoType)
-            {
-                // Default
-                case PasswordType.Default:
-                // BCrypt
-                case PasswordType.BCrypt:
-                    string[] hashParts = hash.Split('$');
-
-                    if (hashParts.Length >= 3 && hashParts[1].Length >= 2 && hashParts[1][0] == '2') // $2 $ Right algorithm
-                    {
-                        if (opt != null && opt.TryGetValue("cost", out var costValue)) // Check options
-                        {
-                            result = !(hashParts[2] == costValue.ToLong().ToString());
-                        }
-                    }
-                    else
-                    {
-                        result = true;
-                    }
-                    break;
-                // Argon2i
-                case PasswordType.Argon2i:
-                // Argon2id
-                case PasswordType.Argon2id:
-
-                    var match = s_expressionHashArgon2.Match(hash);
-                    if (match.Success && algoType == GetPasswordType(match.Groups[1].Value)) // Check right algorithm
-                    {
-                        if (opt != null) // Check options
-                        {
-                            if (opt.TryGetValue("memory_cost", out var memoryValue))
-                                result |= memoryValue.ToLong() != long.Parse(match.Groups[2].Value);
-
-                            if (opt.TryGetValue("time_cost", out var timeValue))
-                                result |= timeValue.ToLong() != long.Parse(match.Groups[3].Value);
-
-                            if (opt.TryGetValue("threads", out var threadsValue))
-                                result |= threadsValue.ToLong() != long.Parse(match.Groups[4].Value);
-                        }
-                    }
-                    else
-                    {
-                        result = true;
-                    }
-                    break;
-                // Unknown algorithm
-                default:
-                    result = true;
-                    break;
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// When passed in a valid hash created by an algorithm supported by password_hash(), this function will return an array of information about that hash.
-        /// </summary>
-        /// <param name="hash">A hash created by password_hash().</param>
-        /// <returns>Returns an associative array with three elements:algo, algoName, options</returns>
-        public static PhpArray password_get_info(string hash)
-        {
-            if (!string.IsNullOrEmpty(hash))
-            {
-                try
-                {
-                    // try BCrypt, may throw if fails
-                    var info = BCrypt.Net.BCrypt.InterrogateHash(hash);
-
-                    return new PhpArray(3)
-                    {
-                        { "algo", PASSWORD_BCRYPT },
-                        { "algoName", "bcrypt" },
-                        { "options", new PhpArray() { { "cost", int.Parse(info.WorkFactor) } } },
-                    };
-                }
-                catch (HashInformationException) // If fail, test argon2i
-                {
-                    var argon = s_expressionHashArgon2.Match(hash);
-                    if (argon.Success)
-                    {
-                        var opt = new PhpArray(3)
-                        {
-                            { "memory_cost", int.Parse(argon.Groups[2].Value) },
-                            { "time_cost", int.Parse(argon.Groups[3].Value) },
-                            { "threads", int.Parse(argon.Groups[4].Value) },
-                        };
-
-                        return new PhpArray(3)
-                        {
-                            { "algo", argon.Groups[1].Value },
-                            { "algoName", argon.Groups[1].Value },
-                            { "options", opt },
-                        };
-                    }
-                }
-            }
-
-            // unknown
-            return new PhpArray(3)
-            {
-                { "algo", PASSWORD_DEFAULT },
-                { "algoName", "unknown" },
-                { "options", new PhpArray() },
-            };
-        }
-
-        #endregion
-
-        #region crypt (Constants)
-
-        /// <summary>
-        /// sha512 crypt has the maximal salt length of 123 characters
-        /// </summary>
-        public const int CRYPT_SALT_LENGTH = 123;
-        public const int CRYPT_STD_DES = 0;
-        public const int CRYPT_EXT_DES = 0;
-        public const int CRYPT_MD5 = 0;
-        public const int CRYPT_BLOWFISH = 0;
-        public const int CRYPT_SHA256 = 0;
-        public const int CRYPT_SHA512 = 0;
-
-        #endregion
-
-        #region crypt
-
-        /// <summary>
-        /// One-way string hashing.
-        /// </summary>
-        /// <returns>Returns the hashed string or a string that is shorter than 13 characters and is guaranteed to differ from the salt on failure.</returns>
-        public static string crypt(string str, string salt/* mandatory since 5.6 */)
-        {
-            if (string.IsNullOrEmpty(salt))
-            {
-                // Generate salt whit MD5
-                byte[] generatedSalt = new byte[12];
-
-                RandomGenerator.GetBytes(generatedSalt);
-                MD5MapASCII(generatedSalt, generatedSalt.Length);
-
-                generatedSalt[0] = generatedSalt[2] = generatedSalt[11] = (byte)'$';
-                generatedSalt[1] = (byte)'1';
-
-                salt = Encoding.ASCII.GetString(generatedSalt);
-            }
-
-            if (salt.Length >= 3)
-            {
-                if (salt[0] == '$')
-                {
-                    if (salt[2] == '$')
-                    {
-                        if (salt[1] == '1') // $1$
-                        {
-                            // MD5
-                            return CryptMD5(str, salt);
-                        }
-
-                        if (salt[1] == '5') // $5$
-                        {
-                            // SHA256
-                            return CryptSHA(str, salt, true);
-                        }
-
-                        if (salt[1] == '6') // $6$
-                        {
-                            // SHA512
-                            return CryptSHA(str, salt, false);
-                        }
-                    }
-                    if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
-                    {
-                        // bcrypt
-                        try
-                        {
-                            return (salt[5] == '$') ? BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 28)) : BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 29));
-                        }
-                        catch (Exception) { } // failure
-                    }
-                }
-            }
-
-            if (salt.Length >= 2 && salt[0] == '*' && (salt[1] == '0' || salt[1] == '1'))
-            {
-                // failure
-            }
-            else
-            {
-                // DES
-                return DES.Crypt(str, salt);
-            }
-
-            // failure
-            return salt.StartsWith("*0") ? "*1" : "*0";
-        }
-
-        #region md5 hash in crypt function
-        // This code in region was copied and modified from The PHP Interpreter (https://github.com/php/php-src/blob/master/ext/standard/md5.c) 
-        private const int MD5MaxLength = 120;
-        private const string MD5Name = "md5";
-        private const string MD5Magic = "$1$";
-        private const string itoa64 =     /* 0 ... 63 => ascii - 64 */
-        "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-        /// <summary>
-        /// Internal funcion of php to map hash symbols to itoa64 set.
-        /// </summary>
-        /// <param name="hash"></param>
-        /// <param name="s">Position, where mapping starts.</param>
-        /// <param name="v"></param>
-        /// <param name="n">Length of mapping sequence.</param>
-        private static void MD5MapASCII(byte[] hash, int s, int v, int n)
-        {
-            while (--n >= 0)
-            {
-                hash[s++] = (byte)itoa64[v & 0x3f];
-                v >>= 6;
-            }
-        }
-
-        /// <summary>
-        /// Internal funcion of php to map hash symbols to itoa64 set.
-        /// </summary>
-        /// <param name="hash"></param>
-        /// <param name="n">Length of mapping sequence.</param>
-        private static void MD5MapASCII(byte[] hash, int n)
-        {
-            int s = 0;
-            while (--n >= 0)
-            {
-                hash[s] = (byte)itoa64[hash[s] & 0x3f];
-                s++;
-            }
-        }
-
-        /// <summary>
-        /// Part of cypt function in php. 
-        /// </summary>
-        private static string CryptMD5(string password, string salt)
-        {
-            int indexOfSaltBegin = 0;
-            int indexOfSaltEnd = 0;
-
-            if (salt.StartsWith(MD5Magic))
-                indexOfSaltBegin = 3;
-
-            for (indexOfSaltEnd = 0; indexOfSaltEnd < salt.Length && indexOfSaltEnd < 8 && salt[indexOfSaltEnd + indexOfSaltBegin] != '$'; indexOfSaltEnd++) ;
-
-            byte[] saltInBytes = Encoding.ASCII.GetBytes(salt.ToCharArray(), indexOfSaltBegin, indexOfSaltEnd);
-            byte[] passwd = Encoding.ASCII.GetBytes(password);
-            byte[] magic = Encoding.ASCII.GetBytes(MD5Magic);
-
-            var md5 = new HashPhpResource.MD5();
-
-            md5.Init();
-
-            md5.Update(passwd);
-
-            md5.Update(magic);
-
-            md5.Update(saltInBytes);
-
-            var md5Alt = new HashPhpResource.MD5();
-
-            md5Alt.Init();
-
-            md5Alt.Update(passwd);
-
-            md5Alt.Update(saltInBytes);
-
-            md5Alt.Update(passwd);
-
-            byte[] final = md5Alt.Final();
-
-            for (int i = passwd.Length; i > 0; i -= 16)
-                md5.Update(i > 16 ? final : final.Take(i).ToArray());
-
-            byte[] fieldhelper = new byte[1];
-
-            for (int i = passwd.Length; i != 0; i >>= 1)
-            {
-                if ((i & 1) != 0)
-                {
-                    fieldhelper[0] = 0;
-                    md5.Update(fieldhelper);
-                }
-                else
-                {
-                    fieldhelper[0] = passwd[0];
-                    md5.Update(fieldhelper);
-                }
-            }
-
-            byte[] output = new byte[MD5MaxLength];
-            Array.Copy(magic, 0, output, 0, magic.Length);
-            Array.Copy(saltInBytes, 0, output, magic.Length, saltInBytes.Length);
-            output[magic.Length + saltInBytes.Length] = (byte)'$';
-
-            final = md5.Final();
-
-            for (int i = 0; i < 1000; i++)
-            {
-                md5Alt = new HashPhpResource.MD5();
-                md5Alt.Init();
-
-                if ((i & 1) != 0)
-                    md5Alt.Update(passwd);
-                else
-                    md5Alt.Update(final);
-
-                if ((i % 3) != 0)
-                    md5Alt.Update(saltInBytes);
-
-                if ((i % 7) != 0)
-                    md5Alt.Update(passwd);
-
-                if ((i & 1) != 0)
-                    md5Alt.Update(final);
-                else
-                    md5Alt.Update(passwd);
-
-                final = md5Alt.Final();
-            }
-
-            int length = magic.Length + saltInBytes.Length + 1;
-
-            int l;
-            l = (final[0] << 16) | (final[6] << 8) | final[12]; MD5MapASCII(output, length, l, 4); length += 4;
-            l = (final[1] << 16) | (final[7] << 8) | final[13]; MD5MapASCII(output, length, l, 4); length += 4;
-            l = (final[2] << 16) | (final[8] << 8) | final[14]; MD5MapASCII(output, length, l, 4); length += 4;
-            l = (final[3] << 16) | (final[9] << 8) | final[15]; MD5MapASCII(output, length, l, 4); length += 4;
-            l = (final[4] << 16) | (final[10] << 8) | final[5]; MD5MapASCII(output, length, l, 4); length += 4;
-            l = final[11]; MD5MapASCII(output, length, l, 2); length += 2;
-
-            // output[0..length]
-            var from = 0;
-            var to = length;
-
-            // trim \0
-            while (from < to && output[from] == 0) from++;
-            while (from < to && output[to - 1] == 0) to--;
-
-            return from < to
-                ? Encoding.ASCII.GetString(output, from, to - from) // TODO: NETSTANDARD2.1 ReadOnleSpan<byte>
-                : string.Empty;
-        }
-        #endregion
-
-        #region sha512/256 hash in crypt function
-        // This code in region was copied and modified from The PHP Interpreter (https://github.com/php/php-src/blob/master/ext/standard/crypt_sha256.c and crypt_sha512.c) 
-        private const string prefixRoundsSHA = "rounds=";
-        private const string prefixSaltSHA512 = "$6$";
-        private const string prefixSaltSHA256 = "$5$";
-        private const int saltMaxLength = 16;
-        private const int roundsDefault = 5000;
-        private const int roundsMin = 1000;
-        private const int roundsMax = 999999999;
-        // Table with characters for base64 transformation.
-        private const string b64t = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-        /// <summary>
-        /// Part of cypt function in php. if sha 512 is false, sha 256 is used.
-        /// </summary>
-        private static string CryptSHA(string password, string salt, bool sha256)
-        {
-            int outputLength = 0;
-            if (sha256)
-                outputLength = prefixSaltSHA256.Length - 1 + prefixRoundsSHA.Length + 9 + 1 + salt.Length + 1 + 43 + 1;
-            else
-                outputLength = prefixSaltSHA512.Length - 1 + prefixRoundsSHA.Length + 9 + 1 + salt.Length + 1 + 86 + 1;
-
-            // Default number of rounds.
-            int rounds = roundsDefault;
-            bool roundsCustom = false;
-            int bytesUsage = sha256 ? 32 : 64;
-            string prefixSalt = sha256 ? prefixSaltSHA256 : prefixSaltSHA512;
-
-            int saltPartsIndex = 0;
-            string[] saltParts = salt.Split('$');
-
-            /* Find beginning of salt string.  The prefix should normally always
-	         be present.  Just in case it is not.  */
-            if (saltParts[1] == prefixSalt.Trim('$'))
-                saltPartsIndex = 2;
-
-            if (saltParts[saltPartsIndex].StartsWith(prefixRoundsSHA))
-            {
-                int srounds;
-                if (int.TryParse(saltParts[saltPartsIndex].Split('=')[1], out srounds))
-                {
-                    saltPartsIndex = 3;
-                    rounds = Math.Min(roundsMax, Math.Max(srounds, roundsMin));
-                    roundsCustom = true;
-                }
-            }
-
-            int endOfSAlt;
-            for (endOfSAlt = 0; endOfSAlt < saltParts[saltPartsIndex].Length && endOfSAlt < saltMaxLength && saltParts[saltPartsIndex][endOfSAlt] != '$'; endOfSAlt++) ;
-
-            byte[] saltInBytes = Encoding.ASCII.GetBytes(saltParts[saltPartsIndex].ToCharArray(), 0, endOfSAlt);
-            byte[] passwd = Encoding.ASCII.GetBytes(password);
-
-            // Prepare for the real work.
-
-            HashPhpResource sha = null;
-            if (sha256)
-                sha = new HashPhpResource.SHA256();
-            else
-                sha = new HashPhpResource.SHA512();
-
-            sha.Init();
-            sha.Update(passwd);
-            sha.Update(saltInBytes);
-
-            /*Compute alternate SHA512 sum with input KEY, SALT, and KEY.The
-             final result will be added to the first context.  */
-            HashPhpResource shaAlt = null;
-            if (sha256)
-                shaAlt = new HashPhpResource.SHA256();
-            else
-                shaAlt = new HashPhpResource.SHA512();
-
-            shaAlt.Init();
-            shaAlt.Update(passwd);
-            shaAlt.Update(saltInBytes);
-            shaAlt.Update(passwd);
-
-            /*Now get result of this(64 bytes) and add it to the other
-             context.  */
-            byte[] altResult = shaAlt.Final();
-
-            int cnt;
-            for (cnt = passwd.Length; cnt > bytesUsage; cnt -= bytesUsage)
-            {
-                sha.Update(altResult);
-            }
-            sha.Update(altResult.Take(cnt).ToArray());
-
-            /* Take the binary representation of the length of the key and for every
-	         1 add the alternate sum, for every 0 the key.  */
-            for (cnt = passwd.Length; cnt > 0; cnt >>= 1)
-            {
-                if ((cnt & 1) != 0)
-                {
-                    sha.Update(altResult);
-                }
-                else
-                {
-                    sha.Update(passwd);
-                }
-            }
-            altResult = sha.Final();
-
-            if (sha256)
-                shaAlt = new HashPhpResource.SHA256();
-            else
-                shaAlt = new HashPhpResource.SHA512();
-
-            shaAlt.Init();
-
-            for (cnt = 0; cnt < passwd.Length; ++cnt)
-                shaAlt.Update(passwd);
-
-            byte[] tempResult = shaAlt.Final();
-
-            // Start computation of P byte sequence.
-            byte[] pbytes = new byte[passwd.Length];
-
-            for (cnt = passwd.Length; cnt >= bytesUsage; cnt -= bytesUsage)
-            {
-                Array.Copy(tempResult, 0, pbytes, 0, bytesUsage);
-            }
-            Array.Copy(tempResult, 0, pbytes, 0, cnt);
-
-            if (sha256)
-                shaAlt = new HashPhpResource.SHA256();
-            else
-                shaAlt = new HashPhpResource.SHA512();
-
-            shaAlt.Init();
-
-            for (cnt = 0; cnt < 16 + (int)altResult[0]; ++cnt)
-                shaAlt.Update(saltInBytes);
-
-            tempResult = shaAlt.Final();
-
-            // Create byte sequence P.
-            byte[] sbytes = new byte[saltInBytes.Length];
-
-            for (cnt = saltInBytes.Length; cnt >= bytesUsage; cnt -= bytesUsage)
-            {
-                Array.Copy(tempResult, 0, sbytes, 0, bytesUsage);
-            }
-            Array.Copy(tempResult, 0, sbytes, 0, cnt);
-
-            for (cnt = 0; cnt < rounds; ++cnt)
-            {
-                // New context. 
-                if (sha256)
-                    shaAlt = new HashPhpResource.SHA256();
-                else
-                    shaAlt = new HashPhpResource.SHA512();
-
-                sha.Init();
-
-                // Add key or last result.
-                if ((cnt & 1) != 0)
-                    sha.Update(pbytes);
-                else
-                    sha.Update(altResult);
-
-                // Add salt for numbers not divisible by 3.
-                if (cnt % 3 != 0)
-                    sha.Update(sbytes);
-
-                // Add key for numbers not divisible by 7.
-                if (cnt % 7 != 0)
-                    sha.Update(pbytes);
-
-                // Add key or last result.
-                if ((cnt & 1) != 0)
-                    sha.Update(altResult);
-                else
-                    sha.Update(pbytes);
-
-                // Create intermediate result.
-                altResult = sha.Final();
-            }
-
-            /* Now we can construct the result string.  It consists of three
-	         parts.  */
-
-            byte[] output = new byte[outputLength];
-            // Salt prefix.
-            int indexOfOutput = 0;
-            Array.Copy(Encoding.ASCII.GetBytes(prefixSalt), 0, output, indexOfOutput, prefixSalt.Length);
-            indexOfOutput += prefixSaltSHA512.Length;
-            // Rounds prefix
-            if (roundsCustom)
-            {
-                string part = $"{prefixRoundsSHA}{rounds}$";
-                Array.Copy(Encoding.ASCII.GetBytes(part), 0, output, indexOfOutput, part.Length);
-                indexOfOutput += part.Length;
-            }
-            // Salt prefix
-            Array.Copy(saltInBytes, 0, output, indexOfOutput, saltInBytes.Length);
-            indexOfOutput += saltInBytes.Length;
-
-            output[indexOfOutput] = (byte)'$';
-            indexOfOutput++;
-
-            // Convert to base 64 
-            if (sha256)
-            {
-                B64From24bit(altResult[0], altResult[10], altResult[20], 4, output, ref indexOfOutput);
-
-                for (int i = 21; i != 0; i = (i + 21) % 30)
-                    B64From24bit(altResult[i], altResult[(i + 10) % 30], altResult[(i + 20) % 30], 4, output, ref indexOfOutput);
-
-                B64From24bit(0, altResult[31], altResult[30], 3, output, ref indexOfOutput);
-            }
-            else
-            {
-                B64From24bit(altResult[0], altResult[21], altResult[42], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[22], altResult[43], altResult[1], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[44], altResult[2], altResult[23], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[3], altResult[24], altResult[45], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[25], altResult[46], altResult[4], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[47], altResult[5], altResult[26], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[6], altResult[27], altResult[48], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[28], altResult[49], altResult[7], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[50], altResult[8], altResult[29], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[9], altResult[30], altResult[51], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[31], altResult[52], altResult[10], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[53], altResult[11], altResult[32], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[12], altResult[33], altResult[54], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[34], altResult[55], altResult[13], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[56], altResult[14], altResult[35], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[15], altResult[36], altResult[57], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[37], altResult[58], altResult[16], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[59], altResult[17], altResult[38], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[18], altResult[39], altResult[60], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[40], altResult[61], altResult[19], 4, output, ref indexOfOutput);
-                B64From24bit(altResult[62], altResult[20], altResult[41], 4, output, ref indexOfOutput);
-                B64From24bit(0, 0, altResult[63], 2, output, ref indexOfOutput);
-            }
-
-            return Encoding.ASCII.GetString(output).Trim('\0'); ;
-        }
-
-        private static void B64From24bit(int B2, int B1, int B0, int N, byte[] output, ref int indexOfOutput)
-        {
-            int buflen = output.Length - indexOfOutput;
-            int w = ((B2) << 16) | ((B1) << 8) | (B0);
-            int n = N;
-            while (n-- > 0 && buflen > 0)
-            {
-                output[indexOfOutput++] = (byte)b64t[w & 0x3f];
-                --buflen;
-                w >>= 6;
-            }
-        }
-        #endregion
 
         #endregion
     }

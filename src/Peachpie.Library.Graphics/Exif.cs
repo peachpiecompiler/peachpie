@@ -34,9 +34,9 @@ namespace Peachpie.Library.Graphics
         /// This is alternative alias of <see cref="exif_read_data(string,string,bool,bool)"/>.
         /// </summary>
         [return: CastToFalse]
-        public static PhpArray read_exif_data(Context ctx, string filename, string sections_needed = null, bool sub_arrays = false, bool thumbnail = false)
+        public static PhpArray read_exif_data(Context ctx, string filename, string sections_needed = null, bool sub_arrays = false, bool read_thumbnail = false)
         {
-            return exif_read_data(ctx, filename, sections_needed, sub_arrays, thumbnail);
+            return exif_read_data(ctx, filename, sections_needed, sub_arrays, read_thumbnail);
         }
 
         #endregion
@@ -58,11 +58,11 @@ namespace Peachpie.Library.Graphics
         /// COMMENT:	Comment headers of JPEG images.
         /// EXIF:	 The EXIF section is a sub section of IFD0. It contains more detailed information about an image. Most of these entries are digital camera related.</param>
         /// <param name="sub_arrays">Specifies whether or not each section becomes an array. The sections COMPUTED, THUMBNAIL, and COMMENT always become arrays as they may contain values whose names conflict with other sections.</param>
-        /// <param name="thumbnail">When set to <c>TRUE</c> the thumbnail itself is read. Otherwise, only the tagged data is read.</param>
+        /// <param name="read_thumbnail">When set to <c>TRUE</c> the thumbnail itself is read. Otherwise, only the tagged data is read.</param>
         /// <returns>It returns an associative array where the array indexes are the header names and the array values are the values associated with those headers.
         /// If no data can be returned, <c>FALSE</c> is returned.</returns>
         [return: CastToFalse]
-        public static PhpArray exif_read_data(Context ctx, string filename, string sections_needed = null, bool sub_arrays = false, bool thumbnail = false)
+        public static PhpArray exif_read_data(Context ctx, string filename, string sections_needed = null, bool sub_arrays = false, bool read_thumbnail = false)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -80,9 +80,9 @@ namespace Peachpie.Library.Graphics
                 PhpException.ArgumentValueNotSupported(nameof(sub_arrays), sub_arrays);
             }
 
-            if (thumbnail)
+            if (read_thumbnail)
             {
-                PhpException.ArgumentValueNotSupported(nameof(thumbnail), thumbnail);
+                PhpException.ArgumentValueNotSupported(nameof(read_thumbnail), read_thumbnail);
             }
 
             PhpArray array = new PhpArray();

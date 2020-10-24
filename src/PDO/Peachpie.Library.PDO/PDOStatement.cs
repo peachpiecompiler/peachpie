@@ -525,24 +525,24 @@ namespace Peachpie.Library.PDO
                 if (row == null) throw new InvalidOperationException(); // row is expected to be array, check flags before grouping results
 
                 // We remove the first column and use it to group rows
-                var firstCol = row.RemoveFirst().Value;
+                var firstCol = row.RemoveFirst();
 
                 // For numeric keys
                 // => Always remove the 0 key (FETCH_NUM: does nothing, FETCH_BOTH: remove remaining)
                 // => Reindex starting from 0
-                if (hasNumKeys && row.Remove(0))
+                if (hasNumKeys && (firstCol.Key == 0 || row.Remove(0)))
                 {
                     row.ReindexIntegers(0);
                 }
 
                 PhpArray group;
-                if (grouped_result.TryGetValue(firstCol, out var existing))
+                if (grouped_result.TryGetValue(firstCol.Value, out var existing))
                 {
                     group = (PhpArray)existing.Object;
                 }
                 else
                 {
-                    grouped_result.Add(firstCol, group = new PhpArray());
+                    grouped_result.Add(firstCol.Value, group = new PhpArray());
                 }
 
                 group.Add(row);

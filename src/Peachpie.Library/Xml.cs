@@ -516,79 +516,6 @@ namespace Pchp.Library
 
         #endregion
 
-        #region utf8_encode, utf8_decode
-
-        /// <summary>
-        /// ISO-8859-1 <see cref="Encoding"/>.
-        /// </summary>
-        static Encoding/*!*/ISO_8859_1_Encoding
-        {
-            get
-            {
-                if (_ISO_8859_1_Encoding == null)
-                {
-                    _ISO_8859_1_Encoding = Encoding.GetEncoding("ISO-8859-1");
-                    Debug.Assert(_ISO_8859_1_Encoding != null);
-                }
-
-                return _ISO_8859_1_Encoding;
-            }
-        }
-        static Encoding _ISO_8859_1_Encoding;
-
-        /// <summary>
-        /// This function encodes the string data to UTF-8, and returns the encoded version. UTF-8 is
-        /// a standard mechanism used by Unicode for encoding wide character values into a byte stream.
-        /// UTF-8 is transparent to plain ASCII characters, is self-synchronized (meaning it is 
-        /// possible for a program to figure out where in the bytestream characters start) and can be
-        /// used with normal string comparison functions for sorting and such. PHP encodes UTF-8
-        /// characters in up to four bytes.
-        /// </summary>
-        /// <param name="data">An ISO-8859-1 string. </param>
-        /// <returns>Returns the UTF-8 translation of data.</returns>
-        //[return:CastToFalse]
-        public static string utf8_encode(PhpString data)
-        {
-            if (data.IsEmpty)
-            {
-                return string.Empty;
-            }
-
-            // this function transforms ISO-8859-1 binary string into UTF8 string
-            // since our internal representation is native CLR string - UTF16, we have changed this semantic for Unicode input.
-            // - Any native String is not modified. The string was already encoded into a valid UTF16 sequence.
-            // - byte[] is treated as ISO-8859-1 encoded, and will be decoded to UTF16
-
-            // This behavior has two reasons:
-            // - compatibility with Unicode behavior; already encoded string should not be decoded/encoded again
-            // - performance; instances of already encoded immutable strings are simply reused
-
-            // ISO-8859-1 is 8bit encoding so we don't have to concatenate the byte[] segments into a single array
-            // Any segments already encoded as System.String are returned as it is;
-            return data.ToString(ISO_8859_1_Encoding);
-        }
-
-        /// <summary>
-        /// This function decodes data, assumed to be UTF-8 encoded, to ISO-8859-1.
-        /// </summary>
-        /// <param name="data">An ISO-8859-1 string. </param>
-        /// <returns>Returns the UTF-8 translation of data.</returns>
-        public static PhpString utf8_decode(string data)
-        {
-            if (data == null)
-            {
-                return new PhpString();  // empty (binary) string
-            }
-
-            // this function converts the UTF8 representation to ISO-8859-1 representation
-            // we assume CLR string (UTF16) as input as it is our internal representation
-
-            // if we got System.String string, convert it from UTF16 CLR representation into ISO-8859-1 binary representation
-            return new PhpString(ISO_8859_1_Encoding.GetBytes(data));
-        }
-
-        #endregion
-
         #region xml_parser_create_ns, xml_parser_create, xml_parser_free
 
         /// <summary>
@@ -980,18 +907,18 @@ namespace Pchp.Library
         /// <param name="parser">
         /// A reference to the XML parser to set up unparsed entity declaration handler function. 
         /// </param>
-        /// <param name="unparsed_entity_decl_handler">
+        /// <param name="hdl">
         /// String (or array) containing the name of a function that must exist when xml_parse() is 
         /// called for parser. 
         /// </param>
         /// <returns>Returns TRUE on success or FALSE on failure. </returns>
-        public static bool SetUnparsedEntityDeclHandler(PhpResource parser, PhpValue unparsed_entity_decl_handler)
+        public static bool xml_set_unparsed_entity_decl_handler(PhpResource parser, PhpValue hdl)
         {
             var xmlParser = XmlParserResource.ValidResource(parser);
             if (xmlParser == null)
                 return false;
 
-            PhpException.FunctionNotSupported("xml_set_unparsed_entity_decl_handler");
+            PhpException.FunctionNotSupported(nameof(xml_set_unparsed_entity_decl_handler));
             return false;
         }
 

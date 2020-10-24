@@ -1857,7 +1857,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 var overloads = symbol is AmbiguousMethodSymbol ambiguous && ambiguous.IsOverloadable
-                    ? new OverloadsList(ambiguous.Ambiguities.ToArray())
+                    ? new OverloadsList(ambiguous.Ambiguities.ToList())
                     : new OverloadsList(symbol ?? new MissingMethodSymbol(x.Name.NameValue.ToString()));
 
                 Debug.Assert(x.TypeArguments.IsDefaultOrEmpty);
@@ -1956,7 +1956,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // NOTE: magic methods __call or __callStatic are called in both cases - the target method is inaccessible or missing
 
                     var isviable = true; // can we safely resolve the method?
-                    var call = Array.Empty<MethodSymbol>();
+                    List<MethodSymbol> call = null;
 
                     // __call() might be used, if we have a reference to $this:
                     if (Routine != null && !Routine.IsStatic)
@@ -1968,7 +1968,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             call = type.LookupMethods(Name.SpecialMethodNames.Call.Value);
 
                             //
-                            if (TypeCtx.ThisType == null && call.Length != 0)
+                            if (TypeCtx.ThisType == null && call.Count != 0)
                             {
                                 // $this is resolved dynamically in runtime and
                                 // we don't know if we can use __call() here
@@ -1977,18 +1977,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
                     }
 
-                    if (call.Length == 0)
+                    if (call == null || call.Count == 0)
                     {
                         // __callStatic()
                         call = type.LookupMethods(Name.SpecialMethodNames.CallStatic.Value);
                     }
 
-                    if (call.Length != 0)
+                    if (call != null && call.Count != 0)
                     {
                         // NOTE: PHP ignores visibility of __callStatic
                         call = Construct(call, x);
 
-                        method = call.Length == 1 && isviable
+                        method = call.Count == 1 && isviable
                             ? new MagicCallMethodSymbol(x.Name.ToStringOrThrow(), call[0])
                             : null; // nullify the symbol so it will be called dynamically and resolved in rutime
                     }
@@ -2003,7 +2003,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // we need this at least to determine possible late static type binding
 
                 var candidates = Construct(Routine.ContainingType.LookupMethods(x.Name.ToStringOrThrow()), x);
-                if (candidates.Length != 0)
+                if (candidates.Count != 0)
                 {
                     // accessibility not have to be checked here
                     x.TargetMethod = new AmbiguousMethodSymbol(candidates.AsImmutable(), overloadable: true);
@@ -2016,26 +2016,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         // helper
-        MethodSymbol[] Construct(MethodSymbol[] methods, BoundRoutineCall bound)
+        List<MethodSymbol> Construct(List<MethodSymbol> methods, BoundRoutineCall bound)
         {
-            if (bound.TypeArguments.IsDefaultOrEmpty)
-            {
-                return methods;
-            }
-            else
+            if (!bound.TypeArguments.IsDefaultOrEmpty)
             {
                 var types = bound.TypeArguments.Select(t => (TypeSymbol)t.Type).AsImmutable();
-                var result = new List<MethodSymbol>();
 
-                for (int i = 0; i < methods.Length; i++)
+                for (int i = methods.Count - 1; i >= 0; i--)
                 {
                     if (methods[i].Arity == types.Length) // TODO: check the type argument is assignable
                     {
-                        result.Add(methods[i].Construct(types));
+                        methods[i] = methods[i].Construct(types);
+                    }
+                    else
+                    {
+                        methods.RemoveAt(i);
                     }
                 }
-                return result.ToArray();
             }
+
+            return methods;
         }
 
         public override T VisitNew(BoundNewEx x)
@@ -2048,7 +2048,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var type = (NamedTypeSymbol)x.TypeRef.Type;
             if (type.IsValidType())
             {
-                var candidates = type.InstanceConstructors.ToArray();
+                var candidates = type.InstanceConstructors.ToList();
 
                 //
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, OverloadsList.InvocationKindFlags.New);

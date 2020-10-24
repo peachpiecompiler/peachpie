@@ -20,6 +20,7 @@ namespace Pchp.Library.Reflection
         public virtual string __toString() { throw new NotImplementedException(); }
 
 #pragma warning disable CS0612 // Type or member is obsolete
+        [PhpHidden]
         public override string ToString() => __toString();
 #pragma warning restore CS0612 // Type or member is obsolete
     }

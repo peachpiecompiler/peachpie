@@ -327,11 +327,18 @@ namespace Pchp.Library
             // TODO: debug_backtrace: options, limit
             ctx.Echo((new Core.Reflection.PhpStackTrace()).GetStackTraceString(skip: 1));
         }
+    }
+}
 
+namespace Pchp.Library.Standard
+{
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
+    public static class Errors
+    {
         /// <summary>
-		/// An action performed by the <see cref="error_log"/> method.
-		/// </summary>
-		public enum ErrorLogType
+        /// An action performed by the <see cref="error_log"/> method.
+        /// </summary>
+        public enum ErrorLogType
         {
             /// <summary>A message to be logged is appended to log file or sent to system log.</summary>
             Default = 0,
