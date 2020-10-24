@@ -101,7 +101,10 @@ namespace Pchp.Library.DateTime
             _span = span;
 
             // For computing the total number of day, we do this without taking account the time part
-            _days = Math.Abs((int)date2.Date.Subtract(date1.Date).TotalDays);
+            //_days = Math.Abs((int)date2.Date.Subtract(date1.Date).TotalDays); // gives different results than in PHP
+
+            // this seems to work as expected:
+            _days = Math.Abs((int)span.TotalDays);
         }
 
         internal bool IsZero
