@@ -4545,7 +4545,16 @@ namespace Pchp.Library
                     }
                 }
 
-                if (i - lineStart >= width)
+                if (str[i] == '\n') {
+
+                    // we reached the end of line before reaching specified width
+
+                    if (lineStart > 0) result.Append(lineBreak);
+                    result.Append(str, lineStart, i - lineStart);
+                    lastSpace = lineStart = i + 1;
+                    continue;
+
+                } else if (i - lineStart >= width)
                 {
                     // we reached the specified width
 
