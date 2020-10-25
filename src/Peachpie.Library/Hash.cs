@@ -56,26 +56,26 @@ namespace Pchp.Library
         /// <summary>
         /// Calculates the crc32 polynomial of a string of bytes.
         /// </summary>
-        /// <param name="bytes">The string of bytes to compute crc32 of.</param>
-        /// <returns>The CRC32 of <paramref name="bytes"/>.</returns>
+        /// <param name="str">The string of bytes to compute crc32 of.</param>
+        /// <returns>The CRC32 of <paramref name="str"/>.</returns>
         /// <remarks>
         /// Generates the cyclic redundancy checksum polynomial of 32-bit lengths of the str. This is usually used to validate the integrity of data being transmitted.
         /// On 64bit installations all crc32() results will be positive integers.
         /// </remarks>
-        public static long crc32(byte[] bytes)
+        public static long crc32(byte[] str)
         {
-            return HashPhpResource.CRC32B.ComputeCRC32(bytes);
+            return HashPhpResource.CRC32B.ComputeCRC32(str);
         }
 
         /// <summary>
         /// Calculate the md5 hash of a string.
         /// </summary>
-        /// <param name="bytes">Input string.</param>
+        /// <param name="str">Input string.</param>
         /// <param name="raw_output">If the optional raw_output is set to TRUE, then the md5 digest is instead returned in raw binary format with a length of 16.</param>
         /// <returns>Returns the hash as a 32-character hexadecimal number.</returns>
-        public static PhpString md5(byte[] bytes, bool raw_output = false)
+        public static PhpString md5(byte[] str, bool raw_output = false)
         {
-            var hash = MD5.Create().ComputeHash(bytes);
+            var hash = MD5.Create().ComputeHash(str);
             return raw_output
                 ? new PhpString(hash)
                 : new PhpString(StringUtils.BinToHex(hash, string.Empty));
@@ -85,13 +85,13 @@ namespace Pchp.Library
         /// Calculates the md5 hash of a given file.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="fileName">The file name.</param>
-        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// <param name="filename">The file name.</param>
+        /// <param name="raw_output">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
         /// a sequence of hexadecimal numbers.</param>
-        /// <returns>MD5 of given <paramref name="fileName"/> content.</returns>
-        public static PhpString md5_file(Context ctx, string fileName, bool rawOutput = false)
+        /// <returns>MD5 of given <paramref name="filename"/> content.</returns>
+        public static PhpString md5_file(Context ctx, string filename, bool raw_output = false)
         {
-            return HashFromFile(ctx, MD5.Create(), fileName, rawOutput);
+            return HashFromFile(ctx, MD5.Create(), filename, raw_output);
         }
 
         /// <summary>
@@ -109,51 +109,51 @@ namespace Pchp.Library
         /// <summary>
         /// Calculate the SHA1 hash of a string of bytes.
         /// </summary>
-        /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
+        /// <param name="str">The string of bytes to compute SHA1 of.</param>
         /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
         /// a sequence of hexadecimal numbers.</param>
-        /// <returns>md5 of <paramref name="bytes"/>.</returns>
-        public static PhpString sha1(byte[] bytes, bool rawOutput = false)
+        /// <returns>md5 of <paramref name="str"/>.</returns>
+        public static PhpString sha1(byte[] str, bool rawOutput = false)
         {
-            return HashBytes(SHA1.Create(), bytes, rawOutput);
+            return HashBytes(SHA1.Create(), str, rawOutput);
         }
 
         /// <summary>
         /// Calculates the SHA1 hash of a given file.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="fileName">The file name.</param>
-        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// <param name="filename">The file name.</param>
+        /// <param name="raw_output">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
         /// a sequence of hexadecimal numbers.</param>
-        /// <returns>SHA1 of <paramref name="fileName"/> content.</returns>
-        public static PhpString sha1_file(Context ctx, string fileName, bool rawOutput = false)
+        /// <returns>SHA1 of <paramref name="filename"/> content.</returns>
+        public static PhpString sha1_file(Context ctx, string filename, bool raw_output = false)
         {
-            return HashFromFile(ctx, SHA1.Create(), fileName, rawOutput);
+            return HashFromFile(ctx, SHA1.Create(), filename, raw_output);
         }
 
         /// <summary>
         /// Calculate the SHA256 hash of a string of bytes.
         /// </summary>
-        /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
-        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// <param name="str">The string of bytes to compute SHA1 of.</param>
+        /// <param name="raw_output">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
         /// a sequence of hexadecimal numbers.</param>
-        /// <returns>md5 of <paramref name="bytes"/>.</returns>
-        public static PhpString sha256(byte[] bytes, bool rawOutput = false)
+        /// <returns>md5 of <paramref name="str"/>.</returns>
+        public static PhpString sha256(byte[] str, bool raw_output = false)
         {
-            return HashBytes(SHA256.Create(), bytes, rawOutput);
+            return HashBytes(SHA256.Create(), str, raw_output);
         }
 
         /// <summary>
         /// Calculates the SHA256 hash of a given file.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="fileName">The file name.</param>
-        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// <param name="filename">The file name.</param>
+        /// <param name="raw_output">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
         /// a sequence of hexadecimal numbers.</param>
-        /// <returns>SHA1 of <paramref name="fileName"/> content.</returns>
-        public static PhpString sha256_file(Context ctx, string fileName, bool rawOutput = false)
+        /// <returns>SHA1 of <paramref name="filename"/> content.</returns>
+        public static PhpString sha256_file(Context ctx, string filename, bool raw_output = false)
         {
-            return HashFromFile(ctx, SHA256.Create(), fileName, rawOutput);
+            return HashFromFile(ctx, SHA256.Create(), filename, raw_output);
         }
 
         /// <summary>
