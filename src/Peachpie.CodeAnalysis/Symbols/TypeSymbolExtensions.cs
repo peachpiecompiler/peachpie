@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.Symbols
             (type.TryGetPhpTypeAttribute(out _, out var fname, out _) && fname != null); // or referenced with [PhpType("name", "path to original PHP file")]
 
         /// <summary>
-        /// Gets value indicating the type is a PHP user type (declared in a PHP code).
+        /// Gets value indicating the type is a PHP type (annotated with [PhpTypeAttribute] (and/or declared in user's code).
         /// </summary>
         public static bool IsPhpType(this TypeSymbol/*!*/type) =>
             type.OriginalDefinition is SourceTypeSymbol ||  // either declared in source code

@@ -278,6 +278,11 @@ namespace Pchp.Library
         public static bool EqualsOrdinalIgnoreCase(this ReadOnlySpan<char> str1, ReadOnlySpan<char> str2) => Core.Utilities.StringUtils.EqualsOrdinalIgnoreCase(str1, str2);
 
         /// <summary>
+        /// Determines whether two strings are equal while ignoring casing.
+        /// </summary>
+        public static bool EqualsOrdinalIgnoreCase(this ReadOnlySpan<char> str1, string str2) => Core.Utilities.StringUtils.EqualsOrdinalIgnoreCase(str1, str2);
+
+        /// <summary>
         /// Decodes given json encoded string.
         /// </summary>
         public static PhpValue JsonDecode(string value)

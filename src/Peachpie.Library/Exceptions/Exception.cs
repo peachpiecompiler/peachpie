@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Serialization;
 using Pchp.Core;
 using Pchp.Core.Reflection;
 
@@ -7,7 +8,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// <see cref="Exception"/> is the base class for all Exceptions in PHP 5, and the base class for all user exceptions in PHP 7.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class Exception : System.Exception, Throwable
     {
         /// <summary>
@@ -39,7 +40,7 @@ namespace Pchp.Library.Spl
         
         protected int line;
 
-        internal protected void InitializeInternal()
+        private protected void InitializeInternal()
         {
             this.file = _stacktrace.GetFilename();
             this.line = _stacktrace.GetLine();
@@ -105,13 +106,23 @@ namespace Pchp.Library.Spl
 
         public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, this.Message); // TODO: _trace
 
+        [PhpHidden]
         public sealed override string ToString() => __toString();
+
+        [PhpHidden]
+        public override System.Exception GetBaseException() => base.GetBaseException();
+
+        [PhpHidden]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context) => base.GetObjectData(info, context);
+
+        [PhpHidden]
+        public new Type GetType() => base.GetType();
     }
 
     /// <summary>
     /// An Error Exception.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ErrorException : Spl.Exception
     {
         protected long severity;

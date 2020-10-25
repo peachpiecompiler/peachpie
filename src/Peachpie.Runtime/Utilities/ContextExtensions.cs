@@ -104,5 +104,11 @@ namespace Pchp.Core.Utilities
                     false
 #endif
             ;
+
+        /// <summary>
+        /// Gets the type containing the script's main method.
+        /// </summary>
+        /// <remarks>The type or <c>null</c>.</remarks>
+        public static Type GetScriptTypeFromScript(Context.ScriptInfo script) => script.GetScriptType();
     }
 }

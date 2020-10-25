@@ -155,7 +155,9 @@
 
     <ItemGroup Condition=" '$(ComposerDependencies)'=='true' ">
       <!-- this will be enabled by default -->
-      <PackageReference Include="@(ComposerPackageReference->'%(Name)')" />
+      <PackageReference Include="@(ComposerPackageReference->'%(Name)')">
+        <PrivateAssets>None</PrivateAssets>
+      </PackageReference>
     </ItemGroup>
 
   </Target>
@@ -248,6 +250,7 @@
                TempOutputPath="$(TempOutputDir)"
                TargetFramework="$(TargetFrameworkMoniker)"
                NetFrameworkPath="$(NetFrameworkPath)"
+               BasePath="$(PhpBasePath)"
                Optimization="$(Optimize)"
                DebugType="$(DebugType)"
                PdbFile="$(PdbFile)"

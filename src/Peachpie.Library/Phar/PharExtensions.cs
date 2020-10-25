@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -17,8 +18,11 @@ namespace Pchp.Library.Phar
     /// </summary>
     internal static class PharExtensions
     {
+        /// <summary>
+        /// Compiled .phar file internal representation.
+        /// </summary>
         [DebuggerDisplay("{PharFile,nq} ({Scripts.Length} scripts)")]
-        sealed class CachedPhar
+        internal sealed class CachedPhar
         {
             /// <summary>
             /// Containing assembly.
@@ -37,13 +41,14 @@ namespace Pchp.Library.Phar
 
             /// <summary>
             /// Associated resource manager.
+            /// Provides .phar content files.
             /// </summary>
             public ResourceManager Resources { get; }
 
-            public CachedPhar(Type stubScriptType)
+            public CachedPhar(string pharFile, Type stubScriptType)
             {
                 Assembly = stubScriptType.Assembly;
-                PharFile = GetPharFile(stubScriptType);
+                PharFile = pharFile ?? GetPharFile(stubScriptType);
                 Resources = new ResourceManager($"phar://{PharFile}", Assembly);
 
                 Scripts = EnumeratePharScripts(stubScriptType.Assembly, PharFile)
@@ -51,7 +56,7 @@ namespace Pchp.Library.Phar
                     {
                         var relpath = PharEntryRelativePath(t);
                         Context.DeclareScript(relpath, Context.ScriptInfo.CreateMain(t));
-                        return relpath;
+                        return CurrentPlatform.NormalizeSlashes(relpath);
                     })
                     .ToArray();
             }
@@ -68,18 +73,18 @@ namespace Pchp.Library.Phar
         public static string PharExtension => ".phar";
 
         /// <summary>
-        /// Read-only dictionary of cached phars.
+        /// Dictionary of cached compiled phars.
         /// Indexed by PharFile.
         /// </summary>
-        static Dictionary<string, CachedPhar> s_cachedPhars; // TODO: ImmutableDictionary
+        readonly static ConcurrentDictionary<string, CachedPhar> s_cachedPhars = new ConcurrentDictionary<string, CachedPhar>(CurrentPlatform.PathComparer);
 
         /// <summary>
         /// Resolves the phar's file name of given script representing phar stub.
         /// </summary>
         public static string GetPharFile(Type stubScriptType)
         {
-            var attr = ReflectionUtils.GetScriptAttribute(stubScriptType);
-            if (attr != null && attr.Path.EndsWith(PharExtension, StringComparison.OrdinalIgnoreCase))
+            var attr = ReflectionUtils.GetScriptAttribute(stubScriptType ?? throw new ArgumentNullException(nameof(stubScriptType)));
+            if (attr != null && attr.Path.EndsWith(PharExtension, CurrentPlatform.PathStringComparison))
             {
                 return attr.Path;
             }
@@ -101,9 +106,9 @@ namespace Pchp.Library.Phar
         /// Gets relative path to the phar entry.
         /// The returned string is in form <c>{relative phar path}{DS}{phar entry path}</c> (e.g. <c>file.phar/dir/file.php</c>).
         /// </summary>
-        public static string PharEntryRelativePath(string pharFile, string pharEntryPath)
+        public static string PharEntryRelativePath(string pharFile, ReadOnlySpan<char> pharEntryPath)
         {
-            return CurrentPlatform.NormalizeSlashes(pharFile + CurrentPlatform.DirectorySeparator.ToString() + pharEntryPath);
+            return $"{pharFile}{CurrentPlatform.DirectorySeparator}{pharEntryPath.ToString()}";
         }
 
         /// <summary>
@@ -118,28 +123,32 @@ namespace Pchp.Library.Phar
                 : null;
         }
 
-        static CachedPhar EnsureCachedPhar(Type stubScriptType)
+        /// <summary>
+        /// Gets compiled phar file by compile-time file name (relative to the root).
+        /// </summary>
+        internal static CachedPhar TryGetPhar(string pharFile)
         {
-            CachedPhar cached = null;
+            s_cachedPhars.TryGetValue(pharFile, out var phar);
+            return phar;
+        }
 
-            var pharFile = GetPharFile(stubScriptType);
-            if (pharFile != null)
+        static CachedPhar TryGetCachedPhar(Type stubScriptType)
+        {
+            if (stubScriptType != null)
             {
-                var cachedPhars = s_cachedPhars;
-                if (cachedPhars == null || !cachedPhars.TryGetValue(pharFile, out cached))
+                var pharFile = GetPharFile(stubScriptType);
+                if (pharFile != null)
                 {
-                    cached = new CachedPhar(stubScriptType);
-
-                    var newdict = cachedPhars != null
-                        ? new Dictionary<string, CachedPhar>(cachedPhars, CurrentPlatform.PathComparer)
-                        : new Dictionary<string, CachedPhar>(CurrentPlatform.PathComparer);
-
-                    newdict[pharFile] = cached;
-                    s_cachedPhars = newdict;
+                    return s_cachedPhars.GetOrAdd(pharFile, _pharFile => new CachedPhar(_pharFile, stubScriptType));
                 }
             }
 
-            return cached;
+            return null;
+        }
+
+        public static CachedPhar TryGetCachedPhar(Context.ScriptInfo stubscript)
+        {
+            return TryGetCachedPhar(ContextExtensions.GetScriptTypeFromScript(stubscript));
         }
 
         /// <summary>
@@ -147,7 +156,7 @@ namespace Pchp.Library.Phar
         /// </summary>
         public static bool MapPhar(Context ctx, Type stubScriptType, string alias)
         {
-            var phar = EnsureCachedPhar(stubScriptType);
+            var phar = TryGetCachedPhar(stubScriptType);
             if (phar != null)
             {
                 if (alias != null)
@@ -167,22 +176,34 @@ namespace Pchp.Library.Phar
         /// Resolves Phar Alias to a PharFile (relative .phar file path).
         /// </summary>
         /// <returns>Relative .phar file path or <c>null</c>.</returns>
-        public static string AliasToPharFile(Context ctx, string alias)
+        public static CachedPhar AliasToPharFile(Context ctx, string alias)
         {
-            return ctx.GetStatic<PharContext>().PharMap.TryGetValue(alias, out var phar)
-                ? phar.PharFile
-                : null;
+            return ctx.GetStatic<PharContext>().PharMap.TryGetValue(alias, out var phar) ? phar : null;
+        }
+
+        /// <summary>
+        /// Gets phar content.
+        /// </summary>
+        public static string GetResourceContent(CachedPhar phar, ReadOnlySpan<char> entryName)
+        {
+            if (phar != null && phar.Resources != null)
+            {
+                // TODO: the resource should be embedded as Stream
+                // return value may change from string to Stream
+                return phar.Resources.GetString(entryName.ToString().Replace('\\', '/'));
+            }
+
+            return null;
         }
 
         /// <summary>
         /// Gets phar content file stream.
         /// </summary>
-        public static Stream GetResourceStream(string pharFile, string entryName)
+        public static Stream GetResourceStream(CachedPhar phar, ReadOnlySpan<char> entryName)
         {
-            if (s_cachedPhars != null && s_cachedPhars.TryGetValue(pharFile, out var phar) && phar.Resources != null)
+            var content = GetResourceContent(phar, entryName);
+            if (content != null)
             {
-                // TODO: the resource should be embedded as Stream
-                var content = phar.Resources.GetString(entryName.Replace('\\', '/'));
                 return new MemoryStream(Encoding.UTF8.GetBytes(content));
             }
 

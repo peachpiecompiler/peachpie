@@ -34,9 +34,9 @@ namespace Peachpie.Library.Graphics
         /// This is alternative alias of <see cref="exif_read_data(string,string,bool,bool)"/>.
         /// </summary>
         [return: CastToFalse]
-        public static PhpArray read_exif_data(Context ctx, string filename, string sections = null, bool arrays = false, bool thumbnail = false)
+        public static PhpArray read_exif_data(Context ctx, string filename, string sections_needed = null, bool sub_arrays = false, bool read_thumbnail = false)
         {
-            return exif_read_data(ctx, filename, sections, arrays, thumbnail);
+            return exif_read_data(ctx, filename, sections_needed, sub_arrays, read_thumbnail);
         }
 
         #endregion
@@ -48,7 +48,7 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="filename">The name of the image file being read. This cannot be an URL.</param>
-        /// <param name="sections">Is a comma separated list of sections that need to be present in file to produce a result array. If none of the requested sections could be found the return value is FALSE.
+        /// <param name="sections_needed">Is a comma separated list of sections that need to be present in file to produce a result array. If none of the requested sections could be found the return value is FALSE.
         /// 
         /// FILE:	FileName, FileSize, FileDateTime, SectionsFound
         /// COMPUTED:	 html, Width, Height, IsColor, and more if available. Height and Width are computed the same way getimagesize() does so their values must not be part of any header returned. Also, html is a height/width text string to be used inside normal HTML.
@@ -57,12 +57,12 @@ namespace Peachpie.Library.Graphics
         /// THUMBNAIL:	 A file is supposed to contain a thumbnail if it has a second IFD. All tagged information about the embedded thumbnail is stored in this section.
         /// COMMENT:	Comment headers of JPEG images.
         /// EXIF:	 The EXIF section is a sub section of IFD0. It contains more detailed information about an image. Most of these entries are digital camera related.</param>
-        /// <param name="arrays">Specifies whether or not each section becomes an array. The sections COMPUTED, THUMBNAIL, and COMMENT always become arrays as they may contain values whose names conflict with other sections.</param>
-        /// <param name="thumbnail">When set to <c>TRUE</c> the thumbnail itself is read. Otherwise, only the tagged data is read.</param>
+        /// <param name="sub_arrays">Specifies whether or not each section becomes an array. The sections COMPUTED, THUMBNAIL, and COMMENT always become arrays as they may contain values whose names conflict with other sections.</param>
+        /// <param name="read_thumbnail">When set to <c>TRUE</c> the thumbnail itself is read. Otherwise, only the tagged data is read.</param>
         /// <returns>It returns an associative array where the array indexes are the header names and the array values are the values associated with those headers.
         /// If no data can be returned, <c>FALSE</c> is returned.</returns>
         [return: CastToFalse]
-        public static PhpArray exif_read_data(Context ctx, string filename, string sections = null, bool arrays = false, bool thumbnail = false)
+        public static PhpArray exif_read_data(Context ctx, string filename, string sections_needed = null, bool sub_arrays = false, bool read_thumbnail = false)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -70,19 +70,19 @@ namespace Peachpie.Library.Graphics
                 return null;
             }
 
-            if (!string.IsNullOrEmpty(sections))
+            if (!string.IsNullOrEmpty(sections_needed))
             {
-                PhpException.ArgumentValueNotSupported("sections", sections);
+                PhpException.ArgumentValueNotSupported(nameof(sections_needed), sections_needed);
             }
 
-            if (arrays)
+            if (sub_arrays)
             {
-                PhpException.ArgumentValueNotSupported("arrays", arrays);
+                PhpException.ArgumentValueNotSupported(nameof(sub_arrays), sub_arrays);
             }
 
-            if (thumbnail)
+            if (read_thumbnail)
             {
-                PhpException.ArgumentValueNotSupported("thumbnail", thumbnail);
+                PhpException.ArgumentValueNotSupported(nameof(read_thumbnail), read_thumbnail);
             }
 
             PhpArray array = new PhpArray();
@@ -317,15 +317,15 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         /// <returns></returns>
         [return: CastToFalse]
-        public static int exif_imagetype(Context ctx, string filename)
+        public static int exif_imagetype(Context ctx, string imagefile)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(imagefile))
             {
                 PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
                 return -1;
             }
 
-            var stream = Utils.OpenStream(ctx, filename);
+            var stream = Utils.OpenStream(ctx, imagefile);
             if (stream == null)
             {
                 PhpException.Throw(PhpError.Warning, Resources.read_error);

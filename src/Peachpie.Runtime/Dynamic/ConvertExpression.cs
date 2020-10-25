@@ -524,6 +524,12 @@ namespace Pchp.Core.Dynamic
                 if (source == typeof(uint)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), Expression.Convert(expr, typeof(long)));
                 if (source == typeof(ulong)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.UInt64), expr);
 
+                if (source.IsEnum)
+                {
+                    // (PhpValue)(int)enum
+                    return BindToValue(Expression.Convert(expr, source.GetEnumUnderlyingType()));
+                }
+
                 throw new NotImplementedException(source.FullName);
             }
             else if (

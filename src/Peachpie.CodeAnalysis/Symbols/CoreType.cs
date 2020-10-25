@@ -151,7 +151,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IntStringKey, PhpHashtable, ImportValueAttribute, DummyFieldsOnlyCtor,
             Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
-            stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
+            stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, Stringable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -234,6 +234,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             Iterator = CreateFromFullName("Iterator");
             Traversable = CreateFromFullName("Traversable");
+            Stringable = CreateFromFullName("Stringable");
             Generator = CreateFromFullName("Generator");
             GeneratorStateMachineDelegate = CreateFromFullName("GeneratorStateMachineDelegate");
 

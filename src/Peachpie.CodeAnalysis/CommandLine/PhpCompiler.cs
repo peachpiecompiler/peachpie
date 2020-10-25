@@ -210,6 +210,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                 {
                     var entryName = PhpFileUtilities.NormalizeSlashes(entry.Name);
 
+                    if (entry.IsIgnoredEntry())
+                    {
+                        continue;
+                    }
+
                     if (entry.IsCompileEntry())
                     {
                         var tree = PhpSyntaxTree.ParseCode(SourceText.From(entry.Code, Encoding.UTF8), parseOptions, scriptParseOptions, $"{prefix}/{entryName}");

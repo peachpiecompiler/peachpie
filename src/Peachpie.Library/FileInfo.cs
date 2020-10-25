@@ -65,8 +65,8 @@ namespace Pchp.Library
         /// Return information about a file.
         /// </summary>
         [return: CastToFalse]
-        public static string finfo_file(PhpResource finfo, string file_name = null, int options = FILEINFO_NONE, PhpResource context = null)
-            => ((finfoResource)finfo).finfo.file(file_name, options, context);
+        public static string finfo_file(PhpResource finfo, string filename = null, int options = FILEINFO_NONE, PhpResource context = null)
+            => ((finfoResource)finfo).finfo.file(filename, options, context);
 
         /// <summary>
         /// Set configuration options.
@@ -409,11 +409,11 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public virtual string file(string file_name, int options = PhpFileInfo.FILEINFO_NONE, PhpResource context = null)
+        public virtual string file(string filename, int options = PhpFileInfo.FILEINFO_NONE, PhpResource context = null)
         {
             byte[] bytes;
 
-            using (var stream = PhpStream.Open(_ctx, file_name, "rb"/*ReadBinary*/, StreamOpenOptions.Empty, StreamContext.GetValid(context, allowNull: true)))
+            using (var stream = PhpStream.Open(_ctx, filename, "rb"/*ReadBinary*/, StreamOpenOptions.Empty, StreamContext.GetValid(context, allowNull: true)))
             {
                 bytes = stream?.ReadBytes(FileType.MaxHeaderSize);
             }

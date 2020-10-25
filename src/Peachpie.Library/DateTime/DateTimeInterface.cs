@@ -8,7 +8,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
     /// DateTimeInterface is meant so that both DateTime and DateTimeImmutable can be type hinted for.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Date)]
     public interface DateTimeInterface
     {
         public class _statics   // nested "_statics" class is understood by compiler and runtime, contained readonly/const fields are treated as containing class's constants

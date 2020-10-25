@@ -11,10 +11,10 @@ using static Pchp.Library.StandardPhpOptions;
 
 namespace Peachpie.Library.Scripting
 {
-    [PhpExtension(ExtensionName, Registrator = typeof(Config))]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard, Registrator = typeof(Config))]
     public static class Highlight
     {
-        public const string ExtensionName = "standard";
+        static string ExtensionName => PhpExtensionAttribute.KnownExtensionNames.Standard;
 
         sealed class Config : IPhpConfiguration
         {

@@ -44,8 +44,8 @@ namespace Pchp.Core.Dynamic
              * return NULL;
             */
             var throwcall = bound.TargetType != null
-                ? Expression.Call(typeof(PhpException), "UndefinedMethodCalled", Array.Empty<Type>(), Expression.Constant(bound.TargetType.Name), bound.IndirectName ?? Expression.Constant(bound.Name))
-                : Expression.Call(typeof(PhpException), "UndefinedFunctionCalled", Array.Empty<Type>(), bound.IndirectName ?? Expression.Constant(bound.Name));
+                ? Expression.Call(Cache.Exceptions.UndefinedMethodCalled_String_String, Expression.Constant(bound.TargetType.Name), bound.IndirectName ?? Expression.Constant(bound.Name))
+                : Expression.Call(Cache.Exceptions.UndefinedFunctionCalled_String, bound.IndirectName ?? Expression.Constant(bound.Name));
 
             return Expression.Block(throwcall, ConvertExpression.BindDefault(this.ReturnType));
         }
@@ -82,7 +82,6 @@ namespace Pchp.Core.Dynamic
         {
             var bound = CreateContext().ProcessArgs(target, args, HasTarget);
 
-
             Expression invocation;
 
             //
@@ -103,12 +102,17 @@ namespace Pchp.Core.Dynamic
 
                     invocation = Expression.Block(new[] { args_var },
                             Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments, bound.Context, bound.ClassContext)),
-                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, bound.IsStaticSyntax, lateStaticType: lateStaticTypeArg)
+                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var,
+                                isStaticCallSyntax: bound.IsStaticSyntax,
+                                lateStaticType: lateStaticTypeArg)
                         );
                 }
                 else
                 {
-                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, bound.IsStaticSyntax, lateStaticType: lateStaticTypeArg, classContext: bound.ClassContext);
+                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments,
+                        isStaticCallSyntax: bound.IsStaticSyntax,
+                        lateStaticType: lateStaticTypeArg,
+                        classContext: bound.ClassContext);
                 }
             }
             else
@@ -169,11 +173,10 @@ namespace Pchp.Core.Dynamic
             {
                 Debug.Assert(routine.Index != 0);
 
-                // restriction: ctx.CheckFunctionDeclared(index, routine.GetHashCode())
+                // restriction: CheckFunctionDeclared(ctx, index, routine.GetHashCode())
                 var checkExpr = Expression.Call(
-                    bound.Context,
-                    typeof(Context).GetMethod("CheckFunctionDeclared", typeof(int), typeof(int)),
-                    Expression.Constant(routine.Index), Expression.Constant(routine.GetHashCode()));
+                    Cache.Operators.CheckFunctionDeclared_Context_Int_Int,
+                    bound.Context, Expression.Constant(routine.Index), Expression.Constant(routine.GetHashCode()));
 
                 bound.AddRestriction(checkExpr);
             }
@@ -255,7 +258,7 @@ namespace Pchp.Core.Dynamic
                  * PhpException.MethodOnNonObject(name_expr);
                  * return NULL;
                  */
-                var throwcall = Expression.Call(typeof(PhpException), "MethodOnNonObject", Array.Empty<Type>(), ConvertExpression.Bind(name_expr, typeof(string), bound.Context));
+                var throwcall = Expression.Call(Cache.Exceptions.MethodOnNonObject_String, ConvertExpression.Bind(name_expr, typeof(string), bound.Context));
                 return Expression.Block(throwcall, ConvertExpression.BindDefault(this.ReturnType));
             }
 

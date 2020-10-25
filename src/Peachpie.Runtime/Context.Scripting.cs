@@ -36,6 +36,13 @@ namespace Pchp.Core
             /// Optional. Collection of additional metadata references.
             /// </summary>
             public string[] AdditionalReferences { get; set; }
+
+            /// <summary>
+            /// Optional.
+            /// Sets the language version.
+            /// By default, it uses the version of currently running scripts, or the latest version available.
+            /// </summary>
+            public Version LanguageVersion { get; set; }
         }
 
         /// <summary>

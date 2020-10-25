@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
@@ -10,7 +11,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// <see cref="Error"/> is the base class for all internal PHP errors.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class Error : System.Exception, Throwable
     {
         [PhpHidden]
@@ -39,7 +40,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Initializes the file and line fields from <see cref="_stacktrace"/>.
         /// </summary>
-        internal protected void InitializeInternal()
+        private protected void InitializeInternal()
         {
             this.file = _stacktrace.GetFilename();
             this.line = _stacktrace.GetLine();
@@ -89,13 +90,23 @@ namespace Pchp.Library.Spl
 
         public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, this.Message);   // TODO: _trace
 
+        [PhpHidden]
         public sealed override string ToString() => __toString();
+
+        [PhpHidden]
+        public override System.Exception GetBaseException() => base.GetBaseException();
+
+        [PhpHidden]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context) => base.GetObjectData(info, context);
+
+        [PhpHidden]
+        public new Type GetType() => base.GetType();
     }
 
     /// <summary>
     /// Thrown when an error occurs while performing mathematical operations.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ArithmeticError : Error
     {
         [PhpFieldsOnlyCtor]
@@ -110,7 +121,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Thrown when an attempt is made to divide a number by zero.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class DivisionByZeroError : ArithmeticError
     {
         [PhpFieldsOnlyCtor]
@@ -125,7 +136,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Thrown when <c>assert()</c> fails.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("standard")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public class AssertionError : Error
     {
         [PhpFieldsOnlyCtor]
@@ -137,7 +148,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class TypeError : Error
     {
         [PhpFieldsOnlyCtor]
@@ -149,7 +160,11 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    /// <summary>
+    /// The exception is thrown when too few arguments are passed to a user-defined function or method.<br/>
+    /// This should apply to built-in functions as well if the code is in strict mode.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ArgumentCountError : TypeError
     {
         [PhpFieldsOnlyCtor]
@@ -161,7 +176,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class CompileError : Error
     {
         [PhpFieldsOnlyCtor]
@@ -173,7 +188,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ParseError : CompileError
     {
         [PhpFieldsOnlyCtor]
@@ -185,7 +200,7 @@ namespace Pchp.Library.Spl
         }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class UnhandledMatchError : Error
     {
         [PhpFieldsOnlyCtor]

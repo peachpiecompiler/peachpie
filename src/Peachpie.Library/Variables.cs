@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Reflection;
 using System.Runtime.InteropServices;
+using static Pchp.Core.PhpExtensionAttribute;
 
 namespace Pchp.Library
 {
@@ -95,7 +96,7 @@ namespace Pchp.Library
 
     #endregion
 
-    [PhpExtension("standard")]
+    [PhpExtension(KnownExtensionNames.Standard)]
     public static class Variables
     {
         #region Constants
@@ -522,7 +523,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region is_scalar, is_numeric, is_callable, is_countable, get_resource_type, get_resource_id
+        #region is_scalar, is_numeric, is_callable, is_countable, get_resource_id
 
         /// <summary>
         /// Checks whether a dereferenced variable is a scalar.
@@ -621,13 +622,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Returns the type of a resource.
-        /// </summary>
-        /// <param name="resource">The resource.</param>
-        /// <returns>The resource type name or <c>null</c> if <paramref name="resource"/> is <c>null</c>.</returns>
-        public static string get_resource_type(PhpValue resource) => resource.AsResource()?.TypeName;
-
-        /// <summary>
         /// Get the resource ID for a given resource.
         /// </summary>
         /// <exception cref="Spl.TypeError">Argument is not a resource or <c>null</c>.</exception>
@@ -694,7 +688,7 @@ namespace Pchp.Library
 
             readonly HashSet<object> _visited = new HashSet<object>();
 
-            public CompactVisitor(PhpArray locals, [Out]PhpArray result)
+            public CompactVisitor(PhpArray locals, [Out] PhpArray result)
             {
                 _locals = locals;
                 _result = result;
@@ -857,18 +851,6 @@ namespace Pchp.Library
             //
             return extracted_count;
         }
-
-        #endregion
-
-        #region get_defined_vars
-
-        /// <summary>
-        /// This function returns a multidimensional array containing a list of all defined variables,
-        /// be them environment, server or user-defined variables, within the scope that get_defined_vars() is called.
-        /// </summary>
-        /// <param name="locals">The table of defined variables.</param>
-        /// <returns></returns>
-        public static PhpArray get_defined_vars([ImportValue(ImportValueAttribute.ValueSpec.Locals)] PhpArray locals) => locals.DeepCopy();
 
         #endregion
 
@@ -1530,6 +1512,33 @@ namespace Pchp.Library
             }
 
         }
+
+        #endregion
+    }
+
+    [PhpExtension(KnownExtensionNames.Core)]
+    public static class VariablesCore
+    {
+        #region get_defined_vars
+
+        /// <summary>
+        /// This function returns a multidimensional array containing a list of all defined variables,
+        /// be them environment, server or user-defined variables, within the scope that get_defined_vars() is called.
+        /// </summary>
+        /// <param name="locals">The table of defined variables.</param>
+        /// <returns></returns>
+        public static PhpArray get_defined_vars([ImportValue(ImportValueAttribute.ValueSpec.Locals)] PhpArray locals) => locals.DeepCopy();
+
+        #endregion
+
+        #region get_resource_type
+
+        /// <summary>
+        /// Returns the type of a resource.
+        /// </summary>
+        /// <param name="res">The resource.</param>
+        /// <returns>The resource type name or <c>null</c> if <paramref name="res"/> is <c>null</c>.</returns>
+        public static string get_resource_type(PhpValue res) => res.AsResource()?.TypeName;
 
         #endregion
     }

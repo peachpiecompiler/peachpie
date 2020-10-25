@@ -33,7 +33,7 @@ namespace ScriptsTest
             var files = Directory.GetFiles(testspath, "*.php", SearchOption.AllDirectories);
             Assert.NotEmpty(files);
 
-            return files.Select(f => new object[] { Path.GetDirectoryName(f), Path.GetFileName(f) });
+            return files.Select(f => new object[] { f });
         }
     }
 }

@@ -168,7 +168,7 @@ namespace Pchp.Library
         public override int Next(int min, int max)
         {
             if (min > max)
-                throw new ArgumentOutOfRangeException("min");
+                throw new ArgumentOutOfRangeException(nameof(min));
 
             unchecked
             {

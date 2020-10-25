@@ -463,16 +463,14 @@ namespace Pchp.Library.Spl
                 _flags,
                 PhpValue.FromClr(storage),
                 __peach__runtimeFields ?? PhpArray.NewEmpty(),
-                PhpValue.Null, // NULL for ArrayIterator
+                PhpValue.Null, // NULL for ArrayIterator, seems in some versions of PHP it is ommited
             };
         }
 
         public virtual void __unserialize(PhpArray array)
         {
-            PhpValue value;
-
             // 0: flags:
-            if (array.TryGetValue(0, out value) && value.IsLong(out long flags))
+            if (array.TryGetValue(0, out var value) && value.IsLong(out var flags))
             {
                 _flags = (int)flags;
 
@@ -484,6 +482,8 @@ namespace Pchp.Library.Spl
                     // 2: runtime fields:
                     if (array.TryGetValue(2, out value) && value.IsPhpArray(out __peach__runtimeFields))
                     {
+                        // 3: ignored
+
                         // ok
                         return;
                     }
@@ -1315,6 +1315,7 @@ namespace Pchp.Library.Spl
             }
         }
 
+        [PhpHidden]
         public override string ToString() => __toString();
 
         protected private virtual void NextImpl()

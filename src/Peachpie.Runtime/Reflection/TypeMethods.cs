@@ -66,7 +66,7 @@ namespace Pchp.Core.Reflection
             int index = 0;
 
             // skip members of {System.Object} if we are in a PHP type
-            if (type.Type.AsType() != typeof(object))
+            if (type.Type != typeof(object))
             {
                 methods = methods.Where(s_notObjectMember);
             }
@@ -87,8 +87,11 @@ namespace Pchp.Core.Reflection
                 // ignore methods in base classes that has been "overriden" in current class
                 // in PHP we do override even if signature does not match (e.g. __construct)
                 SelectVisibleOverrides(ref overrides);
+                
+                // TODO: negative {index} in case of non-user method
 
                 var info = PhpMethodInfo.Create(++index, m.Key, overrides, type);
+
                 MagicMethods magic;
 
                 if (IsSpecialName(overrides))
@@ -140,8 +143,21 @@ namespace Pchp.Core.Reflection
             return
                 access != MethodAttributes.Assembly &&
                 access != MethodAttributes.FamANDAssem &&
+                !m.IsSpecialName &&
+                !IsSpecialHidden(m) &&
                 !ReflectionUtils.IsPhpHidden(m);
         };
+
+        static bool IsSpecialHidden(MethodInfo method)
+        {
+            if (method.DeclaringType == typeof(Exception) && method.Name == nameof(Exception.GetType))
+            {
+                // ignore Exception::GetType()
+                return true;
+            }
+
+            return false;
+        }
 
         static bool IsSpecialName(MethodInfo[] methods)
         {

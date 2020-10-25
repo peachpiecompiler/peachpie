@@ -15,16 +15,16 @@ namespace Pchp.Core.Utilities
         /// Windows-style path separator (back slash).
         /// </summary>
         public const char DirectorySeparator = '\\';
-        
+
         /// <summary>
         /// Linux-style path separator (forward slash).
         /// </summary>
         public const char AltDirectorySeparator = '/';
-        
+
         static readonly char[] s_DirectorySeparators = new[] { DirectorySeparator, AltDirectorySeparator };
 
         public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
-        
+
         public static string TrimEndSeparator(this string path)
         {
             return IsDirectorySeparator(path.LastChar())
@@ -38,6 +38,62 @@ namespace Pchp.Core.Utilities
             return (index <= 0)
                 ? ReadOnlySpan<char>.Empty
                 : path.AsSpan(0, index);
+        }
+
+        /// <summary>
+        /// Gets the file name portion of the given path.
+        /// Trailing slashes are trimmed off.
+        /// </summary>
+        public static ReadOnlySpan<char> GetFileName(ReadOnlySpan<char> path)
+        {
+            for (int index = path.Length - 1; index >= 0; index--)
+            {
+                var c = path[index];
+
+                if (c == DirectorySeparator || c == AltDirectorySeparator)
+                {
+                    if (index == path.Length - 1)
+                    {
+                        // trim trailing slashes
+                        path = path.Slice(0, index);
+                        continue;
+                    }
+
+                    return path.Slice(index + 1);
+                }
+
+                if (c == Path.VolumeSeparatorChar)
+                {
+                    return path.Slice(index + 1);
+                }
+            }
+
+            return path;
+        }
+
+        /// <summary>
+        /// Gets the file extension excluding the dot (.) character.
+        /// The method does not check for the path validity.
+        /// If path does not have an extension, empty string is returned.
+        /// </summary>
+        public static ReadOnlySpan<char> GetExtension(ReadOnlySpan<char> path)
+        {
+            for (int index = path.Length - 1; index >= 0; index--)
+            {
+                var c = path[index];
+
+                if (c == '.')
+                {
+                    return path.Slice(index + 1);
+                }
+
+                if (c == DirectorySeparator || c == AltDirectorySeparator || c == Path.VolumeSeparatorChar)
+                {
+                    break;
+                }
+            }
+
+            return ReadOnlySpan<char>.Empty;
         }
     }
 
@@ -146,19 +202,25 @@ namespace Pchp.Core.Utilities
         /// <summary>
         /// Wrapper-safe method of getting the schema portion from an URL.
         /// </summary>
-        /// <param name="value">A <see cref="string"/> containing an URL or a local filesystem path.</param>
+        /// <param name="path">A <see cref="string"/> containing an URL or a local filesystem path.</param>
         /// <param name="scheme">Resulting scheme if any.</param>
         /// <returns>Whether given value contains the scheme.</returns>
-        public static bool TryGetScheme(string value, out ReadOnlySpan<char> scheme)
-        {
-            Debug.Assert(value != null);
+        public static bool TryGetScheme(string path, out ReadOnlySpan<char> scheme) => TryGetScheme(path.AsSpan(), out scheme);
 
-            if (value.Length > 3)
+        /// <summary>
+        /// Wrapper-safe method of getting the schema portion from an URL.
+        /// </summary>
+        /// <param name="path">A <see cref="string"/> containing an URL or a local filesystem path.</param>
+        /// <param name="scheme">Resulting scheme if any.</param>
+        /// <returns>Whether given value contains the scheme.</returns>
+        public static bool TryGetScheme(ReadOnlySpan<char> path, out ReadOnlySpan<char> scheme)
+        {
+            if (path.Length > 3)
             {
-                var colon_index = value.IndexOf(':', 1, Math.Min(value.Length - 1, 6)); // examine no more than 6 characters
-                if (colon_index > 0 && colon_index < value.Length - 3 && value[colon_index + 1] == '/' && value[colon_index + 2] == '/') // "://"
+                var colon_index = path.Slice(0, Math.Min(path.Length, 6)).IndexOf(':'); // examine no more than 6 characters
+                if (colon_index > 0 && colon_index < path.Length - 3 && path[colon_index + 1] == '/' && path[colon_index + 2] == '/') // "://"
                 {
-                    scheme = value.AsSpan(0, colon_index);
+                    scheme = path.Slice(0, colon_index);
                     return true;
                 }
             }
@@ -213,7 +275,7 @@ namespace Pchp.Core.Utilities
         /// <exception cref="ArgumentException">Invalid path.</exception>
         public static bool IsRemoteFile(string/*!*/ url)
         {
-            return GetScheme(url) != "file";
+            return TryGetScheme(url, out var scheme) && !scheme.SequenceEqual("file".AsSpan()); // has scheme and it is not file
         }
 
         /// <summary>
@@ -224,7 +286,8 @@ namespace Pchp.Core.Utilities
         /// <exception cref="ArgumentException">Invalid path.</exception>
         public static bool IsLocalFile(string/*!*/ url)
         {
-            return GetScheme(url) == "file";
+            return !TryGetScheme(url, out var scheme)   // if no scheme provided, file is default
+                || scheme.SequenceEqual("file".AsSpan());
         }
 
         /// <summary>

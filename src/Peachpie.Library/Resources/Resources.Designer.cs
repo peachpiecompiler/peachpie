@@ -943,6 +943,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid scanner mode.
+        /// </summary>
+        public static string invalid_scanner_mode {
+            get {
+                return ResourceManager.GetString("invalid_scanner_mode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid session save path &apos;{0}&apos;..
         /// </summary>
         public static string invalid_session_save_path {
@@ -1101,6 +1110,15 @@ namespace Pchp.Library.Resources {
         public static string method_doesnt_have_prototype {
             get {
                 return ResourceManager.GetString("method_doesnt_have_prototype", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Minimum value must be less than or equal to the maximum value.
+        /// </summary>
+        public static string min_must_be_less_or_equal_to_max {
+            get {
+                return ResourceManager.GetString("min_must_be_less_or_equal_to_max", resourceCulture);
             }
         }
         

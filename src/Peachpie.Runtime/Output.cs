@@ -125,13 +125,13 @@ namespace Pchp.Core
         /// <summary>
         /// Current buffer level starting from 1. Zero if buffering is disabled.
         /// </summary>
-        public int Level { get { return (_level != null) ? _level.Index + 1 : 0; } }
+        public int Level => _level != null ? _level.Index + 1 : 0;
 
         /// <summary>
         /// The total length of data written to the current level of buffering.
         /// Returns -1 if buffering is disabled.
         /// </summary>
-        public int Length { get { return (_level != null) ? _level.size : -1; } }
+        public int Length => _level != null ? _level.size : -1;
 
         #endregion
 

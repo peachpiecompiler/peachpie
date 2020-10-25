@@ -206,7 +206,7 @@ namespace Peachpie.Library.PDO
                     {
                         if (attribute >= PDO_ATTR.ATTR_DRIVER_SPECIFIC)
                         {
-                            return Driver.TrySetAttribute(GetOrCreateAttributes(), (int)attribute, value);
+                            return Driver.TrySetAttribute(this, GetOrCreateAttributes(), (int)attribute, value);
                         }
                     }
                     catch (System.Exception ex)

@@ -26,5 +26,13 @@ namespace Peachpie.Library.PDO.Utilities
         /// Closes pending data reader if any.
         /// </summary>
         public static void ClosePendingReader(this PDO pdo) => pdo.ClosePendingReader();
+
+        /// <summary>
+        /// Gets underlaying <see cref="DbConnection"/> of a <see cref="PDO"/> object.
+        /// </summary>
+        /// <typeparam name="TConnection"></typeparam>
+        /// <param name="pdo">PDO object instance.</param>
+        /// <returns>Underlaying connection. Can be <c>null</c>.</returns>
+        public static TConnection GetCurrentConnection<TConnection>(this PDO pdo) where TConnection : DbConnection => pdo.Connection as TConnection;
     }
 }

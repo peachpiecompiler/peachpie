@@ -789,30 +789,30 @@ namespace Pchp.Library
         /// <summary>
         /// Decodes a MIME header field.
         /// </summary>
-        public static string iconv_mime_decode(string encoded_header, int mode = 0, string charset = null /*= ini_get("iconv.internal_encoding")*/ )
+        public static string iconv_mime_decode(string encoded_string, int mode = 0, string charset = null /*= ini_get("iconv.internal_encoding")*/ )
         {
-            if (encoded_header == null)
+            if (encoded_string == null)
             {
                 return string.Empty;
             }
 
-            return decode_headers(encoded_header).FirstOrDefault();
+            return decode_headers(encoded_string).FirstOrDefault();
         }
 
         /// <summary>
         /// Decodes multiple MIME header fields at once.
         /// </summary>
         [return: CastToFalse]
-        public static PhpArray iconv_mime_decode_headers(string encoded_headers, int mode = 0, string charset = null)
+        public static PhpArray iconv_mime_decode_headers(string headers, int mode = 0, string charset = null)
         {
-            if (encoded_headers == null)
+            if (headers == null)
             {
                 return null;
             }
 
             var result = new PhpArray();
 
-            foreach (var header in decode_headers(encoded_headers))
+            foreach (var header in decode_headers(headers))
             {
                 var col = header.IndexOf(':');
                 if (col >= 0)
@@ -852,7 +852,7 @@ namespace Pchp.Library
         /// <summary>
         /// Composes a MIME header field.
         /// </summary>
-        public static string iconv_mime_encode(string field_name, string field_value, PhpArray preferences = null)
+        public static string iconv_mime_encode(string field_name, string field_value, PhpArray preference = null)
         {
             // process parameters:
 
@@ -866,14 +866,14 @@ namespace Pchp.Library
             string line_break_chars = "\r\n";
             var encoding = Encoding.UTF8;
 
-            if (preferences != null)
+            if (preference != null)
             {
-                if (preferences.TryGetValue("line-break-chars", out var val) && val.IsString(out var str))
+                if (preference.TryGetValue("line-break-chars", out var val) && val.IsString(out var str))
                 {
                     line_break_chars = str;
                 }
 
-                if (preferences.TryGetValue("scheme", out val))
+                if (preference.TryGetValue("scheme", out val))
                 {
                     // PHP ignores any invalid value
                     if (val.IsString(out str) && str.Length >= 1)
@@ -882,7 +882,7 @@ namespace Pchp.Library
                     }
                 }
 
-                if (preferences.TryGetValue("line-length", out val) && val.IsLong(out var l))
+                if (preference.TryGetValue("line-length", out val) && val.IsLong(out var l))
                 {
                     line_length = (int)l;
                 }

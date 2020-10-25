@@ -308,11 +308,14 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
 
-        public MethodSymbol[] LookupMethods(string name)
+        /// <summary>
+        /// Resolves PHP method by its name.
+        /// </summary>
+        public List<MethodSymbol> LookupMethods(string name)
         {
             if (this.Is_PhpValue())
             {
-                return Array.Empty<MethodSymbol>();
+                return new List<MethodSymbol>();
             }
 
             TypeSymbol topPhpType = null; // deals with PHP-like overriding, once there is PHP method that override another method (even with a different signature) in a base PHP type
@@ -330,7 +333,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 int count = set.Count;
 
-                set.UnionWith(t.GetMembersByPhpName(name).OfType<MethodSymbol>());
+                foreach (var c in t.GetMembersByPhpName(name))
+                {
+                    if (c is MethodSymbol m) set.Add(m);
+                }
 
                 // remember the top PHP class declaring the method:
                 if (topPhpType == null && count != set.Count && t.IsPhpType()) // some methods were found in PHP type
@@ -338,6 +344,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     topPhpType = t;
                 }
             }
+
+            // remove php-hidden methods
+            set.RemoveWhere(m => m.IsPhpHidden); // TODO: other attributes: "private protected", "internal"
 
             if (set.Count == 0 || (this.IsAbstract && set.All(m => m.IsAbstract))) // abstract or interface, otherwise all methods should be declared on this already
             {
@@ -350,7 +359,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
-            return set.ToArray();
+            return set.ToList();
         }
     }
 }

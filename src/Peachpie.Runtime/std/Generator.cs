@@ -182,13 +182,13 @@ public class Generator : Iterator
     /// <summary>
     /// Throw an exception into the generator
     /// </summary>
-    /// <param name="ex">Exception to throw into the generator.</param>
+    /// <param name="exception">Exception to throw into the generator.</param>
     /// <returns>Returns the yielded value. </returns>
-    public PhpValue @throw(Exception ex)
+    public PhpValue @throw(Exception exception)
     {
-        if (!valid()) { throw ex; }
+        if (!valid()) { throw exception; }
 
-        _currException = ex;
+        _currException = exception;
         moveStateMachine();
         _currException = null;
 

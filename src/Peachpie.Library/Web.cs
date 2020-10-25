@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Web
     {
         #region Constants
@@ -43,16 +43,16 @@ namespace Pchp.Library
         #region base64_decode, base64_encode
 
         [return: CastToFalse]
-        public static PhpString base64_decode(string encoded_data, bool strict = false)
+        public static PhpString base64_decode(string str, bool strict = false)
         {
-            if (string.IsNullOrEmpty(encoded_data))
+            if (string.IsNullOrEmpty(str))
             {
                 return default; // FALSE
             }
 
             try
             {
-                return new PhpString(Base64Utils.FromBase64(encoded_data.AsSpan(), strict));
+                return new PhpString(Base64Utils.FromBase64(str.AsSpan(), strict));
             }
             catch (FormatException)
             {
@@ -62,9 +62,9 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public static string base64_encode(Context ctx, PhpString data_to_encode)
+        public static string base64_encode(Context ctx, PhpString str)
         {
-            return System.Convert.ToBase64String(data_to_encode.ToBytes(ctx.StringEncoding));
+            return System.Convert.ToBase64String(str.ToBytes(ctx.StringEncoding));
         }
 
         #endregion
@@ -354,6 +354,14 @@ namespace Pchp.Library
             var httpctx = ctx.HttpPhpContext;
             if (httpctx == null)
             {
+                // TODO: PHP actually modifies internal headers even on CLI
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                // TODO: "Cookie names must not be empty"
+                PhpException.InvalidArgument(nameof(name), Resources.Resources.arg_empty);
                 return false;
             }
 
@@ -1063,9 +1071,15 @@ namespace Pchp.Library
         /// <param name="seconds">The time-out setting for request.</param>
         public static bool set_time_limit(Context ctx, int seconds)
         {
-            //ctx.ApplyExecutionTimeout(seconds);
-
-            return false;
+            try
+            {
+                ctx.ApplyExecutionTimeout(seconds);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>

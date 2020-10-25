@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="foo" type="fooType" />
+  <xs:complexType name="fooType">
+    <xs:attribute name="bar" type="xs:string" default="barDefault" />
+    <xs:attribute name="baz" type="xs:string" fixed="bazFixed" />
+    <xs:attribute name="bay" type="xs:string" />
+  </xs:complexType>
+</xs:schema>

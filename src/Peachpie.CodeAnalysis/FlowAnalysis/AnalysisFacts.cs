@@ -14,6 +14,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     static class AnalysisFacts
     {
+        public static bool IsAutoloadDeprecated(Version langVersion)
+        {
+            // >= 7.2
+            return langVersion != null && langVersion.Major > 7 || (langVersion.Major == 7 && langVersion.Minor >= 2);
+        }
+
+        public static bool IsStringableSupported(PhpCompilation compilation)
+        {
+            // >= 8.0
+            return
+                compilation.CoreTypes.Stringable.Symbol is PENamedTypeSymbol pe &&
+                pe.TryGetPhpTypeAttribute(out _, out var minLangVersion) &&
+                minLangVersion != null &&
+                compilation.Options.LanguageVersion >= minLangVersion;
+
+            //var langVersion = compilation.Options.LanguageVersion;
+            //return langVersion != null && langVersion.Major >= 8;
+        }
+
         /// <summary>
         /// Determines if given global function symbol is unconditionally declared (always declared).
         /// </summary>
@@ -96,8 +115,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             // TRUE <=> class is defined unconditionally in a reference library (PE assembly)
                             var class_name = args[0].Value.ConstantValue.Value as string;
-                            if (class_name != null)
-                            {
+                            if (!string.IsNullOrEmpty(class_name))
+                                {
                                 var tmp = (TypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
                                 if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())   // TODO: + SourceTypeSymbol when reachable unconditional declaration
                                 {
@@ -121,7 +140,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 var tmp = (NamedTypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
                                 if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())
                                 {
-                                    if (tmp.LookupMethods(str).Any())
+                                    if (tmp.LookupMethods(str).Count != 0) // TODO: why not User Types // TODO: why not resolve FALSE as well below?
                                     {
                                         call.ConstantValue = ConstantValueExtensions.AsOptional(true);
                                     }

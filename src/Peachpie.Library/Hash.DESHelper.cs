@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Pchp.Library
 {
-    public static partial class PhpHash 
+    public static partial class Strings
     {
         // This code was copied and modified from The PHP Interpreter (https://github.com/php/php-src/blob/master/ext/standard/crypt_freesec.c)
         static class DES

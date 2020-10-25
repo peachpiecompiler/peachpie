@@ -81,13 +81,24 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<PropertyInfo, bool> s_isAllowedProperty = p =>
         {
-            var access = p.GetMethod.Attributes & MethodAttributes.MemberAccessMask;
-            return
-                access != MethodAttributes.Assembly &&
-                access != MethodAttributes.FamANDAssem &&
-                ReflectionUtils.IsAllowedPhpName(p.Name) &&
-                p.GetIndexParameters().Length == 0 &&
-                !p.IsPhpHidden();
+            var getter = p.GetMethod;
+            if (getter != null)
+            {
+                var access = getter.Attributes & MethodAttributes.MemberAccessMask;
+                if (access == MethodAttributes.Assembly || access == MethodAttributes.FamANDAssem)
+                {
+                    return false;
+                }
+
+                if (ReflectionUtils.IsAllowedPhpName(p.Name) &&
+                    p.GetIndexParameters().Length == 0 &&
+                    !p.IsPhpHidden())
+                {
+                    return true;
+                }
+            }
+
+            return false;
         };
 
         #endregion

@@ -8,11 +8,12 @@ using Pchp.Core;
 using Pchp.Core.Text;
 using Pchp.Core.Utilities;
 using Pchp.Library.Resources;
+using static Pchp.Core.PhpExtensionAttribute;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
-    public static class Strings
+    [PhpExtension(KnownExtensionNames.Standard)]
+    public static partial class Strings
     {
         #region Character map
 
@@ -79,13 +80,13 @@ namespace Pchp.Library
         /// <summary>
         /// Converts a string into hexadecimal representation.
         /// </summary>
-        /// <param name="str">The string to be converted.</param>
+        /// <param name="data">The string to be converted.</param>
         /// <returns>
-        /// The concatenated two-characters long hexadecimal numbers each representing one character of <paramref name="str"/>.
+        /// The concatenated two-characters long hexadecimal numbers each representing one character of <paramref name="data"/>.
         /// </returns>
-        public static string bin2hex(byte[] str)
+        public static string bin2hex(byte[] data)
         {
-            if (str == null || str.Length == 0)
+            if (data == null || data.Length == 0)
             {
                 return string.Empty;
             }
@@ -108,7 +109,7 @@ namespace Pchp.Library
 
             //return result.ToString();
 
-            return StringUtils.BinToHex(str, null);
+            return StringUtils.BinToHex(data, null);
         }
 
         /// <summary>
@@ -2232,7 +2233,7 @@ namespace Pchp.Library
         /// <summary>
         /// List of known HTML entities without leading <c>&amp;</c> character when checking double encoded entities.
         /// </summary>
-        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;", "nbsp;", "raquo;" };
+        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;", "nbsp;", "raquo;", "lsaquo;" };
 
         /// <summary>
         /// Converts special characters of substring to HTML entities.
@@ -2454,16 +2455,16 @@ namespace Pchp.Library
         /// Returns the translation table used by <see cref="HtmlSpecialChars"/> and <see cref="EncodeHtmlEntities"/>. 
         /// </summary>
         /// <param name="table">Type of the table that should be returned.</param>
-        /// <param name="quoteStyle">Quote conversion.</param>
+        /// <param name="quote_style">Quote conversion.</param>
         /// <returns>The table.</returns>
-        public static PhpArray get_html_translation_table(HtmlEntitiesTable table, QuoteStyle quoteStyle = QuoteStyle.Compatible)
+        public static PhpArray get_html_translation_table(HtmlEntitiesTable table, QuoteStyle quote_style = QuoteStyle.Compatible)
         {
             PhpArray result = new PhpArray();
             if (table == HtmlEntitiesTable.SpecialChars)
             {
                 // return the table used with HtmlSpecialChars
-                if ((quoteStyle & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
-                if ((quoteStyle & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
+                if ((quote_style & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
+                if ((quote_style & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
 
                 result.Add("&", "&amp;");
                 result.Add("<", "&lt;");
@@ -2472,8 +2473,8 @@ namespace Pchp.Library
             else
             {
                 // return the table used with HtmlEntities
-                if ((quoteStyle & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
-                if ((quoteStyle & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
+                if ((quote_style & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
+                if ((quote_style & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
 
                 for (char ch = (char)0; ch < 0x100; ch++)
                 {
@@ -2495,14 +2496,14 @@ namespace Pchp.Library
         /// Converts all HTML entities to their applicable characters.
         /// </summary>
         /// <param name="str">The string to convert.</param>
-        /// <param name="quoteStyle">Quote conversion.</param>
-        /// <param name="charSet">The character set used in conversion.</param>
+        /// <param name="quote_style">Quote conversion.</param>
+        /// <param name="encoding">The character set used in conversion.</param>
         /// <returns>The converted string.</returns>
-        public static string html_entity_decode(PhpString str, QuoteStyle quoteStyle = QuoteStyle.Compatible, string charSet = DefaultHtmlEntitiesCharset)
+        public static string html_entity_decode(PhpString str, QuoteStyle quote_style = QuoteStyle.Compatible, string encoding = DefaultHtmlEntitiesCharset)
         {
             try
             {
-                return DecodeHtmlEntities(str.ToString(charSet), quoteStyle);
+                return DecodeHtmlEntities(str.ToString(encoding), quote_style);
             }
             catch (ArgumentException ex)
             {
@@ -3096,22 +3097,22 @@ namespace Pchp.Library
         /// <summary>
         /// Calculates the metaphone key of a string.
         /// </summary>
-        /// <param name="str">The string to calculate metaphone key of.</param>
-        /// <returns>The metaphone key of <paramref name="str"/>.</returns>
-        public static string metaphone(string str)
+        /// <param name="text">The string to calculate metaphone key of.</param>
+        /// <returns>The metaphone key of <paramref name="text"/>.</returns>
+        public static string metaphone(string text)
         {
-            if (str == null) return String.Empty;
+            if (text == null) return String.Empty;
 
-            int length = str.Length;
+            int length = text.Length;
             const int padL = 4, padR = 3;
 
-            StringBuilder sb = new StringBuilder(str.Length + padL + padR);
+            StringBuilder sb = new StringBuilder(text.Length + padL + padR);
             StringBuilder result = new StringBuilder();
 
             // avoid index out of bounds problem when looking at previous and following characters
             // by padding the string at both sides
             sb.Append('\0', padL);
-            sb.Append(str.ToUpper());
+            sb.Append(text.ToUpper());
             sb.Append('\0', padR);
 
             int i = padL;
@@ -3340,10 +3341,8 @@ namespace Pchp.Library
         /// <returns>The number of matching characters in both strings.</returns>
         /// <remarks>Algorithm description is supposed to be found 
         /// <A href="http://citeseer.nj.nec.com/oliver93decision.html">here</A>.</remarks>
-        internal static int SimilarTextInternal(string first, string second)
+        internal static int SimilarTextInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
-            Debug.Assert(first != null && second != null);
-
             int posF = 0, lengthF = first.Length;
             int posS = 0, lengthS = second.Length;
             int maxK = 0;
@@ -3368,11 +3367,11 @@ namespace Pchp.Library
             {
                 if (posF > 0 && posS > 0)
                 {
-                    sum += SimilarTextInternal(first.Substring(0, posF), second.Substring(0, posS));
+                    sum += SimilarTextInternal(first.Slice(0, posF), second.Slice(0, posS));
                 }
                 if (posF + maxK < lengthF && posS + maxK < lengthS)
                 {
-                    sum += SimilarTextInternal(first.Substring(posF + maxK), second.Substring(posS + maxK));
+                    sum += SimilarTextInternal(first.Slice(posF + maxK), second.Slice(posS + maxK));
                 }
             }
 
@@ -3387,8 +3386,12 @@ namespace Pchp.Library
         /// <returns>The number of matching characters in both strings.</returns>
         public static int similar_text(string first, string second)
         {
-            if (first == null || second == null) return 0;
-            return SimilarTextInternal(first, second);
+            if (first == null || second == null)
+            {
+                return 0;
+            }
+
+            return SimilarTextInternal(first.AsSpan(), second.AsSpan());
         }
 
         /// <summary>
@@ -3400,9 +3403,13 @@ namespace Pchp.Library
         /// <returns>The number of matching characters in both strings.</returns>
         public static int similar_text(string first, string second, out double percent)
         {
-            if (first == null || second == null) { percent = 0; return 0; }
+            if (first == null || second == null)
+            {
+                percent = 0;
+                return 0;
+            }
 
-            int sum = SimilarTextInternal(first, second);
+            int sum = SimilarTextInternal(first.AsSpan(), second.AsSpan());
             percent = (200.0 * sum) / (first.Length + second.Length);
 
             return sum;
@@ -4107,9 +4114,10 @@ namespace Pchp.Library
         public static int sscanf(string str, string format, PhpAlias arg, params PhpAlias[] arguments)
         {
             if (arg == null)
-                throw new ArgumentNullException("arg");
+                throw new ArgumentNullException(nameof(arg));
+
             if (arguments == null)
-                throw new ArgumentNullException("arguments");
+                throw new ArgumentNullException(nameof(arguments));
 
             // assumes capacity same as the number of arguments:
             var result = new List<PhpValue>(arguments.Length + 1);
@@ -4120,7 +4128,7 @@ namespace Pchp.Library
             // the number of specifiers differs from the number of arguments:
             if (result.Count != arguments.Length + 1)
             {
-                PhpException.Throw(PhpError.Warning, LibResources.GetString("different_variables_and_specifiers", arguments.Length + 1, result.Count));
+                PhpException.Throw(PhpError.Warning, LibResources.different_variables_and_specifiers, (arguments.Length + 1).ToString(), result.Count.ToString());
                 return -1;
             }
 
@@ -4154,7 +4162,7 @@ namespace Pchp.Library
         /// <remarks><seealso cref="ParseString"/>.</remarks>
         public static PhpArray sscanf(string str, string format)
         {
-            return (PhpArray)ParseString(str, format, new PhpArray());
+            return ParseString(str, format, new PhpArray());
         }
 
         /// <summary>
@@ -4166,7 +4174,7 @@ namespace Pchp.Library
         /// <returns><paramref name="result"/> for convenience.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is a <B>null</B> reference.</exception>
         /// <exception cref="PhpException">Invalid formatting specifier.</exception>
-        public static IList<PhpValue> ParseString(string str, string format, IList<PhpValue> result)
+        static T ParseString<T>(string str, string format, T result) where T : IList<PhpValue>
         {
             if (result == null)
                 throw new ArgumentNullException(nameof(result));
@@ -4211,7 +4219,7 @@ namespace Pchp.Library
                         if (f == format.Length)
                         {
                             PhpException.Throw(PhpError.Warning, LibResources.invalid_scan_conversion_character, "null");
-                            return null;
+                            return default;
                         }
                     }
                     else
@@ -4264,13 +4272,13 @@ namespace Pchp.Library
                             else
                             {
                                 PhpException.Throw(PhpError.Warning, LibResources.unmathed_format_bracket);
-                                return null;
+                                return default;
                             }
                         }
                         else
                         {
                             PhpException.Throw(PhpError.Warning, LibResources.invalid_scan_conversion_character, c.ToString());
-                            return null;
+                            return default;
                         }
                     }
 
@@ -4312,7 +4320,7 @@ namespace Pchp.Library
         /// Specifier should be enclosed to brackets '[', ']' and can contain complement character '^' at the beginning.
         /// The first character after '[' or '^' can be ']'. In such a case the specifier continues to the next ']'.
         /// </remarks>
-        private static CharMap ParseRangeSpecifier(string format, ref int f, out bool complement)
+        static CharMap ParseRangeSpecifier(string format, ref int f, out bool complement)
         {
             Debug.Assert(format != null && f > 0 && f < format.Length && format[f] == '[');
 
@@ -4580,74 +4588,32 @@ namespace Pchp.Library
         #region number_format, money_format
 
         /// <summary>
-        /// Formats a number with grouped thousands.
-        /// </summary>
-        /// <param name="number">The number to format.</param>
-        /// <returns>String representation of the number without decimals (rounded) with comma between every group
-        /// of thousands.</returns>
-        public static string number_format(double number)
-        {
-            return number_format(number, 0, ".", ",");
-        }
-
-        /// <summary>
-        /// Formats a number with grouped thousands and with given number of decimals.
-        /// </summary>
-        /// <param name="number">The number to format.</param>
-        /// <param name="decimals">The number of decimals.</param>
-        /// <returns>String representation of the number with <paramref name="decimals"/> decimals with a dot in front, and with 
-        /// comma between every group of thousands.</returns>
-        public static string number_format(double number, int decimals)
-        {
-            return number_format(number, decimals, ".", ",");
-        }
-
-        /// <summary>
         /// Formats a number with grouped thousands, with given number of decimals, with given decimal point string
         /// and with given thousand separator.
         /// </summary>
         /// <param name="number">The number to format.</param>
-        /// <param name="decimals">The number of decimals within range 0 to 99.</param>
-        /// <param name="decimalPoint">The string to separate integer part and decimals.</param>
-        /// <param name="thousandsSeparator">The character to separate groups of thousands. Only the first character
-        /// of <paramref name="thousandsSeparator"/> is used.</param>
+        /// <param name="num_decimal_places">The number of decimals within range 0 to 99.</param>
+        /// <param name="dec_separator">The string to separate integer part and decimals.</param>
+        /// <param name="thousands_separator">The character to separate groups of thousands. Only the first character
+        /// of <paramref name="thousands_separator"/> is used.</param>
         /// <returns>
-        /// String representation of the number with <paramref name="decimals"/> decimals with <paramref name="decimalPoint"/> in 
-        /// front, and with <paramref name="thousandsSeparator"/> between every group of thousands.
+        /// String representation of the number with <paramref name="num_decimal_places"/> decimals with <paramref name="dec_separator"/> in 
+        /// front, and with <paramref name="thousands_separator"/> between every group of thousands.
         /// </returns>
         /// <remarks>
-        /// The <b>number_format</b> (<see cref="FormatNumber"/>) PHP function requires <paramref name="decimalPoint"/> and <paramref name="thousandsSeparator"/>
+        /// The <b>number_format</b> (<see cref="FormatNumber"/>) PHP function requires <paramref name="dec_separator"/> and <paramref name="thousands_separator"/>
         /// to be of length 1 otherwise it uses default values (dot and comma respectively). As this behavior does
-        /// not make much sense, this method has no such limitation except for <paramref name="thousandsSeparator"/> of which
+        /// not make much sense, this method has no such limitation except for <paramref name="thousands_separator"/> of which
         /// only the first character is used (documented feature).
         /// </remarks>
-        public static string number_format(double number, int decimals, string decimalPoint, string thousandsSeparator)
+        public static string number_format(double number, int num_decimal_places = 0, string dec_separator = ".", string thousands_separator = ",")
         {
-            System.Globalization.NumberFormatInfo format = new System.Globalization.NumberFormatInfo();
-
-            if ((decimals >= 0) && (decimals <= 99))
+            var format = new System.Globalization.NumberFormatInfo
             {
-                format.NumberDecimalDigits = decimals;
-            }
-            else
-            {
-                //PhpException.InvalidArgument("decimals", LibResources.GetString("arg_out_of_bounds", decimals));
-                throw new ArgumentException();
-            }
-
-            if (!string.IsNullOrEmpty(decimalPoint))
-            {
-                format.NumberDecimalSeparator = decimalPoint;
-            }
-
-            if (thousandsSeparator == null) thousandsSeparator = String.Empty;
-
-            switch (thousandsSeparator.Length)
-            {
-                case 0: format.NumberGroupSeparator = String.Empty; break;
-                case 1: format.NumberGroupSeparator = thousandsSeparator; break;
-                default: format.NumberGroupSeparator = thousandsSeparator.Substring(0, 1); break;
-            }
+                NumberDecimalDigits = Math.Max(num_decimal_places, 0), // TODO: .NET throws for decimals > 99
+                NumberDecimalSeparator = dec_separator ?? ".", // NULL ~ a defalt value
+                NumberGroupSeparator = thousands_separator ?? ",", // NULL ~ a default value
+            };
 
             return number.ToString("N", format);
         }
@@ -5235,75 +5201,6 @@ namespace Pchp.Library
 
         #endregion
 
-        #region strcmp, strcasecmp, strncmp, strncasecmp
-
-        /// <summary>
-        /// Compares two specified strings, honoring their case, using culture invariant comparison.
-        /// </summary>
-        /// <param name="str1">A string.</param>
-        /// <param name="str2">A string.</param>
-        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
-        /// and 0 if they are equal.</returns>
-        public static int strcmp(string str1, string str2) => string.CompareOrdinal(str1, str2);
-
-        /// <summary>
-        /// Compares two specified strings, ignoring their case, using culture invariant comparison.
-        /// </summary>
-        /// <param name="str1">A string.</param>
-        /// <param name="str2">A string.</param>
-        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
-        /// and 0 if they are equal.</returns>
-        public static int strcasecmp(string str1, string str2)
-        {
-            return System.Globalization.CultureInfo.InvariantCulture.CompareInfo
-                .Compare(str1, str2, System.Globalization.CompareOptions.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
-        /// </summary>
-        /// <param name="str1">The lesser string.</param>
-        /// <param name="str2">The greater string.</param>
-        /// <param name="length">The upper limit of the length of parts to be compared.</param>
-        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
-        /// and 0 if they are equal.</returns>
-        public static PhpValue strncmp(string str1, string str2, int length)
-        {
-            if (length < 0)
-            {
-                throw new ArgumentException();
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
-                //return PhpValue.False;
-            }
-
-            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, length));
-        }
-
-        /// <summary>
-        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
-        /// </summary>
-        /// <param name="str1">A string.</param>
-        /// <param name="str2">A string.</param>
-        /// <param name="length">The upper limit of the length of parts to be compared.</param>
-        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
-        /// and 0 if they are equal.</returns>
-        public static PhpValue strncasecmp(string str1, string str2, int length)
-        {
-            if (length < 0)
-            {
-                throw new ArgumentException();
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
-                //return PhpValue.False;
-            }
-
-            length = Math.Max(Math.Max(length, str1.Length), str2.Length);
-
-            return PhpValue.Create(System.Globalization.CultureInfo.InvariantCulture.CompareInfo
-                .Compare(str1, 0, length, str2, 0, length, System.Globalization.CompareOptions.OrdinalIgnoreCase));
-        }
-
-        #endregion
-
         #region strpos, strrpos, stripos, strripos
 
         /// <summary>
@@ -5640,7 +5537,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region strtolower, strtoupper, strlen
+        #region strtolower, strtoupper
 
         /// <summary>
         /// Returns string with all alphabetic characters converted to lowercase. 
@@ -5666,13 +5563,167 @@ namespace Pchp.Library
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));
         //}
 
+        #endregion
+
+        #region utf8_encode, utf8_decode
+
+        /// <summary>
+        /// ISO-8859-1 <see cref="Encoding"/>.
+        /// </summary>
+        static Encoding/*!*/ISO_8859_1_Encoding
+        {
+            get
+            {
+                if (_ISO_8859_1_Encoding == null)
+                {
+                    _ISO_8859_1_Encoding = Encoding.GetEncoding("ISO-8859-1");
+                    Debug.Assert(_ISO_8859_1_Encoding != null);
+                }
+
+                return _ISO_8859_1_Encoding;
+            }
+        }
+        static Encoding _ISO_8859_1_Encoding;
+
+        /// <summary>
+        /// This function encodes the string data to UTF-8, and returns the encoded version. UTF-8 is
+        /// a standard mechanism used by Unicode for encoding wide character values into a byte stream.
+        /// UTF-8 is transparent to plain ASCII characters, is self-synchronized (meaning it is 
+        /// possible for a program to figure out where in the bytestream characters start) and can be
+        /// used with normal string comparison functions for sorting and such. PHP encodes UTF-8
+        /// characters in up to four bytes.
+        /// </summary>
+        /// <param name="data">An ISO-8859-1 string. </param>
+        /// <returns>Returns the UTF-8 translation of data.</returns>
+        //[return:CastToFalse]
+        public static string utf8_encode(PhpString data)
+        {
+            if (data.IsEmpty)
+            {
+                return string.Empty;
+            }
+
+            // this function transforms ISO-8859-1 binary string into UTF8 string
+            // since our internal representation is native CLR string - UTF16, we have changed this semantic for Unicode input.
+            // - Any native String is not modified. The string was already encoded into a valid UTF16 sequence.
+            // - byte[] is treated as ISO-8859-1 encoded, and will be decoded to UTF16
+
+            // This behavior has two reasons:
+            // - compatibility with Unicode behavior; already encoded string should not be decoded/encoded again
+            // - performance; instances of already encoded immutable strings are simply reused
+
+            // ISO-8859-1 is 8bit encoding so we don't have to concatenate the byte[] segments into a single array
+            // Any segments already encoded as System.String are returned as it is;
+            return data.ToString(ISO_8859_1_Encoding);
+        }
+
+        /// <summary>
+        /// This function decodes data, assumed to be UTF-8 encoded, to ISO-8859-1.
+        /// </summary>
+        /// <param name="data">An ISO-8859-1 string. </param>
+        /// <returns>Returns the UTF-8 translation of data.</returns>
+        public static PhpString utf8_decode(string data)
+        {
+            if (data == null)
+            {
+                return new PhpString();  // empty (binary) string
+            }
+
+            // this function converts the UTF8 representation to ISO-8859-1 representation
+            // we assume CLR string (UTF16) as input as it is our internal representation
+
+            // if we got System.String string, convert it from UTF16 CLR representation into ISO-8859-1 binary representation
+            return new PhpString(ISO_8859_1_Encoding.GetBytes(data));
+        }
+
+        #endregion
+    }
+
+    [PhpExtension(KnownExtensionNames.Core)]
+    public static class StringsCore
+    {
+        #region strlen
+
         /// <summary>
         /// Returns the length of a string.
         /// </summary>
-        public static int strlen(PhpString x) => x.Length;
+        public static int strlen(PhpString str) => str.Length;
 
         #endregion
 
+        #region strcmp, strcasecmp, strncmp, strncasecmp
+
+        /// <summary>
+        /// Compares two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static int strcmp(string str1, string str2) => string.CompareOrdinal(str1, str2);
+
+        /// <summary>
+        /// Compares two specified strings, ignoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static int strcasecmp(string str1, string str2)
+        {
+            return System.Globalization.CultureInfo.InvariantCulture.CompareInfo
+                .Compare(str1, str2, System.Globalization.CompareOptions.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">The lesser string.</param>
+        /// <param name="str2">The greater string.</param>
+        /// <param name="len">The upper limit of the length of parts to be compared.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static PhpValue strncmp(string str1, string str2, int len)
+        {
+            if (len < 0)
+            {
+                throw new ArgumentException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
+                //return PhpValue.False;
+            }
+
+            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, len));
+        }
+
+        /// <summary>
+        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <param name="len">The upper limit of the length of parts to be compared.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static PhpValue strncasecmp(string str1, string str2, int len)
+        {
+            if (len < 0)
+            {
+                throw new ArgumentException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
+                //return PhpValue.False;
+            }
+
+            len = Math.Max(Math.Max(len, str1.Length), str2.Length);
+
+            return PhpValue.Create(System.Globalization.CultureInfo.InvariantCulture.CompareInfo
+                .Compare(str1, 0, len, str2, 0, len, System.Globalization.CompareOptions.OrdinalIgnoreCase));
+        }
+
+        #endregion
+    }
+
+    [PhpExtension(KnownExtensionNames.Ctype)]
+    public static class StringsCtype
+    {
         #region ctype_*
 
         public static bool ctype_alnum(string text)

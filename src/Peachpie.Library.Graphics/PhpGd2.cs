@@ -1674,7 +1674,7 @@ namespace Peachpie.Library.Graphics
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public static bool imagestringup(PhpResource im, int fontInd, int x, int y, string text, long col) => DrawText(im, fontInd, x, y, text, col, true);
 
-        public static bool DrawText(PhpResource im, int fontInd, int x, int y, string text, long col, bool up = false)
+        static bool DrawText(PhpResource im, int fontInd, int x, int y, string text, long col, bool up = false)
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             if (img == null)

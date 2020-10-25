@@ -38,7 +38,7 @@ namespace Pchp.Library
 	///   <term>@</term><description>0x00-fill to absolute position</description>
 	/// </list>
 	/// </remarks>
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class PhpBitConverter
     {
         /// <summary>

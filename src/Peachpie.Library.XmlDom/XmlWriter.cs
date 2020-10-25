@@ -18,7 +18,7 @@ namespace Peachpie.Library.XmlDom
     {
         #region Constants
 
-        private const string DefaultXmlVersion = "1.0";
+        private protected const string DefaultXmlVersion = "1.0";
 
         #endregion
 

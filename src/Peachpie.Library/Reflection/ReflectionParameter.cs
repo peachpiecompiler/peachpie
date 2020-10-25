@@ -76,6 +76,7 @@ namespace Pchp.Library.Reflection
             {
                 if (Core.Reflection.ReflectionUtils.IsAllowedPhpName(name))
                 {
+                    _name = name; // override the name from the variadic version
                     _isVariadic |= isVariadic;
                 }
             }
@@ -210,6 +211,7 @@ namespace Pchp.Library.Reflection
 
         public virtual string __toString() => $"Parameter #{_index} [ <{(_defaultValue.HasValue ? "optional" : "required")}>{_debugTypeName} ${_name}{_debugDefaultValue} ]";
 
+        [PhpHidden]
         public override string ToString() => __toString();
 
         private protected static bool hasTypeInternal(Type t) => t != null && t != typeof(PhpValue) && t != typeof(PhpAlias) && t != typeof(PhpValue[]) && t != typeof(PhpAlias[]);

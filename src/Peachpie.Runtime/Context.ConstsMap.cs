@@ -256,14 +256,17 @@ namespace Pchp.Core
                     Debug.Assert(idx != 0);
                 }
 
-                if (idx < 0) // app constant cannot be redeclared
+                if (idx < 0)
                 {
-                    RedeclarationError(name);
+                    // constant already defined as app constant
+                    return false;
                 }
-
-                ref var values = ref self._valuesCtx;
-                EnsureArray(ref values, idx);
-                return SetValue(ref values[idx - 1], value);
+                else
+                {
+                    ref var values = ref self._valuesCtx;
+                    EnsureArray(ref values, idx);
+                    return SetValue(ref values[idx - 1], value);
+                }
             }
 
             /// <summary>
@@ -349,11 +352,6 @@ namespace Pchp.Core
                 value = default;
                 return false;
             }
-
-            /// <summary>
-            /// Gets value indicating whether given constant is defined.
-            /// </summary>
-            public bool IsDefined(string name) => TryGetConstant(name, out _);
 
             /// <summary>
             /// Enumerates all defined constants available in the context (including app constants).

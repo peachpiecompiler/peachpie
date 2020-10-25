@@ -711,4 +711,10 @@
   <data name="openssl_cannot_set_iv_length" xml:space="preserve">
     <value>Key length cannot be set for the cipher method</value>
   </data>
+  <data name="invalid_scanner_mode" xml:space="preserve">
+    <value>Invalid scanner mode</value>
+  </data>
+  <data name="min_must_be_less_or_equal_to_max" xml:space="preserve">
+    <value>Minimum value must be less than or equal to the maximum value</value>
+  </data>
 </root>

@@ -1,4 +1,5 @@
-﻿using Pchp.Core;
+﻿using Mono.Unix;
+using Pchp.Core;
 using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
@@ -6,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Threading.Tasks;
@@ -99,10 +101,8 @@ namespace Pchp.Library
 
         internal static StatStruct ResolveStat(Context ctx, string path, bool quiet)
         {
-            StreamWrapper wrapper;
-
-            return ResolvePath(ctx, ref path, quiet, out wrapper)   // TODO: stat cache
-                ? wrapper.Stat(path, quiet ? StreamStatOptions.Quiet : StreamStatOptions.Empty, StreamContext.Default, false)
+            return ResolvePath(ctx, ref path, quiet, out var wrapper)   // TODO: stat cache
+                ? wrapper.Stat(ctx.RootPath, path, quiet ? StreamStatOptions.Quiet : StreamStatOptions.Empty, StreamContext.Default, false)
                 : StatStruct.Invalid;
         }
 
@@ -113,8 +113,9 @@ namespace Pchp.Library
         /// <param name="invalid">Invalid value.</param>
         /// <param name="path">Path to the resource passed to the <paramref name="action"/>. Also used for error control.</param>
         /// <param name="action">Action to try. The first argument is the path.</param>
+        /// <param name="quiet">True to suppress warning messages.</param>
         /// <returns>The value of <paramref name="action"/>() or <paramref name="invalid"/>.</returns>
-        internal static T HandleFileSystemInfo<T>(T invalid, string path, Func<string, T>/*!*/action)
+        internal static T HandleFileSystemInfo<T>(T invalid, string path, Func<string, T>/*!*/action, bool quiet = false)
         {
             try
             {
@@ -122,15 +123,24 @@ namespace Pchp.Library
             }
             catch (ArgumentException)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
+                if (!quiet)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
+                }
             }
             catch (PathTooLongException)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
+                if (!quiet)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
+                }
             }
             catch (System.Exception e)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
+                if (!quiet)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
+                }
             }
 
             return invalid;
@@ -220,10 +230,23 @@ namespace Pchp.Library
 		/// <returns>True if the file exists.</returns>
 		public static bool file_exists(Context ctx, string path)
         {
-            return !string.IsNullOrEmpty(path) &&  // check empty parameter quietly
-                ResolvePath(ctx, ref path, true, out var wrapper) &&
-                HandleFileSystemInfo(false, path, p => File.Exists(p) || System.IO.Directory.Exists(p)) || // check file system
-                Context.TryResolveScript(ctx.RootPath, path).IsValid;   // check a compiled script
+            if (!string.IsNullOrEmpty(path) && ResolvePath(ctx, ref path, true, out var wrapper))
+            {
+                if (wrapper.Scheme == FileStreamWrapper.scheme && File.Exists(path)) // faster than calling full stat
+                {
+                    return true;
+                }
+
+                var stat = wrapper.Stat(ctx.RootPath, path, StreamStatOptions.Quiet, StreamContext.Default, false);
+                return stat.IsValid; // file or directory
+            }
+
+            return false;
+
+            //return !string.IsNullOrEmpty(path) &&  // check empty parameter quietly
+            //    ResolvePath(ctx, ref path, true, out var wrapper) &&
+            //    HandleFileSystemInfo(false, path, p => File.Exists(p) || System.IO.Directory.Exists(p)) || // check file system
+            //    Context.TryResolveScript(ctx.RootPath, path).IsValid;   // check a compiled script
         }
 
         /// <summary>
@@ -247,9 +270,10 @@ namespace Pchp.Library
             // Create the file if it does not already exist (performs all checks).
             //PhpStream file = (PhpStream)Open(path, "ab");
             //if (file == null) return false;
-            StreamWrapper wrapper;
-            if (!PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileMayExist, CheckAccessOptions.Quiet))
+            if (!PhpStream.ResolvePath(ctx, ref path, out var wrapper, CheckAccessMode.FileMayExist, CheckAccessOptions.Quiet))
+            {
                 return false;
+            }
 
             if (!file_exists(ctx, path))
             {
@@ -351,23 +375,25 @@ namespace Pchp.Library
             var stat = ResolveStat(ctx, path, false);
             if (stat.IsValid)
             {
-                return null;
+                var mode = (FileModeFlags)stat.st_mode & FileModeFlags.FileTypeMask;
+
+                switch (mode)
+                {
+                    case FileModeFlags.Directory:
+                        return "dir";
+
+                    case FileModeFlags.File:
+                        return "file";
+
+                    default:
+                        //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_file_type"));
+                        // TODO: Err unknown_file_type
+                        return "unknown";
+                }
             }
-
-            var mode = (FileModeFlags)stat.st_mode & FileModeFlags.FileTypeMask;
-
-            switch (mode)
+            else
             {
-                case FileModeFlags.Directory:
-                    return "dir";
-
-                case FileModeFlags.File:
-                    return "file";
-
-                default:
-                    //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_file_type"));
-                    // TODO: Err unknown_file_type
-                    return "unknown";
+                return null; // false
             }
         }
 
@@ -484,7 +510,7 @@ namespace Pchp.Library
         public static int fileperms(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, false);
-            return stat.IsValid ? stat.st_mode : -1;
+            return stat.IsValid ? (int)stat.st_mode : -1;
         }
 
         /// <summary>
@@ -531,7 +557,8 @@ namespace Pchp.Library
 
                 return
                     HandleFileSystemInfo(false, path, (p) => new DirectoryInfo(p).Exists) ||    // filesystem
-                    Context.TryGetScriptsInDirectory(ctx.RootPath, path, out var scripts);      // compiled scripts
+                    Context.TryGetScriptsInDirectory(ctx.RootPath, path, out _);      // compiled scripts
+                // TODO: embedded files
             }
 
             return false;
@@ -551,7 +578,7 @@ namespace Pchp.Library
         public static bool is_executable(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, true);
-            return ((FileModeFlags)stat.st_mode & FileModeFlags.Execute) > 0;
+            return (stat.st_mode & FileModeFlags.Execute) != 0;
         }
 
         /// <summary>
@@ -562,18 +589,19 @@ namespace Pchp.Library
         /// <returns></returns>
         public static bool is_file(Context ctx, string path)
         {
-            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0 && ResolvePath(ctx, ref path, false, out var wrapper))
+            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0)
             {
-                //string url;
-                //if (StatInternalTryCache(path, out url))
-                //    return ((FileModeFlags)statCache.st_mode & FileModeFlags.File) != 0;
+                if (ResolvePath(ctx, ref path, false, out var wrapper))
+                {
+                    // avoids calling full stat(), since it is slow
+                    if (wrapper.Scheme == FileStreamWrapper.scheme && File.Exists(path))
+                    {
+                        return true;
+                    }
 
-                // we can't just call File.Exists since we have to throw warnings
-                // also we are not calling full stat(), it is slow
-
-                return
-                    HandleFileSystemInfo(false, path, (p) => new FileInfo(p).Exists) || // check file system
-                    Context.TryResolveScript(ctx.RootPath, path).IsValid;   // check a compiled script
+                    // checks the full stat
+                    return wrapper.Stat(ctx.RootPath, path, default, StreamContext.Default, false).IsFile;
+                }
             }
 
             return false;
@@ -585,11 +613,12 @@ namespace Pchp.Library
         /// <remarks>
         /// Returns always <c>false</c>.
         /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="path"></param>
         /// <returns>Always <c>false</c></returns>
-        public static bool is_link(string path)
+        public static bool is_link(Context ctx, string path)
         {
-            return false; // OK
+            return ResolveStat(ctx, path, false).IsLink;
         }
 
         /// <summary>
@@ -601,7 +630,7 @@ namespace Pchp.Library
         public static bool is_readable(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, true);
-            return ((FileModeFlags)stat.st_mode & FileModeFlags.Read) > 0;
+            return (stat.st_mode & FileModeFlags.Read) != 0;
         }
 
         /// <summary>
@@ -621,7 +650,7 @@ namespace Pchp.Library
         public static bool is_writable(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, true);
-            return ((FileModeFlags)stat.st_mode & FileModeFlags.Write) > 0;
+            return (stat.st_mode & FileModeFlags.Write) > 0;
         }
 
         #endregion
@@ -635,7 +664,7 @@ namespace Pchp.Library
     /// Not supported. Implementations may be empty.
     /// </summary>
     /// <threadsafety static="true"/>
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class UnixFile
     {
         #region Owners, Mode (chgrp, chmod, chown, umask)
@@ -722,7 +751,32 @@ namespace Pchp.Library
         {
             if (PhpPath.ResolvePath(ctx, ref filename, false, out var wrapper))
             {
-                var fs = new FileSecurity(filename, AccessControlSections.Owner);   // throws if file does not exist or no permissions
+                try
+                {
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        return WindowsChown(filename, user);
+                    }
+                    else
+                    {
+                        return PosixChown(filename, user);
+                    }
+                }
+                catch (Exception e)
+                {
+                    PhpException.Throw(PhpError.Warning, e.Message);
+                    return false;
+                }
+            }
+
+            //
+            return false;
+
+            static bool WindowsChown(string filename, PhpValue user)
+            {
+                var fileInfo = new FileInfo(filename);
+                var fileSecurity = fileInfo.GetAccessControl(AccessControlSections.Owner); // throws if file does not exist or no permissions
+
                 IdentityReference identity;
                 if (user.IsString(out var uname))
                 {
@@ -733,23 +787,39 @@ namespace Pchp.Library
 
                     identity = new NTAccount(domain_user.Item1, domain_user.Item2);
                 }
-                //else if (user.IsLong(out var uid))
-                //{
+                else
+                {
+                    // There's no UID on Windows (only SID, which is not a pure number)
+                    PhpException.InvalidArgumentType(nameof(user), PhpVariable.TypeNameString);
+                    return false;
+                }
 
-                //}
+                fileSecurity.SetOwner(identity);
+                fileInfo.SetAccessControl(fileSecurity); // throws if no permission or error
+
+                return true;
+            }
+
+            static bool PosixChown(string filename, PhpValue user)
+            {
+                var file = UnixFileInfo.GetFileSystemEntry(filename);
+
+                if (user.IsString(out var uname))
+                {
+                    file.SetOwner(uname);
+                }
+                else if (user.IsLong(out long uid))
+                {
+                    file.SetOwner(new UnixUserInfo(uid));
+                }
                 else
                 {
                     PhpException.InvalidArgumentType(nameof(user), PhpVariable.TypeNameString);
                     return false;
                 }
 
-                //var identity = user.IsString(out var uname) ? new NTAccount(uname) : user.IsLong(out var uid) ? new IdentityReference(...) : null;
-                fs.SetOwner(identity);  // throws if no permission or error
                 return true;
             }
-
-            //
-            return false;
         }
 
         /// <summary>

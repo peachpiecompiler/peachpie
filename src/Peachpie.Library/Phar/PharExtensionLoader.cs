@@ -7,6 +7,7 @@ using System.Text;
 using Pchp.Core;
 using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
+using static Pchp.Library.Phar.PharExtensions;
 using static Pchp.Library.StandardPhpOptions;
 
 namespace Pchp.Library.Phar
@@ -25,49 +26,142 @@ namespace Pchp.Library.Phar
 
             public override bool IsUrl => true;
 
-            public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
+            static bool TryResolvePhar(Context ctx, ReadOnlySpan<char> path, out CachedPhar phar, out ReadOnlySpan<char> entry)
             {
+                return TryResolvePhar(pharpath =>
+                {
+                    var result = PharExtensions.AliasToPharFile(ctx, pharpath);
+
+                    if (result == null && pharpath.EndsWith(PharExtensions.PharExtension, CurrentPlatform.PathStringComparison))
+                    {
+                        // resolve not-mapped phars (resolve path to root ... find .phar in compiled scripts ...)
+                        var stub = Context.TryResolveScript(ctx.RootPath, pharpath);
+                        result = PharExtensions.TryGetCachedPhar(stub);
+                    }
+
+                    return result;
+
+                }, path, out phar, out entry);
+            }
+
+            static bool TryResolvePhar(Func<string, CachedPhar> resolver, ReadOnlySpan<char> path, out CachedPhar phar, out ReadOnlySpan<char> entry)
+            {
+                phar = default;
+                entry = default;
+
                 if (FileSystemUtils.TryGetScheme(path, out var schemespan))
                 {
-                    var schemeends = schemespan.Length + 3;
-                    var sep = path.IndexOfAny(PathUtils.DirectorySeparatorChars, schemeends);
-                    if (sep >= 0)
+                    if (!schemespan.SequenceEqual("phar".AsSpan()))
                     {
-                        Stream resource = null;
+                        return false;
+                    }
 
-                        var alias = path.Substring(schemeends, sep - schemeends);
-                        var pharFile = PharExtensions.AliasToPharFile(ctx, alias);
-                        if (pharFile != null)
+                    // slice off the scheme://
+                    path = path.Slice(schemespan.Length + 3);
+                }
+
+                if (path.IsEmpty)
+                {
+                    return false;
+                }
+
+                // find the phar
+                for (int slash = 0; slash <= path.Length; slash++)
+                {
+                    if (slash == path.Length || PathUtils.IsDirectorySeparator(path[slash]))
+                    {
+                        var pharpath = path.Slice(0, slash);
+
+                        phar = resolver(pharpath.ToString());
+
+                        if (phar != null)
                         {
-                            // Template: phar://alias/entryName
-                            resource = PharExtensions.GetResourceStream(pharFile, path.Substring(sep + 1));
-                        }
-                        else
-                        {
-                            // Template: phar://path_phar_file/entryName
-                            var pharExt = path.IndexOfOrdinal(PharExtensions.PharExtension, schemeends, path.Length - schemeends);
-                            if (pharExt >= 0 && pharExt + PharExtensions.PharExtension.Length + 1 < path.Length)
-                            {
-                                // path_phar_file:
-                                var pharPath = path.Substring(schemeends, pharExt + PharExtensions.PharExtension.Length - schemeends);
-
-                                // entryName:
-                                var entryName = path.Substring(pharExt + PharExtensions.PharExtension.Length + 1);
-
-                                // ensure phar is loaded
-                                // TODO: locate pharPath and get containing System.Reflection.Assembly
-                                throw new NotImplementedException();
-                            }
-                        }
-
-                        if (resource != null)
-                        {
-                            return new NativeStream(ctx, resource, this, StreamAccessOptions.UseText | StreamAccessOptions.Read, path, context);
+                            entry = slash < path.Length ? path.Slice(slash + 1) : ReadOnlySpan<char>.Empty;
+                            return true;
                         }
                     }
                 }
 
+                //
+                return false;
+            }
+
+            public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
+            {
+                if (TryResolvePhar(ctx, path.AsSpan(), out var phar, out var entry))
+                {
+                    // Template: phar://alias/entryName
+                    var resource = PharExtensions.GetResourceStream(phar, entry);
+
+                    if (resource != null)
+                    {
+                        return new NativeStream(ctx, resource, this, StreamAccessOptions.UseText | StreamAccessOptions.Read, path, context);
+                    }
+                    else
+                    {
+                        // TODO: entry not found
+                    }
+                }
+                else
+                {
+                    // TODO: phar alias nor phar file not found
+                }
+
                 return null;
+            }
+
+            public override void ResolvePath(Context ctx, ref string path)
+            {
+                // resolve the phar alias or phar relative path
+                // phar://filename.phar/entryname -> phar://resolve_filename.phar/entryname
+                if (TryResolvePhar(ctx, path.AsSpan(), out var phar, out var entry))
+                {
+                    path = $"{scheme}://{phar.PharFile}/{entry.ToString()}";
+                }
+            }
+
+            public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
+            {
+                // path is already normalized using ResolvePath method
+                // phar://{pharFile}/{entry}
+
+                if (TryResolvePhar(pharpath => PharExtensions.TryGetPhar(pharpath), path.AsSpan(), out var phar, out var entry))
+                {
+                    if (entry.IsEmpty)
+                    {
+                        // phar stub itself
+                        return new StatStruct(st_mode: FileModeFlags.File | FileModeFlags.Read);
+                    }
+
+                    // pharfile.phar/entryname
+                    if (phar.Scripts.IndexOf($"{phar.PharFile}{CurrentPlatform.DirectorySeparator}{entry.ToString()}") >= 0)
+                    {
+                        return new StatStruct(st_mode: FileModeFlags.File | FileModeFlags.Read);
+                    }
+
+                    if (GetResourceContent(phar, entry) != null)
+                    {
+                        return new StatStruct(st_mode: FileModeFlags.File | FileModeFlags.Read);
+                    }
+
+                    // TODO: directory
+                }
+
+                return StatStruct.Invalid;
+            }
+
+            public override List<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
+            {
+                // path is already normalized using ResolvePath method
+                // phar://{pharFile}/{entry}
+
+                if (TryResolvePhar(pharpath => PharExtensions.TryGetPhar(pharpath), path.AsSpan(), out var phar, out var entry))
+                {
+                    // TODO: list entries in given phar
+
+                }
+
+                return base.Listing(root, path, options, context);
             }
 
             #endregion
@@ -76,17 +170,12 @@ namespace Pchp.Library.Phar
             {
                 // Template: include "phar://{path}"
 
-                var sep = path.IndexOfAny(PathUtils.DirectorySeparatorChars);
-                if (sep >= 0)
+                if (TryResolvePhar(ctx, path.AsSpan(), out var phar, out var entry))
                 {
-                    var pharFile = PharExtensions.AliasToPharFile(ctx, path.Remove(sep));
-                    if (pharFile != null)
-                    {
-                        Debug.Assert(pharFile.EndsWith(PharExtensions.PharExtension, CurrentPlatform.PathStringComparison));
-                        var pharPath = PharExtensions.PharEntryRelativePath(pharFile, path.Substring(sep + 1));
-                        script = Context.TryGetDeclaredScript(pharPath);
-                        return script.IsValid;
-                    }
+                    Debug.Assert(phar.PharFile.EndsWith(PharExtensions.PharExtension, CurrentPlatform.PathStringComparison));
+                    var pharPath = PharExtensions.PharEntryRelativePath(phar.PharFile, entry);
+                    script = Context.TryGetDeclaredScript(pharPath);
+                    return script.IsValid;
                 }
 
                 // invalid

@@ -33,13 +33,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var phpname = this.GetPhpTypeNameOrNull();
-                if (phpname.IsEmpty())
-                {
-                    phpname = this.MakeQualifiedName();
-                }
-
-                return phpname;
+                return this.TryGetPhpTypeAttribute(out var fullname, out _) ? fullname : this.MakeQualifiedName();
             }
         }
 
@@ -1027,7 +1021,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Interlocked.CompareExchange(ref _lazyMembersByPhpName,
                     Microsoft.CodeAnalysis.EnumerableExtensions.ToDictionary(
                         _lazyMembersInDeclarationOrder
-                        .Where(x => x is MethodSymbol || x is FieldSymbol),
+                            .Where(x => x is MethodSymbol || x is FieldSymbol), // TODO: PropertySymbol ????
                         x => x.PhpName(), StringComparer.InvariantCultureIgnoreCase),
                     null);
             }

@@ -95,15 +95,39 @@ namespace Pchp.Library.Reflection
         
         public long getNumberOfParameters()
         {
-            return ReflectionUtils.ResolvePhpParameters(_routine.Methods).Count;
+            var parameters = ReflectionUtils.ResolvePhpParameters(_routine.Methods);
+            int count = 0;
+
+            for (; count < parameters.Count; count++)
+            {
+                var p = parameters[count];
+                
+                if (p.GetCustomAttribute<ParamArrayAttribute>() != null)
+                {
+                    // variadic is the last one
+                    return count + 1;
+                }
+            }
+
+            return count;
         }
 
         public long getNumberOfRequiredParameters()
         {
-            return ReflectionUtils
-                .ResolvePhpParameters(_routine.Methods)
-                .TakeWhile(p => p.HasDefaultValue == false && p.GetCustomAttribute<DefaultValueAttribute>() == null && p.GetCustomAttribute<ParamArrayAttribute>() == null)
-                .Count();
+            var parameters = ReflectionUtils.ResolvePhpParameters(_routine.Methods);
+            int count = 0;
+
+            for (; count < parameters.Count; count++)
+            {
+                var p = parameters[count];
+                if (p.HasDefaultValue || p.GetCustomAttribute<DefaultValueAttribute>() != null) // is optional argument
+                    break;
+
+                if (p.GetCustomAttribute<ParamArrayAttribute>() != null) // is optional, variadic
+                    break;
+            }
+
+            return count;
         }
 
         /// <summary>
@@ -119,9 +143,11 @@ namespace Pchp.Library.Reflection
             var arr = new PhpArray(parameters.Count);
             for (int i = 0; i < parameters.Count; i++)
             {
-                Debug.Assert(!parameters[i]._isVariadic || i == parameters.Count - 1, "Variadic can be only last parameter");
+                var p = parameters[i];
 
-                arr.Add(PhpValue.FromClass(parameters[i]));
+                arr.Add(PhpValue.FromClass(p));
+
+                if (p.isVariadic()) break; // variadic must be the last one
             }
 
             return arr;
@@ -158,13 +184,14 @@ namespace Pchp.Library.Reflection
         public virtual bool isClosure() { throw new NotImplementedException(); }
         public virtual bool isDeprecated() { throw new NotImplementedException(); }
         public bool isGenerator() { throw new NotImplementedException(); }
-        public bool isInternal() => !isUserDefined();
+        public bool isInternal() => !isUserDefined(); // CONSIDER: rather check MethodInfo Assembly PublicKeyToken
         public bool isUserDefined() => _routine.IsUserFunction;
         public bool isVariadic() => _routine.Methods.Any(m => m.GetParameters().Any(p => p.GetCustomAttribute<ParamArrayAttribute>() != null));
         public bool returnsReference() => _routine.Methods.Any(m => m.ReturnType == typeof(PhpAlias));
 
         public virtual string __toString() { throw new NotImplementedException(); }
 
+        [PhpHidden]
         public override string ToString() => __toString();
     }
 }
