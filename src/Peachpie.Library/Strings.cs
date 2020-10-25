@@ -4521,7 +4521,7 @@ namespace Pchp.Library
             }
 
             int length = str.Length;
-            StringBuilder result = new StringBuilder(length);
+            var result = StringBuilderUtilities.Pool.Get();
 
             // mimic the strange PHP behaviour when width < 0 and cut is true
             if (width < 0 && cut)
@@ -4591,7 +4591,8 @@ namespace Pchp.Library
                 result.Append(str, lineStart, length - lineStart);
             }
 
-            return result.ToString();
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         #endregion 
