@@ -4520,7 +4520,6 @@ namespace Pchp.Library
                 return null; // return FALSE;
             }
 
-            int length = str.Length;
             var result = StringBuilderUtilities.Pool.Get();
 
             // mimic the strange PHP behaviour when width < 0 and cut is true
@@ -4530,65 +4529,54 @@ namespace Pchp.Library
                 width = 1;
             }
 
-            int lastSpace = -1, lineStart = 0;
-            for (int i = 0; i < length; i++)
+            //
+            int lastspace = 0, linestart = 0;
+
+            for (int i = 0; i < str.Length; i++)
             {
-                if (str[i] == ' ')
-                {
-                    lastSpace = i;
-                    if (i - lineStart >= width + 1)
-                    {
-                        // cut is false if we get here
-                        if (lineStart == 0)
-                        {
-                            result.Append(str, 0, i);
-                        }
-                        else
-                        {
-                            result.Append(@break);
-                            result.Append(str, lineStart, i - lineStart);
-                        }
+                var ch = str[i];
 
-                        lineStart = i + 1;
-                        continue;
-                    }
+                // check there is already an existing break:
+                if (ch == @break[0] && str.AsSpan(i).StartsWith(@break.AsSpan()))
+                {
+                    result.Append(str, linestart, i - linestart + @break.Length);
+                    
+                    lastspace = linestart = i + @break.Length;
+                    i = linestart - 1; // ++
                 }
-
-                if (str[i] == '\n')
+                // check the space, and if it is a line boundary:
+                else if (ch == ' ')
                 {
+                    if (i - linestart >= width)
+                    {
+                        result.Append(str, linestart, i - linestart);
+                        result.Append(@break);
 
-                    // we reached the end of line before reaching specified width
+                        linestart = i + 1;
+                    }
 
-                    if (lineStart > 0) result.Append(@break);
-                    result.Append(str, lineStart, i - lineStart);
-                    lastSpace = lineStart = i + 1;
-                    continue;
-
+                    lastspace = i;
                 }
-                else if (i - lineStart >= width)
+                // cut if there was no space in this line:
+                else if (i - linestart >= width && cut && linestart >= lastspace)
                 {
-                    // we reached the specified width
-
-                    if (lastSpace > lineStart) // obsolete: >=
-                    {
-                        if (lineStart > 0) result.Append(@break);
-                        result.Append(str, lineStart, lastSpace - lineStart);
-                        lineStart = lastSpace + 1;
-                    }
-                    else if (cut)
-                    {
-                        if (lineStart > 0) result.Append(@break);
-                        result.Append(str, lineStart, width);
-                        lineStart = i;
-                    }
+                    result.Append(str, linestart, i - linestart);
+                    result.Append(@break);
+                    lastspace = linestart = i;
+                }
+                // current word exceeds {width}
+                else if (i - linestart >= width && linestart < lastspace)
+                {
+                    result.Append(str, linestart, lastspace - linestart);
+                    result.Append(@break);
+                    lastspace = linestart = lastspace + 1;
                 }
             }
 
             // process the rest of str
-            if (lineStart < length || lastSpace == length - 1)
+            if (linestart < str.Length)
             {
-                if (lineStart > 0) result.Append(@break);
-                result.Append(str, lineStart, length - lineStart);
+                result.Append(str, linestart, str.Length - linestart);
             }
 
             //
