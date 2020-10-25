@@ -4494,22 +4494,31 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to word-wrap.</param>
         /// <param name="width">The desired line length.</param>
-        /// <param name="lineBreak">The break string.</param>
+        /// <param name="break">The break string.</param>
         /// <param name="cut">If true, words longer than <paramref name="width"/> will be cut so that no line is longer
         /// than <paramref name="width"/>.</param>
         /// <returns>The word-wrapped string.</returns>
         /// <remarks>The only "break-point" character is space (' ').</remarks>
         /// <exception cref="PhpException">Thrown if the combination of <paramref name="width"/> and <paramref name="cut"/> is invalid.</exception>
         [return: CastToFalse]
-        public static string wordwrap(string str, int width = 75, string lineBreak = "\n", bool cut = false)
+        public static string wordwrap(string str, int width = 75, string @break = "\n", bool cut = false)
         {
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrEmpty(@break))
+            {
+                PhpException.Throw(PhpError.Warning, LibResources.arg_empty, nameof(@break));
+                return null; // return FALSE;
+            }
+
             if (width == 0 && cut)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("cut_forced_with_zero_width"));
-                //return null;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, LibResources.cut_forced_with_zero_width);
+                return null; // return FALSE;
             }
-            if (str == null) return null;
 
             int length = str.Length;
             StringBuilder result = new StringBuilder(length);
@@ -4517,7 +4526,7 @@ namespace Pchp.Library
             // mimic the strange PHP behaviour when width < 0 and cut is true
             if (width < 0 && cut)
             {
-                result.Append(lineBreak);
+                result.Append(@break);
                 width = 1;
             }
 
@@ -4536,7 +4545,7 @@ namespace Pchp.Library
                         }
                         else
                         {
-                            result.Append(lineBreak);
+                            result.Append(@break);
                             result.Append(str, lineStart, i - lineStart);
                         }
 
@@ -4545,28 +4554,30 @@ namespace Pchp.Library
                     }
                 }
 
-                if (str[i] == '\n') {
+                if (str[i] == '\n')
+                {
 
                     // we reached the end of line before reaching specified width
 
-                    if (lineStart > 0) result.Append(lineBreak);
+                    if (lineStart > 0) result.Append(@break);
                     result.Append(str, lineStart, i - lineStart);
                     lastSpace = lineStart = i + 1;
                     continue;
 
-                } else if (i - lineStart >= width)
+                }
+                else if (i - lineStart >= width)
                 {
                     // we reached the specified width
 
                     if (lastSpace > lineStart) // obsolete: >=
                     {
-                        if (lineStart > 0) result.Append(lineBreak);
+                        if (lineStart > 0) result.Append(@break);
                         result.Append(str, lineStart, lastSpace - lineStart);
                         lineStart = lastSpace + 1;
                     }
                     else if (cut)
                     {
-                        if (lineStart > 0) result.Append(lineBreak);
+                        if (lineStart > 0) result.Append(@break);
                         result.Append(str, lineStart, width);
                         lineStart = i;
                     }
@@ -4576,7 +4587,7 @@ namespace Pchp.Library
             // process the rest of str
             if (lineStart < length || lastSpace == length - 1)
             {
-                if (lineStart > 0) result.Append(lineBreak);
+                if (lineStart > 0) result.Append(@break);
                 result.Append(str, lineStart, length - lineStart);
             }
 
