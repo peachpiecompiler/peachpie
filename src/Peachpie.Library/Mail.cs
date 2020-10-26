@@ -883,31 +883,35 @@ namespace Pchp.Library
                     return null;
 
                 MailResource result = null;
+                Stream stream = GetStream(info);
+                if (stream == null)
+                    return null;
 
                 if (String.IsNullOrEmpty(info.Service))
                 {
                     if (info.NameFlags.Contains("imap") || info.NameFlags.Contains("imap2") || info.NameFlags.Contains("imap2bis")
                         || info.NameFlags.Contains("imap4") || info.NameFlags.Contains("imap4rev1"))
-                        result = CreateImap(info, GetStream(info));
+                        result = CreateImap(info, stream);
                     else if (info.NameFlags.Contains("pop3"))
-                        result = CreatePop3(info, GetStream(info));
+                        result = CreatePop3(info, stream);
                     else if (info.NameFlags.Contains("nntp"))
-                        result = CreateNntp(info, GetStream(info));
+                        result = CreateNntp(info, stream);
                     else // Default is imap                   
-                        result = CreateImap(info, GetStream(info));
+                        result = CreateImap(info, stream);
                 }
                 else
                 {
+
                     switch (info.Service)
                     {
                         case "pop3":
-                            result = CreatePop3(info, GetStream(info));
+                            result = CreatePop3(info, stream);
                             break;
                         case "nntp":
-                            result = CreateNntp(info, GetStream(info));
+                            result = CreateNntp(info, stream);
                             break;
                         default: // Default is imap
-                            result = CreateImap(info, GetStream(info));
+                            result = CreateImap(info, stream);
                             break;
                     }
                 }
@@ -1102,8 +1106,7 @@ namespace Pchp.Library
             }
             protected abstract bool StartTLS(bool sslValidation);
             public abstract bool Login(string username, string password);
-            public abstract bool Select(string path);
-            public abstract void Close();
+            public abstract bool Close();
             #endregion
         }
 
@@ -1279,9 +1282,21 @@ namespace Pchp.Library
                 return ((responses != null || responses.Count != 0) && responses[0].Status == Status.OK);
             }
 
-            public override bool Select(string path) => throw new NotImplementedException();
+            /// <summary>
+            /// Executes QUIT and calls FreeManaged.
+            /// </summary>
+            public override bool Close()
+            {
+                Write($"QUIT\r\n");
 
-            public override void Close() => FreeManaged();
+                List<POP3Response> responses = Receive();
+                bool result = ((responses != null || responses.Count != 0) && responses[0].Status == Status.OK);
+
+                if (result)
+                    FreeManaged();
+
+                return result;
+            }
 
             protected override void FreeManaged()
             {
@@ -1297,17 +1312,12 @@ namespace Pchp.Library
         /// </summary>
         internal class NNTPResource : MailResource
         {
-            public override void Close()
+            public override bool Close()
             {
                 throw new NotImplementedException();
             }
 
             public override bool Login(string username, string password)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool Select(string path)
             {
                 throw new NotImplementedException();
             }
@@ -1559,7 +1569,7 @@ namespace Pchp.Library
             /// </summary>
             /// <param name="path">The path in mailbox.</param>
             /// <returns>Returns true on success or false on failure.</returns>
-            public override bool Select(string path)
+            public bool Select(string path)
             {
                 string messageTag = $"{TagPrefix}{_tag.ToString()}";
                 Write($"{messageTag} SELECT {path}\r\n");
@@ -1573,7 +1583,33 @@ namespace Pchp.Library
                 }
             }
 
-            public override void Close() => FreeManaged();
+            /// <summary>
+            /// Executes LOGOUT and calls FreeManaged.
+            /// </summary>
+            public override bool Close()
+            {
+                string messageTag = $"{TagPrefix}{_tag.ToString()}";
+                Write($"{messageTag} LOGOUT\r\n");
+
+                bool result = false;
+                bool completed = false;
+                while (!completed) // Waits for the response.
+                {
+                    List<ImapResponse> responses = Receive();
+                    foreach (var response in responses)
+                        if (response.Tag == messageTag)
+                        {
+                            result = response.Status == Status.OK;
+                            completed = true;
+                            break;
+                        }
+                }
+
+                if (result)
+                    FreeManaged();
+
+                return result;
+            }
 
             protected override void FreeManaged()
             {
