@@ -860,297 +860,206 @@ namespace Pchp.Library
         {
             private enum Service { IMAP, NNTP, POP3};
 
+            /// <summary>
+            /// Represents a connection between a client and server.
+            /// </summary>
             protected Stream _stream;
+            /// <summary>
+            /// Represents an initial connection string.
+            /// </summary>
+            protected MailBoxInfo _info;
 
             #region Contructors
             protected MailResource() : base("imap") { }
 
+            /// <summary>
+            /// Creates a client for one of three supported protocols. 
+            /// </summary>
+            /// <param name="info">A connection string, which contains info about desired protocol. Default is IMAP.</param>
+            /// <returns>The client of desired protocol or NULL if there is a problem with the connection.</returns>
             public static MailResource Create(MailBoxInfo info)
             {
+                if (info == null)
+                    return null;
+
+                MailResource result = null;
+
                 if (String.IsNullOrEmpty(info.Service))
                 {
                     if (info.NameFlags.Contains("imap") || info.NameFlags.Contains("imap2") || info.NameFlags.Contains("imap2bis")
                         || info.NameFlags.Contains("imap4") || info.NameFlags.Contains("imap4rev1"))
-                    {
-                        return CreateImap(info, GetStream(info));
-                    }
+                        result = CreateImap(info, GetStream(info));
                     else if (info.NameFlags.Contains("pop3"))
-                    {
-                        return CreatePop3(info, GetStream(info));
-                    }
+                        result = CreatePop3(info, GetStream(info));
                     else if (info.NameFlags.Contains("nntp"))
-                    {
-                        return CreateNntp(info, GetStream(info));
-                    }
-
-                    // Default is imap
-                    return CreateImap(info, GetStream(info));
+                        result = CreateNntp(info, GetStream(info));
+                    else // Default is imap                   
+                        result = CreateImap(info, GetStream(info));
                 }
                 else
                 {
                     switch (info.Service)
                     {
                         case "pop3":
-                            return CreatePop3(info, GetStream(info));
+                            result = CreatePop3(info, GetStream(info));
+                            break;
                         case "nntp":
-                            return CreateNntp(info, GetStream(info));
+                            result = CreateNntp(info, GetStream(info));
+                            break;
                         default: // Default is imap
-                            return CreateImap(info, GetStream(info));
+                            result = CreateImap(info, GetStream(info));
+                            break;
                     }
                 }
+
+                return result;
             }
 
+            /// <summary>
+            /// Creates IMAP client with a specific type of connection(TLS, SSL, ...).
+            /// </summary>
+            /// <param name="info">Info can contain information about a type of connection(security, tls, ...)</param>
+            /// <param name="stream">A stream which is connected to a server.</param>
+            /// <returns>Returns the client or null, if there is problem with the connection.</returns>
             private static ImapResource CreateImap(MailBoxInfo info, Stream stream)
             {
-                ImapResource resource = ImapResource.Create(info, GetStream(info));
+                if (info == null || stream == null)
+                    return null;
+
+                ImapResource resource = ImapResource.Create(GetStream(info));
+                if (resource == null)
+                    return null;
+
+                resource._info = info; // Save info about connection
 
                 if (info.NameFlags.Contains("secure")) // StartTLS with validation
-                {
-                    resource.StartTLS(true, info);
-                }
-
-                if (info.NameFlags.Contains("tls"))// StartTLS
-                {
-                    resource.StartTLS(!info.NameFlags.Contains("novalidate-cert"), info);
-                }
+                    resource.StartTLS(true);
+                else if (info.NameFlags.Contains("tls"))// StartTLS
+                    resource.StartTLS(!info.NameFlags.Contains("novalidate-cert"));
 
                 return resource;
             }
 
-            private static ImapResource CreatePop3(MailBoxInfo info, Stream stream)
+            /// <summary>
+            /// Creates POP3 client with a specific type of connection(TLS, SSL, ...)
+            /// </summary>
+            /// <param name="info">Info can contain information about a type of connection(security, tls, ...)</param>
+            /// <param name="stream">A stream which is connected to a server.</param>
+            /// <returns>Returns the client or null, if there is problem with the connection.</returns>
+            private static POP3Resource CreatePop3(MailBoxInfo info, Stream stream)
             {
-                throw new NotImplementedException();
+                if (info == null || stream == null)
+                    return null;
+
+                POP3Resource resource = POP3Resource.Create(GetStream(info));
+                if (resource == null)
+                    return null;
+
+                resource._info = info; // Save info about connection
+
+                if (info.NameFlags.Contains("secure")) // StartTLS with validation
+                    resource.StartTLS(true);
+                else if (info.NameFlags.Contains("tls"))// StartTLS
+                    resource.StartTLS(!info.NameFlags.Contains("novalidate-cert"));
+
+                return resource;
             }
 
+            /// <summary>
+            /// Creates NNTP client with a specific type of connection(TLS, SSL, ...)
+            /// </summary>
+            /// <param name="info">Info can contain information about a type of connection(security, tls, ...)</param>
+            /// <param name="stream">A stream which is connected to a server.</param>
+            /// <returns>Returns the client or null, if there is problem with the connection.</returns>
             private static ImapResource CreateNntp(MailBoxInfo info, Stream stream)
             {
+                if (info == null || stream == null)
+                    return null;
+
+                //TODO: Support for NNTP protocol
                 throw new NotImplementedException();
             }
 
+            /// <summary>
+            /// Creates a stream which is connected to a server. Makes no-secure conection by default.
+            /// </summary>
+            /// <param name="info">Info which contains info about server address</param>
+            /// <returns>Stream or null, if there is a problem with a connetion.</returns>
             private static Stream GetStream(MailBoxInfo info)
             {
-                TcpClient client = new TcpClient(info.Hostname, info.Port);
+                if (info == null)
+                    return null;
 
-                if (info.NameFlags.Contains("notls"))
+                TcpClient client;
+                try
+                {
+                    client = new TcpClient(info.Hostname, info.Port);
+                }
+                catch (Exception ex)
+                {
+                    if (ex is ArgumentNullException || ex is SocketException)
+                        return null;
+
+                    throw;
+                }
+
+
+                if (info.NameFlags.Contains("notls")) // There is nothing to do yet and return non-secure connection (can be later change by starttls command)
                     return client.GetStream();
 
                 if (info.NameFlags.Contains("ssl"))
-                {
-                    SslStream stream;
-                    if (info.NameFlags.Contains("novalidate-cert"))
-                        stream = new SslStream(client.GetStream(), false, (sender, certificate, chain, sslPolicyErrors) => true);       
-                    else // Validate Certificate
-                        stream = new SslStream(client.GetStream(), false, ValidateServerCertificate);
+                    return MakeSslConection(client.GetStream(), info);
 
-                    stream.AuthenticateAsClient(info.Hostname);
-                    return stream;
-                }
-
-                return client.GetStream();
+                return client.GetStream(); // Makes no-secure conection by default.
             }
 
+            /// <summary>
+            /// Makes authentication and ssl conection according to settings in info.
+            /// </summary>
+            /// <param name="stream">A stream which is connected to server.</param>
+            /// <param name="info">The information about connection string.</param>
+            /// <returns>Sslstream or null, if there is a problem with authentication.</returns>
+            protected static SslStream MakeSslConection(Stream stream, MailBoxInfo info)
+            {
+                SslStream result;
+                try
+                {
+                    if (info.NameFlags.Contains("novalidate-cert"))
+                        result = new SslStream(stream, false, (sender, certificate, chain, sslPolicyErrors) => true);
+                    else // Validate Certificate
+                        result = new SslStream(stream, false, ValidateServerCertificate);
+
+                    result.AuthenticateAsClient(info.Hostname);
+                }
+                catch (AuthenticationException)
+                {
+                    return null;
+                }
+
+                return result;
+            }
+
+            /// <summary>
+            /// Validates a certificate. Copied from https://docs.microsoft.com/en-us/dotnet/api/system.net.security.sslstream?view=netcore-3.1. 
+            /// </summary>
+            /// <returns>Returns true if <see cref="SslPolicyErrors"/> is equal to None, false otherwise.</returns>
             protected static bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
             {
                 if (sslPolicyErrors == SslPolicyErrors.None)
-                {
                     return true;
-                }
 
-                Console.WriteLine("Certificate error: {0}", sslPolicyErrors);
-
-                // refuse connection
+                // Refuse connection
                 return false;
             }
             #endregion
 
             #region Methods
-            public abstract bool Login(string username, string password);
-            public abstract bool Select(string path);
-            public abstract void Close();
-            #endregion
-        }
-
-        /// <summary>
-        /// Context of POP3 session.
-        /// </summary>
-        internal class POP3Resource : MailResource
-        {
-            public static POP3Resource Create(string hostname, int port)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override void Close()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool Login(string username, string password)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool Select(string path)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        /// <summary>
-        /// Context of NNTP session.
-        /// </summary>
-        internal class NNTPResource : MailResource
-        {
-            public override void Close()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool Login(string username, string password)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool Select(string path)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        /// <summary>
-        /// Context of IMAP session.
-        /// </summary>
-        internal class ImapResource : MailResource
-        {
-            private enum Status { OK, NO, BAD, None };
-            class ImapResponse
-            {
-                public string Tag { get; set; }
-                public Status Status { get; set; }
-                public string Body { get; set; }
-                public byte[] Raw { get; set; }
-
-                public static bool TryParse(byte[] buffer, out ImapResponse response)
-                {
-                    response = new ImapResponse();
-
-                    int index = 0;
-
-                    //Tag
-                    if (buffer[index] == UnTaggedTag)
-                    {
-                        response.Tag = UnTaggedTag.ToString();
-                        index++;
-                    }
-                    else if (buffer[index] == ContinousTag)
-                    {
-                        response.Tag = ContinousTag.ToString();
-                        index++;
-                    }
-                    else if (buffer[index] == TagPrefix)
-                    {
-                        index++;
-                        while (index < buffer.Length && buffer[index] >= '0' && buffer[index] <= '9')
-                            index++;
-
-                        response.Tag = Encoding.ASCII.GetString(buffer, 0, index);
-                    }
-
-                    if (index < buffer.Length && buffer[index] == ' ')
-                        index++;
-
-                    //Status
-                    if (index + 1 < buffer.Length)
-                    {
-                        if (buffer[index] == 'N' && buffer[index + 1] == 'O')
-                        {
-                            response.Status = Status.NO;
-                            index += 2;
-                        }
-                        else if (buffer[index] == 'O' && buffer[index + 1] == 'K')
-                        {
-                            response.Status = Status.OK;
-                            index += 2;
-                        }
-                        else if (index + 2 < buffer.Length && buffer[index] == 'D' && buffer[index + 1] == 'A' && buffer[index + 2] == 'D')
-                        {
-                            response.Status = Status.BAD;
-                            index += 3;
-                        }
-                        else
-                            response.Status = Status.None;
-                    }
-
-                    //Body
-                    response.Body = Encoding.ASCII.GetString(buffer, index, buffer.Length - index);
-                    response.Raw = buffer.Slice(0, buffer.Length);
-
-                    return true;
-                }
-            }
-
-            #region Constants
-            const char UnTaggedTag = '*';
-            const char ContinousTag = '+';
-            const char TagPrefix = 'A';
-            #endregion
-
-            #region Props
-            private int _tag = 0;
-            #endregion
-
-            #region Constructors
-            private ImapResource() { }
-
-            public static ImapResource Create(MailBoxInfo info, Stream stream)
-            {
-                ImapResource resource = new ImapResource();
-                resource._stream = stream;
-
-                List<ImapResponse> responses = resource.Receive();
-
-                return (responses[0].Status == Status.OK) ? resource : null;
-            }
-            #endregion
-
-            #region Methods
-            public bool StartTLS(bool sslValidation, MailBoxInfo info)
-            {
-                string messageTag = $"{TagPrefix}{_tag.ToString()}";
-                string command = $"{messageTag} STARTTLS\r\n";
-                
-                Write(command);
-
-                bool completed = false;
-                while (!completed)
-                {
-                    List<ImapResponse> responses = Receive();
-                    foreach (var response in responses)
-                        if (response.Tag == messageTag)
-                            if (response.Status != Status.OK)
-                                return false;
-                            else
-                                completed = true;
-                }
-
-                SslStream stream;
-                if (sslValidation)
-                    stream = new SslStream(_stream, false, ValidateServerCertificate);
-                else
-                    stream = new SslStream(_stream, false, (sender, certificate, chain, sslPolicyErrors) => true);
-
-                stream.AuthenticateAsClient(info.Hostname);
-                _stream = stream;
-                return true;
-            }
-
-            private void Write(string command)
-            {
-                _stream.Write(Encoding.ASCII.GetBytes(command));
-                _tag++;
-            }
-
-            private List<ImapResponse> Receive(bool wait = true)
+            /// <summary>
+            /// Receive bytes. The bytes represents responses from server and has to be ended \r\n.
+            /// </summary>
+            /// <param name="wait">Set false, if you don't want to wait until response arrived.</param>
+            /// <returns>Returns bytes ended by \r\n, or null if there is no response and you don't want to wait for response.</returns>
+            protected byte[] ReceiveBytes(bool wait = true)
             {
                 byte[] buffer = new byte[2];
                 int length = 0;
@@ -1189,15 +1098,435 @@ namespace Pchp.Library
                     buffer = newBuffer;
                 }
 
+                return buffer;
+            }
+            protected abstract bool StartTLS(bool sslValidation);
+            public abstract bool Login(string username, string password);
+            public abstract bool Select(string path);
+            public abstract void Close();
+            #endregion
+        }
+
+        /// <summary>
+        /// Context of POP3 session.
+        /// </summary>
+        internal class POP3Resource : MailResource
+        {
+            /// <summary>
+            /// Represents a status of received message. There are two types in POP3.
+            /// </summary>
+            private enum Status { OK, ERR, None};
+
+            /// <summary>
+            /// Represents a response from a server. 
+            /// </summary>
+            class POP3Response
+            {
+                /// <summary>
+                /// Status of sent command.
+                /// </summary>
+                public Status Status { get; set; } = Status.None;
+                /// <summary>
+                /// The rest of message.
+                /// </summary>
+                public string Body { get; set; } = null;
+                /// <summary>
+                /// Complete message delimeted by \r\n sequence(Common ending sequence in POP3).
+                /// </summary>
+                public byte[] Raw { get; set; } = null;
+                /// <summary>
+                /// Tries to parse a server response.
+                /// </summary>
+                /// <param name="buffer">Buffer, which contains one message ended by \r\n.</param>
+                /// <param name="response">The result.</param>
+                /// <returns> If the header hasn't the standard form, Only Raw property is filled.</returns>
+                public static bool TryParse(byte[] buffer, out POP3Response response)
+                {
+                    response = new POP3Response();
+                    if (buffer == null)
+                        return false;
+
+                    int index = 0;
+
+                    // Status
+                    if (buffer.Length >= 3 && buffer[index] == OkTag[0] && buffer[index + 1] == OkTag[1] && buffer[index + 2] == OkTag[2])
+                    {
+                        response.Status = Status.OK;
+                        index = index + 3;
+                    }
+                    else if (buffer.Length >= 4 && buffer[index] == ErrTag[0] && buffer[index + 1] == ErrTag[1] && buffer[index + 2] == ErrTag[2] && buffer[index + 3] == ErrTag[3])
+                    {
+                        response.Status = Status.ERR;
+                        index = index + 4;
+                    }
+                    else
+                    {
+                        response.Status = Status.None;
+                    }
+
+                    if (index < buffer.Length && buffer[index] == ' ')
+                        index++;
+
+                    // Body
+                    response.Body = Encoding.ASCII.GetString(buffer, index, buffer.Length - index);
+                    response.Raw = buffer;
+
+                    return true;
+                }
+            }
+
+            #region Constants
+            const string OkTag = "+OK";
+            const string ErrTag = "-ERR";
+            #endregion
+
+            #region Constructors
+
+            /// <summary>
+            /// Creates IMAP client.
+            /// </summary>
+            /// <param name="stream">A stream which is connected to server.</param>
+            /// <returns>Returns the client or null if there is problem with receiving an initial message.</returns>
+            public static POP3Resource Create(Stream stream)
+            {
+                POP3Resource resource = new POP3Resource();
+                resource._stream = stream;
+
+                List<POP3Response> responses = resource.Receive();
+
+                return (responses != null && responses.Count != 0 && responses[0].Status == Status.OK) ? resource : null;
+            }
+            #endregion
+
+            #region Methods
+            /// <summary>
+            /// Executes the command STLS.
+            /// </summary>
+            /// <param name="sslValidation">Set false if you don't want certificate validation.</param>
+            /// <returns>Returns true on success, false otherwise.</returns>
+            protected override bool StartTLS(bool sslValidation)
+            {
+                string command = $"STLS\r\n";
+                Write(command);
+
+                List<POP3Response> responses = Receive();
+                    if (responses[0].Status != Status.OK) //It should be the first message.
+                        return false;
+
+                var stream = MakeSslConection(_stream, _info);
+                if (stream == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    _stream = stream;
+                    return true;
+                }
+            }
+
+            /// <summary>
+            /// Writes command into stream.
+            /// </summary>
+            /// <param name="command">An POP3 command.</param>
+            private void Write(string command)
+            {
+                _stream.Write(Encoding.ASCII.GetBytes(command));
+            }
+
+            /// <summary>
+            /// Receives a response from server. Server can send more than one response.
+            /// </summary>
+            /// <param name="wait">Set false, if you don't want to wait until response arrived.</param>
+            /// <returns>Returns response(s), or null if there is no response and you don't want to wait for response.</returns>
+            private List<POP3Response> Receive(bool wait = true)
+            {
+                byte[] buffer = ReceiveBytes(wait);
+                if (buffer == null)
+                    return null;
+
+                List<POP3Response> responses = new List<POP3Response>();
+                int startIndex = 0;
+                for (int i = 1; i < buffer.Length; i++)
+                {
+                    if (buffer[i] == '\n' && buffer[i - 1] == '\r') // Split the message (Server's responses are ended by \r\n sequence) 
+                    {
+                        if (POP3Response.TryParse(buffer.Slice(startIndex, i - startIndex + 1), out POP3Response pop3))
+                            responses.Add(pop3);
+
+                        startIndex = i + 1;
+                    }
+                }
+
+                return responses;
+            }
+
+            /// <summary>
+            /// Executes commands USER {username} and PASS {password.}
+            /// </summary>
+            /// <returns>Returns true on success or false on failure.</returns>
+            public override bool Login(string username, string password)
+            {
+                Write($"USER {username}\r\n");
+
+                List<POP3Response> responses = Receive();
+                if (responses == null || responses.Count == 0 || responses[0].Status != Status.OK)
+                    return false;
+
+                Write($"PASS {password}\r\n");
+                
+                responses = Receive();
+                return ((responses != null || responses.Count != 0) && responses[0].Status == Status.OK);
+            }
+
+            public override bool Select(string path) => throw new NotImplementedException();
+
+            public override void Close() => FreeManaged();
+
+            protected override void FreeManaged()
+            {
+                _stream.Close();
+                _stream.Dispose();
+                base.FreeManaged();
+            }
+            #endregion
+        }
+
+        /// <summary>
+        /// Context of NNTP session.
+        /// </summary>
+        internal class NNTPResource : MailResource
+        {
+            public override void Close()
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool Login(string username, string password)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool Select(string path)
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override bool StartTLS(bool sslValidation)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Context of IMAP session.
+        /// </summary>
+        internal class ImapResource : MailResource
+        {
+            /// <summary>
+            /// Represents a status of received message. There are three types in IMAP.
+            /// </summary>
+            private enum Status { OK, NO, BAD, None };
+
+            /// <summary>
+            /// Represents a response from a server. 
+            /// </summary>
+            class ImapResponse
+            {
+                /// <summary>
+                /// Tag used by IMAP for monitoring status of a command.
+                /// </summary>
+                public string Tag { get; set; } = null;
+                /// <summary>
+                /// Status of sent command.
+                /// </summary>
+                public Status Status { get; set; } = Status.None;
+                /// <summary>
+                /// The rest of message.
+                /// </summary>
+                public string Body { get; set; } = null;
+                /// <summary>
+                /// Complete message delimeted by \r\n sequence(Common ending sequence in IMAP).
+                /// </summary>
+                public byte[] Raw { get; set; } = null;
+
+                /// <summary>
+                /// Tries to parse a server response.
+                /// </summary>
+                /// <param name="buffer">Buffer, which contains one message ended by \r\n.</param>
+                /// <param name="response">The result.</param>
+                /// <returns> If the header hasn't the standard form, Only Raw property is filled.</returns>
+                public static bool TryParse(byte[] buffer, out ImapResponse response)
+                {
+                    response = new ImapResponse();
+                    if (buffer == null)
+                        return false;
+
+                    int index = 0;
+
+                    // Tag property
+                    if (buffer[index] == UnTaggedTag)
+                    {
+                        response.Tag = UnTaggedTag.ToString();
+                        index++;
+                    }
+                    else if (buffer[index] == ContinousTag)
+                    {
+                        response.Tag = ContinousTag.ToString();
+                        index++;
+                    }
+                    else if (buffer[index] == TagPrefix)
+                    {
+                        index++;
+                        while (index < buffer.Length && buffer[index] >= '0' && buffer[index] <= '9')
+                            index++;
+
+                        response.Tag = Encoding.ASCII.GetString(buffer, 0, index);
+                    }
+
+                    if (index < buffer.Length && buffer[index] == ' ')
+                        index++;
+
+                    // Status property
+                    if (index + 1 < buffer.Length)
+                    {
+                        if (buffer[index] == 'N' && buffer[index + 1] == 'O')
+                        {
+                            response.Status = Status.NO;
+                            index += 2;
+                        }
+                        else if (buffer[index] == 'O' && buffer[index + 1] == 'K')
+                        {
+                            response.Status = Status.OK;
+                            index += 2;
+                        }
+                        else if (index + 2 < buffer.Length && buffer[index] == 'D' && buffer[index + 1] == 'A' && buffer[index + 2] == 'D')
+                        {
+                            response.Status = Status.BAD;
+                            index += 3;
+                        }
+                        else
+                            response.Status = Status.None;
+                    }
+
+                    // Body property
+                    response.Body = Encoding.ASCII.GetString(buffer, index, buffer.Length - index);
+
+                    // Raw property
+                    response.Raw = buffer;
+
+                    return true;
+                }
+            }
+
+            #region Constants
+            // Tags belong to responses from a server.
+            const char UnTaggedTag = '*';
+            const char ContinousTag = '+';
+            const char TagPrefix = 'A';
+            #endregion
+
+            #region Properties
+            /// <summary>
+            /// Represents next number of tag, which will be used to send new message to server in format {TagPrefix}{_tag}.
+            /// </summary>
+            private int _tag = 0;
+            #endregion
+
+            #region Constructors
+            private ImapResource() {}
+
+            /// <summary>
+            /// Creates IMAP client.
+            /// </summary>
+            /// <param name="stream">A stream which is connected to server.</param>
+            /// <returns>Returns the client or null if there is problem with receiving an initial message.</returns>
+            public static ImapResource Create(Stream stream)
+            {
+                ImapResource resource = new ImapResource();
+                resource._stream = stream;
+
+                // The server should send an initial message.
+                List<ImapResponse> responses = resource.Receive();
+                if (responses == null || responses.Count == 0)
+                    return null;
+
+                // First message should contain information about connection status.
+                return (responses[0].Status == Status.OK) ? resource : null;
+            }
+            #endregion
+
+            #region Methods
+
+            /// <summary>
+            /// Executes the command STARTTLS.
+            /// </summary>
+            /// <param name="sslValidation">Set false if you don't want certificate validation.</param>
+            /// <returns>Returns true on success, false otherwise.</returns>
+            protected override bool StartTLS(bool sslValidation = true)
+            {
+                string messageTag = $"{TagPrefix}{_tag.ToString()}";
+                string command = $"{messageTag} STARTTLS\r\n";
+                Write(command);
+
+                bool completed = false;
+                while (!completed) // Waits until command is completed(Server sends OK message with right messageTag)
+                {
+                    List<ImapResponse> responses = Receive();
+                    if (responses == null || responses.Count == 0)
+                        continue;
+
+                    /* Server can send more then one messages. 
+                     * We have to find the one, which contains information about command status.
+                     * */
+                    foreach (var response in responses)
+                        if (response.Tag == messageTag) // There has to be message with right tag.
+                            if (response.Status != Status.OK) // Returns, if command failed.
+                                return false;
+                            else
+                                completed = true;
+                }
+
+                var stream = MakeSslConection(_stream, _info);
+                if (stream == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    _stream = stream;
+                    return true;
+                }
+            }
+
+            /// <summary>
+            /// Writes command into stream and increment the tag.
+            /// </summary>
+            /// <param name="command">An IMAP command.</param>
+            private void Write(string command)
+            {
+                _stream.Write(Encoding.ASCII.GetBytes(command));
+                _tag++;
+            }
+
+            /// <summary>
+            /// Receives a response from server. Server can send more than one response.
+            /// </summary>
+            /// <param name="wait">Set false, if you don't want to wait until response arrived.</param>
+            /// <returns>Returns response(s), or null if there is no response and you don't want to wait for response.</returns>
+            private List<ImapResponse> Receive(bool wait = true)
+            {
+                byte[] buffer = ReceiveBytes(wait);
+                if (buffer == null)
+                    return null;
+
                 List<ImapResponse> responses = new List<ImapResponse>();
                 int startIndex = 0;
                 for (int i = 1; i < buffer.Length; i++)
                 {
-                    if (buffer[i] == '\n' && buffer[i - 1] == '\r') // Split
+                    if (buffer[i] == '\n' && buffer[i - 1] == '\r') // Split the message (Server's responses are ended by \r\n sequence)  
                     {
-                        if (!ImapResponse.TryParse(buffer.Slice(startIndex, i - startIndex + 1), out ImapResponse imap))
-                            return null;
-                        else
+                        if (ImapResponse.TryParse(buffer.Slice(startIndex, i - startIndex + 1), out ImapResponse imap))
                             responses.Add(imap);
 
                         startIndex = i + 1;
@@ -1207,13 +1536,16 @@ namespace Pchp.Library
                 return responses;
             }
 
+            /// <summary>
+            /// Executes command LOGIN {username} {password}.
+            /// </summary>
+            /// <returns>Returns true on success or false on failure.</returns>
             public override bool Login(string username, string password)
             {
                 string messageTag = $"{TagPrefix}{_tag.ToString()}";
-
                 Write($"{messageTag} LOGIN {username} {password}\r\n");
 
-                while (true)
+                while (true) // Waits for the response.
                 {
                     List<ImapResponse> responses = Receive();
                     foreach (var response in responses)
@@ -1222,13 +1554,17 @@ namespace Pchp.Library
                 }
             }
 
+            /// <summary>
+            /// Excutes command SELECT {path}.
+            /// </summary>
+            /// <param name="path">The path in mailbox.</param>
+            /// <returns>Returns true on success or false on failure.</returns>
             public override bool Select(string path)
             {
                 string messageTag = $"{TagPrefix}{_tag.ToString()}";
-
                 Write($"{messageTag} SELECT {path}\r\n");
 
-                while (true)
+                while (true) // Waits for the response.
                 {
                     List<ImapResponse> responses = Receive();
                     foreach (var response in responses)
@@ -1549,6 +1885,9 @@ namespace Pchp.Library
 
         #region connection, errors, quotas
 
+        /// <summary>
+        /// Represents parsed "conection string" from image_open.
+        /// </summary>
         internal class MailBoxInfo
         {
             public string Hostname { get; set; }
@@ -1682,7 +2021,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpResource imap_open(string mailbox, string username , string password, int options, int n_retries, PhpArray @params)
         {
-            // Unsupported flags: authuser, debug, (nntp, pop3 - can be done), (validate-cert - maybe can be done), readonly
+            // Unsupported flags: authuser, debug, (nntp - can be done), readonly
             // Unsupported options: OP_SECURE, OP_PROTOTYPE, OP_SILENT, OP_SHORTCACHE, OP_DEBUG, OP_READONLY, OP_ANONYMOUS, OP_HALFOPEN, CL_EXPUNGE
             // Unsupported n_retries, params
 
@@ -1703,16 +2042,15 @@ namespace Pchp.Library
                     return null;
                 if (!resource.Login(username, password))
                     return null;
-                
-                if (String.IsNullOrEmpty(info.MailBoxName))
-                {
-                    resource.Select("INBOX");
-                }
-                else
-                {
-                    resource.Select(info.MailBoxName);
-                }
 
+                if (resource is ImapResource imap) // There is only one folder in POP3.
+                {
+                    if (String.IsNullOrEmpty(info.MailBoxName))
+                        imap.Select("INBOX");
+                    else
+                        imap.Select(info.MailBoxName);
+                }
+      
                 return resource;
             }
             catch (SocketException)
