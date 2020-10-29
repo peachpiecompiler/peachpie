@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Microsoft.Cci;
+using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -45,6 +46,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return new PointerTypeSymbol(type, CSharpCustomModifier.Convert(customModifiers));
         }
 
+        internal override TypeSymbol MakeFunctionPointerTypeSymbol(CallingConvention callingConvention, ImmutableArray<ParamInfo<TypeSymbol>> returnAndParamTypes)
+        {
+            throw new NotImplementedException();
+        }
+
         internal override TypeSymbol GetEnumUnderlyingType(PEModuleSymbol moduleSymbol, TypeSymbol type)
         {
             return type.GetEnumUnderlyingType();
@@ -53,23 +59,6 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override Cci.PrimitiveTypeCode GetPrimitiveTypeCode(PEModuleSymbol moduleSymbol, TypeSymbol type)
         {
             return type.PrimitiveTypeCode;            
-        }
-
-        internal override bool IsAcceptedVolatileModifierType(PEModuleSymbol moduleSymbol, TypeSymbol type)
-        {
-            return type.SpecialType == SpecialType.System_Runtime_CompilerServices_IsVolatile;
-        }
-
-        internal override bool IsAcceptedInAttributeModifierType(TypeSymbol type)
-        {
-            // ref-readonly parameters and return types are not supported
-            return false;
-        }
-
-        internal override bool IsAcceptedUnmanagedTypeModifierType(TypeSymbol type)
-        {
-            // Unmanaged generic type constraints are not supported
-            return false;
         }
 
         internal override TypeSymbol GetSZArrayTypeSymbol(PEModuleSymbol moduleSymbol, TypeSymbol elementType, ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers)

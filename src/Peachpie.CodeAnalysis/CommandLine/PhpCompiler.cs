@@ -65,7 +65,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             public ResourceDescription Resources;
         }
 
-        public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger)
+        public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger, ImmutableArray<AnalyzerConfigOptionsResult> analyzerConfigOptions)
         {
             bool hadErrors = false;
             var sourceFiles = Arguments.SourceFiles;
@@ -339,9 +339,9 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         internal new string GetAssemblyFileVersion() => GetVersion();
 
-        protected override ImmutableArray<DiagnosticAnalyzer> ResolveAnalyzersFromArguments(List<DiagnosticInfo> diagnostics, CommonMessageProvider messageProvider)
+        protected override void ResolveAnalyzersFromArguments(List<DiagnosticInfo> diagnostics, CommonMessageProvider messageProvider, out ImmutableArray<DiagnosticAnalyzer> analyzers, out ImmutableArray<ISourceGenerator> generators)
         {
-            return Arguments.ResolveAnalyzersFromArguments(Constants.PhpLanguageName, diagnostics, messageProvider, AssemblyLoader);
+            Arguments.ResolveAnalyzersFromArguments(Constants.PhpLanguageName, diagnostics, messageProvider, AssemblyLoader, out analyzers, out generators);
         }
 
         protected override bool TryGetCompilerDiagnosticCode(string diagnosticId, out uint code)

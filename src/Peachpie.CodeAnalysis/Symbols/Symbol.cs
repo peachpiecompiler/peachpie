@@ -1166,6 +1166,8 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        bool ISymbol.Equals(ISymbol other, SymbolEqualityComparer equalityComparer) => this.Equals((object)other);
+
         #endregion
 
         #region ISymbolInternal

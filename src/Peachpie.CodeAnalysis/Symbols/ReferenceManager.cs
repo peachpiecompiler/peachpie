@@ -54,19 +54,10 @@ namespace Pchp.CodeAnalysis
 
             internal override ImmutableArray<MetadataReference> ExplicitReferences => _lazyExplicitReferences;
 
-            internal override ImmutableArray<MetadataReference> ImplicitReferences => _lazyImplicitReferences;
-
-            internal override IEnumerable<KeyValuePair<AssemblyIdentity, PortableExecutableReference>> GetImplicitlyResolvedAssemblyReferences()
-            {
-                foreach (var pair in _metadataMap)
-                {
-                    var per = pair.Value as PortableExecutableReference;
-                    if (per != null)
-                    {
-                        yield return new KeyValuePair<AssemblyIdentity, PortableExecutableReference>(pair.Key.Identity, per);
-                    }
-                }
-            }
+            internal override ImmutableDictionary<AssemblyIdentity, PortableExecutableReference> ImplicitReferenceResolutions =>
+                _metadataMap
+                    .Where(kvp => kvp.Value is PortableExecutableReference)
+                    .ToImmutableDictionary(kvp => kvp.Key.Identity, kvp => (PortableExecutableReference)kvp.Value);
 
             internal override MetadataReference GetMetadataReference(IAssemblySymbolInternal assemblySymbol) => _metadataMap.TryGetOrDefault((IAssemblySymbol)assemblySymbol);
 

@@ -256,6 +256,8 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        protected override ITypeSymbol CommonScriptGlobalsType => null;
+
         protected override INamespaceSymbol CommonGlobalNamespace
         {
             get
@@ -427,6 +429,11 @@ namespace Pchp.CodeAnalysis
         }
 
         private DiagnosticBag _lazyDeclarationDiagnostics;
+
+        private protected override bool IsSymbolAccessibleWithinCore(ISymbol symbol, ISymbol within, ITypeSymbol throughType)
+        {
+            throw new NotImplementedException();
+        }
 
         public override ImmutableArray<Diagnostic> GetParseDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -614,6 +621,17 @@ namespace Pchp.CodeAnalysis
             return new PointerTypeSymbol((TypeSymbol)elementType);
         }
 
+        protected override IFunctionPointerTypeSymbol CommonCreateFunctionPointerTypeSymbol(ITypeSymbol returnType, RefKind returnRefKind,
+            ImmutableArray<ITypeSymbol> parameterTypes, ImmutableArray<RefKind> parameterRefKinds)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override INamedTypeSymbol CommonCreateNativeIntegerTypeSymbol(bool signed)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override INamedTypeSymbol CommonCreateAnonymousTypeSymbol(ImmutableArray<ITypeSymbol> memberTypes, ImmutableArray<string> memberNames, ImmutableArray<Location> memberLocations, ImmutableArray<bool> memberIsReadOnly, ImmutableArray<NullableAnnotation> memberNullableAnnotations)
         {
             throw new NotImplementedException();
@@ -623,6 +641,9 @@ namespace Pchp.CodeAnalysis
         {
             throw new NotImplementedException();
         }
+
+        private protected override MetadataReference CommonGetMetadataReference(IAssemblySymbol assemblySymbol) =>
+            GetBoundReferenceManager().GetMetadataReference((IAssemblySymbolInternal)assemblySymbol);
 
         protected override INamespaceSymbol CommonGetCompilationNamespace(INamespaceSymbol namespaceSymbol)
         {
@@ -791,11 +812,16 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
-        internal override AnalyzerDriver AnalyzerForLanguage(ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerManager analyzerManager)
+        internal override AnalyzerDriver CreateAnalyzerDriver(ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerManager analyzerManager, SeverityFilter severityFilter)
         {
-            Func<SyntaxNode, int> getKind = node => node.RawKind;
-            Func<SyntaxTrivia, bool> isComment = trivia => false;
-            return new AnalyzerDriver<int>(analyzers, getKind, analyzerManager, isComment);
+            static int GetKind(SyntaxNode node) => node.RawKind;
+            static bool IsComment(SyntaxTrivia trivia) => false;
+            return new AnalyzerDriver<int>(analyzers, GetKind, analyzerManager, severityFilter, IsComment);
+        }
+
+        internal override void SerializePdbEmbeddedCompilationOptions(BlobBuilder builder)
+        {
+            throw new NotImplementedException();
         }
 
         internal override CommonReferenceManager CommonGetBoundReferenceManager()
@@ -822,6 +848,11 @@ namespace Pchp.CodeAnalysis
         internal override ISymbolInternal CommonGetWellKnownTypeMember(WellKnownMember member)
         {
             return GetWellKnownTypeMember(member);
+        }
+
+        internal override ITypeSymbolInternal CommonGetWellKnownType(WellKnownType wellknownType)
+        {
+            return GetWellKnownType(wellknownType);
         }
 
         internal override int CompareSourceLocations(Location loc1, Location loc2)
