@@ -135,6 +135,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public IReadOnlyCollection<(string prefix, string path)> Autoload_PSR4 { get; internal set; }
 
+        /// <summary>
+        /// Global Nullable context options.
+        /// </summary>
+        public override NullableContextOptions NullableContextOptions { get; protected set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -178,7 +183,8 @@ namespace Pchp.CodeAnalysis
             ImmutableArray<Diagnostic> diagnostics = default,
             PhpParseOptions parseOptions = null,
             ImmutableDictionary<string, string> defines = default,
-            bool referencesSupersedeLowerVersions = false)
+            bool referencesSupersedeLowerVersions = false,
+            NullableContextOptions nullableContextOptions = NullableContextOptions.Disable)
             : this(outputKind, baseDirectory, sdkDirectory, subDirectory, targetFramework,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    versionString,
@@ -200,7 +206,8 @@ namespace Pchp.CodeAnalysis
                    diagnostics: diagnostics,
                    defines: defines,
                    parseOptions: parseOptions,
-                   referencesSupersedeLowerVersions: referencesSupersedeLowerVersions)
+                   referencesSupersedeLowerVersions: referencesSupersedeLowerVersions,
+                   nullableContextOptions: nullableContextOptions)
         {
         }
 
@@ -242,7 +249,8 @@ namespace Pchp.CodeAnalysis
             ImmutableArray<Diagnostic> diagnostics,
             PhpParseOptions parseOptions,
             ImmutableDictionary<string, string> defines,
-            bool referencesSupersedeLowerVersions)
+            bool referencesSupersedeLowerVersions,
+            NullableContextOptions nullableContextOptions)
             : base(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel.AsOptimizationLevel(), checkOverflow,
                    platform, generalDiagnosticOption, warningLevel, specificDiagnosticOptions.ToImmutableDictionaryOrEmpty(),
@@ -261,6 +269,7 @@ namespace Pchp.CodeAnalysis
             this.VersionString = versionString;
             this.OptimizationLevel = optimizationLevel;
             this.Defines = defines;
+            this.NullableContextOptions = nullableContextOptions;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
@@ -300,7 +309,8 @@ namespace Pchp.CodeAnalysis
             diagnostics: other.Diagnostics,
             parseOptions: other.ParseOptions,
             defines: other.Defines,
-            referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions)
+            referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions,
+            nullableContextOptions: other.NullableContextOptions)
         {
             EventSources = other.EventSources;
             Autoload_ClassMapFiles = other.Autoload_ClassMapFiles;

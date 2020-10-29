@@ -120,6 +120,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal virtual ImportValueAttributeData ImportValueAttributeData => default;
 
+        NullableAnnotation IParameterSymbol.NullableAnnotation => NullableAnnotation.None;
+
         /// <summary>
         /// Helper method that checks whether this parameter can be passed to anothers method parameter.
         /// </summary>

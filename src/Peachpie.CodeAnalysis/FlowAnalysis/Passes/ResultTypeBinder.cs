@@ -85,7 +85,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var op = DeclaringCompilation.Conversions.ResolveOperator(type, hasref, new[] { opName }, new[] { DeclaringCompilation.CoreTypes.Operators.Symbol });
                 if (op != null)
                 {
-                    expression.BoundConversion = new CommonConversion(true, false, false, false, true, op);
+                    expression.BoundConversion = new CommonConversion(true, false, false, false, true, false, op);
                     type = op.ReturnType;
                 }
                 else

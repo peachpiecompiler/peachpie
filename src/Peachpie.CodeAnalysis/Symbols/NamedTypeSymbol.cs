@@ -520,6 +520,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         INamedTypeSymbol INamedTypeSymbol.TupleUnderlyingType => TupleUnderlyingType;
 
+        ImmutableArray<NullableAnnotation> INamedTypeSymbol.TypeArgumentNullableAnnotations => TypeArguments.SelectAsArray(a => ((ITypeSymbol)a).NullableAnnotation);
+
         #endregion
 
         #region ISymbol Members
@@ -569,6 +571,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public NamedTypeSymbol ConstructUnboundGenericType()
         {
             return OriginalDefinition.AsUnboundGenericType();
+        }
+
+        INamedTypeSymbol INamedTypeSymbol.Construct(ImmutableArray<ITypeSymbol> typeArguments, ImmutableArray<NullableAnnotation> typeArgumentNullableAnnotations)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

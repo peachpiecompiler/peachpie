@@ -318,6 +318,8 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return this.OriginalDefinition; }
         }
 
+        NullableAnnotation IFieldSymbol.NullableAnnotation => NullableAnnotation.None;
+
         #endregion
 
         #region ISymbol Members

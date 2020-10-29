@@ -366,6 +366,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<CustomModifier> IPropertySymbol.RefCustomModifiers => ImmutableArray<CustomModifier>.Empty;
 
+        NullableAnnotation IPropertySymbol.NullableAnnotation => NullableAnnotation.None;
+
         #endregion
 
         #region ISymbol Members
