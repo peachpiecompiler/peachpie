@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Cci = Microsoft.Cci;
 
@@ -15,7 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents a type other than an array, a pointer, a type parameter, and dynamic.
     /// </summary>
-    internal abstract partial class NamedTypeSymbol : TypeSymbol, INamedTypeSymbol
+    internal abstract partial class NamedTypeSymbol : TypeSymbol, INamedTypeSymbol, INamedTypeSymbolInternal
     {
         public abstract int Arity { get; }
 
@@ -116,6 +117,8 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         INamedTypeSymbol INamedTypeSymbol.EnumUnderlyingType => EnumUnderlyingType;
+
+        INamedTypeSymbolInternal INamedTypeSymbolInternal.EnumUnderlyingType => EnumUnderlyingType;
 
         internal abstract bool HasTypeArgumentsCustomModifiers { get; }
 

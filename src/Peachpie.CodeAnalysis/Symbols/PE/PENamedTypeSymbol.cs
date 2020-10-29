@@ -734,7 +734,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override IModuleSymbol ContainingModule
+        internal override ModuleSymbol ContainingModule
         {
             get
             {

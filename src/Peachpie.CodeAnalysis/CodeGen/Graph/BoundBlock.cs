@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;

@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override AssemblySymbol ContainingAssembly => _sourceModule.ContainingAssembly;
 
-        internal override IModuleSymbol ContainingModule => _sourceModule;
+        internal override ModuleSymbol ContainingModule => _sourceModule;
 
         public override Symbol ContainingSymbol => _sourceModule;
 
@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override AssemblySymbol ContainingAssembly => _sourceModule.ContainingAssembly;
 
-        internal override IModuleSymbol ContainingModule => _sourceModule;
+        internal override ModuleSymbol ContainingModule => _sourceModule;
 
         public override Symbol ContainingSymbol => _sourceModule;
 

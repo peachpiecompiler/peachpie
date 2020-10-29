@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using Cci = Microsoft.Cci;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using System;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -11,7 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents a namespace.
     /// </summary>
-    internal abstract partial class NamespaceSymbol : NamespaceOrTypeSymbol, INamespaceSymbol
+    internal abstract partial class NamespaceSymbol : NamespaceOrTypeSymbol, INamespaceSymbol, INamespaceSymbolInternal
     {
         /// <summary>
         /// Get all the members of this symbol that are namespaces.
@@ -85,7 +86,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public abstract override AssemblySymbol ContainingAssembly { get; }
 
-        internal override IModuleSymbol ContainingModule
+        internal override ModuleSymbol ContainingModule
         {
             get
             {

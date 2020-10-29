@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;

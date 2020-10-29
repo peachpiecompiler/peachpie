@@ -12,13 +12,14 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Represents a field in a class, struct or enum
     /// </summary>
-    internal abstract partial class FieldSymbol : Symbol, IFieldSymbol, IPhpValue
+    internal abstract partial class FieldSymbol : Symbol, IFieldSymbol, IFieldSymbolInternal, IPhpValue
     {
         internal FieldSymbol()
         {

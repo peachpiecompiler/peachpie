@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
