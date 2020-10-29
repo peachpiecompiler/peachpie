@@ -602,6 +602,9 @@ namespace Peachpie.Library.Network
                     // Expect: 100-continue header and
                     // use chunked encoding to upload a file of unknown size if you are using HTTP/1.1
                     return true; // enable data upload
+                case CURLOPT_NOSIGNAL:
+                    // ignored
+                    return true;
                 case CURLOPT_POST: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Post; } break;
                 case CURLOPT_PUT: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Put; } break;
                 case CURLOPT_NOBODY: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Head; } break;
@@ -833,15 +836,15 @@ namespace Peachpie.Library.Network
             return (scheme, username, password, host, port);
         }
 
-        internal static bool TryGetOption(this CURLResource ch, int option, out PhpValue value)
-        {
-            switch (option)
-            {
-                default:
-                    value = PhpValue.Null;
-                    return false;
-            }
-        }
+        //internal static bool TryGetOption(this CURLResource ch, int option, out PhpValue value)
+        //{
+        //    switch (option)
+        //    {
+        //        default:
+        //            value = PhpValue.Null;
+        //            return false;
+        //    }
+        //}
 
         /// <summary>
         /// Sets cURL option.
