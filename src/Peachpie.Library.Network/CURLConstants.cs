@@ -647,17 +647,8 @@ namespace Peachpie.Library.Network
                 case CURLOPT_HEADERFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders, callerCtx);
                 case CURLOPT_WRITEFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.StdOut, ref ch.ProcessingResponse, callerCtx);
                 case CURLOPT_READFUNCTION: return (ch.ReadFunction = value.AsCallable()) != null || value.IsNull;
-                case CURLOPT_PROGRESSFUNCTION:
-                    if (Operators.IsSet(value))
-                    {
-                        // not implemented
-                        goto default;
-                    }
-                    else
-                    {
-                        // NULL
-                        return true;
-                    }
+                case CURLOPT_NOPROGRESS: ch.Progress = !value.ToBoolean(); break;
+                case CURLOPT_PROGRESSFUNCTION: return (ch.ProgressFunction = value.AsCallable()) != null || value.IsNull;
 
                 case CURLOPT_USERAGENT: return SetOption<CurlOption_UserAgent, string>(ch, value.AsString());
                 case CURLOPT_BINARYTRANSFER: break;   // no effect
