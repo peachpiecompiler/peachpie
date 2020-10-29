@@ -306,8 +306,11 @@ namespace Pchp.CodeAnalysis.Emit
             {
                 if (!_cctorBuilders.TryGetValue(container, out il))
                 {
+                    // TODO: Check whether in some cases we cannot skip it
+                    bool areLocalsZeroed = true;
+
                     var cctor = SynthesizedManager.EnsureStaticCtor(container); // ensure .cctor is declared
-                    _cctorBuilders[container] = il = new ILBuilder(this, new LocalSlotManager(null), _compilation.Options.OptimizationLevel.AsOptimizationLevel());
+                    _cctorBuilders[container] = il = new ILBuilder(this, new LocalSlotManager(null), _compilation.Options.OptimizationLevel.AsOptimizationLevel(), areLocalsZeroed);
                 }
             }
 

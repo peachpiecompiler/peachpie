@@ -72,7 +72,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (!compilation.Options.CryptoPublicKey.IsEmpty)
             {
                 // Private key is not necessary for assembly identity, only when emitting.  For this reason, the private key can remain null.
-                _lazyStrongNameKeys = StrongNameKeys.Create(compilation.Options.CryptoPublicKey, null, Errors.MessageProvider.Instance);
+                _lazyStrongNameKeys = StrongNameKeys.Create(compilation.Options.CryptoPublicKey, privateKey: null, hasCounterSignature: false, Errors.MessageProvider.Instance);
             }
         }
 
@@ -249,7 +249,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 //}
             }
 
-            return StrongNameKeys.Create(DeclaringCompilation.Options.StrongNameProvider, keyFile, keyContainer, Errors.MessageProvider.Instance);
+            bool hasCounterSignature = !string.IsNullOrEmpty(this.SignatureKey);
+            return StrongNameKeys.Create(DeclaringCompilation.Options.StrongNameProvider, keyFile, keyContainer, hasCounterSignature, Errors.MessageProvider.Instance);
         }
 
         Version AssemblyVersionAttributeSetting

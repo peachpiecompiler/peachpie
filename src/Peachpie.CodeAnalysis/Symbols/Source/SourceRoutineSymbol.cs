@@ -511,7 +511,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var deprecated = this.PHPDocBlock?.GetElement<PHPDocBlock.DeprecatedTag>();
                 if (deprecated != null)
                 {
-                    return new ObsoleteAttributeData(ObsoleteAttributeKind.Deprecated, deprecated.Version/*==Text*/, isError: false);
+                    return new ObsoleteAttributeData(ObsoleteAttributeKind.Deprecated, deprecated.Version/*==Text*/, isError: false, diagnosticId: null, urlFormat: null);
                 }
 
                 return null;

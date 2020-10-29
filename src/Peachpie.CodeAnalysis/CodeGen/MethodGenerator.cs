@@ -31,7 +31,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     normalizedPath,
                     Constants.CorSymLanguageTypePeachpie,
                     srctext.GetChecksum(),
-                    Cci.DebugSourceDocument.GetAlgorithmGuid(srctext.ChecksumAlgorithm));
+                    SourceHashAlgorithms.GetAlgorithmGuid(srctext.ChecksumAlgorithm));
             }
             else
             {
@@ -117,7 +117,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 };
             }
 
-            ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations.AsOptimizationLevel());
+            // TODO: Check whether in some cases we cannot skip it
+            bool areLocalsZeroed = true;
+
+            ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations.AsOptimizationLevel(), areLocalsZeroed);
             try
             {
                 StateMachineMoveNextBodyDebugInfo stateMachineMoveNextDebugInfo = null;
@@ -172,6 +175,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     il.RealizedSequencePoints,
                     debugDocumentProvider,
                     il.RealizedExceptionHandlers,
+                    il.AreLocalsZeroed,
+                    hasStackalloc: false,   // No support for stackalloc in PHP
                     il.GetAllScopes(),
                     il.HasDynamicLocal,
                     null, // importScopeOpt,
@@ -251,6 +256,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     il.RealizedSequencePoints,
                     null,
                     il.RealizedExceptionHandlers,
+                    il.AreLocalsZeroed,
+                    hasStackalloc: false,   // No support for stackalloc in PHP
                     il.GetAllScopes(),
                     il.HasDynamicLocal,
                     null, // importScopeOpt,

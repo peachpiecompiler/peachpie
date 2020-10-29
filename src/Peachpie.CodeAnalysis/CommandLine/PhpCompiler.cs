@@ -158,15 +158,15 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             MetadataReferenceResolver referenceDirectiveResolver;
             var resolvedReferences = ResolveMetadataReferences(diagnostics, touchedFilesLogger, out referenceDirectiveResolver);
-            if (ReportErrors(diagnostics, consoleOutput, errorLogger))
+            if (ReportDiagnostics(diagnostics, consoleOutput, errorLogger))
             {
                 return null;
             }
 
             //
             var referenceResolver = GetCommandLineMetadataReferenceResolver(touchedFilesLogger);
-            var loggingFileSystem = new LoggingStrongNameFileSystem(touchedFilesLogger);
-            var strongNameProvider = Arguments.GetStrongNameProvider(loggingFileSystem, _tempDirectory);
+            var loggingFileSystem = new LoggingStrongNameFileSystem(touchedFilesLogger, _tempDirectory);
+            var strongNameProvider = Arguments.GetStrongNameProvider(loggingFileSystem);
 
             var compilation = PhpCompilation.Create(
                 Arguments.CompilationName,
@@ -258,7 +258,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 if (diagnosticInfos.Count != 0)
                 {
-                    ReportErrors(diagnosticInfos, consoleOutput, errorLogger);
+                    ReportDiagnostics(diagnosticInfos, consoleOutput, errorLogger);
                     hadErrors = true;
                 }
 
@@ -271,7 +271,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 if (result != null && result.Diagnostics.HasAnyErrors())
                 {
-                    ReportErrors(result.Diagnostics, consoleOutput, errorLogger);
+                    ReportDiagnostics(result.Diagnostics, consoleOutput, errorLogger);
                     hadErrors = true;
                 }
 
