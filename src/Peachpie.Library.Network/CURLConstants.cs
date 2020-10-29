@@ -596,6 +596,7 @@ namespace Peachpie.Library.Network
                 case CURLOPT_URL: return (ch.Url = value.AsString()) != null;
                 case CURLOPT_DEFAULT_PROTOCOL: return (ch.DefaultSheme = value.AsString()) != null;
                 case CURLOPT_HTTPGET: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Get; } break;
+                case CURLOPT_UPLOAD: return true; // enable data upload // we don't have to handle it
                 case CURLOPT_POST: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Post; } break;
                 case CURLOPT_PUT: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Put; } break;
                 case CURLOPT_NOBODY: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Head; } break;
