@@ -156,8 +156,7 @@ namespace Pchp.CodeAnalysis.Symbols.PE
                         }
 
                         ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers;
-                        bool isVolatile;
-                        TypeSymbol type = this.DecodeFieldSignature(ref signaturePointer, out isVolatile, out customModifiers);
+                        TypeSymbol type = this.DecodeFieldSignature(ref signaturePointer, out customModifiers);
                         return FindFieldBySignature(targetTypeSymbol, memberName, customModifiers, type);
 
                     default:

@@ -227,12 +227,11 @@ namespace Pchp.CodeAnalysis.Symbols
             if ((object)_lazyType == null)
             {
                 var moduleSymbol = _containingType.ContainingPEModule;
-                bool isVolatile;
                 ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers;
-                TypeSymbol type = (new MetadataDecoder(moduleSymbol, _containingType)).DecodeFieldSignature(_handle, out isVolatile, out customModifiers);
+                TypeSymbol type = (new MetadataDecoder(moduleSymbol, _containingType)).DecodeFieldSignature(_handle, out customModifiers);
                 ImmutableArray<CustomModifier> customModifiersArray = CSharpCustomModifier.Convert(customModifiers);
                 //type = DynamicTypeDecoder.TransformType(type, customModifiersArray.Length, _handle, moduleSymbol);
-                _lazyIsVolatile = isVolatile;
+                _lazyIsVolatile = customModifiersArray.Any(m => !m.IsOptional && m.Modifier.SpecialType == SpecialType.System_Runtime_CompilerServices_IsVolatile);
 
                 TypeSymbol fixedElementType;
                 int fixedSize;

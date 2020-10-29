@@ -82,7 +82,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var gindex = path.IndexOf('*');
             if (gindex < 0)
             {
-                return ParseFileArgument(path, baseDirectory, diagnostics);
+                return ParseFileArgument(path, baseDirectory, diagnostics).Select(file => ToCommandLineSourceFile(file));
             }
 
             var dir = baseDirectory;
@@ -146,7 +146,9 @@ namespace Pchp.CodeAnalysis.CommandLine
             // we don't care about empty folders reported as file not found,
             // this error is ment for cases where no files are enumerated at all
 
-            return ParseFileArgument(path, dir, new ConditionalList<Diagnostic>(errors, (err) => err.Code != MessageProvider.ERR_FileNotFound));
+            return
+                ParseFileArgument(path, dir, new ConditionalList<Diagnostic>(errors, (err) => err.Code != MessageProvider.ERR_FileNotFound))
+                    .Select(file => ToCommandLineSourceFile(file));
         }
 
         internal override CommandLineArguments CommonParse(IEnumerable<string> args, string baseDirectory, string sdkDirectoryOpt, string additionalReferenceDirectories)
@@ -672,7 +674,10 @@ namespace Pchp.CodeAnalysis.CommandLine
                             continue;
                         }
 
-                        embeddedFiles.AddRange(ParseSeparatedFileArgument(value, baseDirectory, diagnostics));
+                        foreach (var path in ParseSeparatedFileArgument(value, baseDirectory, diagnostics))
+                        {
+                            embeddedFiles.Add(ToCommandLineSourceFile(path));
+                        }
                         continue;
 
                     case "autoload":
