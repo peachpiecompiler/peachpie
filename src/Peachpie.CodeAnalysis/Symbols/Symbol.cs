@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.Collections;
 using Microsoft.CodeAnalysis.Text;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis
@@ -21,7 +22,7 @@ namespace Pchp.CodeAnalysis
     /// exposed by the compiler.
     /// </summary>
     [DebuggerDisplay("{GetDebuggerDisplay(), nq}")]
-    internal abstract partial class Symbol : ISymbol
+    internal abstract partial class Symbol : ISymbol, ISymbolInternal
     {
         /// <summary>
         /// Gets the name of this symbol. Symbols without a name return the empty string; null is
@@ -159,7 +160,7 @@ namespace Pchp.CodeAnalysis
         /// Returns the module containing this symbol. If this symbol is shared across multiple
         /// modules, or doesn't belong to a module, returns null.
         /// </summary>
-        internal virtual IModuleSymbol ContainingModule
+        internal virtual ModuleSymbol ContainingModule
         {
             get
             {
@@ -1164,6 +1165,26 @@ namespace Pchp.CodeAnalysis
                 return this.OriginalDefinition;
             }
         }
+
+        #endregion
+
+        #region ISymbolInternal
+
+        bool ISymbolInternal.Equals(ISymbolInternal other, TypeCompareKind compareKind) => this.Equals((object)other);
+
+        ISymbol ISymbolInternal.GetISymbol() => this;
+
+        Compilation ISymbolInternal.DeclaringCompilation => this.DeclaringCompilation;
+
+        ISymbolInternal ISymbolInternal.ContainingSymbol => this.ContainingSymbol;
+
+        IAssemblySymbolInternal ISymbolInternal.ContainingAssembly => this.ContainingAssembly;
+
+        IModuleSymbolInternal ISymbolInternal.ContainingModule => this.ContainingModule;
+
+        INamedTypeSymbolInternal ISymbolInternal.ContainingType => this.ContainingType;
+
+        INamespaceSymbolInternal ISymbolInternal.ContainingNamespace => this.ContainingNamespace;
 
         #endregion
     }

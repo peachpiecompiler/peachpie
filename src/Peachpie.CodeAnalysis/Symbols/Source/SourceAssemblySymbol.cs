@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.PooledObjects;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal sealed class SourceAssemblySymbol : NonMissingAssemblySymbol, ISourceAssemblySymbolInternal
+    internal sealed class SourceAssemblySymbol : NonMissingAssemblySymbol, ISourceAssemblySymbol, ISourceAssemblySymbolInternal
     {
         readonly string _simpleName;
         readonly PhpCompilation _compilation;
@@ -308,7 +309,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         AssemblyHashAlgorithm ISourceAssemblySymbolInternal.HashAlgorithm => HashAlgorithm;
 
-        Version ISourceAssemblySymbolInternal.AssemblyVersionPattern => AssemblyVersionPattern;
+        Version IAssemblySymbolInternal.AssemblyVersionPattern => AssemblyVersionPattern;
 
         bool ISourceAssemblySymbolInternal.InternalsAreVisible => false;
 

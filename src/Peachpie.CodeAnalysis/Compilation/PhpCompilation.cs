@@ -819,7 +819,7 @@ namespace Pchp.CodeAnalysis
             return _referenceManager;
         }
 
-        internal override ISymbol CommonGetWellKnownTypeMember(WellKnownMember member)
+        internal override ISymbolInternal CommonGetWellKnownTypeMember(WellKnownMember member)
         {
             return GetWellKnownTypeMember(member);
         }
@@ -863,7 +863,7 @@ namespace Pchp.CodeAnalysis
             return await _lazyAnalysisTask.ConfigureAwait(false);
         }
 
-        internal override bool CompileMethods(CommonPEModuleBuilder moduleBuilder, bool emittingPdb, bool emitMetadataOnly, bool emitTestCoverageData, DiagnosticBag diagnostics, Predicate<ISymbol> filterOpt, CancellationToken cancellationToken)
+        internal override bool CompileMethods(CommonPEModuleBuilder moduleBuilder, bool emittingPdb, bool emitMetadataOnly, bool emitTestCoverageData, DiagnosticBag diagnostics, Predicate<ISymbolInternal> filterOpt, CancellationToken cancellationToken)
         {
             // The diagnostics should include syntax and declaration errors. We insert these before calling Emitter.Emit, so that the emitter
             // does not attempt to emit if there are declaration errors (but we do insert all errors from method body binding...)
@@ -1157,7 +1157,7 @@ namespace Pchp.CodeAnalysis
 
             if (debugEntryPoint != null)
             {
-                moduleBeingBuilt.SetDebugEntryPoint(debugEntryPoint, diagnostics);
+                moduleBeingBuilt.SetDebugEntryPoint((IMethodSymbolInternal)debugEntryPoint, diagnostics);
             }
 
             moduleBeingBuilt.SourceLinkStreamOpt = sourceLinkStream;

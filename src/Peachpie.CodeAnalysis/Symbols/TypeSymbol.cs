@@ -8,13 +8,14 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// A TypeSymbol is a base class for all the symbols that represent a type in PHP.
     /// </summary>
-    internal abstract partial class TypeSymbol : NamespaceOrTypeSymbol, ITypeSymbol
+    internal abstract partial class TypeSymbol : NamespaceOrTypeSymbol, ITypeSymbol, ITypeSymbolInternal
     {
         #region ITypeSymbol
 
@@ -31,6 +32,8 @@ namespace Pchp.CodeAnalysis.Symbols
         ITypeSymbol ITypeSymbol.OriginalDefinition => (ITypeSymbol)this.OriginalTypeSymbolDefinition;
 
         #endregion
+
+        ITypeSymbol ITypeSymbolInternal.GetITypeSymbol() => this;
 
         internal NamedTypeSymbol BaseTypeWithDefinitionUseSiteDiagnostics(ref HashSet<DiagnosticInfo> useSiteDiagnostics)
         {

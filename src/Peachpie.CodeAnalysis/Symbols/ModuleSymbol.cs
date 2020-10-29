@@ -7,14 +7,15 @@ using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal abstract partial class ModuleSymbol : Symbol, IModuleSymbol
+    internal abstract partial class ModuleSymbol : Symbol, IModuleSymbol, IModuleSymbolInternal
     {
         ModuleReferences<AssemblySymbol> _moduleReferences;
 
-        internal override IModuleSymbol ContainingModule => null;
+        internal override ModuleSymbol ContainingModule => null;
 
         public override Accessibility DeclaredAccessibility => Accessibility.NotApplicable;
 

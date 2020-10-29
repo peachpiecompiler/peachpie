@@ -10,10 +10,11 @@ using System.Threading;
 using Roslyn.Utilities;
 using System.Diagnostics;
 using System.Reflection;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal abstract class AssemblySymbol : Symbol, IAssemblySymbol
+    internal abstract class AssemblySymbol : Symbol, IAssemblySymbol, IAssemblySymbolInternal
     {
         AssemblySymbol _corLibrary;
 

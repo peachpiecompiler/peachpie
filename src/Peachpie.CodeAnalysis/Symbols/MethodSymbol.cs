@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// Represents a method or method-like symbol (including constructor,
     /// destructor, operator, or property/event accessor).
     /// </summary>
-    internal abstract partial class MethodSymbol : Symbol, IMethodSymbol, IPhpRoutineSymbol
+    internal abstract partial class MethodSymbol : Symbol, IMethodSymbol, IMethodSymbolInternal, IPhpRoutineSymbol
     {
         public virtual int Arity => 0;
 
@@ -301,6 +302,19 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual bool IsGlobalScope => false;
 
         public BoundExpression Initializer => null; // not applicable for methods
+
+        #endregion
+
+        #region IMethodSymbolInternal
+
+        int IMethodSymbolInternal.CalculateLocalSyntaxOffset(int declaratorPosition, SyntaxTree declaratorTree)
+        {
+            throw new NotImplementedException();
+        }
+
+        IMethodSymbolInternal IMethodSymbolInternal.Construct(params ITypeSymbolInternal[] typeArguments) => Construct(typeArguments.CastToArray<ITypeSymbol>());
+
+        bool IMethodSymbolInternal.IsIterator => false;     // Peachpie produces only PHP generators, which is of a different type.
 
         #endregion
     }

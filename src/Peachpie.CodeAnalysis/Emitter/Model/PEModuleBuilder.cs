@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Emit;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Cci = Microsoft.Cci;
 using Microsoft.CodeAnalysis.Emit.NoPia;
@@ -79,7 +80,7 @@ namespace Pchp.CodeAnalysis.Emit
         #region PEModuleBuilder
 
         internal MetadataConstant CreateConstant(
-            ITypeSymbol type,
+            TypeSymbol type,
             object value,
             SyntaxNode syntaxNodeOpt,
             DiagnosticBag diagnostics)
@@ -167,7 +168,7 @@ namespace Pchp.CodeAnalysis.Emit
             {
                 var phpextensionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.PhpExtensionAttributeFullName).InstanceConstructors.First();
                 _phpextensionAttribute = new SynthesizedAttributeData(phpextensionAttributeCtor,
-                    ImmutableArray.Create(new TypedConstant(Compilation.CreateArrayTypeSymbol(Compilation.CoreTypes.String.Symbol), ImmutableArray<TypedConstant>.Empty)),  // string[] { }
+                    ImmutableArray.Create(new TypedConstant((ITypeSymbolInternal)Compilation.CreateArrayTypeSymbol(Compilation.CoreTypes.String.Symbol), ImmutableArray<TypedConstant>.Empty)),  // string[] { }
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
             }
             yield return _phpextensionAttribute;
@@ -369,7 +370,7 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        internal override IAssemblySymbol CommonCorLibrary => _compilation.CorLibrary;
+        internal override IAssemblySymbolInternal CommonCorLibrary => _compilation.CorLibrary;
 
         internal EmitOptions EmitOptions => _emitOptions;
 
@@ -762,7 +763,7 @@ namespace Pchp.CodeAnalysis.Emit
             get { return false; }   // TODO: true when GetSpecialType() will be implemented
         }
 
-        internal override IModuleSymbol CommonSourceModule => SourceModule;
+        internal override IModuleSymbolInternal CommonSourceModule => SourceModule;
 
         #endregion
 
@@ -830,7 +831,7 @@ namespace Pchp.CodeAnalysis.Emit
             return (Cci.INamedTypeReference)Translate(typeSymbol, syntaxNodeOpt, diagnostics, needDeclaration: true);
         }
 
-        internal override Cci.IAssemblyReference Translate(IAssemblySymbol iassembly, DiagnosticBag diagnostics)
+        internal override Cci.IAssemblyReference Translate(IAssemblySymbolInternal iassembly, DiagnosticBag diagnostics)
         {
             var assembly = (AssemblySymbol)iassembly;
 
@@ -907,7 +908,7 @@ namespace Pchp.CodeAnalysis.Emit
             //}
         }
 
-        internal override Cci.IMethodReference Translate(IMethodSymbol symbol, DiagnosticBag diagnostics, bool needDeclaration)
+        internal override Cci.IMethodReference Translate(IMethodSymbolInternal symbol, DiagnosticBag diagnostics, bool needDeclaration)
         {
             return Translate((MethodSymbol)symbol, null, diagnostics, /*null,*/ needDeclaration);
         }
@@ -1067,7 +1068,7 @@ namespace Pchp.CodeAnalysis.Emit
             return param;
         }
 
-        internal sealed override Cci.ITypeReference Translate(ITypeSymbol typeSymbol, SyntaxNode syntaxNodeOpt, DiagnosticBag diagnostics)
+        internal sealed override Cci.ITypeReference Translate(ITypeSymbolInternal typeSymbol, SyntaxNode syntaxNodeOpt, DiagnosticBag diagnostics)
         {
             Debug.Assert(diagnostics != null);
 
