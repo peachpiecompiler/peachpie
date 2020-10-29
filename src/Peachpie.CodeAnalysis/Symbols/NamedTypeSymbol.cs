@@ -522,6 +522,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<NullableAnnotation> INamedTypeSymbol.TypeArgumentNullableAnnotations => TypeArguments.SelectAsArray(a => ((ITypeSymbol)a).NullableAnnotation);
 
+        INamedTypeSymbol INamedTypeSymbol.NativeIntegerUnderlyingType => null;
+
         #endregion
 
         #region ISymbol Members

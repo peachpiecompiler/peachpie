@@ -313,7 +313,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<NullableAnnotation> IMethodSymbol.TypeArgumentNullableAnnotations => TypeArguments.SelectAsArray(a => NullableAnnotation.None);
 
+        bool IMethodSymbol.IsReadOnly => false;
+
+        bool IMethodSymbol.IsInitOnly => false;
+
         NullableAnnotation IMethodSymbol.ReceiverNullableAnnotation => NullableAnnotation.None;
+
+        bool IMethodSymbol.IsConditional => throw new NotImplementedException();
 
         #endregion
 

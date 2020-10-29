@@ -260,6 +260,8 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public BoundVariableRef Variable { get; internal set; }
 
+        ImmutableArray<IOperation> IVariableDeclarationOperation.IgnoredDimensions => ImmutableArray<IOperation>.Empty;
+
         public BoundGlobalVariableStatement(BoundVariableRef variable)
         {
             Variable = variable;
@@ -359,6 +361,8 @@ namespace Pchp.CodeAnalysis.Semantics
             ImmutableArray.Create((IVariableDeclaratorOperation)_variable.Variable);
 
         IVariableInitializerOperation IVariableDeclarationOperation.Initializer => null;
+
+        ImmutableArray<IOperation> IVariableDeclarationOperation.IgnoredDimensions => ImmutableArray<IOperation>.Empty;
 
         internal StaticVarDecl Declaration => _variable;
         readonly StaticVarDecl _variable;

@@ -31,6 +31,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ITypeSymbol ITypeSymbol.OriginalDefinition => (ITypeSymbol)this.OriginalTypeSymbolDefinition;
 
+        bool ITypeSymbol.IsNativeIntegerType => SpecialType == SpecialType.System_IntPtr || SpecialType == SpecialType.System_UIntPtr;
+
+        bool ITypeSymbol.IsRefLikeType => false;
+
+        bool ITypeSymbol.IsUnmanagedType => false;
+
+        bool ITypeSymbol.IsReadOnly => false;
+
         NullableAnnotation ITypeSymbol.NullableAnnotation => NullableAnnotation.None;
 
         string ITypeSymbol.ToDisplayString(NullableFlowState topLevelNullability, SymbolDisplayFormat format)

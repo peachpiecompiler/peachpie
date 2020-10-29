@@ -369,5 +369,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return null;
         }
+
+        ImmutableArray<INamedTypeSymbol> IAssemblySymbol.GetForwardedTypes()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
