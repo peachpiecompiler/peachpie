@@ -193,6 +193,13 @@ namespace Peachpie.Library.Network
         public ProcessMethod ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
 
         /// <summary>
+        /// Value of <see cref="CURLConstants.CURLOPT_READFUNCTION "/> option.<br/>
+        /// The function's signature is: (curl resource, infile stream, length)
+        /// Returning the new data string to be uploaded.
+        /// </summary>
+        public IPhpCallable ReadFunction = null;
+
+        /// <summary>
         /// Bit mask of enabled protocols. All by default.
         /// </summary>
         internal int Protocols { get; set; } = CURLConstants.CURLPROTO_ALL;
@@ -228,6 +235,7 @@ namespace Peachpie.Library.Network
             this.ProcessingHeaders = ProcessMethod.Ignore;
             this.ProcessingResponse = ProcessMethod.StdOut;
             this.ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
+            this.ReadFunction = null;
             this.PostFields = default;
             this.VerboseOutput = null;
 
@@ -245,6 +253,7 @@ namespace Peachpie.Library.Network
             this.ProcessingHeaders = ProcessMethod.Ignore;
             this.ProcessingResponse = ProcessMethod.StdOut;
             this.ProcessingRequest = new ProcessMethod { Method = ProcessMethodEnum.FILE };
+            this.ReadFunction = null;
             this.PostFields = default;
             this.VerboseOutput = null;
 

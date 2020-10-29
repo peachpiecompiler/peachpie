@@ -646,7 +646,7 @@ namespace Peachpie.Library.Network
 
                 case CURLOPT_HEADERFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders, callerCtx);
                 case CURLOPT_WRITEFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.StdOut, ref ch.ProcessingResponse, callerCtx);
-                //case CURLOPT_READFUNCTION:
+                case CURLOPT_READFUNCTION: return (ch.ReadFunction = value.AsCallable()) != null || value.IsNull;
                 case CURLOPT_PROGRESSFUNCTION:
                     if (Operators.IsSet(value))
                     {
