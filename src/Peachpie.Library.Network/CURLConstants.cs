@@ -596,7 +596,12 @@ namespace Peachpie.Library.Network
                 case CURLOPT_URL: return (ch.Url = value.AsString()) != null;
                 case CURLOPT_DEFAULT_PROTOCOL: return (ch.DefaultSheme = value.AsString()) != null;
                 case CURLOPT_HTTPGET: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Get; } break;
-                case CURLOPT_UPLOAD: return true; // enable data upload // we don't have to handle it
+                case CURLOPT_UPLOAD:
+                    // The idea behind CURLOPT_UPLOAD is to tell curl to use PUT method,
+                    // add some common file uploading headers for that such as
+                    // Expect: 100-continue header and
+                    // use chunked encoding to upload a file of unknown size if you are using HTTP/1.1
+                    return true; // enable data upload
                 case CURLOPT_POST: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Post; } break;
                 case CURLOPT_PUT: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Put; } break;
                 case CURLOPT_NOBODY: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Head; } break;
