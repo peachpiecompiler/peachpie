@@ -31,6 +31,33 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ITypeSymbol ITypeSymbol.OriginalDefinition => (ITypeSymbol)this.OriginalTypeSymbolDefinition;
 
+        NullableAnnotation ITypeSymbol.NullableAnnotation => NullableAnnotation.None;
+
+        string ITypeSymbol.ToDisplayString(NullableFlowState topLevelNullability, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        ImmutableArray<SymbolDisplayPart> ITypeSymbol.ToDisplayParts(NullableFlowState topLevelNullability, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        string ITypeSymbol.ToMinimalDisplayString(SemanticModel semanticModel, NullableFlowState topLevelNullability, int position, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        ImmutableArray<SymbolDisplayPart> ITypeSymbol.ToMinimalDisplayParts(SemanticModel semanticModel, NullableFlowState topLevelNullability, int position, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        ITypeSymbol ITypeSymbol.WithNullableAnnotation(NullableAnnotation nullableAnnotation)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         ITypeSymbol ITypeSymbolInternal.GetITypeSymbol() => this;

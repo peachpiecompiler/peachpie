@@ -11,6 +11,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using System.Reflection;
 using System.Diagnostics;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -272,6 +273,11 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
+        IMethodSymbol IMethodSymbol.Construct(ImmutableArray<ITypeSymbol> typeArguments, ImmutableArray<NullableAnnotation> typeArgumentNullableAnnotations)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Gets value indicating the method is annotated with [PhpHiddenAttribute] metadata.
         /// </summary>
@@ -302,6 +308,12 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual bool IsGlobalScope => false;
 
         public BoundExpression Initializer => null; // not applicable for methods
+
+        NullableAnnotation IMethodSymbol.ReturnNullableAnnotation => NullableAnnotation.None;
+
+        ImmutableArray<NullableAnnotation> IMethodSymbol.TypeArgumentNullableAnnotations => TypeArguments.SelectAsArray(a => NullableAnnotation.None);
+
+        NullableAnnotation IMethodSymbol.ReceiverNullableAnnotation => NullableAnnotation.None;
 
         #endregion
 

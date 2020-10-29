@@ -145,6 +145,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual bool IsFixed => false;
 
+        NullableAnnotation ILocalSymbol.NullableAnnotation => NullableAnnotation.None;
+
         #endregion
     }
 

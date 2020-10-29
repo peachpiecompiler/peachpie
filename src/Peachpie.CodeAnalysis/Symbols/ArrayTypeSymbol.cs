@@ -466,6 +466,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<int> IArrayTypeSymbol.Sizes => Sizes;
 
+        NullableAnnotation IArrayTypeSymbol.ElementNullableAnnotation => NullableAnnotation.None;
+
         #endregion
 
         #region ISymbol Members
