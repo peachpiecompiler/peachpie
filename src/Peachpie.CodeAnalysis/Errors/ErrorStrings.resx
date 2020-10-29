@@ -409,4 +409,13 @@
   <data name="ERR_PropertyTypeNotAllowed" xml:space="preserve">
     <value>Property {0}::${1} cannot have type {2}</value>
   </data>
+  <data name="ERR_MultipleAnalyzerConfigsInSameDir" xml:space="preserve">
+    <value>Multiple analyzer config files cannot be in the same directory ('{0}').</value>
+  </data>
+  <data name="WRN_GeneratorFailedDuringGeneration" xml:space="preserve">
+    <value>Generator '{0}' failed to generate source. It will not contribute to the output and compilation errors may occur as a result. Exception was of type '{1}' with message '{2}'</value>
+  </data>
+  <data name="WRN_GeneratorFailedDuringInitialization" xml:space="preserve">
+    <value>Generator '{0}' failed to initialize. It will not contribute to the output and compilation errors may occur as a result. Exception was of type '{1}' with message '{2}'</value>
+  </data>
 </root>
