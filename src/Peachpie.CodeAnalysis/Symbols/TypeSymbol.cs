@@ -289,7 +289,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return ReferenceEquals(this, t2);
         }
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(ISymbol obj, SymbolEqualityComparer equalityComparer)
         {
             var t2 = obj as TypeSymbol;
             if ((object)t2 == null) return false;

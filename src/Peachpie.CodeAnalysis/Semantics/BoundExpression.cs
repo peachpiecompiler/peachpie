@@ -407,8 +407,10 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             foreach (var arg in _arguments)
             {
-                if (arg.Parameter == parameter)
+                if (SymbolEqualityComparer.Default.Equals(arg.Parameter, parameter))
+                {
                     return arg;
+                }
             }
 
             return null;
