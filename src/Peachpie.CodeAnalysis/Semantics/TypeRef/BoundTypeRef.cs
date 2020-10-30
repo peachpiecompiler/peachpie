@@ -854,7 +854,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             return base.GetTypeRefMask(ctx);
         }
 
-        public override bool Equals(IBoundTypeRef other) => base.Equals(other) || (other is BoundTypeRefFromSymbol ts && ts._symbol == _symbol);
+        public override bool Equals(IBoundTypeRef other) => base.Equals(other) || (other is BoundTypeRefFromSymbol ts && SymbolEqualityComparer.Default.Equals(ts._symbol, _symbol));
     }
 
     /// <summary>

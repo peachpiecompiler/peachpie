@@ -386,10 +386,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #region Equality
 
-        public override bool Equals(object obj)
+        public override bool Equals(ISymbol other, SymbolEqualityComparer equalityComparer)
         {
-            PropertySymbol other = obj as PropertySymbol;
-
             if (ReferenceEquals(null, other))
             {
                 return false;
@@ -402,7 +400,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // This checks if the property have the same definition and the type parameters on the containing types have been
             // substituted in the same way.
-            return this.ContainingType == other.ContainingType && ReferenceEquals(this.OriginalDefinition, other.OriginalDefinition);
+            return other is PropertySymbol p && this.ContainingType == p.ContainingType && ReferenceEquals(this.OriginalDefinition, p.OriginalDefinition);
         }
 
         public override int GetHashCode()

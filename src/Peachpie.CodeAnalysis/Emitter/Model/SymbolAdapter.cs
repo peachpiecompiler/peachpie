@@ -36,7 +36,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal bool IsDefinitionOrDistinct()
         {
-            return this.IsDefinition || !this.Equals(this.OriginalDefinition);
+            return this.IsDefinition || !SymbolEqualityComparer.Default.Equals(this, OriginalDefinition);
         }
 
         Cci.IDefinition Cci.IReference.AsDefinition(EmitContext context)

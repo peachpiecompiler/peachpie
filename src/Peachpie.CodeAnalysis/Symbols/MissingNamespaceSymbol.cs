@@ -63,16 +63,9 @@ namespace Pchp.CodeAnalysis.Symbols
             return Hash.Combine(_containingSymbol.GetHashCode(), _name.GetHashCode());
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(ISymbol other, SymbolEqualityComparer equalityComparer)
         {
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
-            MissingNamespaceSymbol other = obj as MissingNamespaceSymbol;
-
-            return (object)other != null && _name.Equals(other._name) && _containingSymbol.Equals(other._containingSymbol);
+            return other is MissingNamespaceSymbol missing && _name.Equals(missing._name) && SymbolEqualityComparer.Default.Equals(_containingSymbol, missing._containingSymbol);
         }
 
         public override ImmutableArray<Location> Locations

@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override Symbol OriginalSymbolDefinition => this;
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(ISymbol obj, SymbolEqualityComparer equalityComparer)
         {
             if ((object)this == obj)
             {
@@ -42,10 +42,9 @@ namespace Pchp.CodeAnalysis.Symbols
             // define it on the base type because most can simply use
             // ReferenceEquals.
 
-            var other = obj as WrappedParameterSymbol;
-            return (object)other != null &&
+            return obj is WrappedParameterSymbol other &&
                 this.Ordinal == other.Ordinal &&
-                this.ContainingSymbol.Equals(other.ContainingSymbol);
+                SymbolEqualityComparer.Default.Equals(this.ContainingSymbol, other.ContainingSymbol);
         }
 
         public sealed override int GetHashCode()

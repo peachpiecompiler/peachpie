@@ -456,7 +456,7 @@ namespace Pchp.CodeAnalysis
             }
 
             // this part is expected to disappear when inlining "someSymbol == null"
-            return (object)left == (object)right || right.Equals(left);
+            return (object)left == (object)right || right.Equals(left, SymbolEqualityComparer.Default);
         }
 
         /// <summary>
@@ -481,18 +481,28 @@ namespace Pchp.CodeAnalysis
             }
 
             // this part is expected to disappear when inlining "someSymbol != null"
-            return (object)left != (object)right && !right.Equals(left);
+            return (object)left != (object)right && !right.Equals(left, SymbolEqualityComparer.Default);
         }
 
         // By default, we do reference equality. This can be overridden.
-        public override bool Equals(object obj)
+        public virtual bool Equals(ISymbol other, SymbolEqualityComparer equalityComparer)
         {
-            return (object)this == obj;
+            return (object)other == this;
         }
 
         public bool Equals(ISymbol other)
         {
-            return this.Equals((object)other);
+            return this.Equals(other, SymbolEqualityComparer.Default);
+        }
+
+        public sealed override bool Equals(object obj)
+        {
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            return obj is ISymbol other && this.Equals(other, SymbolEqualityComparer.Default);
         }
 
         // By default, we do reference equality. This can be overridden.
@@ -1165,8 +1175,6 @@ namespace Pchp.CodeAnalysis
                 return this.OriginalDefinition;
             }
         }
-
-        bool ISymbol.Equals(ISymbol other, SymbolEqualityComparer equalityComparer) => this.Equals((object)other);
 
         #endregion
 

@@ -402,7 +402,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // Template: new wrapper(<STACK:value>)
 
                 var ctor = wrapper.InstanceConstructors.Single(m => m.ParameterCount == 1);
-                Debug.Assert((ITypeSymbol)ctor.Parameters[0].Type == value);
+                Debug.Assert(SymbolEqualityComparer.Default.Equals(ctor.Parameters[0].Type, value));
                 var t = _cg.EmitCall(ILOpCode.Newobj, ctor);
 
                 AddArg(t, byref: false);

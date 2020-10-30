@@ -298,7 +298,7 @@ namespace Pchp.CodeAnalysis.Symbols.PE
             }
 
             var n = candidateCustomModifiers.Length;
-            if (targetCustomModifiers.Length != n)
+            if (n != targetCustomModifiers.Length)
             {
                 return false;
             }
@@ -306,10 +306,14 @@ namespace Pchp.CodeAnalysis.Symbols.PE
             for (int i = 0; i < n; i++)
             {
                 var targetCustomModifier = targetCustomModifiers[i];
-                CustomModifier candidateCustomModifier = candidateCustomModifiers[i];
+                var candidateCustomModifier = candidateCustomModifiers[i];
 
-                if (targetCustomModifier.IsOptional != candidateCustomModifier.IsOptional ||
-                    !object.Equals(targetCustomModifier.Modifier, candidateCustomModifier.Modifier))
+                if (targetCustomModifier.IsOptional != candidateCustomModifier.IsOptional)
+                {
+                    return false;
+                }
+
+                if (!SymbolEqualityComparer.Default.Equals(targetCustomModifier.Modifier, candidateCustomModifier.Modifier))
                 {
                     return false;
                 }

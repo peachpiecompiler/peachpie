@@ -457,7 +457,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         bool IArrayTypeSymbol.Equals(IArrayTypeSymbol symbol)
         {
-            return this.Equals(symbol as ArrayTypeSymbol);
+            return this.Equals(symbol as ArrayTypeSymbol, SymbolEqualityComparer.Default);
         }
 
         bool IArrayTypeSymbol.IsSZArray => IsSZArray;
