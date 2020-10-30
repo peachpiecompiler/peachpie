@@ -411,7 +411,7 @@ namespace Pchp.Core
         public static implicit operator PhpValue(PhpArray value) => Create(value);
         public static implicit operator PhpValue(Delegate value) => FromClass(value);
 
-        public static implicit operator bool(PhpValue value) => value.ToBoolean();
+        public static explicit operator bool(PhpValue value) => value.ToBoolean();
 
         public static explicit operator long(PhpValue value) => value.ToLong();
 
