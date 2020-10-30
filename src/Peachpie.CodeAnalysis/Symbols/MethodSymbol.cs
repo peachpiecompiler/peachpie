@@ -275,7 +275,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         IMethodSymbol IMethodSymbol.Construct(ImmutableArray<ITypeSymbol> typeArguments, ImmutableArray<NullableAnnotation> typeArgumentNullableAnnotations)
         {
-            throw new NotImplementedException();
+            if (typeArgumentNullableAnnotations.All(annotation => annotation != NullableAnnotation.Annotated))
+            {
+                return this.Construct(typeArguments.CastArray<TypeSymbol>());
+            }
+            else
+            {
+                throw new NotImplementedException(); 
+            }
         }
 
         /// <summary>

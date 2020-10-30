@@ -25,7 +25,6 @@ namespace Pchp.CodeAnalysis.Emit
     {
         private readonly SourceModuleSymbol _sourceModule;
         private readonly PhpCompilation _compilation;
-        private readonly EmitOptions _emitOptions;
         //private readonly Cci.ModulePropertiesForSerialization _serializationProperties;
 
         /// <summary>
@@ -67,7 +66,6 @@ namespace Pchp.CodeAnalysis.Emit
 
             _compilation = compilation;
             _sourceModule = sourceModule;
-            _emitOptions = emitOptions;
             this.CompilationState = new CommonModuleCompilationState();
             this.SynthesizedManager = new SynthesizedManager(this);
             this.ScriptType = new SynthesizedScriptTypeSymbol(_compilation);
@@ -379,8 +377,6 @@ namespace Pchp.CodeAnalysis.Emit
         }
 
         internal override IAssemblySymbolInternal CommonCorLibrary => _compilation.CorLibrary;
-
-        internal EmitOptions EmitOptions => _emitOptions;
 
         public Cci.IDefinition AsDefinition(EmitContext context)
         {

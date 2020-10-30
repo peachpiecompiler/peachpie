@@ -337,7 +337,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         internal static string GetVersion() => typeof(PhpCompiler).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
-        internal new string GetAssemblyFileVersion() => GetVersion();
+        internal string GetAssemblyFileVersion() => GetVersion();
 
         protected override void ResolveAnalyzersFromArguments(List<DiagnosticInfo> diagnostics, CommonMessageProvider messageProvider, out ImmutableArray<DiagnosticAnalyzer> analyzers, out ImmutableArray<ISourceGenerator> generators)
         {
