@@ -161,6 +161,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var sourceFiles = new List<CommandLineSourceFile>();
             var metadataReferences = new List<CommandLineReference>();
             var analyzers = new List<CommandLineAnalyzerReference>();
+            var analyzerConfigPaths = new List<string>();
             var additionalFiles = new List<CommandLineSourceFile>();
             var embeddedFiles = new List<CommandLineSourceFile>();
             var managedResources = new List<ResourceDescription>();
@@ -899,6 +900,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 ChecksumAlgorithm = SourceHashAlgorithm.Sha1, // checksumAlgorithm,
                 MetadataReferences = metadataReferences.AsImmutable(),
                 AnalyzerReferences = analyzers.AsImmutable(),
+                AnalyzerConfigPaths = analyzerConfigPaths.AsImmutable(),
                 AdditionalFiles = additionalFiles.AsImmutable(),
                 ReferencePaths = referencePaths.AsImmutable(),
                 SourcePaths = ImmutableArray<string>.Empty, //sourcePaths.AsImmutable(),
