@@ -72,6 +72,8 @@ namespace Pchp.CodeAnalysis
 
             internal DiagnosticBag Diagnostics => _diagnostics;
 
+            internal ISymbol GetReferencedAssemblySymbol(MetadataReference reference) => (ISymbol)_referencesMap.TryGetOrDefault(reference);
+
             public ReferenceManager(
                 string simpleAssemblyName,
                 AssemblyIdentityComparer identityComparer,

@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using Devsense.PHP.Syntax;
+using Microsoft.Cci;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -639,7 +640,23 @@ namespace Pchp.CodeAnalysis
 
         protected override ISymbol CommonGetAssemblyOrModuleSymbol(MetadataReference reference)
         {
-            throw new NotImplementedException();
+            if (reference == null)
+            {
+                throw new ArgumentNullException(nameof(reference));
+            }
+
+            if (reference.Properties.Kind == MetadataImageKind.Assembly)
+            {
+                return GetBoundReferenceManager().GetReferencedAssemblySymbol(reference);
+            }
+            else
+            {
+                Debug.Assert(reference.Properties.Kind == MetadataImageKind.Module);
+                throw new NotImplementedException();
+
+                //int index = GetBoundReferenceManager().GetReferencedModuleIndex(reference);
+                //return index < 0 ? null : this.Assembly.Modules[index];
+            }
         }
 
         private protected override MetadataReference CommonGetMetadataReference(IAssemblySymbol assemblySymbol) =>
@@ -821,7 +838,36 @@ namespace Pchp.CodeAnalysis
 
         internal override void SerializePdbEmbeddedCompilationOptions(BlobBuilder builder)
         {
-            throw new NotImplementedException();
+            WriteValue(CompilationOptionNames.LanguageVersion, Options.LanguageVersion.ToString());
+
+            if (Options.CheckOverflow)
+            {
+                WriteValue(CompilationOptionNames.Checked, Options.CheckOverflow.ToString());
+            }
+
+            if (Options.NullableContextOptions != NullableContextOptions.Disable)
+            {
+                WriteValue(CompilationOptionNames.Nullable, Options.NullableContextOptions.ToString());
+            }
+
+            //if (Options.AllowUnsafe)
+            //{
+            //    WriteValue(CompilationOptionNames.Unsafe, Options.AllowUnsafe.ToString());
+            //}
+
+            //var preprocessorSymbols = GetPreprocessorSymbols();
+            //if (preprocessorSymbols.Any())
+            //{
+            //    WriteValue(CompilationOptionNames.Define, string.Join(",", preprocessorSymbols));
+            //}
+
+            void WriteValue(string key, string value)
+            {
+                builder.WriteUTF8(key);
+                builder.WriteByte(0);
+                builder.WriteUTF8(value);
+                builder.WriteByte(0);
+            }
         }
 
         internal override CommonReferenceManager CommonGetBoundReferenceManager()
