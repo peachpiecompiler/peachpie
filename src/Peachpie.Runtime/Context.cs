@@ -620,7 +620,7 @@ namespace Pchp.Core
             {
                 Debug.WriteLine($"Note: file '{path}' has not been compiled.");
 
-                return fnc.PhpCallable(this, (PhpValue)path);
+                return (bool)fnc.PhpCallable(this, (PhpValue)path);
             }
             else
             {
