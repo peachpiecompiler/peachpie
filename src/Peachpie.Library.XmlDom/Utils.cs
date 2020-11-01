@@ -399,7 +399,7 @@ namespace Peachpie.Library.XmlDom
                     break;
 
                 case HtmlNodeType.Text:
-                    var text = ((HtmlTextNode)node).Text;
+                    var text = System.Net.WebUtility.HtmlDecode(((HtmlTextNode)node).Text);
 
                     AppendChildElement(
                         containing,
