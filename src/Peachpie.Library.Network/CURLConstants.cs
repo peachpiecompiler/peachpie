@@ -1018,13 +1018,63 @@ namespace Peachpie.Library.Network
                     // set the header,
                     // replace previously set header or remove header with no value
 
-                    if (header_value.Length != 0)
+                    // some headers can't be set using WebHeaderCollection.Set()
+
+                    if (header_name.EqualsOrdinalIgnoreCase("accept"))
                     {
-                        request.Headers.Set(header_name, header_value);
+                        request.Accept = header_value;
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("connection"))
+                    {
+                        request.Connection = header_value;
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("content-type"))
+                    {
+                        request.ContentType = header_value;
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("content-length"))
+                    {
+                        request.ContentLength = long.Parse(header_value);
+                    }
+                    //else if (header_name.EqualsOrdinalIgnoreCase("date"))
+                    //{
+                    //    request.Date = header_value;
+                    //}
+                    else if (header_name.EqualsOrdinalIgnoreCase("host"))
+                    {
+                        request.Host = header_value;
+                    }
+                    //else if (header_name.EqualsOrdinalIgnoreCase("if-modified-since"))
+                    //{
+                    //    request.IfModifiedSince = header_value;
+                    //}
+                    //else if (header_name.EqualsOrdinalIgnoreCase("proxy-connection"))
+                    //{
+                    //    request.Proxy = header_value;
+                    //}
+                    //else if (header_name.EqualsOrdinalIgnoreCase("range"))
+                    //{
+                    //    request.AddRange(header_value);
+                    //}
+                    else if (header_name.EqualsOrdinalIgnoreCase("referer"))
+                    {
+                        request.Referer = header_value;
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("transfer-encoding"))
+                    {
+                        request.TransferEncoding = header_value;
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("user-agent"))
+                    {
+                        request.UserAgent = header_value;
+                    }
+                    else if (string.IsNullOrEmpty(header_value))
+                    {
+                        request.Headers.Remove(header_name);
                     }
                     else
                     {
-                        request.Headers.Remove(header_name);
+                        request.Headers.Set(header_name, header_value);
                     }
                 }
             }
