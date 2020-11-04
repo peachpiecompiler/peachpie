@@ -643,6 +643,24 @@ namespace Peachpie.RequestHandler
             }
         }
 
+        public override void ApplyExecutionTimeout(TimeSpan span)
+        {
+            if (span.Ticks > 0)
+            {
+                var totaltimeout = DateTime.Now - _httpctx.Timestamp + span;
+
+                // round it up,
+                // convert to seconds
+                var seconds = (totaltimeout.Ticks + TimeSpan.TicksPerSecond / 2) / TimeSpan.TicksPerSecond;
+                
+                _httpctx.Server.ScriptTimeout = (int)seconds;
+            }
+            else
+            {
+                _httpctx.Server.ScriptTimeout = int.MaxValue;
+            }
+        }
+
         /// <summary>
         /// Includes requested script file.
         /// </summary>
