@@ -319,7 +319,7 @@ namespace Peachpie.RequestHandler
         /// <summary>
         /// Informational string exposing technology powering the web request and version.
         /// </summary>
-        public static readonly string s_XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+        public static readonly string s_XPoweredBy = $"PeachPie {ContextExtensions.GetRuntimeInformationalVersion()}";
 
         public override IHttpPhpContext HttpPhpContext => this;
 
