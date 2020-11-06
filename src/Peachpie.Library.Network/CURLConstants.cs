@@ -1007,7 +1007,7 @@ namespace Peachpie.Library.Network
                     if (colpos >= 0)
                     {
                         header_name = header.Remove(colpos);
-                        header_value = header.Substring(colpos + 1);
+                        header_value = header.Substring(colpos + 1).Trim();
                     }
                     else
                     {
@@ -1026,7 +1026,18 @@ namespace Peachpie.Library.Network
                     }
                     else if (header_name.EqualsOrdinalIgnoreCase("connection"))
                     {
-                        request.Connection = header_value;
+                        if (header_value.EqualsOrdinalIgnoreCase("keep-alive"))
+                        {
+                            request.KeepAlive = true;
+                        }
+                        else if (header_value.EqualsOrdinalIgnoreCase("close"))
+                        {
+                            request.Connection = null; // ???
+                        }
+                        else
+                        {
+                            request.Connection = header_value;
+                        }
                     }
                     else if (header_name.EqualsOrdinalIgnoreCase("content-type"))
                     {

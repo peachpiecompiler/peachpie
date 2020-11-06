@@ -437,7 +437,7 @@ namespace Peachpie.Library.Network
         {
             get
             {
-                if (DateTime.TryParse(Headers?[HttpRequestHeader.LastModified], out var dt))
+                if (DateTime.TryParse(Headers?["Last-Modified"], out var dt))
                 {
                     return dt;
                 }
@@ -472,9 +472,9 @@ namespace Peachpie.Library.Network
         /// Content length of download, read from Content-Length: field.
         /// If not specified, gets <c>-1</c>.
         /// </summary>
-        public long ContentLength => Headers != null && long.TryParse(Headers[HttpRequestHeader.ContentLength], out var length) ? length : -1;
+        public long ContentLength => Headers != null && long.TryParse(Headers["Content-Length"], out var length) ? length : -1;
 
-        public string ContentType => (Headers != null) ? Headers[HttpRequestHeader.ContentType] : null;
+        public string ContentType => (Headers != null) ? Headers["Content-Type"] : null;
 
         public string StatusHeader { get; set; } = string.Empty;
 
