@@ -2096,6 +2096,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     if (path.Length != 0 && PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
                     x.TargetMethod = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
                 }
+                else // include (RootPath . path)
+                if (concat.ArgumentsInSourceOrder.Length == 2 &&
+                    concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc2 && pc2.ConstType == BoundPseudoConst.Types.RootPath &&
+                    concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out path))
+                {
+                    // create project relative path
+                    // not starting with a directory separator!
+                    if (path.Length != 0 && PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
+                    x.TargetMethod = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
+                }
             }
 
             // resolve result type
@@ -2517,6 +2527,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case BoundPseudoConst.Types.Dir:
                 case BoundPseudoConst.Types.File:
+                    x.TypeRefMask = TypeCtx.GetStringTypeMask();
+                    return default;
+
+                case BoundPseudoConst.Types.RootPath:
                     x.TypeRefMask = TypeCtx.GetStringTypeMask();
                     return default;
 

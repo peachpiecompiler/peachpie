@@ -2301,6 +2301,9 @@ namespace Pchp.CodeAnalysis.Semantics
             Namespace = Ast.PseudoConstUse.Types.Namespace,
             /// <summary>__DIR__</summary>
             Dir = Ast.PseudoConstUse.Types.Dir,
+
+            /// <summary><code>Context.RootPath</code></summary>
+            RootPath,
         }
 
         public Types ConstType { get; private set; }
@@ -2315,6 +2318,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundPseudoConst(Ast.PseudoConstUse.Types type)
             : this((Types)type)
         {
+            Debug.Assert(Enum.IsDefined(typeof(Ast.PseudoConstUse), type));
         }
 
         public BoundPseudoConst Update(Types type)
