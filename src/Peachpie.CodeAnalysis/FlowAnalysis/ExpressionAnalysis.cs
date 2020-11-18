@@ -75,7 +75,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// In case of a local variable or parameter, gets its name.
         /// </summary>
-        VariableName AsVariableName(BoundReferenceExpression r)
+        static VariableName AsVariableName(BoundReferenceExpression r)
         {
             if (r is BoundVariableRef vr)
             {
@@ -85,13 +85,63 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        bool IsLongConstant(BoundExpression expr, long value)
+        static bool IsLongConstant(BoundExpression expr, long value)
         {
             if (expr.ConstantValue.HasValue)
             {
                 if (expr.ConstantValue.Value is long) return ((long)expr.ConstantValue.Value) == value;
                 if (expr.ConstantValue.Value is int) return ((int)expr.ConstantValue.Value) == value;
             }
+            return false;
+        }
+
+        static bool TryConvertToNumber(object value, out long l, out double d)
+        {
+            if (value is int)
+            {
+                l = (int)value;
+                d = (double)l;
+                return true;
+            }
+
+            if (value is long)
+            {
+                l = (long)value;
+                d = (double)l;
+                return true;
+            }
+
+            if (value is double)
+            {
+                d = (double)value;
+                l = (long)d;
+                return true;
+            }
+
+            if (value is bool)
+            {
+                l = (bool)value ? 1 : 0;
+                d = (double)l;
+                return true;
+            }
+
+            if (value is string s)
+            {
+                if (long.TryParse(s, out l))
+                {
+                    d = (double)l;
+                    return true;
+                }
+
+                if (double.TryParse(s, out d))
+                {
+                    l = (long)d;
+                    return true;
+                }
+            }
+
+            l = default;
+            d = default;
             return false;
         }
 
@@ -879,14 +929,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (xobj.TryConvertToBool(out var bx) && yobj.TryConvertToBool(out var by))
             {
-                switch (op)
+                return op switch
                 {
-                    case Operations.And: return (bx && by).AsOptional();
-                    case Operations.Or: return (bx || by).AsOptional();
-                    case Operations.Xor: return (bx ^ by).AsOptional();
-                    default:
-                        throw ExceptionUtilities.Unreachable;
-                }
+                    Operations.And => (bx && by),
+                    Operations.Or => (bx || by),
+                    Operations.Xor => (bx ^ by),
+                    _ => throw ExceptionUtilities.Unreachable,
+                };
             }
 
             return default;
@@ -1144,8 +1193,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             // TODO
 
+            if (TryConvertToNumber(lvalue, out _, out var dl) && TryConvertToNumber(rvalue, out _, out var dr))
+            {
+                return op switch
+                {
+                    Operations.Equal => dl == dr,
+                    Operations.GreaterThan => dl > dr,
+                    Operations.LessThan => dl < dr,
+                    Operations.GreaterThanOrEqual => dl >= dr,
+                    Operations.LessThanOrEqual => dl <= dr,
+                    _ => default(Optional<object>),
+                };
+            }                
+
             //
-            return default(Optional<object>);
+            return default;
         }
 
         static Optional<object> ResolveShift(Operations op, Optional<object> lvalue, Optional<object> rvalue)
