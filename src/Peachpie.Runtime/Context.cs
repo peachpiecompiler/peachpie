@@ -210,7 +210,7 @@ namespace Pchp.Core
                         {
                             Debug.Assert(fi.IsStatic && fi.IsPublic);
 
-                            if (ReflectionUtils.IsLazyConstantField(fi, out var getter))
+                            if (ReflectionUtils.TryBindLazyConstantField(fi, out var getter))
                             {
                                 // lazy constant
                                 ConstsMap.DefineAppConstant(fi.Name, getter, false, extensionName);

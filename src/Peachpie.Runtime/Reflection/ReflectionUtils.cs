@@ -91,7 +91,7 @@ namespace Pchp.Core.Reflection
         /// Resolves lazy constant field in form of:<br/>
         /// public static readonly Func&lt;Context, TResult&gt; FIELD;
         /// </summary>
-        internal static bool IsLazyConstantField(FieldInfo fld, out Func<Context, PhpValue> getter)
+        internal static bool TryBindLazyConstantField(FieldInfo fld, out Func<Context, PhpValue> getter)
         {
             if (fld.IsInitOnly && fld.IsStatic)
             {
