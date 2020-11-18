@@ -4922,7 +4922,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             switch (this.ConstType)
             {
-                case PseudoConstUse.Types.File:
+                case BoundPseudoConst.Types.File:
 
                     // <ctx>.RootPath + RelativePath
                     cg.EmitLoadContext();
@@ -4934,7 +4934,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Concat_String_String)
                         .Expect(SpecialType.System_String);
 
-                case PseudoConstUse.Types.Dir:
+                case BoundPseudoConst.Types.Dir:
 
                     // <ctx>.RootPath + RelativeDirectory
                     cg.EmitLoadContext();
@@ -4951,7 +4951,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     return cg.CoreTypes.String;
 
-                case PseudoConstUse.Types.Class:
+                case BoundPseudoConst.Types.Class:
 
                     // resolve name of self in runtime:
                     // Template: (string)Operators.GetSelfOrNull(<self>)?.Name

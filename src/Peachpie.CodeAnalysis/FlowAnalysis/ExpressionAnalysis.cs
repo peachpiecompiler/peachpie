@@ -2087,8 +2087,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // include (dirname( __FILE__ ) . path) // changed to (__DIR__ . path) by graph rewriter
                 // include (__DIR__ . path)
                 if (concat.ArgumentsInSourceOrder.Length == 2 &&
-                    concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
-                    pc.ConstType == PseudoConstUse.Types.Dir &&
+                    concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == BoundPseudoConst.Types.Dir &&
                     concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out path))
                 {
                     // create project relative path
@@ -2445,12 +2444,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             switch (x.ConstType)
             {
-                case PseudoConstUse.Types.Line:
+                case BoundPseudoConst.Types.Line:
                     value = x.PhpSyntax.ContainingSourceUnit.GetLineFromPosition(x.PhpSyntax.Span.Start) + 1;
                     break;
 
-                case PseudoConstUse.Types.Class:
-                case PseudoConstUse.Types.Trait:
+                case BoundPseudoConst.Types.Class:
+                case BoundPseudoConst.Types.Trait:
                     {
                         var containingtype = x.PhpSyntax.ContainingType;
                         if (containingtype != null)
@@ -2459,14 +2458,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                             value = containingtype.QualifiedName.ToString();
 
-                            if (intrait && x.ConstType == PseudoConstUse.Types.Class)
+                            if (intrait && x.ConstType == BoundPseudoConst.Types.Class)
                             {
                                 // __CLASS__ inside trait resolved in runtime
                                 x.TypeRefMask = TypeCtx.GetStringTypeMask();
                                 return default;
                             }
 
-                            if (!intrait && x.ConstType == PseudoConstUse.Types.Trait)
+                            if (!intrait && x.ConstType == BoundPseudoConst.Types.Trait)
                             {
                                 // __TRAIT__ inside class is empty string
                                 value = string.Empty;
@@ -2479,7 +2478,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                     break;
 
-                case PseudoConstUse.Types.Method:
+                case BoundPseudoConst.Types.Method:
                     if (Routine == null)
                     {
                         value = string.Empty;
@@ -2498,7 +2497,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                     break;
 
-                case PseudoConstUse.Types.Function:
+                case BoundPseudoConst.Types.Function:
                     if (Routine is SourceLambdaSymbol)
                     {
                         value = "{closure}";
@@ -2509,15 +2508,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                     break;
 
-                case PseudoConstUse.Types.Namespace:
+                case BoundPseudoConst.Types.Namespace:
                     var ns = x.PhpSyntax.ContainingNamespace;
                     value = ns != null && ns.QualifiedName.HasValue
                         ? ns.QualifiedName.QualifiedName.NamespacePhpName
                         : string.Empty;
                     break;
 
-                case PseudoConstUse.Types.Dir:
-                case PseudoConstUse.Types.File:
+                case BoundPseudoConst.Types.Dir:
+                case BoundPseudoConst.Types.File:
                     x.TypeRefMask = TypeCtx.GetStringTypeMask();
                     return default;
 

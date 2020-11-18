@@ -465,7 +465,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     if (arg.Value is BoundConcatEx concat &&
                         concat.ArgumentsInSourceOrder.Length == 2 &&
                         concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
-                        pc.ConstType == PseudoConstUse.Types.Dir &&
+                        pc.ConstType == BoundPseudoConst.Types.Dir &&
                         concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out var relativePath) &&
                         relativePath.Length != 0)
                     {

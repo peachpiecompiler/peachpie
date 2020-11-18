@@ -54,35 +54,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         private TransformationRewriter()
         {
-            bool TryResolveConstant(string constName, out IPhpValue value)
-            {
-                value = null;
-
-                // invalid name
-                if (string.IsNullOrEmpty(constName))
-                    return false;
-
-                // trim leading \
-                if (constName[0] == QualifiedName.Separator)
-                    constName = constName.Substring(1);
-
-                //
-                var sepidx = constName.IndexOf(Name.ClassMemberSeparator);
-                if (sepidx < 0)
-                {
-                    // global const name
-                    // TODO: also user constants defined in the same scope?
-                    value = DeclaringCompilation.GlobalSemantics.ResolveConstant(constName);
-                }
-                else
-                {
-                    // TODO: class constant
-                }
-
-                //
-                return value != null;
-            }
-
             // initialize rewrite rules for specific well-known functions:
             _special_functions = new Dictionary<QualifiedName, Func<BoundGlobalFunctionCall, BoundExpression>>()
             {
@@ -91,9 +62,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // dirname( __FILE__ ) -> __DIR__
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
                         x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
-                        pc.ConstType == Ast.PseudoConstUse.Types.File)
+                        pc.ConstType == BoundPseudoConst.Types.File)
                     {
-                        return new BoundPseudoConst(Ast.PseudoConstUse.Types.Dir).WithAccess(x.Access);
+                        return new BoundPseudoConst(BoundPseudoConst.Types.Dir).WithAccess(x.Access);
                     }
 
                     return null;
@@ -103,7 +74,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // basename( __FILE__ ) -> "filename"
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
                         x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
-                        pc.ConstType == Ast.PseudoConstUse.Types.File)
+                        pc.ConstType == BoundPseudoConst.Types.File)
                     {
                         var fname = _routine.ContainingFile.FileName;
                         return new BoundLiteral(fname).WithContext(x);
@@ -160,7 +131,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     {
                         // get_parent_class($this), get_parent_class(__CLASS__) ->  {class name} | FALSE
                         if ((x.ArgumentsInSourceOrder[0].Value is BoundVariableRef varref && varref.Variable is ThisVariableReference) ||
-                            (x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == Ast.PseudoConstUse.Types.Class))
+                            (x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == BoundPseudoConst.Types.Class))
                         {
                             if (TryResolveParentClassInCurrentClassContext(_routine, out var newExpression))
                             {
@@ -339,6 +310,35 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     TransformationCount++;
                 }
             }
+        }
+
+        private bool TryResolveConstant(string constName, out IPhpValue value)
+        {
+            value = null;
+
+            // invalid name
+            if (string.IsNullOrEmpty(constName))
+                return false;
+
+            // trim leading \
+            if (constName[0] == QualifiedName.Separator)
+                constName = constName.Substring(1);
+
+            //
+            var sepidx = constName.IndexOf(Name.ClassMemberSeparator);
+            if (sepidx < 0)
+            {
+                // global const name
+                // TODO: also user constants defined in the same scope?
+                value = DeclaringCompilation.GlobalSemantics.ResolveConstant(constName);
+            }
+            else
+            {
+                // TODO: class constant
+            }
+
+            //
+            return value != null;
         }
 
         protected override void OnVisitCFG(ControlFlowGraph x)

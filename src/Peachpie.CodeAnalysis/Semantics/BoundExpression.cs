@@ -2280,16 +2280,44 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.None;
 
-        public Ast.PseudoConstUse.Types ConstType { get; private set; }
+        /// <summary>
+        /// Pseudo-constant type.
+        /// </summary>
+        public enum Types
+        {
+            /// <summary>__LINE__</summary>
+            Line = Ast.PseudoConstUse.Types.Line,
+            /// <summary>__FILE__</summary>
+            File = Ast.PseudoConstUse.Types.File,
+            /// <summary>__CLASS__</summary>
+            Class = Ast.PseudoConstUse.Types.Class,
+            /// <summary>__TRAIT__</summary>
+            Trait = Ast.PseudoConstUse.Types.Trait,
+            /// <summary>__FUNCTION__</summary>
+            Function = Ast.PseudoConstUse.Types.Function,
+            /// <summary>__METHOD__</summary>
+            Method = Ast.PseudoConstUse.Types.Method,
+            /// <summary>__NAMESPACE__</summary>
+            Namespace = Ast.PseudoConstUse.Types.Namespace,
+            /// <summary>__DIR__</summary>
+            Dir = Ast.PseudoConstUse.Types.Dir,
+        }
+
+        public Types ConstType { get; private set; }
 
         public override bool IsDeeplyCopied => false;
 
-        public BoundPseudoConst(Ast.PseudoConstUse.Types type)
+        public BoundPseudoConst(Types type)
         {
             this.ConstType = type;
         }
 
-        public BoundPseudoConst Update(Ast.PseudoConstUse.Types type)
+        public BoundPseudoConst(Ast.PseudoConstUse.Types type)
+            : this((Types)type)
+        {
+        }
+
+        public BoundPseudoConst Update(Types type)
         {
             if (type == ConstType)
             {
