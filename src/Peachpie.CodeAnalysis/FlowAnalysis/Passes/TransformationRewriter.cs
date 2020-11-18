@@ -841,6 +841,59 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitArray(x);
         }
 
+        public override object VisitGlobalConstUse(BoundGlobalConst x)
+        {
+            if (TryResolveConstant(x.Name.ToString(), out var value) && value is PEFieldSymbol fld)
+            {
+                var attr = fld.GetAttribute($"{CoreTypes.PeachpieRuntimeNamespace}.PhpConstantAttribute");
+                if (attr != null && attr.ConstructorArguments.Length == 1 && attr.ConstructorArguments[0].TryDecodeValue(SpecialType.System_String, out string expression) && expression != null)
+                {
+                    var args = new List<BoundArgument>();
+
+                    // parse the expression
+                    // transform it to BoundConcatEx
+
+                    for (int pos = 0; pos < expression.Length;)
+                    {
+                        var brace = expression.IndexOf('{', pos);
+                        var closing = brace < 0 ? -1 : expression.IndexOf('}', brace);
+                        var upto = closing < 0 ? expression.Length : brace;
+
+                        //
+                        if (pos < upto)
+                        {
+                            args.Add(BoundArgument.Create(new BoundLiteral(expression.Substring(pos, upto - pos))
+                            {
+                                TypeRefMask = _routine.TypeRefContext.GetStringTypeMask(),
+                                ResultType = DeclaringCompilation.CoreTypes.String,
+                            }.WithAccess(BoundAccess.Read)));
+                        }
+
+                        if (closing > brace)
+                        {
+                            if (Enum.TryParse<BoundPseudoConst.Types>(expression.Substring(brace + 1, closing - brace - 1), out var type))
+                            {
+                                args.Add(BoundArgument.Create(new BoundPseudoConst(type).WithAccess(BoundAccess.Read)));
+                            }
+                            else
+                            {
+                                // ERR
+                                throw ExceptionUtilities.UnexpectedValue(expression);
+                            }
+                        }
+
+                        //
+                        pos = closing < 0 ? expression.Length : closing + 1;
+                    }
+
+                    TransformationCount++;
+                    return new BoundConcatEx(args.AsImmutable()).WithContext(x);
+                }
+            }
+
+            return base.VisitGlobalConstUse(x);
+        }
+
         /// <summary>
         /// If <paramref name="expr"/> is of type <typeparamref name="T"/> or it is a <see cref="BoundCopyValue" /> enclosing an
         /// expression of type <typeparamref name="T"/>, store the expression to <paramref name="typedExpr"/> and return true;

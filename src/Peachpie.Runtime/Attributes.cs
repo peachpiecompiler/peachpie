@@ -415,6 +415,28 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Annotates a compile time constant value.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class PhpConstantAttribute : Attribute
+    {
+        /// <summary>
+        /// The constant value expression.
+        /// </summary>
+        public string? Expression { get; }
+
+        public PhpConstantAttribute()
+        {
+            Expression = null;
+        }
+
+        public PhpConstantAttribute(string expression)
+        {
+            Expression = expression;
+        }
+    }
+
+    /// <summary>
     /// Compiler generated attribute denoting constructor that initializes only fields and calls minimal base .ctor.
     /// Such constructor is used for emitting derived class constructor that calls PHP constructor function by itself.
     /// </summary>
