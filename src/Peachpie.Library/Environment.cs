@@ -24,6 +24,15 @@ namespace Pchp.Library
         public const string PHP_EXTRA_VERSION = "-peachpie";
         public static string PHP_OS => CurrentPlatform.IsWindows ? "WINNT" : CurrentPlatform.IsLinux ? "Linux" : CurrentPlatform.IsOsx ? "Darwin" : "Unix";
 
+        /// <summary>
+        /// Gets the Server API name.
+        /// </summary>
+        /// <remarks>
+        /// The member is defined as a lazy constant, known to runtime and compiler.
+        /// The delegate is evaluated and cached, the value of constant is resolved by invocation to the delegate.
+        /// </remarks>
+        public static readonly Func<Context, string>/*!*/PHP_SAPI = ctx => ctx.ServerApi;
+
         public static readonly string PEACHPIE_VERSION = ContextExtensions.GetRuntimeInformationalVersion();
 
         /// <summary>

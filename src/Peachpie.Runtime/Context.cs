@@ -274,8 +274,6 @@ namespace Pchp.Core
             /// </summary>
             static void DefineCoreConstants()
             {
-                ConstsMap.DefineAppConstant("PHP_SAPI", new Func<Context, PhpValue>(ctx => ctx.ServerApi), false, "Core");
-
                 if (CurrentPlatform.IsWindows)
                 {
                     DefineCoreConstant("PHP_WINDOWS_VERSION_MAJOR", Environment.OSVersion.Version.Major);
