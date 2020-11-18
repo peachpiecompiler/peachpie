@@ -2318,7 +2318,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundPseudoConst(Ast.PseudoConstUse.Types type)
             : this((Types)type)
         {
-            Debug.Assert(Enum.IsDefined(typeof(Ast.PseudoConstUse), type));
+            Debug.Assert(Enum.IsDefined(typeof(Ast.PseudoConstUse.Types), type));
         }
 
         public BoundPseudoConst Update(Types type)
