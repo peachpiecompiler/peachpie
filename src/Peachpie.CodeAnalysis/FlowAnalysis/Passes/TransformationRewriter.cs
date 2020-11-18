@@ -617,10 +617,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 return new BoundLiteral(string.Empty).WithContext(x);
             }
 
-            // visit & concat in compile time if we can:
             var newargs = args;
-            int i = 0;
-            do
+            int i;
+
+            // flattern nested concats:
+            for (i = 0; i < newargs.Length; )
+            {
+                // flattern concat:
+                if (newargs[i].Value is BoundConcatEx concat)
+                {
+                    newargs = newargs.RemoveAt(i);
+                    newargs = newargs.InsertRange(i, concat.ArgumentsInSourceOrder);
+                    continue;
+                }
+
+                i++;
+            }
+
+            // concat adjacent expressions if possible:
+            for (i = 0; i < newargs.Length; i++)
             {
                 // accumulate evaluated string value if possible:
                 if (newargs[i].Value.ConstantValue.TryConvertToString(out var value))
@@ -647,10 +662,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         }
                     }
                 }
-
-                //
-                i++;
-            } while (i < newargs.Length);
+            }
 
             //
             if (newargs != args)
