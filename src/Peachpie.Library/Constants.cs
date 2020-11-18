@@ -102,6 +102,12 @@ namespace Pchp.Library.Standard
         {
             if (!string.IsNullOrEmpty(name))
             {
+                // trim leading \
+                if (name[0] == '\\')
+                {
+                    name = name.Substring(1);
+                }
+
                 var sepidx = name.IndexOf(':');
                 if (sepidx < 0)
                 {
@@ -114,7 +120,7 @@ namespace Pchp.Library.Standard
 
                     // cut the type name only, 
                     // eventually trim the leading backslash:
-                    var tname = name[0] == '\\' ? name.Substring(1, sepidx - 1) : name.Remove(sepidx);
+                    var tname = name.Remove(sepidx);
 
                     PhpTypeInfo tinfo;
 
