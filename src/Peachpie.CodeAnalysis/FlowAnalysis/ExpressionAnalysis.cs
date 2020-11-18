@@ -2585,11 +2585,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 if (field != null && field.IsStatic)
                 {
-                    x._boundExpressionOpt = new FieldReference(null, field);
-                    x.TypeRefMask = field.GetResultType(TypeCtx);
+                    if (field.Type.Is_Func_Context_TResult(out var tresult))
+                    {
+                        // lazy constant
+                        // public static readonly Func<Context, TResult> Constant = (ctx) => VALUE;
+                        x._boundExpressionOpt = new InvokeReference(new FieldPlace(null, field));
+                        x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, tresult);
+                    }
+                    else
+                    {
+                        // constant
+                        // public static readonly T Constant = VALUE
+                        x._boundExpressionOpt = new FieldReference(null, field);
+                        x.TypeRefMask = field.GetResultType(TypeCtx);
+                    }
                 }
                 else if (symbol is PEPropertySymbol prop && prop.IsStatic)
                 {
+                    // constant
+                    // public static T Constant => VALUE;
                     x._boundExpressionOpt = new PropertyReference(null, prop);
                     x.TypeRefMask = prop.GetResultType(TypeCtx);
                 }

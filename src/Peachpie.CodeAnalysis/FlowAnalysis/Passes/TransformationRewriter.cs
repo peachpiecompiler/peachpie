@@ -275,7 +275,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         ConstantValue value = null;
                         if (constValue is PEFieldSymbol fld)
                         {
-                            value = fld.GetConstantValue(false);
+                            if (fld.Type.Is_Func_Context_TResult(out var tresult))
+                            {
+                                // value = Func<Context, TResult>.Invoke( ctx )
+                                // must be evaluated in run time
+                                value = null;
+                            }
+                            else
+                            {
+                                value = fld.GetConstantValue(false);
+                            }
                         }
                         else if (constValue is PEPropertySymbol prop)
                         {

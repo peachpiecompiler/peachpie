@@ -167,9 +167,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 }
                                 else // name == "constant"
                                 {
-                                    var cvalue = fld.GetConstantValue(false);
-                                    call.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
-                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, fld.Type, notNull: fld.IsNotNull());
+                                    if (fld.Type.Is_Func_Context_TResult(out var tresult))
+                                    {
+                                        call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, tresult);
+                                    }
+                                    else
+                                    {
+                                        var cvalue = fld.GetConstantValue(false);
+                                        call.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
+                                        call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, fld.Type, notNull: fld.IsNotNull());
+                                    }
                                 }
                             }
                             else if (tmp is PEPropertySymbol prop)

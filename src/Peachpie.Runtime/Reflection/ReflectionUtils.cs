@@ -88,6 +88,33 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
+        /// Resolves lazy constant field in form of:<br/>
+        /// public static readonly Func&lt;Context, TResult&gt; FIELD;
+        /// </summary>
+        internal static bool IsLazyConstantField(FieldInfo fld, out Func<Context, PhpValue> getter)
+        {
+            if (fld.IsInitOnly && fld.IsStatic)
+            {
+                var rtype = fld.FieldType;
+                if (rtype.IsGenericType && rtype.GetGenericTypeDefinition() == typeof(Func<,>))
+                {
+                    // Func<Context, TResult>
+                    var g = rtype.GenericTypeArguments;
+                    if (g.Length == 2 && g[0] == typeof(Context))
+                    {
+                        var getter1 = (MulticastDelegate)fld.GetValue(null); // initonly
+
+                        getter = BinderHelpers.BindFuncInvoke<PhpValue>(getter1);
+                        return true;
+                    }
+                }
+            }
+
+            getter = null;
+            return false;
+        }
+
+        /// <summary>
         /// Determines whether given constructor is <c>PhpFieldsOnlyCtorAttribute</c>.
         /// </summary>
         public static bool IsPhpFieldsOnlyCtor(this ConstructorInfo ctor)

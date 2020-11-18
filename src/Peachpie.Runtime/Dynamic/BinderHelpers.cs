@@ -989,6 +989,24 @@ namespace Pchp.Core.Dynamic
         }
 
         /// <summary>
+        /// Compiles delegate that invokes a Func{Context, TOut} and converts the result to <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <typeparam name="TResult">The result of expression.</typeparam>
+        /// <param name="funcdelegate">The func delegate to be invoked.</param>
+        public static Func<Context, TResult> BindFuncInvoke<TResult>(MulticastDelegate funcdelegate)
+        {
+            // getter = new Func<Context, PhpValue>(ctx => PhpValue.FromClr(funcdelegate.DynamicInvoke(ctx)));
+
+            var pctx = Expression.Parameter(typeof(Context));
+            var invoke = ConvertExpression.Bind(Expression.Invoke(Expression.Constant(funcdelegate), pctx), typeof(TResult), pctx);
+            
+            // {expr}: void
+            var lambda = Expression.Lambda(invoke, tailCall: true, pctx);
+
+            return (Func<Context, TResult>)lambda.Compile();
+        }
+
+        /// <summary>
         /// Binds recursion check for property magic method.
         /// </summary>
         static Expression InvokeHandler(Expression ctx, Expression target, string field, Expression getter, AccessMask access, Expression @default = null, Type resultType = null)
