@@ -54,6 +54,35 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         private TransformationRewriter()
         {
+            bool TryResolveConstant(string constName, out IPhpValue value)
+            {
+                value = null;
+
+                // invalid name
+                if (string.IsNullOrEmpty(constName))
+                    return false;
+
+                // trim leading \
+                if (constName[0] == QualifiedName.Separator)
+                    constName = constName.Substring(1);
+
+                //
+                var sepidx = constName.IndexOf(Name.ClassMemberSeparator);
+                if (sepidx < 0)
+                {
+                    // global const name
+                    // TODO: also user constants defined in the same scope?
+                    value = DeclaringCompilation.GlobalSemantics.ResolveConstant(constName);
+                }
+                else
+                {
+                    // TODO: class constant
+                }
+
+                //
+                return value != null;
+            }
+
             // initialize rewrite rules for specific well-known functions:
             _special_functions = new Dictionary<QualifiedName, Func<BoundGlobalFunctionCall, BoundExpression>>()
             {
@@ -224,19 +253,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // define( CONST_NAME, CONST_VALUE ) : true|false
 
                     if (x.ArgumentsInSourceOrder.Length >= 2 &&
-                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName))
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName) &&
+                        TryResolveConstant(constName, out var constValue))
                     {
-                        var constValue = DeclaringCompilation.GlobalSemantics.ResolveConstant(constName);
-                        
                         // constant already defined?
-                        if (constValue != null)
-                        {
-                            // diagnostic: constant already defined
-                            DeclaringCompilation.DeclarationDiagnostics.Add(_routine, x.GetTextSpan(), Errors.ErrorCode.INF_ConstantAlreadyDefined, constName);
+                        // diagnostic: constant already defined
+                        DeclaringCompilation.DeclarationDiagnostics.Add(_routine, x.GetTextSpan(), Errors.ErrorCode.INF_ConstantAlreadyDefined, constName);
 
-                            // always FALSE
-                            return new BoundLiteral(false.AsObject());
-                        }
+                        // always FALSE
+                        return new BoundLiteral(false.AsObject()).WithContext(x);
                     }
                     return null;
                 } },
@@ -245,16 +270,52 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // defined( CONST_NAME ) : true|false
 
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
-                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName))
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName) &&
+                        TryResolveConstant(constName, out var constValue))
                     {
-                        var constValue = DeclaringCompilation.GlobalSemantics.ResolveConstant(constName);
-                        
                         // constant already defined => TRUE
-                        if (constValue != null)
+                        return new BoundLiteral(true.AsObject()).WithContext(x);
+                    }
+                    return null;
+                } },
+                { NameUtils.SpecialNames.constant, x =>
+                {
+                    // constant( CONST_NAME ) : CONST_VALUE
+                    
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName) &&
+                        TryResolveConstant(constName, out var constValue))
+                    {
+                        // try to resolve value
+                        ConstantValue value = null;
+                        if (constValue is PEFieldSymbol fld)
                         {
-                            return new BoundLiteral(true.AsObject());
+                            value = fld.GetConstantValue(false);
+                        }
+                        else if (constValue is PEPropertySymbol prop)
+                        {
+                            // 
+                        }
+
+                        if (value == null)
+                        {
+                            if (constName.IndexOf(Name.ClassMemberSeparator) < 0)
+                            {
+                                // transform to BoundGlobalConst
+                                return new BoundGlobalConst(QualifiedName.Parse(constName, true), default).WithContext(x);
+                            }
+                            else
+                            {
+                                // return BoundFieldRef.CreateClassConst( ... )
+                            }
+                        }
+                        else
+                        {
+                            // resolved value
+                            return new BoundLiteral(value.Value).WithContext(x);
                         }
                     }
+
                     return null;
                 } },
             };
