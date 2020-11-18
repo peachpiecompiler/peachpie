@@ -233,5 +233,7 @@ namespace Pchp.CodeAnalysis.Errors
         INF_DestructDiscouraged,
         /// <summary>Overriden function name '{0}' does not match it's parent name '{1}', letter casing mismatch.</summary>
         INF_OverrideNameCaseMismatch,
+        /// <summary>Constant '{0}' with the same name is already defined</summary>
+        INF_ConstantAlreadyDefined,
     }
 }

@@ -149,13 +149,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
                         break;
 
-                    case "defined":
-                    case "constant":
+                    case "defined":     // defined(CONST_NAME)
+                    case "constant":    // constant(CONST_NAME)
                         if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))
                         {
                             // TODO: const_name in form of "{CLASS}::{NAME}"
+                            // TODO: also user constants defined in the same scope?
+
+                            // quick evaluation of PE constants that can't be changed at run time
+
                             var tmp = analysis.Model.ResolveConstant(str);
-                            if (tmp is PEFieldSymbol fld)    // TODO: also user constants defined in the same scope
+                            if (tmp is PEFieldSymbol fld)    
                             {
                                 if (name == "defined")
                                 {

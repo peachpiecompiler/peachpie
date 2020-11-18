@@ -219,6 +219,44 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                     return null;
                 } },
+                { NameUtils.SpecialNames.define, x =>
+                {
+                    // define( CONST_NAME, CONST_VALUE ) : true|false
+
+                    if (x.ArgumentsInSourceOrder.Length >= 2 &&
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName))
+                    {
+                        var constValue = DeclaringCompilation.GlobalSemantics.ResolveConstant(constName);
+                        
+                        // constant already defined?
+                        if (constValue != null)
+                        {
+                            // diagnostic: constant already defined
+                            DeclaringCompilation.DeclarationDiagnostics.Add(_routine, x.GetTextSpan(), Errors.ErrorCode.INF_ConstantAlreadyDefined, constName);
+
+                            // always FALSE
+                            return new BoundLiteral(false.AsObject());
+                        }
+                    }
+                    return null;
+                } },
+                { NameUtils.SpecialNames.defined, x =>
+                {
+                    // defined( CONST_NAME ) : true|false
+
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName))
+                    {
+                        var constValue = DeclaringCompilation.GlobalSemantics.ResolveConstant(constName);
+                        
+                        // constant already defined => TRUE
+                        if (constValue != null)
+                        {
+                            return new BoundLiteral(true.AsObject());
+                        }
+                    }
+                    return null;
+                } },
             };
         }
 
