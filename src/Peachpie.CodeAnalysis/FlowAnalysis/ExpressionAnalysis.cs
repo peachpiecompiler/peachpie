@@ -2075,38 +2075,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var targetExpr = x.ArgumentsInSourceOrder[0].Value;
 
             //
-            x.TargetMethod = null;
-
-            if (targetExpr.ConstantValue.TryConvertToString(out var path))
-            {
-                // include (path)
-                x.TargetMethod = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
-            }
-            else if (targetExpr is BoundConcatEx concat) // common case
-            {
-                // include (dirname( __FILE__ ) . path) // changed to (__DIR__ . path) by graph rewriter
-                // include (__DIR__ . path)
-                if (concat.ArgumentsInSourceOrder.Length == 2 &&
-                    concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == BoundPseudoConst.Types.Dir &&
-                    concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out path))
-                {
-                    // create project relative path
-                    // not starting with a directory separator!
-                    path = Routine.ContainingFile.DirectoryRelativePath + path;
-                    if (path.Length != 0 && PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
-                    x.TargetMethod = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
-                }
-                else // include (RootPath . path)
-                if (concat.ArgumentsInSourceOrder.Length == 2 &&
-                    concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc2 && pc2.ConstType == BoundPseudoConst.Types.RootPath &&
-                    concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out path))
-                {
-                    // create project relative path
-                    // not starting with a directory separator!
-                    if (path.Length != 0 && PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
-                    x.TargetMethod = (MethodSymbol)_model.ResolveFile(path)?.MainMethod;
-                }
-            }
+            x.TargetMethod = AnalysisFacts.TryResolveFile(_model, Routine, targetExpr, out var script)
+                ? (MethodSymbol)script.MainMethod
+                : null;
 
             // resolve result type
             if (x.Access.IsRead)

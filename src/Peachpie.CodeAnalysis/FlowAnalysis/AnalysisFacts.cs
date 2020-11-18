@@ -116,7 +116,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             // TRUE <=> class is defined unconditionally in a reference library (PE assembly)
                             var class_name = args[0].Value.ConstantValue.Value as string;
                             if (!string.IsNullOrEmpty(class_name))
-                                {
+                            {
                                 var tmp = (TypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
                                 if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())   // TODO: + SourceTypeSymbol when reachable unconditional declaration
                                 {
@@ -159,7 +159,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             // quick evaluation of PE constants that can't be changed at run time
 
                             var tmp = analysis.Model.ResolveConstant(str);
-                            if (tmp is PEFieldSymbol fld)    
+                            if (tmp is PEFieldSymbol fld)
                             {
                                 if (name == "defined")
                                 {
@@ -201,6 +201,44 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         break;
                 }
             }
+        }
+
+        public static bool TryResolveFile(ISymbolProvider model, SourceRoutineSymbol routine, BoundExpression expr, out IPhpScriptTypeSymbol script)
+        {
+            script = null;
+
+            if (expr.ConstantValue.TryConvertToString(out var path))
+            {
+                // include (path)
+                script = model.ResolveFile(path);
+            }
+            else if (expr is BoundConcatEx concat) // common case
+            {
+                // include (dirname( __FILE__ ) . path) // changed to (__DIR__ . path) by graph rewriter
+                // include (__DIR__ . path)
+                if (concat.ArgumentsInSourceOrder.Length == 2 &&
+                    concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == BoundPseudoConst.Types.Dir &&
+                    concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out path))
+                {
+                    // create project relative path
+                    // not starting with a directory separator!
+                    path = routine.ContainingFile.DirectoryRelativePath + path;
+                    if (path.Length != 0 && Roslyn.Utilities.PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
+                    script = model.ResolveFile(path);
+                }
+                else // include (RootPath . path)
+                if (concat.ArgumentsInSourceOrder.Length == 2 &&
+                    concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc2 && pc2.ConstType == BoundPseudoConst.Types.RootPath &&
+                    concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out path))
+                {
+                    // create project relative path
+                    // not starting with a directory separator!
+                    if (path.Length != 0 && Roslyn.Utilities.PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
+                    script = model.ResolveFile(path);
+                }
+            }
+
+            return script != null;
         }
 
         public static bool HasSimpleName(BoundGlobalFunctionCall call, out string name)
