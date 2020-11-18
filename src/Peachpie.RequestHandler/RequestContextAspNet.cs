@@ -68,11 +68,6 @@ namespace Peachpie.RequestHandler
             }
         }
 
-        static Type TryGetScriptType(Assembly ass)
-        {
-            return ass?.GetType(ScriptInfo.ScriptTypeName, false, false);
-        }
-
         /// <summary>
         /// Loads assemblies representing referenced scripts and reflects their symbols to be used by the runtime.
         /// </summary>
