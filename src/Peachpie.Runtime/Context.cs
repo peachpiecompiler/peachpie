@@ -224,7 +224,7 @@ namespace Pchp.Core
                             {
                                 // static field
                                 var clrfield = new PhpPropertyInfo.ClrFieldProperty(t.ContainerType.GetPhpTypeInfo(), fi);
-                                ConstsMap.DefineAppConstant(fi.Name, new Func<PhpValue>(clrfield.GetStaticValue), false, extensionName);
+                                ConstsMap.DefineAppConstant(fi.Name, new Func<Context, PhpValue>(ctx => clrfield.GetValue(ctx, null)), false, extensionName);
                             }
                         }
                         else if (m is PropertyInfo pi && !pi.IsPhpHidden())

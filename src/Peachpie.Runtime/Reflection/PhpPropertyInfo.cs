@@ -25,31 +25,32 @@ namespace Pchp.Core.Reflection
         {
             public FieldInfo Field { get; }
 
-            readonly Lazy<Func<object?, PhpValue>> _lazyGetter;
+            readonly Lazy<Func<Context, object?, PhpValue>> _lazyGetter;
             readonly Lazy<Action<Context, object?, PhpValue>> _lazySetValue;
-            readonly Lazy<Func<object?, PhpAlias>> _lazyEnsureAlias;
-            readonly Lazy<Func<object?, object>> _lazyEnsureObject;
-            readonly Lazy<Func<object?, IPhpArray>> _lazyEnsureArray;
+            readonly Lazy<Func<Context, object?, PhpAlias>> _lazyEnsureAlias;
+            readonly Lazy<Func<Context, object?, object>> _lazyEnsureObject;
+            readonly Lazy<Func<Context, object?, IPhpArray>> _lazyEnsureArray;
 
             /// <summary>
-            /// Creates Func&lt;object, T&gt; depending on the access.
+            /// Creates Func&lt;Context, object, T&gt; depending on the access.
             /// </summary>
             Delegate CompileAccess(AccessMask access)
             {
+                var pctx = Expression.Parameter(typeof(Context));
                 var pinstance = Expression.Parameter(typeof(object));
 
-                var expr = Bind(Expression.Convert(pinstance, Field.DeclaringType));
+                var expr = Bind(pctx, Expression.Convert(pinstance, Field.DeclaringType));
                 if (access == AccessMask.Read)
                 {
                     expr = ConvertExpression.BindToValue(expr);
                 }
                 else
                 {
-                    expr = BinderHelpers.BindAccess(expr, null, access, null);
+                    expr = BinderHelpers.BindAccess(expr, pctx, access, null);
                 }
 
                 //
-                return Expression.Lambda(expr, tailCall: true, parameters: new[] { pinstance }).Compile();
+                return Expression.Lambda(expr, tailCall: true, parameters: new[] { pctx, pinstance }).Compile();
             }
 
             public ClrFieldProperty(PhpTypeInfo tinfo, FieldInfo field)
@@ -58,10 +59,10 @@ namespace Pchp.Core.Reflection
                 Field = field ?? throw new ArgumentNullException(nameof(field));
 
                 //
-                _lazyGetter = new Lazy<Func<object?, PhpValue>>(() => (Func<object?, PhpValue>)CompileAccess(AccessMask.Read));
-                _lazyEnsureAlias = new Lazy<Func<object?, PhpAlias>>(() => (Func<object?, PhpAlias>)CompileAccess(AccessMask.ReadRef));
-                _lazyEnsureObject = new Lazy<Func<object?, object>>(() => (Func<object?, object>)CompileAccess(AccessMask.EnsureObject));
-                _lazyEnsureArray = new Lazy<Func<object?, IPhpArray>>(() => (Func<object?, IPhpArray>)CompileAccess(AccessMask.EnsureArray));
+                _lazyGetter = new Lazy<Func<Context, object?, PhpValue>>(() => (Func<Context, object?, PhpValue>)CompileAccess(AccessMask.Read));
+                _lazyEnsureAlias = new Lazy<Func<Context, object?, PhpAlias>>(() => (Func<Context, object?, PhpAlias>)CompileAccess(AccessMask.ReadRef));
+                _lazyEnsureObject = new Lazy<Func<Context, object?, object>>(() => (Func<Context, object?, object>)CompileAccess(AccessMask.EnsureObject));
+                _lazyEnsureArray = new Lazy<Func<Context, object?, IPhpArray>>(() => (Func<Context, object?, IPhpArray>)CompileAccess(AccessMask.EnsureArray));
 
                 // SetValue(instance, PhpValue): void
                 _lazySetValue = new Lazy<Action<Context, object?, PhpValue>>(() =>
@@ -80,7 +81,7 @@ namespace Pchp.Core.Reflection
                     var pvalue = Expression.Parameter(typeof(PhpValue));
 
                     // field_expr: <instance>.<field>
-                    var field_expr = Bind(Expression.Convert(pinstance, Field.DeclaringType));
+                    var field_expr = Bind(pctx, Expression.Convert(pinstance, Field.DeclaringType));
 
                     // expr: <field> := <value>
                     // var expr = BinderHelpers.BindAccess(field_expr, pctx, AccessMask.Write, pvalue); // <-- does not allow passing PhpAlias
@@ -119,21 +120,17 @@ namespace Pchp.Core.Reflection
 
             public override Type PropertyType => Field.FieldType;
 
-            public PhpValue GetStaticValue() => GetValue(null);
+            public override PhpValue GetValue(Context ctx, object instance) => _lazyGetter.Value(ctx, instance);
 
-            public PhpValue GetValue(object? instance) => _lazyGetter.Value(instance);
+            public override PhpAlias EnsureAlias(Context ctx, object instance) => _lazyEnsureAlias.Value(ctx, instance);
 
-            public override PhpValue GetValue(Context ctx, object instance) => GetValue(instance);
+            public override object EnsureObject(Context ctx, object instance) => _lazyEnsureObject.Value(ctx, instance);
 
-            public override PhpAlias EnsureAlias(Context ctx, object instance) => _lazyEnsureAlias.Value(instance);
-
-            public override object EnsureObject(Context ctx, object instance) => _lazyEnsureObject.Value(instance);
-
-            public override IPhpArray EnsureArray(Context ctx, object instance) => _lazyEnsureArray.Value(instance);
+            public override IPhpArray EnsureArray(Context ctx, object instance) => _lazyEnsureArray.Value(ctx, instance);
 
             public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
 
-            public Expression Bind(Expression target)
+            public override Expression Bind(Expression ctx, Expression target)
             {
                 if (Field.IsLiteral)
                 {
@@ -142,8 +139,6 @@ namespace Pchp.Core.Reflection
 
                 return Expression.Field(Field.IsStatic ? null : target, Field);
             }
-
-            public override Expression Bind(Expression _, Expression target) => Bind(target);
         }
 
         #endregion
