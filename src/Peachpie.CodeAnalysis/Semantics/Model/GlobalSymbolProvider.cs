@@ -85,7 +85,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             {
                 return (field.IsConst || (field.IsReadOnly && field.IsStatic)) &&
                     field.DeclaredAccessibility == Accessibility.Public &&
-                    !field.IsPhpHidden(_compilation);
+                    !field.IsPhpHidden;
             }
 
             if (symbol is PropertySymbol prop)

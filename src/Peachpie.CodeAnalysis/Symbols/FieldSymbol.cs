@@ -97,6 +97,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual int FixedSize { get { return 0; } }
 
         /// <summary>
+        /// Gets value indicating the field is hidden from PHP reflection.
+        /// </summary>
+        public virtual bool IsPhpHidden => false;
+
+        /// <summary>
         /// If this.IsFixed is true, returns the underlying implementation type for the
         /// fixed-size buffer when emitted.  Otherwise returns null.
         /// </summary>

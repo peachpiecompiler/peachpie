@@ -32,6 +32,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 return m.IsPhpHidden;
             }
 
+            if (s is FieldSymbol f)
+            {
+                return f.IsPhpHidden;
+            }
+
             var attrs = s.GetAttributes();
             if (attrs.Length != 0)
             {

@@ -201,6 +201,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override bool IsPhpHidden => _originalDefinition.IsPhpHidden;
+
         public override bool IsConst
         {
             get
