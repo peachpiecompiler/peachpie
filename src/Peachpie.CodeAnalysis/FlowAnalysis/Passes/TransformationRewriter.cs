@@ -106,7 +106,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         pc.ConstType == Ast.PseudoConstUse.Types.File)
                     {
                         var fname = _routine.ContainingFile.FileName;
-                        return new BoundLiteral(fname) { ConstantValue = new Optional<object>(fname) }.WithContext(x);
+                        return new BoundLiteral(fname).WithContext(x);
                     }
 
                     return null;
@@ -129,20 +129,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                             if (t.BaseType == null || t.BaseType.IsObjectType())
                             {
                                 // FALSE
-                                newExpression = new BoundLiteral(false.AsObject())
-                                {
-                                    ConstantValue = false.AsOptional()
-                                };
+                                newExpression = new BoundLiteral(false.AsObject());
                                 return true;
                             }
                             else
                             {
                                 // {class name}
                                 var baseTypeName = t.BaseType.PhpQualifiedName().ToString();
-                                newExpression = new BoundLiteral(baseTypeName)
-                                {
-                                    ConstantValue = baseTypeName
-                                };
+                                newExpression = new BoundLiteral(baseTypeName);
                                 return true;
                             }
                         }
@@ -186,10 +180,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
                         if (value.HasValue && value.TryConvertToBool(out var bvalue) && !bvalue)
                         {
-                            return new BoundLiteral(false.AsObject())
-                            {
-                                ConstantValue = false.AsOptional()
-                            }.WithContext(x);
+                            return new BoundLiteral(false.AsObject()).WithContext(x);
                         }
                     }
                     return null;
@@ -204,10 +195,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         // always FALSE
                         if (svalue.StartsWith("xdebug.") || svalue.StartsWith("xcache.") || svalue.StartsWith("opcache.") || svalue.StartsWith("apc."))
                         {
-                            return new BoundLiteral(false.AsObject())
-                            {
-                                ConstantValue = false.AsOptional()
-                            }.WithContext(x);
+                            return new BoundLiteral(false.AsObject()).WithContext(x);
 
                             // TODO: well-known ini options can be translated to access the configuration property directly
                         }
@@ -227,10 +215,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                         Trace.WriteLine($"'extension_loaded({ext_name})' evaluated to {hasextension}.");
 
-                        return new BoundLiteral(hasextension.AsObject())
-                        {
-                            ConstantValue = hasextension.AsOptional()
-                        }.WithContext(x);
+                        return new BoundLiteral(hasextension.AsObject()).WithContext(x);
                     }
                     return null;
                 } },
@@ -620,7 +605,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 // empty string:
                 TransformationCount++;
-                return new BoundLiteral(string.Empty) { ConstantValue = new Optional<object>(string.Empty) }.WithContext(x);
+                return new BoundLiteral(string.Empty).WithContext(x);
             }
 
             // visit & concat in compile time if we can:
@@ -647,7 +632,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         {
                             newargs = newargs.Insert(i, BoundArgument.Create(new BoundLiteral(result)
                             {
-                                ConstantValue = new Optional<object>(result),
                                 TypeRefMask = _routine.TypeRefContext.GetStringTypeMask(),
                                 ResultType = DeclaringCompilation.CoreTypes.String,
                             }.WithAccess(BoundAccess.Read)));
@@ -666,12 +650,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                 if (newargs.Length == 0)
                 {
-                    return new BoundLiteral(string.Empty) { ConstantValue = new Optional<object>(string.Empty) }.WithContext(x);
+                    return new BoundLiteral(string.Empty).WithContext(x);
                 }
                 else if (newargs.Length == 1 && newargs[0].Value.ConstantValue.TryConvertToString(out var value))
                 {
                     // "value"
-                    return new BoundLiteral(value) { ConstantValue = new Optional<object>(value) }.WithContext(x);
+                    return new BoundLiteral(value).WithContext(x);
                 }
 
                 //
