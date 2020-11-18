@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Reference to corresponding source routine.
         /// </summary>
-        protected SourceRoutineSymbol Routine => State.Routine;
+        public SourceRoutineSymbol Routine => State.Routine;
 
         /// <summary>
         /// Gets current type context for type masks resolving.
