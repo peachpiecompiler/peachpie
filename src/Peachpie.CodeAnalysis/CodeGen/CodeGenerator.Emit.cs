@@ -2010,7 +2010,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on stack.</returns>
         internal TypeSymbol EmitMethodAccess(TypeSymbol stack, MethodSymbol method, BoundAccess access)
         {
-            // cast -1 or null to false (CastToFalse) 
+            // cast negative number or null to false (CastToFalse)
             // and copy the value on stack if necessary
             if (access.IsRead)
             {
@@ -2023,7 +2023,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     //    stack = EmitNullableCastToFalse(stack, access.IsReadValueCopy);
                     //} else
 
-                    stack = EmitCastToFalse(stack);
+                    //
+                    stack = EmitCastToFalse(stack, access.TargetType);
                 }
 
                 if (access.EnsureArray)
@@ -2097,12 +2098,50 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Converts <b>negative</b> number or <c>null</c> to <c>FALSE</c>.
         /// </summary>
         /// <param name="stack">Type of value on stack.</param>
+        /// <param name="targetType">Optional hint, the expected conversion of the resulting value.</param>
         /// <returns>New type of value on stack.</returns>
-        internal TypeSymbol EmitCastToFalse(TypeSymbol stack)
+        internal TypeSymbol EmitCastToFalse(TypeSymbol stack, TypeSymbol targetType = null)
         {
             if (stack.SpecialType == SpecialType.System_Boolean)
             {
                 return stack;
+            }
+
+            if (targetType != null && targetType.SpecialType == SpecialType.System_Boolean)
+            {
+                // will be converting to bool anyways
+                if (stack.SpecialType == SpecialType.System_Int32)
+                {
+                    _il.EmitIntConstant(0);     // > 0
+                    _il.EmitOpCode(ILOpCode.Cgt);
+                    return CoreTypes.Boolean;
+                }
+                else if (stack.SpecialType == SpecialType.System_Int64)
+                {
+                    _il.EmitLongConstant(0);    // > 0L
+                    _il.EmitOpCode(ILOpCode.Cgt);
+                    return CoreTypes.Boolean;
+                }
+                else if (stack.SpecialType == SpecialType.System_Double)
+                {
+                    _il.EmitDoubleConstant(0.0);    // > 0.0
+                    _il.EmitOpCode(ILOpCode.Cgt);
+                    return CoreTypes.Boolean;
+                }
+                else if (stack.SpecialType == SpecialType.System_String)
+                {
+                    // Convert.ToBoolean({stack})
+                    return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_String);
+                }
+                else if (stack.Is_PhpString())
+                {
+                    // Convert.ToBoolean({stack})
+                    return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_PhpString);
+                }
+                else if (stack.IsReferenceType)
+                {
+                    // TODO: {stack} != null && Convert.ToBoolean({stack})
+                }
             }
 
             // Template: <stack> ?? FALSE
@@ -2115,17 +2154,17 @@ namespace Pchp.CodeAnalysis.CodeGen
             // emit branching to lblfalse
             if (stack.SpecialType == SpecialType.System_Int32)
             {
-                _il.EmitIntConstant(0);     // 0
+                _il.EmitIntConstant(0);     // < 0
                 _il.EmitBranch(ILOpCode.Blt, lblfalse);
             }
             else if (stack.SpecialType == SpecialType.System_Int64)
             {
-                _il.EmitLongConstant(0);    // 0L
+                _il.EmitLongConstant(0);    // < 0L
                 _il.EmitBranch(ILOpCode.Blt, lblfalse);
             }
             else if (stack.SpecialType == SpecialType.System_Double)
             {
-                _il.EmitDoubleConstant(0.0);    // 0.0
+                _il.EmitDoubleConstant(0.0);    // < 0.0
                 _il.EmitBranch(ILOpCode.Blt, lblfalse);
             }
             else if (stack == CoreTypes.PhpString)
@@ -2135,7 +2174,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (stack.IsReferenceType)
             {
-                _il.EmitNullConstant(); // null
+                _il.EmitNullConstant(); // == null
                 _il.EmitBranch(ILOpCode.Beq, lblfalse);
             }
             else

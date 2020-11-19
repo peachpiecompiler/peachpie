@@ -295,6 +295,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 IsNullOrEmpty_String = ct.String.Method("IsNullOrEmpty", ct.String);
                 Concat_String_String = ct.String.Method("Concat", ct.String, ct.String);
 
+                ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
+                ToBoolean_PhpString = ct.Convert.Method("ToBoolean", ct.PhpString);
+
                 ToString_Bool = ct.Convert.Method("ToString", ct.Boolean);
                 ToString_Int32 = ct.Convert.Method("ToString", ct.Int32);
                 ToString_Long = ct.Convert.Method("ToString", ct.Long);
@@ -431,6 +434,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemArray_IPhpArray_PhpValue,
                 EnsureItemObject_IPhpArray_PhpValue,
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
+                ToBoolean_String, ToBoolean_PhpString,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToChar_String,
                 ToNumber_PhpValue, ToNumber_String, ToArrayOrThrow_PhpValue,
