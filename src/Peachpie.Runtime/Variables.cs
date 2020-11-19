@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
@@ -376,6 +377,15 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Gets the PHP class name of given object instance.
+        /// Returns <see cref="TypeNameNull"/> in case of argument is <c>null</c>.
+        /// </summary>
+        public static string GetClassName(object value)
+        {
+            return value != null ? value.GetPhpTypeInfo().Name : TypeNameNull;
+        }
+
         #endregion
 
         /// <summary>
@@ -565,13 +575,14 @@ namespace Pchp.Core
         public static PhpArray? AsArray(this PhpValue value)
         {
             return (value.Object is PhpAlias alias ? alias.Value.Object : value.Object) as PhpArray;
+            //return value.Object as PhpArray ?? (value.Object is PhpAlias alias ? alias.Value.Object as PhpArray : null);
         }
 
         /// <summary>
         /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
         /// Single-byte strings are decoded using <c>UTF-8</c>.
         /// </summary>
-        public static bool IsPhpArray(this PhpValue value, /*[MaybeNullWhen(false)]*/out PhpArray? array) => (array = value.AsArray()) != null; // TODO: STANDARD21
+        public static bool IsPhpArray(this PhpValue value, /*[MaybeNullWhen(false)]*/out PhpArray? array) => (array = value.AsArray()) != null; // TODO: NETSTANDARD2.1
 
         /// <summary>
         /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.

@@ -8,6 +8,8 @@ using System.IO;
 using Pchp.Core.Reflection;
 using System.Text;
 using System.Net;
+using System.Runtime.InteropServices;
+using Mono.Unix;
 
 namespace Pchp.Library.Streams
 {
@@ -726,6 +728,20 @@ namespace Pchp.Library.Streams
                 );
         }
 
+        internal static bool TryBuildStatStructUnix(string path, out StatStruct stat)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && UnixFileSystemInfo.TryGetFileSystemEntry(path, out var entry) && entry.Exists)
+            {
+                stat = new StatStruct(entry.ToStat());
+                return true;
+            }
+            else
+            {
+                stat = default;
+                return false;
+            }
+        }
+
         /// <summary>
         /// Adjusts UTC time of a file by adding Daylight Saving Time difference.
         /// Makes file times working in the same way as in PHP and Windows Explorer.
@@ -921,6 +937,11 @@ namespace Pchp.Library.Streams
 
             // TODO: no cache here
             // Note: path is already absolute w/o the scheme, the permissions have already been checked.
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && TryBuildStatStructUnix(path, out var stat))
+            {
+                return stat;
+            }
 
             var info = PhpPath.HandleFileSystemInfo<FileSystemInfo>(null, path, p =>
             {

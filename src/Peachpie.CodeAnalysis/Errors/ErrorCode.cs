@@ -153,6 +153,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_CtorPropertyStaticCtor,
         /// <summary>Property {0}::${1} cannot have type {2}</summary>
         ERR_PropertyTypeNotAllowed,
+        /// <summary>Multiple analyzer config files cannot be in the same directory ('{0}').</summary>
+        ERR_MultipleAnalyzerConfigsInSameDir,
 
         //
         // Warnings
@@ -214,6 +216,10 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_CannotIncludeFile,
         /// <summary>Called from the global scope</summary>
         WRN_CalledFromGlobalScope,
+        /// <summary>Generator '{0}' failed to initialize. It will not contribute to the output and compilation errors may occur as a result. Exception was of type '{1}' with message '{2}'</summary>
+        WRN_GeneratorFailedDuringInitialization,
+        /// <summary>Generator '{0}' failed to generate source. It will not contribute to the output and compilation errors may occur as a result. Exception was of type '{1}' with message '{2}'</summary>
+        WRN_GeneratorFailedDuringGeneration,
 
         //
         // Visible information
@@ -227,5 +233,7 @@ namespace Pchp.CodeAnalysis.Errors
         INF_DestructDiscouraged,
         /// <summary>Overriden function name '{0}' does not match it's parent name '{1}', letter casing mismatch.</summary>
         INF_OverrideNameCaseMismatch,
+        /// <summary>Constant '{0}' with the same name is already defined</summary>
+        INF_ConstantAlreadyDefined,
     }
 }

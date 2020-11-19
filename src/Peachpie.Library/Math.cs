@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -236,11 +237,26 @@ namespace Pchp.Library
         {
             if (max < min)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new Spl.Error(Resources.LibResources.min_must_be_less_or_equal_to_max);
+            }
+            else if (max == min)
+            {
+                return min;
             }
 
-            // TODO: use mcrypt, int64
-            return rand((int)min, (int)max);
+            var bytes = new byte[sizeof(long)]; // TODO: NETSTANDARD2.1 // Span<byte> bytes = stackalloc byte[sizeof(long)];
+
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(bytes);
+            }
+
+            var value = (decimal)BitConverter.ToUInt64(bytes, 0);
+
+            // adjust to min/max
+            var length = (decimal)max - min + 1;
+            value = min + (value % length);
+            return (long)value;
         }
 
         /// <summary>
@@ -255,8 +271,10 @@ namespace Pchp.Library
 
             var bytes = new byte[length];
 
-            // TODO: System.Security.Cryptography.RNGCryptoServiceProvider
-            System.Security.Cryptography.RandomNumberGenerator.Create().GetBytes(bytes);
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(bytes);
+            }
 
             return new PhpString(bytes);
         }
@@ -275,7 +293,7 @@ namespace Pchp.Library
             return MTGenerator.Next();
         }
 
-        public static int mt_rand(int min, int max)
+        public static int mt_rand(int min, int max) // TODO: long min, long max, mt_getrandmax
         {
             return (min < max) ? MTGenerator.Next(min, max) : MTGenerator.Next(max, min);
         }
@@ -328,19 +346,19 @@ namespace Pchp.Library
 
         #region is_nan,is_finite,is_infinite
 
-        public static bool is_nan(double x)
+        public static bool is_nan(double val)
         {
-            return Double.IsNaN(x);
+            return Double.IsNaN(val);
         }
 
-        public static bool is_finite(double x)
+        public static bool is_finite(double val)
         {
-            return !Double.IsInfinity(x);
+            return !Double.IsInfinity(val);
         }
 
-        public static bool is_infinite(double x)
+        public static bool is_infinite(double val)
         {
-            return Double.IsInfinity(x);
+            return Double.IsInfinity(val);
         }
 
         #endregion
@@ -389,14 +407,14 @@ namespace Pchp.Library
         /// Returns the decimal equivalent of the binary number represented by the binary_string argument.
         /// bindec() converts a binary number to an integer or, if needed for size reasons, double.
         /// </summary>
-        /// <param name="str">The binary string to convert.</param>
-        /// <returns>The decimal value of <paramref name="str"/>.</returns>
-        public static PhpNumber bindec(string str)
+        /// <param name="binary_number">The binary string to convert.</param>
+        /// <returns>The decimal value of <paramref name="binary_number"/>.</returns>
+        public static PhpNumber bindec(string binary_number)
         {
-            if (str == null)
+            if (binary_number == null)
                 return PhpNumber.Default;
 
-            return ConvertToLong(BaseToDouble(str, 2));
+            return ConvertToLong(BaseToDouble(binary_number, 2));
         }
 
 
@@ -410,24 +428,24 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a string containing an octal representation of the given number argument.
         /// </summary>
-        /// <param name="number">Decimal value to convert.</param>
-        /// <returns>Octal string representation of <paramref name="number"/>.</returns>
-        public static string decoct(int number)
+        /// <param name="decimal_number">Decimal value to convert.</param>
+        /// <returns>Octal string representation of <paramref name="decimal_number"/>.</returns>
+        public static string decoct(int decimal_number)
         {
-            return System.Convert.ToString(number, 8);
+            return System.Convert.ToString(decimal_number, 8);
         }
 
         /// <summary>
-        /// Returns the decimal equivalent of the octal number represented by the <paramref name="str"/> argument.
+        /// Returns the decimal equivalent of the octal number represented by the <paramref name="octal_number"/> argument.
         /// </summary>
-        /// <param name="str">The octal string to convert.</param>
-        /// <returns>The decimal representation of <paramref name="str"/>.</returns>
-        public static PhpNumber octdec(string str)
+        /// <param name="octal_number">The octal string to convert.</param>
+        /// <returns>The decimal representation of <paramref name="octal_number"/>.</returns>
+        public static PhpNumber octdec(string octal_number)
         {
-            if (str == null)
+            if (octal_number == null)
                 return PhpNumber.Default;
 
-            return ConvertToLong(BaseToDouble(str, 8));
+            return ConvertToLong(BaseToDouble(octal_number, 8));
         }
 
         //public static object octdec_unicode(string str)
@@ -439,11 +457,11 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a string containing a hexadecimal representation of the given number argument.
         /// </summary>
-        /// <param name="number">Decimal value to convert.</param>
-        /// <returns>Hexadecimal string representation of <paramref name="number"/>.</returns>
-        public static string dechex(long number)
+        /// <param name="decimal_number">Decimal value to convert.</param>
+        /// <returns>Hexadecimal string representation of <paramref name="decimal_number"/>.</returns>
+        public static string dechex(long decimal_number)
         {
-            return System.Convert.ToString(number, 16);
+            return System.Convert.ToString(decimal_number, 16);
         }
 
         //public static string dechex_unicode(int number)
@@ -456,14 +474,14 @@ namespace Pchp.Library
         /// Returns the decimal equivalent of the hexadecimal number represented by the hex_string argument. hexdec() converts a hexadecimal string to a decimal number.
         /// hexdec() will ignore any non-hexadecimal characters it encounters.
         /// </summary>
-        /// <param name="str">The hexadecimal string to convert.</param>
-        /// <returns>The decimal representation of <paramref name="str"/>.</returns>
-        public static PhpNumber hexdec(string str)
+        /// <param name="hexadecimal_number">The hexadecimal string to convert.</param>
+        /// <returns>The decimal representation of <paramref name="hexadecimal_number"/>.</returns>
+        public static PhpNumber hexdec(string hexadecimal_number)
         {
-            if (str == null)
+            if (hexadecimal_number == null)
                 return PhpNumber.Default;
 
-            return ConvertToLong(BaseToDouble(str, 16));
+            return ConvertToLong(BaseToDouble(hexadecimal_number, 16));
         }
 
         //public static object hexdec_unicode(string str)
@@ -598,21 +616,21 @@ namespace Pchp.Library
         /// <summary>
         /// Degrees to radians.
         /// </summary>
-        /// <param name="degrees"></param>
+        /// <param name="number"></param>
         /// <returns></returns>
-        public static double deg2rad(double degrees)
+        public static double deg2rad(double number)
         {
-            return degrees / 180 * Math.PI;
+            return number / 180 * Math.PI;
         }
 
         /// <summary>
         /// Radians to degrees.
         /// </summary>
-        /// <param name="radians"></param>
+        /// <param name="number"></param>
         /// <returns></returns>
-        public static double rad2deg(double radians)
+        public static double rad2deg(double number)
         {
-            return radians / Math.PI * 180;
+            return number / Math.PI * 180;
         }
 
         /// <summary>
@@ -626,28 +644,28 @@ namespace Pchp.Library
 
         /// <summary>
         /// Returns the arc cosine of arg in radians.
-        /// acos() is the complementary function of cos(), which means that <paramref name="x"/>==cos(acos(<paramref name="x"/>)) for every value of a that is within acos()' range.
+        /// acos() is the complementary function of cos(), which means that <paramref name="number"/>==cos(acos(<paramref name="number"/>)) for every value of a that is within acos()' range.
         /// </summary>
-        /// <param name="x">The argument to process.</param>
-        /// <returns>The arc cosine of <paramref name="x"/> in radians.</returns>
-		public static double acos(double x)
+        /// <param name="number">The argument to process.</param>
+        /// <returns>The arc cosine of <paramref name="number"/> in radians.</returns>
+		public static double acos(double number)
         {
-            return Math.Acos(x);
+            return Math.Acos(number);
         }
 
         /// <summary>
-        /// Returns the arc sine of arg in radians. asin() is the complementary function of sin(), which means that <paramref name="x"/>==sin(asin(<paramref name="x"/>)) for every value of a that is within asin()'s range.
+        /// Returns the arc sine of arg in radians. asin() is the complementary function of sin(), which means that <paramref name="number"/>==sin(asin(<paramref name="number"/>)) for every value of a that is within asin()'s range.
         /// </summary>
-        /// <param name="x">The argument to process.</param>
-        /// <returns>The arc sine of <paramref name="x"/> in radians.</returns>
-		public static double asin(double x)
+        /// <param name="number">The argument to process.</param>
+        /// <returns>The arc sine of <paramref name="number"/> in radians.</returns>
+		public static double asin(double number)
         {
-            return Math.Asin(x);
+            return Math.Asin(number);
         }
 
-        public static double atan(double x)
+        public static double atan(double number)
         {
-            return Math.Atan(x);
+            return Math.Atan(number);
         }
 
         public static double atan2(double y, double x)
@@ -660,53 +678,53 @@ namespace Pchp.Library
             else return rv;
         }
 
-        public static double cos(double x)
+        public static double cos(double number)
         {
-            return Math.Cos(x);
+            return Math.Cos(number);
         }
 
-        public static double sin(double x)
+        public static double sin(double number)
         {
-            return Math.Sin(x);
+            return Math.Sin(number);
         }
 
-        public static double tan(double x)
+        public static double tan(double number)
         {
-            return Math.Tan(x);
+            return Math.Tan(number);
         }
 
         #endregion
 
         #region cosh, sinh, tanh, acosh, asinh, atanh
 
-        public static double cosh(double x)
+        public static double cosh(double number)
         {
-            return Math.Cosh(x);
+            return Math.Cosh(number);
         }
 
-        public static double sinh(double x)
+        public static double sinh(double number)
         {
-            return Math.Sinh(x);
+            return Math.Sinh(number);
         }
 
-        public static double tanh(double x)
+        public static double tanh(double number)
         {
-            return Math.Tanh(x);
+            return Math.Tanh(number);
         }
 
-        public static double acosh(double x)
+        public static double acosh(double number)
         {
-            return Math.Log(x + Math.Sqrt(x * x - 1));
+            return Math.Log(number + Math.Sqrt(number * number - 1));
         }
 
-        public static double asinh(double x)
+        public static double asinh(double number)
         {
-            return Math.Log(x + Math.Sqrt(x * x + 1));
+            return Math.Log(number + Math.Sqrt(number * number + 1));
         }
 
-        public static double atanh(double x)
+        public static double atanh(double number)
         {
-            return Math.Log((1 + x) / (1 - x)) / 2;
+            return Math.Log((1 + number) / (1 - number)) / 2;
         }
 
         #endregion
@@ -714,11 +732,11 @@ namespace Pchp.Library
         #region exp, expm1, log, log10, log1p, pow, sqrt, hypot
 
         /// <summary>
-        /// Returns <c>e</c> raised to the power of <paramref name="x"/>.
+        /// Returns <c>e</c> raised to the power of <paramref name="number"/>.
         /// </summary>
-        public static double exp(double x)
+        public static double exp(double number)
         {
-            return Math.Exp(x);
+            return Math.Exp(number);
         }
 
         /// <summary>
@@ -726,48 +744,48 @@ namespace Pchp.Library
         /// if the value of arg is near zero, a case where 'exp (arg) - 1' would be inaccurate due to
         /// subtraction of two numbers that are nearly equal. 
         /// </summary>
-        /// <param name="x">The argument to process </param>
-        public static double expm1(double x)
+        /// <param name="number">The argument to process </param>
+        public static double expm1(double number)
         {
-            return Math.Exp(x) - 1.0;   // TODO: implement exp(x)-1 for x near to zero
+            return Math.Exp(number) - 1.0;   // TODO: implement exp(x)-1 for x near to zero
         }
 
         /// <summary>
-        /// Returns the base-10 logarithm of <paramref name="x"/>.
+        /// Returns the base-10 logarithm of <paramref name="number"/>.
         /// </summary>
-        public static double log10(double x)
+        public static double log10(double number)
         {
-            return Math.Log10(x);
+            return Math.Log10(number);
         }
 
-        public static double log(double x)
+        public static double log(double number)
         {
-            return Math.Log(x);
+            return Math.Log(number);
         }
 
         /// <summary>
-        /// If the optional <paramref name="logBase"/> parameter is specified, log() returns log(<paramref name="logBase"/>) <paramref name="x"/>, otherwise log() returns the natural logarithm of <paramref name="x"/>.
+        /// If the optional <paramref name="base"/> parameter is specified, log() returns log(<paramref name="base"/>) <paramref name="number"/>, otherwise log() returns the natural logarithm of <paramref name="number"/>.
         /// </summary>
-        public static double log(double x, double logBase)
+        public static double log(double number, double @base)
         {
-            return Math.Log(x, logBase);
+            return Math.Log(number, @base);
         }
 
         /// <summary>
         /// log1p() returns log(1 + number) computed in a way that is accurate even when the value
         /// of number is close to zero. log()  might only return log(1) in this case due to lack of precision. 
         /// </summary>
-        /// <param name="x">The argument to process </param>
+        /// <param name="number">The argument to process </param>
         /// <returns></returns>
-		public static double log1p(double x)
+		public static double log1p(double number)
         {
-            return Math.Log(x + 1.0);   // TODO: implement log(x+1) for x near to zero
+            return Math.Log(number + 1.0);   // TODO: implement log(x+1) for x near to zero
         }
 
         /// <summary>
-        /// Returns <paramref name="base"/> raised to the power of <paramref name="exp"/>.
+        /// Returns <paramref name="base"/> raised to the power of <paramref name="exponent"/>.
         /// </summary>
-        public static PhpNumber pow(PhpNumber @base, PhpNumber exp) => PhpNumber.Pow(@base, exp);
+        public static PhpNumber pow(PhpNumber @base, PhpNumber exponent) => PhpNumber.Pow(@base, exponent);
 
         //public static PhpNumber pow(PhpNumber @base, PhpNumber exp)
         //{
@@ -838,14 +856,14 @@ namespace Pchp.Library
         //    return PhpNumber.Create(l1);
         //}
 
-        public static double sqrt(double x)
+        public static double sqrt(double number)
         {
-            return Math.Sqrt(x);
+            return Math.Sqrt(number);
         }
 
-        public static double hypot(double x, double y)
+        public static double hypot(double num1, double num2)
         {
-            return Math.Sqrt(x * x + y * y);
+            return Math.Sqrt(num1 * num1 + num2 * num2);
         }
 
         #endregion
@@ -853,44 +871,44 @@ namespace Pchp.Library
         #region  ceil, floor, round, abs, fmod, max, min, intdiv, fdiv
 
         /// <summary>
-        /// Returns the next highest integer value by rounding up <paramref name="x"/> if necessary.
+        /// Returns the next highest integer value by rounding up <paramref name="number"/> if necessary.
         /// </summary>
-        /// <param name="x">The value to round.</param>
-        /// <returns><paramref name="x"/> rounded up to the next highest integer. The return value of ceil() is still of type <c>double</c> as the value range of double is usually bigger than that of integer.</returns>
-        public static double ceil(double x)
+        /// <param name="number">The value to round.</param>
+        /// <returns><paramref name="number"/> rounded up to the next highest integer. The return value of ceil() is still of type <c>double</c> as the value range of double is usually bigger than that of integer.</returns>
+        public static double ceil(double number)
         {
-            return Math.Ceiling(x);
+            return Math.Ceiling(number);
         }
 
         /// <summary>
-        /// Returns the next lowest integer value by rounding down <paramref name="x"/> if necessary.
+        /// Returns the next lowest integer value by rounding down <paramref name="number"/> if necessary.
         /// </summary>
-        /// <param name="x">The numeric value to round.</param>
-        /// <returns><paramref name="x"/> rounded to the next lowest integer. The return value of floor() is still of type <c>double</c> because the value range of double is usually bigger than that of integer.</returns>
-		public static double floor(double x)
+        /// <param name="number">The numeric value to round.</param>
+        /// <returns><paramref name="number"/> rounded to the next lowest integer. The return value of floor() is still of type <c>double</c> because the value range of double is usually bigger than that of integer.</returns>
+		public static double floor(double number)
         {
-            return Math.Floor(x);
+            return Math.Floor(number);
         }
 
         /// <summary>
         /// Rounds a float.
         /// </summary>
-        /// <param name="x">The value to round.</param>
+        /// <param name="number">The value to round.</param>
         /// <returns>The rounded value.</returns>
-		public static double round(double x)
+		public static double round(double number)
         {
-            return RoundInternal(x, RoundMode.HalfUp);
+            return RoundInternal(number, RoundMode.HalfUp);
         }
 
         /// <summary>
         /// Rounds a float.
         /// </summary>
-        /// <param name="x">The value to round.</param>
+        /// <param name="number">The value to round.</param>
         /// <param name="precision">The optional number of decimal digits to round to. Can be less than zero to ommit digits at the end. Default is <c>0</c>.</param>
         /// <returns>The rounded value.</returns>
-        public static double round(double x, int precision /*= 0*/)
+        public static double round(double number, int precision /*= 0*/)
         {
-            return round(x, precision, RoundMode.HalfUp);
+            return round(number, precision, RoundMode.HalfUp);
         }
 
         /// <summary>
@@ -1059,29 +1077,29 @@ namespace Pchp.Library
         /// <summary>
         /// Rounds a float.
         /// </summary>
-        /// <param name="x">The value to round.</param>
+        /// <param name="number">The value to round.</param>
         /// <param name="precision">The optional number of decimal digits to round to. Can be less than zero to ommit digits at the end. Default is <c>0</c>.</param>
         /// <param name="mode">One of PHP_ROUND_HALF_UP, PHP_ROUND_HALF_DOWN, PHP_ROUND_HALF_EVEN, or PHP_ROUND_HALF_ODD. Default is <c>PHP_ROUND_HALF_UP</c>.</param>
         /// <returns>The rounded value.</returns>
-        public static double round(double x, int precision = 0, RoundMode mode = RoundMode.HalfUp)
+        public static double round(double number, int precision = 0, RoundMode mode = RoundMode.HalfUp)
         {
-            if (Double.IsInfinity(x) || Double.IsNaN(x) || x == default(double))
-                return x;
+            if (Double.IsInfinity(number) || Double.IsNaN(number) || number == default(double))
+                return number;
 
             if (precision == 0)
             {
-                return RoundInternal(x, mode);
+                return RoundInternal(number, mode);
             }
             else
             {
                 if (precision > 23 || precision < -23)
-                    return x;
+                    return number;
 
                 //
                 // Following code is taken from math.c to avoid incorrect .NET rounding
                 //
 
-                var precision_places = 14 - _Log10Abs(x);
+                var precision_places = 14 - _Log10Abs(number);
 
                 var f1 = Power10Value(precision);
                 double tmp_value;
@@ -1092,7 +1110,7 @@ namespace Pchp.Library
                 if (precision_places > precision && precision_places - precision < 15)
                 {
                     var f2 = Power10Value(precision_places);
-                    tmp_value = x * f2;
+                    tmp_value = number * f2;
                     /* preround the result (tmp_value will always be something * 1e14,
                        thus never larger than 1e15 here) */
                     tmp_value = RoundInternal(tmp_value, mode);
@@ -1104,10 +1122,10 @@ namespace Pchp.Library
                 else
                 {
                     /* adjust the value */
-                    tmp_value = x * f1;
+                    tmp_value = number * f1;
                     /* This value is beyond our precision, so rounding it is pointless */
                     if (Math.Abs(tmp_value) >= 1e15)
-                        return x;
+                        return number;
                 }
 
                 /* round the temp value */
@@ -1143,27 +1161,27 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Returns the absolute value of <paramref name="x"/>.
+        /// Returns the absolute value of <paramref name="number"/>.
         /// </summary>
-        /// <param name="x">The numeric value to process.</param>
-        public static PhpNumber abs(PhpNumber x)
+        /// <param name="number">The numeric value to process.</param>
+        public static PhpNumber abs(PhpNumber number)
         {
-            return x.IsLong
-                ? abs(x.Long)
-                : PhpNumber.Create(Math.Abs(x.Double));
+            return number.IsLong
+                ? abs(number.Long)
+                : PhpNumber.Create(Math.Abs(number.Double));
         }
 
-        public static double abs(double x)
+        public static double abs(double number)
         {
-            return Math.Abs(x);
+            return Math.Abs(number);
         }
 
-        public static PhpNumber abs(long lx)
+        public static PhpNumber abs(long number)
         {
-            if (lx == long.MinValue)
-                return PhpNumber.Create(-(double)lx);
+            if (number == long.MinValue)
+                return PhpNumber.Create(-(double)number);
             else
-                return PhpNumber.Create(Math.Abs(lx));
+                return PhpNumber.Create(Math.Abs(number));
         }
 
         /// <summary>
@@ -1183,12 +1201,12 @@ namespace Pchp.Library
         /// <summary>
         /// Find highest value.
         /// </summary>
-        public static PhpValue max(PhpArray array) => FindExtreme(array.Values, true);
+        public static PhpValue max(PhpArray values) => FindExtreme(values.Values, true);
 
         /// <summary>
         /// Find lowest value.
         /// </summary>
-        public static PhpValue min(PhpArray array) => FindExtreme(array.Values, false);
+        public static PhpValue min(PhpArray values) => FindExtreme(values.Values, false);
 
         /// <summary>
         /// Find highest value.
@@ -1204,19 +1222,19 @@ namespace Pchp.Library
         /// Find highest value.
         /// If the first and only parameter is an array, max() returns the highest value in that array. If at least two parameters are provided, max() returns the biggest of these values.
         /// </summary>
-        /// <param name="numbers">An array containing the values or values separately.</param>
+        /// <param name="args">An array containing the values or values separately.</param>
         /// <returns>max() returns the numerically highest of the parameter values. If multiple values can be considered of the same size, the one that is listed first will be returned.
         /// When max() is given multiple arrays, the longest array is returned. If all the arrays have the same length, max() will use lexicographic ordering to find the return value.
         /// When given a string it will be cast as an integer when comparing.</returns>
-		public static PhpValue max(params PhpValue[] numbers) => GetExtreme(numbers, true);
+		public static PhpValue max(params PhpValue[] args) => GetExtreme(args, true);
 
         /// <summary>
         /// Find lowest value.
         /// If the first and only parameter is an array, min() returns the lowest value in that array. If at least two parameters are provided, min() returns the smallest of these values.
         /// </summary>
-        /// <param name="numbers">An array containing the values or values separately.</param>
+        /// <param name="args">An array containing the values or values separately.</param>
         /// <returns>min() returns the numerically lowest of the parameter values.</returns>
-		public static PhpValue min(params PhpValue[] numbers) => GetExtreme(numbers, false);
+		public static PhpValue min(params PhpValue[] args) => GetExtreme(args, false);
 
         internal static PhpValue GetExtreme(PhpValue[] numbers, bool maximum)
         {

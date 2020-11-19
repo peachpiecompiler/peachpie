@@ -85,111 +85,173 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
 
-            // Functions with all arguments resolved
-            if (call.ArgumentsInSourceOrder.All(a => a.Value.ConstantValue.HasValue))
+            var args = call.ArgumentsInSourceOrder;
+
+            // Clear out the constant value result from the previous run of this method (if it was valid, it will be reassigned below)
+            call.ConstantValue = default;
+
+            string str;
+
+            switch (name) // TODO: case insensitive
             {
-                // Clear out the constant value result from the previous run of this method (if it was valid, it will be reassigned below)
-                call.ConstantValue = default;
-
-                string str;
-
-                var args = call.ArgumentsInSourceOrder;
-                switch (name) // TODO: case insensitive
-                {
-                    case "is_callable":     // bool is_callable( string $function_name )
-                    case "function_exists": // bool function_exists ( string $function_name )
-                        if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))
+                case "is_callable":     // bool is_callable( string $function_name )
+                case "function_exists": // bool function_exists ( string $function_name )
+                    if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))
+                    {
+                        // TRUE <=> function is defined unconditionally in a reference library (PE assembly)
+                        if (IsUnconditionalDeclaration(analysis.Model.ResolveFunction(NameUtils.MakeQualifiedName(str, true))))
                         {
-                            // TRUE <=> function is defined unconditionally in a reference library (PE assembly)
-                            if (IsUnconditionalDeclaration(analysis.Model.ResolveFunction(NameUtils.MakeQualifiedName(str, true))))
-                            {
-                                call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                            }
+                            call.ConstantValue = ConstantValueExtensions.AsOptional(true);
                         }
-                        break;
+                    }
+                    break;
 
-                    // bool class_exists ( string $class_name [, bool $autoload = true ] )
-                    case "class_exists":
-                    case "interface_exists":
-                        if (args.Length >= 1)
+                // bool class_exists ( string $class_name [, bool $autoload = true ] )
+                case "class_exists":
+                case "interface_exists":
+                    if (args.Length >= 1)
+                    {
+                        // TRUE <=> class is defined unconditionally in a reference library (PE assembly)
+                        var class_name = args[0].Value.ConstantValue.Value as string;
+                        if (!string.IsNullOrEmpty(class_name))
                         {
-                            // TRUE <=> class is defined unconditionally in a reference library (PE assembly)
-                            var class_name = args[0].Value.ConstantValue.Value as string;
-                            if (!string.IsNullOrEmpty(class_name))
-                                {
-                                var tmp = (TypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
-                                if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())   // TODO: + SourceTypeSymbol when reachable unconditional declaration
-                                {
-                                    bool @interface = (name == "interface_exists");
-                                    if (tmp.TypeKind == (@interface ? TypeKind.Interface : TypeKind.Class))
-                                    {
-                                        call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                                    }
-                                }
-                            }
-                        }
-                        break;
-
-                    // bool method_exists ( string $class_name , string $method_name )
-                    case "method_exists":
-                        if (args.Length == 2)
-                        {
-                            var class_name = args[0].Value.ConstantValue.Value as string;
-                            if (class_name != null && args[1].Value.ConstantValue.TryConvertToString(out str))
+                            var tmp = (TypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
+                            if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())   // TODO: + SourceTypeSymbol when reachable unconditional declaration
                             {
-                                var tmp = (NamedTypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
-                                if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())
-                                {
-                                    if (tmp.LookupMethods(str).Any())
-                                    {
-                                        call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                                    }
-                                }
-                            }
-                        }
-                        break;
-
-                    case "defined":
-                    case "constant":
-                        if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))
-                        {
-                            // TODO: const_name in form of "{CLASS}::{NAME}"
-                            var tmp = analysis.Model.ResolveConstant(str);
-                            if (tmp is PEFieldSymbol fld)    // TODO: also user constants defined in the same scope
-                            {
-                                if (name == "defined")
+                                bool @interface = (name == "interface_exists");
+                                if (tmp.TypeKind == (@interface ? TypeKind.Interface : TypeKind.Class))
                                 {
                                     call.ConstantValue = ConstantValueExtensions.AsOptional(true);
                                 }
-                                else // name == "constant"
+                            }
+                        }
+                    }
+                    break;
+
+                // bool method_exists ( string $class_name , string $method_name )
+                case "method_exists":
+                    if (args.Length == 2)
+                    {
+                        var class_name = args[0].Value.ConstantValue.Value as string;
+                        if (class_name != null && args[1].Value.ConstantValue.TryConvertToString(out str))
+                        {
+                            var tmp = (NamedTypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
+                            if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())
+                            {
+                                if (tmp.LookupMethods(str).Count != 0) // TODO: why not User Types // TODO: why not resolve FALSE as well below?
+                                {
+                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                }
+                            }
+                        }
+                    }
+                    break;
+
+                case "defined":     // defined(CONST_NAME)
+                case "constant":    // constant(CONST_NAME)
+                    if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))
+                    {
+                        // TODO: const_name in form of "{CLASS}::{NAME}"
+                        // TODO: also user constants defined in the same scope?
+
+                        // quick evaluation of PE constants that can't be changed at run time
+
+                        var tmp = analysis.Model.ResolveConstant(str);
+                        if (tmp is PEFieldSymbol fld)
+                        {
+                            if (name == "defined")
+                            {
+                                call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                            }
+                            else // name == "constant"
+                            {
+                                if (fld.Type.Is_Func_Context_TResult(out var tresult))
+                                {
+                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, tresult);
+                                }
+                                else
                                 {
                                     var cvalue = fld.GetConstantValue(false);
                                     call.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
                                     call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, fld.Type, notNull: fld.IsNotNull());
                                 }
                             }
-                            else if (tmp is PEPropertySymbol prop)
+                        }
+                        else if (tmp is PEPropertySymbol prop)
+                        {
+                            if (name == "defined")
                             {
-                                if (name == "defined")
-                                {
-                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                                }
-                                else // name == "constant"
-                                {
-                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, prop.Type, notNull: prop.IsNotNull());
-                                }
+                                call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                            }
+                            else // name == "constant"
+                            {
+                                call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, prop.Type, notNull: prop.IsNotNull());
                             }
                         }
-                        break;
+                    }
+                    break;
 
-                    case "strlen":
-                        if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out string value))
+                case "strlen":
+                    if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out string value))
+                    {
+                        call.ConstantValue = new Optional<object>(value.Length);
+                    }
+                    break;
+
+                case "file_exists":
+                    if (args.Length == 1)
+                    {
+                        if (TryResolveFile(analysis.Model, analysis.Routine, args[0].Value, out var script))
                         {
-                            call.ConstantValue = new Optional<object>(value.Length);
+                            // there is compiled script at this path,
+                            // the expression will be always true
+                            call.ConstantValue = true.AsOptional();
                         }
-                        break;
+                    }
+                    break;
+            }
+        }
+
+        public static bool TryResolveFile(ISymbolProvider model, SourceRoutineSymbol routine, BoundExpression expr, out IPhpScriptTypeSymbol script)
+        {
+            script = null;
+
+            if (expr.ConstantValue.TryConvertToString(out var path))
+            {
+                // include (path)
+                script = model.ResolveFile(path);
+            }
+            else if (expr is BoundPseudoConst pc1 && pc1.ConstType == BoundPseudoConst.Types.File) // __FILE__
+            {
+                script = routine.ContainingFile;
+            }
+            else if (expr is BoundConcatEx concat) // common case
+            {
+                // include (dirname( __FILE__ ) . path) // changed to (__DIR__ . path) by graph rewriter
+                // include (__DIR__ . path)
+                if (concat.ArgumentsInSourceOrder.Length == 2 &&
+                    concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == BoundPseudoConst.Types.Dir &&
+                    concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out path))
+                {
+                    // create project relative path
+                    // not starting with a directory separator!
+                    path = routine.ContainingFile.DirectoryRelativePath + path;
+                    if (path.Length != 0 && Roslyn.Utilities.PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
+                    script = model.ResolveFile(path);
+                }
+                else // include (RootPath . path)
+                if (concat.ArgumentsInSourceOrder.Length == 2 &&
+                    concat.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc2 && pc2.ConstType == BoundPseudoConst.Types.RootPath &&
+                    concat.ArgumentsInSourceOrder[1].Value.ConstantValue.TryConvertToString(out path))
+                {
+                    // create project relative path
+                    // not starting with a directory separator!
+                    if (path.Length != 0 && Roslyn.Utilities.PathUtilities.IsAnyDirectorySeparator(path[0])) path = path.Substring(1);   // make nicer when we have a helper method for that
+                    script = model.ResolveFile(path);
                 }
             }
+
+            return script != null;
         }
 
         public static bool HasSimpleName(BoundGlobalFunctionCall call, out string name)

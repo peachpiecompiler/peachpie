@@ -25,14 +25,14 @@ namespace Pchp.Core.Reflection
         {
             public FieldInfo Field { get; }
 
-            readonly Lazy<Func<Context, object, PhpValue>> _lazyGetter;
-            readonly Lazy<Action<Context, object, PhpValue>> _lazySetValue;
-            readonly Lazy<Func<Context, object, PhpAlias>> _lazyEnsureAlias;
-            readonly Lazy<Func<Context, object, object>> _lazyEnsureObject;
-            readonly Lazy<Func<Context, object, IPhpArray>> _lazyEnsureArray;
+            readonly Lazy<Func<Context, object?, PhpValue>> _lazyGetter;
+            readonly Lazy<Action<Context, object?, PhpValue>> _lazySetValue;
+            readonly Lazy<Func<Context, object?, PhpAlias>> _lazyEnsureAlias;
+            readonly Lazy<Func<Context, object?, object>> _lazyEnsureObject;
+            readonly Lazy<Func<Context, object?, IPhpArray>> _lazyEnsureArray;
 
             /// <summary>
-            /// Creates Func&lt;object, T&gt; depending on the access.
+            /// Creates Func&lt;Context, object, T&gt; depending on the access.
             /// </summary>
             Delegate CompileAccess(AccessMask access)
             {
@@ -46,7 +46,7 @@ namespace Pchp.Core.Reflection
                 }
                 else
                 {
-                    expr = BinderHelpers.BindAccess(expr, null, access, null);
+                    expr = BinderHelpers.BindAccess(expr, pctx, access, null);
                 }
 
                 //
@@ -59,13 +59,13 @@ namespace Pchp.Core.Reflection
                 Field = field ?? throw new ArgumentNullException(nameof(field));
 
                 //
-                _lazyGetter = new Lazy<Func<Context, object, PhpValue>>(() => (Func<Context, object, PhpValue>)CompileAccess(AccessMask.Read));
-                _lazyEnsureAlias = new Lazy<Func<Context, object, PhpAlias>>(() => (Func<Context, object, PhpAlias>)CompileAccess(AccessMask.ReadRef));
-                _lazyEnsureObject = new Lazy<Func<Context, object, object>>(() => (Func<Context, object, object>)CompileAccess(AccessMask.EnsureObject));
-                _lazyEnsureArray = new Lazy<Func<Context, object, IPhpArray>>(() => (Func<Context, object, IPhpArray>)CompileAccess(AccessMask.EnsureArray));
+                _lazyGetter = new Lazy<Func<Context, object?, PhpValue>>(() => (Func<Context, object?, PhpValue>)CompileAccess(AccessMask.Read));
+                _lazyEnsureAlias = new Lazy<Func<Context, object?, PhpAlias>>(() => (Func<Context, object?, PhpAlias>)CompileAccess(AccessMask.ReadRef));
+                _lazyEnsureObject = new Lazy<Func<Context, object?, object>>(() => (Func<Context, object?, object>)CompileAccess(AccessMask.EnsureObject));
+                _lazyEnsureArray = new Lazy<Func<Context, object?, IPhpArray>>(() => (Func<Context, object?, IPhpArray>)CompileAccess(AccessMask.EnsureArray));
 
                 // SetValue(instance, PhpValue): void
-                _lazySetValue = new Lazy<Action<Context, object, PhpValue>>(() =>
+                _lazySetValue = new Lazy<Action<Context, object?, PhpValue>>(() =>
                 {
                     if (IsReadOnly)
                     {
@@ -104,7 +104,7 @@ namespace Pchp.Core.Reflection
                     //
                     var lambda = Expression.Lambda(assign_expr, pctx, pinstance, pvalue);
 
-                    return (Action<Context, object, PhpValue>)lambda.Compile();
+                    return (Action<Context, object?, PhpValue>)lambda.Compile();
                 });
             }
 
@@ -219,15 +219,15 @@ namespace Pchp.Core.Reflection
         {
             public PropertyInfo Property { get; }
 
-            readonly Lazy<Func<object, PhpValue>> _lazyGetter;
-            readonly Lazy<Action<Context, object, PhpValue>> _lazySetValue;
+            readonly Lazy<Func<object?, PhpValue>> _lazyGetter;
+            readonly Lazy<Action<Context, object?, PhpValue>> _lazySetValue;
 
             public ClrProperty(PhpTypeInfo tinfo, PropertyInfo property)
                 : base(tinfo)
             {
                 Property = property ?? throw new ArgumentNullException(nameof(property));
 
-                _lazyGetter = new Lazy<Func<object, PhpValue>>(() =>
+                _lazyGetter = new Lazy<Func<object?, PhpValue>>(() =>
                 {
                     var pinstance = Expression.Parameter(typeof(object));
 
@@ -235,11 +235,11 @@ namespace Pchp.Core.Reflection
                     expr = ConvertExpression.BindToValue(expr);
 
                     //
-                    return (Func<object, PhpValue>)Expression.Lambda(expr, true, pinstance).Compile();
+                    return (Func<object?, PhpValue>)Expression.Lambda(expr, true, pinstance).Compile();
                 });
 
                 // SetValue(instance, PhpValue): void
-                _lazySetValue = new Lazy<Action<Context, object, PhpValue>>(() =>
+                _lazySetValue = new Lazy<Action<Context, object?, PhpValue>>(() =>
                 {
                     if (IsReadOnly)
                     {
@@ -263,7 +263,7 @@ namespace Pchp.Core.Reflection
                     // {expr}: void
                     var lambda = Expression.Lambda(Expression.Block(expr, Expression.Empty()), pctx, pinstance, pvalue);
 
-                    return (Action<Context, object, PhpValue>)lambda.Compile();
+                    return (Action<Context, object?, PhpValue>)lambda.Compile();
                 });
             }
 
@@ -299,7 +299,11 @@ namespace Pchp.Core.Reflection
 
             public override Type PropertyType => Property.PropertyType;
 
-            public override PhpValue GetValue(Context ctx, object instance) => _lazyGetter.Value(instance);
+            public PhpValue GetStaticValue() => _lazyGetter.Value(null);
+
+            public PhpValue GetValue(object? instance) => _lazyGetter.Value(instance);
+
+            public override PhpValue GetValue(Context ctx, object instance) => GetValue(instance);
 
             public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
 

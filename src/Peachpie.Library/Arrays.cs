@@ -9,8 +9,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using static Pchp.Core.PhpExtensionAttribute;
 
-namespace Pchp.Library
+namespace Pchp.Library.Standard
 {
     #region Enumerations
 
@@ -73,7 +74,7 @@ namespace Pchp.Library
     /// <summary>
     /// Implements PHP array functions.
     /// </summary>
-    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
+    [PhpExtension(KnownExtensionNames.Standard)]
     public static class Arrays
     {
         #region Constants
@@ -97,7 +98,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region reset, pos, prev, next, key, end, each
+        #region reset, pos, prev, next, key, end
 
         /// <summary>
         /// Retrieves a value being pointed by an array intrinsic enumerator.
@@ -236,49 +237,6 @@ namespace Pchp.Library
             return (array.IntrinsicEnumerator.MoveFirst())
                 ? array.IntrinsicEnumerator.CurrentValue.GetValue()
                 : PhpValue.False;
-        }
-
-        /// <summary>
-        /// Retrieves the current entry and advances array intrinsic enumerator one item forward.
-        /// </summary>
-        /// <param name="array">The array which entry get and which intrinsic enumerator to advance.</param>
-        /// <returns>
-        /// The instance of <see cref="PhpArray"/>(0 =&gt; key, 1 =&gt; value, "key" =&gt; key, "value" =&gt; value)
-        /// where key and value are pointed by the enumerator before it is advanced
-        /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="array"/>
-        /// before the call.
-        /// </returns>
-        [Obsolete]
-        [return: CastToFalse]
-        public static PhpArray each(PhpArray array)
-        {
-            if (array == null)
-            {
-                //PhpException.ReferenceNull("array");
-                return null;
-            }
-
-            if (array.IntrinsicEnumerator.AtEnd)
-            {
-                return null;
-            }
-
-            var entry = array.IntrinsicEnumerator.Current;
-            array.IntrinsicEnumerator.MoveNext();
-
-            // dereferences result since enumerator doesn't do so:
-            var key = entry.Key;
-            var value = entry.Value.GetValue().DeepCopy();
-
-            // creates the resulting array:
-            var result = new PhpArray(4);
-            result.Add(1, value);
-            result.Add("value", value);
-            result.Add(0, key);
-            result.Add("key", key);
-
-            // keys and values should be inplace deeply copied:
-            return result;
         }
 
         #endregion
@@ -2034,10 +1992,15 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Some array is a <B>null</B> reference (Warning).</exception>
         public static PhpArray array_merge_recursive(PhpArray array, params PhpArray[] arrays)
         {
-            if (array == null || arrays == null)
+            if (array == null)
             {
-                PhpException.ArgumentNull(array == null ? nameof(array) : nameof(arrays));
+                PhpException.ArgumentNull(nameof(array));
                 return null;
+            }
+
+            if (arrays == null)
+            {
+                throw new ArgumentNullException(nameof(arrays));    // cannot happen
             }
 
             for (int i = 0; i < arrays.Length; i++)
@@ -2049,7 +2012,7 @@ namespace Pchp.Library
                 }
             }
 
-            return MergeRecursive(array, true, arrays);
+            return MergeRecursive(array, arrays);
         }
 
         /// <summary>
@@ -2057,27 +2020,21 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="array">The first array to merge.</param>
         /// <param name="arrays">The next arrays to merge.</param>
-        /// <param name="deepCopy">Whether to deep copy merged items.</param>
         /// <returns>An array containing items of all specified arrays.</returns>
-        private static PhpArray MergeRecursive(PhpArray array, bool deepCopy, params PhpArray[] arrays)
+        private static PhpArray MergeRecursive(PhpArray/*!*/array, params PhpArray[]/*!!*/arrays)
         {
-            if (array == null) return null;
+            Debug.Assert(array != null);    // already checked
+            Debug.Assert(arrays != null);   // already checked
 
-            PhpArray result = new PhpArray();
-            array.AddTo(result, deepCopy);
+            var result = new PhpArray();
 
-            if (arrays != null)
+            array.AddTo(result, deepCopy: true);
+
+            for (int i = 0; i < arrays.Length; i++)
             {
-                for (int i = 0; i < arrays.Length; i++)
+                if (!MergeRecursiveInternal(result, arrays[i], wasDeepCopied: true))
                 {
-                    if (arrays[i] != null)
-                    {
-                        if (!MergeRecursiveInternal(result, arrays[i], deepCopy))
-                        {
-                            //PhpException.Throw(PhpError.Warning, LibResources.GetString("recursion_detected"));
-                            throw new ArgumentException();
-                        }
-                    }
+                    PhpException.Throw(PhpError.Warning, LibResources.recursion_detected);
                 }
             }
 
@@ -2087,9 +2044,9 @@ namespace Pchp.Library
         /// <summary>
         /// Adds items of "array" to "result" merging those whose string keys are the same.
         /// </summary>
-        private static bool MergeRecursiveInternal(PhpArray/*!*/ result, PhpArray/*!*/ array, bool deepCopy)
+        private static bool MergeRecursiveInternal(PhpArray/*!*/ result, PhpArray/*!*/ array, bool wasDeepCopied)
         {
-            var visited = new HashSet<object>();    // marks arrays that are being visited
+            var visited = new HashSet<PhpArray>();    // marks arrays that are being visited
 
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
@@ -2097,33 +2054,32 @@ namespace Pchp.Library
                 var entry = iterator.Current;
                 if (entry.Key.IsString)
                 {
-                    if (result.ContainsKey(entry.Key))
+                    if (result.TryGetValue(entry.Key, out var xv))
                     {
-                        // the result array already contains the item => merging take place
-                        var xv = result[entry.Key];
-                        var y = entry.Value.GetValue();
-
                         // source item:
-                        PhpValue x = xv.GetValue();
+                        var x = xv.GetValue();
+                        var ax = x.AsArray();
+
+                        // the result array already contains the item => merging take place
+                        var y = entry.Value.GetValue();
+                        var ay = y.AsArray();
 
                         // if x is not a reference then we can reuse the ax array for the result
-                        // since it has been deeply copied when added to the resulting array:
-                        PhpArray item_result = (deepCopy && x.IsArray && !xv.IsAlias) ? x.Array : new PhpArray();
+                        // since on the top level (indicated by wasDeepCopied) it has been deeply
+                        // copied when added to the resulting array:
+                        PhpArray item_result = (wasDeepCopied && ax != null && !xv.IsAlias) ? ax : new PhpArray();
 
-                        if (x.IsArray && y.IsArray)
+                        if (ax != null && ay != null)
                         {
-                            var ax = x.Array;
-                            var ay = y.Array;
-
                             if (ax != item_result)
-                                ax.AddTo(item_result, deepCopy);
+                                ax.AddTo(item_result, deepCopy: true);
 
                             if (visited.Add(ax) == false && visited.Add(ay) == false)
                                 return false;
 
                             // merges ay to the item result (may lead to stack overflow, 
                             // but only with both arrays recursively referencing themselves - who cares?):
-                            bool finite = MergeRecursiveInternal(item_result, ay, deepCopy);
+                            bool finite = MergeRecursiveInternal(item_result, ay, wasDeepCopied: false);     // Nested array items were not deeply copied previously
 
                             visited.Remove(ax);
                             visited.Remove(ay);
@@ -2132,19 +2088,19 @@ namespace Pchp.Library
                         }
                         else
                         {
-                            if (x.IsArray)
+                            if (ax != null)
                             {
-                                if (x.Array != item_result)
-                                    x.Array.AddTo(item_result, deepCopy);
+                                if (ax != item_result)
+                                    ax.AddTo(item_result, deepCopy: true);
                             }
                             else
                             {
                                 /*if (x != null)*/
-                                item_result.Add(deepCopy ? x.DeepCopy() : x);
+                                item_result.Add(x.DeepCopy());
                             }
 
-                            if (y.IsArray) y.Array.AddTo(item_result, deepCopy);
-                            else /*if (y != null)*/ item_result.Add(deepCopy ? y.DeepCopy() : y);
+                            if (ay != null) ay.AddTo(item_result, deepCopy: true);
+                            else /*if (y != null)*/ item_result.Add(y.DeepCopy());
                         }
 
                         result[entry.Key] = PhpValue.Create(item_result);
@@ -2152,13 +2108,13 @@ namespace Pchp.Library
                     else
                     {
                         // PHP does no dereferencing when items are not merged:
-                        result.Add(entry.Key, (deepCopy) ? entry.Value.DeepCopy() : entry.Value);
+                        result.Add(entry.Key, entry.Value.DeepCopy());
                     }
                 }
                 else
                 {
                     // PHP does no dereferencing when items are not merged:
-                    result.Add((deepCopy) ? entry.Value.DeepCopy() : entry.Value);
+                    result.Add(entry.Value.DeepCopy());
                 }
             }
 
@@ -3315,9 +3271,9 @@ namespace Pchp.Library
         }
 
         /// <remarks>Performs deep copy of array, return array with replacements.</remarks>
-        internal static PhpArray ArrayReplaceImpl(PhpArray array, PhpArray[] arrays, bool recursive)
+        static PhpArray ArrayReplaceImpl(PhpArray array, PhpArray[] arrays, bool recursive)
         {
-            PhpArray result = array.DeepCopy();
+            var result = array.DeepCopy();
 
             if (arrays != null)
             {
@@ -3335,18 +3291,24 @@ namespace Pchp.Library
         /// <summary>
         /// Performs replacements on deeply-copied array. Performs deep copies of replace values.
         /// </summary>
-        internal static void ArrayReplaceImpl(PhpArray array, PhpArray replaceWith, bool recursive)
+        static void ArrayReplaceImpl(PhpArray array, PhpArray replaceWith, bool recursive)
         {
-            if (array != null && replaceWith != null)
+            Debug.Assert(array != null);
+
+            if (replaceWith != null)
             {
                 var iterator = replaceWith.GetFastEnumerator();
                 while (iterator.MoveNext())
                 {
-                    PhpValue tmp;
                     var entry = iterator.Current;
-                    if (recursive && entry.Value.IsArray && (tmp = array[entry.Key]).IsArray)
+
+                    if (recursive &&
+                        entry.Value.IsPhpArray(out var arrReplacement) &&
+                        array[entry.Key].IsPhpArray(out var arrOriginal))
                     {
-                        ArrayReplaceImpl(tmp.Array, entry.Value.Array, true);
+                        arrOriginal = arrOriginal.DeepCopy();
+                        ArrayReplaceImpl(arrOriginal, arrReplacement, true);
+                        array[entry.Key] = arrOriginal;
                     }
                     else
                     {
@@ -3357,5 +3319,57 @@ namespace Pchp.Library
         }
 
         #endregion
+    }
+}
+
+namespace Pchp.Library
+{
+    /// <summary>
+    /// Implements PHP array functions.
+    /// </summary>
+    [PhpExtension(KnownExtensionNames.Core)]
+    public static class Arrays
+    {
+        /// <summary>
+        /// Retrieves the current entry and advances array intrinsic enumerator one item forward.
+        /// </summary>
+        /// <param name="arr">The array which entry get and which intrinsic enumerator to advance.</param>
+        /// <returns>
+        /// The instance of <see cref="PhpArray"/>(0 =&gt; key, 1 =&gt; value, "key" =&gt; key, "value" =&gt; value)
+        /// where key and value are pointed by the enumerator before it is advanced
+        /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="arr"/>
+        /// before the call.
+        /// </returns>
+        [Obsolete]
+        [return: CastToFalse]
+        public static PhpArray each(PhpArray arr)
+        {
+            if (arr == null)
+            {
+                PhpException.ArgumentNull(nameof(arr));
+                return null;
+            }
+
+            if (arr.IntrinsicEnumerator.AtEnd)
+            {
+                return null;
+            }
+
+            var entry = arr.IntrinsicEnumerator.Current;
+            arr.IntrinsicEnumerator.MoveNext();
+
+            // dereferences result since enumerator doesn't do so:
+            var key = entry.Key;
+            var value = entry.Value.GetValue();
+
+            // creates the resulting array:
+            return new PhpArray(4)
+            {
+                { 1, value.DeepCopy() },
+                { "value", value.DeepCopy() },
+                { 0, key },
+                { "key", key },
+            };
+        }
     }
 }

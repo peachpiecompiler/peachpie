@@ -8,16 +8,44 @@ using System.Threading.Tasks;
 namespace Pchp.Core
 {
     /// <summary>
+    /// PHP runtime exception.
+    /// </summary>
+    public class PhpErrorException : Exception
+    {
+        public PhpErrorException()
+        {
+        }
+
+        public PhpErrorException(string message) : base(message)
+        {
+        }
+
+        public PhpErrorException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Fatal PHP error causing the script to be terminated.
+    /// </summary>
+    public sealed class PhpFatalErrorException : PhpErrorException
+    {
+        public PhpFatalErrorException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+    }
+
+
+    /// <summary>
     /// Thrown by exit/die language constructs to cause immediate termination of a script being executed.
     /// </summary>
-    [DebuggerDisplay("died(reason={_status,nq})")]
-    public sealed class ScriptDiedException : Exception
+    [DebuggerDisplay("died(reason={Status,nq})")]
+    public sealed class ScriptDiedException : PhpErrorException
     {
         /// <summary>
         /// The exist status.
         /// </summary>
-        public PhpValue Status => _status;
-        PhpValue _status;
+        public PhpValue Status { get; }
 
         /// <summary>
         /// Gets exit code from the status code.
@@ -26,11 +54,11 @@ namespace Pchp.Core
 
         public ScriptDiedException(PhpValue status)
         {
-            _status = status;
+            Status = status;
         }
 
         public ScriptDiedException(string status)
-            :this(PhpValue.Create(status))
+            : this(PhpValue.Create(status))
         {
         }
 
@@ -44,29 +72,26 @@ namespace Pchp.Core
         {
         }
 
-        public override string Message => _status.DisplayString;
-        
+        public override string Message => Status.DisplayString;
+
         /// <summary>
         /// Status of a different type than integer is printed,
         /// exit code according to PHP semantic is returned.
         /// </summary>
-        public int ProcessStatus(Context ctx) => ProcessStatus(ctx, ref _status);
+        public int ProcessStatus(Context ctx) => ProcessStatus(ctx, Status);
 
-        int ProcessStatus(Context ctx, ref PhpValue status)
+        static int ProcessStatus(Context ctx, PhpValue status)
         {
             switch (status.TypeCode)
             {
                 case PhpTypeCode.Alias:
-                    return ProcessStatus(ctx, ref status.Alias.Value);
+                    return ProcessStatus(ctx, status.Alias.Value);
 
                 case PhpTypeCode.Long:
                     return (int)status.ToLong();
 
                 default:
-                    if (ctx != null)
-                    {
-                        ctx.Echo(status);
-                    }
+                    ctx?.Echo(status);
                     return 0;
             }
         }
@@ -76,7 +101,7 @@ namespace Pchp.Core
     /// Thrown when a script couldn't be included because it was not found.
     /// See <see cref="Path"/> for the script file path.
     /// </summary>
-    public sealed class ScriptIncludeException : ArgumentException
+    public sealed class ScriptIncludeException : PhpErrorException
     {
         /// <summary>
         /// Original path to the script that failed to be included.
@@ -84,9 +109,10 @@ namespace Pchp.Core
         public string Path { get; }
 
         internal ScriptIncludeException(string path)
-            : base(string.Format(Resources.ErrResources.script_not_found, path))
         {
-            this.Path = path;
+            Path = path;
         }
+
+        public override string Message => string.Format(Resources.ErrResources.script_not_found, Path);
     }
 }

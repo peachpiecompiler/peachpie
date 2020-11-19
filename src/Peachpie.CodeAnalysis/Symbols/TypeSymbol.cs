@@ -8,13 +8,14 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// A TypeSymbol is a base class for all the symbols that represent a type in PHP.
     /// </summary>
-    internal abstract partial class TypeSymbol : NamespaceOrTypeSymbol, ITypeSymbol
+    internal abstract partial class TypeSymbol : NamespaceOrTypeSymbol, ITypeSymbol, ITypeSymbolInternal
     {
         #region ITypeSymbol
 
@@ -30,7 +31,44 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ITypeSymbol ITypeSymbol.OriginalDefinition => (ITypeSymbol)this.OriginalTypeSymbolDefinition;
 
+        bool ITypeSymbol.IsNativeIntegerType => SpecialType == SpecialType.System_IntPtr || SpecialType == SpecialType.System_UIntPtr;
+
+        bool ITypeSymbol.IsRefLikeType => false;
+
+        bool ITypeSymbol.IsUnmanagedType => false;
+
+        bool ITypeSymbol.IsReadOnly => false;
+
+        NullableAnnotation ITypeSymbol.NullableAnnotation => NullableAnnotation.None;
+
+        string ITypeSymbol.ToDisplayString(NullableFlowState topLevelNullability, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        ImmutableArray<SymbolDisplayPart> ITypeSymbol.ToDisplayParts(NullableFlowState topLevelNullability, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        string ITypeSymbol.ToMinimalDisplayString(SemanticModel semanticModel, NullableFlowState topLevelNullability, int position, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        ImmutableArray<SymbolDisplayPart> ITypeSymbol.ToMinimalDisplayParts(SemanticModel semanticModel, NullableFlowState topLevelNullability, int position, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        ITypeSymbol ITypeSymbol.WithNullableAnnotation(NullableAnnotation nullableAnnotation)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
+
+        ITypeSymbol ITypeSymbolInternal.GetITypeSymbol() => this;
 
         internal NamedTypeSymbol BaseTypeWithDefinitionUseSiteDiagnostics(ref HashSet<DiagnosticInfo> useSiteDiagnostics)
         {
@@ -251,7 +289,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return ReferenceEquals(this, t2);
         }
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(ISymbol obj, SymbolEqualityComparer equalityComparer)
         {
             var t2 = obj as TypeSymbol;
             if ((object)t2 == null) return false;
@@ -308,11 +346,14 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
 
-        public MethodSymbol[] LookupMethods(string name)
+        /// <summary>
+        /// Resolves PHP method by its name.
+        /// </summary>
+        public List<MethodSymbol> LookupMethods(string name)
         {
             if (this.Is_PhpValue())
             {
-                return Array.Empty<MethodSymbol>();
+                return new List<MethodSymbol>();
             }
 
             TypeSymbol topPhpType = null; // deals with PHP-like overriding, once there is PHP method that override another method (even with a different signature) in a base PHP type
@@ -330,7 +371,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 int count = set.Count;
 
-                set.UnionWith(t.GetMembersByPhpName(name).OfType<MethodSymbol>());
+                foreach (var c in t.GetMembersByPhpName(name))
+                {
+                    if (c is MethodSymbol m) set.Add(m);
+                }
 
                 // remember the top PHP class declaring the method:
                 if (topPhpType == null && count != set.Count && t.IsPhpType()) // some methods were found in PHP type
@@ -338,6 +382,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     topPhpType = t;
                 }
             }
+
+            // remove php-hidden methods
+            set.RemoveWhere(m => m.IsPhpHidden); // TODO: other attributes: "private protected", "internal"
 
             if (set.Count == 0 || (this.IsAbstract && set.All(m => m.IsAbstract))) // abstract or interface, otherwise all methods should be declared on this already
             {
@@ -350,7 +397,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
-            return set.ToArray();
+            return set.ToList();
         }
     }
 }

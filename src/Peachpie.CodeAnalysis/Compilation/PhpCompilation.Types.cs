@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
@@ -474,17 +475,17 @@ namespace Pchp.CodeAnalysis
             return ((TypeSymbol)type).IsDerivedFrom(GetWellKnownType(WellKnownType.System_Attribute), false, ref useSiteDiagnostics);
         }
 
-        internal override bool IsSystemTypeReference(ITypeSymbol type)
+        internal override bool IsSystemTypeReference(ITypeSymbolInternal type)
         {
             return (TypeSymbol)type == GetWellKnownType(WellKnownType.System_Type);
         }
 
-        protected override INamedTypeSymbol CommonGetSpecialType(SpecialType specialType)
+        private protected override INamedTypeSymbolInternal CommonGetSpecialType(SpecialType specialType)
         {
             return this.CorLibrary.GetSpecialType(specialType);
         }
 
-        internal override ISymbol CommonGetSpecialTypeMember(SpecialMember specialMember)
+        internal override ISymbolInternal CommonGetSpecialTypeMember(SpecialMember specialMember)
         {
             return this.CorLibrary.GetDeclaredSpecialTypeMember(specialMember);
         }
@@ -615,7 +616,7 @@ namespace Pchp.CodeAnalysis
             get
             {
                 foreach (var pair in CommonGetBoundReferenceManager().GetReferencedAssemblies())
-                    yield return pair.Value;
+                    yield return (IAssemblySymbol)pair.Value;
 
                 yield return this.SourceAssembly;
             }
@@ -717,7 +718,7 @@ namespace Pchp.CodeAnalysis
             return Conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination, ConversionKind.Implicit | ConversionKind.Explicit);
         }
 
-        internal override IConvertibleConversion ClassifyConvertibleConversion(IOperation source, ITypeSymbol destination, out Optional<object> constantValue)
+        internal override IConvertibleConversion ClassifyConvertibleConversion(IOperation source, ITypeSymbol destination, out ConstantValue constantValue)
         {
             //constantValue = default;
 
@@ -967,6 +968,11 @@ namespace Pchp.CodeAnalysis
             protected override bool IsByRefMethod(MethodSymbol method)
             {
                 return method.RefKind != RefKind.None;
+            }
+
+            protected override bool IsByRefProperty(PropertySymbol property)
+            {
+                return property.RefKind != RefKind.None;
             }
 
             protected override bool IsGenericMethodTypeParam(TypeSymbol type, int paramPosition)

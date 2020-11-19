@@ -24,6 +24,15 @@ namespace Pchp.Library
         public const string PHP_EXTRA_VERSION = "-peachpie";
         public static string PHP_OS => CurrentPlatform.IsWindows ? "WINNT" : CurrentPlatform.IsLinux ? "Linux" : CurrentPlatform.IsOsx ? "Darwin" : "Unix";
 
+        /// <summary>
+        /// Gets the Server API name.
+        /// </summary>
+        /// <remarks>
+        /// The member is defined as a lazy constant, known to runtime and compiler.
+        /// The delegate is evaluated and cached, the value of constant is resolved by invocation to the delegate.
+        /// </remarks>
+        public static readonly Func<Context, string>/*!*/PHP_SAPI = ctx => ctx.ServerApi;
+
         public static readonly string PEACHPIE_VERSION = ContextExtensions.GetRuntimeInformationalVersion();
 
         /// <summary>
@@ -33,11 +42,7 @@ namespace Pchp.Library
         /// <remarks>Available as of PHP 7.2.0.</remarks>
         public static string PHP_OS_FAMILY => CurrentPlatform.IsWindows ? "Windows" : CurrentPlatform.IsLinux ? "Linux" : CurrentPlatform.IsOsx ? "OSX" : "Unknown";
 
-        //_constants.Add("PHP_SAPI", (System.Web.HttpContext.Current == null) ? "cli" : "isapi", false); // "hardcoded" in Context
-        //_constants.Add("DIRECTORY_SEPARATOR", FullPath.DirectorySeparatorString, false);
-        public static readonly string DIRECTORY_SEPARATOR = CurrentPlatform.DirectorySeparator.ToString();
-        //_constants.Add("PATH_SEPARATOR", Path.PathSeparator.ToString(), false);
-        public static readonly string PATH_SEPARATOR = CurrentPlatform.PathSeparator.ToString();
+        //_constants.Add("PHP_SAPI", (System.Web.HttpContext.Current == null) ? "cli" : "isapi", false); // defined in Context DefineCoreConstants
 
         public const long PHP_INT_SIZE = sizeof(long);
         public const long PHP_INT_MIN = long.MinValue;
@@ -84,5 +89,18 @@ namespace Pchp.Library
         /// https://github.com/dotnet/runtime/blob/ca1a6842d796d95b44a64222b023263f023a6c5e/src/libraries/System.Net.Sockets/src/System/Net/Sockets/SocketPal.Unix.cs#L1491
         /// </remarks>
         public const int PHP_FD_SETSIZE = 65536;
+    }
+}
+
+namespace Pchp.Library.Standard
+{
+    /// <summary>
+    /// Environment constants and functions.
+    /// </summary>
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
+    public static class Environment
+    {
+        public static readonly string DIRECTORY_SEPARATOR = CurrentPlatform.DirectorySeparator.ToString();
+        public static readonly string PATH_SEPARATOR = CurrentPlatform.PathSeparator.ToString();
     }
 }

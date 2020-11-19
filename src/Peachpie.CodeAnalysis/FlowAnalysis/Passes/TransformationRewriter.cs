@@ -62,9 +62,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // dirname( __FILE__ ) -> __DIR__
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
                         x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
-                        pc.ConstType == Ast.PseudoConstUse.Types.File)
+                        pc.ConstType == BoundPseudoConst.Types.File)
                     {
-                        return new BoundPseudoConst(Ast.PseudoConstUse.Types.Dir).WithAccess(x.Access);
+                        return new BoundPseudoConst(BoundPseudoConst.Types.Dir).WithAccess(x.Access);
                     }
 
                     return null;
@@ -74,10 +74,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // basename( __FILE__ ) -> "filename"
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
                         x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
-                        pc.ConstType == Ast.PseudoConstUse.Types.File)
+                        pc.ConstType == BoundPseudoConst.Types.File)
                     {
                         var fname = _routine.ContainingFile.FileName;
-                        return new BoundLiteral(fname) { ConstantValue = new Optional<object>(fname) }.WithContext(x);
+                        return new BoundLiteral(fname).WithContext(x);
                     }
 
                     return null;
@@ -100,20 +100,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                             if (t.BaseType == null || t.BaseType.IsObjectType())
                             {
                                 // FALSE
-                                newExpression = new BoundLiteral(false.AsObject())
-                                {
-                                    ConstantValue = false.AsOptional()
-                                };
+                                newExpression = new BoundLiteral(false.AsObject());
                                 return true;
                             }
                             else
                             {
                                 // {class name}
                                 var baseTypeName = t.BaseType.PhpQualifiedName().ToString();
-                                newExpression = new BoundLiteral(baseTypeName)
-                                {
-                                    ConstantValue = baseTypeName
-                                };
+                                newExpression = new BoundLiteral(baseTypeName);
                                 return true;
                             }
                         }
@@ -137,7 +131,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     {
                         // get_parent_class($this), get_parent_class(__CLASS__) ->  {class name} | FALSE
                         if ((x.ArgumentsInSourceOrder[0].Value is BoundVariableRef varref && varref.Variable is ThisVariableReference) ||
-                            (x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == Ast.PseudoConstUse.Types.Class))
+                            (x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == BoundPseudoConst.Types.Class))
                         {
                             if (TryResolveParentClassInCurrentClassContext(_routine, out var newExpression))
                             {
@@ -157,10 +151,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
                         if (value.HasValue && value.TryConvertToBool(out var bvalue) && !bvalue)
                         {
-                            return new BoundLiteral(false.AsObject())
-                            {
-                                ConstantValue = false.AsOptional()
-                            }.WithContext(x);
+                            return new BoundLiteral(false.AsObject()).WithContext(x);
                         }
                     }
                     return null;
@@ -175,10 +166,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         // always FALSE
                         if (svalue.StartsWith("xdebug.") || svalue.StartsWith("xcache.") || svalue.StartsWith("opcache.") || svalue.StartsWith("apc."))
                         {
-                            return new BoundLiteral(false.AsObject())
-                            {
-                                ConstantValue = false.AsOptional()
-                            }.WithContext(x);
+                            return new BoundLiteral(false.AsObject()).WithContext(x);
 
                             // TODO: well-known ini options can be translated to access the configuration property directly
                         }
@@ -198,10 +186,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                         Trace.WriteLine($"'extension_loaded({ext_name})' evaluated to {hasextension}.");
 
-                        return new BoundLiteral(hasextension.AsObject())
-                        {
-                            ConstantValue = hasextension.AsOptional()
-                        }.WithContext(x);
+                        return new BoundLiteral(hasextension.AsObject()).WithContext(x);
                     }
                     return null;
                 } },
@@ -215,6 +200,85 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         itemAccess.Index != null && itemAccess.Index.TypeRefMask.IsSingleType && typeCtx.IsLong(itemAccess.Index.TypeRefMask))
                     {
                         return new BoundArrayItemOrdEx(DeclaringCompilation, itemAccess.Array, itemAccess.Index).WithContext(x);
+                    }
+
+                    return null;
+                } },
+                { NameUtils.SpecialNames.define, x =>
+                {
+                    // define( CONST_NAME, CONST_VALUE ) : true|false
+
+                    if (x.ArgumentsInSourceOrder.Length >= 2 &&
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName) &&
+                        TryResolveConstant(constName, out var constValue))
+                    {
+                        // constant already defined?
+                        // diagnostic: constant already defined
+                        DeclaringCompilation.DeclarationDiagnostics.Add(_routine, x.GetTextSpan(), Errors.ErrorCode.INF_ConstantAlreadyDefined, constName);
+
+                        // always FALSE
+                        return new BoundLiteral(false.AsObject()).WithContext(x);
+                    }
+                    return null;
+                } },
+                { NameUtils.SpecialNames.defined, x =>
+                {
+                    // defined( CONST_NAME ) : true|false
+
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName) &&
+                        TryResolveConstant(constName, out var constValue))
+                    {
+                        // constant already defined => TRUE
+                        return new BoundLiteral(true.AsObject()).WithContext(x);
+                    }
+                    return null;
+                } },
+                { NameUtils.SpecialNames.constant, x =>
+                {
+                    // constant( CONST_NAME ) : CONST_VALUE
+                    
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var constName) &&
+                        TryResolveConstant(constName, out var constValue))
+                    {
+                        // try to resolve value
+                        ConstantValue value = null;
+                        if (constValue is PEFieldSymbol fld)
+                        {
+                            if (fld.Type.Is_Func_Context_TResult(out var tresult))
+                            {
+                                // value = Func<Context, TResult>.Invoke( ctx )
+                                // must be evaluated in run time
+                                value = null;
+                            }
+                            else
+                            {
+                                value = fld.GetConstantValue(false);
+                            }
+                        }
+                        else if (constValue is PEPropertySymbol prop)
+                        {
+                            // 
+                        }
+
+                        if (value == null)
+                        {
+                            if (constName.IndexOf(Name.ClassMemberSeparator) < 0)
+                            {
+                                // transform to BoundGlobalConst
+                                return new BoundGlobalConst(QualifiedName.Parse(constName, true), default).WithContext(x);
+                            }
+                            else
+                            {
+                                // return BoundFieldRef.CreateClassConst( ... )
+                            }
+                        }
+                        else
+                        {
+                            // resolved value
+                            return new BoundLiteral(value.Value).WithContext(x);
+                        }
                     }
 
                     return null;
@@ -246,6 +310,35 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     TransformationCount++;
                 }
             }
+        }
+
+        private bool TryResolveConstant(string constName, out IPhpValue value)
+        {
+            value = null;
+
+            // invalid name
+            if (string.IsNullOrEmpty(constName))
+                return false;
+
+            // trim leading \
+            if (constName[0] == QualifiedName.Separator)
+                constName = constName.Substring(1);
+
+            //
+            var sepidx = constName.IndexOf(Name.ClassMemberSeparator);
+            if (sepidx < 0)
+            {
+                // global const name
+                // TODO: also user constants defined in the same scope?
+                value = DeclaringCompilation.GlobalSemantics.ResolveConstant(constName);
+            }
+            else
+            {
+                // TODO: class constant
+            }
+
+            //
+            return value != null;
         }
 
         protected override void OnVisitCFG(ControlFlowGraph x)
@@ -521,13 +614,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 // empty string:
                 TransformationCount++;
-                return new BoundLiteral(string.Empty) { ConstantValue = new Optional<object>(string.Empty) }.WithContext(x);
+                return new BoundLiteral(string.Empty).WithContext(x);
             }
 
-            // visit & concat in compile time if we can:
             var newargs = args;
-            int i = 0;
-            do
+            int i;
+
+            // flattern nested concats:
+            for (i = 0; i < newargs.Length; )
+            {
+                // flattern concat:
+                if (newargs[i].Value is BoundConcatEx concat)
+                {
+                    newargs = newargs.RemoveAt(i);
+                    newargs = newargs.InsertRange(i, concat.ArgumentsInSourceOrder);
+                    continue;
+                }
+
+                i++;
+            }
+
+            // concat adjacent expressions if possible:
+            for (i = 0; i < newargs.Length; i++)
             {
                 // accumulate evaluated string value if possible:
                 if (newargs[i].Value.ConstantValue.TryConvertToString(out var value))
@@ -548,17 +656,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         {
                             newargs = newargs.Insert(i, BoundArgument.Create(new BoundLiteral(result)
                             {
-                                ConstantValue = new Optional<object>(result),
                                 TypeRefMask = _routine.TypeRefContext.GetStringTypeMask(),
                                 ResultType = DeclaringCompilation.CoreTypes.String,
                             }.WithAccess(BoundAccess.Read)));
                         }
                     }
                 }
-
-                //
-                i++;
-            } while (i < newargs.Length);
+            }
 
             //
             if (newargs != args)
@@ -567,12 +671,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                 if (newargs.Length == 0)
                 {
-                    return new BoundLiteral(string.Empty) { ConstantValue = new Optional<object>(string.Empty) }.WithContext(x);
+                    return new BoundLiteral(string.Empty).WithContext(x);
                 }
                 else if (newargs.Length == 1 && newargs[0].Value.ConstantValue.TryConvertToString(out var value))
                 {
                     // "value"
-                    return new BoundLiteral(value) { ConstantValue = new Optional<object>(value) }.WithContext(x);
+                    return new BoundLiteral(value).WithContext(x);
                 }
 
                 //
@@ -747,6 +851,59 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
 
             return base.VisitArray(x);
+        }
+
+        public override object VisitGlobalConstUse(BoundGlobalConst x)
+        {
+            if (TryResolveConstant(x.Name.ToString(), out var value) && value is PEFieldSymbol fld)
+            {
+                var attr = fld.GetAttribute($"{CoreTypes.PeachpieRuntimeNamespace}.PhpConstantAttribute");
+                if (attr != null && attr.ConstructorArguments.Length == 1 && attr.ConstructorArguments[0].TryDecodeValue(SpecialType.System_String, out string expression) && expression != null)
+                {
+                    var args = new List<BoundArgument>();
+
+                    // parse the expression
+                    // transform it to BoundConcatEx
+
+                    for (int pos = 0; pos < expression.Length;)
+                    {
+                        var brace = expression.IndexOf('{', pos);
+                        var closing = brace < 0 ? -1 : expression.IndexOf('}', brace);
+                        var upto = closing < 0 ? expression.Length : brace;
+
+                        //
+                        if (pos < upto)
+                        {
+                            args.Add(BoundArgument.Create(new BoundLiteral(expression.Substring(pos, upto - pos))
+                            {
+                                TypeRefMask = _routine.TypeRefContext.GetStringTypeMask(),
+                                ResultType = DeclaringCompilation.CoreTypes.String,
+                            }.WithAccess(BoundAccess.Read)));
+                        }
+
+                        if (closing > brace)
+                        {
+                            if (Enum.TryParse<BoundPseudoConst.Types>(expression.Substring(brace + 1, closing - brace - 1), out var type))
+                            {
+                                args.Add(BoundArgument.Create(new BoundPseudoConst(type).WithAccess(BoundAccess.Read)));
+                            }
+                            else
+                            {
+                                // ERR
+                                throw ExceptionUtilities.UnexpectedValue(expression);
+                            }
+                        }
+
+                        //
+                        pos = closing < 0 ? expression.Length : closing + 1;
+                    }
+
+                    TransformationCount++;
+                    return new BoundConcatEx(args.AsImmutable()).WithContext(x);
+                }
+            }
+
+            return base.VisitGlobalConstUse(x);
         }
 
         /// <summary>

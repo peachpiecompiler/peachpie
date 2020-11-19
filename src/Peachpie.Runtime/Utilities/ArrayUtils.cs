@@ -83,27 +83,6 @@ namespace Pchp.Core.Utilities
         public static char Last(this string str) => StringUtils.LastChar(str);
 
         /// <summary>
-        /// Fast trim of a specified character.
-        /// </summary>
-        public static string Trim(string str, char ch)
-        {
-            if (!string.IsNullOrEmpty(str))
-            {
-                int i = 0;
-                int j = str.Length - 1;
-
-                //
-                while (i < str.Length && str[i] == ch) i++;
-                while (j > i && str[j] == ch) j--;
-
-                //
-                return i < j ? str.Substring(i, j - i + 1) : string.Empty;
-            }
-
-            return str;
-        }
-
-        /// <summary>
         /// Fills a portion of an array of bytes by specified byte.
         /// </summary>
         /// <param name="array">The array to fill.</param>

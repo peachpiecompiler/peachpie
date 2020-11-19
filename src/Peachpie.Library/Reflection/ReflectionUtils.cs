@@ -124,7 +124,8 @@ namespace Pchp.Library.Reflection
                     {
                         // choose the better - the one with more metadata
                         var oldp = parameters[index];
-                        if (p.HasDefaultValue || p.GetCustomAttribute<DefaultValueAttribute>() != null) // TODO: or has type information
+                        if (p.HasDefaultValue || p.GetCustomAttribute<DefaultValueAttribute>() != null || // TODO: or has type information
+                            oldp.GetCustomAttribute<ParamArrayAttribute>() == null && p.GetCustomAttribute<ParamArrayAttribute>() != null) // prefer the variadic overload
                         {
                             parameters[index] = p;
                         }

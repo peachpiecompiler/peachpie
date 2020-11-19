@@ -137,7 +137,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
 
-        internal override IModuleSymbol ContainingModule => _routine.ContainingModule;
+        internal override ModuleSymbol ContainingModule => _routine.ContainingModule;
 
         public override NamedTypeSymbol ContainingType => _routine.ContainingType;
 

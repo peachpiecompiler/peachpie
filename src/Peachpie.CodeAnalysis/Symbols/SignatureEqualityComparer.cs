@@ -27,7 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     for (int i = 0; i < px.Length; i++)
                     {
-                        if (px[i].Type != py[i].Type)
+                        if (!SymbolEqualityComparer.Default.Equals(px[i].Type, py[i].Type))
                         {
                             return false;
                         }

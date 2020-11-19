@@ -771,7 +771,14 @@ namespace Pchp.Library
 
                 static IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(object/*!*/obj)
                 {
-                    return TypeMembersUtils.EnumerateInstanceFields(obj, TypeMembersUtils.s_propertyName, TypeMembersUtils.s_keyToString);
+                    if (obj is IPhpJsonSerializable serializable_internal)
+                    {
+                        return serializable_internal.Properties;
+                    }
+                    else
+                    {
+                        return TypeMembersUtils.EnumerateInstanceFields(obj, TypeMembersUtils.s_propertyName, TypeMembersUtils.s_keyToString);
+                    }
                 }
             }
 
@@ -1032,6 +1039,17 @@ namespace Pchp.Library
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// Provides explicit object behavior for <see cref="JsonSerialization.json_encode"/>.
+    /// </summary>
+    public interface IPhpJsonSerializable
+    {
+        /// <summary>
+        /// Returns properties to be serialized.
+        /// </summary>
+        IEnumerable<KeyValuePair<string, PhpValue>> Properties { get; }
     }
 
     [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]

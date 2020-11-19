@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
@@ -39,7 +40,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Initializes the file and line fields from <see cref="_stacktrace"/>.
         /// </summary>
-        internal protected void InitializeInternal()
+        private protected void InitializeInternal()
         {
             this.file = _stacktrace.GetFilename();
             this.line = _stacktrace.GetLine();
@@ -89,7 +90,17 @@ namespace Pchp.Library.Spl
 
         public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, this.Message);   // TODO: _trace
 
+        [PhpHidden]
         public sealed override string ToString() => __toString();
+
+        [PhpHidden]
+        public override System.Exception GetBaseException() => base.GetBaseException();
+
+        [PhpHidden]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context) => base.GetObjectData(info, context);
+
+        [PhpHidden]
+        public new Type GetType() => base.GetType();
     }
 
     /// <summary>
@@ -149,6 +160,10 @@ namespace Pchp.Library.Spl
         }
     }
 
+    /// <summary>
+    /// The exception is thrown when too few arguments are passed to a user-defined function or method.<br/>
+    /// This should apply to built-in functions as well if the code is in strict mode.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public class ArgumentCountError : TypeError
     {

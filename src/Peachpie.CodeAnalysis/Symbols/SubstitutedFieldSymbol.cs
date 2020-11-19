@@ -201,6 +201,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override bool IsPhpHidden => _originalDefinition.IsPhpHidden;
+
         public override bool IsConst
         {
             get
@@ -279,15 +281,14 @@ namespace Pchp.CodeAnalysis.Symbols
         //    return (NamedTypeSymbol)_containingType.TypeSubstitution.SubstituteType(_originalDefinition.FixedImplementationType(emitModule)).Type;
         //}
 
-        public override bool Equals(object obj)
+        public override bool Equals(ISymbol other, SymbolEqualityComparer equalityComparer)
         {
-            if ((object)this == obj)
+            if ((object)this == other)
             {
                 return true;
             }
 
-            var other = obj as SubstitutedFieldSymbol;
-            return (object)other != null && _token == other._token && _originalDefinition == other._originalDefinition;
+            return other is SubstitutedFieldSymbol f && _token == f._token && SymbolEqualityComparer.Default.Equals(_originalDefinition, f._originalDefinition);
         }
 
         public override int GetHashCode()

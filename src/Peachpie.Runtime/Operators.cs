@@ -886,9 +886,7 @@ namespace Pchp.Core
             //
             if (!quiet)
             {
-                PhpException.Throw(
-                    PhpError.Error,
-                    Resources.ErrResources.object_used_as_array, obj != null ? obj.GetPhpTypeInfo().Name : PhpVariable.TypeNameNull);
+                PhpException.ObjectUsedAsArray(PhpVariable.GetClassName(obj));
             }
 
             //

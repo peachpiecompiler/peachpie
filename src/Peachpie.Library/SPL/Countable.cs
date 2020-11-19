@@ -1,11 +1,12 @@
 ﻿using Pchp.Core;
+using static Pchp.Core.PhpExtensionAttribute;
 
 namespace Pchp.Library.Spl
 {
     /// <summary>
     /// Classes implementing Countable can be used with the <c>count()</c> function.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(KnownExtensionNames.Core)]
     public interface Countable
     {
         /// <summary>

@@ -137,11 +137,25 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static bool Is_Func_Context_PhpValue(this TypeSymbol t)
         {
-            return t.IsDelegateType() && t is NamedTypeSymbol nt &&
+            return Is_Func_Context_TResult(t, out var tresult) && tresult.Is_PhpValue();
+        }
+
+        /// <summary>
+        /// Determines the type is <c>Func{Context,TResult}</c>.
+        /// </summary>
+        public static bool Is_Func_Context_TResult(this TypeSymbol t, out TypeSymbol tresult)
+        {
+            if (t.IsDelegateType() && t is NamedTypeSymbol nt &&
                 nt.Arity == 2 &&
-                nt.ConstructedFrom.MetadataName == "Func`2" &&
-                nt.TypeArguments[0].Name == "Context" &&
-                nt.TypeArguments[1].Is_PhpValue();
+                nt.ConstructedFrom.MetadataName == "Func`2" && // !!!
+                nt.TypeArguments[0].Name == "Context") // !!!
+            {
+                tresult = nt.TypeArguments[1];
+                return true;
+            }
+
+            tresult = null;
+            return false;
         }
 
         public static bool IsOfType(this TypeSymbol t, TypeSymbol oftype)

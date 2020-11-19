@@ -46,7 +46,7 @@ namespace Pchp.Core
 
             public bool Equals(ConstName other) => StringComparer.Equals(Name, other.Name);
 
-            public override bool Equals(object obj) => obj is ConstName && Equals((ConstName)obj);
+            public override bool Equals(object obj) => obj is ConstName c && Equals(c);
 
             public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Name); // always ignore case when getting hash
         }
@@ -256,14 +256,17 @@ namespace Pchp.Core
                     Debug.Assert(idx != 0);
                 }
 
-                if (idx < 0) // app constant cannot be redeclared
+                if (idx < 0)
                 {
-                    RedeclarationError(name);
+                    // constant already defined as app constant
+                    return false;
                 }
-
-                ref var values = ref self._valuesCtx;
-                EnsureArray(ref values, idx);
-                return SetValue(ref values[idx - 1], value);
+                else
+                {
+                    ref var values = ref self._valuesCtx;
+                    EnsureArray(ref values, idx);
+                    return SetValue(ref values[idx - 1], value);
+                }
             }
 
             /// <summary>
@@ -349,11 +352,6 @@ namespace Pchp.Core
                 value = default;
                 return false;
             }
-
-            /// <summary>
-            /// Gets value indicating whether given constant is defined.
-            /// </summary>
-            public bool IsDefined(string name) => TryGetConstant(name, out _);
 
             /// <summary>
             /// Enumerates all defined constants available in the context (including app constants).

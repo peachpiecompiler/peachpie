@@ -68,11 +68,6 @@ namespace Peachpie.RequestHandler
             }
         }
 
-        static Type TryGetScriptType(Assembly ass)
-        {
-            return ass?.GetType(ScriptInfo.ScriptTypeName, false, false);
-        }
-
         /// <summary>
         /// Loads assemblies representing referenced scripts and reflects their symbols to be used by the runtime.
         /// </summary>
@@ -122,18 +117,18 @@ namespace Peachpie.RequestHandler
 
             if (name.EqualsOrdinalIgnoreCase("location"))
             {
-                _httpctx.Response.StatusCode = (int)HttpStatusCode.Redirect; // 302
+                this.HttpContext.Response.StatusCode = (int)HttpStatusCode.Redirect; // 302
             }
 
             // specific headers
             //if (name.EqualsOrdinalIgnoreCase("location"))
             //{
-            //    _httpctx.Response.RedirectLocation = location;
+            //    this.HttpContext.Response.RedirectLocation = location;
             //}
             if (name.EqualsOrdinalIgnoreCase("content-type"))
             {
-                _httpctx.Response.ContentType = value;
-                // _httpctx.Response.ContentEncoding = contentEncoding.Encoding;
+                this.HttpContext.Response.ContentType = value;
+                // this.HttpContext.Response.ContentEncoding = contentEncoding.Encoding;
             }
             //else if (name.EqualsOrdinalIgnoreCase("content-encoding"))
             //{
@@ -158,25 +153,25 @@ namespace Peachpie.RequestHandler
                 // default:
                 if (append)
                 {
-                    _httpctx.Response.Headers.Add(name, value);
+                    this.HttpContext.Response.Headers.Add(name, value);
                 }
                 else
                 {
-                    _httpctx.Response.Headers[name] = value;
+                    this.HttpContext.Response.Headers[name] = value;
                 }
             }
         }
 
-        void IHttpPhpContext.RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
+        void IHttpPhpContext.RemoveHeader(string name) { this.HttpContext.Response.Headers.Remove(name); }
 
-        void IHttpPhpContext.RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
+        void IHttpPhpContext.RemoveHeaders() { this.HttpContext.Response.Headers.Clear(); }
 
         /// <summary>Enumerates HTTP headers in current response.</summary>
         IEnumerable<KeyValuePair<string, string>> IHttpPhpContext.GetHeaders()
         {
-            foreach (string name in _httpctx.Response.Headers)
+            foreach (string name in this.HttpContext.Response.Headers)
             {
-                yield return new KeyValuePair<string, string>(name, _httpctx.Response.Headers[name]);
+                yield return new KeyValuePair<string, string>(name, this.HttpContext.Response.Headers[name]);
             }
         }
 
@@ -184,7 +179,7 @@ namespace Peachpie.RequestHandler
         {
             get
             {
-                var headers = _httpctx.Request.Headers;
+                var headers = this.HttpContext.Request.Headers;
                 for (int i = 0; i < headers.Count; i++)
                 {
                     yield return new KeyValuePair<string, IEnumerable<string>>(headers.GetKey(i), headers.GetValues(i));
@@ -194,8 +189,8 @@ namespace Peachpie.RequestHandler
 
         public string CacheControl
         {
-            get => _httpctx.Response.CacheControl;
-            set => _httpctx.Response.CacheControl = value;    // TOOD: Response.Cache.SetCacheability
+            get => this.HttpContext.Response.CacheControl;
+            set => this.HttpContext.Response.CacheControl = value;    // TOOD: Response.Cache.SetCacheability
         }
 
         public event Action HeadersSending
@@ -204,7 +199,7 @@ namespace Peachpie.RequestHandler
             {
                 if (_headersSending == null)
                 {
-                    _httpctx.Response.AddOnSendingHeaders((httpctx) =>
+                    this.HttpContext.Response.AddOnSendingHeaders((httpctx) =>
                     {
                         _headersSending?.Invoke();
                     });
@@ -224,14 +219,14 @@ namespace Peachpie.RequestHandler
         /// </summary>
         public int StatusCode
         {
-            get { return _httpctx.Response.StatusCode; }
-            set { _httpctx.Response.StatusCode = value; }
+            get { return this.HttpContext.Response.StatusCode; }
+            set { this.HttpContext.Response.StatusCode = value; }
         }
 
         /// <summary>
         /// Stream with contents of the incoming HTTP entity body.
         /// </summary>
-        Stream IHttpPhpContext.InputStream => _httpctx.Request.InputStream;
+        Stream IHttpPhpContext.InputStream => this.HttpContext.Request.InputStream;
 
         void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly)
         {
@@ -248,18 +243,18 @@ namespace Peachpie.RequestHandler
                 cookie.Expires = expires.Value.UtcDateTime;
             }
 
-            _httpctx.Response.AppendCookie(cookie);
+            this.HttpContext.Response.AppendCookie(cookie);
         }
 
         void IHttpPhpContext.Flush(bool endRequest)
         {
             if (endRequest)
             {
-                _httpctx.Response.End();
+                this.HttpContext.Response.End();
             }
             else
             {
-                _httpctx.Response.Flush();
+                this.HttpContext.Response.Flush();
             }
         }
 
@@ -271,7 +266,7 @@ namespace Peachpie.RequestHandler
         {
             get
             {
-                var http_runtime_section = (HttpRuntimeSection)_httpctx.GetSection("system.web/httpRuntime");
+                var http_runtime_section = (HttpRuntimeSection)this.HttpContext.GetSection("system.web/httpRuntime");
                 return (http_runtime_section != null)
                     ? http_runtime_section.MaxRequestLength * 1024
                     : 0;// values in config are in kB
@@ -281,7 +276,7 @@ namespace Peachpie.RequestHandler
         /// <summary>
         /// Whether the underlaying connection is alive.
         /// </summary>
-        public bool IsClientConnected => _httpctx.Response.IsClientConnected;
+        public bool IsClientConnected => this.HttpContext.Response.IsClientConnected;
 
         /// <summary>
         /// Gets or sets session handler for current context.
@@ -309,7 +304,7 @@ namespace Peachpie.RequestHandler
         #endregion
 
         /// <summary>Debug display string.</summary>
-        protected override string DebugDisplay => _httpctx.Request.RawUrl;
+        protected override string DebugDisplay => this.HttpContext.Request.RawUrl;
 
         /// <summary>
         /// Gets server type interface name.
@@ -319,7 +314,7 @@ namespace Peachpie.RequestHandler
         /// <summary>
         /// Informational string exposing technology powering the web request and version.
         /// </summary>
-        public static readonly string s_XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+        public static readonly string s_XPoweredBy = $"PeachPie {ContextExtensions.GetRuntimeInformationalVersion()}";
 
         public override IHttpPhpContext HttpPhpContext => this;
 
@@ -327,18 +322,15 @@ namespace Peachpie.RequestHandler
         /// Reference to current <see cref="HttpContext"/>.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public HttpContext HttpContext => _httpctx;
-        readonly HttpContext _httpctx;
+        public HttpContext/*!*/HttpContext { get; }
 
-        public RequestContextAspNet(HttpContext httpcontext)
+        public RequestContextAspNet(HttpContext httpcontext, string rootPath = null)
             : base(httpcontext)
         {
-            Debug.Assert(httpcontext != null);
             Debug.Assert(HttpRuntime.UsingIntegratedPipeline);
 
-            _httpctx = httpcontext;
-
-            this.RootPath = httpcontext.Request.PhysicalApplicationPath; // == HttpRuntime.AppDomainAppPath;
+            this.HttpContext = httpcontext ?? throw new ArgumentNullException(nameof(httpcontext));
+            this.RootPath = rootPath ?? httpcontext.Request.PhysicalApplicationPath; // == HttpRuntime.AppDomainAppPath;
 
             this.InitOutput(httpcontext.Response.OutputStream);
             this.InitSuperglobals();
@@ -350,7 +342,7 @@ namespace Peachpie.RequestHandler
 
         void SetupHeaders()
         {
-            _httpctx.Response.Headers["X-Powered-By"] = s_XPoweredBy;
+            this.HttpContext.Response.Headers["X-Powered-By"] = s_XPoweredBy;
         }
 
         static void AddVariables(PhpArray result, NameValueCollection collection)
@@ -391,7 +383,7 @@ namespace Peachpie.RequestHandler
         {
             var array = new PhpArray(32);
 
-            var request = _httpctx.Request;
+            var request = this.HttpContext.Request;
             var serverVariables = request.ServerVariables;
 
             // adds variables defined by ASP.NET and IIS:
@@ -448,7 +440,7 @@ namespace Peachpie.RequestHandler
             array[CommonPhpArrayKeys.SERVER_ADDR] = (PhpValue)serverVariables["LOCAL_ADDR"];
             array[CommonPhpArrayKeys.REQUEST_URI] = request.RawUrl;
             array[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
-            array[CommonPhpArrayKeys.REQUEST_TIME] = DateTimeUtils.UtcToUnixTimeStamp(_httpctx.Timestamp.ToUniversalTime());
+            array[CommonPhpArrayKeys.REQUEST_TIME] = DateTimeUtils.UtcToUnixTimeStamp(this.HttpContext.Timestamp.ToUniversalTime());
             array[CommonPhpArrayKeys.SCRIPT_FILENAME] = (PhpValue)request.PhysicalPath;
 
             //IPv6 is the default in IIS7, convert to an IPv4 address (store the IPv6 as well)
@@ -505,8 +497,8 @@ namespace Peachpie.RequestHandler
 
         protected override PhpArray InitGetVariable()
         {
-            var query = _httpctx.Request.QueryString;
-            var form = _httpctx.Request.RequestType == WebRequestMethods.Http.Get ? _httpctx.Request.Form : null;
+            var query = this.HttpContext.Request.QueryString;
+            var form = this.HttpContext.Request.RequestType == WebRequestMethods.Http.Get ? this.HttpContext.Request.Form : null;
 
             if (query.Count != 0 || form != null)
             {
@@ -529,7 +521,7 @@ namespace Peachpie.RequestHandler
 
         protected override PhpArray InitPostVariable()
         {
-            var form = _httpctx.Request.Form;
+            var form = this.HttpContext.Request.Form;
             if (form.Count != 0)
             {
                 var result = new PhpArray(form.Count);
@@ -559,7 +551,7 @@ namespace Peachpie.RequestHandler
             PhpArray files;
             int count;
 
-            var request = _httpctx.Request;
+            var request = this.HttpContext.Request;
             if ((count = request.Files.Count) != 0)
             {
                 files = new PhpArray(count);
@@ -567,7 +559,7 @@ namespace Peachpie.RequestHandler
                 // gets a path where temporary files are stored:
                 var temppath = Path.GetTempPath(); // global_config.PostedFiles.GetTempPath(global_config.SafeMode);
                 // temporary file name (first part)
-                var basetempfilename = string.Concat("php_", _httpctx.Timestamp.Ticks.ToString("x"), "-");
+                var basetempfilename = string.Concat("php_", this.HttpContext.Timestamp.Ticks.ToString("x"), "-");
                 var basetempfileid = this.GetHashCode();
 
                 for (int i = 0; i < count; i++)
@@ -617,7 +609,7 @@ namespace Peachpie.RequestHandler
 
         protected override PhpArray InitCookieVariable()
         {
-            var cookies = _httpctx.Request.Cookies;
+            var cookies = this.HttpContext.Request.Cookies;
             var count = cookies.Count;
             if (count != 0)
             {
@@ -640,6 +632,24 @@ namespace Peachpie.RequestHandler
             else
             {
                 return PhpArray.NewEmpty();
+            }
+        }
+
+        public override void ApplyExecutionTimeout(TimeSpan span)
+        {
+            if (span.Ticks > 0)
+            {
+                var totaltimeout = DateTime.Now - this.HttpContext.Timestamp + span;
+
+                // round it up,
+                // convert to seconds
+                var seconds = (totaltimeout.Ticks + TimeSpan.TicksPerSecond / 2) / TimeSpan.TicksPerSecond;
+                
+                this.HttpContext.Server.ScriptTimeout = (int)seconds;
+            }
+            else
+            {
+                this.HttpContext.Server.ScriptTimeout = int.MaxValue;
             }
         }
 

@@ -83,6 +83,7 @@ namespace Pchp.Core
             public const string Date = "date";
             public const string Reflection = "Reflection";
             public const string Json = "json";
+            public const string Ctype = "ctype";
         }
 
         /// <summary>
@@ -147,20 +148,23 @@ namespace Pchp.Core
         /// <summary>
         /// Whether short open tags were enabled to compile the sources.
         /// </summary>
-        public bool ShortOpenTag { get; set; }
+        public bool ShortOpenTag { get; }
 
         /// <summary>
         /// The language version of compiled sources.
+        /// Can be <c>null</c> in case the version was not specified.
         /// </summary>
-        public string LanguageVersion { get; set; }
+        public Version? LanguageVersion { get; }
 
         /// <summary>
         /// Construct the attribute.
         /// </summary>
+        /// <exception cref="FormatException"><paramref name="langVersion"/> is an invalid version string.</exception>
+        /// <exception cref="ArgumentException"><paramref name="langVersion"/> is empty or invalid version string.</exception>
         public TargetPhpLanguageAttribute(string langVersion, bool shortOpenTag)
         {
             this.ShortOpenTag = shortOpenTag;
-            this.LanguageVersion = langVersion;
+            this.LanguageVersion = langVersion != null ? Version.Parse(langVersion) : null;
         }
     }
 
@@ -408,6 +412,28 @@ namespace Pchp.Core
     public sealed class PhpTraitAttribute : Attribute
     {
 
+    }
+
+    /// <summary>
+    /// Annotates a compile time constant value.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class PhpConstantAttribute : Attribute
+    {
+        /// <summary>
+        /// The constant value expression.
+        /// </summary>
+        public string? Expression { get; }
+
+        public PhpConstantAttribute()
+        {
+            Expression = null;
+        }
+
+        public PhpConstantAttribute(string expression)
+        {
+            Expression = expression;
+        }
     }
 
     /// <summary>

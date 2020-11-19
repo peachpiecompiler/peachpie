@@ -83,7 +83,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Sets <see cref="PDO.PDO_ATTR.ATTR_STRINGIFY_FETCHES"/> attribute value.
         /// </summary>
-        /// <param name="pdo"><see cref="PDO"/> object reference.</param>
+        /// <param name="pdo">Containing <see cref="PDO"/> object reference.</param>
         /// <param name="stringify">Whether to stringify fetched values.</param>
         /// <returns>Value indicating the attribute was set succesfuly.</returns>
         public virtual bool TrySetStringifyFetches(PDO pdo, bool stringify)
@@ -97,11 +97,12 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Tries to set a driver specific attribute value.
         /// </summary>
+        /// <param name="pdo">Containing <see cref="PDO"/> object reference.</param>
         /// <param name="attributes">The current attributes collection.</param>
         /// <param name="attribute">The attribute to set.</param>
         /// <param name="value">The value.</param>
         /// <returns>true if value is valid, or false if value can't be set.</returns>
-        public virtual bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
+        public virtual bool TrySetAttribute(PDO pdo, Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
         {
             return false;
         }

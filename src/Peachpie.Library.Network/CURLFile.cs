@@ -43,9 +43,11 @@ namespace Peachpie.Library.Network
         public string getFilename() => this.name;
 
         public string getMimeType() => this.mime;
-        public void setMimeType(string mime) => this.mime = mime;
+
+        public void setMimeType(string name) => this.mime = name;
 
         public string getPostFilename() => this.postname;
-        public void setPostFilename(string postname) => this.postname = postname;
+
+        public void setPostFilename(string name) => this.postname = name;
     }
 }

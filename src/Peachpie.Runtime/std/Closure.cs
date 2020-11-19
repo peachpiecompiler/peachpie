@@ -144,21 +144,21 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     /// <summary>
     /// Binds and calls the closure.
     /// </summary>
-    public PhpValue call(object newthis, params PhpValue[] arguments)
+    public PhpValue call(object newthis, params PhpValue[] parameters)
     {
-        return bindTo(newthis).__invoke(arguments);
+        return bindTo(newthis).__invoke(parameters);
     }
 
     /// <summary>
     /// Magic method <c>__invoke</c> invokes the anonymous function with given arguments.
     /// </summary>
-    public PhpValue __invoke(params PhpValue[] arguments)
+    public PhpValue __invoke(params PhpValue[] parameters)
     {
         if (_callable is PhpAnonymousRoutineInfo)
         {
-            // { Closure, ... @static, ... arguments }
+            // { Closure, ... @static, ... parameters }
 
-            var newargs = new PhpValue[1 + @static.Count + arguments.Length];
+            var newargs = new PhpValue[1 + @static.Count + parameters.Length];
 
             newargs[0] = PhpValue.FromClass(this);
 
@@ -168,14 +168,14 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
             }
 
             //
-            Array.Copy(arguments, 0, newargs, 1 + @static.Count, arguments.Length);
+            Array.Copy(parameters, 0, newargs, 1 + @static.Count, parameters.Length);
 
             return _callable.Invoke(_ctx, newargs);
         }
         else
         {
             Debug.Assert(@static.Count == 0);
-            return _callable.Invoke(_ctx, arguments);
+            return _callable.Invoke(_ctx, parameters);
         }
     }
 

@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         internal bool IsFunction(MethodSymbol method)
         {
-            return method != null && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden(_compilation);
+            return method != null && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden;
         }
 
         internal bool IsGlobalConstant(Symbol symbol)
@@ -85,7 +85,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             {
                 return (field.IsConst || (field.IsReadOnly && field.IsStatic)) &&
                     field.DeclaredAccessibility == Accessibility.Public &&
-                    !field.IsPhpHidden(_compilation);
+                    !field.IsPhpHidden;
             }
 
             if (symbol is PropertySymbol prop)

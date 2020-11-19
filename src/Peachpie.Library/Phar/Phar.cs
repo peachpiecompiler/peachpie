@@ -21,7 +21,7 @@ namespace Pchp.Library.Phar
             __construct(fname, flags, alias);
         }
 
-        public void __construct(string fname, int flags = 0, string alias = default)
+        public void __construct(string filename, int flags = 0, string alias = default)
         {
             throw new NotImplementedException();
         }
@@ -35,22 +35,22 @@ namespace Pchp.Library.Phar
             throw new NotImplementedException();
         }
 
-        public bool offsetExists(PhpValue offset)
+        public bool offsetExists(PhpValue entry)
         {
             throw new NotImplementedException();
         }
 
-        public PhpValue offsetGet(PhpValue offset)
+        public PhpValue offsetGet(PhpValue entry)
         {
             throw new NotImplementedException();
         }
 
-        public void offsetSet(PhpValue offset, PhpValue value)
+        public void offsetSet(PhpValue entry, PhpValue value)
         {
             throw new NotImplementedException();
         }
 
-        public void offsetUnset(PhpValue offset)
+        public void offsetUnset(PhpValue entry)
         {
             throw new NotImplementedException();
         }
@@ -63,9 +63,9 @@ namespace Pchp.Library.Phar
         /// <param name="ctx">Runtime context.</param>
         /// <param name="self">Current script.</param>
         /// <param name="alias">The alias that can be used in phar:// URLs to refer to this archive, rather than its full path.</param>
-        /// <param name="dataoffset">Unused.</param>
+        /// <param name="offset">Unused.</param>
         /// <returns>Always <c>true</c>.</returns>
-        public static bool mapPhar(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerScript)] RuntimeTypeHandle self, string alias = default, int dataoffset = 0)
+        public static bool mapPhar(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerScript)] RuntimeTypeHandle self, string alias = default, int offset = 0)
         {
             if (PharExtensions.MapPhar(ctx, Type.GetTypeFromHandle(self), alias))
             {
@@ -98,7 +98,7 @@ namespace Pchp.Library.Phar
 
         public static bool loadPhar(string filename, string alias = default) => throw new NotSupportedException();
 
-        public static void mount(string pharpath, string externalpath) => throw new NotSupportedException();
+        public static void mount(string inphar, string externalfile) => throw new NotSupportedException();
 
         public static void mungServer(PhpArray munglist) => throw new NotSupportedException();
 

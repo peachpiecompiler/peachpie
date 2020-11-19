@@ -12,13 +12,14 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Represents a field in a class, struct or enum
     /// </summary>
-    internal abstract partial class FieldSymbol : Symbol, IFieldSymbol, IPhpValue
+    internal abstract partial class FieldSymbol : Symbol, IFieldSymbol, IFieldSymbolInternal, IPhpValue
     {
         internal FieldSymbol()
         {
@@ -94,6 +95,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// the pointed-to type will be the declared element type of the fixed-size buffer.
         /// </summary>
         public virtual int FixedSize { get { return 0; } }
+
+        /// <summary>
+        /// Gets value indicating the field is hidden from PHP reflection.
+        /// </summary>
+        public virtual bool IsPhpHidden => false;
 
         /// <summary>
         /// If this.IsFixed is true, returns the underlying implementation type for the
@@ -316,6 +322,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get { return this.OriginalDefinition; }
         }
+
+        bool IFieldSymbol.IsFixedSizeBuffer => false;
+
+        NullableAnnotation IFieldSymbol.NullableAnnotation => NullableAnnotation.None;
 
         #endregion
 
