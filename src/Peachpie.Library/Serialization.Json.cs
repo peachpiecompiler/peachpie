@@ -283,6 +283,7 @@ namespace Pchp.Library
                 bool HasUnescapedSlashes => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_SLASHES) != 0;
                 bool HasUnescapedUnicode => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_UNICODE) != 0;
                 bool HasPreserveZeroFraction => (_encodeOptions & JsonEncodeOptions.JSON_PRESERVE_ZERO_FRACTION) != 0;
+                bool HasPartialOutputOnError => (_encodeOptions & JsonEncodeOptions.JSON_PARTIAL_OUTPUT_ON_ERROR) != 0;
 
                 #endregion
 
@@ -361,6 +362,18 @@ namespace Pchp.Library
                     {
                         WriteRaw(aslong.ToString());
                         WriteRaw(".0"); // as PHP does
+                    }
+                    else if (double.IsNaN(obj) || double.IsInfinity(obj))
+                    {
+                        // unencodable double values
+                        if (HasPartialOutputOnError)
+                        {
+                            WriteRaw("0"); // always "0", without .0 fraction
+                        }
+                        else
+                        {
+                            WriteUnsupported("NaN");
+                        }
                     }
                     else
                     {
@@ -1192,6 +1205,11 @@ namespace Pchp.Library
             JSON_UNESCAPED_UNICODE = 256,
 
             /// <summary>
+            /// Substitute some unencodable values instead of failing.
+            /// </summary>
+            JSON_PARTIAL_OUTPUT_ON_ERROR = 512,
+
+            /// <summary>
             /// Ensures that float values are always encoded as a float value.
             /// </summary>
             JSON_PRESERVE_ZERO_FRACTION = 1024,
@@ -1208,6 +1226,7 @@ namespace Pchp.Library
         public const int JSON_UNESCAPED_SLASHES = (int)JsonEncodeOptions.JSON_UNESCAPED_SLASHES;
         public const int JSON_PRETTY_PRINT = (int)JsonEncodeOptions.JSON_PRETTY_PRINT;
         public const int JSON_UNESCAPED_UNICODE = (int)JsonEncodeOptions.JSON_UNESCAPED_UNICODE;
+        public const int JSON_PARTIAL_OUTPUT_ON_ERROR = (int)JsonEncodeOptions.JSON_PARTIAL_OUTPUT_ON_ERROR;
         public const int JSON_PRESERVE_ZERO_FRACTION = (int)JsonEncodeOptions.JSON_PRESERVE_ZERO_FRACTION;
 
         /// <summary>
