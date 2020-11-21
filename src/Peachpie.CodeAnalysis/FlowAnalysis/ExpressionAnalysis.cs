@@ -1451,6 +1451,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             x.TypeRefMask = x.Operand.TypeRefMask;   // (object)<object>
                             return default;
                         }
+                        else if (IsArrayOnly(x.Operand.TypeRefMask))
+                        {
+                            // array -> object conversion
+                            // always stdClass
+                            x.TypeRefMask = TypeCtx.GetTypeMask(BoundTypeRefFactory.stdClassTypeRef, false);
+                            return default;
+                        }
                         break;
                 }
             }
