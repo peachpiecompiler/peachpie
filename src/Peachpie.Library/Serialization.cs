@@ -53,7 +53,7 @@ namespace Pchp.Library
                 catch (Exception e)
                 {
                     PhpException.Throw(PhpError.Notice, LibResources.serialization_failed, e.Message);
-                    return default(PhpString);
+                    return default;
                 }
             }
 

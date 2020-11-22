@@ -90,110 +90,123 @@ namespace Pchp.Library
 
             #endregion
 
-            #region Nested struct: MiniSet // helper data structure
-
-            /// <summary>
-            /// Helper data structure maintaining "Stack" of objects.
-            /// Does not allocate for less than 2 objects.
-            /// </summary>
-            struct MiniSet
-            {
-                /// <summary>
-                /// Internal data, either object reference or reference to <see cref="object"/>[] representing the set.
-                /// </summary>
-                object value;
-
-                /// <summary>
-                /// Stack size if <see cref="value"/> referes to <see cref="object"/>[].
-                /// </summary>
-                int top;
-
-                /// <summary>
-                /// Counts object refereces in the set;
-                /// </summary>
-                public int Count(object obj)
-                {
-                    if (ReferenceEquals(value, obj))
-                    {
-                        return 1;
-                    }
-                    else if (value is object[] array)
-                    {
-                        Debug.Assert(top <= array.Length);
-
-                        int count = 0;
-                        for (int i = 0; i < top; i++)
-                        {
-                            if (ReferenceEquals(array[i], obj))
-                            {
-                                count++;
-                            }
-                        }
-                        return count;
-                    }
-
-                    //
-                    return 0;
-                }
-
-                public static void Push(ref MiniSet set, object obj)
-                {
-                    if (ReferenceEquals(set.value, null))
-                    {
-                        set.value = obj;
-                    }
-                    else if (set.value is object[] array)
-                    {
-                        Debug.Assert(set.top <= array.Length);
-                        if (set.top == array.Length)
-                        {
-                            Array.Resize(ref array, array.Length * 2);
-                            set.value = array;
-                        }
-
-                        array[set.top++] = obj;
-                    }
-                    else
-                    {
-                        // upgrade _value to object[4]
-                        set.value = new[] { set.value, obj, null, null, };
-                        set.top = 2;
-                    }
-                }
-
-                /// <summary>
-                /// Removes one occurence of the given object reference from the set.
-                /// </summary>
-                public static bool Pop(ref MiniSet set, object obj)
-                {
-                    if (ReferenceEquals(set.value, obj))
-                    {
-                        set.value = null;
-                        return true;
-                    }
-                    else if (
-                        set.top > 0 &&
-                        set.value is object[] array &&
-                        ReferenceEquals(array[set.top - 1], obj))
-                    {
-                        set.top--;
-                        return true;
-                    }
-
-                    // ERR
-                    return false;
-                }
-            }
-
-            #endregion
-
             #region ObjectWriter
 
             internal sealed class ObjectWriter : PhpVariableVisitor
             {
+                #region Nested struct: StackHelper
+
+                /// <summary>
+                /// Helper data structure maintaining "Stack" of objects.
+                /// Does not allocate for 0 to 3 items.
+                /// </summary>
+                readonly struct StackHelper
+                {
+                    readonly object _0, _1, _2;
+                    readonly object[] _3; // additional set of items > 3, gets actually modified across operations
+
+                    /// <summary>
+                    /// Count of objects in the set.
+                    /// </summary>
+                    readonly int _count;
+
+                    StackHelper(object o0, object o1, object o2, object[] orest, int count)
+                    {
+                        _0 = o0;
+                        _1 = o1;
+                        _2 = o2;
+                        _3 = orest;
+                        _count = count;
+                        Debug.Assert(_count >= 0);
+                        Debug.Assert(_count <= 3 || _3.Length >= _count - 3);
+                    }
+
+                    /// <summary>
+                    /// Counts object refereces in the set.
+                    /// </summary>
+                    public readonly int Count(object obj)
+                    {
+                        int count = 0;
+
+                        for (int i = 0; i < _count; i++)
+                        {
+                            if (this[i] == obj)
+                            {
+                                count++;
+                            }
+                        }
+
+                        return count;
+                    }
+
+                    public readonly object this[int index]
+                    {
+                        get
+                        {
+                            return index switch
+                            {
+                                0 => _0,
+                                1 => _1,
+                                2 => _2,
+                                _ => _3?[index - 3],
+                            };
+                        }
+                    }
+
+                    /// <summary>
+                    /// Creates set with the given object on top.
+                    /// </summary>
+                    public readonly StackHelper Push(object obj)
+                    {
+                        switch (_count)
+                        {
+                            case 0: return new StackHelper(obj, null, null, _3, 1);
+                            case 1: return new StackHelper(_0, obj, null, _3, 2);
+                            case 2: return new StackHelper(_0, _1, obj, _3, 3);
+                            default:
+                                var index = _count - 3;
+                                var array = _3 ?? new object[4];
+                                if (array.Length <= index)
+                                    Array.Resize(ref array, index * 2);
+                                array[index] = obj;
+
+                                return new StackHelper(_0, _1, _2, array, _count + 1);
+                        }
+                    }
+
+                    /// <summary>
+                    /// Creates set without the last object.
+                    /// </summary>
+                    public readonly StackHelper Pop(out object popped)
+                    {
+                        switch (_count)
+                        {
+                            case 0:
+                                popped = null;
+                                return this;
+                            case 1:
+                                popped = _0;
+                                return new StackHelper(null, null, null, _3, 0);
+                            case 2:
+                                popped = _1;
+                                return new StackHelper(_0, null, null, _3, 1);
+                            case 3:
+                                popped = _2;
+                                return new StackHelper(_0, _1, null, _3, 2);
+                            default:
+                                var index = _count - 1 - 3;
+                                popped = _3[index];
+                                _3[index] = null;
+                                return new StackHelper(_0, _1, _2, _3, _count - 1);
+                        }
+                    }
+                }
+
+                #endregion
+
                 //Encoding Encoding => _ctx.StringEncoding;
 
-                MiniSet _recursion;
+                StackHelper _recursion;
 
                 /// <summary>
                 /// Result data.
@@ -283,7 +296,8 @@ namespace Pchp.Library
                 bool HasUnescapedSlashes => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_SLASHES) != 0;
                 bool HasUnescapedUnicode => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_UNICODE) != 0;
                 bool HasPreserveZeroFraction => (_encodeOptions & JsonEncodeOptions.JSON_PRESERVE_ZERO_FRACTION) != 0;
-                bool HasPartialOutputOnError => (_encodeOptions & JsonEncodeOptions.JSON_PARTIAL_OUTPUT_ON_ERROR) != 0;
+                bool PartialOutputOnError => (_encodeOptions & JsonEncodeOptions.JSON_PARTIAL_OUTPUT_ON_ERROR) != 0;
+                bool ThrowOnError => (_encodeOptions & JsonEncodeOptions.JSON_THROW_ON_ERROR) != 0;
 
                 #endregion
 
@@ -303,29 +317,47 @@ namespace Pchp.Library
 
                     variable.Accept(new ObjectWriter(ctx, str, encodeOptions, caller));
 
-                    return StringBuilderUtilities.GetStringAndReturn(str); // note: str is cleared
+                    return StringBuilderUtilities.GetStringAndReturn(str);
+                }
+
+                /// <summary>
+                /// Writes <c>NULL</c> value and handles the error.
+                /// </summary>
+                /// <param name="code">Error code.</param>
+                /// <param name="message">Error message.</param>
+                void HandleError(JsonError code, string message)
+                {
+                    if (PartialOutputOnError || !ThrowOnError)
+                    {
+                        SetLastJsonError(_ctx/*, message*/, (int)code);
+                    }
+                    else
+                    {
+                        throw new JsonException(message, (long)code);
+                    }
                 }
 
                 bool PushObject(object obj)
                 {
                     if (_recursion.Count(obj) < 2)
                     {
-                        MiniSet.Push(ref _recursion, obj);
+                        _recursion = _recursion.Push(obj);
                         return true;
                     }
                     else
                     {
-                        PhpException.Throw(PhpError.Warning, Resources.LibResources.recursion_detected);
                         return false;
                     }
                 }
 
                 void PopObject(object obj)
                 {
-                    MiniSet.Pop(ref _recursion, obj);
+                    _recursion = _recursion.Pop(out var popped);
+                    Debug.Assert(popped == obj);
                 }
 
                 void WriteRaw(string str) => _result.Append(str);
+
                 void WriteRaw(char c) => _result.Append(c);
 
                 public override void AcceptNull()
@@ -365,15 +397,8 @@ namespace Pchp.Library
                     }
                     else if (double.IsNaN(obj) || double.IsInfinity(obj))
                     {
-                        // unencodable double values
-                        if (HasPartialOutputOnError)
-                        {
-                            WriteRaw("0"); // always "0", without .0 fraction
-                        }
-                        else
-                        {
-                            WriteUnsupported("NaN");
-                        }
+                        HandleError(JsonError.InfOrNan, Resources.LibResources.serialization_json_inf_nan_error);
+                        WriteRaw("0"); // always "0", without .0 fraction
                     }
                     else
                     {
@@ -428,6 +453,7 @@ namespace Pchp.Library
                     }
                     else
                     {
+                        HandleError(JsonError.Recursion, Resources.LibResources.recursion_detected);
                         WriteNull();
                     }
                 }
@@ -450,17 +476,17 @@ namespace Pchp.Library
 
                     if (obj is PhpResource)
                     {
-                        WriteUnsupported(PhpResource.PhpTypeName);
-                        return;
+                        HandleError(JsonError.UnsupportedType, string.Format(Resources.LibResources.serialization_unsupported_type, PhpResource.PhpTypeName));
+                        WriteNull();
                     }
-
-                    if (PushObject(obj))
+                    else if (PushObject(obj))
                     {
                         WriteObject(JsonObjectProperties(obj));
                         PopObject(obj);
                     }
                     else
                     {
+                        HandleError(JsonError.Recursion, Resources.LibResources.recursion_detected);
                         WriteNull();
                     }
                 }
@@ -595,16 +621,6 @@ namespace Pchp.Library
                 }
 
                 #endregion
-
-                /// <summary>
-                /// Serializes null and throws an exception.
-                /// </summary>
-                /// <param name="TypeName"></param>
-                private void WriteUnsupported(string TypeName)
-                {
-                    PhpException.Throw(PhpError.Warning, Resources.LibResources.serialization_unsupported_type, TypeName);
-                    WriteNull();
-                }
 
                 void WriteNull()
                 {
@@ -1073,7 +1089,7 @@ namespace Pchp.Library
         // 
         // Values returned by json_last_error function.
         //
-        enum JsonError
+        internal enum JsonError
         {
             None = JSON_ERROR_NONE,
             Depth = JSON_ERROR_DEPTH,
@@ -1275,7 +1291,21 @@ namespace Pchp.Library
             PhpSerialization.SetLastJsonError(ctx, 0);
 
             //return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
-            return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default);
+
+            //try
+            {
+                return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default);
+            }
+            //catch (JsonException jsonex)
+            //{
+            //    if ((options & JsonEncodeOptions.JSON_THROW_ON_ERROR) != 0)
+            //    {
+            //        throw;
+            //    }
+
+            //    PhpSerialization.SetLastJsonError(ctx, jsonex.getCode());
+            //    return null;
+            //}
         }
 
         /// <summary>
@@ -1331,22 +1361,20 @@ namespace Pchp.Library
 
             // TODO: to resources
 
-            switch (error)
+            return error switch
             {
-                case JsonError.None: return "No error";
-                case JsonError.Depth: return "Maximum stack depth exceeded";
-                case JsonError.StateMismatch: return "State mismatch (invalid or malformed JSON)";
-                case JsonError.CtrlChar: return "Control character error, possibly incorrectly encoded";
-                case JsonError.Syntax: return "Syntax error";
-                case JsonError.Utf8: return "Malformed UTF-8 characters, possibly incorrectly encoded";
-                case JsonError.Recursion:
-                case JsonError.InfOrNan:
-                case JsonError.UnsupportedType:
-                case JsonError.InvalidPropertyName:
-                    return error.ToString();
-
-                default: throw new ArgumentOutOfRangeException();
-            }
+                JsonError.None => "No error",
+                JsonError.Depth => "Maximum stack depth exceeded",
+                JsonError.StateMismatch => "State mismatch (invalid or malformed JSON)",
+                JsonError.CtrlChar => "Control character error, possibly incorrectly encoded",
+                JsonError.Syntax => "Syntax error",
+                JsonError.Utf8 => "Malformed UTF-8 characters, possibly incorrectly encoded",
+                JsonError.Recursion => Resources.LibResources.recursion_detected,
+                JsonError.InfOrNan => Resources.LibResources.serialization_json_inf_nan_error,
+                JsonError.UnsupportedType => error.ToString(),
+                JsonError.InvalidPropertyName => error.ToString(),
+                _ => throw new ArgumentOutOfRangeException(),
+            };
         }
 
         #endregion

@@ -1474,6 +1474,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Inf and NaN cannot be JSON encoded.
+        /// </summary>
+        public static string serialization_json_inf_nan_error {
+            get {
+                return ResourceManager.GetString("serialization_json_inf_nan_error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Serialization of type {0} is not supported by PhpFormatter..
         /// </summary>
         public static string serialization_unsupported_type {

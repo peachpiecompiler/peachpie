@@ -717,4 +717,7 @@
   <data name="min_must_be_less_or_equal_to_max" xml:space="preserve">
     <value>Minimum value must be less than or equal to the maximum value</value>
   </data>
+  <data name="serialization_json_inf_nan_error" xml:space="preserve">
+    <value>Inf and NaN cannot be JSON encoded</value>
+  </data>
 </root>
