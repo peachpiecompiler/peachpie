@@ -321,7 +321,7 @@ namespace Pchp.Library
                 }
 
                 /// <summary>
-                /// Writes <c>NULL</c> value and handles the error.
+                /// handles the error - either remembers its code or throws exception.
                 /// </summary>
                 /// <param name="code">Error code.</param>
                 /// <param name="message">Error message.</param>
