@@ -122,6 +122,11 @@ namespace Pchp.Library
                     }
 
                     /// <summary>
+                    /// Gets count of objects.
+                    /// </summary>
+                    public int Count() => _count;
+
+                    /// <summary>
                     /// Counts object refereces in the set.
                     /// </summary>
                     public readonly int Count(object obj)
@@ -217,6 +222,7 @@ namespace Pchp.Library
                 //readonly RuntimeTypeHandle _caller;
                 readonly JsonEncodeOptions _encodeOptions;
                 readonly IPrettyPrinter _pretty;
+                readonly int _maxdepth;
 
                 const int LastAsciiCharacter = 0x7F;
 
@@ -301,21 +307,24 @@ namespace Pchp.Library
 
                 #endregion
 
-                private ObjectWriter(Context ctx, StringBuilder result, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                private ObjectWriter(Context ctx, StringBuilder result, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller, long depth)
                 {
                     Debug.Assert(ctx != null);
+                    // Debug.Assert(depth >= 0); // NOTE: negative values allowed
+
                     _ctx = ctx;
                     _encodeOptions = encodeOptions;
                     _result = result ?? throw new ArgumentNullException(nameof(result));
                     //_caller = caller;
                     _pretty = HasPrettyPrint ? (IPrettyPrinter)new PrettyPrintOn(_result) : PrettyPrintOff.Instance;
+                    _maxdepth = depth < 0 ? 0 : depth < int.MaxValue ? (int)depth : int.MaxValue;
                 }
 
-                public static string Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                public static string Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller, long depth)
                 {
                     var str = StringBuilderUtilities.Pool.Get();
 
-                    variable.Accept(new ObjectWriter(ctx, str, encodeOptions, caller));
+                    variable.Accept(new ObjectWriter(ctx, str, encodeOptions, caller, depth));
 
                     return StringBuilderUtilities.GetStringAndReturn(str);
                 }
@@ -435,7 +444,13 @@ namespace Pchp.Library
 
                 public override void Accept(PhpArray array)
                 {
-                    if (PushObject(array))
+                    if (_recursion.Count() >= _maxdepth)
+                    {
+                        HandleError(JsonError.Depth, Resources.LibResources.serialization_max_depth);
+                        // TODO: on partial output, write top level elements
+                        WriteNull();
+                    }
+                    else if (PushObject(array))
                     {
                         if (HasForceObject || !IsSequentialArray(array))
                         {
@@ -474,7 +489,13 @@ namespace Pchp.Library
                         }
                     }
 
-                    if (obj is PhpResource)
+                    if (_recursion.Count() >= _maxdepth)
+                    {
+                        HandleError(JsonError.Depth, Resources.LibResources.serialization_max_depth);
+                        // TODO: on partial output, write top level properties
+                        WriteNull();
+                    }
+                    else if (obj is PhpResource)
                     {
                         HandleError(JsonError.UnsupportedType, string.Format(Resources.LibResources.serialization_unsupported_type, PhpResource.PhpTypeName));
                         WriteNull();
@@ -1028,7 +1049,7 @@ namespace Pchp.Library
             {
                 SetLastJsonError(ctx, 0);
 
-                return ObjectWriter.Serialize(ctx, variable, _encodeOptions, caller);
+                return ObjectWriter.Serialize(ctx, variable, _encodeOptions, caller, 512);
             }
 
             #endregion
@@ -1284,7 +1305,7 @@ namespace Pchp.Library
         /// All string data must be UTF-8 encoded.</param>
         /// <param name="options"></param>
         /// <param name="depth">Set the maximum depth. Must be greater than zero.</param>
-        public static string json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, int depth = 512)
+        public static string json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, long depth = 512)
         {
             // TODO: depth
 
@@ -1294,7 +1315,7 @@ namespace Pchp.Library
 
             //try
             {
-                return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default);
+                return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default, depth);
             }
             //catch (JsonException jsonex)
             //{
@@ -1364,7 +1385,7 @@ namespace Pchp.Library
             return error switch
             {
                 JsonError.None => "No error",
-                JsonError.Depth => "Maximum stack depth exceeded",
+                JsonError.Depth => Resources.LibResources.serialization_max_depth,
                 JsonError.StateMismatch => "State mismatch (invalid or malformed JSON)",
                 JsonError.CtrlChar => "Control character error, possibly incorrectly encoded",
                 JsonError.Syntax => "Syntax error",

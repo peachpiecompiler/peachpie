@@ -720,4 +720,7 @@
   <data name="serialization_json_inf_nan_error" xml:space="preserve">
     <value>Inf and NaN cannot be JSON encoded</value>
   </data>
+  <data name="serialization_max_depth" xml:space="preserve">
+    <value>Maximum stack depth exceeded</value>
+  </data>
 </root>
