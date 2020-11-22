@@ -602,7 +602,7 @@ namespace Pchp.Core
                     return true;
 
                 case PhpTypeCode.MutableString:
-                    key = Convert.StringToArrayKey(MutableStringBlob.ToString());
+                    key = Convert.StringToArrayKey(MutableStringBlob.ToString()); // TODO: corrupts non-Unicode strings https://github.com/peachpiecompiler/peachpie/issues/802
                     return true;
 
                 case PhpTypeCode.PhpArray:

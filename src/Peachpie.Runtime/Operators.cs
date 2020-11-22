@@ -807,8 +807,11 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
+                case PhpTypeCode.PhpArray:
+                    return value.Array.GetItemValue(index); // , quiet);
+
                 case PhpTypeCode.String:
-                    var item = Operators.GetItemValue(value.String, index, quiet);
+                    var item = GetItemValue(value.String, index, quiet);
                     if (quiet && string.IsNullOrEmpty(item))
                     {
                         return PhpValue.Null;
@@ -816,10 +819,7 @@ namespace Pchp.Core
                     return item;
 
                 case PhpTypeCode.MutableString:
-                    return ((IPhpArray)value.MutableStringBlob).GetItemValue(index); // quiet);
-
-                case PhpTypeCode.PhpArray:
-                    return value.Array.GetItemValue(index); // , quiet);
+                    return value.MutableStringBlob.GetItemValue(index); // quiet);
 
                 case PhpTypeCode.Object:
                     return Operators.GetItemValue(value.Object, index, quiet);
@@ -828,6 +828,7 @@ namespace Pchp.Core
                     return value.Alias.Value.GetArrayItem(index, quiet);
 
                 default:
+                    // TODO: warning
                     return PhpValue.Null;
             }
         }
