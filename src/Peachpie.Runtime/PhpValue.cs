@@ -539,8 +539,7 @@ namespace Pchp.Core
 
         public static PhpNumber operator /(long lx, PhpValue y)
         {
-            PhpNumber ny;
-            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            if ((y.ToNumber(out var ny) & Convert.NumberInfo.IsPhpArray) != 0)
             {
                 //PhpException.UnsupportedOperandTypes();
                 //return PhpNumber.Create(0.0);
@@ -552,8 +551,7 @@ namespace Pchp.Core
 
         public static double operator /(double dx, PhpValue y)
         {
-            PhpNumber ny;
-            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            if ((y.ToNumber(out var ny) & Convert.NumberInfo.IsPhpArray) != 0)
             {
                 //PhpException.UnsupportedOperandTypes();
                 //return PhpNumber.Create(0.0);
