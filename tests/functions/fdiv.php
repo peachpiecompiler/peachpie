@@ -5,7 +5,11 @@ use const INF;
 
 function test( float $a, float $b, float $expected ) {
     if( function_exists("fdiv") ) {
-        echo fdiv($a, $b) === $expected ? "ok" : "($a / $b) failed";
+        $x = fdiv($a, $b);
+        if ($x == $expected || (is_nan($x) && is_nan($expected)))
+            echo "ok";
+        else
+            echo "($a / $b) failed";
     }
     else {
         echo "ok";
