@@ -118,7 +118,7 @@ namespace Pchp.Library.Spl
                         {
                             if (obj.GetType() == typeof(stdClass))
                             {
-                                _underlayingArray = ((stdClass)obj).GetRuntimeFields();
+                                _underlayingArray = obj.GetPhpTypeInfo().EnsureRuntimeFields(obj);
                                 _underlayingObject = null;
                             }
                             else
