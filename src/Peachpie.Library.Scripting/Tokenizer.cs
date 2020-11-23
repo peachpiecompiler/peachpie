@@ -430,6 +430,16 @@ namespace Peachpie.Library.Scripting
         ///<summary>yield from generators(available since PHP 7.0.0)</summary>
         public const int T_YIELD_FROM = (int)Tokens.T_YIELD_FROM;
 
+        ///<summary>match (available since PHP 8.0.0)</summary>
+        public const int T_MATCH = (int)Tokens.T_MATCH;
+
+        /// <summary>?-> (available since PHP 8.0.0)</summary>
+        public const int T_NULLSAFE_OBJECT_OPERATOR = (int)Tokens.T_NULLSAFE_OBJECT_OPERATOR;
+
+        /////<summary>#[ (available since PHP 8.0.0)</summary>
+        //public const int T_ATTRIBUTE = (int)Tokens.T_ATTRIBUTE;
+
+
         /// <summary>
         /// Not used.
         /// Our lexer does not report T_BAD_CHARACTER on long script (&gt; Int32.MaxValue characters)
