@@ -79,7 +79,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpArray_ContainsKey = typeof(PhpArray).GetMethod("ContainsKey", typeof(Core.IntStringKey));
 
             public static MethodInfo ToBoolean_PhpArray = typeof(PhpArray).GetOpExplicit(typeof(bool));
-            public static MethodInfo ToBoolean_PhpValue = typeof(PhpValue).GetOpImplicit(typeof(bool));
+            public static MethodInfo ToBoolean_PhpValue = typeof(PhpValue).GetOpExplicit(typeof(bool));
             public static MethodInfo ToBoolean_PhpNumber = typeof(PhpNumber).GetOpImplicit(typeof(bool));
             public static MethodInfo ToBoolean_String = typeof(Convert).GetMethod("ToBoolean", Types.String);
 

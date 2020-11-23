@@ -601,9 +601,9 @@ namespace Pchp.Library.Streams
                             options.TryGetValue("cafile", out var cafilevalue);
                             options.TryGetValue("crypto_method", out var crypto_method_value);
 
-                            Debug.WriteLineIf(Operators.IsSet(vpvalue) && !vpvalue, "ssl: verify_peer not supported");
+                            Debug.WriteLineIf(Operators.IsSet(vpvalue) && !(bool)vpvalue, "ssl: verify_peer not supported");
                             Debug.WriteLineIf(Operators.IsSet(vpnvalue) && (bool)vpnvalue, "ssl: verify_peer_name not supported");
-                            Debug.WriteLineIf(Operators.IsSet(assvalue) && !assvalue, "ssl: allow_self_signed not supported");
+                            Debug.WriteLineIf(Operators.IsSet(assvalue) && !(bool)assvalue, "ssl: allow_self_signed not supported");
                             Debug.WriteLineIf(Operators.IsSet(cafilevalue), "ssl: cafile not supported");
 
                             crypto_method = (CryptoMethod)crypto_method_value.ToLong();

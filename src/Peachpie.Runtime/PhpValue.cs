@@ -411,7 +411,7 @@ namespace Pchp.Core
         public static implicit operator PhpValue(PhpArray value) => Create(value);
         public static implicit operator PhpValue(Delegate value) => FromClass(value);
 
-        public static implicit operator bool(PhpValue value) => value.ToBoolean();
+        public static explicit operator bool(PhpValue value) => value.ToBoolean();
 
         public static explicit operator long(PhpValue value) => value.ToLong();
 
@@ -539,8 +539,7 @@ namespace Pchp.Core
 
         public static PhpNumber operator /(long lx, PhpValue y)
         {
-            PhpNumber ny;
-            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            if ((y.ToNumber(out var ny) & Convert.NumberInfo.IsPhpArray) != 0)
             {
                 //PhpException.UnsupportedOperandTypes();
                 //return PhpNumber.Create(0.0);
@@ -552,8 +551,7 @@ namespace Pchp.Core
 
         public static double operator /(double dx, PhpValue y)
         {
-            PhpNumber ny;
-            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            if ((y.ToNumber(out var ny) & Convert.NumberInfo.IsPhpArray) != 0)
             {
                 //PhpException.UnsupportedOperandTypes();
                 //return PhpNumber.Create(0.0);
@@ -602,7 +600,7 @@ namespace Pchp.Core
                     return true;
 
                 case PhpTypeCode.MutableString:
-                    key = Convert.StringToArrayKey(MutableStringBlob.ToString());
+                    key = Convert.StringToArrayKey(MutableStringBlob.ToString()); // TODO: corrupts non-Unicode strings https://github.com/peachpiecompiler/peachpie/issues/802
                     return true;
 
                 case PhpTypeCode.PhpArray:

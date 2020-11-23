@@ -46,7 +46,7 @@ namespace Pchp.Core
 
             public bool Equals(ConstName other) => StringComparer.Equals(Name, other.Name);
 
-            public override bool Equals(object obj) => obj is ConstName && Equals((ConstName)obj);
+            public override bool Equals(object obj) => obj is ConstName c && Equals(c);
 
             public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Name); // always ignore case when getting hash
         }

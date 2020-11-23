@@ -38,6 +38,7 @@ namespace Peachpie.Library.Network
             FailOnError = 4,
             FollowLocation = 8,
             SafeUpload = 16,
+            Progress = 32,
         }
 
         #endregion
@@ -140,6 +141,21 @@ namespace Peachpie.Library.Network
             }
         }
 
+        /// <summary>
+        /// Gets value indicating whether to notifi download/upload progress via <see cref="ProgressFunction"/> callback.
+        /// Ref <see cref="CURLConstants.CURLOPT_NOPROGRESS"/> option.
+        /// Default is <c>false</c>.
+        /// </summary>
+        public bool Progress
+        {
+            get => (_flags & Flags.Progress) != 0;
+            set
+            {
+                if (value) _flags |= Flags.Progress;
+                else _flags &= ~Flags.Progress;
+            }
+        }
+
         public string Method { get; set; } = DefaultMethod;
 
         /// <summary>
@@ -193,6 +209,20 @@ namespace Peachpie.Library.Network
         public ProcessMethod ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
 
         /// <summary>
+        /// Value of <see cref="CURLConstants.CURLOPT_READFUNCTION "/> option.<br/>
+        /// The function's signature is: (curl resource, infile stream, length)
+        /// Returning the new data string to be uploaded.
+        /// </summary>
+        public IPhpCallable ReadFunction = null;
+
+        /// <summary>
+        /// Value of <see cref="CURLConstants.CURLOPT_PROGRESSFUNCTION"/> option.<br/>
+        /// The function's signature is: (curl resource, infile stream, length)
+        /// Returning the new data string to be uploaded.
+        /// </summary>
+        public IPhpCallable ProgressFunction = null;
+
+        /// <summary>
         /// Bit mask of enabled protocols. All by default.
         /// </summary>
         internal int Protocols { get; set; } = CURLConstants.CURLPROTO_ALL;
@@ -228,6 +258,8 @@ namespace Peachpie.Library.Network
             this.ProcessingHeaders = ProcessMethod.Ignore;
             this.ProcessingResponse = ProcessMethod.StdOut;
             this.ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
+            this.ReadFunction = null;
+            this.ProgressFunction = null;
             this.PostFields = default;
             this.VerboseOutput = null;
 
@@ -245,6 +277,8 @@ namespace Peachpie.Library.Network
             this.ProcessingHeaders = ProcessMethod.Ignore;
             this.ProcessingResponse = ProcessMethod.StdOut;
             this.ProcessingRequest = new ProcessMethod { Method = ProcessMethodEnum.FILE };
+            this.ReadFunction = null;
+            this.ProgressFunction = null;
             this.PostFields = default;
             this.VerboseOutput = null;
 
@@ -303,7 +337,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Applies all the options to the request.
         /// </summary>
-        internal void ApplyOptions(Context ctx,  WebRequest request)
+        internal void ApplyOptions(Context ctx, WebRequest request)
         {
             foreach (var option in this.Options)
             {
@@ -403,7 +437,7 @@ namespace Peachpie.Library.Network
         {
             get
             {
-                if (DateTime.TryParse(Headers?[HttpRequestHeader.LastModified], out var dt))
+                if (DateTime.TryParse(Headers?["Last-Modified"], out var dt))
                 {
                     return dt;
                 }
@@ -438,9 +472,9 @@ namespace Peachpie.Library.Network
         /// Content length of download, read from Content-Length: field.
         /// If not specified, gets <c>-1</c>.
         /// </summary>
-        public long ContentLength => Headers != null && long.TryParse(Headers[HttpRequestHeader.ContentLength], out var length) ? length : -1;
+        public long ContentLength => Headers != null && long.TryParse(Headers["Content-Length"], out var length) ? length : -1;
 
-        public string ContentType => (Headers != null) ? Headers[HttpRequestHeader.ContentType] : null;
+        public string ContentType => (Headers != null) ? Headers["Content-Type"] : null;
 
         public string StatusHeader { get; set; } = string.Empty;
 

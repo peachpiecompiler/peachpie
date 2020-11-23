@@ -67,14 +67,14 @@ namespace Pchp.CodeAnalysis.Symbols
             return identity.GetHashCode();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(ISymbol other, SymbolEqualityComparer equalityComparer)
         {
-            return Equals(obj as MissingAssemblySymbol);
+            return other is MissingAssemblySymbol missing && Equals(missing, equalityComparer);
         }
 
-        public bool Equals(MissingAssemblySymbol other)
+        public bool Equals(MissingAssemblySymbol other, SymbolEqualityComparer _)
         {
-            if ((object)other == null)
+            if (ReferenceEquals(other, null))
             {
                 return false;
             }

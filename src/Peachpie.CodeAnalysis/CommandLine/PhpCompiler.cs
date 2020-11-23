@@ -65,7 +65,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             public ResourceDescription Resources;
         }
 
-        public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger)
+        public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger, ImmutableArray<AnalyzerConfigOptionsResult> analyzerConfigOptions)
         {
             bool hadErrors = false;
             var sourceFiles = Arguments.SourceFiles;
@@ -158,15 +158,15 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             MetadataReferenceResolver referenceDirectiveResolver;
             var resolvedReferences = ResolveMetadataReferences(diagnostics, touchedFilesLogger, out referenceDirectiveResolver);
-            if (ReportErrors(diagnostics, consoleOutput, errorLogger))
+            if (ReportDiagnostics(diagnostics, consoleOutput, errorLogger))
             {
                 return null;
             }
 
             //
             var referenceResolver = GetCommandLineMetadataReferenceResolver(touchedFilesLogger);
-            var loggingFileSystem = new LoggingStrongNameFileSystem(touchedFilesLogger);
-            var strongNameProvider = Arguments.GetStrongNameProvider(loggingFileSystem, _tempDirectory);
+            var loggingFileSystem = new LoggingStrongNameFileSystem(touchedFilesLogger, _tempDirectory);
+            var strongNameProvider = Arguments.GetStrongNameProvider(loggingFileSystem);
 
             var compilation = PhpCompilation.Create(
                 Arguments.CompilationName,
@@ -258,7 +258,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 if (diagnosticInfos.Count != 0)
                 {
-                    ReportErrors(diagnosticInfos, consoleOutput, errorLogger);
+                    ReportDiagnostics(diagnosticInfos, consoleOutput, errorLogger);
                     hadErrors = true;
                 }
 
@@ -271,7 +271,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 if (result != null && result.Diagnostics.HasAnyErrors())
                 {
-                    ReportErrors(result.Diagnostics, consoleOutput, errorLogger);
+                    ReportDiagnostics(result.Diagnostics, consoleOutput, errorLogger);
                     hadErrors = true;
                 }
 
@@ -337,11 +337,11 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         internal static string GetVersion() => typeof(PhpCompiler).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
-        internal new string GetAssemblyFileVersion() => GetVersion();
+        internal string GetAssemblyFileVersion() => GetVersion();
 
-        protected override ImmutableArray<DiagnosticAnalyzer> ResolveAnalyzersFromArguments(List<DiagnosticInfo> diagnostics, CommonMessageProvider messageProvider)
+        protected override void ResolveAnalyzersFromArguments(List<DiagnosticInfo> diagnostics, CommonMessageProvider messageProvider, out ImmutableArray<DiagnosticAnalyzer> analyzers, out ImmutableArray<ISourceGenerator> generators)
         {
-            return Arguments.ResolveAnalyzersFromArguments(Constants.PhpLanguageName, diagnostics, messageProvider, AssemblyLoader);
+            Arguments.ResolveAnalyzersFromArguments(Constants.PhpLanguageName, diagnostics, messageProvider, AssemblyLoader, out analyzers, out generators);
         }
 
         protected override bool TryGetCompilerDiagnosticCode(string diagnosticId, out uint code)

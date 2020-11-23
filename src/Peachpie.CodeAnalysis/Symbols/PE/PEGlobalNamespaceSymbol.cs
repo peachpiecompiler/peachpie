@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override AssemblySymbol ContainingAssembly => _moduleSymbol.ContainingAssembly;
 
-        internal override IModuleSymbol ContainingModule => _moduleSymbol;
+        internal override ModuleSymbol ContainingModule => _moduleSymbol;
 
         protected override void EnsureAllMembersLoaded()
         {

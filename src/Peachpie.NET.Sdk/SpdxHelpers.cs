@@ -25,6 +25,7 @@ namespace Peachpie.NET.Sdk
             { "PHP License v3.0", "PHP-3.0" },
             { "PHP License", "PHP-3.0" },
             // deprecations:
+            { "GPL", "GPL-2.0-or-later" },
             { "GPL-1.0", "GPL-1.0-or-later" },
             { "GPL-1.0+", "GPL-1.0-or-later" },
             { "GPL-2.0", "GPL-2.0-or-later" },

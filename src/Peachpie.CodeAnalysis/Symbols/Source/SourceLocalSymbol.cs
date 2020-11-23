@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -143,6 +144,8 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual RefKind RefKind => RefKind.None;
 
         public virtual bool IsFixed => false;
+
+        NullableAnnotation ILocalSymbol.NullableAnnotation => NullableAnnotation.None;
 
         #endregion
     }

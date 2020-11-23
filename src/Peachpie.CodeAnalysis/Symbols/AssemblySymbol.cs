@@ -10,10 +10,11 @@ using System.Threading;
 using Roslyn.Utilities;
 using System.Diagnostics;
 using System.Reflection;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal abstract class AssemblySymbol : Symbol, IAssemblySymbol
+    internal abstract class AssemblySymbol : Symbol, IAssemblySymbol, IAssemblySymbolInternal
     {
         AssemblySymbol _corLibrary;
 
@@ -367,6 +368,11 @@ namespace Pchp.CodeAnalysis.Symbols
         internal virtual NamedTypeSymbol TryLookupForwardedMetadataTypeWithCycleDetection(ref MetadataTypeName emittedName, ConsList<AssemblySymbol> visitedAssemblies)
         {
             return null;
+        }
+
+        ImmutableArray<INamedTypeSymbol> IAssemblySymbol.GetForwardedTypes()
+        {
+            throw new NotImplementedException();
         }
     }
 }

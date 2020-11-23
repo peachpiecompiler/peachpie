@@ -1250,7 +1250,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int Arity => 0;
 
-        internal override IModuleSymbol ContainingModule => _file.SourceModule;
+        internal override ModuleSymbol ContainingModule => _file.SourceModule;
 
         public override Symbol ContainingSymbol => _file.SourceModule;
 

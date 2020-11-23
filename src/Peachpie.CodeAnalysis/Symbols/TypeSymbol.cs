@@ -8,13 +8,14 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// A TypeSymbol is a base class for all the symbols that represent a type in PHP.
     /// </summary>
-    internal abstract partial class TypeSymbol : NamespaceOrTypeSymbol, ITypeSymbol
+    internal abstract partial class TypeSymbol : NamespaceOrTypeSymbol, ITypeSymbol, ITypeSymbolInternal
     {
         #region ITypeSymbol
 
@@ -30,7 +31,44 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ITypeSymbol ITypeSymbol.OriginalDefinition => (ITypeSymbol)this.OriginalTypeSymbolDefinition;
 
+        bool ITypeSymbol.IsNativeIntegerType => SpecialType == SpecialType.System_IntPtr || SpecialType == SpecialType.System_UIntPtr;
+
+        bool ITypeSymbol.IsRefLikeType => false;
+
+        bool ITypeSymbol.IsUnmanagedType => false;
+
+        bool ITypeSymbol.IsReadOnly => false;
+
+        NullableAnnotation ITypeSymbol.NullableAnnotation => NullableAnnotation.None;
+
+        string ITypeSymbol.ToDisplayString(NullableFlowState topLevelNullability, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        ImmutableArray<SymbolDisplayPart> ITypeSymbol.ToDisplayParts(NullableFlowState topLevelNullability, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        string ITypeSymbol.ToMinimalDisplayString(SemanticModel semanticModel, NullableFlowState topLevelNullability, int position, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        ImmutableArray<SymbolDisplayPart> ITypeSymbol.ToMinimalDisplayParts(SemanticModel semanticModel, NullableFlowState topLevelNullability, int position, SymbolDisplayFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        ITypeSymbol ITypeSymbol.WithNullableAnnotation(NullableAnnotation nullableAnnotation)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
+
+        ITypeSymbol ITypeSymbolInternal.GetITypeSymbol() => this;
 
         internal NamedTypeSymbol BaseTypeWithDefinitionUseSiteDiagnostics(ref HashSet<DiagnosticInfo> useSiteDiagnostics)
         {
@@ -251,7 +289,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return ReferenceEquals(this, t2);
         }
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(ISymbol obj, SymbolEqualityComparer equalityComparer)
         {
             var t2 = obj as TypeSymbol;
             if ((object)t2 == null) return false;

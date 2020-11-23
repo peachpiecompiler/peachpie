@@ -534,6 +534,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        bool Cci.ITypeDefinition.IsDelegate => this.TypeKind == TypeKind.Delegate;
+
         internal virtual bool IsMetadataSealed
         {
             get

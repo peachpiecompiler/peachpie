@@ -210,7 +210,12 @@ namespace Pchp.Core
                         {
                             Debug.Assert(fi.IsStatic && fi.IsPublic);
 
-                            if (fi.IsInitOnly || fi.IsLiteral)
+                            if (ReflectionUtils.TryBindLazyConstantField(fi, out var getter))
+                            {
+                                // lazy constant
+                                ConstsMap.DefineAppConstant(fi.Name, getter, false, extensionName);
+                            }
+                            else if (fi.IsInitOnly || fi.IsLiteral)
                             {
                                 // constant
                                 ConstsMap.DefineAppConstant(fi.Name, PhpValue.FromClr(fi.GetValue(null)), false, extensionName);
@@ -218,13 +223,15 @@ namespace Pchp.Core
                             else
                             {
                                 // static field
-                                ConstsMap.DefineAppConstant(fi.Name, new Func<PhpValue>(() => PhpValue.FromClr(fi.GetValue(null))), false, extensionName);
+                                var clrfield = new PhpPropertyInfo.ClrFieldProperty(t.ContainerType.GetPhpTypeInfo(), fi);
+                                ConstsMap.DefineAppConstant(fi.Name, new Func<Context, PhpValue>(ctx => clrfield.GetValue(ctx, null)), false, extensionName);
                             }
                         }
                         else if (m is PropertyInfo pi && !pi.IsPhpHidden())
                         {
                             // property
-                            ConstsMap.DefineAppConstant(pi.Name, new Func<PhpValue>(() => PhpValue.FromClr(pi.GetValue(null))), false, extensionName);
+                            var clrproperty = new PhpPropertyInfo.ClrProperty(t.ContainerType.GetPhpTypeInfo(), pi);
+                            ConstsMap.DefineAppConstant(pi.Name, new Func<PhpValue>(clrproperty.GetStaticValue), false, extensionName);
                         }
                     }
                 }
@@ -267,8 +274,6 @@ namespace Pchp.Core
             /// </summary>
             static void DefineCoreConstants()
             {
-                ConstsMap.DefineAppConstant("PHP_SAPI", new Func<Context, PhpValue>(ctx => ctx.ServerApi), false, "Core");
-
                 if (CurrentPlatform.IsWindows)
                 {
                     DefineCoreConstant("PHP_WINDOWS_VERSION_MAJOR", Environment.OSVersion.Version.Major);
@@ -620,7 +625,7 @@ namespace Pchp.Core
             {
                 Debug.WriteLine($"Note: file '{path}' has not been compiled.");
 
-                return fnc.PhpCallable(this, (PhpValue)path);
+                return (bool)fnc.PhpCallable(this, (PhpValue)path);
             }
             else
             {

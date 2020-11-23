@@ -4494,84 +4494,93 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to word-wrap.</param>
         /// <param name="width">The desired line length.</param>
-        /// <param name="lineBreak">The break string.</param>
+        /// <param name="break">The break string.</param>
         /// <param name="cut">If true, words longer than <paramref name="width"/> will be cut so that no line is longer
         /// than <paramref name="width"/>.</param>
         /// <returns>The word-wrapped string.</returns>
         /// <remarks>The only "break-point" character is space (' ').</remarks>
         /// <exception cref="PhpException">Thrown if the combination of <paramref name="width"/> and <paramref name="cut"/> is invalid.</exception>
         [return: CastToFalse]
-        public static string wordwrap(string str, int width = 75, string lineBreak = "\n", bool cut = false)
+        public static string wordwrap(string str, int width = 75, string @break = "\n", bool cut = false)
         {
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrEmpty(@break))
+            {
+                PhpException.Throw(PhpError.Warning, LibResources.arg_empty, nameof(@break));
+                return null; // return FALSE;
+            }
+
             if (width == 0 && cut)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("cut_forced_with_zero_width"));
-                //return null;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, LibResources.cut_forced_with_zero_width);
+                return null; // return FALSE;
             }
-            if (str == null) return null;
 
-            int length = str.Length;
-            StringBuilder result = new StringBuilder(length);
+            var result = StringBuilderUtilities.Pool.Get();
 
             // mimic the strange PHP behaviour when width < 0 and cut is true
             if (width < 0 && cut)
             {
-                result.Append(lineBreak);
+                result.Append(@break);
                 width = 1;
             }
 
-            int lastSpace = -1, lineStart = 0;
-            for (int i = 0; i < length; i++)
+            //
+            int lastspace = 0, linestart = 0;
+
+            for (int i = 0; i < str.Length; i++)
             {
-                if (str[i] == ' ')
-                {
-                    lastSpace = i;
-                    if (i - lineStart >= width + 1)
-                    {
-                        // cut is false if we get here
-                        if (lineStart == 0)
-                        {
-                            result.Append(str, 0, i);
-                        }
-                        else
-                        {
-                            result.Append(lineBreak);
-                            result.Append(str, lineStart, i - lineStart);
-                        }
+                var ch = str[i];
 
-                        lineStart = i + 1;
-                        continue;
-                    }
+                // check there is already an existing break:
+                if (ch == @break[0] && str.AsSpan(i).StartsWith(@break.AsSpan()))
+                {
+                    result.Append(str, linestart, i - linestart + @break.Length);
+                    
+                    lastspace = linestart = i + @break.Length;
+                    i = linestart - 1; // ++
                 }
-
-                if (i - lineStart >= width)
+                // check the space, and if it is a line boundary:
+                else if (ch == ' ')
                 {
-                    // we reached the specified width
+                    if (i - linestart >= width)
+                    {
+                        result.Append(str, linestart, i - linestart);
+                        result.Append(@break);
 
-                    if (lastSpace > lineStart) // obsolete: >=
-                    {
-                        if (lineStart > 0) result.Append(lineBreak);
-                        result.Append(str, lineStart, lastSpace - lineStart);
-                        lineStart = lastSpace + 1;
+                        linestart = i + 1;
                     }
-                    else if (cut)
-                    {
-                        if (lineStart > 0) result.Append(lineBreak);
-                        result.Append(str, lineStart, width);
-                        lineStart = i;
-                    }
+
+                    lastspace = i;
+                }
+                // cut if there was no space in this line:
+                else if (i - linestart >= width && cut && linestart >= lastspace)
+                {
+                    result.Append(str, linestart, i - linestart);
+                    result.Append(@break);
+                    lastspace = linestart = i;
+                }
+                // current word exceeds {width}
+                else if (i - linestart >= width && linestart < lastspace)
+                {
+                    result.Append(str, linestart, lastspace - linestart);
+                    result.Append(@break);
+                    lastspace = linestart = lastspace + 1;
                 }
             }
 
             // process the rest of str
-            if (lineStart < length || lastSpace == length - 1)
+            if (linestart < str.Length)
             {
-                if (lineStart > 0) result.Append(lineBreak);
-                result.Append(str, lineStart, length - lineStart);
+                result.Append(str, linestart, str.Length - linestart);
             }
 
-            return result.ToString();
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         #endregion 

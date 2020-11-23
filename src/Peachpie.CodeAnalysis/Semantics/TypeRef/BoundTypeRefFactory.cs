@@ -38,6 +38,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal readonly BoundClassTypeRef/*!*/TraversableTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.Traversable, null, null);
         internal readonly BoundClassTypeRef/*!*/ClosureTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.Closure, null, null);
+        internal readonly BoundClassTypeRef/*!*/stdClassTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.stdClass, null, null);
 
         #endregion
 

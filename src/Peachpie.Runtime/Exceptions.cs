@@ -39,7 +39,7 @@ namespace Pchp.Core
     /// <summary>
     /// Thrown by exit/die language constructs to cause immediate termination of a script being executed.
     /// </summary>
-    [DebuggerDisplay("died(reason={_status,nq})")]
+    [DebuggerDisplay("died(reason={Status,nq})")]
     public sealed class ScriptDiedException : PhpErrorException
     {
         /// <summary>

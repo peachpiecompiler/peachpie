@@ -145,7 +145,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _file.SourceModule;
 
-        internal override IModuleSymbol ContainingModule => _file.SourceModule;
+        internal override ModuleSymbol ContainingModule => _file.SourceModule;
 
         public override AssemblySymbol ContainingAssembly => _file.DeclaringCompilation.SourceAssembly;
 

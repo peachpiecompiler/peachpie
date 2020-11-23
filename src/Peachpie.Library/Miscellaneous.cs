@@ -743,7 +743,7 @@ namespace Pchp.Library.Standard
                 return true;
             }
 
-            return ctx.Assert(assertion, action);
+            return ctx.Assert((bool)assertion, action);
         }
     }
 }

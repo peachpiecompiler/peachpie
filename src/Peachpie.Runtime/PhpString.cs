@@ -1406,27 +1406,27 @@ namespace Pchp.Core
             /// Gets value at given index.
             /// Gets <c>void</c> value in case the key is not found.
             /// </summary>
-            PhpValue IPhpArray.GetItemValue(IntStringKey key)
+            public PhpValue GetItemValue(IntStringKey key)
             {
                 var index = key.IsInteger ? key.Integer : Convert.StringToLongInteger(key.String);
                 return (index >= 0 && index < this.Length) ? this[(int)index].AsValue() : PhpValue.Create(string.Empty);
             }
 
-            PhpValue IPhpArray.GetItemValue(PhpValue index)
+            public PhpValue GetItemValue(PhpValue index)
             {
                 if (index.TryToIntStringKey(out IntStringKey key))
                 {
-                    return ((IPhpArray)this).GetItemValue(key);
+                    return GetItemValue(key);
                 }
 
-                return new PhpValue(string.Empty);
+                return string.Empty;
             }
 
-            void IPhpArray.SetItemValue(PhpValue index, PhpValue value)
+            public void SetItemValue(PhpValue index, PhpValue value)
             {
                 if (index.TryToIntStringKey(out var key))
                 {
-                    ((IPhpArray)this).SetItemValue(key, value);
+                    SetItemValue(key, value);
                 }
                 else
                 {
@@ -1437,7 +1437,7 @@ namespace Pchp.Core
             /// <summary>
             /// Sets value at specific index. Value must not be an alias.
             /// </summary>
-            void IPhpArray.SetItemValue(IntStringKey key, PhpValue value)
+            public void SetItemValue(IntStringKey key, PhpValue value)
             {
                 var index = key.IsInteger ? key.Integer : Convert.StringToLongInteger(key.String);
                 if (NumberUtils.IsInt32(index))

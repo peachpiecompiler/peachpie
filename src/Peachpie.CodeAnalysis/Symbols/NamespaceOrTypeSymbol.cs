@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using System;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -10,7 +11,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents either a namespace or a type.
     /// </summary>
-    internal abstract class NamespaceOrTypeSymbol : Symbol, INamespaceOrTypeSymbol
+    internal abstract class NamespaceOrTypeSymbol : Symbol, INamespaceOrTypeSymbol, INamespaceOrTypeSymbolInternal
     {
         // Only the compiler can create new instances.
         internal NamespaceOrTypeSymbol()

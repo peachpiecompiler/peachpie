@@ -137,6 +137,8 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override int ERR_BadAssemblyName => throw new NotImplementedException();
 
+        public override int ERR_MultipleAnalyzerConfigsInSameDir => throw new NotImplementedException();
+
         public override int FTL_InvalidInputFileName => throw new NotImplementedException();
 
         public override int INF_UnableToLoadSomeTypesInAnalyzer => throw new NotImplementedException();
@@ -152,6 +154,10 @@ namespace Pchp.CodeAnalysis.Errors
         public override int WRN_PdbUsingNameTooLong => throw new NotImplementedException();
 
         public override int WRN_UnableToLoadAnalyzer => throw new NotImplementedException();
+
+        public override int WRN_GeneratorFailedDuringInitialization => throw new NotImplementedException();
+
+        public override int WRN_GeneratorFailedDuringGeneration => throw new NotImplementedException();
 
         public override string GetErrorDisplayString(ISymbol symbol)
         {

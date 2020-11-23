@@ -31,7 +31,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (IsConst) return PhpPropertyKind.ClassConstant;
                 if (IsStatic) return PhpPropertyKind.AppStaticField;
-                
+
                 if (((IPhpPropertySymbol)this).ContainingStaticsHolder != null)
                 {
                     if (IsReadOnly) return PhpPropertyKind.ClassConstant;
@@ -69,6 +69,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private int _lazyFixedSize;
         private NamedTypeSymbol _lazyFixedImplementationType;
         //private PEEventSymbol _associatedEventOpt;
+        private byte _lazyIsPhpHidden;
 
         internal PEFieldSymbol(
             PEModuleSymbol moduleSymbol,
@@ -227,12 +228,11 @@ namespace Pchp.CodeAnalysis.Symbols
             if ((object)_lazyType == null)
             {
                 var moduleSymbol = _containingType.ContainingPEModule;
-                bool isVolatile;
                 ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers;
-                TypeSymbol type = (new MetadataDecoder(moduleSymbol, _containingType)).DecodeFieldSignature(_handle, out isVolatile, out customModifiers);
+                TypeSymbol type = (new MetadataDecoder(moduleSymbol, _containingType)).DecodeFieldSignature(_handle, out customModifiers);
                 ImmutableArray<CustomModifier> customModifiersArray = CSharpCustomModifier.Convert(customModifiers);
                 //type = DynamicTypeDecoder.TransformType(type, customModifiersArray.Length, _handle, moduleSymbol);
-                _lazyIsVolatile = isVolatile;
+                _lazyIsVolatile = customModifiersArray.Any(m => !m.IsOptional && m.Modifier.SpecialType == SpecialType.System_Runtime_CompilerServices_IsVolatile);
 
                 TypeSymbol fixedElementType;
                 int fixedSize;
@@ -341,6 +341,20 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 EnsureSignatureIsLoaded();
                 return _lazyIsVolatile;
+            }
+        }
+
+        public override bool IsPhpHidden
+        {
+            get
+            {
+                const byte IsPhpHiddenFlag = 2;
+                if (_lazyIsPhpHidden == 0)
+                {
+                    _lazyIsPhpHidden |= Peachpie.CodeAnalysis.Symbols.AttributeHelpers.HasPhpHiddenAttribute(Handle, (PEModuleSymbol)ContainingModule) ? IsPhpHiddenFlag : (byte)0;
+                    _lazyIsPhpHidden |= 1;
+                }
+                return (_lazyIsPhpHidden & IsPhpHiddenFlag) != 0;
             }
         }
 

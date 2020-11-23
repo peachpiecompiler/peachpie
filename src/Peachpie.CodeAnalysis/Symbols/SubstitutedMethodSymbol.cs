@@ -629,7 +629,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return code;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(ISymbol obj, SymbolEqualityComparer equalityComparer)
         {
             if ((object)this == obj) return true;
 

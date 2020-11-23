@@ -50,7 +50,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => (Symbol)_containingType ?? _compilation.SourceModule;
 
-        internal override IModuleSymbol ContainingModule => _compilation.SourceModule;
+        internal override ModuleSymbol ContainingModule => _compilation.SourceModule;
 
         public override Accessibility DeclaredAccessibility { get; }
 

@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
@@ -634,7 +635,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (VariableKind == VariableKind.LocalTemporalVariable)
                 {
-                    return SynthesizedLocalKind.LoweringTemp ;
+                    return SynthesizedLocalKind.LoweringTemp;
                 }
 
                 return SynthesizedLocalKind.UserDefined;
@@ -1763,6 +1764,58 @@ namespace Pchp.CodeAnalysis.Semantics
         public void EmitStore(CodeGenerator cg, ref LhsStack lhs, TypeSymbol stack, BoundAccess access)
         {
             Place.EmitStore(cg, ref lhs, stack, access);
+        }
+    }
+
+    /// <summary>
+    /// Represens call to Func`2{Context, TResult}.Invoke.
+    /// </summary>
+    sealed class InvokeReference : IVariableReference
+    {
+        readonly IPlace _funcplace;
+
+        public InvokeReference(IPlace funcplace)
+        {
+            _funcplace = funcplace ?? throw new ArgumentNullException(nameof(funcplace));
+
+            if (funcplace.Type.Is_Func_Context_TResult(out var tresult))
+            {
+                this.Type = tresult;
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(funcplace.Type);
+            }
+        }
+
+        public Symbol Symbol => throw new NotImplementedException();
+
+        public TypeSymbol Type { get; }
+
+        public bool HasAddress => false;
+
+        public IPlace Place => null;
+
+        public TypeSymbol EmitLoadAddress(CodeGenerator cg, ref LhsStack lhs)
+        {
+            throw new InvalidOperationException();
+        }
+
+        public TypeSymbol EmitLoadValue(CodeGenerator cg, ref LhsStack lhs, BoundAccess access)
+        {
+            var tfunc = (NamedTypeSymbol)_funcplace.EmitLoad(cg.Builder);
+            cg.EmitLoadContext();
+            return cg.EmitCall(ILOpCode.Callvirt, tfunc.DelegateInvokeMethod);
+        }
+
+        public void EmitStore(CodeGenerator cg, ref LhsStack lhs, TypeSymbol stack, BoundAccess access)
+        {
+            throw new InvalidOperationException();
+        }
+
+        public LhsStack EmitStorePreamble(CodeGenerator cg, BoundAccess access)
+        {
+            throw new InvalidOperationException();
         }
     }
 

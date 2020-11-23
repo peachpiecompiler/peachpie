@@ -138,6 +138,8 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override int ERR_BadAssemblyName => (int)ErrorCode.ERR_BadAssemblyName;
 
+        public override int ERR_MultipleAnalyzerConfigsInSameDir => (int)ErrorCode.ERR_MultipleAnalyzerConfigsInSameDir;
+
         public override int FTL_InvalidInputFileName => (int)ErrorCode.FTL_InvalidInputFileName;
 
         public override int INF_UnableToLoadSomeTypesInAnalyzer => (int)ErrorCode.INF_UnableToLoadSomeTypesInAnalyzer;
@@ -153,6 +155,10 @@ namespace Pchp.CodeAnalysis.Errors
         public override int WRN_PdbUsingNameTooLong => (int)ErrorCode.WRN_PdbUsingNameTooLong;
 
         public override int WRN_UnableToLoadAnalyzer => (int)ErrorCode.WRN_UnableToLoadAnalyzer;
+
+        public override int WRN_GeneratorFailedDuringInitialization => (int)ErrorCode.WRN_GeneratorFailedDuringInitialization;
+
+        public override int WRN_GeneratorFailedDuringGeneration => (int)ErrorCode.WRN_GeneratorFailedDuringGeneration;
 
         public override string GetErrorDisplayString(ISymbol symbol)
         {

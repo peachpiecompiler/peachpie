@@ -30,7 +30,7 @@ namespace Peachpie.Library.Network
             var msg = new PhpArray
             {
                 { "msg", CURLConstants.CURLMSG_DONE },
-                { "result", handle.Result.ErrorCode },
+                { "result", (int)handle.Result.ErrorCode },
                 { "handle", handle }
             };
 

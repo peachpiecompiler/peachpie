@@ -734,7 +734,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override IModuleSymbol ContainingModule
+        internal override ModuleSymbol ContainingModule
         {
             get
             {
@@ -845,9 +845,8 @@ namespace Pchp.CodeAnalysis.Symbols
                         if ((fieldFlags & FieldAttributes.Static) == 0)
                         {
                             // Instance field used to determine underlying type.
-                            bool isVolatile;
                             ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers;
-                            TypeSymbol type = decoder.DecodeFieldSignature(fieldDef, out isVolatile, out customModifiers);
+                            TypeSymbol type = decoder.DecodeFieldSignature(fieldDef, out customModifiers);
 
                             if (type.SpecialType.IsValidEnumUnderlyingType())
                             {
@@ -1019,7 +1018,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 EnsureAllMembersAreLoaded();
                 Interlocked.CompareExchange(ref _lazyMembersByPhpName,
-                    Microsoft.CodeAnalysis.EnumerableExtensions.ToDictionary(
+                    Roslyn.Utilities.EnumerableExtensions.ToDictionary(
                         _lazyMembersInDeclarationOrder
                             .Where(x => x is MethodSymbol || x is FieldSymbol), // TODO: PropertySymbol ????
                         x => x.PhpName(), StringComparer.InvariantCultureIgnoreCase),

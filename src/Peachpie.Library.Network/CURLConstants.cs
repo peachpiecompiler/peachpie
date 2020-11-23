@@ -596,6 +596,15 @@ namespace Peachpie.Library.Network
                 case CURLOPT_URL: return (ch.Url = value.AsString()) != null;
                 case CURLOPT_DEFAULT_PROTOCOL: return (ch.DefaultSheme = value.AsString()) != null;
                 case CURLOPT_HTTPGET: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Get; } break;
+                case CURLOPT_UPLOAD:
+                    // The idea behind CURLOPT_UPLOAD is to tell curl to use PUT method,
+                    // add some common file uploading headers for that such as
+                    // Expect: 100-continue header and
+                    // use chunked encoding to upload a file of unknown size if you are using HTTP/1.1
+                    return true; // enable data upload
+                case CURLOPT_NOSIGNAL:
+                    // ignored
+                    return true;
                 case CURLOPT_POST: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Post; } break;
                 case CURLOPT_PUT: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Put; } break;
                 case CURLOPT_NOBODY: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Head; } break;
@@ -640,8 +649,9 @@ namespace Peachpie.Library.Network
 
                 case CURLOPT_HEADERFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders, callerCtx);
                 case CURLOPT_WRITEFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.StdOut, ref ch.ProcessingResponse, callerCtx);
-                //case CURLOPT_READFUNCTION:
-                //case CURLOPT_PROGRESSFUNCTION:
+                case CURLOPT_READFUNCTION: return (ch.ReadFunction = value.AsCallable()) != null || value.IsNull;
+                case CURLOPT_NOPROGRESS: ch.Progress = !value.ToBoolean(); break;
+                case CURLOPT_PROGRESSFUNCTION: return (ch.ProgressFunction = value.AsCallable()) != null || value.IsNull;
 
                 case CURLOPT_USERAGENT: return SetOption<CurlOption_UserAgent, string>(ch, value.AsString());
                 case CURLOPT_BINARYTRANSFER: break;   // no effect
@@ -722,7 +732,7 @@ namespace Peachpie.Library.Network
 
                 case CURLINFO_HEADER_OUT: ch.StoreRequestHeaders = value.ToBoolean(); break;
                 case CURLOPT_VERBOSE: ch.Verbose = value.ToBoolean(); break;
-                case CURLOPT_STDERR: ch.VerboseOutput = TryProcessMethodFromStream(value); return ch.VerboseOutput != null || Operators.IsEmpty(value);
+                case CURLOPT_STDERR: return (ch.VerboseOutput = TryProcessMethodFromStream(value)) != null || value.IsNull;
                 case CURLOPT_FAILONERROR: ch.FailOnError = value.ToBoolean(); break;
 
                 case CURLOPT_FRESH_CONNECT: break; // ignored, let the system decide
@@ -826,15 +836,15 @@ namespace Peachpie.Library.Network
             return (scheme, username, password, host, port);
         }
 
-        internal static bool TryGetOption(this CURLResource ch, int option, out PhpValue value)
-        {
-            switch (option)
-            {
-                default:
-                    value = PhpValue.Null;
-                    return false;
-            }
-        }
+        //internal static bool TryGetOption(this CURLResource ch, int option, out PhpValue value)
+        //{
+        //    switch (option)
+        //    {
+        //        default:
+        //            value = PhpValue.Null;
+        //            return false;
+        //    }
+        //}
 
         /// <summary>
         /// Sets cURL option.
@@ -997,7 +1007,7 @@ namespace Peachpie.Library.Network
                     if (colpos >= 0)
                     {
                         header_name = header.Remove(colpos);
-                        header_value = header.Substring(colpos + 1);
+                        header_value = header.Substring(colpos + 1).Trim();
                     }
                     else
                     {
@@ -1008,13 +1018,74 @@ namespace Peachpie.Library.Network
                     // set the header,
                     // replace previously set header or remove header with no value
 
-                    if (header_value.Length != 0)
+                    // some headers can't be set using WebHeaderCollection.Set()
+
+                    if (header_name.EqualsOrdinalIgnoreCase("accept"))
                     {
-                        request.Headers.Set(header_name, header_value);
+                        request.Accept = header_value;
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("connection"))
+                    {
+                        if (header_value.EqualsOrdinalIgnoreCase("keep-alive"))
+                        {
+                            request.KeepAlive = true;
+                        }
+                        else if (header_value.EqualsOrdinalIgnoreCase("close"))
+                        {
+                            request.Connection = null; // ???
+                        }
+                        else
+                        {
+                            request.Connection = header_value;
+                        }
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("content-type"))
+                    {
+                        request.ContentType = header_value;
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("content-length"))
+                    {
+                        request.ContentLength = long.Parse(header_value);
+                    }
+                    //else if (header_name.EqualsOrdinalIgnoreCase("date"))
+                    //{
+                    //    request.Date = header_value;
+                    //}
+                    else if (header_name.EqualsOrdinalIgnoreCase("host"))
+                    {
+                        request.Host = header_value;
+                    }
+                    //else if (header_name.EqualsOrdinalIgnoreCase("if-modified-since"))
+                    //{
+                    //    request.IfModifiedSince = header_value;
+                    //}
+                    //else if (header_name.EqualsOrdinalIgnoreCase("proxy-connection"))
+                    //{
+                    //    request.Proxy = header_value;
+                    //}
+                    //else if (header_name.EqualsOrdinalIgnoreCase("range"))
+                    //{
+                    //    request.AddRange(header_value);
+                    //}
+                    else if (header_name.EqualsOrdinalIgnoreCase("referer"))
+                    {
+                        request.Referer = header_value;
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("transfer-encoding"))
+                    {
+                        request.TransferEncoding = header_value;
+                    }
+                    else if (header_name.EqualsOrdinalIgnoreCase("user-agent"))
+                    {
+                        request.UserAgent = header_value;
+                    }
+                    else if (string.IsNullOrEmpty(header_value))
+                    {
+                        request.Headers.Remove(header_name);
                     }
                     else
                     {
-                        request.Headers.Remove(header_name);
+                        request.Headers.Set(header_name, header_value);
                     }
                 }
             }
