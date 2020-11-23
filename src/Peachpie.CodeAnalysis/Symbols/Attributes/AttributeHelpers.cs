@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 
 namespace Peachpie.CodeAnalysis.Symbols
@@ -118,9 +119,25 @@ namespace Peachpie.CodeAnalysis.Symbols
 
         public static bool HasNotNullAttribute(EntityHandle token, PEModuleSymbol containingModule)
         {
-            // TODO: C# 8.0 NotNull
-
             return containingModule != null && PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, NotNullAttribute).HasValue;
+        }
+
+        public static bool IsNotNullable(Symbol symbol, EntityHandle token, PEModuleSymbol containingModule)
+        {
+            // C# 8.0 Nullability check
+            if (containingModule != null && containingModule.Module.HasNullableAttribute(token, out byte attrArg, out var attrArgs))
+            {
+                // Directly annotated [Nullable(x)] or [Nullable(new byte[]{x, y, z})]
+                return
+                    attrArgs.IsDefault
+                    ? attrArg == NullableContextUtils.NotAnnotatedAttributeValue
+                    : attrArgs[0] == NullableContextUtils.NotAnnotatedAttributeValue;   // For generics and arrays, the first byte represents the type itself
+            }
+            else
+            {
+                // Recursively look in containing symbols for [NullableContext(x)], which specifies the default value
+                return symbol.GetNullableContextValue() == NullableContextUtils.NotAnnotatedAttributeValue;
+            }
         }
 
         public static bool HasPhpRwAttribute(EntityHandle token, PEModuleSymbol containingModule)

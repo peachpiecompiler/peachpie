@@ -958,6 +958,20 @@ namespace Pchp.CodeAnalysis
             //return SymbolDisplay.ToMinimalDisplayParts(this, semanticModel, position, format);
         }
 
+        #region Nullability
+
+        internal virtual byte? GetNullableContextValue()
+        {
+            return GetLocalNullableContextValue() ?? ContainingSymbol?.GetNullableContextValue();
+        }
+
+        internal virtual byte? GetLocalNullableContextValue()
+        {
+            return null;
+        }
+
+        #endregion
+
         #region ISymbol Members
 
         SymbolKind ISymbol.Kind

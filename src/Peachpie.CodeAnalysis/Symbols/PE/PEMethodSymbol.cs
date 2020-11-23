@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             // We currently pack everything into a 32-bit int with the following layout:
             //
-            // |            m|l|k|j|i|h|g|f|e|d|c|b|aaaaa|
+            // |   sss|r|q|o|n|m|l|k|j|i|h|g|f|e|d|c|b|aaaaa|
             // 
             // a = method kind. 5 bits.
             // b = method kind populated. 1 bit.
@@ -64,7 +64,14 @@ namespace Pchp.CodeAnalysis.Symbols
             // j = isUseSiteDiagnostic populated. 1 bit
             // k = isConditional populated. 1 bit
             // l = isOverriddenOrHiddenMembers populated. 1 bit
-            // 16 bits remain for future purposes.
+            // m = isCastToFalseBit populated. 1 bit
+            // n = isCastToFalseBit. 1 bit
+            // o = isPhpHiddenBit populated. 1 bit
+            // p = isPhpHiddenBit. 1 bit
+            // q = isPhpFieldsOnlyCtorBit populated. 1 bit
+            // r = isPhpFieldsOnlyCtorBit. 1 bit
+            // s = NullableContext. 3 bits
+            // 7 bits remain for future purposes.
 
             private const int MethodKindOffset = 0;
 
@@ -88,6 +95,9 @@ namespace Pchp.CodeAnalysis.Symbols
             private const int IsPhpHiddenBit = 0x1 << 19;
             private const int IsPhpFieldsOnlyCtorPopulatedBit = 0x1 << 20;
             private const int IsPhpFieldsOnlyCtorBit = 0x1 << 21;
+
+            private const int NullableContextOffset = 22;
+            private const int NullableContextMask = 0x7;
 
             private int _bits;
 
@@ -197,6 +207,16 @@ namespace Pchp.CodeAnalysis.Symbols
             public void SetIsOverriddenOrHiddenMembersPopulated()
             {
                 ThreadSafeFlagOperations.Set(ref _bits, IsOverriddenOrHiddenMembersPopulatedBit);
+            }
+
+            public bool TryGetNullableContext(out byte? value)
+            {
+                return ((NullableContextKind)((_bits >> NullableContextOffset) & NullableContextMask)).TryGetByte(out value);
+            }
+
+            public bool SetNullableContext(byte? value)
+            {
+                return ThreadSafeFlagOperations.Set(ref _bits, (((int)value.ToNullableContextFlags() & NullableContextMask) << NullableContextOffset));
             }
         }
 
@@ -994,5 +1014,27 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return PEDocumentationCommentUtils.GetDocumentationComment(this, _containingType.ContainingPEModule, preferredCulture, cancellationToken, ref AccessUncommonFields()._lazyDocComment);
         }
+
+        #region Nullability
+
+        internal override byte? GetNullableContextValue()
+        {
+            byte? value;
+            if (!_packedFlags.TryGetNullableContext(out value))
+            {
+                value = _containingType.ContainingPEModule.Module.HasNullableContextAttribute(_handle, out byte arg) ?
+                    arg :
+                    _containingType.GetNullableContextValue();
+                _packedFlags.SetNullableContext(value);
+            }
+            return value;
+        }
+
+        internal override byte? GetLocalNullableContextValue()
+        {
+            throw ExceptionUtilities.Unreachable;
+        }
+
+        #endregion
     }
 }

@@ -554,6 +554,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         TypeKind _lazyKind;
 
+        private NullableContextKind _lazyNullableContextValue;
+
         NamedTypeSymbol _lazyUnderlayingType;
 
         private KeyValuePair<CultureInfo, string> _lazyDocComment;
@@ -1634,5 +1636,27 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return PEDocumentationCommentUtils.GetDocumentationComment(this, ContainingPEModule, preferredCulture, cancellationToken, ref _lazyDocComment);
         }
+
+        #region Nullability
+
+        internal override byte? GetNullableContextValue()
+        {
+            byte? value;
+            if (!_lazyNullableContextValue.TryGetByte(out value))
+            {
+                value = ContainingPEModule.Module.HasNullableContextAttribute(_handle, out byte arg) ?
+                    arg :
+                    _container.GetNullableContextValue();
+                _lazyNullableContextValue = value.ToNullableContextFlags();
+            }
+            return value;
+        }
+
+        internal override byte? GetLocalNullableContextValue()
+        {
+            throw ExceptionUtilities.Unreachable;
+        }
+
+        #endregion
     }
 }
