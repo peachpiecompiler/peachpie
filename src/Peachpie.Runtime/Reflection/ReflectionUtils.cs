@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Dynamic;
@@ -176,7 +177,10 @@ namespace Pchp.Core.Reflection
             else
             {
                 // NULL is explicitly disallowed?
-                return p.GetCustomAttribute<NotNullAttribute>() == null;
+                // TODO: Properly search for NullableContext and use the attribute names instead of the types from Peachpie.Runtime
+                //       (C# compiler emits a distinct attribute definition in each compiled assembly)
+                return p.GetCustomAttribute<NotNullAttribute>() == null &&
+                    !(p.GetCustomAttribute<NullableAttribute>() is NullableAttribute nullable && nullable.NullableFlags[0] == 1);
             }
         }
 

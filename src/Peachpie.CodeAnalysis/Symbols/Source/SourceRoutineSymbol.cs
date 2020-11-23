@@ -492,11 +492,11 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (!ReturnsNull)
             {
-                // [return: NotNull]
+                // [return: Nullable(1)] - does not return null
                 var returnType = this.ReturnType;
                 if (returnType != null && (returnType.IsReferenceType || returnType.Is_PhpValue())) // only if it makes sense to check for NULL
                 {
-                    return ImmutableArray.Create<AttributeData>(DeclaringCompilation.CreateNotNullAttribute());
+                    return ImmutableArray.Create<AttributeData>(DeclaringCompilation.CreateNullableAttribute(NullableContextUtils.NotAnnotatedAttributeValue));
                 }
             }
 

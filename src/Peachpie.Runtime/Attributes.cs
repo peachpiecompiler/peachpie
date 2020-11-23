@@ -553,3 +553,45 @@ namespace Pchp.Core
         }
     }
 }
+
+namespace System.Runtime.CompilerServices
+{
+    /// <summary>
+    /// Attribute for compiler use only, used to indicate the nullability of contained type references without a <see cref="NullableAttribute"/> annotation.
+    /// </summary>
+    /// <remarks>
+    /// Whereas the C# compiler embeds the definition in the compiled assembly, the assemblies produced by Peachpie refer to this definition.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
+    public sealed class NullableContextAttribute : Attribute
+    {
+        public readonly byte Flag;
+
+        public NullableContextAttribute(byte flag)
+        {
+            Flag = flag;
+        }
+    }
+
+    /// <summary>
+    /// Attribute for compiler use only, used to indicate the nullability of type references.
+    /// </summary>
+    /// <remarks>
+    /// Whereas the C# compiler embeds the definition in the compiled assembly, the assemblies produced by Peachpie refer to this definition.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = false)]
+    public sealed class NullableAttribute : Attribute
+    {
+        public readonly byte[] NullableFlags;
+
+        public NullableAttribute(byte nullableFlag)
+        {
+            NullableFlags = new byte[1] { nullableFlag };
+        }
+
+        public NullableAttribute(byte[] nullableFlags)
+        {
+            NullableFlags = nullableFlags;
+        }
+    }
+}

@@ -308,10 +308,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return DeclaringCompilation.CreateParamsAttribute();
             }
 
-            // [NotNull]
+            // [Nullable(1)] - does not return null
             if (HasNotNull && Type.IsReferenceType)
             {
-                yield return DeclaringCompilation.CreateNotNullAttribute();
+                yield return DeclaringCompilation.CreateNullableAttribute(NullableContextUtils.NotAnnotatedAttributeValue);
             }
 
             // [DefaultValue]

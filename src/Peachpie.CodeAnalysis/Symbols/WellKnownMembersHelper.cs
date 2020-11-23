@@ -44,11 +44,20 @@ namespace Pchp.CodeAnalysis.Symbols
                 ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
         }
 
-        public static AttributeData CreateNotNullAttribute(this PhpCompilation compilation)
+        public static AttributeData CreateNullableAttribute(this PhpCompilation compilation, byte nullableFlag)
         {
             return new SynthesizedAttributeData(
-                compilation.CoreMethods.Ctors.NotNullAttribute,
-                ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                compilation.CoreMethods.Ctors.NullableAttribute_byte,
+                ImmutableArray.Create(new TypedConstant(compilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, nullableFlag)),
+                ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+        }
+
+        public static AttributeData CreateNullableContextAttribute(this PhpCompilation compilation, byte flag)
+        {
+            return new SynthesizedAttributeData(
+                compilation.CoreMethods.Ctors.NullableContextAttribute_byte,
+                ImmutableArray.Create(new TypedConstant(compilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, flag)),
+                ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
         }
 
         //public static AttributeData CreateDefaultValueAttribute(this PhpCompilation compilation, IMethodSymbol method, BoundArrayEx arr)
