@@ -268,7 +268,8 @@ namespace Pchp.Core
         /// <summary>
         /// Gets enumeration of all available constants and their values.
         /// </summary>
-        public IEnumerable<ConstantInfo> GetConstants() => _constants;
+        /// <param name="extension">Optionally specify the extension name; only constants defined within this extension will be enumerated.</param>
+        public ConstsMap.Enumerator GetConstants(string? extension = null) => _constants.GetEnumerator(extension);
 
         #endregion
     }
