@@ -67,7 +67,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                receiver.ResultType = receiver.Emit(cg);
+                //receiver.ResultType = receiver.Emit(cg);
+                cg.EmitSpecialize(receiver);
 
                 if (IsEnabled) // store the result
                 {

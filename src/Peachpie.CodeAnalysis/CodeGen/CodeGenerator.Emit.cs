@@ -336,7 +336,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (expr.Access.IsNone)
                 {
-                    return CoreTypes.Void;
+                    return expr.ResultType = CoreTypes.Void;
                 }
 
                 if (expr.Access.IsRead)
