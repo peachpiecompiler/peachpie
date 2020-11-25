@@ -344,10 +344,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // Keep IncludesSubclasses flag in the true branch and clear it in the false branch
                     HandleTypeCheckingExpression(
                         arg,
-                        currentType => typeCtx.GetObjectsFromMask(currentType).WithSubclasses,
+                        currentType =>
+                        {
+                            var objType = currentType.IsAnyType
+                            ? typeCtx.GetSystemObjectTypeMask()
+                            : typeCtx.GetObjectsFromMask(currentType);
+                            
+                            return objType.WithSubclasses;
+                        },
                         branch,
                         flowState,
-                        skipPositiveIfAnyType: true,
+                        skipPositiveIfAnyType: false,
                         checkExpr: call);
                     return true;
 
@@ -479,7 +486,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             BoundExpression checkExpr = null,
             bool isPositiveCheck = true)
         {
-            if (!TryGetVariableHandle(varRef.Variable, flowState, out VariableHandle handle))
+            if (!TryGetVariableHandle(varRef.Variable, flowState, out var handle))
             {
                 return;
             }
