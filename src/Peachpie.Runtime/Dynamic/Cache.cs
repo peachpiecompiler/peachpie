@@ -98,6 +98,8 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo Or_ConversionCost_ConversionCost = typeof(CostOf).GetMethod("Or", typeof(ConversionCost), typeof(ConversionCost));
 
             public static MethodInfo CheckFunctionDeclared_Context_Int_Int = new Func<Context, int, int, bool>(Context.CheckFunctionDeclared).Method;
+
+            public static MethodInfo GetDeclaredFunction_Context_String = typeof(Context).GetMethod("GetDeclaredFunction");
         }
 
         public static class Exceptions
