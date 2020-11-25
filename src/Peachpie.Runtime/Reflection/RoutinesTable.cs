@@ -1,5 +1,6 @@
 ﻿using Pchp.Core.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -24,20 +25,18 @@ namespace Pchp.Core.Reflection
         /// Positive number is context-wide function.
         /// Zero is not used.
         /// </summary>
-        static readonly Dictionary<string, int> s_nameToIndex = new Dictionary<string, int>(2048, StringComparer.CurrentCultureIgnoreCase);
-        static readonly List<RoutineInfo> s_appRoutines = new List<RoutineInfo>(2048);
+        static readonly ConcurrentDictionary<string, int> s_nameToIndex = new ConcurrentDictionary<string, int>(StringComparer.InvariantCultureIgnoreCase);
+        static readonly List<ClrRoutineInfo> s_appRoutines = new List<ClrRoutineInfo>(2048);
         static readonly RoutinesCount s_contextRoutinesCounter = new RoutinesCount();
 
         /// <summary>
         /// Adds referenced symbol into the map.
         /// In case of redeclaration, the handle is added to the list.
         /// </summary>
-        /// <exception cref="InvalidOperationException">The routine is already defined as a user routine.</exception>
+        /// <exception cref="PhpFatalErrorException">The routine is already defined as a user routine.</exception>
         public static ClrRoutineInfo/*!*/DeclareAppRoutine(string name, MethodInfo method)
         {
             ClrRoutineInfo routine;
-
-            // TODO: W lock
 
             if (s_nameToIndex.TryGetValue(name, out var index))
             {
@@ -45,16 +44,15 @@ namespace Pchp.Core.Reflection
 
                 if (index > 0)  // already taken by user routine
                 {
-                    throw new InvalidOperationException();
+                    RedeclarationError(name);
                 }
 
-                (routine = (ClrRoutineInfo)s_appRoutines[-index - 1]).AddOverload(method);
+                (routine = s_appRoutines[-index - 1]).AddOverload(method);
             }
             else
             {
                 index = -s_appRoutines.Count - 1;
-                routine = new ClrRoutineInfo(index, name, method);
-                s_appRoutines.Add(routine);
+                s_appRoutines.Add(routine = new ClrRoutineInfo(index, name, method));
                 s_nameToIndex[name] = index;
             }
 
@@ -87,10 +85,10 @@ namespace Pchp.Core.Reflection
             _contextRoutines = new RoutineInfo[s_contextRoutinesCounter.Count];
         }
 
-        static void RedeclarationError(RoutineInfo routine)
+        /// <exception cref="PhpFatalErrorException">The routine is already defined as a user routine.</exception>
+        static void RedeclarationError(string name)
         {
-            // TODO: ErrCode & throw
-            throw new InvalidOperationException($"Function {routine.Name} redeclared!");
+            PhpException.Throw(PhpError.Error, Resources.ErrResources.function_redeclared, name);
         }
 
         /// <summary>
@@ -109,20 +107,15 @@ namespace Pchp.Core.Reflection
             int index = routine.Index;
             if (index == 0)
             {
-                lock (s_nameToIndex)
+                index = s_nameToIndex.GetOrAdd(routine.Name, newname =>
                 {
-                    if (s_nameToIndex.TryGetValue(routine.Name, out index))
-                    {
-                        if (index < 0)  // redeclaring over an app context function
-                        {
-                            RedeclarationError(routine);
-                        }
-                    }
-                    else
-                    {
-                        index = s_contextRoutinesCounter.GetNewIndex();
-                        s_nameToIndex[routine.Name] = index;
-                    }
+                    return s_contextRoutinesCounter.GetNewIndex();
+                });
+
+                if (index < 0)
+                {
+                    // redeclaring over app context function
+                    RedeclarationError(routine.Name);
                 }
 
                 //
@@ -134,7 +127,7 @@ namespace Pchp.Core.Reflection
             //
             if (_contextRoutines.Length < index)
             {
-                Array.Resize(ref _contextRoutines, index * 2);                
+                Array.Resize(ref _contextRoutines, index * 2);
             }
 
             DeclarePhpRoutine(ref _contextRoutines[index - 1], routine);
@@ -150,7 +143,7 @@ namespace Pchp.Core.Reflection
             {
                 if (!ReferenceEquals(slot, routine))
                 {
-                    RedeclarationError(routine);
+                    RedeclarationError(routine.Name);
                 }
             }
         }
@@ -169,9 +162,10 @@ namespace Pchp.Core.Reflection
                     name = name.Substring(1);
                 }
 
-                int index;
-                if (s_nameToIndex.TryGetValue(name, out index))
+                if (s_nameToIndex.TryGetValue(name, out var index))
                 {
+                    Debug.Assert(index != 0);
+
                     if (index > 0)
                     {
                         var routines = _contextRoutines;
@@ -182,7 +176,6 @@ namespace Pchp.Core.Reflection
                     }
                     else
                     {
-                        Debug.Assert(index != 0);
                         return s_appRoutines[-index - 1];
                     }
                 }
