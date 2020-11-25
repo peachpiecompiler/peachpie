@@ -55,7 +55,7 @@ namespace Pchp.Core.Dynamic
                 if (target == typeof(PhpAlias))
                 {
                     // new PhppAlias(PhpValue.Null, 1)
-                    return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
+                    return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Cache.Expressions.Create(1));
                 }
 
                 // (T)null
@@ -107,7 +107,7 @@ namespace Pchp.Core.Dynamic
             {
                 //Debug.Assert(arg.Type.IsByRef && arg.Type == typeof(PhpValue), "Variable should be PhpValue and passed by ref so things will work out!");
                 if (arg.Type == typeof(PhpValue)) return Expression.Call(Cache.Operators.EnsureAlias_PhpValueRef, arg);
-                return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
+                return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Cache.Expressions.Create(1));
             }
 
             if (target.IsByRef)
@@ -220,7 +220,7 @@ namespace Pchp.Core.Dynamic
             }
 
             // Template: new Nullable<T>( (T)arg )
-            Expression new_nullable = null;
+            Expression new_nullable;
 
             try
             {
