@@ -2463,7 +2463,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             protected virtual void EmitLoadTarget(CodeGenerator cg, TypeSymbol type)
             {
-                cg.EmitConvert(Target, type);
+                cg.EmitConvert(Target, type); // TODO: DetermineConversionKind(targetp)
             }
 
             /// <summary>
@@ -2497,6 +2497,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        static ConversionKind DetermineConversionKind(ParameterSymbol targetp)
+        {
+            var t = targetp.ContainingType;
+            if (t.IsPhpSourceFile() || t.IsPhpUserType())
+            {
+                // TODO: strict mode on file level?
+                // var f = cg.ContainingFile;                    
+
+                return ConversionKind.Strict;
+            }
+            else
+            {
+                // a library function
+                return ConversionKind.Implicit;
+            }
+        }
+
         /// <summary>
         /// Loads argument from bound expression.
         /// </summary>
@@ -2506,8 +2523,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // load argument
                 EmitConvert(expr, targetp.Type,
-                    conversion: ConversionKind.Strict,  // TODO: strict mode?
-                    notNull: targetp.HasNotNull); 
+                    conversion: DetermineConversionKind(targetp),
+                    notNull: targetp.HasNotNull);
             }
             else
             {
