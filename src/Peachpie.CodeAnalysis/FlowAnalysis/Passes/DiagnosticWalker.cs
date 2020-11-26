@@ -529,7 +529,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                                 // Argument {0} passed to {1}() must be of the type {2}, {3} given
                                 _diagnostics.Add(_routine, arg.Value.PhpSyntax,
                                     ErrorCode.ERR_ArgumentTypeMismatch,
-                                    (p.Ordinal - skippedps + 1).ToString(), x.TargetMethod.RoutineName, GetNameForDiagnostic(p.Type), "NULL");
+                                    (i - skippedps + 1).ToString(), x.TargetMethod.RoutineName, GetNameForDiagnostic(p.Type), "NULL");
                             }
                         }
                     }
@@ -540,7 +540,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     : ps.Length - skippedps;
 
                 // check mandatory parameters are provided:
-                if (x.ArgumentsInSourceOrder.Length < expectsmin)
+                if (x.ArgumentsInSourceOrder.Length < expectsmin && !x.HasArgumentsUnpacking)
                 {
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, GetMemberNameForDiagnostic(x), expectsmin, x.ArgumentsInSourceOrder.Length);
                 }
