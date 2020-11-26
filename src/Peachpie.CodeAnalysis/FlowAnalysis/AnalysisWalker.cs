@@ -99,7 +99,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // merge and check whether state changed
                 state = MergeStates(state, targetState);   // merge states into new one
 
-                if (AreStatesEqual(state, targetState) && !target.ForceRepeatedAnalysis)
+                // ExitBlock propagates the return type (which is not a part of a flow state) to all the callers.
+                // Therefore, it must be reanalysed every time it is encountered, even if the flow state didn't change.
+                if (target is ExitBlock)
+                {
+                    // TODO: Consider marking the return type as dirty and return true only in that case.
+                }
+                else if (AreStatesEqual(state, targetState))
                 {
                     // state converged, we don't have to analyse the target block again
                     // unless it is specially needed (e.g. ExitBlock)

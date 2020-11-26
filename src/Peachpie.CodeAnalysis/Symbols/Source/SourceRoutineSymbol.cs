@@ -46,14 +46,13 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_cfg == null && this.Statements != null) // ~ Statements => non abstract method
                 {
-                    // create initial flow state
-                    var state = StateBinder.CreateInitialState(this);
-
                     // build control flow graph
                     var cfg = new ControlFlowGraph(
                         this.Statements,
                         SemanticsBinder.Create(DeclaringCompilation, ContainingFile.SyntaxTree, LocalsTable, ContainingType as SourceTypeSymbol));
-                    cfg.Start.FlowState = state;
+
+                    // create initial flow state
+                    cfg.Start.FlowState = StateBinder.CreateInitialState(this);
 
                     //
                     Interlocked.CompareExchange(ref _cfg, cfg, null);
@@ -62,10 +61,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 //
                 return _cfg;
             }
-            internal set
-            {
-                _cfg = value;
-            }
+        }
+
+        /// <summary>
+        /// Sets the new value of <see cref="ControlFlowGraph"/>.
+        /// </summary>
+        internal void UpdateControlFlowGraph(ControlFlowGraph newcfg)
+        {
+            _cfg = newcfg ?? throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(null);
         }
 
         /// <summary>

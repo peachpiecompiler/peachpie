@@ -119,13 +119,13 @@ namespace Pchp.CodeAnalysis
             _worklist.Enqueue(routine.ControlFlowGraph?.Start);
 
             // enqueue routine parameter default values
-            routine.SourceParameters.Foreach(p =>
+            foreach (var p in routine.SourceParameters)
             {
                 if (p.Initializer != null)
                 {
                     EnqueueExpression(p.Initializer, routine.TypeRefContext);
                 }
-            });
+            }
         }
 
         /// <summary>
