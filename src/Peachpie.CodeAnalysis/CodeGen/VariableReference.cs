@@ -1428,7 +1428,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (Field.IsConst)
             {
-                return cg.EmitLoadConstant(Field.ConstantValue);
+                return cg.EmitLoadConstant(Field.ConstantValue, targetOpt: access.TargetType);
             }
 
             VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);

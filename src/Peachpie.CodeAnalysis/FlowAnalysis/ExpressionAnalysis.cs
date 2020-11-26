@@ -1677,6 +1677,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         void BindParam(PhpParam expected, BoundArgument givenarg)
         {
+            // bind symbol
+            givenarg.Parameter = expected.ParameterSymbol;
+
             // [PhpRwAttribute]
             if (expected.IsPhpRw)
             {

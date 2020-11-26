@@ -495,10 +495,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             base.VisitRoutineCall(x);
 
             // check method
-            if (x.TargetMethod.IsValidMethod() && !x.HasArgumentsUnpacking)
+            if (x.TargetMethod.IsValidMethod())
             {
-                // check mandatory parameters are provided:
                 var ps = x.TargetMethod.Parameters;
+
                 var skippedps = 0; // number of implicit parameters provided by compiler
                 var expectsmin = 0;
 
@@ -512,9 +512,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     else
                     {
-                        if (!ps[i].IsPhpOptionalParameter() && (i < ps.Length - 1 /*check for IsParams only for last parameter*/ || !ps[i].IsParams))
+                        var p = ps[i];
+
+                        if (!p.IsPhpOptionalParameter() && (i < ps.Length - 1 /*check for IsParams only for last parameter*/ || !p.IsParams))
                         {
                             expectsmin = i - skippedps + 1;
+                        }
+
+                        var arg = x.ArgumentMatchingParameter(p);
+                        if (arg != null)
+                        {
+                            // TODO: check arg.Value.BoundConversion.Exists in general, instead of the following
+
+                            if (arg.Value.ConstantValue.IsNull() && p.HasNotNull)
+                            {
+                                // Argument {0} passed to {1}() must be of the type {2}, {3} given
+                                _diagnostics.Add(_routine, arg.Value.PhpSyntax,
+                                    ErrorCode.ERR_ArgumentTypeMismatch,
+                                    (p.Ordinal - skippedps + 1).ToString(), x.TargetMethod.RoutineName, GetNameForDiagnostic(p.Type), "NULL");
+                            }
                         }
                     }
                 }
@@ -523,7 +539,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     ? int.MaxValue
                     : ps.Length - skippedps;
 
-                //
+                // check mandatory parameters are provided:
                 if (x.ArgumentsInSourceOrder.Length < expectsmin)
                 {
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, GetMemberNameForDiagnostic(x), expectsmin, x.ArgumentsInSourceOrder.Length);
@@ -859,6 +875,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
 
             return name;
+        }
+
+        static string GetNameForDiagnostic(TypeSymbol t)
+        {
+            return t.SpecialType switch
+            {
+                SpecialType.System_Object => QualifiedName.Object.ToString(),
+                SpecialType.System_Double => QualifiedName.Float.ToString(),
+                SpecialType.System_Boolean => QualifiedName.Bool.ToString(),
+                SpecialType.System_Int32 => QualifiedName.Int.ToString(),
+                SpecialType.System_Int64 => QualifiedName.Int.ToString(),
+                SpecialType.System_String => QualifiedName.String.ToString(),
+                _ => t.PhpName(),
+            };
         }
 
         static TextSpan GetMemberNameSpanForDiagnostic(LangElement node)

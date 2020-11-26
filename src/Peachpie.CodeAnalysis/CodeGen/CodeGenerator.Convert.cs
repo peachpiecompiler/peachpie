@@ -533,7 +533,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits expression and converts it to required type.
         /// </summary>
-        public void EmitConvert(BoundExpression expr, TypeSymbol to, ConversionKind conversion = ConversionKind.Implicit)
+        public void EmitConvert(BoundExpression expr, TypeSymbol to, ConversionKind conversion = ConversionKind.Implicit, bool notNull = false)
         {
             Debug.Assert(expr != null);
             Debug.Assert(to != null);
@@ -561,7 +561,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (expr.ConstantValue.HasValue && to != null)
                 {
                     // TODO: ConversionKind.Strict ?
-                    EmitConvert(EmitLoadConstant(expr.ConstantValue.Value, to), 0, to);
+                    EmitConvert(EmitLoadConstant(expr.ConstantValue.Value, to, notNull), 0, to);
                     return;
                 }
 

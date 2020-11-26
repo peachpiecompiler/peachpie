@@ -155,6 +155,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_PropertyTypeNotAllowed,
         /// <summary>Multiple analyzer config files cannot be in the same directory ('{0}').</summary>
         ERR_MultipleAnalyzerConfigsInSameDir,
+        /// <summary>Argument {0} passed to {1}() must be of the type {2}, {3} given</summary>
+        ERR_ArgumentTypeMismatch,
 
         //
         // Warnings

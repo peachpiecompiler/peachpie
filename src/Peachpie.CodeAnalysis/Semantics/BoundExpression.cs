@@ -393,6 +393,7 @@ namespace Pchp.CodeAnalysis.Semantics
     public abstract partial class BoundRoutineCall : BoundExpression, IInvocationOperation
     {
         protected ImmutableArray<BoundArgument> _arguments;
+
         protected ImmutableArray<IBoundTypeRef> _typeargs = ImmutableArray<IBoundTypeRef>.Empty;
 
         ImmutableArray<IArgumentOperation> IInvocationOperation.Arguments => StaticCast<IArgumentOperation>.From(_arguments);
@@ -403,7 +404,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public ImmutableArray<IBoundTypeRef> TypeArguments { get => _typeargs; internal set => _typeargs = value; }
 
-        public IArgumentOperation ArgumentMatchingParameter(IParameterSymbol parameter)
+        public BoundArgument ArgumentMatchingParameter(IParameterSymbol parameter)
         {
             foreach (var arg in _arguments)
             {

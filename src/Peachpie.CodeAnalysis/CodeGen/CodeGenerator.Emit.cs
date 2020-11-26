@@ -2505,7 +2505,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (targetp.RefKind == RefKind.None)
             {
                 // load argument
-                EmitConvert(expr, targetp.Type, conversion: ConversionKind.Strict); // TODO: strict mode?
+                EmitConvert(expr, targetp.Type,
+                    conversion: ConversionKind.Strict,  // TODO: strict mode?
+                    notNull: targetp.HasNotNull); 
             }
             else
             {
@@ -3289,11 +3291,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             return EmitCall(ILOpCode.Call, mainmethod);
         }
 
-        public TypeSymbol EmitLoadConstant(object value, TypeSymbol targetOpt = null, bool nullable = true)
+        public TypeSymbol EmitLoadConstant(object value, TypeSymbol targetOpt = null, bool notNull = false)
         {
             if (value == null)
             {
-                Debug.Assert(nullable);
+                if (notNull)
+                {
+                    // should be reported already
+                    // Diagnostics.Add( ... )
+                    Debug.Fail("value cannot be null");
+                }
 
                 if (targetOpt != null && targetOpt.IsValueType)
                 {

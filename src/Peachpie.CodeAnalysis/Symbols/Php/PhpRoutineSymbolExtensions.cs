@@ -206,19 +206,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 //
-                var phpparam = new PhpParam(
-                    index++,
-                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull),
-                    p.RefKind != RefKind.None,
-                    p.IsParams,
-                    isPhpRw: p.IsPhpRw,
-                    defaultValue: p.Initializer);
+                var phpparam = new PhpParam(p, index++, TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull));
 
-                if (result == null)
-                {
-                    result = new List<PhpParam>(ps.Length);
-                }
-
+                result ??= new List<PhpParam>(ps.Length);
                 result.Add(phpparam);
             }
 
