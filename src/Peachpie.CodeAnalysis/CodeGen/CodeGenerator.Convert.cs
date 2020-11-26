@@ -667,7 +667,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (to.IsNullableType(out var ttype))
                     {
-                        EmitConvertToNullable_T(from, fromHint, to, ttype);
+                        EmitConvertToNullable_T(from, fromHint, to, ttype, conversion);
                     }
                     else if (to.SpecialType == SpecialType.System_DateTime)
                     {
@@ -681,14 +681,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        TypeSymbol EmitConvertToNullable_T(TypeSymbol from, TypeRefMask fromHint, TypeSymbol nullabletype, TypeSymbol ttype)
+        TypeSymbol EmitConvertToNullable_T(TypeSymbol from, TypeRefMask fromHint, TypeSymbol nullabletype, TypeSymbol ttype, ConversionKind conversion = ConversionKind.Implicit)
         {
             Debug.Assert(nullabletype.IsValueType);
 
             if (!CanBeNull(from) || !CanBeNull(fromHint))
             {
                 // new Nullable<T>((T)from)
-                EmitConvert(from, fromHint, ttype);
+                EmitConvert(from, fromHint, ttype, conversion);
                 return EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)nullabletype).InstanceConstructors[0]);
             }
 
@@ -713,7 +713,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // trueLbl:
             _il.MarkLabel(trueLbl);
             _il.EmitLocalLoad(from_var);
-            EmitConvert(from, fromHint, ttype);
+            EmitConvert(from, fromHint, ttype, conversion);
             EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)nullabletype).InstanceConstructors[0]); // new Nullable<T>( STACK )
 
             // endLbl:
