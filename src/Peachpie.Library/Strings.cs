@@ -4611,7 +4611,7 @@ namespace Pchp.Library
             var format = new System.Globalization.NumberFormatInfo
             {
                 NumberDecimalDigits = Math.Max(num_decimal_places, 0), // TODO: .NET throws for decimals > 99
-                NumberDecimalSeparator = dec_separator ?? ".", // NULL ~ a defalt value
+                NumberDecimalSeparator = dec_separator ?? ".", // NULL ~ a default value
                 NumberGroupSeparator = thousands_separator ?? ",", // NULL ~ a default value
             };
 
