@@ -124,11 +124,12 @@ namespace Peachpie.CodeAnalysis.Symbols
 
         public static bool IsNotNullable(Symbol symbol, EntityHandle token, PEModuleSymbol containingModule)
         {
-            // C# 8.0 Nullability check
+            // C# basic 8.0 Nullability check
+            bool isNotNullable;
             if (containingModule != null && containingModule.Module.HasNullableAttribute(token, out byte attrArg, out var attrArgs))
             {
                 // Directly annotated [Nullable(x)] or [Nullable(new byte[]{x, y, z})]
-                return
+                isNotNullable =
                     attrArgs.IsDefault
                     ? attrArg == NullableContextUtils.NotAnnotatedAttributeValue
                     : attrArgs[0] == NullableContextUtils.NotAnnotatedAttributeValue;   // For generics and arrays, the first byte represents the type itself
@@ -136,8 +137,60 @@ namespace Peachpie.CodeAnalysis.Symbols
             else
             {
                 // Recursively look in containing symbols for [NullableContext(x)], which specifies the default value
-                return symbol.GetNullableContextValue() == NullableContextUtils.NotAnnotatedAttributeValue;
+                isNotNullable = symbol.GetNullableContextValue() == NullableContextUtils.NotAnnotatedAttributeValue;
             }
+
+            // Special C# 8.0 attributes for flow static analysis
+            if (DecodeFlowAnalysisAttributes(containingModule.Module, token) is var flowAnnotations && flowAnnotations != FlowAnalysisAnnotations.None)
+            {
+                // Specified attributes can override nullability in both directions
+                isNotNullable =
+                    isNotNullable
+                    ? (flowAnnotations & (FlowAnalysisAnnotations.AllowNull | FlowAnalysisAnnotations.MaybeNull)) == 0
+                    : ((flowAnnotations & FlowAnalysisAnnotations.DisallowNull) != 0 || (flowAnnotations & FlowAnalysisAnnotations.NotNull) == FlowAnalysisAnnotations.NotNull);
+            }
+
+            return isNotNullable;
+        }
+
+        private static FlowAnalysisAnnotations DecodeFlowAnalysisAttributes(PEModule module, EntityHandle handle)
+        {
+            FlowAnalysisAnnotations annotations = FlowAnalysisAnnotations.None;
+
+            if (handle.IsNil)
+            {
+                return annotations;
+            }
+
+            if (module.HasAttribute(handle, AttributeDescription.AllowNullAttribute)) annotations |= FlowAnalysisAnnotations.AllowNull;
+            if (module.HasAttribute(handle, AttributeDescription.DisallowNullAttribute)) annotations |= FlowAnalysisAnnotations.DisallowNull;
+
+            if (module.HasAttribute(handle, AttributeDescription.MaybeNullAttribute))
+            {
+                annotations |= FlowAnalysisAnnotations.MaybeNull;
+            }
+            else if (module.HasMaybeNullWhenOrNotNullWhenOrDoesNotReturnIfAttribute(handle, AttributeDescription.MaybeNullWhenAttribute, out bool when))
+            {
+                annotations |= (when ? FlowAnalysisAnnotations.MaybeNullWhenTrue : FlowAnalysisAnnotations.MaybeNullWhenFalse);
+            }
+
+            if (module.HasAttribute(handle, AttributeDescription.NotNullAttribute))
+            {
+                annotations |= FlowAnalysisAnnotations.NotNull;
+            }
+            //else if (module.HasMaybeNullWhenOrNotNullWhenOrDoesNotReturnIfAttribute(handle, AttributeDescription.NotNullWhenAttribute, out bool when))
+            //{
+            //    annotations |= (when ? FlowAnalysisAnnotations.NotNullWhenTrue : FlowAnalysisAnnotations.NotNullWhenFalse);
+            //}
+
+            //if (module.HasMaybeNullWhenOrNotNullWhenOrDoesNotReturnIfAttribute(handle, AttributeDescription.DoesNotReturnIfAttribute, out bool condition))
+            //{
+            //    annotations |= (condition ? FlowAnalysisAnnotations.DoesNotReturnIfTrue : FlowAnalysisAnnotations.DoesNotReturnIfFalse);
+            //}
+
+            // NOTE: Uncomment the code above if we decide to use these attributes for our flow analysis as well
+
+            return annotations;
         }
 
         public static bool HasPhpRwAttribute(EntityHandle token, PEModuleSymbol containingModule)
