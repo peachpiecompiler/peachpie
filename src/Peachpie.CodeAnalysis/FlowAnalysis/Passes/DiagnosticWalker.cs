@@ -16,6 +16,7 @@ using Peachpie.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.Utilities;
+using Peachpie.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
@@ -389,13 +390,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
             }
 
-            // "void" return type hint ?
-            if (_routine.SyntaxReturnType is Devsense.PHP.Syntax.Ast.PrimitiveTypeRef pt && pt.PrimitiveTypeName == Devsense.PHP.Syntax.Ast.PrimitiveTypeRef.PrimitiveType.@void)
+            if (_routine.SyntaxReturnType != null)
             {
-                if (x.Returned != null)
+                // "void" return type hint ?
+                if (_routine.SyntaxReturnType.IsVoid() && x.Returned != null)
                 {
                     // A void function must not return a value
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_VoidFunctionCannotReturnValue);
+                }
+
+                // not nullable return type
+                if (!_routine.SyntaxReturnType.CanBeNull() && x.Returned.ConstantValue.IsNull())
+                {
+                    // Cannot convert {0} to {1}
+                    _diagnostics.Add(_routine, x.Returned.PhpSyntax, ErrorCode.ERR_TypeMismatch, "NULL", _routine.SyntaxReturnType.ToString());
                 }
             }
 

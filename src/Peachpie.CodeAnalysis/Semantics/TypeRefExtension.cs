@@ -34,11 +34,19 @@ namespace Peachpie.CodeAnalysis.Semantics
         }
 
         /// <summary>
-        /// Gets value indicating the type refers to a nullable type (<c>?TYPE</c>).
+        /// Gets value indicating the type refers to a mixed type (<c>mixed</c>).
         /// </summary>
         public static bool IsMixed(this TypeRef tref)
         {
             return tref is PrimitiveTypeRef pt && pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.mixed;
+        }
+
+        /// <summary>
+        /// Gets value indicating the type refers to "void" type (<c>void</c>).
+        /// </summary>
+        public static bool IsVoid(this TypeRef tref)
+        {
+            return tref is PrimitiveTypeRef pt && pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.@void;
         }
 
         /// <summary>

@@ -574,6 +574,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot convert {0} to {1}.
+        /// </summary>
+        internal static string ERR_TypeMismatch {
+            get {
+                return ResourceManager.GetString("ERR_TypeMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Type name &apos;{0}&apos; could not be resolved..
         /// </summary>
         internal static string ERR_TypeNameCannotBeResolved {
