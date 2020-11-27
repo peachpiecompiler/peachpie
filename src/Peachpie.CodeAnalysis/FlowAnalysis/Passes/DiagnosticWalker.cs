@@ -399,9 +399,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_VoidFunctionCannotReturnValue);
                 }
 
-                // not nullable return type
-                if (!_routine.SyntaxReturnType.CanBeNull() && x.Returned.ConstantValue.IsNull())
+                if (x.Returned == null)
                 {
+                    if (!_routine.SyntaxReturnType.IsVoid())
+                    {
+                        // CONSIDER: Err or silently return NULL
+                    }
+                }
+                else if (x.Returned.ConstantValue.IsNull() && !_routine.SyntaxReturnType.CanBeNull())
+                {
+                    // not nullable return type
                     // Cannot convert {0} to {1}
                     _diagnostics.Add(_routine, x.Returned.PhpSyntax, ErrorCode.ERR_TypeMismatch, "NULL", _routine.SyntaxReturnType.ToString());
                 }
