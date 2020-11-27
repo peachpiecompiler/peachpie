@@ -16,6 +16,7 @@ using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
 using System.Globalization;
 using System.Threading;
+using Peachpie.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -435,22 +436,23 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 var thint = SyntaxReturnType;
-
-                if (thint == null)
-                {
-                    // use the result of type analysis if possible
-                    var tmask = ResultTypeMask;
-
-                    return this.IsOverrideable()
-                        ? true
-                        : tmask.IsAnyType || tmask.IsRef || this.TypeRefContext.IsNull(tmask);
-                }
-                else
+                if (thint != null)
                 {
                     // if type hint is provided,
                     // only can be NULL if specified
-                    return thint.IsNullable();
+                    return thint.CanBeNull();
                 }
+                else if (this.IsOverrideable())
+                {
+                    // a virtual method can be overriden with anything
+                    // always possible it may return null
+                    return true;
+                }
+
+                // use the result of type analysis
+                var tmask = ResultTypeMask;
+
+                return tmask.IsAnyType || tmask.IsRef || this.TypeRefContext.IsNull(tmask);
             }
         }
 

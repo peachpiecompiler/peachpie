@@ -3,6 +3,7 @@ using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Peachpie.CodeAnalysis.Semantics;
 using Peachpie.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
@@ -62,6 +63,14 @@ namespace Pchp.CodeAnalysis.Symbols
             // : return type
             if (routine.SyntaxReturnType != null)
             {
+                // "static"
+                if (routine.SyntaxReturnType is ReservedTypeRef rt && rt.Type == ReservedTypeRef.ReservedType.@static &&
+                    routine.ContainingType is SourceTypeSymbol srct && !srct.IsTrait)
+                {
+                    return srct;
+                }
+
+                //
                 return compilation.GetTypeFromTypeRef(routine.SyntaxReturnType, routine.ContainingType as SourceTypeSymbol);
             }
 

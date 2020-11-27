@@ -321,28 +321,6 @@ namespace Pchp.CodeAnalysis
             return element;
         }
 
-        /// <summary>
-        /// Gets value indicating the type refers to a nullable type (<c>?TYPE</c>).
-        /// </summary>
-        public static bool IsNullable(this TypeRef tref)
-        {
-            return tref is NullableTypeRef; // && tref != null
-        }
-
-        /// <summary>
-        /// Gets value indicating the type refers to <c>callable</c> or <c>?callable</c>.
-        /// </summary>
-        public static bool IsCallable(this TypeRef tref)
-        {
-            if (tref is NullableTypeRef nullable)
-            {
-                tref = nullable.TargetType;
-            }
-
-            return tref is PrimitiveTypeRef primitiveType &&
-                primitiveType.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable;
-        }
-
         public static Microsoft.CodeAnalysis.Text.TextSpan GetDeclareClauseSpan(this DeclareStmt declStmt)
         {
             if (declStmt.Statement is EmptyStmt)

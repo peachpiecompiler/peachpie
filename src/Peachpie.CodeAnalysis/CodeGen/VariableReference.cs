@@ -13,6 +13,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
 using Cci = Microsoft.Cci;
+using Peachpie.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
