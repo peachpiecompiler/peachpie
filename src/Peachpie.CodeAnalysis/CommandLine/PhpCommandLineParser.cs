@@ -380,9 +380,13 @@ namespace Pchp.CodeAnalysis.CommandLine
                         {
                             diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
                         }
-                        else if (string.Equals(value, "default", StringComparison.OrdinalIgnoreCase) || string.Equals(value, "latest", StringComparison.OrdinalIgnoreCase))
+                        else if (string.Equals(value, "default", StringComparison.OrdinalIgnoreCase))
                         {
-                            languageVersion = null; // default
+                            languageVersion = PhpSyntaxTree.DefaultLanguageVersion;
+                        }
+                        else if (string.Equals(value, "latest", StringComparison.OrdinalIgnoreCase))
+                        {
+                            languageVersion = PhpSyntaxTree.LatestLanguageVersion;
                         }
                         else if (!Version.TryParse(value, out languageVersion))
                         {
