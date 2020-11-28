@@ -22,8 +22,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     internal partial class DiagnosticWalker<T> : GraphExplorer<T>
     {
-        private readonly DiagnosticBag _diagnostics;
-        private SourceRoutineSymbol _routine;
+        readonly DiagnosticBag _diagnostics;
+        readonly SourceRoutineSymbol _routine;
 
         private bool CallsParentCtor { get; set; }
 
@@ -666,7 +666,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod, isMemberCall: true);
 
             // remember there is call to `parent::__construct`
-            if (call.TypeRef is BoundReservedTypeRef rt && rt.ReservedType == ReservedTypeRef.ReservedType.parent &&
+            if (call.TypeRef.IsParent() &&
                 call.Name.IsDirect &&
                 call.Name.NameValue.Name.IsConstructName)
             {
