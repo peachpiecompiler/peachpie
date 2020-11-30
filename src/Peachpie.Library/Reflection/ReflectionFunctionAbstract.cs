@@ -45,7 +45,7 @@ namespace Pchp.Library.Reflection
 
             type = m.ReturnType;
             notNullFlag =
-                m.ReturnTypeCustomAttributes.IsDefined(typeof(NotNullAttribute), false) ||
+                !m.ReturnParameter.IsNullable() ||
                 m.ReturnTypeCustomAttributes.IsDefined(typeof(CastToFalse), false); // [return: CastToFalse] => NULL cannot be returned
 
             //
