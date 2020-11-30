@@ -82,7 +82,7 @@ namespace Pchp.Core
         /// <summary>
         /// Implicit conversion to <see cref="PhpValue"/>.
         /// </summary>
-        public static implicit operator PhpValue(PhpResource @object) => PhpValue.FromClass(@object);
+        public static implicit operator PhpValue(PhpResource? @object) => PhpValue.FromClass(@object);
 
         #region IDisposable
 

@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,7 +43,7 @@ namespace Peachpie.Library.XmlDom
         }
 
         [PhpHidden]
-        private protected XmlNode _xmlNode;
+        private protected XmlNode? _xmlNode;
 
         [PhpHidden]
         internal protected XmlNode XmlNode
@@ -90,7 +92,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the parent of the node.
         /// </summary>
-        public DOMNode parentNode
+        public DOMNode? parentNode
         {
             get
             {
@@ -102,7 +104,6 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns all children of the node.
         /// </summary>
-        [NotNull]
         public DOMNodeList childNodes
         {
             get
@@ -136,7 +137,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the first child of the node.
         /// </summary>
-        public DOMNode firstChild
+        public DOMNode? firstChild
         {
             get
             {
@@ -170,7 +171,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the last child of the node.
         /// </summary>
-        public DOMNode lastChild
+        public DOMNode? lastChild
         {
             get
             {
@@ -182,7 +183,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the previous sibling of the node.
         /// </summary>
-        public DOMNode previousSibling
+        public DOMNode? previousSibling
         {
             get
             {
@@ -194,7 +195,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the next sibling of the node.
         /// </summary>
-        public DOMNode nextSibling
+        public DOMNode? nextSibling
         {
             get
             {
@@ -210,7 +211,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns a map of attributes of this node (overriden in <see cref="DOMElement"/>).
         /// </summary>
-        public virtual DOMNamedNodeMap attributes => null;
+        public virtual DOMNamedNodeMap? attributes => null;
 
         /// <summary>
         /// This function returns the document the current node belongs to.
@@ -220,7 +221,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the namespace URI of the node.
         /// </summary>
-        public virtual string namespaceURI
+        public virtual string? namespaceURI
         {
             get
             {
@@ -269,7 +270,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the base URI of the node.
         /// </summary>
-        public string baseURI
+        public string? baseURI
         {
             get
             {
@@ -296,7 +297,7 @@ namespace Peachpie.Library.XmlDom
         #region Construction
 
         [PhpHidden]
-        internal protected static DOMNode Create(XmlNode xmlNode)
+        internal protected static DOMNode? Create(XmlNode? xmlNode)
         {
             if (xmlNode == null) return null;
             switch (xmlNode.NodeType)
@@ -374,7 +375,7 @@ namespace Peachpie.Library.XmlDom
         /// Performs a child-adding action with error checks.
         /// </summary>
         [PhpHidden]
-        private protected XmlNode CheckedChildOperation(DOMNode/*!*/ newNode, DOMNode auxNode, NodeAction/*!*/ action)
+        private protected XmlNode? CheckedChildOperation(DOMNode/*!*/ newNode, DOMNode? auxNode, NodeAction/*!*/ action)
         {
             newNode.Associate(XmlNode.OwnerDocument != null ? XmlNode.OwnerDocument : (XmlDocument)XmlNode);
 
@@ -429,7 +430,7 @@ namespace Peachpie.Library.XmlDom
         /// to the children.</param>
         /// <returns>The inserted node.</returns>
         [return: CastToFalse]
-        public virtual DOMNode insertBefore(DOMNode newnode, DOMNode refnode = null)
+        public virtual DOMNode? insertBefore(DOMNode newnode, DOMNode? refnode = null)
         {
             bool is_fragment;
             if (newnode is DOMDocumentFragment)
@@ -443,7 +444,7 @@ namespace Peachpie.Library.XmlDom
             }
             else is_fragment = false;
 
-            XmlNode result = CheckedChildOperation(newnode, refnode, delegate (DOMNode _newNode, DOMNode _refNode)
+            XmlNode? result = CheckedChildOperation(newnode, refnode, delegate (DOMNode _newNode, DOMNode _refNode)
             {
                 return XmlNode.InsertBefore(_newNode.XmlNode, (_refNode == null ? null : _refNode.XmlNode));
             });
@@ -460,9 +461,9 @@ namespace Peachpie.Library.XmlDom
         /// <param name="oldnode">The old node.</param>
         /// <returns>The inserted node.</returns>
         [return: CastToFalse]
-        public virtual DOMNode replaceChild(DOMNode newnode, DOMNode oldnode)
+        public virtual DOMNode? replaceChild(DOMNode newnode, DOMNode oldnode)
         {
-            XmlNode result = CheckedChildOperation(newnode, oldnode, delegate (DOMNode _newNode, DOMNode _oldNode)
+            XmlNode? result = CheckedChildOperation(newnode, oldnode, delegate (DOMNode _newNode, DOMNode _oldNode)
             {
                 return XmlNode.ReplaceChild(_newNode.XmlNode, _oldNode.XmlNode);
             });
@@ -478,7 +479,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="newnode">The node to add.</param>
         /// <returns>The node added.</returns>
         [return: CastToFalse]
-        public virtual DOMNode appendChild(DOMNode newnode)
+        public virtual DOMNode? appendChild(DOMNode newnode)
         {
             bool is_fragment;
             if (newnode is DOMDocumentFragment)
@@ -492,7 +493,7 @@ namespace Peachpie.Library.XmlDom
             }
             else is_fragment = false;
 
-            XmlNode result = CheckedChildOperation(newnode, null, delegate (DOMNode _newNode, DOMNode _)
+            XmlNode? result = CheckedChildOperation(newnode, null, delegate (DOMNode _newNode, DOMNode _)
             {
                 return XmlNode.AppendChild(_newNode.XmlNode);
             });
@@ -508,7 +509,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="oldnode">The node to remove.</param>
         /// <returns>The removed node.</returns>
         [return: CastToFalse]
-        public virtual DOMNode removeChild(DOMNode oldnode)
+        public virtual DOMNode? removeChild(DOMNode oldnode)
         {
             // check for readonly node
             if (XmlNode.IsReadOnly)
@@ -629,8 +630,8 @@ namespace Peachpie.Library.XmlDom
         public PhpString C14N(
             bool exclusive = false,
             bool with_comments = false,
-            PhpArray xpath = null,
-            PhpArray ns_prefixes = null)
+            PhpArray? xpath = null,
+            PhpArray? ns_prefixes = null)
         {
             var transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
             transform.LoadInput(XmlNode.GetXmlDocument());
@@ -656,8 +657,8 @@ namespace Peachpie.Library.XmlDom
             string uri,
             bool exclusive = false,
             bool with_comments = false,
-            PhpArray xpath = null,
-            PhpArray ns_prefixes = null)
+            PhpArray? xpath = null,
+            PhpArray? ns_prefixes = null)
         {
             using var stream = PhpStream.Open(ctx, uri, StreamOpenMode.WriteBinary);
 
@@ -691,7 +692,7 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         /// <returns>Returns a <see cref="string"/> containing the XPath, or NULL in case of an error. </returns>
         [return: CastToFalse]
-        public string getNodePath()
+        public string? getNodePath()
         {
             throw new NotImplementedException();
         }

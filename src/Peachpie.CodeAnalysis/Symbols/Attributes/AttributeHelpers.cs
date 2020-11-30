@@ -15,8 +15,6 @@ namespace Peachpie.CodeAnalysis.Symbols
 
         public static readonly AttributeDescription PhpTraitAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, CoreTypes.PhpTraitAttributeName, new[] { s_signature_HasThis_Void });
 
-        public static readonly AttributeDescription NotNullAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "NotNullAttribute", new[] { s_signature_HasThis_Void });
-
         public static readonly AttributeDescription PhpRwAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "PhpRwAttribute", new[] { s_signature_HasThis_Void });
 
         public static readonly AttributeDescription PhpHiddenAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "PhpHiddenAttribute", new[] { s_signature_HasThis_Void });
@@ -115,11 +113,6 @@ namespace Peachpie.CodeAnalysis.Symbols
 
             //
             return false;
-        }
-
-        public static bool HasNotNullAttribute(EntityHandle token, PEModuleSymbol containingModule)
-        {
-            return containingModule != null && PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, NotNullAttribute).HasValue;
         }
 
         public static bool IsNotNullable(Symbol symbol, EntityHandle token, PEModuleSymbol containingModule)

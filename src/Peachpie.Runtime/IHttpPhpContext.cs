@@ -59,7 +59,7 @@ namespace Pchp.Core
         /// <summary>
         /// Adds a cookie into the response.
         /// </summary>
-        void AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string? domain = null, bool secure = false, bool httpOnly = false);
+        void AddCookie(string name, string? value, DateTimeOffset? expires, string path = "/", string? domain = null, bool secure = false, bool httpOnly = false);
 
         /// <summary>
         /// Flushes the response stream of the HTTP server.

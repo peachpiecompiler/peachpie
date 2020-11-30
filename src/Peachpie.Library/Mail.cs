@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -16,7 +18,7 @@ namespace Pchp.Library
     [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Mail
     {
-        public static bool mail(Context ctx, string to, string subject, string message, string additional_headers = null, string additional_parameters = null)
+        public static bool mail(Context ctx, string to, string subject, string message, string? additional_headers = null, string? additional_parameters = null)
         {
             // to and subject cannot contain newlines, replace with spaces
             to = (to != null) ? to.Replace("\r\n", " ").Replace('\n', ' ') : "";
@@ -341,14 +343,14 @@ namespace Pchp.Library
             /// <summary>
             /// Gets a list of SMTP extensions supported by current connection.
             /// </summary>
-            public string[] Extensions { get { return _extensions; } }
-            private string[] _extensions;
+            public string[]? Extensions { get { return _extensions; } }
+            private string[]? _extensions;
 
-            private TextReader _reader;
-            private TextWriter _writer;
+            private TextReader? _reader;
+            private TextWriter? _writer;
 
-            private Socket _socket;
-            private NetworkStream _stream;
+            private Socket? _socket;
+            private NetworkStream? _stream;
 
             public RawSmtpClient(string hostName)
                 : this(hostName, 25)
@@ -428,7 +430,7 @@ namespace Pchp.Library
                 }
 
                 // resolve host's domain
-                IPAddress[] addresses = null;
+                IPAddress[]? addresses = null;
 
                 try
                 {
@@ -604,7 +606,7 @@ namespace Pchp.Library
             /// <param name="headers">Additional headers.</param>
             /// <param name="body">Message body.</param>
             /// <returns>List of message body lines.</returns>
-            private IEnumerable<string>/*!*/ProcessMessageHeaders(string from, string to, string subject, string headers, string body)
+            private IEnumerable<string>/*!*/ProcessMessageHeaders(string from, string to, string subject, string? headers, string body)
             {
                 Dictionary<string, int> headerHashtable = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 List<KeyValuePair<string, string>> headerList = new List<KeyValuePair<string, string>>();
@@ -732,7 +734,7 @@ namespace Pchp.Library
                 throw new RawSmtpException(string.Format("Expected response {0}, '{1}' given.", expectedStr, givenResponse));
             }
 
-            private bool Ack(string expected1, string expected2, Action<string>/*!*/fail)
+            private bool Ack(string? expected1, string? expected2, Action<string>/*!*/fail)
             {
                 Debug.Assert(fail != null);
 
@@ -772,7 +774,7 @@ namespace Pchp.Library
             /// </summary>
             /// <remarks>On eny error an exception is thrown.</remarks>
             /// <exception cref="RawSmtpException">When any error occures during the mail send.</exception>
-            public void SendMessage(string from, string to, string subject, string headers, string body)
+            public void SendMessage(string from, string to, string subject, string? headers, string body)
             {
                 //
                 // see http://email.about.com/cs/standards/a/smtp_error_code_2.htm for response codes.
@@ -842,8 +844,7 @@ namespace Pchp.Library
         /// <summary>
         /// Parses an address string.
         /// </summary>
-        [return: NotNull]
-        public static PhpArray imap_rfc822_parse_adrlist(string addresses, string default_host = null)
+        public static PhpArray imap_rfc822_parse_adrlist(string addresses, string? default_host = null)
         {
             if (string.IsNullOrEmpty(addresses))
             {

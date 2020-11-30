@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -95,7 +97,7 @@ namespace Pchp.Library.Spl
             _fullpath = FileSystemUtils.AbsolutePath(ctx, file_name);
         }
 
-        public virtual string getBasename(string suffix = null) => PhpPath.basename(_fullpath, suffix);
+        public virtual string getBasename(string? suffix = null) => PhpPath.basename(_fullpath, suffix);
 
         public virtual long getATime()
         {
@@ -121,21 +123,21 @@ namespace Pchp.Library.Spl
             return ext.ToString(); // extension without the dot
         }
 
-        public virtual SplFileInfo getFileInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, _fullpath);
+        public virtual SplFileInfo getFileInfo(Context ctx, string? class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, _fullpath);
         public virtual string getFilename() => PhpPath.basename(_originalPath);
         public virtual long getGroup() => Stat.st_gid;
         public virtual long getInode() => Stat.st_ino;
         public virtual string getLinkTarget() => throw new NotImplementedException();
         public virtual long getOwner() => throw new NotImplementedException();
         public virtual string getPath() => PhpPath.dirname(_originalPath);
-        public virtual SplFileInfo getPathInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, PhpPath.dirname(_fullpath));
+        public virtual SplFileInfo getPathInfo(Context ctx, string? class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, PhpPath.dirname(_fullpath));
         /// <summary>Gets the path to the file</summary>
         public virtual string getPathname() => _originalPath;
         public virtual long getPerms() => (long)Stat.st_mode;
 
         /// <summary>This method expands all symbolic links, resolves relative references and returns the real path to the file.</summary>
         [return: CastToFalse]
-        public virtual string getRealPath() => _fullpath;
+        public virtual string? getRealPath() => _fullpath;
 
         public virtual long getSize() => Stat.st_size;
 
@@ -144,7 +146,6 @@ namespace Pchp.Library.Spl
         /// </summary>
         /// <returns>A string representing the type of the entry. May be one of <c>file</c>, <c>link</c>, or <c>dir</c>.</returns>
         /// <exception cref="RuntimeException">Throws a RuntimeException on error.</exception>
-        [return: NotNull]
         public virtual string getType()
         {
             // see filetype()
@@ -162,7 +163,7 @@ namespace Pchp.Library.Spl
         public virtual bool isLink() => Stat.IsLink;
         public virtual bool isReadable() => (Stat.st_mode & FileModeFlags.Read) != 0;
         public virtual bool isWritable() => (Stat.st_mode & FileModeFlags.Write) != 0;
-        public virtual SplFileObject openFile(Context ctx, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
+        public virtual SplFileObject openFile(Context ctx, string open_mode = "r", bool use_include_path = false, PhpResource? context = null)
         {
             if (string.IsNullOrEmpty(_file_class) ||
                 string.Equals(_file_class, nameof(SplFileObject), StringComparison.OrdinalIgnoreCase))
@@ -194,13 +195,13 @@ namespace Pchp.Library.Spl
 
         private protected PhpStream _stream;
 
-        public SplFileObject(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
+        public SplFileObject(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource? context = null)
             : this(ctx)
         {
             __construct(file_name, open_mode, use_include_path, context);
         }
 
-        public void __construct(string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
+        public void __construct(string file_name, string open_mode = "r", bool use_include_path = false, PhpResource? context = null)
         {
             _root = _ctx.RootPath;
             _originalPath = file_name;
@@ -281,13 +282,13 @@ namespace Pchp.Library.Spl
         public virtual PhpString fgetc() => PhpPath.fgetc(_ctx, _stream);
 
         [return: CastToFalse]
-        public virtual PhpArray fgetcsv(char delimiter = ',', char enclosure = '"', char escape = '\\') => PhpPath.fgetcsv(_stream, 0, delimiter, enclosure, escape).AsArray();
+        public virtual PhpArray? fgetcsv(char delimiter = ',', char enclosure = '"', char escape = '\\') => PhpPath.fgetcsv(_stream, 0, delimiter, enclosure, escape).AsArray();
 
         [return: CastToFalse]
         public virtual PhpString fgets() => PhpPath.fgets(_stream);
 
         [return: CastToFalse]
-        public virtual string fgetss(string allowable_tags = null) => PhpPath.fgetss(_stream, -1, allowable_tags);
+        public virtual string? fgetss(string? allowable_tags = null) => PhpPath.fgetss(_stream, -1, allowable_tags);
 
         public virtual bool flock(int operation, ref int wouldblock) => PhpPath.flock(_stream, operation, ref wouldblock);
 
@@ -460,7 +461,7 @@ namespace Pchp.Library.Spl
         public override string getPathname() => _fullpath;
 
         [return: CastToFalse]
-        public override string getRealPath() => null;
+        public override string? getRealPath() => null;
 
         public override bool isDir() => false;
 

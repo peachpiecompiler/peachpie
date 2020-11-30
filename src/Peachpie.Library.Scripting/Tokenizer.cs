@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -456,7 +458,6 @@ namespace Peachpie.Library.Scripting
         /// <summary>
         /// Get the symbolic name of a given PHP token.
         /// </summary>
-        [return: NotNull]
         public static string token_name(int token)
         {
             return ((Tokens)token).ToString();
@@ -472,7 +473,6 @@ namespace Peachpie.Library.Scripting
         /// Each individual token identifier is either a single character (i.e.: ;, ., >, !, etc...),
         /// or a three element array containing the token index in element 0, the string content of the original token in element 1 and the line number in element 2.
         /// </returns>
-        [return: NotNull]
         public static PhpArray/*!*/token_get_all(string source, int flags = 0)
         {
             var tokens = new PhpArray();

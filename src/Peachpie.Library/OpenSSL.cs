@@ -1,4 +1,6 @@
-﻿/*
+﻿#nullable enable
+
+/*
  * What is almost implemented, but something missing.
  * - Hash and crypto algorithms. There are supported the most useful algos.
  * - There are new useful methods and options avaible in .NET standart 2.1.
@@ -116,7 +118,7 @@ namespace Pchp.Library
                 _messages.Push(message ?? throw new ArgumentNullException(nameof(message)));
             }
 
-            public bool TryPop(out string message)
+            public bool TryPop(/*[NotNullWhen(true)]*/ out string? message) // TODO: NETSTANDARD2.1
             {
                 if (_messages.Count != 0)
                 {
@@ -146,7 +148,7 @@ namespace Pchp.Library
         /// The last error will be the most recent one.
         /// </summary>
         [return: CastToFalse]
-        public static string openssl_error_string(Context ctx)
+        public static string? openssl_error_string(Context ctx)
         {
             if (ctx.TryGetStatic<ErrorList>(out var list) && list.TryPop(out var message))
             {
@@ -198,7 +200,7 @@ namespace Pchp.Library
                 Buffer.BlockCopy(iv, 0, iVector, 0, ivLength);
             }
 
-            SymmetricAlgorithm alg = null;
+            SymmetricAlgorithm? alg = null;
             switch (cipher.Type)
             {
                 case CipherType.AES:
@@ -235,7 +237,7 @@ namespace Pchp.Library
         /// <param name="aad">Additional authentication data.</param>
         /// <returns>The decrypted string on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static string openssl_decrypt(Context ctx, PhpString data, string method, byte[] key, Options options, byte[] iv, string tag = "", string aad = "")
+        public static string? openssl_decrypt(Context ctx, PhpString data, string method, byte[] key, Options options, byte[] iv, string tag = "", string aad = "")
         {
             if (CiphersAliases.TryGetValue(method, out var aliasName))
             {
@@ -494,7 +496,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="aliases">Set to TRUE if digest aliases should be included within the returned array.</param>
         /// <returns>An array of available digest methods.</returns>
-        [return: NotNull]
         public static PhpArray openssl_get_md_methods(bool aliases = false)
         {
             var algos = hash_algos();
@@ -520,7 +521,7 @@ namespace Pchp.Library
         /// </summary>
         public class X509Resource : PhpResource
         {
-            public X509Certificate2 Certificate { get; private set; }
+            public X509Certificate2? Certificate { get; private set; }
 
             public X509Resource(X509Certificate2 certificate) : base("OpenSSL X.509")
             {
@@ -543,7 +544,7 @@ namespace Pchp.Library
         /// Gets instance of <see cref="X509Resource"/> or <c>null</c>.
         /// If given argument is not an instance of <see cref="X509Resource"/>, PHP warning is reported.
         /// </summary>
-        static X509Resource ParseX509Certificate(Context ctx, PhpValue mixed)
+        static X509Resource? ParseX509Certificate(Context ctx, PhpValue mixed)
         {
             if (mixed.AsResource() is X509Resource h && h.IsValid)
             {
@@ -579,7 +580,7 @@ namespace Pchp.Library
         /// <param name="x509certdata">Path to file with PEM encoded certificate or a string containing the content of a certificate or X509Resource</param>
         /// <returns>Returns a resource identifier on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static X509Resource openssl_x509_read(Context ctx, PhpValue x509certdata)
+        public static X509Resource? openssl_x509_read(Context ctx, PhpValue x509certdata)
         {
             return ParseX509Certificate(ctx, x509certdata);
         }
@@ -817,7 +818,7 @@ namespace Pchp.Library
             //return null;
         }
 
-        public static OpenSSLKeyResource openssl_pkey_new(PhpArray configargs = null)
+        public static OpenSSLKeyResource openssl_pkey_new(PhpArray? configargs = null)
         {
             KeyType type = KeyType.RSA; // By default
 

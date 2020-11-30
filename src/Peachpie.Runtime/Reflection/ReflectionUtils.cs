@@ -179,8 +179,7 @@ namespace Pchp.Core.Reflection
                 // NULL is explicitly disallowed?
                 // TODO: Properly search for NullableContext and use the attribute names instead of the types from Peachpie.Runtime
                 //       (C# compiler emits a distinct attribute definition in each compiled assembly)
-                return p.GetCustomAttribute<NotNullAttribute>() == null &&
-                    !(p.GetCustomAttribute<NullableAttribute>() is NullableAttribute nullable && nullable.NullableFlags[0] == 1);
+                return !(p.GetCustomAttribute<NullableAttribute>() is NullableAttribute nullable && nullable.NullableFlags[0] == 1);
             }
         }
 

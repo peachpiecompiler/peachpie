@@ -23,10 +23,8 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Create a CURLFile object.
         /// </summary>
-        [return: NotNull]
         public static CURLFile/*!*/curl_file_create(string filename, string? mimetype = null, string? postname = null) => new CURLFile(filename, mimetype, postname);
 
-        [return: NotNull]
         public static CURLResource/*!*/curl_init(string? url = null) => new CURLResource() { Url = url };
 
         /// <summary>
@@ -93,7 +91,6 @@ namespace Peachpie.Library.Network
         /// in the future might get a different struct.
         /// <c>CURLVERSION_NOW</c> will be the most recent one for the library you have installed.</param>
         /// <returns>Array with version information.</returns>
-        [return: NotNull]
         public static PhpArray curl_version(int version = CURLConstants.CURLVERSION_NOW)
         {
             // version_number       cURL 24 bit version number
@@ -767,7 +764,6 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Return a new cURL multi handle.
         /// </summary>
-        [return: NotNull]
         public static CURLMultiResource/*!*/curl_multi_init() => new CURLMultiResource();
 
         /// <summary>

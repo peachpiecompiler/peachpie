@@ -7,6 +7,8 @@ using System.Text;
 using Pchp.Core;
 using Pchp.Library.Resources;
 
+#nullable enable
+
 namespace Pchp.Library.DateTime
 {
     /// <summary>
@@ -277,8 +279,7 @@ namespace Pchp.Library.DateTime
             return new DateInterval(scanner.Time, negative: false);
         }
 
-        [return: NotNull]
-        public virtual string format(string format)
+        public virtual string format(string? format)
         {
             if (string.IsNullOrEmpty(format))
             {

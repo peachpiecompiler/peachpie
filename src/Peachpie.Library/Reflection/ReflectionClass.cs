@@ -1,4 +1,6 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
@@ -108,7 +110,6 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets class constants.
         /// </summary>
-        [return: NotNull]
         public PhpArray getReflectionConstants()
         {
             var result = new PhpArray();
@@ -120,7 +121,7 @@ namespace Pchp.Library.Reflection
         }
 
         [return: CastToFalse]
-        public ReflectionClassConstant getReflectionConstant(string name)
+        public ReflectionClassConstant? getReflectionConstant(string name)
         {
             var p = _tinfo.GetDeclaredConstant(name);
             return p != null ? new ReflectionClassConstant(p) : null;
@@ -131,7 +132,7 @@ namespace Pchp.Library.Reflection
         /// </summary>
         /// <returns>A <see cref="ReflectionMethod"/> object reflecting the class' constructor,
         /// or NULL if the class has no constructor.</returns>
-        public ReflectionMethod getConstructor()
+        public ReflectionMethod? getConstructor()
         {
             var routine = _tinfo.RuntimeMethods[Pchp.Core.Reflection.ReflectionUtils.PhpConstructorName];
             return (routine != null)
@@ -139,7 +140,6 @@ namespace Pchp.Library.Reflection
                 : null;
         }
 
-        [return: NotNull]
         public PhpArray getDefaultProperties(Context ctx)
         {
             var tinfo = _tinfo;
@@ -174,9 +174,9 @@ namespace Pchp.Library.Reflection
         }
 
         [return: CastToFalse]
-        public string getDocComment() => ReflectionUtils.getDocComment(_tinfo.Type);
+        public string? getDocComment() => ReflectionUtils.getDocComment(_tinfo.Type);
 
-        public ReflectionExtension getExtension()
+        public ReflectionExtension? getExtension()
         {
             var extensionName = _tinfo.ExtensionName;
             return extensionName != null
@@ -185,14 +185,14 @@ namespace Pchp.Library.Reflection
         }
 
         [return: CastToFalse]
-        public string getExtensionName() => _tinfo.ExtensionName; // null means FALSE
+        public string? getExtensionName() => _tinfo.ExtensionName; // null means FALSE
 
         /// <summary>Gets the filename of the file in which the class has been defined</summary>
         /// <param name="ctx">Current runtime context</param>
         /// <returns>Returns the filename of the file in which the class has been defined.
         /// If the class is defined in the PHP core or in a PHP extension, FALSE is returned.</returns>
         [return: CastToFalse]
-        public string getFileName(Context ctx)
+        public string? getFileName(Context ctx)
         {
             var path = _tinfo.RelativePath;
 
@@ -311,7 +311,7 @@ namespace Pchp.Library.Reflection
             return (sep < 0) ? string.Empty : name.Remove(sep);
         }
         [return: CastToFalse]
-        public ReflectionClass getParentClass() => (_tinfo.BaseType != null) ? new ReflectionClass(_tinfo.BaseType) : null;
+        public ReflectionClass? getParentClass() => (_tinfo.BaseType != null) ? new ReflectionClass(_tinfo.BaseType) : null;
 
         /// <summary>
         /// Retrieves reflected properties.
@@ -334,7 +334,7 @@ namespace Pchp.Library.Reflection
         }
 
         [return: CastToFalse]
-        public virtual ReflectionProperty getProperty(string name)
+        public virtual ReflectionProperty? getProperty(string name)
         {
             var prop = _tinfo.GetDeclaredProperty(name);
             return (prop != null) ? new ReflectionProperty(prop) : null;
@@ -360,7 +360,6 @@ namespace Pchp.Library.Reflection
             return -1;
         }
 
-        [return: NotNull]
         public PhpArray getStaticProperties(Context ctx)
         {
             var array = new PhpArray();

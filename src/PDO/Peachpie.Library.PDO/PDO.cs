@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -40,7 +42,7 @@ namespace Peachpie.Library.PDO
 
             protected override IDbConnection ActiveConnection => Connection;
 
-            public DbCommand LastCommand { get; private set; }
+            public DbCommand? LastCommand { get; private set; }
 
             public DbCommand CreateCommand(string commandText)
             {
@@ -93,10 +95,10 @@ namespace Peachpie.Library.PDO
             {
             }
 
-            protected override object[] GetValues(string[] dataTypes, bool convertTypes)
+            protected override object?[] GetValues(string[] dataTypes, bool convertTypes)
             {
                 var my_reader = Reader;
-                var oa = new object[my_reader.FieldCount];
+                var oa = new object?[my_reader.FieldCount];
 
                 if (convertTypes)
                 {
@@ -131,7 +133,7 @@ namespace Peachpie.Library.PDO
             /// <param name="stringify">Whether to convert the value to nullable string.
             /// Byte arrays are not converted to be later properly turned into PhpString.</param>
             /// <returns>PHP value.</returns>
-            private static object ConvertDbValue(string dataType, object sqlValue, bool stringify)
+            private static object? ConvertDbValue(string dataType, object sqlValue, bool stringify)
             {
                 //if (sqlValue == null || sqlValue.GetType() == typeof(string))
                 //    return sqlValue;
@@ -224,16 +226,16 @@ namespace Peachpie.Library.PDO
         /// <remarks>"_ctx" is a special name recognized by compiler. Will be reused by inherited classes.</remarks>
         protected readonly Context _ctx;
 
-        internal DbTransaction CurrentTransaction { get; private set; }
+        internal DbTransaction? CurrentTransaction { get; private set; }
 
         internal PDODriver Driver { get; private set; }
 
-        internal DbCommand CurrentCommand => _connection?.LastCommand;
+        internal DbCommand? CurrentCommand => _connection?.LastCommand;
 
         /// <summary>
         /// Gets the native connection instance
         /// </summary>
-        internal DbConnection Connection => _connection?.Connection;
+        internal DbConnection? Connection => _connection?.Connection;
 
         /// <summary>
         /// Empty constructor.
@@ -254,7 +256,7 @@ namespace Peachpie.Library.PDO
         /// <param name="username">The user name for the DSN string.</param>
         /// <param name="password">The password for the DSN string.</param>
         /// <param name="options">A key=&gt;value array of driver-specific connection options.</param>
-        public PDO(Context ctx, string dsn, string username = null, string password = null, PhpArray options = null)
+        public PDO(Context ctx, string dsn, string? username = null, string? password = null, PhpArray? options = null)
             : this(ctx)
         {
             __construct(dsn, username, password, options);
@@ -267,7 +269,7 @@ namespace Peachpie.Library.PDO
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
         /// <param name="options">The options.</param>
-        public void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
+        public void __construct(string dsn, string? username = null, string? password = null, PhpArray? options = null)
         {
             int doublecolon = dsn.IndexOf(':');
             if (doublecolon < 0)
@@ -351,7 +353,6 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// This function returns all currently available PDO drivers which can be used in DSN parameter of <see cref="PDO" /> constructor.
         /// </summary>
-        [return: NotNull]
         public static PhpArray getAvailableDrivers()
         {
             return PDOStatic.pdo_drivers();
@@ -451,7 +452,7 @@ namespace Peachpie.Library.PDO
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns></returns>
-        public virtual string lastInsertId(string name = null)
+        public virtual string lastInsertId(string? name = null)
         {
             return Driver.GetLastInsertId(this, name);
         }
@@ -463,7 +464,7 @@ namespace Peachpie.Library.PDO
         /// <param name="driver_options">The driver options.</param>
         /// <returns></returns>
         [return: CastToFalse]
-        public virtual PDOStatement prepare(string statement, PhpArray driver_options = null)
+        public virtual PDOStatement? prepare(string statement, PhpArray? driver_options = null)
         {
             try
             {
@@ -483,7 +484,7 @@ namespace Peachpie.Library.PDO
         /// <param name="args">The arguments.</param>
         /// <returns></returns>
         [return: CastToFalse]
-        public virtual PDOStatement query(string statement, params PhpValue[] args)
+        public virtual PDOStatement? query(string statement, params PhpValue[] args)
         {
             var stmt = CreateStatement(statement, null);
             if (stmt == null)
@@ -521,13 +522,13 @@ namespace Peachpie.Library.PDO
         /// <param name="parameter_type">Type of the parameter.</param>
         /// <returns></returns>
         [return: CastToFalse]
-        public virtual string quote(string str, PARAM parameter_type = PARAM.PARAM_STR)
+        public virtual string? quote(string str, PARAM parameter_type = PARAM.PARAM_STR)
         {
             return Driver?.Quote(str, parameter_type);
         }
 
         [PhpHidden]
-        PDOStatement CreateStatement(string statement, PhpArray options)
+        PDOStatement? CreateStatement(string statement, PhpArray? options)
         {
             // TODO: lookup driver_options for `ATTR_STATEMENT_CLASS` instead ?
 

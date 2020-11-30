@@ -1,4 +1,6 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
@@ -126,7 +128,7 @@ namespace Pchp.Library.Reflection
             throw new NotImplementedException();
         }
         public ReflectionClass getDeclaringClass() => new ReflectionClass(_tinfo);
-        public override string getFileName(Context ctx)
+        public override string? getFileName(Context ctx)
         {
             var path = _tinfo.RelativePath;
 
@@ -156,7 +158,6 @@ namespace Pchp.Library.Reflection
         /// </summary>
         /// <returns><see cref="ReflectionMethod"/> of the prototype.</returns>
         /// <exception cref="ReflectionException">If the method does not have a prototype.</exception>
-        [return: NotNull]
         public ReflectionMethod getPrototype()
         {
             // NOTE: not the same as _routine.Methods[0].GetBaseDefinition()
@@ -175,7 +176,7 @@ namespace Pchp.Library.Reflection
             }
 
             // then base classes:
-            RoutineInfo prototype = null;
+            RoutineInfo? prototype = null;
             for (var t = _tinfo.BaseType; t != null; t = t.BaseType)
             {
                 var r = t.RuntimeMethods[name];

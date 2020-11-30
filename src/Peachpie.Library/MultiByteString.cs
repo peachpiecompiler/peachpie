@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -20,11 +22,11 @@ namespace Pchp.Library
 
         sealed class MbConfig : IPhpConfiguration
         {
-            public Encoding InternalEncoding { get; set; }
+            public Encoding? InternalEncoding { get; set; }
 
-            public Encoding RegexEncoding { get; set; }
+            public Encoding? RegexEncoding { get; set; }
 
-            public Encoding HttpOutputEncoding { get; set; }
+            public Encoding? HttpOutputEncoding { get; set; }
 
             public IPhpConfiguration Copy() => (MbConfig)this.MemberwiseClone();
 
@@ -287,7 +289,7 @@ namespace Pchp.Library
             };
 
 
-            public override Encoding GetEncoding(int codepage)
+            public override Encoding? GetEncoding(int codepage)
             {
                 return null;
             }
@@ -297,7 +299,7 @@ namespace Pchp.Library
                 return enc is UnicodeEncoding || enc == Encoding.UTF8 || enc == Encoding.UTF32;
             }
 
-            public override Encoding GetEncoding(string name)
+            public override Encoding? GetEncoding(string name)
             {
                 var encname = new EncodingName(name);
 
@@ -357,9 +359,9 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="encodingName"></param>
         /// <returns></returns>
-        internal static Encoding GetEncoding(string encodingName)
+        internal static Encoding? GetEncoding(string? encodingName)
         {
-            Encoding encoding = null;
+            Encoding? encoding = null;
             if (encodingName != null)
             {
                 try
@@ -372,7 +374,7 @@ namespace Pchp.Library
             return encoding;
         }
 
-        static string ToString(Context ctx, PhpValue value, string forceencoding = null)
+        static string ToString(Context ctx, PhpValue value, string? forceencoding = null)
         {
             switch (value.TypeCode)
             {
@@ -383,14 +385,14 @@ namespace Pchp.Library
             }
         }
 
-        static string ToString(Context ctx, PhpString value, string forceencoding = null)
+        static string ToString(Context ctx, PhpString value, string? forceencoding = null)
         {
             return value.ContainsBinaryData
                 ? value.ToString(GetEncoding(forceencoding) ?? GetInternalEncoding(ctx))
                 : value.ToString(ctx);  // no bytes have to be converted anyway
         }
 
-        static byte[] ToBytes(Context ctx, PhpString value, string forceencoding = null)
+        static byte[] ToBytes(Context ctx, PhpString value, string? forceencoding = null)
         {
             return value.ToBytes(GetEncoding(forceencoding) ?? GetInternalEncoding(ctx));
         }
@@ -415,7 +417,7 @@ namespace Pchp.Library
         /// <returns>True is encoding was set, otherwise false.</returns>
         public static bool mb_internal_encoding(Context ctx, string encodingName)
         {
-            Encoding enc = GetEncoding(encodingName);
+            Encoding? enc = GetEncoding(encodingName);
 
             if (enc != null)
             {
@@ -434,7 +436,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="encoding_name">The encoding being checked. Its BodyName or PHP/Phalanger name.</param>
         /// <returns>The MIME charset string for given character encoding.</returns>
-        public static string mb_preferred_mime_name(string encoding_name)
+        public static string? mb_preferred_mime_name(string encoding_name)
         {
             var enc = GetEncoding(encoding_name);
 
@@ -533,7 +535,7 @@ namespace Pchp.Library
         #region mb_substr, mb_strcut
 
         [return: CastToFalse]
-        public static string mb_substr(Context ctx, PhpString str, int start, int? length = default, string encoding = null)
+        public static string? mb_substr(Context ctx, PhpString str, int start, int? length = default, string? encoding = null)
             => SubString(ctx, str, start, length.HasValue ? length.Value : int.MaxValue, encoding);
 
         /// <summary>
@@ -547,10 +549,10 @@ namespace Pchp.Library
         /// <returns></returns>
         /// <remarks>in PHP it behaves differently, but in .NET it is an alias for mb_substr</remarks>
         [return: CastToFalse]
-        public static string mb_strcut(Context ctx, PhpString str, int start, int? length = default, string encoding = null)
+        public static string? mb_strcut(Context ctx, PhpString str, int start, int? length = default, string? encoding = null)
             => SubString(ctx, str, start, length.HasValue ? length.Value : -1, encoding);
 
-        static string SubString(Context ctx, PhpString str, int start, int length, string encoding)
+        static string? SubString(Context ctx, PhpString str, int start, int length, string? encoding)
         {
             var ustr = ToString(ctx, str, encoding);
 
@@ -571,7 +573,7 @@ namespace Pchp.Library
         /// <summary>
         /// Alias to <see cref="Strings.substr_count(string, string, int, int)"/>.
         /// </summary>
-        public static int mb_substr_count(string haystack, string needle, string encoding = null)
+        public static int mb_substr_count(string haystack, string needle, string? encoding = null)
         {
             return Strings.substr_count(haystack, needle);
         }
@@ -588,7 +590,7 @@ namespace Pchp.Library
         /// <summary>
         /// Performs string splitting to an array of defined size chunks.
         /// </summary>
-        public static PhpArray mb_str_split(Context ctx, PhpString @string, int split_length = 1, string encoding = null)
+        public static PhpArray mb_str_split(Context ctx, PhpString @string, int split_length = 1, string? encoding = null)
         {
             return Strings.str_split(ctx, @string, split_length);
 
@@ -600,10 +602,10 @@ namespace Pchp.Library
 
         #region mb_strtoupper, mb_strtolower
 
-        public static string mb_strtoupper(Context ctx, PhpValue str, string encoding = null)
+        public static string mb_strtoupper(Context ctx, PhpValue str, string? encoding = null)
             => ToString(ctx, str, encoding).ToUpperInvariant();
 
-        public static string mb_strtolower(Context ctx, PhpValue str, string encoding = null)
+        public static string mb_strtolower(Context ctx, PhpValue str, string? encoding = null)
             => ToString(ctx, str, encoding).ToLowerInvariant();
 
         #endregion
@@ -613,7 +615,7 @@ namespace Pchp.Library
         /// <summary>
         /// Counts characters in a Unicode string or multi-byte string in PhpBytes.
         /// </summary>
-        public static int mb_strlen(Context ctx, PhpString str, string encoding = null)
+        public static int mb_strlen(Context ctx, PhpString str, string? encoding = null)
         {
             if (encoding != null && ((EncodingName)encoding).Is8bit())
             {
@@ -629,7 +631,7 @@ namespace Pchp.Library
         /// <summary>
         /// Return width of string.
         /// </summary>
-        public static int mb_strwidth(Context ctx, PhpValue str, string encoding = null)
+        public static int mb_strwidth(Context ctx, PhpValue str, string? encoding = null)
         {
             /*
              * Chars                Width
@@ -760,7 +762,7 @@ namespace Pchp.Library
         /// <summary>
         /// Perform case folding on a string.
         /// </summary>
-        public static string mb_convert_case(/*Context ctx,*/ string str, CaseConstants mode, string encoding = default)
+        public static string mb_convert_case(/*Context ctx,*/ string str, CaseConstants mode, string? encoding = default)
         {
             if (string.IsNullOrEmpty(str))
             {
@@ -791,7 +793,7 @@ namespace Pchp.Library
 
         #region mb_convert_encoding, mb_convert_variables
 
-        static bool TryGetEncodingsFromStringOrArray(PhpValue from_encoding, out Encoding enc, out Encoding[] enc_array)
+        static bool TryGetEncodingsFromStringOrArray(PhpValue from_encoding, out Encoding? enc, out Encoding[]? enc_array)
         {
             enc = null;
             enc_array = null;
@@ -877,7 +879,7 @@ namespace Pchp.Library
             }
         }
 
-        static bool TryDetectEncoding(PhpString value, Encoding[] encodings, out Encoding detectedEncoding, out string convertedValue)
+        static bool TryDetectEncoding(PhpString value, Encoding?[]? encodings, /*[NotNullWhen(true)]*/ out Encoding? detectedEncoding, /*[NotNullWhen(true)]*/ out string? convertedValue)  // TODO: NETSTANDARD2.1
         {
             if (encodings != null)
             {
@@ -962,7 +964,7 @@ namespace Pchp.Library
             }
         }
 
-        static PhpValue convert_variable(PhpValue value, PhpValue from_encoding, ref Encoding from_enc, ref Encoding[] from_encs, Encoding to_enc, ref HashSet<object> visited)
+        static PhpValue convert_variable(PhpValue value, PhpValue from_encoding, ref Encoding? from_enc, ref Encoding?[]? from_encs, Encoding? to_enc, ref HashSet<object>? visited)
         {
             object obj;
 
@@ -1074,14 +1076,14 @@ namespace Pchp.Library
         /// <param name="vars">Reference to the variable being converted. String, Array and Object are accepted.</param>
         /// <returns>The character encoding before conversion for success, or <c>FALSE</c> for failure.</returns>
         [return: CastToFalse]
-        public static string mb_convert_variables(Context ctx, string to_encoding, PhpValue from_encoding, params PhpAlias[] vars)
+        public static string? mb_convert_variables(Context ctx, string to_encoding, PhpValue from_encoding, params PhpAlias[] vars)
         {
             // source encoding,
             // initialized when first needed (when there is non-unicode string)
-            Encoding from_enc = null;
-            Encoding[] from_encs = Operators.IsSet(from_encoding) ? null : GetConfig(ctx).DetectOrder;
+            Encoding? from_enc = null;
+            Encoding?[]? from_encs = Operators.IsSet(from_encoding) ? null : GetConfig(ctx).DetectOrder;
 
-            HashSet<object> visited = null;
+            HashSet<object>? visited = null;
 
             // only convert non-unicode encodings, otherwise keep the `System.String`
             var to_enc = string.IsNullOrEmpty(to_encoding) || EncodingName.IsUtfEncoding(to_encoding)
@@ -1109,7 +1111,7 @@ namespace Pchp.Library
         /// <summary>
         /// Check if the string is valid for the specified encoding
         /// </summary>
-        public static bool mb_check_encoding(Context ctx, PhpString var = default(PhpString), string encoding = null/*mb_internal_encoding()*/)
+        public static bool mb_check_encoding(Context ctx, PhpString var = default(PhpString), string? encoding = null/*mb_internal_encoding()*/)
         {
             if (var.ContainsBinaryData)
             {
@@ -1136,8 +1138,7 @@ namespace Pchp.Library
         /// Although always returns a valid Unicode string value.
         /// </summary>
         /// <returns>A string value where any ill-formed sequence is replaced with <c>'?'</c> character.</returns>
-        [return: NotNull]
-        public static string mb_scrub(Context ctx, PhpString str, string encoding = null)
+        public static string mb_scrub(Context ctx, PhpString str, string? encoding = null)
         {
             Encoding enc;
 
@@ -1174,7 +1175,7 @@ namespace Pchp.Library
 
         #region mb_strimwidth implementation
 
-        public static string mb_strimwidth(Context ctx, string str, int start, int width, string trimmarker = null, string encoding = null)
+        public static string mb_strimwidth(Context ctx, string str, int start, int width, string? trimmarker = null, string? encoding = null)
         {
             return StringTrimByWidth(
                 str,
@@ -1184,7 +1185,7 @@ namespace Pchp.Library
                 () => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding));
         }
 
-        static string StringTrimByWidth(string str, int start, int width, string trimmarker, Func<Encoding> encodingGetter)
+        static string StringTrimByWidth(string str, int start, int width, string? trimmarker, Func<Encoding?> encodingGetter)
         {
             string ustr = str; // ObjectToString(str, encodingGetter);
 
@@ -1201,9 +1202,9 @@ namespace Pchp.Library
             int trimmarkerWidth = StringWidth(trimmarker);
 
             width -= trimmarkerWidth;
-            string trimmedStr = StringTrimByWidth(ustr, ref width);
+            string? trimmedStr = StringTrimByWidth(ustr, ref width);
             width += trimmarkerWidth;
-            string trimmedTrimMarker = StringTrimByWidth(trimmarker, ref width);
+            string? trimmedTrimMarker = StringTrimByWidth(trimmarker, ref width);
 
             //
             return trimmedStr + trimmedTrimMarker;
@@ -1214,7 +1215,7 @@ namespace Pchp.Library
         #region mb_strstr, mb_stristr
 
         [return: CastToFalse]
-        public static string mb_strstr(Context ctx, string haystack, string needle, bool part = false, string encoding = null)
+        public static string? mb_strstr(Context ctx, string haystack, string needle, bool part = false, string? encoding = null)
         {
             return StrStr(
                 haystack,
@@ -1225,7 +1226,7 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public static string mb_stristr(Context ctx, string haystack, string needle, bool part = false, string encoding = null)
+        public static string? mb_stristr(Context ctx, string haystack, string needle, bool part = false, string? encoding = null)
         {
             return StrStr(
                 haystack,
@@ -1244,7 +1245,7 @@ namespace Pchp.Library
         /// <param name="encodingGetter">Character encoding name to use. If it is omitted, internal character encoding is used. </param>
         /// <param name="ignoreCase">Case insensitive.</param>
         /// <returns>Returns the portion of haystack, or FALSE (-1) if needle is not found.</returns>
-        static string StrStr(string haystack, string needle, bool part/* = false*/  , Func<Encoding> encodingGetter, bool ignoreCase)
+        static string? StrStr(string haystack, string needle, bool part/* = false*/  , Func<Encoding?> encodingGetter, bool ignoreCase)
         {
             string uhaystack = haystack; //ObjectToString(haystack, encodingGetter);
             string uneedle = needle; //ObjectToString(needle, encodingGetter);
@@ -1267,7 +1268,7 @@ namespace Pchp.Library
         #region mb_strrpos
 
         [return: CastToFalse]
-        public static int mb_strrpos(Context ctx, string haystack, string needle, int offset = 0, string encoding = null)
+        public static int mb_strrpos(Context ctx, string haystack, string needle, int offset = 0, string? encoding = null)
         {
             return Strrpos(
                 haystack,
@@ -1282,7 +1283,7 @@ namespace Pchp.Library
         #region mb_strripos
 
         [return: CastToFalse]
-        public static int mb_strripos(Context ctx, string haystack, string needle, int offset = 0, string encoding = null)
+        public static int mb_strripos(Context ctx, string haystack, string needle, int offset = 0, string? encoding = null)
         {
             return Strrpos(
                 haystack,
@@ -1297,7 +1298,7 @@ namespace Pchp.Library
         #region mb_strrchr, mb_strrichr
 
         [return: CastToFalse]
-        public static string mb_strrchr(/*Context ctx,*/ string haystack, string needle, bool part = false, string encoding = null)
+        public static string? mb_strrchr(/*Context ctx,*/ string haystack, string needle, bool part = false, string? encoding = null)
         {
             return StrrChr(
                 haystack,
@@ -1309,7 +1310,7 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public static string mb_strrichr(/*Context ctx,*/ string haystack, string needle, bool part = false, string encoding = null)
+        public static string? mb_strrichr(/*Context ctx,*/ string haystack, string needle, bool part = false, string? encoding = null)
         {
             return StrrChr(
                 haystack,
@@ -1328,7 +1329,7 @@ namespace Pchp.Library
         /// Returns a code point of character or  on failure.
         /// </summary>
         [return: CastToFalse]
-        public static int mb_ord(Context ctx, PhpString str, string encoding = null)
+        public static int mb_ord(Context ctx, PhpString str, string? encoding = null)
         {
             var value = ToString(ctx, str, encoding);
             if (string.IsNullOrEmpty(value))
@@ -1343,7 +1344,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a specific character or <c>FALSE</c> on failure.
         /// </summary>
-        public static string mb_chr(int cp, string encoding = null)
+        public static string mb_chr(int cp, string? encoding = null)
         {
             return unchecked((char)cp).ToString();
         }
@@ -1374,7 +1375,7 @@ namespace Pchp.Library
 
         #region mb_send_mail()
 
-        public static bool mb_send_mail(Context ctx, string to, string subject, string message, string additional_headers = null, string additional_parameter = null)
+        public static bool mb_send_mail(Context ctx, string to, string subject, string message, string? additional_headers = null, string? additional_parameter = null)
         {
             // TODO: use mb_language
 
@@ -1410,7 +1411,7 @@ namespace Pchp.Library
         /// <returns>True is encoding was set, otherwise false.</returns>
         public static bool mb_regex_encoding(Context ctx, string encodingName)
         {
-            Encoding enc = GetEncoding(encodingName);
+            Encoding? enc = GetEncoding(encodingName);
 
             if (enc != null)
             {
@@ -1429,7 +1430,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns the internal setting parameters of mbstring.
         /// </summary>
-        public static PhpValue mb_get_info(Context ctx, string type = null)
+        public static PhpValue mb_get_info(Context ctx, string? type = null)
         {
             var config = GetConfig(ctx);
 
@@ -1479,7 +1480,7 @@ namespace Pchp.Library
 
         public static bool mb_http_output(Context ctx, string encodingName)
         {
-            Encoding enc = GetEncoding(encodingName);
+            Encoding? enc = GetEncoding(encodingName);
 
             if (enc != null)
             {
@@ -1506,7 +1507,7 @@ namespace Pchp.Library
         /// </remarks>
         public static PhpValue mb_detect_order(Context ctx, PhpValue encoding_list = default)
         {
-            Encoding[] encodings;
+            Encoding[]? encodings;
 
             if (Operators.IsSet(encoding_list))
             {
@@ -1528,7 +1529,6 @@ namespace Pchp.Library
         /// Get character encoding detection order.
         /// </summary>
         /// <returns>An ordered array of the encodings is returned.</returns>
-        [return: NotNull]
         public static PhpArray/*!*/mb_detect_order(Context ctx)
         {
             return new PhpArray(GetConfig(ctx).DetectOrder.Select(enc => enc.WebName));
@@ -1546,12 +1546,12 @@ namespace Pchp.Library
         /// <param name="strict">strict specifies whether to use the strict encoding detection or not. Default is FALSE.</param>
         /// <returns>The detected character encoding or FALSE if the encoding cannot be detected from the given string.</returns>
         [return: CastToFalse]
-        public static string mb_detect_encoding(Context ctx, PhpString str, PhpValue encoding_list = default, bool strict = false)
+        public static string? mb_detect_encoding(Context ctx, PhpString str, PhpValue encoding_list = default, bool strict = false)
         {
             if (str.ContainsBinaryData)
             {
-                Encoding encoding;
-                Encoding[] encodings;
+                Encoding? encoding;
+                Encoding[]? encodings;
 
                 if (!Operators.IsSet(encoding_list))
                 {
@@ -1588,7 +1588,7 @@ namespace Pchp.Library
         /// <summary>
         /// Implementation of <c>mb_strr[i]pos</c> functions.
         /// </summary>
-        static int Strrpos(string haystack, string needle, int offset, Func<Encoding> encodingGetter, bool ignoreCase)
+        static int Strrpos(string haystack, string needle, int offset, Func<Encoding?> encodingGetter, bool ignoreCase)
         {
             string uhaystack = haystack; //ObjectToString(haystack, encodingGetter);
             string uneedle = needle; //ObjectToString(needle, encodingGetter);
@@ -1621,7 +1621,7 @@ namespace Pchp.Library
                 return uhaystack.LastIndexOf(uneedle, end, end - offset + 1);
         }
 
-        static int StringWidth(string str)
+        static int StringWidth(string? str)
         {
             if (str == null)
                 return 0;
@@ -1661,7 +1661,8 @@ namespace Pchp.Library
         /// <param name="str"></param>
         /// <param name="width">Characters remaining.</param>
         /// <returns></returns>
-        static string StringTrimByWidth(string/*!*/str, ref int width)
+        //[NotNullIfNotNull("str")]     // TODO: NETSTANDARD2.1
+        static string? StringTrimByWidth(string? str, ref int width)
         {
             if (str == null)
                 return null;
@@ -1690,7 +1691,7 @@ namespace Pchp.Library
             return (i < str.Length) ? str.Remove(i) : str;
         }
 
-        static string StrrChr(string haystack, string needle, bool beforeNeedle/*=false*/, bool ignoreCase/*, Func<Encoding> encodingGetter*/)
+        static string? StrrChr(string haystack, string needle, bool beforeNeedle/*=false*/, bool ignoreCase/*, Func<Encoding> encodingGetter*/)
         {
             string uhaystack = haystack; //ObjectToString(haystack, encodingGetter);
             string uneedle = needle;

@@ -447,15 +447,6 @@ namespace Pchp.Core
     }
 
     /// <summary>
-    /// Attribute denoting that associated value cannot be <c>null</c>.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Field | AttributeTargets.Property)]
-    public sealed class NotNullAttribute : Attribute
-    {
-
-    }
-
-    /// <summary>
     /// Attribute specifying the parameter default if cannot be stored in standard metadata.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field)]

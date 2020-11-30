@@ -120,7 +120,7 @@ namespace Pchp.Core.Reflection
 
             public override Type PropertyType => Field.FieldType;
 
-            public override PhpValue GetValue(Context ctx, object instance) => _lazyGetter.Value(ctx, instance);
+            public override PhpValue GetValue(Context ctx, object? instance) => _lazyGetter.Value(ctx, instance);
 
             public override PhpAlias EnsureAlias(Context ctx, object instance) => _lazyEnsureAlias.Value(ctx, instance);
 
@@ -128,7 +128,7 @@ namespace Pchp.Core.Reflection
 
             public override IPhpArray EnsureArray(Context ctx, object instance) => _lazyEnsureArray.Value(ctx, instance);
 
-            public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
+            public override void SetValue(Context ctx, object? instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
 
             public override Expression Bind(Expression ctx, Expression target)
             {
@@ -303,9 +303,9 @@ namespace Pchp.Core.Reflection
 
             public PhpValue GetValue(object? instance) => _lazyGetter.Value(instance);
 
-            public override PhpValue GetValue(Context ctx, object instance) => GetValue(instance);
+            public override PhpValue GetValue(Context ctx, object? instance) => GetValue(instance);
 
-            public override void SetValue(Context ctx, object instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
+            public override void SetValue(Context ctx, object? instance, PhpValue value) => _lazySetValue.Value(ctx, instance, value);
 
             public override Expression Bind(Expression ctx, Expression target)
             {
@@ -341,7 +341,7 @@ namespace Pchp.Core.Reflection
 
             public override Type PropertyType => typeof(PhpValue);
 
-            public override PhpValue GetValue(Context ctx, object instance)
+            public override PhpValue GetValue(Context ctx, object? instance)
             {
                 var runtime_fields = ContainingType.GetRuntimeFields(instance);
 
@@ -393,7 +393,7 @@ namespace Pchp.Core.Reflection
                 return runtime_fields.EnsureItemArray(_name);
             }
 
-            public override void SetValue(Context ctx, object instance, PhpValue value)
+            public override void SetValue(Context ctx, object? instance, PhpValue value)
             {
                 var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
                 if (runtime_fields == null)
@@ -451,7 +451,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets the runtime value of the property.
         /// </summary>
-        public abstract PhpValue GetValue(Context ctx, object instance);
+        public abstract PhpValue GetValue(Context ctx, object? instance);
 
         /// <summary>
         /// Ensures the property value to be <see cref="PhpAlias"/>.
@@ -489,7 +489,7 @@ namespace Pchp.Core.Reflection
         /// </summary>
         /// <exception cref="Exception">Type mismatch.</exception>
         /// <exception cref="NotSupportedException">Property is read-only.</exception>
-        public abstract void SetValue(Context ctx, object instance, PhpValue value);
+        public abstract void SetValue(Context ctx, object? instance, PhpValue value);
 
         /// <summary>
         /// Gets accessibility attributes.

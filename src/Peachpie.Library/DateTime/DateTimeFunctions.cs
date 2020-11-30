@@ -1,4 +1,6 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -83,7 +85,7 @@ namespace Pchp.Library.DateTime
         /// Alias of new <see cref="DateTime"/> but not throwing exception.
         /// </summary>
         [return: CastToFalse]
-        public static DateTime date_create(Context/*!*/ctx, string time = null, DateTimeZone timezone = null)
+        public static DateTime? date_create(Context/*!*/ctx, string? time = null, DateTimeZone? timezone = null)
         {
             try
             {
@@ -99,7 +101,7 @@ namespace Pchp.Library.DateTime
         /// Alias of new <see cref="DateTimeImmutable"/> but not throwing exception.
         /// </summary>
         [return: CastToFalse]
-        public static DateTimeImmutable date_create_immutable(Context/*!*/ctx, string time = null, DateTimeZone timezone = null)
+        public static DateTimeImmutable? date_create_immutable(Context/*!*/ctx, string? time = null, DateTimeZone? timezone = null)
         {
             try
             {
@@ -120,7 +122,7 @@ namespace Pchp.Library.DateTime
         /// <param name="timezone">A DateTimeZone object representing the desired time zone.</param>
         /// <returns></returns>
         [return: CastToFalse]
-        public static DateTime date_create_from_format(Context/*!*/ctx, string format, string time, DateTimeZone timezone = null)
+        public static DateTime? date_create_from_format(Context/*!*/ctx, string format, string time, DateTimeZone? timezone = null)
         {
             return DateTime.createFromFormat(ctx, format, time, timezone);
         }
@@ -134,7 +136,7 @@ namespace Pchp.Library.DateTime
         /// <param name="timezone">A DateTimeZone object representing the desired time zone.</param>
         /// <returns></returns>
         [return: CastToFalse]
-        public static DateTimeImmutable date_create_immutable_from_format(Context/*!*/ctx, string format, string time, DateTimeZone timezone = null)
+        public static DateTimeImmutable? date_create_immutable_from_format(Context/*!*/ctx, string format, string time, DateTimeZone? timezone = null)
         {
             return DateTimeImmutable.createFromFormat(ctx, format, time, timezone);
         }
@@ -199,7 +201,6 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns the difference between two DateTime objects.
         /// </summary>
-        [return: NotNull]
         public static DateInterval date_diff(DateTimeInterface datetime1, DateTimeInterface datetime2, bool absolute = false)
         {
             if (GetDateTimeFromInterface(datetime1, out var dt1, out _) &&
@@ -258,7 +259,6 @@ namespace Pchp.Library.DateTime
 
         /// <summary>Returns the warnings and errors.</summary>
         /// <remarks>Unlike in PHP, we never return <c>FALSE</c>, according to the documentation and for (our) sanity.</remarks>
-        [return: NotNull]
         public static PhpArray date_get_last_errors(Context ctx) => DateTime.getLastErrors(ctx);
 
         #endregion
@@ -745,7 +745,6 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Alias to <see cref="DateInterval.format"/>.
         /// </summary>
-        [return: NotNull]
         public static string date_interval_format(DateInterval @object, string format) => @object.format(format);
 
         #endregion
@@ -755,7 +754,6 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Get info about given date formatted according to the specified format.
         /// </summary>
-        [return: NotNull]
         public static PhpArray date_parse_from_format(Context ctx, string format, string date)
         {
             var dateinfo = DateInfo.ParseFromFormat(format, date, out var errors);
@@ -1523,10 +1521,9 @@ namespace Pchp.Library.DateTime
         /// Returns associative array with detailed info about given date.
         /// </summary>
         /// <returns>Returns array with information about the parsed date on success.</returns>
-        [return: NotNull]
         public static PhpArray date_parse(Context ctx, string time)
         {
-            DateTimeErrors errors = null;
+            DateTimeErrors? errors = null;
 
             if (string.IsNullOrEmpty(time))
             {
@@ -1555,7 +1552,7 @@ namespace Pchp.Library.DateTime
             return AsArray(ctx, scanner.Time, errors);
         }
 
-        static PhpArray AsArray(Context ctx, DateInfo dateinfo, DateTimeErrors errors)
+        static PhpArray AsArray(Context ctx, DateInfo dateinfo, DateTimeErrors? errors)
         {
             var timezone = dateinfo.ResolveTimeZone(ctx, null);
             var datetime = dateinfo.GetDateTime(ctx, System_DateTime.UtcNow);   // gets UTC time!

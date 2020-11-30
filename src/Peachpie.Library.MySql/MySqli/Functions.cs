@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Pchp.Core;
@@ -18,13 +20,12 @@ namespace Peachpie.Library.MySql.MySqli
         {
             public static MySqliContextData/*!*/GetContextData(Context ctx) => ctx.GetStatic<MySqliContextData>();
 
-            public string LastConnectionError { get; set; }
+            public string? LastConnectionError { get; set; }
         }
 
         /// <summary>
         /// Initializes MySQLi and returns a resource for use with mysqli_real_connect().
         /// </summary>
-        [return: NotNull]
         public static mysqli/*!*/mysqli_init() => new mysqli();
 
         /// <summary>
@@ -51,13 +52,13 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Opens a connection to a mysql server
         /// </summary>
-        public static bool mysqli_real_connect(Context ctx, mysqli link, string host = null, string username = null, string passwd = null, string dbname = "", int port = -1, string socket = null, int flags = 0)
+        public static bool mysqli_real_connect(Context ctx, mysqli link, string? host = null, string? username = null, string? passwd = null, string dbname = "", int port = -1, string? socket = null, int flags = 0)
             => link.real_connect(ctx, host, username, passwd, dbname, port, socket, flags);
 
         /// <summary>
         /// Opens a connection to a mysql server
         /// </summary>
-        public static mysqli mysqli_connect(Context ctx, string host = null, string username = null, string passwd = null, string dbname = "", int port = -1, string socket = null, int flags = 0)
+        public static mysqli? mysqli_connect(Context ctx, string? host = null, string? username = null, string? passwd = null, string dbname = "", int port = -1, string? socket = null, int flags = 0)
         {
             var link = new mysqli(ctx, host, username, passwd, dbname, port, socket);
             return (string.IsNullOrEmpty(link.connect_error)) ? link : null;
@@ -86,13 +87,13 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// The connection error message. Otherwise <c>null</c>.
         /// </summary>
-        public static string mysqli_connect_error(Context ctx, mysqli link = null)
+        public static string? mysqli_connect_error(Context ctx, mysqli? link = null)
             => (link != null) ? link.connect_error : MySqliContextData.GetContextData(ctx).LastConnectionError;
 
         /// <summary>
         /// Returns the error code from last connect call.
         /// </summary>
-        public static int mysqli_connect_errno(Context ctx, mysqli link = null)
+        public static int mysqli_connect_errno(Context ctx, mysqli? link = null)
             => (link != null)
                 ? link.connect_errno
                 : string.IsNullOrEmpty(MySqliContextData.GetContextData(ctx).LastConnectionError) ? 0 : -1;
@@ -125,12 +126,12 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Get MySQL client info.
         /// </summary>
-        public static string mysqli_get_client_info(mysqli link = null) => mysqli.ClientInfo;
+        public static string mysqli_get_client_info(mysqli? link = null) => mysqli.ClientInfo;
 
         /// <summary>
         /// Returns the MySQL client version as an integer.
         /// </summary>
-        public static int mysqli_get_client_version(mysqli link = null) => mysqli.ClientVersion;
+        public static int mysqli_get_client_version(mysqli? link = null) => mysqli.ClientVersion;
 
         /// <summary>
         /// Returns the default character set for the database connection.
@@ -202,60 +203,60 @@ namespace Peachpie.Library.MySql.MySqli
         /// Used for establishing secure connections using SSL
         /// </summary>
         /// <returns>Always true.</returns>
-        public static bool mysqli_ssl_set(mysqli link, string key = null, string cert = null, string ca = null, string capath = null, string cipher = null)
+        public static bool mysqli_ssl_set(mysqli link, string? key = null, string? cert = null, string? ca = null, string? capath = null, string? cipher = null)
             => link.ssl_set(key, cert, ca, capath, cipher);
 
         /// <summary>
         /// Prepare an SQL statement for execution.
         /// </summary>
         //[return: CastToFalse]
-        public static mysqli_stmt mysqli_prepare([NotNull]mysqli link, string query = null) => new mysqli_stmt(link, query);
+        public static mysqli_stmt mysqli_prepare(mysqli link, string? query = null) => new mysqli_stmt(link, query);
 
         /// <summary>
         /// Prepare an SQL statement for execution.
         /// </summary>
-        public static bool mysqli_stmt_prepare([NotNull]mysqli_stmt stmt, string query) => stmt.prepare(query);
+        public static bool mysqli_stmt_prepare(mysqli_stmt stmt, string query) => stmt.prepare(query);
 
         /// <summary>
         /// Binds variables to a prepared statement as parameters.
         /// </summary>
-        public static bool mysqli_stmt_bind_param([NotNull]mysqli_stmt stmt, string types, params PhpAlias[] variables) => stmt.bind_param(types, variables);
+        public static bool mysqli_stmt_bind_param(mysqli_stmt stmt, string types, params PhpAlias[] variables) => stmt.bind_param(types, variables);
 
         /// <summary>
         /// Send data in blocks.
         /// </summary>
-        public static bool mysqli_stmt_send_long_data([NotNull]mysqli_stmt stmt, int param_nr, PhpString data) => stmt.send_long_data(param_nr, data);
+        public static bool mysqli_stmt_send_long_data(mysqli_stmt stmt, int param_nr, PhpString data) => stmt.send_long_data(param_nr, data);
 
         /// <summary>
         /// Executes a prepared Query.
         /// </summary>
-        public static bool mysqli_stmt_execute([NotNull]mysqli_stmt stmt) => stmt.execute();
+        public static bool mysqli_stmt_execute(mysqli_stmt stmt) => stmt.execute();
 
         /// <summary>
         /// Closes a prepared statement.
         /// </summary>
-        public static bool mysqli_stmt_close([NotNull]mysqli_stmt stmt) => stmt.close();
+        public static bool mysqli_stmt_close(mysqli_stmt stmt) => stmt.close();
 
         /// <summary>
         /// Get the ID generated from the previous INSERT operation.
         /// </summary>
-        public static long mysqli_stmt_insert_id([NotNull]mysqli_stmt stmt) => stmt.insert_id;
+        public static long mysqli_stmt_insert_id(mysqli_stmt stmt) => stmt.insert_id;
 
         /// <summary>
         /// Returns the total number of rows changed, deleted, or inserted by the last executed statement .
         /// </summary>
-        public static int mysqli_stmt_affected_rows([NotNull]mysqli_stmt stmt) => stmt.affected_rows;
+        public static int mysqli_stmt_affected_rows(mysqli_stmt stmt) => stmt.affected_rows;
 
         /// <summary>
         /// Seeks to an arbitrary row in statement result set.
         /// </summary>
-        public static void mysqli_stmt_data_seek([NotNull]mysqli_stmt stmt, int offset) => stmt.data_seek(offset);
+        public static void mysqli_stmt_data_seek(mysqli_stmt stmt, int offset) => stmt.data_seek(offset);
 
         /// <summary>
         /// Gets a result set from a prepared statement.
         /// </summary>
         [return: CastToFalse]
-        public static mysqli_result mysqli_stmt_get_result([NotNull]mysqli_stmt stmt) => stmt.get_result();
+        public static mysqli_result mysqli_stmt_get_result(mysqli_stmt stmt) => stmt.get_result();
 
         /// <summary>
         /// Fetch a result row as an associative array.
@@ -285,7 +286,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Returns the current row of a result set as an object.
         /// </summary>
-        public static object mysqli_fetch_object(mysqli_result result, string class_name = null, PhpArray class_params = null) => result.fetch_object(class_name, class_params);
+        public static object mysqli_fetch_object(mysqli_result result, string? class_name = null, PhpArray? class_params = null) => result.fetch_object(class_name, class_params);
 
         /// <summary>
         /// Returns an array of objects representing the fields in a result set.
