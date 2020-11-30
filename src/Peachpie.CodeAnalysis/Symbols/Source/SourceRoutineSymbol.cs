@@ -462,17 +462,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
+            var attrs = ImmutableArray<AttributeData>.Empty;
+
             // attributes from syntax node
-            if (this.Syntax.TryGetCustomAttributes(out var attrs))
+            var sourceattrs = this.Syntax.GetAttributes();
+            if (sourceattrs.Count != 0)
             {
-                // initialize attribute data if necessary:
-                attrs
-                    .OfType<SourceCustomAttribute>()
-                    .ForEach(x => x.Bind(this, this.ContainingFile));
-            }
-            else
-            {
-                attrs = ImmutableArray<AttributeData>.Empty;
+                // TODO: initialize attribute data:
+                //attrs
+                //    .OfType<SourceCustomAttribute>()
+                //    .ForEach(x => x.Bind(this, this.ContainingFile));
             }
 
             // attributes from PHPDoc
