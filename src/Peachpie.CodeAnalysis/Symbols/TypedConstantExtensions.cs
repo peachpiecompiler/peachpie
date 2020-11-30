@@ -235,5 +235,13 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return new TypedConstant(compilation.GetSpecialType(SpecialType.System_Int64), TypedConstantKind.Primitive, value);
         }
+
+        public static TypedConstant CreateTypedConstant(this PhpCompilation compilation, byte[] bytes)
+        {
+            return new TypedConstant(
+                (TypeSymbol)compilation.CreateArrayTypeSymbol(compilation.GetSpecialType(SpecialType.System_Byte)),
+                bytes.SelectAsArray(b => CreateTypedConstant(compilation, b))
+                );
+        }
     }
 }
