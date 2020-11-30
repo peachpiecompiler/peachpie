@@ -104,28 +104,6 @@ namespace Pchp.CodeAnalysis
         public static bool IsWhitespace(this CompleteToken t) => t.Token == Tokens.T_WHITESPACE || t.Token == Tokens.T_COMMENT; // not T_DOC_COMMENT
 
         /// <summary>
-        /// Gets attributes associated with given syntax node.
-        /// </summary>
-        public static bool TryGetCustomAttributes(this AstNode element, out ImmutableArray<AttributeData> attrs)
-        {
-            return element.TryGetProperty(out attrs);
-        }
-
-        /// <summary>
-        /// Associates an attribute with syntax node.
-        /// </summary>
-        public static void AddCustomAttribute(this AstNode element, AttributeData attribute)
-        {
-            Debug.Assert(attribute != null);
-
-            var newattrs = TryGetCustomAttributes(element, out var attrs)
-                ? attrs.Add(attribute)
-                : ImmutableArray.Create(attribute);
-
-            element.SetProperty(newattrs);
-        }
-
-        /// <summary>
         /// Determines whether method has <c>$this</c> variable.
         /// </summary>
         public static bool HasThisVariable(MethodDecl method)

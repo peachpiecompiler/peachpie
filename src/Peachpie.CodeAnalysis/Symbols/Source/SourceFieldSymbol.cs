@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly BoundExpression _initializer;
 
-        readonly ImmutableArray<AttributeData> _customAttributes;
+        ImmutableArray<AttributeData> _lazyAttributes;
 
         /// <summary>
         /// Gets value indicating whether this field redefines a field from a base type.
@@ -152,7 +152,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         PropertySymbol _fieldAccessorProperty;
 
-        public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, PhpPropertyKind kind, BoundExpression initializer = null, ImmutableArray<AttributeData> customAttributes = default)
+        public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, PhpPropertyKind kind, BoundExpression initializer = null)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(name);
@@ -164,7 +164,6 @@ namespace Pchp.CodeAnalysis.Symbols
             _phpDoc = phpdoc;
             _initializer = initializer;
             _location = location;
-            _customAttributes = customAttributes;
         }
 
         #region FieldSymbol
@@ -201,36 +200,34 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            var attrs = _customAttributes;
-
-            // attributes from syntax node
-            if (attrs.IsDefaultOrEmpty)
+            var attrs = _lazyAttributes;
+            if (attrs.IsDefault)
             {
                 attrs = ImmutableArray<AttributeData>.Empty;
-            }
-            else
-            {
-                // initialize attribute data if necessary:
+
+                // TODO: populate SourceCustomAttribute here
+
                 attrs
                     .OfType<SourceCustomAttribute>()
                     .ForEach(x => x.Bind(this, _containingType.ContainingFile));
-            }
 
-            // attributes from PHPDoc
-            if (_phpDoc != null)
-            {
-                var deprecated = _phpDoc.GetElement<PHPDocBlock.DeprecatedTag>();
-                if (deprecated != null)
+                // implicit attributes from PHPDoc
+                if (_phpDoc != null)
                 {
-                    // [ObsoleteAttribute(message, false)]
-                    attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
+                    var deprecated = _phpDoc.GetElement<PHPDocBlock.DeprecatedTag>();
+                    if (deprecated != null)
+                    {
+                        // [ObsoleteAttribute(message, false)]
+                        attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
+                    }
+
+                    // ...
                 }
 
-                // ...
+                //
+                _lazyAttributes = attrs;
             }
 
-
-            //
             return attrs;
         }
 

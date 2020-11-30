@@ -510,6 +510,11 @@ namespace Pchp.CodeAnalysis.Symbols
         List<Symbol> _lazyMembers;
 
         /// <summary>
+        /// Populated symbol attributes.
+        /// </summary>
+        ImmutableArray<SourceCustomAttribute> _lazyAttributes;
+
+        /// <summary>
         /// In case the type is declared conditionally,
         /// postpone reporting the diagnostics so they might get ignored eventually.
         /// </summary>
@@ -1095,8 +1100,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             p.ConstructorPropertyVisibility.GetAccessibility(),
                             phpdoc: null,
                             kind: PhpPropertyKind.InstanceField,
-                            initializer: null, // passed as argument
-                            customAttributes: default);
+                            initializer: null); // passed as argument
                     }
                 }
             }
@@ -1110,16 +1114,13 @@ namespace Pchp.CodeAnalysis.Symbols
                         ? PhpPropertyKind.AppStaticField
                         : PhpPropertyKind.StaticField;
 
-                flist.TryGetCustomAttributes(out var attrs);
-
                 foreach (var f in flist.Fields)
                 {
                     yield return new SourceFieldSymbol(this, f.Name.Value,
                         CreateLocation(f.NameSpan),
                         flist.Modifiers.GetAccessibility(), flist.PHPDoc,
                         fkind,
-                        initializer: (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null,
-                        customAttributes: attrs);
+                        initializer: (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null);
                 }
             }
 
@@ -1644,6 +1645,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var attrs = base.GetAttributes();
 
+            // TODO: _lazyAttributes
+
             AttributeData phptypeattr;
             var autoload = AutoloadFlag;
             if (autoload == 0)
@@ -1675,15 +1678,16 @@ namespace Pchp.CodeAnalysis.Symbols
             attrs = attrs.Add(phptypeattr);
 
             // attributes from syntax node
-            if (this.Syntax.TryGetCustomAttributes(out var customattrs))
+            var sourceattrs = this.Syntax.GetAttributes();
+            if (sourceattrs.Count != 0)
             {
-                // initialize attribute data if necessary:
-                customattrs
-                    .OfType<SourceCustomAttribute>()
-                    .ForEach(x => x.Bind(this, this.ContainingFile));
+                // TODO: initialize attribute data
+                //customattrs
+                //    .OfType<SourceCustomAttribute>()
+                //    .ForEach(x => x.Bind(this, this.ContainingFile));
 
-                //
-                attrs = attrs.AddRange(customattrs);
+                ////
+                //attrs = attrs.AddRange(customattrs);
             }
 
             return attrs;
