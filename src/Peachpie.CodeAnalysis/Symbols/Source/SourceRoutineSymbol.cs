@@ -464,10 +464,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            var attrs = _lazyAttributes;
-            if (attrs.IsDefault)
+            if (_lazyAttributes.IsDefault)
             {
-                attrs = base.GetAttributes();
+                var attrs = base.GetAttributes();
 
                 // attributes from syntax node
                 attrs = attrs.AddRange(SemanticsBinder.BindAttributes(Syntax.GetAttributes(), ContainingFile));
@@ -486,11 +485,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     // ...
                 }
 
-                attrs = Roslyn.Utilities.InterlockedOperations.Initialize(ref _lazyAttributes, attrs);
+                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, attrs);
             }
 
             //
-            return attrs;
+            return _lazyAttributes;
         }
 
         public override ImmutableArray<AttributeData> GetReturnTypeAttributes()

@@ -25,9 +25,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Index of the source parameter, relative to the first source parameter.
         /// </summary>
         readonly int _relindex;
-        readonly PHPDocBlock.ParamTag _ptagOpt;
+        
+        internal PHPDocBlock.ParamTag PHPDoc { get; }
 
-        internal PHPDocBlock.ParamTag PHPDocOpt => _ptagOpt;
+        ImmutableArray<AttributeData> _lazyAttributes;
 
         TypeSymbol _lazyType;
 
@@ -120,12 +121,12 @@ namespace Pchp.CodeAnalysis.Symbols
             _routine = routine;
             _syntax = syntax;
             _relindex = relindex;
-            _ptagOpt = ptagOpt;
             _initializer = (syntax.InitValue != null)
                 ? new SemanticsBinder(DeclaringCompilation, routine.ContainingFile.SyntaxTree, locals: null, routine: null, self: routine.ContainingType as SourceTypeSymbol)
                     .BindWholeExpression(syntax.InitValue, BoundAccess.Read)
                     .SingleBoundElement()
                 : null;
+            PHPDoc = ptagOpt;
         }
 
         /// <summary>
@@ -235,11 +236,11 @@ namespace Pchp.CodeAnalysis.Symbols
             var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint, _routine.ContainingType as SourceTypeSymbol, nullable: DefaultsToNull);
 
             // 2. optionally type specified in PHPDoc
-            if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0
+            if (result == null && PHPDoc != null && PHPDoc.TypeNamesArray.Length != 0
                 && (DeclaringCompilation.Options.PhpDocTypes & PhpDocTypes.ParameterTypes) != 0)
             {
                 var typectx = _routine.TypeRefContext;
-                var tmask = FlowAnalysis.PHPDoc.GetTypeMask(typectx, _ptagOpt.TypeNamesArray, _routine.GetNamingContext());
+                var tmask = FlowAnalysis.PHPDoc.GetTypeMask(typectx, PHPDoc.TypeNamesArray, _routine.GetNamingContext());
                 if (!tmask.IsVoid && !tmask.IsAnyType)
                 {
                     result = DeclaringCompilation.GetTypeFromTypeRef(typectx, tmask);
@@ -300,6 +301,19 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            var attrs = _lazyAttributes;
+            if (attrs.IsDefault)
+            {
+                attrs = SemanticsBinder.BindAttributes(Syntax.GetAttributes(), _routine.ContainingFile);
+
+                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, attrs);
+            }
+
+            return _lazyAttributes;
+        }
+
         internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
         {
             // [param]   
@@ -321,7 +335,10 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
-            yield break;
+            foreach (var attr in GetAttributes())
+            {
+                yield return attr;
+            }
         }
 
         public override bool IsOptional => this.HasExplicitDefaultValue;
