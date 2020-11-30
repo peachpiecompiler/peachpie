@@ -205,10 +205,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            var attrs = _lazyAttributes;
-            if (attrs.IsDefault)
+            if (_lazyAttributes.IsDefault)
             {
-                attrs = ImmutableArray<AttributeData>.Empty;
+                var attrs = ImmutableArray<AttributeData>.Empty;
 
                 // populate attributes
                 attrs = attrs.AddRange(SemanticsBinder.BindAttributes(_sourceAttributes, _containingType.ContainingFile));
@@ -227,10 +226,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 //
-                attrs = InterlockedOperations.Initialize(ref _lazyAttributes, attrs);
+                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, attrs);
             }
 
-            return attrs;
+            return _lazyAttributes;
         }
 
         #endregion

@@ -1649,10 +1649,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            var attrs = _lazyAttributes;
-            if (attrs.IsDefault)
+            if (_lazyAttributes.IsDefault)
             {
-                attrs = base.GetAttributes();
+                var attrs = base.GetAttributes();
 
                 AttributeData phptypeattr;
                 var autoload = AutoloadFlag;
@@ -1688,10 +1687,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 attrs = attrs.AddRange(SemanticsBinder.BindAttributes(Syntax.GetAttributes(), ContainingFile));
 
                 //
-                attrs = InterlockedOperations.Initialize(ref _lazyAttributes, attrs);
+                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, attrs);
             }
 
-            return attrs;
+            return _lazyAttributes;
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
