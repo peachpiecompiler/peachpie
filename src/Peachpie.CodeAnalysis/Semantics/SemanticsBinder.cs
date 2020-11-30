@@ -306,6 +306,35 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
+        #region Attributes
+
+        public static ImmutableArray<AttributeData> BindAttributes(IReadOnlyList<AST.IAttributeGroup> groups, SourceFileSymbol file)
+        {
+            if (groups == null || groups.Count == 0)
+            {
+                return ImmutableArray<AttributeData>.Empty;
+            }
+
+            var attrs = new List<AttributeData>();
+
+            foreach (var g in groups)
+            {
+                foreach (var a in g.Attributes)
+                {
+                    var attribute = new SourceCustomAttribute(a.ClassRef, a.CallSignature);
+
+                    attribute.Bind(file);
+
+                    attrs.Add(attribute);
+                }
+            }
+
+
+            return attrs.ToImmutableArray();
+        }
+
+        #endregion
+
         public virtual void WithTryScopes(IEnumerable<TryCatchEdge> tryScopes) { }
 
         public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt) => BindStatement(stmt);

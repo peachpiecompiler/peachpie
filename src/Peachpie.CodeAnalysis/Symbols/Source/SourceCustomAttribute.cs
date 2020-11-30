@@ -14,51 +14,56 @@ namespace Pchp.CodeAnalysis.Symbols
     sealed class SourceCustomAttribute : BaseAttributeData
     {
         readonly TypeRef _tref;
-        readonly ImmutableArray<LangElement> _arguments;
-        readonly ImmutableArray<KeyValuePair<Name, LangElement>> _properties;
+        readonly ImmutableArray<Expression> _arguments;
+        readonly ImmutableArray<KeyValuePair<VariableName, Expression>> _properties;
 
         NamedTypeSymbol _type;
         MethodSymbol _ctor;
         ImmutableArray<TypedConstant> _ctorArgs;
         ImmutableArray<KeyValuePair<string, TypedConstant>> _namedArgs;
 
-        public SourceCustomAttribute(TypeRef tref, IList<KeyValuePair<Name, LangElement>> arguments)
+        public SourceCustomAttribute(TypeRef tref, CallSignature arguments)
         {
             _tref = tref;
 
-            if (arguments != null && arguments.Count != 0)
-            {
-                // count args
-                int nargs = 0;
-                while (nargs < arguments.Count && arguments[nargs].Key.Value == null)
-                    nargs++;
+            _arguments = ImmutableArray<Expression>.Empty;
+            _properties = ImmutableArray<KeyValuePair<VariableName, Expression>>.Empty;
 
-                //
-                _arguments = arguments.Take(nargs).Select(x => x.Value).AsImmutable();
-                _properties = arguments.Skip(nargs).AsImmutable();
-            }
-            else
+            if (!arguments.IsEmpty)
             {
-                _arguments = ImmutableArray<LangElement>.Empty;
-                _properties = ImmutableArray<KeyValuePair<Name, LangElement>>.Empty;
+                foreach (var arg in arguments.Parameters)
+                {
+                    if (!arg.Exists) continue;
+
+                    if (arg.Name.HasValue)
+                    {
+                        _properties = _properties.Add(new KeyValuePair<VariableName, Expression>(arg.Name.Value.Name, arg.Expression));
+                    }
+                    else
+                    {
+                        _arguments = _arguments.Add(arg.Expression);
+                    }
+                }
             }
         }
 
         #region Bind to Symbol and TypedConstant
 
-        internal void Bind(Symbol symbol, SourceFileSymbol file)
+        internal void Bind(SourceFileSymbol file)
         {
-            Debug.Assert(symbol != null);
+            Contract.ThrowIfNull(file);
+
+            var compilation = file.DeclaringCompilation;
 
             if (_type == null)
             {
-                // TODO: check the attribute can bi bound to symbol
+                // TODO: check the attribute can be bound to symbol
 
-                var type = (NamedTypeSymbol)symbol.DeclaringCompilation.GetTypeFromTypeRef(_tref);
+                var type = (NamedTypeSymbol)compilation.GetTypeFromTypeRef(_tref);
 
                 if (type.IsErrorTypeOrNull() || type.SpecialType == SpecialType.System_Object)
                 {
-                    symbol.DeclaringCompilation.DeclarationDiagnostics.Add(
+                    compilation.DeclarationDiagnostics.Add(
                         Location.Create(file.SyntaxTree, _tref.Span.ToTextSpan()),
                         Errors.ErrorCode.ERR_TypeNameCannotBeResolved,
                         _tref.ToString());
@@ -67,9 +72,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 // bind arguments
-                if (!TryResolveCtor(type, symbol.DeclaringCompilation, out _ctor, out _ctorArgs) && type.IsValidType())
+                if (!TryResolveCtor(type, compilation, out _ctor, out _ctorArgs) && type.IsValidType())
                 {
-                    symbol.DeclaringCompilation.DeclarationDiagnostics.Add(
+                    compilation.DeclarationDiagnostics.Add(
                         Location.Create(file.SyntaxTree, _tref.Span.ToTextSpan()),
                         Errors.ErrorCode.ERR_NoMatchingOverload,
                         type.Name + "..ctor");
@@ -90,7 +95,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             (Symbol)type.LookupMember<PropertySymbol>(prop.Key.Value) ??
                             (Symbol)type.LookupMember<FieldSymbol>(prop.Key.Value);
 
-                        if (member != null && TryBindTypedConstant(member.GetTypeOrReturnType(), prop.Value, symbol.DeclaringCompilation, out var arg))
+                        if (member != null && TryBindTypedConstant(member.GetTypeOrReturnType(), prop.Value, compilation, out var arg))
                         {
                             namedArgs[i] = new KeyValuePair<string, TypedConstant>(prop.Key.Value, arg);
                         }
