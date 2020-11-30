@@ -1114,8 +1114,6 @@ namespace Pchp.CodeAnalysis.Symbols
                         ? PhpPropertyKind.AppStaticField
                         : PhpPropertyKind.StaticField;
 
-                var attrs = flist.Fields.Count == 1 ? flist.GetAttributes() : null;
-
                 foreach (var f in flist.Fields)
                 {
                     yield return new SourceFieldSymbol(this, f.Name.Value,
@@ -1123,15 +1121,13 @@ namespace Pchp.CodeAnalysis.Symbols
                         flist.Modifiers.GetAccessibility(), flist.PHPDoc,
                         fkind,
                         initializer: (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null,
-                        sourceAttributes: attrs);
+                        sourceAttributes: flist.GetAttributes());
                 }
             }
 
             // constants
             foreach (var clist in _syntax.Members.OfType<ConstDeclList>())
             {
-                var attrs = clist.Constants.Count == 1 ? clist.GetAttributes() : null;
-
                 foreach (var c in clist.Constants)
                 {
                     yield return new SourceFieldSymbol(this, c.Name.Name.Value,
@@ -1139,7 +1135,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         clist.Modifiers.GetAccessibility(), clist.PHPDoc,
                         PhpPropertyKind.ClassConstant,
                         initializer: binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement(),
-                        sourceAttributes: attrs);
+                        sourceAttributes: clist.GetAttributes());
                 }
             }
         }
