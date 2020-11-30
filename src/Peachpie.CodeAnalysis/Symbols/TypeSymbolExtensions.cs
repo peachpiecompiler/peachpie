@@ -443,6 +443,17 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.TypeKind == TypeKind.Array && ((ArrayTypeSymbol)type).IsSZArray;
         }
 
+        /// <summary>Gets value indicating the given type represents a <c>byte[]</c> array type.</summary>
+        public static bool IsByteArray(this ITypeSymbol type)
+        {
+            Debug.Assert((object)type != null);
+            return
+                type.TypeKind == TypeKind.Array &&
+                type is ArrayTypeSymbol array &&
+                array.IsSZArray &&
+                array.ElementType.SpecialType == SpecialType.System_Byte;
+        }
+
         // If the type is a delegate type, it returns it. If the type is an
         // expression tree type associated with a delegate type, it returns
         // the delegate type. Otherwise, null.
