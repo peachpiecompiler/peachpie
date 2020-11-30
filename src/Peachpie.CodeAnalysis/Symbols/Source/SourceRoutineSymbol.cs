@@ -115,6 +115,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal abstract SourceFileSymbol ContainingFile { get; }
 
+        ImmutableArray<AttributeData> _lazyAttributes;
+
         public override ImmutableArray<Location> Locations =>
             ImmutableArray.Create(
                 Location.Create(
@@ -462,34 +464,33 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            var attrs = ImmutableArray<AttributeData>.Empty;
-
-            // attributes from syntax node
-            var sourceattrs = this.Syntax.GetAttributes();
-            if (sourceattrs.Count != 0)
+            var attrs = _lazyAttributes;
+            if (attrs.IsDefault)
             {
-                // TODO: initialize attribute data:
-                //attrs
-                //    .OfType<SourceCustomAttribute>()
-                //    .ForEach(x => x.Bind(this, this.ContainingFile));
-            }
+                attrs = base.GetAttributes();
 
-            // attributes from PHPDoc
-            var phpdoc = this.PHPDocBlock;
-            if (phpdoc != null)
-            {
-                var deprecated = phpdoc.GetElement<PHPDocBlock.DeprecatedTag>();
-                if (deprecated != null)
+                // attributes from syntax node
+                attrs = attrs.AddRange(SemanticsBinder.BindAttributes(Syntax.GetAttributes(), ContainingFile));
+
+                // attributes from PHPDoc
+                var phpdoc = this.PHPDocBlock;
+                if (phpdoc != null)
                 {
-                    // [ObsoleteAttribute(message, false)]
-                    attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
+                    var deprecated = phpdoc.GetElement<PHPDocBlock.DeprecatedTag>();
+                    if (deprecated != null)
+                    {
+                        // [ObsoleteAttribute(message, false)]
+                        attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
+                    }
+
+                    // ...
                 }
 
-                // ...
+                attrs = Roslyn.Utilities.InterlockedOperations.Initialize(ref _lazyAttributes, attrs);
             }
 
             //
-            return base.GetAttributes().AddRange(attrs);
+            return attrs;
         }
 
         public override ImmutableArray<AttributeData> GetReturnTypeAttributes()

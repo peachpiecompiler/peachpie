@@ -61,8 +61,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optional associated PHPDoc block defining the field type hint.
         /// </summary>
-        internal PHPDocBlock PHPDocBlock => _phpDoc;
-        readonly PHPDocBlock _phpDoc;
+        internal PHPDocBlock PHPDocBlock { get; }
 
         /// <summary>
         /// Declared accessibility - private, protected or public.
@@ -71,6 +70,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly BoundExpression _initializer;
 
+        IReadOnlyList<IAttributeGroup> _sourceAttributes;
         ImmutableArray<AttributeData> _lazyAttributes;
 
         /// <summary>
@@ -152,7 +152,11 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         PropertySymbol _fieldAccessorProperty;
 
-        public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, PhpPropertyKind kind, BoundExpression initializer = null)
+        public SourceFieldSymbol(
+            SourceTypeSymbol type, string name, Location location, Accessibility accessibility,
+            PHPDocBlock phpdoc, PhpPropertyKind kind,
+            BoundExpression initializer = null,
+            IReadOnlyList<IAttributeGroup> sourceAttributes = null)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(name);
@@ -161,9 +165,10 @@ namespace Pchp.CodeAnalysis.Symbols
             _fieldName = name;
             _fieldKind = kind;
             _accessibility = accessibility;
-            _phpDoc = phpdoc;
             _initializer = initializer;
             _location = location;
+            _sourceAttributes = sourceAttributes;
+            PHPDocBlock = phpdoc;
         }
 
         #region FieldSymbol
@@ -205,16 +210,13 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 attrs = ImmutableArray<AttributeData>.Empty;
 
-                // TODO: populate SourceCustomAttribute here
-
-                attrs
-                    .OfType<SourceCustomAttribute>()
-                    .ForEach(x => x.Bind(this, _containingType.ContainingFile));
+                // populate attributes
+                attrs = attrs.AddRange(SemanticsBinder.BindAttributes(_sourceAttributes, _containingType.ContainingFile));
 
                 // implicit attributes from PHPDoc
-                if (_phpDoc != null)
+                if (PHPDocBlock != null)
                 {
-                    var deprecated = _phpDoc.GetElement<PHPDocBlock.DeprecatedTag>();
+                    var deprecated = PHPDocBlock.GetElement<PHPDocBlock.DeprecatedTag>();
                     if (deprecated != null)
                     {
                         // [ObsoleteAttribute(message, false)]
@@ -225,7 +227,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 //
-                _lazyAttributes = attrs;
+                attrs = InterlockedOperations.Initialize(ref _lazyAttributes, attrs);
             }
 
             return attrs;
@@ -302,9 +304,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal PHPDocBlock.TypeVarDescTag FindPhpDocVarTag()
         {
-            if (_phpDoc != null)
+            if (PHPDocBlock != null)
             {
-                foreach (var vartype in _phpDoc.Elements.OfType<PHPDocBlock.TypeVarDescTag>())
+                foreach (var vartype in PHPDocBlock.Elements.OfType<PHPDocBlock.TypeVarDescTag>())
                 {
                     if (string.IsNullOrEmpty(vartype.VariableName) || vartype.VariableName.Substring(1) == this.MetadataName)
                     {
@@ -320,9 +322,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var summary = string.Empty;
 
-            if (_phpDoc != null)
+            if (PHPDocBlock != null)
             {
-                summary = _phpDoc.Summary;
+                summary = PHPDocBlock.Summary;
 
                 if (string.IsNullOrWhiteSpace(summary))
                 {
