@@ -127,72 +127,118 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>Simple AST to JSON serialization.</summary>
         string ArgumentsToJson()
         {
-            string ExpressionToJson(Expression element)
+            void ExpressionToJson(Expression element, StringBuilder output)
             {
-                if (element is LongIntLiteral llit) return llit.Value.ToString();
-                if (element is DoubleLiteral dlit) return dlit.Value.ToString("N", System.Globalization.CultureInfo.InvariantCulture);
-                if (element is StringLiteral slit)
+                switch (element)
                 {
-                    var output = new System.IO.StringWriter();
-                    using (var json = new Roslyn.Utilities.JsonWriter(output))
-                    {
-                        json.Write(slit.Value);
-                    }
-                    return output.ToString();
-                }
-                if (element is BoolLiteral blit) return blit.Value ? "true" : "false";
-                if (element is NullLiteral) return "null";
+                    case LongIntLiteral llit:
+                        output.Append(llit.Value);
+                        break;
+                    case DoubleLiteral dlit:
+                        output.Append(dlit.Value.ToString("N", System.Globalization.CultureInfo.InvariantCulture));
+                        break;
+                    case StringLiteral slit:
+                        using (var writer = new System.IO.StringWriter(output))
+                        using (var json = new Roslyn.Utilities.JsonWriter(writer))
+                        {
+                            json.Write(slit.Value);
+                        }
+                        break;
+                    case BoolLiteral blit:
+                        output.Append(blit.Value ? "true" : "false");
+                        break;
+                    case NullLiteral _:
+                        output.Append("null");
+                        break;
+                    case PseudoClassConstUse pc: // TYPE::class
+                        output.Append('"');
+                        output.Append(pc.TargetType.ToString());
+                        output.Append('"');
+                        break;
 
-                //if (element is TypeRef tref)
-                if (element is PseudoClassConstUse pc && pc.Type == PseudoClassConstUse.Types.Class) // TYPE::class
-                {
-                    return $"\"{pc.TargetType}\"";
-                }
-
-                if (element is GlobalConstUse gconst)
-                {
-                    var qname = gconst.FullName.Name.QualifiedName;
-                    if (qname.IsSimpleName)
-                    {
-                        // common constants
-                        if (qname == QualifiedName.True) return "true";
-                        if (qname == QualifiedName.False) return "false";
-                        if (qname == QualifiedName.Null) return "null";
-
-                        //// lookup constant
-                        //var csymbol = compilation.GlobalSemantics.ResolveConstant(qname.Name.Value);
-                        //if (csymbol is FieldSymbol fld && fld.HasConstantValue)
-                        //{
-                        //    return TryBindTypedConstant(target, fld.ConstantValue, out result);
-                        //}
-                    }
+                    case GlobalConstUse gconst:
+                        var qname = gconst.FullName.Name.QualifiedName;
+                        if (qname.IsSimpleName)
+                        {
+                            // common constants
+                            if (qname == QualifiedName.True) output.Append("true");
+                            else if (qname == QualifiedName.False) output.Append("false");
+                            else if (qname == QualifiedName.Null) output.Append("null");
+                            else
+                            {
+                                //// lookup constant
+                                //var csymbol = compilation.GlobalSemantics.ResolveConstant(qname.Name.Value);
+                                //if (csymbol is FieldSymbol fld && fld.HasConstantValue)
+                                //{
+                                //    return TryBindTypedConstant(target, fld.ConstantValue, out result);
+                                //}
+                                goto default;
+                            }
+                        }
+                        else
+                        {
+                            goto default;
+                        }
+                        break;
 
                     // note: namespaced constants are unreachable
+
+                    //if (element is ClassConstUse cconst)
+                    //{
+                    //    // lookup the type container
+                    //    var ctype = compilation.GetTypeFromTypeRef(cconst.TargetType);
+                    //    if (ctype.IsValidType())
+                    //    {
+                    //        // lookup constant/enum field (both are FieldSymbol)
+                    //        var member = ctype.LookupMember<FieldSymbol>(cconst.Name.Value);
+                    //        if (member != null && member.HasConstantValue)
+                    //        {
+                    //            return TryBindTypedConstant(target, member.ConstantValue, out result);
+                    //        }
+                    //    }
+                    //}
+                    case ArrayEx array:
+                        if (array.Items.Length == 0)
+                        {
+                            output.Append("[]");
+                        }
+                        else if (array.Items.All(x => x.Index == null))
+                        {
+                            output.Append('[');
+                            for (int i = 0; i < array.Items.Length; i++)
+                            {
+                                if (i != 0) output.Append(',');
+                                ExpressionToJson((Expression)array.Items[i].Value, output);
+                            }
+                            output.Append(']');
+                        }
+                        else
+                        {
+                            output.Append('{');
+                            for (int i = 0; i < array.Items.Length; i++)
+                            {
+                                if (i != 0) output.Append(',');
+                                output.Append('"');
+                                output.Append(array.Items[i].Index switch
+                                {
+                                    StringLiteral slit => slit.Value,
+                                    LongIntLiteral ilit => ilit.Value.ToString(),
+                                    null => i.ToString(),
+                                    _ => Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(array.Items[i].Index),
+                                });
+                                output.Append('"');
+                                output.Append(':');
+                                ExpressionToJson((Expression)array.Items[i].Value, output);
+                            }
+                            output.Append('}');
+                        }
+                        break;
+                    default:
+                        throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(element);
                 }
-
-                //if (element is ClassConstUse cconst)
-                //{
-                //    // lookup the type container
-                //    var ctype = compilation.GetTypeFromTypeRef(cconst.TargetType);
-                //    if (ctype.IsValidType())
-                //    {
-                //        // lookup constant/enum field (both are FieldSymbol)
-                //        var member = ctype.LookupMember<FieldSymbol>(cconst.Name.Value);
-                //        if (member != null && member.HasConstantValue)
-                //        {
-                //            return TryBindTypedConstant(target, member.ConstantValue, out result);
-                //        }
-                //    }
-                //}
-
-                if (element is ArrayEx array)
-                {
-
-                }
-
-                throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(element);
             }
 
             void AppendKey(StringBuilder json, string key)
@@ -204,23 +250,39 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             var json = new StringBuilder();
-            json.Append('{');
 
-            for (int i = 0; i < _arguments.Length; i++)
+            if (_properties.Length == 0)
             {
-                if (json.Length > 1) json.Append(',');
-                AppendKey(json, i.ToString()); // "i":
-                json.Append(ExpressionToJson(_arguments[i]));
+                // use array syntax
+                json.Append('[');
+                for (int i = 0; i < _arguments.Length; i++)
+                {
+                    if (json.Length > 1) json.Append(',');
+                    ExpressionToJson(_arguments[i], json);
+                }
+                json.Append(']');
             }
-
-            foreach (var named in _properties)
+            else
             {
-                if (json.Length > 1) json.Append(',');
-                AppendKey(json, named.Key.Value); // "i":
-                json.Append(ExpressionToJson(named.Value));
-            }
+                // use object syntax
+                json.Append('{');
 
-            json.Append('}');
+                for (int i = 0; i < _arguments.Length; i++)
+                {
+                    if (json.Length > 1) json.Append(',');
+                    AppendKey(json, i.ToString()); // "i":
+                    ExpressionToJson(_arguments[i], json);
+                }
+
+                foreach (var named in _properties)
+                {
+                    if (json.Length > 1) json.Append(',');
+                    AppendKey(json, named.Key.Value); // "i":
+                    ExpressionToJson(named.Value, json);
+                }
+
+                json.Append('}');
+            }
 
             //
             return json.ToString();
@@ -340,7 +402,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (element is LongIntLiteral llit) return TryBindTypedConstant(target, llit.Value, out result);
             if (element is DoubleLiteral dlit) return TryBindTypedConstant(target, dlit.Value, out result);
             if (element is StringLiteral slit) return TryBindTypedConstant(target, slit.Value, out result);
-            if (element is BoolLiteral blit) return TryBindTypedConstant(target, blit.Value, out result); 
+            if (element is BoolLiteral blit) return TryBindTypedConstant(target, blit.Value, out result);
             if (element is NullLiteral) return TryBindTypedConstant(target, (object)null, out result);
 
             //if (element is TypeRef tref)
