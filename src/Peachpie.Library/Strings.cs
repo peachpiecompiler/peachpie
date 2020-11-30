@@ -2223,7 +2223,7 @@ namespace Pchp.Library
         /// <param name="double_encode">When double_encode is turned off PHP will not encode existing html entities, the default is to convert everything.</param>
         /// <returns>The converted string.</returns>
         [return: NotNull]
-        public static string/*!*/htmlspecialchars(string @string, QuoteStyle flags = QuoteStyle.Compatible, string encoding = "ISO-8859-1", bool double_encode = true)
+        public static string/*!*/htmlspecialchars(string @string, QuoteStyle flags = QuoteStyle.Compatible | QuoteStyle.Html401, string encoding = "UTF-8", bool double_encode = true)
         {
             return string.IsNullOrEmpty(@string)
                 ? string.Empty
