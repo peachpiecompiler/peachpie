@@ -512,7 +512,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Populated symbol attributes.
         /// </summary>
-        ImmutableArray<AttributeData> _lazyAttributes;
+        ImmutableArray<AttributeData> _attributes;
 
         /// <summary>
         /// In case the type is declared conditionally,
@@ -552,6 +552,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             _staticsContainer = new SynthesizedStaticFieldsHolder(this);
+            _attributes = PopulateSourceAttributes();
         }
 
         /// <summary>
@@ -1076,6 +1077,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected virtual MethodSymbol CreateSourceMethod(MethodDecl m) => new SourceMethodSymbol(this, m);
 
+        ImmutableArray<AttributeData> PopulateSourceAttributes()
+        {
+            var phpattrs = Syntax.GetAttributes();
+            if (phpattrs.Count == 0)
+            {
+                return ImmutableArray<AttributeData>.Empty;
+            }
+
+            var binder = new SemanticsBinder(DeclaringCompilation, ContainingFile.SyntaxTree, locals: null, routine: null, self: this);
+            return binder.BindAttributes(phpattrs);
+        }
+
         IEnumerable<MethodSymbol> LoadMethods()
         {
             return _syntax.Members.OfType<MethodDecl>().Select(m => CreateSourceMethod(m));
@@ -1121,7 +1134,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         flist.Modifiers.GetAccessibility(), flist.PHPDoc,
                         fkind,
                         initializer: (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null,
-                        sourceAttributes: flist.GetAttributes());
+                        attributes: binder.BindAttributes(flist.GetAttributes()));
                 }
             }
 
@@ -1135,7 +1148,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         clist.Modifiers.GetAccessibility(), clist.PHPDoc,
                         PhpPropertyKind.ClassConstant,
                         initializer: binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement(),
-                        sourceAttributes: clist.GetAttributes());
+                        attributes: binder.BindAttributes(clist.GetAttributes()));
                 }
             }
         }
@@ -1645,48 +1658,40 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            if (_lazyAttributes.IsDefault)
+            var attrs = _attributes;
+
+            // [PhpTypeAttribute]
+            AttributeData phptypeattr;
+            var autoload = AutoloadFlag;
+            if (autoload == 0)
             {
-                var attrs = base.GetAttributes();
-
-                AttributeData phptypeattr;
-                var autoload = AutoloadFlag;
-                if (autoload == 0)
-                {
-                    // most common case, shorter signature:
-                    // [PhpTypeAttribute(string FullName, string FileName)]
-                    phptypeattr = new SynthesizedAttributeData(
-                        DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
-                        ImmutableArray.Create(
-                            DeclaringCompilation.CreateTypedConstant(FullNameString),
-                            DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString())
-                        ),
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-                }
-                else
-                {
-                    // [PhpTypeAttribute(string FullName, string FileName, byte Autoload)]
-                    phptypeattr = new SynthesizedAttributeData(
-                        DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string_byte,
-                        ImmutableArray.Create(
-                            DeclaringCompilation.CreateTypedConstant(FullNameString),
-                            DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString()),
-                            DeclaringCompilation.CreateTypedConstant(autoload)
-                        ),
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-                }
-
-                //
-                attrs = attrs.Add(phptypeattr);
-
-                // attributes from syntax node
-                attrs = attrs.AddRange(SemanticsBinder.BindAttributes(Syntax.GetAttributes(), ContainingFile));
-
-                //
-                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, attrs);
+                // most common case, shorter signature:
+                // [PhpTypeAttribute(string FullName, string FileName)]
+                phptypeattr = new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
+                    ImmutableArray.Create(
+                        DeclaringCompilation.CreateTypedConstant(FullNameString),
+                        DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString())
+                    ),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+            else
+            {
+                // [PhpTypeAttribute(string FullName, string FileName, byte Autoload)]
+                phptypeattr = new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string_byte,
+                    ImmutableArray.Create(
+                        DeclaringCompilation.CreateTypedConstant(FullNameString),
+                        DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString()),
+                        DeclaringCompilation.CreateTypedConstant(autoload)
+                    ),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
             }
 
-            return _lazyAttributes;
+            attrs = attrs.Add(phptypeattr);
+
+            //
+            return attrs;
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()

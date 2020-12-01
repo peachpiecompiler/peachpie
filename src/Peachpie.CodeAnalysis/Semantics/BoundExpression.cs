@@ -308,16 +308,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundFunctionCall, BoundArgument, BoundEcho, BoundConcatEx, BoundNewEx
 
-    public partial class BoundArgument : BoundOperation, IArgumentOperation, IPhpOperation
+    public partial class BoundArgument : BoundOperation, IArgumentOperation, IPhpArgumentOperation
     {
         public ArgumentKind ArgumentKind { get; private set; }
 
         public CommonConversion InConversion => default(CommonConversion);
 
-        /// <summary>
-        /// Variable unpacking in PHP, the triple-dot syntax.
-        /// </summary>
+        /// <inheritdoc/>
         public bool IsUnpacking => this.ArgumentKind == ArgumentKind.ParamArray;
+
+        /// <inheritdoc/>
+        public string ParameterName { get; }
 
         public override OperationKind Kind => OperationKind.Argument;
 
@@ -340,28 +341,29 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Creates the argument.
         /// </summary>
-        public static BoundArgument Create(BoundExpression value)
+        public static BoundArgument Create(BoundExpression value, string name = null)
         {
-            return new BoundArgument(value, ArgumentKind.Explicit);
+            return new BoundArgument(value, ArgumentKind.Explicit, name);
         }
 
         /// <summary>
         /// Creates the argument that will be unpacked.
         /// The argument is an array which elements will be passed as actual arguments.
         /// </summary>
-        public static BoundArgument CreateUnpacking(BoundExpression value)
+        public static BoundArgument CreateUnpacking(BoundExpression value, string name = null)
         {
             Debug.Assert(!value.Access.IsReadRef);
-            return new BoundArgument(value, ArgumentKind.ParamArray);
+            return new BoundArgument(value, ArgumentKind.ParamArray, name);
         }
 
-        private BoundArgument(BoundExpression value, ArgumentKind kind = ArgumentKind.Explicit)
+        private BoundArgument(BoundExpression value, ArgumentKind kind = ArgumentKind.Explicit, string name = null)
         {
             Contract.ThrowIfNull(value);
             Debug.Assert(value.Access.IsRead);  // we do not support OUT parameters in PHP I guess, just aliasing ~ IsReadRef
 
             this.Value = value;
             this.ArgumentKind = kind;
+            this.ParameterName = name;
         }
 
         public BoundArgument Update(BoundExpression value, ArgumentKind kind)
@@ -372,7 +374,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundArgument(value, kind);
+                return new BoundArgument(value, kind, ParameterName);
             }
         }
 

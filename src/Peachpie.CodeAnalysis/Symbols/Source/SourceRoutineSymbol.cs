@@ -48,9 +48,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_cfg == null && this.Statements != null) // ~ Statements => non abstract method
                 {
                     // build control flow graph
-                    var cfg = new ControlFlowGraph(
-                        this.Statements,
-                        SemanticsBinder.Create(DeclaringCompilation, ContainingFile.SyntaxTree, LocalsTable, ContainingType as SourceTypeSymbol));
+                    var cfg = new ControlFlowGraph(this.Statements, CreateBinder(true));
 
                     // create initial flow state
                     cfg.Start.FlowState = StateBinder.CreateInitialState(this);
@@ -62,6 +60,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 //
                 return _cfg;
             }
+        }
+
+        protected SemanticsBinder CreateBinder(bool locals)
+        {
+            return SemanticsBinder.Create(DeclaringCompilation, ContainingFile.SyntaxTree, locals ? LocalsTable : null, ContainingType as SourceTypeSymbol);
         }
 
         /// <summary>
@@ -462,30 +465,32 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override TypeSymbol ReturnType => PhpRoutineSymbolExtensions.ConstructClrReturnType(this);
 
+        ImmutableArray<AttributeData> PopulateSourceAttributes()
+        {
+            var attrs = ImmutableArray<AttributeData>.Empty;
+
+            var phpattrs = Syntax.GetAttributes();
+            if (phpattrs.Count != 0)
+            {
+                attrs = attrs.AddRange(CreateBinder(false).BindAttributes(phpattrs));
+            }
+
+            // attributes from PHPDoc
+            var deprecated = PHPDocBlock?.GetElement<PHPDocBlock.DeprecatedTag>();
+            if (deprecated != null)
+            {
+                // [ObsoleteAttribute(message, false)]
+                attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
+            }
+
+            return attrs;
+        }
+
         public override ImmutableArray<AttributeData> GetAttributes()
         {
             if (_lazyAttributes.IsDefault)
             {
-                var attrs = base.GetAttributes();
-
-                // attributes from syntax node
-                attrs = attrs.AddRange(SemanticsBinder.BindAttributes(Syntax.GetAttributes(), ContainingFile));
-
-                // attributes from PHPDoc
-                var phpdoc = this.PHPDocBlock;
-                if (phpdoc != null)
-                {
-                    var deprecated = phpdoc.GetElement<PHPDocBlock.DeprecatedTag>();
-                    if (deprecated != null)
-                    {
-                        // [ObsoleteAttribute(message, false)]
-                        attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
-                    }
-
-                    // ...
-                }
-
-                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, attrs);
+                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, PopulateSourceAttributes());
             }
 
             //
