@@ -565,10 +565,10 @@ namespace Pchp.Core
         public string TypeName { get; }
 
         /// <summary>
-        /// The attribute arguments.
+        /// The attribute arguments encoded as JSON string.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public PhpArray Arguments { get; }
+        public byte[] Arguments { get; }
 
         /// <summary>
         /// Initializes the custom attribute data.
@@ -578,7 +578,7 @@ namespace Pchp.Core
         public PhpCustomAtribute(string typename, byte[] utf8value)
         {
             TypeName = typename ?? throw new ArgumentNullException(nameof(typename));
-            Arguments = Utilities.PhpValueUtils.CreateFromJson(utf8value.AsSpan()).ToArray();
+            Arguments = utf8value ?? Array.Empty<byte>();
         }
     }
 }

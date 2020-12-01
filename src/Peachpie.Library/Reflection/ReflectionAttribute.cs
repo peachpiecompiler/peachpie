@@ -60,12 +60,24 @@ namespace Pchp.Library.Reflection
         {
             if (_attribute is PhpCustomAtribute phpattr)
             {
-                return phpattr.Arguments.DeepCopy();
+                if (phpattr.Arguments == null || phpattr.Arguments.Length == 0)
+                {
+                    return PhpArray.NewEmpty();
+                }
+
+                // {phpattr.Arguments} is JSON-encoded array
+
+                if (PhpSerialization.JsonSerializer.ObjectReader.Deserialize(
+                    phpattr.Arguments.AsSpan(),
+                    default,
+                    JsonSerialization.JsonDecodeOptions.JSON_OBJECT_AS_ARRAY | JsonSerialization.JsonDecodeOptions.JSON_THROW_ON_ERROR)
+                    .IsPhpArray(out var array) && array != null)
+                {
+                    return array;
+                }
             }
-            else
-            {
-                throw new NotImplementedException();
-            }
+
+            throw new NotImplementedException();
         }
     }
 }
