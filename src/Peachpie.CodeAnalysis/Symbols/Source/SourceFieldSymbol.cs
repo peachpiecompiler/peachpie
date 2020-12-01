@@ -73,6 +73,11 @@ namespace Pchp.CodeAnalysis.Symbols
         ImmutableArray<AttributeData> _attributes;
 
         /// <summary>
+        /// Gets enumeration of property source attributes.
+        /// </summary>
+        public IEnumerable<SourceCustomAttribute> SourceAttributes => _attributes.OfType<SourceCustomAttribute>();
+
+        /// <summary>
         /// Gets value indicating whether this field redefines a field from a base type.
         /// </summary>
         public bool IsRedefinition => !ReferenceEquals(OverridenDefinition, null);

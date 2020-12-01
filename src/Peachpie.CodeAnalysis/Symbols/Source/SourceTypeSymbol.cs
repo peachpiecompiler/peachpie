@@ -512,7 +512,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Populated symbol attributes.
         /// </summary>
-        ImmutableArray<AttributeData> _attributes;
+        ImmutableArray<AttributeData> _lazyAttributes;
 
         /// <summary>
         /// In case the type is declared conditionally,
@@ -552,7 +552,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             _staticsContainer = new SynthesizedStaticFieldsHolder(this);
-            _attributes = PopulateSourceAttributes();
         }
 
         /// <summary>
@@ -1656,9 +1655,22 @@ namespace Pchp.CodeAnalysis.Symbols
             return 0;
         }
 
+        public ImmutableArray<AttributeData> SourceAttributes
+        {
+            get
+            {
+                if (_lazyAttributes.IsDefault)
+                {
+                    ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, PopulateSourceAttributes());
+                }
+
+                return _lazyAttributes;
+            }
+        }
+
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            var attrs = _attributes;
+            var attrs = SourceAttributes;
 
             // [PhpTypeAttribute]
             AttributeData phptypeattr;
