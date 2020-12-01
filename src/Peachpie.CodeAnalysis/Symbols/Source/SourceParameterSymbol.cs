@@ -39,6 +39,11 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly BoundExpression _initializer;
 
         /// <summary>
+        /// Gets enumeration of parameter source attributes.
+        /// </summary>
+        public IEnumerable<SourceCustomAttribute> SourceAttributes => _attributes.OfType<SourceCustomAttribute>();
+
+        /// <summary>
         /// Whether the parameter needs to be copied when passed by value.
         /// Can be set to <c>false</c> by analysis (e.g. unused parameter or only delegation to another method).
         /// </summary>

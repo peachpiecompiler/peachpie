@@ -322,6 +322,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 foreach (var a in g.Attributes)
                 {
                     var attribute = new SourceCustomAttribute(
+                        DeclaringCompilation,
+                        Self,
                         BoundTypeRefFactory.CreateFromTypeRef(a.ClassRef, this, Self),
                         BindArguments(a.CallSignature.Parameters));
 

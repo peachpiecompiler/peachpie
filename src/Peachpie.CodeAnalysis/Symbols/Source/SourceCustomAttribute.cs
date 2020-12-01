@@ -12,28 +12,38 @@ using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    sealed class SourceCustomAttribute : BaseAttributeData
+    sealed partial class SourceCustomAttribute : BaseAttributeData
     {
         readonly IBoundTypeRef _tref;
+
         readonly ImmutableArray<BoundArgument> _arguments;
 
+        readonly PhpCompilation _compilation;
+
+        /// <summary>
+        /// Attribute arguments.
+        /// </summary>
+        public ImmutableArray<BoundArgument> Arguments => _arguments;
 
         NamedTypeSymbol _type;
         MethodSymbol _ctor;
         ImmutableArray<TypedConstant> _ctorArgs;
         ImmutableArray<KeyValuePair<string, TypedConstant>> _namedArgs;
 
-        public SourceCustomAttribute(IBoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
+        public SourceCustomAttribute(PhpCompilation compilation, SourceTypeSymbol containingType, IBoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
         {
+            _compilation = compilation;
             _tref = tref;
             _arguments = arguments;
+
+            TypeCtx = new FlowAnalysis.TypeRefContext(compilation, containingType);
         }
 
         #region Bind to Symbol and TypedConstant
 
-        internal void Bind(PhpCompilation compilation)
+        bool Bind()
         {
-            Contract.ThrowIfNull(compilation);
+            var compilation = _compilation;
 
             if (_type == null)
             {
@@ -97,6 +107,9 @@ namespace Pchp.CodeAnalysis.Symbols
                         compilation.CreateTypedConstant(Encoding.UTF8.GetBytes(ArgumentsToJson())));
                 }
             }
+
+            //
+            return _type != null;
         }
 
         /// <summary>Simple AST to JSON serialization.</summary>
@@ -108,6 +121,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     switch (element.ConstantValue.Value)
                     {
+                        case int i:
+                            output.Append(i);
+                            break;
                         case long l:
                             output.Append(l);
                             break;
@@ -403,15 +419,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
-        public override NamedTypeSymbol AttributeClass => _type ?? throw ExceptionUtilities.Unreachable;
+        public override NamedTypeSymbol AttributeClass => Bind() ? _type : throw ExceptionUtilities.Unreachable;
 
-        public override MethodSymbol AttributeConstructor => _ctor ?? throw ExceptionUtilities.Unreachable;
+        public override MethodSymbol AttributeConstructor => Bind() ? _ctor : throw ExceptionUtilities.Unreachable;
 
         public override SyntaxReference ApplicationSyntaxReference => throw new NotImplementedException();
 
-        protected internal override ImmutableArray<TypedConstant> CommonConstructorArguments => _ctorArgs;
+        protected internal override ImmutableArray<TypedConstant> CommonConstructorArguments => Bind() ? _ctorArgs : throw ExceptionUtilities.Unreachable;
 
-        protected internal override ImmutableArray<KeyValuePair<string, TypedConstant>> CommonNamedArguments => _namedArgs;
+        protected internal override ImmutableArray<KeyValuePair<string, TypedConstant>> CommonNamedArguments => Bind() ? _namedArgs : throw ExceptionUtilities.Unreachable;
 
         internal override int GetTargetAttributeSignatureIndex(Symbol targetSymbol, AttributeDescription description)
         {

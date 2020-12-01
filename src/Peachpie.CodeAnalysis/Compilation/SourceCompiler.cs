@@ -125,6 +125,21 @@ namespace Pchp.CodeAnalysis
                 {
                     EnqueueExpression(p.Initializer, routine.TypeRefContext);
                 }
+
+                EnqueueAttributes(p.SourceAttributes);
+            }
+
+            EnqueueAttributes(routine.SourceAttributes);
+        }
+
+        void EnqueueAttributes(IEnumerable<SourceCustomAttribute> attributes)
+        {
+            foreach (var attr in attributes)
+            {
+                foreach (var a in attr.Arguments)
+                {
+                    EnqueueExpression(a.Value, attr.TypeCtx);
+                }
             }
         }
 
@@ -147,9 +162,9 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
-        /// Enqueues initializers of a class fields and constants.
+        /// Enqueues initializers of a class fields and constants, and type custom attributes.
         /// </summary>
-        void EnqueueFieldsInitializer(SourceTypeSymbol type)
+        void EnqueueType(SourceTypeSymbol type)
         {
             type.GetDeclaredMembers().OfType<SourceFieldSymbol>().ForEach(f =>
             {
@@ -159,7 +174,11 @@ namespace Pchp.CodeAnalysis
                         f.Initializer,
                         f.EnsureTypeRefContext());
                 }
+
+                EnqueueAttributes(f.SourceAttributes);
             });
+
+            EnqueueAttributes(type.SourceAttributes.OfType<SourceCustomAttribute>());
         }
 
         internal void ReanalyzeMethods()
@@ -468,7 +487,7 @@ namespace Pchp.CodeAnalysis
                 //   a. construct CFG, bind AST to Operation
                 //   b. declare table of local variables
                 compiler.WalkMethods(compiler.EnqueueRoutine, allowParallel: true);
-                compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
+                compiler.WalkTypes(compiler.EnqueueType, allowParallel: true);
             }
 
             // Repeat analysis and transformation until either the limit is met or there are no more changes

@@ -465,6 +465,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override TypeSymbol ReturnType => PhpRoutineSymbolExtensions.ConstructClrReturnType(this);
 
+        /// <summary>
+        /// Gets enumeration of function attributes.
+        /// </summary>
+        public IEnumerable<SourceCustomAttribute> SourceAttributes => GetAttributes().OfType<SourceCustomAttribute>();
+
         ImmutableArray<AttributeData> PopulateSourceAttributes()
         {
             var attrs = ImmutableArray<AttributeData>.Empty;
