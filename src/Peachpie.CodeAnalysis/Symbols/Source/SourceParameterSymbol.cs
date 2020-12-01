@@ -123,7 +123,6 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(syntax);
             Debug.Assert(relindex >= 0);
 
-            var phpattrs = Syntax.GetAttributes();
 
             _routine = routine;
             _syntax = syntax;
@@ -135,6 +134,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     .SingleBoundElement()
                 : null;
 
+            var phpattrs = _syntax.GetAttributes();
             _attributes = phpattrs.Count != 0
                 ? new SemanticsBinder(DeclaringCompilation, routine.ContainingFile.SyntaxTree, locals: null, routine: routine, self: routine.ContainingType as SourceTypeSymbol)
                     .BindAttributes(phpattrs)
