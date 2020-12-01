@@ -70,8 +70,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly BoundExpression _initializer;
 
-        IReadOnlyList<IAttributeGroup> _sourceAttributes;
-        ImmutableArray<AttributeData> _lazyAttributes;
+        ImmutableArray<AttributeData> _attributes;
 
         /// <summary>
         /// Gets value indicating whether this field redefines a field from a base type.
@@ -156,7 +155,7 @@ namespace Pchp.CodeAnalysis.Symbols
             SourceTypeSymbol type, string name, Location location, Accessibility accessibility,
             PHPDocBlock phpdoc, PhpPropertyKind kind,
             BoundExpression initializer = null,
-            IReadOnlyList<IAttributeGroup> sourceAttributes = null)
+            ImmutableArray<AttributeData> attributes = default)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(name);
@@ -167,8 +166,16 @@ namespace Pchp.CodeAnalysis.Symbols
             _accessibility = accessibility;
             _initializer = initializer;
             _location = location;
-            _sourceAttributes = sourceAttributes;
+            _attributes = attributes;
             PHPDocBlock = phpdoc;
+
+            // implicit attributes from PHPDoc
+            var deprecated = phpdoc?.GetElement<PHPDocBlock.DeprecatedTag>();
+            if (deprecated != null)
+            {
+                // [ObsoleteAttribute(message, false)]
+                _attributes = _attributes.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
+            }
         }
 
         #region FieldSymbol
@@ -203,34 +210,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override int? TypeLayoutOffset => null;
 
-        public override ImmutableArray<AttributeData> GetAttributes()
-        {
-            if (_lazyAttributes.IsDefault)
-            {
-                var attrs = ImmutableArray<AttributeData>.Empty;
-
-                // populate attributes
-                attrs = attrs.AddRange(SemanticsBinder.BindAttributes(_sourceAttributes, _containingType.ContainingFile));
-
-                // implicit attributes from PHPDoc
-                if (PHPDocBlock != null)
-                {
-                    var deprecated = PHPDocBlock.GetElement<PHPDocBlock.DeprecatedTag>();
-                    if (deprecated != null)
-                    {
-                        // [ObsoleteAttribute(message, false)]
-                        attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
-                    }
-
-                    // ...
-                }
-
-                //
-                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, attrs);
-            }
-
-            return _lazyAttributes;
-        }
+        public override ImmutableArray<AttributeData> GetAttributes() => _attributes;
 
         #endregion
 

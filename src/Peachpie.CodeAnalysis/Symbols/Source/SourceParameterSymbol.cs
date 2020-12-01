@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.Symbols
         
         internal PHPDocBlock.ParamTag PHPDoc { get; }
 
-        ImmutableArray<AttributeData> _lazyAttributes;
+        ImmutableArray<AttributeData> _attributes;
 
         TypeSymbol _lazyType;
 
@@ -118,14 +118,23 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(syntax);
             Debug.Assert(relindex >= 0);
 
+            var phpattrs = Syntax.GetAttributes();
+
             _routine = routine;
             _syntax = syntax;
             _relindex = relindex;
+
             _initializer = (syntax.InitValue != null)
                 ? new SemanticsBinder(DeclaringCompilation, routine.ContainingFile.SyntaxTree, locals: null, routine: null, self: routine.ContainingType as SourceTypeSymbol)
                     .BindWholeExpression(syntax.InitValue, BoundAccess.Read)
                     .SingleBoundElement()
                 : null;
+
+            _attributes = phpattrs.Count != 0
+                ? new SemanticsBinder(DeclaringCompilation, routine.ContainingFile.SyntaxTree, locals: null, routine: routine, self: routine.ContainingType as SourceTypeSymbol)
+                    .BindAttributes(phpattrs)
+                : ImmutableArray<AttributeData>.Empty;
+
             PHPDoc = ptagOpt;
         }
 
@@ -301,19 +310,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override ImmutableArray<AttributeData> GetAttributes()
-        {
-            var attrs = _lazyAttributes;
-            if (attrs.IsDefault)
-            {
-                attrs = SemanticsBinder.BindAttributes(Syntax.GetAttributes(), _routine.ContainingFile);
-
-                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, attrs);
-            }
-
-            return _lazyAttributes;
-        }
-
+        public override ImmutableArray<AttributeData> GetAttributes() => _attributes;
+        
         internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
         {
             // [param]   
