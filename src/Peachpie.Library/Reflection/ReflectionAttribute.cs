@@ -16,6 +16,21 @@ namespace Pchp.Library.Reflection
 
         readonly private protected Attribute _attribute;
 
+        public string name
+        {
+            get
+            {
+                if (_attribute is PhpCustomAtribute phpattr)
+                {
+                    return phpattr.TypeName;
+                }
+                else
+                {
+                    return _attribute.GetPhpTypeInfo().Name;
+                }
+            }
+        }
+
         internal ReflectionAttribute(Attribute attribute)
         {
             _attribute = attribute;
@@ -24,17 +39,7 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets the attribute name.
         /// </summary>
-        public string getName()
-        {
-            if (_attribute is PhpCustomAtribute phpattr)
-            {
-                return phpattr.TypeName;
-            }
-            else
-            {
-                return _attribute.GetPhpTypeInfo().Name;
-            }
-        }
+        public string getName() => name;
 
         /// <summary>
         /// Creates instance of the attribute class.
