@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using Pchp.Core;
+﻿using Pchp.Core;
 using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
@@ -31,6 +29,7 @@ namespace Pchp.Library.Reflection
         {
             get
             {
+                Debug.Assert(_tinfo != null);
                 return _tinfo.Name;
             }
             //set
@@ -62,6 +61,9 @@ namespace Pchp.Library.Reflection
 
         internal ReflectionMethod(PhpTypeInfo tinfo, RoutineInfo routine)
         {
+            Debug.Assert(tinfo != null);
+            Debug.Assert(routine != null);
+
             _tinfo = tinfo;
             _routine = routine;
         }
@@ -124,7 +126,7 @@ namespace Pchp.Library.Reflection
             throw new NotImplementedException();
         }
         public ReflectionClass getDeclaringClass() => new ReflectionClass(_tinfo);
-        public override string? getFileName(Context ctx)
+        public override string getFileName(Context ctx)
         {
             var path = _tinfo.RelativePath;
 
@@ -172,7 +174,7 @@ namespace Pchp.Library.Reflection
             }
 
             // then base classes:
-            RoutineInfo? prototype = null;
+            RoutineInfo prototype = null;
             for (var t = _tinfo.BaseType; t != null; t = t.BaseType)
             {
                 var r = t.RuntimeMethods[name];

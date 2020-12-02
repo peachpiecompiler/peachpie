@@ -7,8 +7,6 @@ using System.Text;
 using Pchp.Core;
 using Pchp.Library.Resources;
 
-#nullable enable
-
 namespace Pchp.Library.DateTime
 {
     /// <summary>
@@ -279,7 +277,7 @@ namespace Pchp.Library.DateTime
             return new DateInterval(scanner.Time, negative: false);
         }
 
-        public virtual string format(string? format)
+        public virtual string format(string format)
         {
             if (string.IsNullOrEmpty(format))
             {
@@ -290,7 +288,7 @@ namespace Pchp.Library.DateTime
             bool percent = false;
             var result = StringBuilderUtilities.Pool.Get();
 
-            foreach (char ch in format!)
+            foreach (char ch in format)
             {
                 if (percent)
                 {

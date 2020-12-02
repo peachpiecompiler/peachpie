@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Pchp.Core;
@@ -20,7 +18,7 @@ namespace Peachpie.Library.MySql.MySqli
         {
             public static MySqliContextData/*!*/GetContextData(Context ctx) => ctx.GetStatic<MySqliContextData>();
 
-            public string? LastConnectionError { get; set; }
+            public string LastConnectionError { get; set; }
         }
 
         /// <summary>
@@ -52,13 +50,13 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Opens a connection to a mysql server
         /// </summary>
-        public static bool mysqli_real_connect(Context ctx, mysqli link, string? host = null, string? username = null, string? passwd = null, string dbname = "", int port = -1, string? socket = null, int flags = 0)
+        public static bool mysqli_real_connect(Context ctx, mysqli link, string host = null, string username = null, string passwd = null, string dbname = "", int port = -1, string socket = null, int flags = 0)
             => link.real_connect(ctx, host, username, passwd, dbname, port, socket, flags);
 
         /// <summary>
         /// Opens a connection to a mysql server
         /// </summary>
-        public static mysqli? mysqli_connect(Context ctx, string? host = null, string? username = null, string? passwd = null, string dbname = "", int port = -1, string? socket = null, int flags = 0)
+        public static mysqli mysqli_connect(Context ctx, string host = null, string username = null, string passwd = null, string dbname = "", int port = -1, string socket = null, int flags = 0)
         {
             var link = new mysqli(ctx, host, username, passwd, dbname, port, socket);
             return (string.IsNullOrEmpty(link.connect_error)) ? link : null;
@@ -87,13 +85,13 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// The connection error message. Otherwise <c>null</c>.
         /// </summary>
-        public static string? mysqli_connect_error(Context ctx, mysqli? link = null)
+        public static string mysqli_connect_error(Context ctx, mysqli link = null)
             => (link != null) ? link.connect_error : MySqliContextData.GetContextData(ctx).LastConnectionError;
 
         /// <summary>
         /// Returns the error code from last connect call.
         /// </summary>
-        public static int mysqli_connect_errno(Context ctx, mysqli? link = null)
+        public static int mysqli_connect_errno(Context ctx, mysqli link = null)
             => (link != null)
                 ? link.connect_errno
                 : string.IsNullOrEmpty(MySqliContextData.GetContextData(ctx).LastConnectionError) ? 0 : -1;
@@ -126,12 +124,12 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Get MySQL client info.
         /// </summary>
-        public static string mysqli_get_client_info(mysqli? link = null) => mysqli.ClientInfo;
+        public static string mysqli_get_client_info(mysqli link = null) => mysqli.ClientInfo;
 
         /// <summary>
         /// Returns the MySQL client version as an integer.
         /// </summary>
-        public static int mysqli_get_client_version(mysqli? link = null) => mysqli.ClientVersion;
+        public static int mysqli_get_client_version(mysqli link = null) => mysqli.ClientVersion;
 
         /// <summary>
         /// Returns the default character set for the database connection.
@@ -203,14 +201,14 @@ namespace Peachpie.Library.MySql.MySqli
         /// Used for establishing secure connections using SSL
         /// </summary>
         /// <returns>Always true.</returns>
-        public static bool mysqli_ssl_set(mysqli link, string? key = null, string? cert = null, string? ca = null, string? capath = null, string? cipher = null)
+        public static bool mysqli_ssl_set(mysqli link, string key = null, string cert = null, string ca = null, string capath = null, string cipher = null)
             => link.ssl_set(key, cert, ca, capath, cipher);
 
         /// <summary>
         /// Prepare an SQL statement for execution.
         /// </summary>
         //[return: CastToFalse]
-        public static mysqli_stmt mysqli_prepare(mysqli link, string? query = null) => new mysqli_stmt(link, query);
+        public static mysqli_stmt mysqli_prepare(mysqli link, string query = null) => new mysqli_stmt(link, query);
 
         /// <summary>
         /// Prepare an SQL statement for execution.
@@ -256,7 +254,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// Gets a result set from a prepared statement.
         /// </summary>
         [return: CastToFalse]
-        public static mysqli_result? mysqli_stmt_get_result(mysqli_stmt stmt) => stmt.get_result();
+        public static mysqli_result mysqli_stmt_get_result(mysqli_stmt stmt) => stmt.get_result();
 
         /// <summary>
         /// Fetch a result row as an associative array.
@@ -286,7 +284,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Returns the current row of a result set as an object.
         /// </summary>
-        public static object mysqli_fetch_object(mysqli_result result, string? class_name = null, PhpArray? class_params = null) => result.fetch_object(class_name, class_params);
+        public static object mysqli_fetch_object(mysqli_result result, string class_name = null, PhpArray class_params = null) => result.fetch_object(class_name, class_params);
 
         /// <summary>
         /// Returns an array of objects representing the fields in a result set.

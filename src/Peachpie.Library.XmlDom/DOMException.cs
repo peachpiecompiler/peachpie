@@ -134,7 +134,6 @@ namespace Peachpie.Library.XmlDom
         /// <param name="code">The exception code.</param>
         /// <exception cref="DOMException"/>
         /// <exception cref="ArgumentException">If the <paramref name="code"/> is invalid.</exception>
-        //[DoesNotReturn] // TODO: NETSTANDARD2.1
         internal static void Throw(ExceptionCode code)
         {
             string msg;
@@ -171,7 +170,6 @@ namespace Peachpie.Library.XmlDom
         /// <param name="code">The exception code.</param>
         /// <param name="message">The exception message.</param>
         /// <exception cref="DOMException"/>
-        //[DoesNotReturn] // TODO: NETSTANDARD2.1
         internal static void Throw(ExceptionCode code, string message)
         {
             throw new DOMException(message, (long)code);

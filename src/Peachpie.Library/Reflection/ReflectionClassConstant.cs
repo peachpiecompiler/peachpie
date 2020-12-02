@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -27,6 +25,7 @@ namespace Pchp.Library.Reflection
 
         internal ReflectionClassConstant(PhpPropertyInfo pinfo)
         {
+            Debug.Assert(pinfo != null);
             _pinfo = pinfo;
         }
 

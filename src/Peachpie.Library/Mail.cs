@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -18,7 +16,7 @@ namespace Pchp.Library
     [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Mail
     {
-        public static bool mail(Context ctx, string to, string subject, string message, string? additional_headers = null, string? additional_parameters = null)
+        public static bool mail(Context ctx, string to, string subject, string message, string additional_headers = null, string additional_parameters = null)
         {
             // to and subject cannot contain newlines, replace with spaces
             to = (to != null) ? to.Replace("\r\n", " ").Replace('\n', ' ') : "";
@@ -343,14 +341,14 @@ namespace Pchp.Library
             /// <summary>
             /// Gets a list of SMTP extensions supported by current connection.
             /// </summary>
-            public string[]? Extensions { get { return _extensions; } }
-            private string[]? _extensions;
+            public string[] Extensions { get { return _extensions; } }
+            private string[] _extensions;
 
-            private TextReader? _reader;
-            private TextWriter? _writer;
+            private TextReader _reader;
+            private TextWriter _writer;
 
-            private Socket? _socket;
-            private NetworkStream? _stream;
+            private Socket _socket;
+            private NetworkStream _stream;
 
             public RawSmtpClient(string hostName)
                 : this(hostName, 25)
@@ -419,7 +417,7 @@ namespace Pchp.Library
                 if (_connected)
                 {
                     // check whether the socket is OK
-                    bool error = _socket!.Poll(_pollTime, SelectMode.SelectError);
+                    bool error = _socket.Poll(_pollTime, SelectMode.SelectError);
 
                     if (!error)
                         // ok, we keep this connection
@@ -430,7 +428,7 @@ namespace Pchp.Library
                 }
 
                 // resolve host's domain
-                IPAddress[]? addresses = null;
+                IPAddress[] addresses = null;
 
                 try
                 {
@@ -583,7 +581,7 @@ namespace Pchp.Library
             {
                 if (!_connected) return;
 
-                if (_reader!.Peek() != -1)
+                if (_reader.Peek() != -1)
                 {
                     // there is something on the input (should be empty)
                     ResetConnection();
@@ -606,7 +604,7 @@ namespace Pchp.Library
             /// <param name="headers">Additional headers.</param>
             /// <param name="body">Message body.</param>
             /// <returns>List of message body lines.</returns>
-            private IEnumerable<string>/*!*/ProcessMessageHeaders(string from, string to, string subject, string? headers, string body)
+            private IEnumerable<string>/*!*/ProcessMessageHeaders(string from, string to, string subject, string headers, string body)
             {
                 Dictionary<string, int> headerHashtable = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 List<KeyValuePair<string, string>> headerList = new List<KeyValuePair<string, string>>();
@@ -694,6 +692,9 @@ namespace Pchp.Library
             /// <returns>Formatted email address.</returns>
             private static string FormatEmailAddress(string/*!*/address, string/*!*/formatString)
             {
+                Debug.Assert(address != null, "address == null");
+                Debug.Assert(formatString != null, "formatString == null");
+
                 int a, b;
                 if ((a = address.IndexOf('<')) >= 0 && (b = address.IndexOf('>', a)) >= 0)
                     address = address.Substring(a + 1, b - a - 1);
@@ -709,7 +710,7 @@ namespace Pchp.Library
             /// <param name="line"><see cref="String"/> to be written onto the internal writer.</param>
             private void Post(string line)
             {
-                this._writer!.WriteLine(line);
+                this._writer.WriteLine(line);
                 this._writer.Flush();
             }
 
@@ -731,9 +732,11 @@ namespace Pchp.Library
                 throw new RawSmtpException(string.Format("Expected response {0}, '{1}' given.", expectedStr, givenResponse));
             }
 
-            private bool Ack(string? expected1, string? expected2, Action<string>/*!*/fail)
+            private bool Ack(string expected1, string expected2, Action<string>/*!*/fail)
             {
-                var line = _reader!.ReadLine();
+                Debug.Assert(fail != null);
+
+                var line = _reader.ReadLine();
 
                 if (expected1 != null && line.StartsWith(expected1, StringComparison.Ordinal))
                     return true; // ok
@@ -769,7 +772,7 @@ namespace Pchp.Library
             /// </summary>
             /// <remarks>On eny error an exception is thrown.</remarks>
             /// <exception cref="RawSmtpException">When any error occures during the mail send.</exception>
-            public void SendMessage(string from, string to, string subject, string? headers, string body)
+            public void SendMessage(string from, string to, string subject, string headers, string body)
             {
                 //
                 // see http://email.about.com/cs/standards/a/smtp_error_code_2.htm for response codes.
@@ -797,14 +800,14 @@ namespace Pchp.Library
 
                     // if SP character is on the first place, we need to duplicate it
                     if (dataLine.Length > 0 && dataLine[0] == '.')
-                        _writer!.Write('.');
+                        _writer.Write('.');
 
                     // according to MIME, the lines must not be longer than 998 characters (1000 including CRLF)
                     // so we need to break such lines using folding
                     while (dataLine.Length - lineStart > maxLineLength - correction)
                     {
                         //break the line, inserting FWS sequence
-                        _writer!.WriteLine(dataLine.Substring(lineStart, maxLineLength - correction));
+                        _writer.WriteLine(dataLine.Substring(lineStart, maxLineLength - correction));
                         _writer.Write(' ');
                         lineStart += maxLineLength - correction;
 
@@ -813,13 +816,13 @@ namespace Pchp.Library
                     }
 
                     //output the rest of the line
-                    _writer!.WriteLine(dataLine.Substring(lineStart));
+                    _writer.WriteLine(dataLine.Substring(lineStart));
 
                     // flush the stream
                     _writer.Flush();
                 }
 
-                _writer!.WriteLine(".");
+                _writer.WriteLine(".");
 
                 // flush the stream
                 _writer.Flush();
@@ -839,7 +842,7 @@ namespace Pchp.Library
         /// <summary>
         /// Parses an address string.
         /// </summary>
-        public static PhpArray imap_rfc822_parse_adrlist(string addresses, string? default_host = null)
+        public static PhpArray imap_rfc822_parse_adrlist(string addresses, string default_host = null)
         {
             if (string.IsNullOrEmpty(addresses))
             {

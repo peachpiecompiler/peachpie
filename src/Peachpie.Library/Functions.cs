@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using Pchp.Core;
+﻿using Pchp.Core;
 using Pchp.Core.Reflection;
 using Pchp.Core.Resources;
 using Pchp.Library.Resources;

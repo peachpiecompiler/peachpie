@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using Pchp.Core;
+﻿using Pchp.Core;
 using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
@@ -72,20 +70,20 @@ namespace Pchp.Library.Reflection
             return 0;
         }
 
-        public ReflectionExtension? getExtension()
+        public ReflectionExtension getExtension()
         {
             var extname = getExtensionName();
             return extname != null ? new ReflectionExtension(extname) : null;
         }
         [return: CastToFalse]
-        public string? getExtensionName()
+        public string getExtensionName()
         {
             var containingType = _routine.Methods[0].DeclaringType;
             var extensionName = containingType.GetCustomAttribute<PhpExtensionAttribute>(false)?.FirstExtensionOrDefault;
 
             return extensionName;
         }
-        public virtual string? getFileName(Context ctx) { throw new NotImplementedException(); }
+        public virtual string getFileName(Context ctx) { throw new NotImplementedException(); }
         public string getName() => name;
         public string getNamespaceName()
         {
@@ -154,7 +152,7 @@ namespace Pchp.Library.Reflection
 
             return arr;
         }
-        public virtual ReflectionType? getReturnType()
+        public virtual ReflectionType getReturnType()
         {
             return ResolveReturnType(out var t, out var notNullFlag) ? new ReflectionNamedType(t, notNullFlag) : null;
         }

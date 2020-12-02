@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using Pchp.Core;
+﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -86,7 +84,7 @@ namespace Pchp.Library
         /// <param name="path">A <see cref="string"/> containing a path to a file.</param>
         /// <param name="suffix">A <see cref="string"/> containing suffix to be cut off the path if present.</param>
         /// <returns>The path conponent of the given <paramref name="path"/>.</returns>
-        public static string basename(string path, string? suffix = null)
+        public static string basename(string path, string suffix = null)
         {
             if (string.IsNullOrEmpty(path)) return string.Empty;
 
@@ -99,7 +97,7 @@ namespace Pchp.Library
 
             int name_length = end - start + 1;
             if (!string.IsNullOrEmpty(suffix) &&
-                suffix!.Length < name_length &&
+                suffix.Length < name_length &&
                 String.Compare(path, end - suffix.Length + 1, suffix, 0, suffix.Length, StringComparison.CurrentCultureIgnoreCase) == 0)
             {
                 name_length -= suffix.Length;
@@ -188,7 +186,7 @@ namespace Pchp.Library
         public static PhpValue pathinfo(string path, PathInfoOptions options = PathInfoOptions.All)
         {
             // collect strings
-            string? dirname = null, basename = null, extension = null, filename = null;
+            string dirname = null, basename = null, extension = null, filename = null;
 
             if ((options & PathInfoOptions.BaseName) != 0 ||
                 (options & PathInfoOptions.Extension) != 0 ||
@@ -200,14 +198,14 @@ namespace Pchp.Library
 
             if ((options & PathInfoOptions.Extension) != 0)
             {
-                int last_dot = basename!.LastIndexOf('.');
+                int last_dot = basename.LastIndexOf('.');
                 if (last_dot >= 0)
                     extension = basename.Substring(last_dot + 1);
             }
 
             if ((options & PathInfoOptions.FileName) != 0)
             {
-                int last_dot = basename!.LastIndexOf('.');
+                int last_dot = basename.LastIndexOf('.');
                 if (last_dot >= 0)
                     filename = basename.Substring(0, last_dot);
                 else
@@ -326,7 +324,7 @@ namespace Pchp.Library
         /// <B>false</B> if the path is invalid or doesn't exists.
         /// </returns>
         [return: CastToFalse]
-        public static string? realpath(Context ctx, string path)
+        public static string realpath(Context ctx, string path)
         {
             if (string.IsNullOrEmpty(path))
             {

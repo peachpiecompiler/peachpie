@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,14 +18,14 @@ namespace Pchp.Library
         #region Character map
 
         [ThreadStatic]
-        private static CharMap? _charmap;
+        private static CharMap _charmap;
 
         /// <summary>
         /// Get clear <see cref="CharMap"/> to be used by current thread. <see cref="_charmap"/>.
         /// </summary>
         internal static CharMap InitializeCharMap()
         {
-            CharMap? result = _charmap;
+            CharMap result = _charmap;
 
             if (result == null)
                 _charmap = result = new CharMap(0x0800);
@@ -155,7 +153,7 @@ namespace Pchp.Library
             /// </summary>
             /// <param name="code">The character set code. Can be one of 'k', 'w', 'i', 'a', 'd', 'm'.</param>
             /// <returns>The translation table or null if no table is associated with given charset code.</returns>
-            public static byte[]? GetCyrTableInternal(char code)
+            public static byte[] GetCyrTableInternal(char code)
             {
                 switch (char.ToUpperInvariant(code))
                 {
@@ -371,7 +369,7 @@ namespace Pchp.Library
             }
 
             // get and check source charset table:
-            byte[]? fromTable = CyrTables.GetCyrTableInternal(srcCharset[0]);
+            byte[] fromTable = CyrTables.GetCyrTableInternal(srcCharset[0]);
             if (fromTable != null && fromTable.Length < 256)
             {
                 PhpException.Throw(PhpError.Warning, LibResources.invalid_src_charset);
@@ -379,7 +377,7 @@ namespace Pchp.Library
             }
 
             // get and check destination charset table:
-            byte[]? toTable = CyrTables.GetCyrTableInternal(dstCharset[0]);
+            byte[] toTable = CyrTables.GetCyrTableInternal(dstCharset[0]);
             if (toTable != null && toTable.Length < 256)
             {
                 PhpException.Throw(PhpError.Warning, LibResources.invalid_dst_charset);
@@ -684,7 +682,7 @@ namespace Pchp.Library
         /// <param name="str">The string to be split.</param>
         /// <returns>The array of strings.</returns>
         [return: CastToFalse]
-        public static PhpArray? explode(string separator, string str) => explode(separator, str, int.MaxValue);
+        public static PhpArray explode(string separator, string str) => explode(separator, str, int.MaxValue);
 
         /// <summary>
         /// Splits a string by string separators with limited resulting array size.
@@ -702,7 +700,7 @@ namespace Pchp.Library
         /// </remarks>
         /// <exception cref="PhpException">Thrown if the <paramref name="separator"/> is null or empty or if <paramref name="limit"/>is not positive nor -1.</exception>
         [return: CastToFalse]
-        public static PhpArray? explode(string separator, string str, int limit)
+        public static PhpArray explode(string separator, string str, int limit)
         {
             // validate parameters:
             if (string.IsNullOrEmpty(separator))
@@ -811,7 +809,7 @@ namespace Pchp.Library
 
         private static PhpString ImplodeGenericEnumeration(Context ctx, PhpValue glue, PhpValue pieces)
         {
-            IEnumerable? enumerable;
+            IEnumerable enumerable;
 
             if ((enumerable = pieces.AsObject() as IEnumerable) != null)
                 return ImplodeInternal(ctx, glue, new PhpArray(enumerable));
@@ -837,6 +835,8 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Thrown if <paramref name="pieces"/> is null.</exception>
         private static PhpString ImplodeInternal(Context ctx, PhpValue glue, PhpArray/*!*/pieces)
         {
+            Debug.Assert(pieces != null);
+
             // handle empty pieces:
             if (pieces.Count == 0)
             {
@@ -947,7 +947,7 @@ namespace Pchp.Library
         /// <remarks>This function will not try to replace stuff that it has already worked on.</remarks>
         /// <exception cref="PhpException">Thrown if the <paramref name="replacePairs"/> argument is null.</exception>
         [return: CastToFalse]
-        public static string? strtr(Context ctx, string str, PhpArray replacePairs)
+        public static string strtr(Context ctx, string str, PhpArray replacePairs)
         {
             if (replacePairs == null)
             {
@@ -1068,7 +1068,7 @@ namespace Pchp.Library
         /// <remarks>If <paramref name="count"/> is set to 0, the function will return <b>null</b> reference.</remarks>   
         /// <exception cref="PhpException">Thrown if <paramref name="count"/> is negative.</exception>
         //[PureFunction]
-        public static string? str_repeat(string str, int count)
+        public static string str_repeat(string str, int count)
         {
             if (str == null)
             {
@@ -1256,12 +1256,12 @@ namespace Pchp.Library
         {
             // TODO: handle non unicode strings (PhpString)
 
-            IList<PhpValue>? replacement_list, offset_list, length_list;
-            PhpArray? subject_array;
-            string[]? replacements = null;
-            int[]? offsets = null, lengths = null;
+            IList<PhpValue> replacement_list, offset_list, length_list;
+            PhpArray subject_array;
+            string[] replacements = null;
+            int[] offsets = null, lengths = null;
             int int_offset = 0, int_length = 0;
-            string? str_replacement = null;
+            string str_replacement = null;
 
             // prepares string array of subjects:
             subject_array = subject.ArrayOrNull(); // otherwise subject is string
@@ -1325,11 +1325,11 @@ namespace Pchp.Library
                 {
                     var subject_string = subjects.CurrentValue.ToStringOrThrow(ctx);
 
-                    if (offset_list != null) int_offset = (i < offsets!.Length) ? offsets[i] : 0;
-                    if (length_list != null) int_length = (i < lengths!.Length) ? lengths[i] : subject_string.Length;
-                    if (replacement_list != null) str_replacement = (i < replacements!.Length) ? replacements[i] : string.Empty;
+                    if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
+                    if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subject_string.Length;
+                    if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
 
-                    result_array.SetItemValue(subjects.CurrentKey, (PhpValue)SubstringReplace(subject_string, str_replacement!, int_offset, int_length));
+                    result_array.SetItemValue(subjects.CurrentKey, (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length));
 
                     //
                     i++;
@@ -1341,11 +1341,11 @@ namespace Pchp.Library
             {
                 var subject_string = subject.ToStringOrThrow(ctx);
 
-                if (offset_list != null) int_offset = offsets!.Length != 0 ? offsets[0] : 0;
-                if (length_list != null) int_length = lengths!.Length != 0 ? lengths[0] : subject_string.Length;
-                if (replacement_list != null) str_replacement = replacements!.Length != 0 ? replacements[0] : string.Empty;
+                if (offset_list != null) int_offset = offsets.Length != 0 ? offsets[0] : 0;
+                if (length_list != null) int_length = lengths.Length != 0 ? lengths[0] : subject_string.Length;
+                if (replacement_list != null) str_replacement = replacements.Length != 0 ? replacements[0] : string.Empty;
 
-                return (PhpValue)SubstringReplace(subject_string, str_replacement!, int_offset, int_length);
+                return (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length);
             }
         }
 
@@ -1488,7 +1488,7 @@ namespace Pchp.Library
             Debug.Assert(replace != null);
 
             // temporary result instantiated lazily
-            StringBuilder? result = null;
+            StringBuilder result = null;
 
             // elementary replace
             int index, from = 0;
@@ -1926,7 +1926,7 @@ namespace Pchp.Library
         /// <exception cref="PhpException"><paramref name="translatedStr"/> contains Unicode characters greater than '\u0800'.</exception>
         static string AddCSlashesInternal(string str, string translatedStr, string translatedMask)
         {
-            Debug.Assert(str.Length == translatedStr.Length);
+            Debug.Assert(str != null && translatedMask != null && translatedStr != null && str.Length == translatedStr.Length);
 
             // prepares the mask:
             CharMap charmap = InitializeCharMap();
@@ -2244,7 +2244,7 @@ namespace Pchp.Library
         /// <param name="charSet">The character set used in conversion. This parameter is ignored.</param>
         /// <param name="keepExisting">Whether to keep existing entities and do not encode them.</param>
         /// <returns>The converted substring.</returns>
-        internal static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string? charSet, bool keepExisting)
+        internal static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string charSet, bool keepExisting)
         {
             int maxi = index + length;
             Debug.Assert(maxi <= str.Length);
@@ -2287,7 +2287,7 @@ namespace Pchp.Library
             return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
-        static string? IsAtKnownEntity(string str, int index)
+        static string IsAtKnownEntity(string str, int index)
         {
             if (index < str.Length - 3)
             {
@@ -2334,7 +2334,7 @@ namespace Pchp.Library
         /// <param name="str">The string to be converted.</param>
         /// <param name="quoteStyle">Which quote entities to convert.</param>
         /// <returns>String with converted entities.</returns>
-        public static string? htmlspecialchars_decode(string str, QuoteStyle quoteStyle = QuoteStyle.Compatible)
+        public static string htmlspecialchars_decode(string str, QuoteStyle quoteStyle = QuoteStyle.Compatible)
         {
             if (str == null) return null;
 
@@ -2584,7 +2584,7 @@ namespace Pchp.Library
         /// &lt;tag1&gt;&lt;tag2&gt;&lt;tag3&gt;.</param>
         /// <returns>The result.</returns>
         /// <remarks>This is a slightly modified php_strip_tags which can be found in PHP sources.</remarks>
-        public static string strip_tags(string str, string? allowableTags = null)
+        public static string strip_tags(string str, string allowableTags = null)
         {
             int state = 0;
             return StripTags(str, new TagsHelper(allowableTags), ref state);
@@ -2607,16 +2607,16 @@ namespace Pchp.Library
         /// <summary>Helper object for 'strip_tags' representing tag collection.</summary>
         internal struct TagsHelper
         {
-            readonly string? _allowableTags;
-            readonly PhpArray? _allowableTagsArray;
+            readonly string _allowableTags;
+            readonly PhpArray _allowableTagsArray;
 
-            public TagsHelper(string? tags)
+            public TagsHelper(string tags)
             {
                 _allowableTags = string.IsNullOrEmpty(tags) ? null : tags;
                 _allowableTagsArray = null;
             }
 
-            public TagsHelper(PhpArray? tags)
+            public TagsHelper(PhpArray tags)
             {
                 _allowableTags = null;
                 _allowableTagsArray = (tags != null && tags.Count != 0) ? tags : null;
@@ -2706,7 +2706,7 @@ namespace Pchp.Library
 
             var result = new StringBuilder();
             var tagBuf = new StringBuilder();
-            StringBuilder? normalized = null;
+            StringBuilder normalized = null;
 
             while (i < str.Length)
             {
@@ -2997,7 +2997,7 @@ namespace Pchp.Library
         /// <param name="endOfChunk">The chunk separator.</param>
         /// <returns><paramref name="endOfChunk"/> is also appended after the last chunk.</returns>
         [return: CastToFalse]
-        public static string? chunk_split(string str, int chunkLength = 76, string endOfChunk = "\r\n")
+        public static string chunk_split(string str, int chunkLength = 76, string endOfChunk = "\r\n")
         {
             if (str == null) return string.Empty;
 
@@ -3444,6 +3444,8 @@ namespace Pchp.Library
             /// <param name="str"></param>
             public void Initialize(string str)
             {
+                Debug.Assert(str != null);
+
                 this.String = str;
                 this.Length = str.Length;
                 this.Position = 0;
@@ -3453,7 +3455,7 @@ namespace Pchp.Library
             /// Splits current string from current position into tokens using given set of delimiter characters.
             /// Tokenizes the string that was passed to a previous call of <see cref="Initialize"/>.
             /// </summary>
-            public string? Tokenize(string delimiters)
+            public string Tokenize(string delimiters)
             {
                 if (this.Position >= this.Length) return null;
                 if (delimiters == null) delimiters = String.Empty;
@@ -3495,7 +3497,7 @@ namespace Pchp.Library
         /// <remarks>This method implements the behavior introduced with PHP 4.1.0, i.e. empty tokens are
         /// skipped and never returned.</remarks>
         [return: CastToFalse]
-        public static string? strtok(Context ctx, string delimiters)
+        public static string strtok(Context ctx, string delimiters)
         {
             return ctx.GetStatic<TokenizerContext>().Tokenize(delimiters);
         }
@@ -3511,7 +3513,7 @@ namespace Pchp.Library
         /// <remarks>This method implements the behavior introduced with PHP 4.1.0, i.e. empty tokens are
         /// skipped and never returned.</remarks>
         [return: CastToFalse]
-        public static string? strtok(Context ctx, string str, string delimiters)
+        public static string strtok(Context ctx, string str, string delimiters)
         {
             if (str == null)
                 str = String.Empty;
@@ -3785,8 +3787,10 @@ namespace Pchp.Library
         /// <param name="arguments">The arguments.</param>
         /// <returns>The formatted string or null if there is too few arguments.</returns>
         /// <remarks>Assumes that either <paramref name="format"/> nor <paramref name="arguments"/> is null.</remarks>
-        internal static string? FormatInternal(Context ctx, string format, PhpValue[] arguments)
+        internal static string FormatInternal(Context ctx, string format, PhpValue[] arguments)
         {
+            Debug.Assert(format != null && arguments != null);
+
             Encoding encoding = ctx.StringEncoding;
             var result = StringBuilderUtilities.Pool.Get();
             int state = 0, width = 0, precision = -1, seqIndex = 0, swapIndex = -1;
@@ -3909,7 +3913,7 @@ namespace Pchp.Library
                             }
 
                             var obj = arguments[index];
-                            string? app = null;
+                            string app = null;
                             char sign = '\0';
 
                             switch (c)
@@ -4035,7 +4039,7 @@ namespace Pchp.Library
         /// <returns>The formatted string.</returns>
         /// <exception cref="PhpException">Thrown when there is less arguments than expeceted by formatting string.</exception>
         [return: CastToFalse]
-        public static string? sprintf(Context ctx, string format, params PhpValue[] arguments)
+        public static string sprintf(Context ctx, string format, params PhpValue[] arguments)
         {
             if (string.IsNullOrEmpty(format))
             {
@@ -4064,7 +4068,7 @@ namespace Pchp.Library
         /// <param name="arguments">The arguments.</param>
         /// <returns>The formatted string on success, or <c>false</c> if there is less arguments than expeceted by formatting string.</returns>
         [return: CastToFalse]
-        public static string? vsprintf(Context ctx, string format, PhpArray arguments)
+        public static string vsprintf(Context ctx, string format, PhpArray arguments)
         {
             if (format == null) return string.Empty;
 
@@ -4151,7 +4155,7 @@ namespace Pchp.Library
         /// <param name="format">The format. See <c>sscanf</c> C function for details.</param>
         /// <returns>A new instance of <see cref="PhpArray"/> containing parsed values indexed by integers starting from 0.</returns>
         /// <remarks><seealso cref="ParseString"/>.</remarks>
-        public static PhpArray? sscanf(string str, string format)
+        public static PhpArray sscanf(string str, string format)
         {
             return ParseString(str, format, new PhpArray());
         }
@@ -4165,7 +4169,7 @@ namespace Pchp.Library
         /// <returns><paramref name="result"/> for convenience.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is a <B>null</B> reference.</exception>
         /// <exception cref="PhpException">Invalid formatting specifier.</exception>
-        static T? ParseString<T>(string str, string format, T result) where T : class, IList<PhpValue>
+        static T ParseString<T>(string str, string format, T result) where T : IList<PhpValue>
         {
             if (result == null)
                 throw new ArgumentNullException(nameof(result));
@@ -4243,7 +4247,7 @@ namespace Pchp.Library
                         else if (format[f] == '[')
                         {
                             bool complement;
-                            CharMap? charmap = ParseRangeSpecifier(format, ref f, out complement);
+                            CharMap charmap = ParseRangeSpecifier(format, ref f, out complement);
                             if (charmap != null)
                             {
                                 int start = s;
@@ -4311,9 +4315,9 @@ namespace Pchp.Library
         /// Specifier should be enclosed to brackets '[', ']' and can contain complement character '^' at the beginning.
         /// The first character after '[' or '^' can be ']'. In such a case the specifier continues to the next ']'.
         /// </remarks>
-        static CharMap? ParseRangeSpecifier(string format, ref int f, out bool complement)
+        static CharMap ParseRangeSpecifier(string format, ref int f, out bool complement)
         {
-            Debug.Assert(f > 0 && f < format.Length && format[f] == '[');
+            Debug.Assert(format != null && f > 0 && f < format.Length && format[f] == '[');
 
             complement = false;
 
@@ -4353,7 +4357,7 @@ namespace Pchp.Library
         /// <returns>The parsed value or a <B>null</B> reference on error.</returns>
         static PhpValue ParseSubstring(char specifier, int width, string str, ref int s)
         {
-            Debug.Assert(width >= 0 && s < str.Length);
+            Debug.Assert(width >= 0 && str != null && s < str.Length);
 
             PhpValue result;
             int limit = (width < str.Length - s) ? s + width : str.Length;
@@ -4492,7 +4496,7 @@ namespace Pchp.Library
         /// <remarks>The only "break-point" character is space (' ').</remarks>
         /// <exception cref="PhpException">Thrown if the combination of <paramref name="width"/> and <paramref name="cut"/> is invalid.</exception>
         [return: CastToFalse]
-        public static string? wordwrap(string str, int width = 75, string @break = "\n", bool cut = false)
+        public static string wordwrap(string str, int width = 75, string @break = "\n", bool cut = false)
         {
             if (string.IsNullOrEmpty(str))
             {
@@ -4662,7 +4666,7 @@ namespace Pchp.Library
         /// there is no maximum.</param>
         /// <param name="convertNewLines">Whether to convert new lines '\n' to "&lt;br/&gt;".</param>
         /// <returns>The converted string.</returns>
-        internal static string? HebrewReverseInternal(string str, int maxCharactersPerLine, bool convertNewLines)
+        internal static string HebrewReverseInternal(string str, int maxCharactersPerLine, bool convertNewLines)
         {
             if (str == null || str == String.Empty) return str;
             int length = str.Length, blockLength = 0, blockStart = 0, blockEnd = 0;
@@ -4815,7 +4819,7 @@ namespace Pchp.Library
         /// <param name="str">The string to convert.</param>
         /// <returns>The comverted string.</returns>
         /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
-        public static string? hebrev(string str)
+        public static string hebrev(string str)
         {
             return HebrewReverseInternal(str, 0, false);
         }
@@ -4827,7 +4831,7 @@ namespace Pchp.Library
         /// <param name="maxCharactersPerLine">Maximum number of characters per line.</param>
         /// <returns>The comverted string.</returns>
         /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
-        public static string? hebrev(string str, int maxCharactersPerLine)
+        public static string hebrev(string str, int maxCharactersPerLine)
         {
             return HebrewReverseInternal(str, maxCharactersPerLine, false);
         }
@@ -4838,7 +4842,7 @@ namespace Pchp.Library
         /// <param name="str">The string to convert.</param>
         /// <returns>The converted string.</returns>
         /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
-        public static string? hebrevc(string str)
+        public static string hebrevc(string str)
         {
             return HebrewReverseInternal(str, 0, true);
         }
@@ -4850,7 +4854,7 @@ namespace Pchp.Library
         /// <param name="maxCharactersPerLine">Maximum number of characters per line.</param>
         /// <returns>The comverted string.</returns>
         /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
-        public static string? hebrevc(string str, int maxCharactersPerLine)
+        public static string hebrevc(string str, int maxCharactersPerLine)
         {
             return HebrewReverseInternal(str, maxCharactersPerLine, true);
         }
@@ -4914,7 +4918,7 @@ namespace Pchp.Library
         /// or on both sides of <paramref name="str"/>.</param>
         /// <returns><paramref name="str"/> padded with <paramref name="paddingString"/>.</returns>
         /// <exception cref="PhpException">Thrown if <paramref name="paddingType"/> is invalid or <paramref name="paddingString"/> is null or empty.</exception>
-        public static string? str_pad(string str, int totalWidth, string paddingString = " ", PaddingType paddingType = PaddingType.Right)
+        public static string str_pad(string str, int totalWidth, string paddingString = " ", PaddingType paddingType = PaddingType.Right)
         {
             //PhpBytes binstr = str as PhpBytes;
             //if (str is PhpBytes)
@@ -5099,7 +5103,7 @@ namespace Pchp.Library
         /// <summary>
         /// Counts the number of words inside a string.
         /// </summary>
-        public static PhpValue str_word_count(string str, WordCountResult format = WordCountResult.WordCount, string? addWordChars = null)
+        public static PhpValue str_word_count(string str, WordCountResult format = WordCountResult.WordCount, string addWordChars = null)
         {
             var words = (format != WordCountResult.WordCount) ? new PhpArray() : null;
 
@@ -5121,19 +5125,19 @@ namespace Pchp.Library
             }
         }
 
-        private static bool IsWordChar(char c, CharMap? map)
+        private static bool IsWordChar(char c, CharMap map)
         {
             return char.IsLetter(c) || map != null && map.Contains(c);
         }
 
-        internal static int CountWords(string str, WordCountResult format, string? addWordChars, PhpArray? words)
+        internal static int CountWords(string str, WordCountResult format, string addWordChars, PhpArray words)
         {
             if (str == null)
                 return 0;
             if (format != WordCountResult.WordCount && words == null)
                 throw new ArgumentNullException("words");
 
-            CharMap? charmap = null;
+            CharMap charmap = null;
 
             if (!String.IsNullOrEmpty(addWordChars))
             {
@@ -5170,11 +5174,11 @@ namespace Pchp.Library
                             break;
 
                         case WordCountResult.WordsArray:
-                            words!.Add(word_count, str.Substring(word_start, pos - word_start));
+                            words.Add(word_count, str.Substring(word_start, pos - word_start));
                             break;
 
                         case WordCountResult.PositionsToWordsMapping:
-                            words!.Add(word_start, str.Substring(word_start, pos - word_start));
+                            words.Add(word_start, str.Substring(word_start, pos - word_start));
                             break;
 
                         default:
@@ -5393,7 +5397,7 @@ namespace Pchp.Library
         /// of <paramref name="haystack"/> or null if <paramref name="needle"/> is not found.</returns>
         /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
         [return: CastToFalse]
-        public static string? strstr(string haystack, PhpValue needle, bool beforeNeedle = false)
+        public static string strstr(string haystack, PhpValue needle, bool beforeNeedle = false)
         {
             return StrstrImpl(haystack, needle, StringComparison.Ordinal, beforeNeedle);
         }
@@ -5403,8 +5407,7 @@ namespace Pchp.Library
         /// </summary>
         /// <remarks>See <see cref="Strstr(string,object)"/> for details.</remarks>
         /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
-        [return: CastToFalse]
-        public static string? strchr(string haystack, PhpValue needle) => strstr(haystack, needle);
+        public static string strchr(string haystack, PhpValue needle) => strstr(haystack, needle);
 
         /// <summary>
         /// Case insensitive version of <see cref="Strstr(string,object)"/>.
@@ -5414,7 +5417,7 @@ namespace Pchp.Library
         /// <param name="beforeNeedle">If TRUE, strstr() returns the part of the haystack before the first occurrence of the needle. </param>
         /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
         [return: CastToFalse]
-        public static string? stristr(string haystack, PhpValue needle, bool beforeNeedle = false)
+        public static string stristr(string haystack, PhpValue needle, bool beforeNeedle = false)
         {
             return StrstrImpl(haystack, needle, StringComparison.OrdinalIgnoreCase, beforeNeedle);
         }
@@ -5432,7 +5435,7 @@ namespace Pchp.Library
         /// <returns>This function returns the portion of string, or FALSE  if needle  is not found.</returns>
         /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
         [return: CastToFalse]
-        public static string? strrchr(string haystack, PhpValue needle)
+        public static string strrchr(string haystack, PhpValue needle)
         {
             if (haystack == null)
                 return null;
@@ -5466,7 +5469,7 @@ namespace Pchp.Library
         /// <summary>
         /// Implementation of <c>str[i]{chr|str}</c> functions.
         /// </summary>
-        internal static string? StrstrImpl(string haystack, PhpValue needle, StringComparison comparisonType, bool beforeNeedle)
+        internal static string StrstrImpl(string haystack, PhpValue needle, StringComparison comparisonType, bool beforeNeedle)
         {
             if (haystack == null) return null;
 
@@ -5512,7 +5515,7 @@ namespace Pchp.Library
         /// found.</returns>
         /// <exception cref="PhpException">Thrown when <paramref name="charList"/> is empty.</exception>
         [return: CastToFalse]
-        public static string? strpbrk(string haystack, string charList)
+        public static string strpbrk(string haystack, string charList)
         {
             if (charList == null)
             {
@@ -5537,7 +5540,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The lowercased string or empty string if <paramref name="str"/> is null.</returns>
-        public static string strtolower(string? str) => str != null ? str.ToLowerInvariant() : string.Empty;
+        public static string strtolower(string str) => str != null ? str.ToLowerInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToLower(Locale.GetCulture(Locale.Category.CType));
         //}
@@ -5548,7 +5551,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The uppercased string or empty string if <paramref name="str"/> is null.</returns>
-        public static string strtoupper(string? str) => str != null ? str.ToUpperInvariant() : string.Empty;
+        public static string strtoupper(string str) => str != null ? str.ToUpperInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));
         //}
@@ -5570,10 +5573,10 @@ namespace Pchp.Library
                     Debug.Assert(_ISO_8859_1_Encoding != null);
                 }
 
-                return _ISO_8859_1_Encoding!;
+                return _ISO_8859_1_Encoding;
             }
         }
-        static Encoding? _ISO_8859_1_Encoding;
+        static Encoding _ISO_8859_1_Encoding;
 
         /// <summary>
         /// This function encodes the string data to UTF-8, and returns the encoded version. UTF-8 is

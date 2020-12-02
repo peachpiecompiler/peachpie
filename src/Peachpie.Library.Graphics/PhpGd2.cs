@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -424,15 +422,12 @@ namespace Peachpie.Library.Graphics
         /// Create a new image
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreate(int x_size, int y_size)
+        public static PhpResource imagecreate(int x_size, int y_size)
         {
             var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), BmpFormat.Instance);
 
-            if (img != null)
-            {
-                img.Image.Mutate(o => o.BackgroundColor(Color.White));
-                img.AlphaBlending = true; 
-            }
+            img.Image.Mutate(o => o.BackgroundColor(Color.White));
+            img.AlphaBlending = true;
 
             return img;
         }
@@ -441,20 +436,17 @@ namespace Peachpie.Library.Graphics
         /// Create a new true color image
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatetruecolor(int x_size, int y_size)
+        public static PhpResource imagecreatetruecolor(int x_size, int y_size)
         {
             var img = imagecreatecommon(x_size, y_size, new PngConfigurationModule(), PngFormat.Instance);
 
-            if (img != null)
-            {
-                img.Image.Mutate(o => o.BackgroundColor(Color.Black));
-                img.AlphaBlending = true; 
-            }
+            img.Image.Mutate(o => o.BackgroundColor(Color.Black));
+            img.AlphaBlending = true;
 
             return img;
         }
 
-        static PhpGdImageResource? imagecreatecommon(int x_size, int y_size, IConfigurationModule configuration, IImageFormat format)
+        static PhpGdImageResource imagecreatecommon(int x_size, int y_size, IConfigurationModule configuration, IImageFormat format)
         {
             if (x_size <= 0 || y_size <= 0)
             {
@@ -469,7 +461,7 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from the image stream in the string
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefromstring(byte[] image)
+        public static PhpResource imagecreatefromstring(byte[] image)
         {
             if (image == null || image.Length == 0)
             {
@@ -492,7 +484,7 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from GD file or URL.
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefromgd(Context ctx, string filename)
+        public static PhpResource imagecreatefromgd(Context ctx, string filename)
         {
             return imagercreatefromfile(ctx, filename);
         }
@@ -501,7 +493,7 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from GD2 file or URL.
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefromgd2(Context ctx, string filename)
+        public static PhpResource imagecreatefromgd2(Context ctx, string filename)
         {
             return imagercreatefromfile(ctx, filename);
         }
@@ -510,7 +502,7 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from a given part of GD2 file or URL.
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefromgd2part(Context ctx, string filename, int srcX, int srcY, int width, int height)
+        public static PhpResource imagecreatefromgd2part(Context ctx, string filename, int srcX, int srcY, int width, int height)
         {
             throw new NotImplementedException();
         }
@@ -519,7 +511,7 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from GIF file or URL.
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefromgif(Context ctx, string filename)
+        public static PhpResource imagecreatefromgif(Context ctx, string filename)
         {
             return imagercreatefromfile(ctx, filename, new GifConfigurationModule());
         }
@@ -528,7 +520,7 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from JPEG file or URL.
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefromjpeg(Context ctx, string filename)
+        public static PhpResource imagecreatefromjpeg(Context ctx, string filename)
         {
             return imagercreatefromfile(ctx, filename, new JpegConfigurationModule());
         }
@@ -537,7 +529,7 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from PNG file or URL.
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefrompng(Context ctx, string filename)
+        public static PhpResource imagecreatefrompng(Context ctx, string filename)
         {
             return imagercreatefromfile(ctx, filename, new PngConfigurationModule());
         }
@@ -546,7 +538,7 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from WBMP file or URL.
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefromwbmp(Context ctx, string filename)
+        public static PhpResource imagecreatefromwbmp(Context ctx, string filename)
         {
             return imagercreatefromfile(ctx, filename);
         }
@@ -555,7 +547,7 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from XBM file or URL.
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefromxbm(Context ctx, string filename)
+        public static PhpResource imagecreatefromxbm(Context ctx, string filename)
         {
             return imagercreatefromfile(ctx, filename);
         }
@@ -564,12 +556,12 @@ namespace Peachpie.Library.Graphics
         /// Create a new image from XPM file or URL.
         /// </summary> 
         [return: CastToFalse]
-        public static PhpResource? imagecreatefromxpm(Context ctx, string filename)
+        public static PhpResource imagecreatefromxpm(Context ctx, string filename)
         {
             return imagercreatefromfile(ctx, filename);
         }
 
-        static PhpGdImageResource? imagercreatefromfile(Context ctx, string filename, IConfigurationModule? formatOpt = null)
+        static PhpGdImageResource imagercreatefromfile(Context ctx, string filename, IConfigurationModule formatOpt = null)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -581,8 +573,8 @@ namespace Peachpie.Library.Graphics
                 ? Configuration.Default
                 : new Configuration(formatOpt);
 
-            Image<Rgba32>? img = null;
-            IImageFormat? format = null;
+            Image<Rgba32> img = null;
+            IImageFormat format = null;
 
             using (var stream = Utils.OpenStream(ctx, filename))
             {
@@ -770,7 +762,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Can be 1, 2, 3, 4, 5 for built-in fonts in latin2 encoding (where higher numbers corresponding to larger fonts) or any of your own font identifiers registered with imageloadfont().
         /// </summary>
-        static Font? CreateFontById(int fontInd)
+        static Font CreateFontById(int fontInd)
         {
             // TODO: cache statically
 
@@ -785,7 +777,7 @@ namespace Peachpie.Library.Graphics
             var fontStyle = FontStyle.Regular;
             if (fontInd == 3 || fontInd >= 5)
             {
-                if (fontFamily!.IsStyleAvailable(FontStyle.Bold))
+                if (fontFamily.IsStyleAvailable(FontStyle.Bold))
                 {
                     fontStyle = FontStyle.Bold;
                 }
@@ -796,10 +788,10 @@ namespace Peachpie.Library.Graphics
             if (fontInd > 1) fontSize += 4;
             if (fontInd > 3) fontSize += 4;
 
-            return fontFamily!.CreateFont(fontSize, fontStyle);
+            return fontFamily.CreateFont(fontSize, fontStyle);
         }
 
-        static Font? CreateFontByFontFile(Context ctx, string font_file, double size)
+        static Font CreateFontByFontFile(Context ctx, string font_file, double size)
         {
             if (string.IsNullOrEmpty(font_file))
             {
@@ -815,11 +807,16 @@ namespace Peachpie.Library.Graphics
             }
 
             // Font preparation
-            FontFamily? family;
+            FontFamily family;
 
             try
             {
                 family = new FontCollection().Install(font_stream.RawStream); // TODO: perf: global font collection cache
+
+                if (family == null)
+                {
+                    throw new InvalidDataException();
+                }
             }
             catch
             {
@@ -1007,7 +1004,7 @@ namespace Peachpie.Library.Graphics
         /// The center of rotation is the center of the image, and the rotated image may have different dimensions than the original image.
         /// </summary>
         [return: CastToFalse]
-        public static PhpResource? imagerotate(PhpResource im, double angle, int bgcolor, bool ignore_transparent = false)
+        public static PhpResource imagerotate(PhpResource im, double angle, int bgcolor, bool ignore_transparent = false)
         {
             var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -1103,7 +1100,7 @@ namespace Peachpie.Library.Graphics
 
         #region imagettftext
 
-        static PhpArray?/*[8]*/imagettf(Context ctx, PhpGdImageResource? img, double size, double angle, int x, int y, long color, string font_file, string text)
+        static PhpArray/*[8]*/imagettf(Context ctx, PhpGdImageResource img, double size, double angle, int x, int y, long color, string font_file, string text)
         {
             var font = CreateFontByFontFile(ctx, font_file, size);
 
@@ -1172,7 +1169,7 @@ namespace Peachpie.Library.Graphics
         /// Write text to the image using a TrueType font
         /// </summary> 
         [return: CastToFalse]
-        public static PhpArray? imagettftext(Context ctx, PhpResource im, double size, double angle, int x, int y, long color, string font_file, string text)
+        public static PhpArray imagettftext(Context ctx, PhpResource im, double size, double angle, int x, int y, long color, string font_file, string text)
         {
             var img = PhpGdImageResource.ValidImage(im);
             if (img != null)
@@ -1188,7 +1185,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Give the bounding box of a markerName using fonts via freetype2
         /// </summary>
-        public static PhpArray imageftbbox(Context ctx, double size, double angle, string font_file, string text, PhpArray? extrainfo = null)
+        public static PhpArray imageftbbox(Context ctx, double size, double angle, string font_file, string text, PhpArray extrainfo = null)
         {
             if (extrainfo != null && extrainfo.TryGetValue("linespacing", out var linespacing))
             {
@@ -1358,6 +1355,8 @@ namespace Peachpie.Library.Graphics
         /// <returns>True if save succeeded.</returns>
         static bool imagesave(Context ctx, PhpResource im, PhpValue to/* = null*/, Action<Image<Rgba32>, Stream> saveaction)
         {
+            Debug.Assert(saveaction != null);
+
             // check the gd2 resource
             var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -1427,7 +1426,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Apply a 3x3 convolution matrix, using coefficient div and offset
         /// </summary>
-        public static PhpResource? imageconvolution(PhpResource src_im, PhpArray matrix3x3, double div, double offset)
+        public static PhpResource imageconvolution(PhpResource src_im, PhpArray matrix3x3, double div, double offset)
         {
             PhpException.FunctionNotSupported("imageconvolution");
             return null;
@@ -2217,7 +2216,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="rect">The cropping rectangle as array with keys x, y, width and height.</param>
         /// <returns>Return cropped image resource on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static PhpResource? imagecrop(PhpResource image, PhpArray rect)
+        public static PhpResource imagecrop(PhpResource image, PhpArray rect)
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
@@ -2255,7 +2254,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="mode"></param>
         /// <returns>Return the scaled image resource on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static PhpResource? imagescale(PhpResource image, int new_width, int new_height = -1, int mode = IMG_BILINEAR_FIXED)
+        public static PhpResource imagescale(PhpResource image, int new_width, int new_height = -1, int mode = IMG_BILINEAR_FIXED)
         {
             // TODO: Description mode
             // TODO: modes fixed
@@ -2273,7 +2272,7 @@ namespace Peachpie.Library.Graphics
             new_height = new_height < 0 ? (img.Image.Height / img.Image.Width) * new_width : new_height;
             new_width = new_width < 0 ? (img.Image.Width / img.Image.Height) * new_height : new_width;
 
-            IResampler? res = null;
+            IResampler res = null;
             switch (mode)
             {
                 case IMG_NEAREST_NEIGHBOUR:
@@ -2302,7 +2301,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="clip">Array with keys "x", "y", "width" and "height".</param>
         /// <returns>Return affined image resource on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static PhpResource? imageaffine(PhpResource image, PhpArray affine, PhpArray? clip = null)
+        public static PhpResource imageaffine(PhpResource image, PhpArray affine, PhpArray clip = null)
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)
@@ -2385,7 +2384,7 @@ namespace Peachpie.Library.Graphics
         /// If type is IMG_AFFINE_ROTATE, IMG_AFFINE_SHEAR_HORIZONTAL or IMG_AFFINE_SHEAR_VERTICAL, options has to be a float specifying the angle.</param>
         /// <returns>Returns an affine transformation matrix.</returns>
         [return: CastToFalse]
-        public static PhpArray? imageaffinematrixget(int type, PhpValue options)
+        public static PhpArray imageaffinematrixget(int type, PhpValue options)
         {
             switch (type)
             {
@@ -2497,7 +2496,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="rectangle">Php rectangle representation.</param>
         /// <param name="result">Rectangle.</param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        private static bool TryGetRectangle(PhpArray? rectangle, out Rectangle result)
+        private static bool TryGetRectangle(PhpArray rectangle, out Rectangle result)
         {
             result = default;
 
@@ -2543,7 +2542,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="m2">An affine transformation matrix (an array with keys 0 to 5 and float values).</param>
         /// <returns>An affine transformation matrix (an array with keys 0 to 5 and float values) or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static PhpArray? imageaffinematrixconcat(PhpArray m1, PhpArray m2)
+        public static PhpArray imageaffinematrixconcat(PhpArray m1, PhpArray m2)
         {
             if (!TryGetTransformMatrix(m1, out Matrix3x2 matrix1))
             {
@@ -2575,7 +2574,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="image">An image resource, returned by one of the image creation functions.</param>
         /// <returns>It returns an indexed array of the horizontal and vertical resolution on success, or FALSE on failure. </returns>
         [return: CastToFalse]
-        public static PhpArray? imageresolution(PhpResource image)
+        public static PhpArray imageresolution(PhpResource image)
         {
             var img = PhpGdImageResource.ValidImage(image);
             if (img == null)

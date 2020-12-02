@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using Pchp.Core;
+﻿using Pchp.Core;
 using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
@@ -90,15 +88,17 @@ namespace Pchp.Library
                             RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase));
                 }
             }
-            private static Regex? _parseUrlRegEx = null;
+            private static Regex _parseUrlRegEx = null;
 
             /// <summary>
             /// Determines matched group value or null if the group was not matched.
             /// </summary>
             /// <param name="g"></param>
             /// <returns></returns>
-            public static string? MatchedString(Group/*!*/g)
+            public static string MatchedString(Group/*!*/g)
             {
+                Debug.Assert(g != null);
+
                 return (g.Success && g.Value.Length > 0) ? g.Value : null;
             }
 
@@ -107,7 +107,9 @@ namespace Pchp.Library
             /// </summary>
             public static string ReplaceControlCharset(string/*!*/str, char newChar)
             {
-                StringBuilder? sb = null;
+                Debug.Assert(str != null);
+
+                StringBuilder sb = null;
                 int last = 0;
                 for (int i = 0; i < str.Length; i++)
                 {
@@ -147,7 +149,7 @@ namespace Pchp.Library
 		/// and values are components themselves.
 		/// </returns>
         [return: CastToFalse]
-        public static PhpArray? parse_url(string url)
+        public static PhpArray parse_url(string url)
         {
             url ??= string.Empty;
 
@@ -168,14 +170,14 @@ namespace Pchp.Library
                 return null;
             }
 
-            string? scheme = ParseUrlMethods.MatchedString(match.Groups["scheme"]);
-            string? user = ParseUrlMethods.MatchedString(match.Groups["user"]);
-            string? pass = ParseUrlMethods.MatchedString(match.Groups["pass"]);
-            string? host = ParseUrlMethods.MatchedString(match.Groups["host"]);
-            string? port = ParseUrlMethods.MatchedString(match.Groups["port"]);
-            string? path = ParseUrlMethods.MatchedString(match.Groups["path"]);
-            string? query = ParseUrlMethods.MatchedString(match.Groups["query"]);
-            string? fragment = ParseUrlMethods.MatchedString(match.Groups["fragment"]);
+            string scheme = ParseUrlMethods.MatchedString(match.Groups["scheme"]);
+            string user = ParseUrlMethods.MatchedString(match.Groups["user"]);
+            string pass = ParseUrlMethods.MatchedString(match.Groups["pass"]);
+            string host = ParseUrlMethods.MatchedString(match.Groups["host"]);
+            string port = ParseUrlMethods.MatchedString(match.Groups["port"]);
+            string path = ParseUrlMethods.MatchedString(match.Groups["path"]);
+            string query = ParseUrlMethods.MatchedString(match.Groups["query"]);
+            string fragment = ParseUrlMethods.MatchedString(match.Groups["fragment"]);
 
             string scheme_separator = match.Groups["scheme_separator"].Value;   // cannot be null
 
@@ -331,7 +333,7 @@ namespace Pchp.Library
         /// This setting can effectively help to reduce identity theft through XSS attacks
         /// (although it is not supported by all browsers).</param>
         /// <returns>Whether a cookie has been successfully send.</returns>
-        public static bool setcookie(Context ctx, string name, string? value = null, int expire = 0, string? path = null, string? domain = null, bool secure = false, bool httponly = false)
+        public static bool setcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
         {
             return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, false);
         }
@@ -339,7 +341,7 @@ namespace Pchp.Library
         /// <summary>
         /// The same as <see cref="setcookie(Context, string, string, int, string, string, bool, bool)"/> except for that value is not <see cref="UrlEncode"/>d.
         /// </summary>
-        public static bool setrawcookie(Context ctx, string name, string? value = null, int expire = 0, string? path = null, string? domain = null, bool secure = false, bool httponly = false)
+        public static bool setrawcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
         {
             return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, true);
         }
@@ -347,7 +349,7 @@ namespace Pchp.Library
         /// <summary>
         /// Internal version common for <see cref="setcookie"/> and <see cref="setrawcookie"/>.
         /// </summary>
-        internal static bool SetCookieInternal(Context ctx, string name, string? value, int expire, string? path, string? domain, bool secure, bool httponly, bool raw)
+        internal static bool SetCookieInternal(Context ctx, string name, string value, int expire, string path, string domain, bool secure, bool httponly, bool raw)
         {
             var httpctx = ctx.HttpPhpContext;
             if (httpctx == null)
@@ -508,7 +510,7 @@ namespace Pchp.Library
         /// Note: This parameter is case-insensitive. 
         /// </param>
         /// <remarks>Caution: This function will remove all headers set by PHP, including cookies, session and the X-Powered-By headers.</remarks>
-        public static void header_remove(Context ctx, string? name = null)
+        public static void header_remove(Context ctx, string name = null)
         {
             var webctx = ctx.HttpPhpContext;
             if (webctx != null)
@@ -611,7 +613,7 @@ namespace Pchp.Library
         /// headers_list() will return a list of headers to be sent to the browser / client.
         /// To determine whether or not these headers have been sent yet, use headers_sent(). 
         /// </summary>
-        public static PhpArray? headers_list(Context ctx)
+        public static PhpArray headers_list(Context ctx)
         {
             var webctx = ctx.HttpPhpContext;
             if (webctx == null)
@@ -668,7 +670,7 @@ namespace Pchp.Library
 
         #region http_build_query, get_browser
 
-        static string UrlEncode(string? value, PhpQueryRfc type)
+        static string UrlEncode(string value, PhpQueryRfc type)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -710,12 +712,12 @@ namespace Pchp.Library
         /// </param>
         /// <param name="encType"></param>
         /// <returns>Returns a URL-encoded string </returns>
-        public static string http_build_query(Context ctx, PhpValue formData, string? numericPrefix = null, string? argSeparator = null, int encType = PHP_QUERY_RFC1738)
+        public static string http_build_query(Context ctx, PhpValue formData, string numericPrefix = null, string argSeparator = null, int encType = PHP_QUERY_RFC1738)
         {
             return http_build_query(ctx, formData, numericPrefix, argSeparator ?? "&", (PhpQueryRfc)encType, null);
         }
 
-        static string http_build_query(Context ctx, PhpValue formData, string? numericPrefix, string? argSeparator, PhpQueryRfc encType, string? indexerPrefix)
+        static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator, PhpQueryRfc encType, string indexerPrefix)
         {
             var result = new StringBuilder(64);
             var first = true;
@@ -792,7 +794,7 @@ namespace Pchp.Library
         ///  the user has enabled the browser to accept cookies or not. The only way to test if cookies are accepted is
         ///  to set one with setcookie(), reload, and check for the value. 
         /// </returns>
-        public static PhpValue get_browser(Context ctx, string? user_agent = null, bool return_array = false)
+        public static PhpValue get_browser(Context ctx, string user_agent = null, bool return_array = false)
         {
             throw new NotImplementedException();
         }
@@ -809,7 +811,7 @@ namespace Pchp.Library
         /// <param name="context">A valid context resource created with <see cref="Streams.PhpContexts.stream_context_create"/>().</param>
         /// <returns></returns>
         [return: CastToFalse]
-        public static PhpArray? get_headers(string url, int format = 0, PhpResource? context = null)
+        public static PhpArray get_headers(string url, int format = 0, PhpResource context = null)
         {
             var arr = new PhpArray();
 
@@ -856,14 +858,14 @@ namespace Pchp.Library
         /// </summary>
         /// <returns>An associative array of all the HTTP headers in the current request, or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static PhpArray? apache_request_headers(Context ctx) => getallheaders(ctx);
+        public static PhpArray apache_request_headers(Context ctx) => getallheaders(ctx);
 
         /// <summary>
         /// Fetch all HTTP request headers.
         /// </summary>
         /// <returns>An associative array of all the HTTP headers in the current request, or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static PhpArray? getallheaders(Context ctx)
+        public static PhpArray getallheaders(Context ctx)
         {
             var webctx = ctx.HttpPhpContext;
             if (webctx != null)
@@ -1020,7 +1022,7 @@ namespace Pchp.Library
         /// Convert domain name to IDNA ASCII form.
         /// </summary>
         [return: CastToFalse]
-        public static string? idn_to_ascii(string domain, int options = IDNA_DEFAULT, int variant = INTL_IDNA_VARIANT_UTS46)
+        public static string idn_to_ascii(string domain, int options = IDNA_DEFAULT, int variant = INTL_IDNA_VARIANT_UTS46)
         {
             return new System.Globalization.IdnMapping().GetAscii(domain);
         }

@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using MySqlConnector;
+﻿using MySqlConnector;
 using Pchp.Core;
 using System;
 using System.Collections.Generic;
@@ -104,9 +102,9 @@ namespace Peachpie.Library.MySql
         /// <summary>
         /// Gets last active connection.
         /// </summary>
-        static MySqlConnectionResource? LastConnection(Context? ctx) => ctx != null ? MySqlConnectionManager.GetInstance(ctx).GetLastConnection() : null;
+        static MySqlConnectionResource LastConnection(Context ctx) => ctx != null ? MySqlConnectionManager.GetInstance(ctx).GetLastConnection() : null;
 
-        static MySqlConnectionResource? ValidConnection(Context? ctx, PhpResource? link)
+        static MySqlConnectionResource ValidConnection(Context ctx, PhpResource link)
         {
             var resource = link ?? LastConnection(ctx);
             if (resource is MySqlConnectionResource mysqllink)
@@ -126,7 +124,7 @@ namespace Peachpie.Library.MySql
         /// Closes the non-persistent connection to the MySQL server that's associated with the specified link identifier.
         /// If link_identifier isn't specified, the last opened link is used.
         /// </summary>
-        public static bool mysql_close(Context ctx, PhpResource? link = null)
+        public static bool mysql_close(Context ctx, PhpResource link = null)
         {
             var connection = ValidConnection(ctx, link);
             if (connection != null)
@@ -150,9 +148,10 @@ namespace Peachpie.Library.MySql
         /// Open a connection to a MySQL Server.
         /// </summary>
         [return: CastToFalse]
-        public static PhpResource? mysql_connect(Context ctx, string? server = null, string? username = null, string? password = null, bool new_link = false, ConnectFlags client_flags = ConnectFlags.None)
+        public static PhpResource mysql_connect(Context ctx, string server = null, string username = null, string password = null, bool new_link = false, ConnectFlags client_flags = ConnectFlags.None)
         {
             var config = ctx.Configuration.Get<MySqlConfiguration>();
+            Debug.Assert(config != null);
 
             var connection_string = config.ConnectionString ?? BuildConnectionString(config, ref server, config.Port, username, password, client_flags).ToString();
 
@@ -180,15 +179,15 @@ namespace Peachpie.Library.MySql
         /// Resource representing the connection or a <B>null</B> reference (<B>false</B> in PHP) on failure.
         /// </returns>
         [return: CastToFalse]
-        public static PhpResource? mysql_pconnect(Context ctx, string? server = null, string? username = null, string? password = null, bool new_link = false, ConnectFlags client_flags = ConnectFlags.None)
+        public static PhpResource mysql_pconnect(Context ctx, string server = null, string username = null, string password = null, bool new_link = false, ConnectFlags client_flags = ConnectFlags.None)
         {
             return mysql_connect(ctx, server, username, password, new_link, client_flags | ConnectFlags.Pooling);
         }
 
-        internal static MySqlConnectionStringBuilder BuildConnectionString(MySqlConfiguration config, ref string? server, int defaultport = 3306, string? user = null, string? password = null, ConnectFlags flags = ConnectFlags.None)
+        internal static MySqlConnectionStringBuilder BuildConnectionString(MySqlConfiguration config, ref string server, int defaultport = 3306, string user = null, string password = null, ConnectFlags flags = ConnectFlags.None)
         {
             // build connection string:
-            string? pipe_name = null;
+            string pipe_name = null;
             int port = -1;
 
             if (server != null)
@@ -228,7 +227,7 @@ namespace Peachpie.Library.MySql
             return builder;
         }
 
-        static void ParseServerName(ref string/*!*/ server, out int port, out string? socketPath)
+        static void ParseServerName(ref string/*!*/ server, out int port, out string socketPath)
         {
             port = -1;
             socketPath = null;
@@ -267,7 +266,7 @@ namespace Peachpie.Library.MySql
         /// <param name="link">Connection resource.</param>
         /// <returns>Query resource or a <B>null</B> reference (<B>null</B> in PHP) on failure.</returns>
         [return: CastToFalse]
-        public static PhpResource? mysql_query(Context ctx, PhpString query, PhpResource? link = null)
+        public static PhpResource mysql_query(Context ctx, PhpString query, PhpResource link = null)
         {
             var connection = ValidConnection(ctx, link);
             if (connection == null || query.IsEmpty)
@@ -295,11 +294,12 @@ namespace Peachpie.Library.MySql
         /// <returns>Query resource or a <B>null</B> reference (<B>null</B> in PHP) on failure.</returns>
         internal static PhpResource QueryBinary(Encoding encoding, byte[] query, MySqlConnectionResource connection)
         {
-            Debug.Assert(connection.IsValid);
+            Debug.Assert(query != null);
+            Debug.Assert(connection != null && connection.IsValid);
 
             //
-            List<IDataParameter>? parameters = null;
-            string? commandText = null;
+            List<IDataParameter> parameters = null;
+            string commandText = null;
             int commandTextLast = 0;
 
             // Parse values whether it contains non-ascii characters,
@@ -416,6 +416,8 @@ namespace Peachpie.Library.MySql
         /// <remarks>This method unescapes as many characters as <paramref name="dest"/> can hold.</remarks>
         private static void UnescapeString(byte[]/*!*/source, int startFrom, byte[]/*!*/dest)
         {
+            Debug.Assert(source != null);
+            Debug.Assert(dest != null);
             Debug.Assert(startFrom >= 0 && startFrom < source.Length);
             Debug.Assert(source.Length - startFrom /* - escapedChars */ >= dest.Length);
 
@@ -454,7 +456,7 @@ namespace Peachpie.Library.MySql
         /// <param name="linkIdentifier">Connection resource.</param>
         /// <returns>Id or 0 if the last command wasn't an insertion.</returns>
         [return: CastToFalse]
-        public static long mysql_insert_id(Context ctx, PhpResource? linkIdentifier = null)
+        public static long mysql_insert_id(Context ctx, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
             return connection != null ? connection.LastInsertedId : -1;
@@ -466,7 +468,7 @@ namespace Peachpie.Library.MySql
         /// <param name="ctx">Runtime context.</param>
         /// <param name="linkIdentifier">Connection resource.</param>
         /// <returns>The thread id.</returns>
-        public static int mysql_thread_id(Context ctx, PhpResource? linkIdentifier = null)
+        public static int mysql_thread_id(Context ctx, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
             if (connection == null) return 0;
@@ -484,7 +486,7 @@ namespace Peachpie.Library.MySql
         /// <param name="resultHandle">Query result resource.</param>
         /// <returns>Array indexed by integers starting from 0 containing values of the current row.</returns>
         [return: CastToFalse]
-        public static PhpArray? mysql_fetch_row(PhpResource resultHandle)
+        public static PhpArray mysql_fetch_row(PhpResource resultHandle)
         {
             return mysql_fetch_array(resultHandle, QueryResultKeys.Numbers);
         }
@@ -495,7 +497,7 @@ namespace Peachpie.Library.MySql
         /// <param name="resultHandle">Query result resource.</param>
         /// <returns>Array indexed by column names containing values of the current row.</returns>
         [return: CastToFalse]
-        public static PhpArray? mysql_fetch_assoc(PhpResource resultHandle)
+        public static PhpArray mysql_fetch_assoc(PhpResource resultHandle)
         {
             return mysql_fetch_array(resultHandle, QueryResultKeys.ColumnNames);
         }
@@ -510,7 +512,7 @@ namespace Peachpie.Library.MySql
         /// on value of <paramref name="resultType"/>.
         /// </returns>
         [return: CastToFalse]
-        public static PhpArray? mysql_fetch_array(PhpResource resultHandle, QueryResultKeys resultType = QueryResultKeys.Both)
+        public static PhpArray mysql_fetch_array(PhpResource resultHandle, QueryResultKeys resultType = QueryResultKeys.Both)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null) return null;
@@ -534,7 +536,7 @@ namespace Peachpie.Library.MySql
         /// Field names corresponds to the column names.
         /// </returns>
         [return: CastToFalse]
-        public static stdClass? mysql_fetch_object(PhpResource resultHandle)
+        public static stdClass mysql_fetch_object(PhpResource resultHandle)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null) return null;
@@ -552,7 +554,7 @@ namespace Peachpie.Library.MySql
         /// <param name="ctx">Runtime context.</param>
         /// <param name="linkIdentifier">Connection resource.</param>
         /// <returns>The number of affected rows or -1 if the last operation failed or the connection is invalid.</returns>
-        public static int mysql_affected_rows(Context ctx, PhpResource? linkIdentifier = null)
+        public static int mysql_affected_rows(Context ctx, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
             if (connection == null || connection.LastException != null) return -1;
@@ -629,7 +631,7 @@ namespace Peachpie.Library.MySql
         /// <param name="databaseName">Name of the database.</param>
         /// <param name="linkIdentifier">Connection resource.</param>
         /// <returns><B>true</B> on success, <B>false</B> on failure.</returns>
-        public static bool mysql_select_db(Context ctx, string databaseName, PhpResource? linkIdentifier = null)
+        public static bool mysql_select_db(Context ctx, string databaseName, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
             return connection != null && connection.SelectDb(databaseName);
@@ -648,7 +650,7 @@ namespace Peachpie.Library.MySql
         /// Error message, empty string if no error occured, or a <B>null</B> reference 
         /// if the connection resource is invalid.
         /// </returns>
-        public static string? mysql_error(Context ctx, PhpResource? linkIdentifier = null)
+        public static string mysql_error(Context ctx, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
             if (connection == null)
@@ -665,7 +667,7 @@ namespace Peachpie.Library.MySql
         /// <param name="ctx">Runtime context.</param>
         /// <param name="linkIdentifier">Connection resource.</param>
         /// <returns>Error number, 0 if no error occured, or -1 if the number cannot be retrieved.</returns>
-        public static int mysql_errno(Context ctx, PhpResource? linkIdentifier = null)
+        public static int mysql_errno(Context ctx, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
             return (connection != null) ? connection.GetLastErrorNumber() : -1;
@@ -720,7 +722,7 @@ namespace Peachpie.Library.MySql
         /// <param name="resultHandle">Query result resource.</param>
         /// <param name="fieldIndex">Column (field) index.</param>
         /// <returns>Name of the column or a <B>null</B> reference on failure (invalid resource or column index).</returns>
-        public static string? mysql_field_name(PhpResource resultHandle, int fieldIndex)
+        public static string mysql_field_name(PhpResource resultHandle, int fieldIndex)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null) return null;
@@ -738,7 +740,7 @@ namespace Peachpie.Library.MySql
         /// Possible values are: "string", "int", "real", "year", "date", "timestamp", "datetime", "time", 
         /// "set", "enum", "blob", "bit" (Phalanger specific), "NULL", and "unknown".
         /// </remarks>
-        public static string? mysql_field_type(PhpResource resultHandle, int fieldIndex)
+        public static string mysql_field_type(PhpResource resultHandle, int fieldIndex)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result != null)
@@ -809,7 +811,7 @@ namespace Peachpie.Library.MySql
         /// <param name="fieldIndex">Field index.</param>
         /// <returns>Name of the base table of the field.</returns>
         [return: CastToFalse]
-        public static string? mysql_field_table(PhpResource resultHandle, int fieldIndex)
+        public static string mysql_field_table(PhpResource resultHandle, int fieldIndex)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null || !result.CheckFieldIndex(fieldIndex))
@@ -827,7 +829,7 @@ namespace Peachpie.Library.MySql
         /// <param name="fieldIndex">Field index.</param>
         /// <returns>Flags of the field.</returns>
         [return: CastToFalse]
-        public static string? mysql_field_flags(PhpResource resultHandle, int fieldIndex)
+        public static string mysql_field_flags(PhpResource resultHandle, int fieldIndex)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null || !result.CheckFieldIndex(fieldIndex))
@@ -885,7 +887,7 @@ namespace Peachpie.Library.MySql
         /// </summary>
         /// <param name="resultHandle">Query result resource.</param>
         /// <returns>The PHP object.</returns>
-        public static stdClass? mysql_fetch_field(PhpResource resultHandle)
+        public static stdClass mysql_fetch_field(PhpResource resultHandle)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null)
@@ -902,7 +904,7 @@ namespace Peachpie.Library.MySql
         /// <param name="resultHandle">Query result resource.</param>
         /// <param name="fieldIndex">Field index.</param>
         /// <returns>The PHP object.</returns>
-        public static stdClass? mysql_fetch_field(PhpResource resultHandle, int fieldIndex)
+        public static stdClass mysql_fetch_field(PhpResource resultHandle, int fieldIndex)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null) return null;
@@ -910,7 +912,7 @@ namespace Peachpie.Library.MySql
             return FetchFieldInternal(result, fieldIndex);
         }
 
-        static stdClass? FetchFieldInternal(MySqlResultResource/*!*/ result, int fieldIndex)
+        static stdClass FetchFieldInternal(MySqlResultResource/*!*/ result, int fieldIndex)
         {
             if (!result.CheckFieldIndex(fieldIndex))
                 return null;
@@ -969,7 +971,7 @@ namespace Peachpie.Library.MySql
         /// <param name="resultHandle">Query result resource.</param>
         /// <returns>An array containing a length of each value of the current row.</returns>
         [return: CastToFalse]
-        public static PhpArray? mysql_fetch_lengths(PhpResource resultHandle)
+        public static PhpArray mysql_fetch_lengths(PhpResource resultHandle)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null) return null;
@@ -1009,14 +1011,14 @@ namespace Peachpie.Library.MySql
         /// </summary>
         /// <returns>Server version</returns>
         [return: CastToFalse]
-        public static string? mysql_get_server_info(Context ctx) => mysql_get_server_info(LastConnection(ctx) ?? mysql_connect(ctx));
+        public static string mysql_get_server_info(Context ctx) => mysql_get_server_info(LastConnection(ctx) ?? mysql_connect(ctx));
 
         /// <summary>
         /// Gets server version.
         /// </summary>
         /// <returns>Server version</returns>
         [return: CastToFalse]
-        public static string? mysql_get_server_info(PhpResource? link)
+        public static string mysql_get_server_info(PhpResource link)
         {
             var connection = ValidConnection(null, link);
             if (connection == null) return null;
@@ -1028,14 +1030,14 @@ namespace Peachpie.Library.MySql
         /// Gets information about the server.
         /// </summary>
         /// <returns>Server name and protocol type.</returns>
-        public static string? mysql_get_host_info(Context ctx) => mysql_get_host_info(LastConnection(ctx) ?? mysql_connect(ctx));
+        public static string mysql_get_host_info(Context ctx) => mysql_get_host_info(LastConnection(ctx) ?? mysql_connect(ctx));
 
         /// <summary>
         /// Gets information about the server.
         /// </summary>
         /// <param name="link">Connection resource.</param>
         /// <returns>Server name and protocol type.</returns>
-        public static string? mysql_get_host_info(PhpResource? link)
+        public static string mysql_get_host_info(PhpResource link)
         {
             var connection = ValidConnection(null, link);
             if (connection == null) return null;
@@ -1047,14 +1049,14 @@ namespace Peachpie.Library.MySql
         /// Gets version of the protocol.
         /// </summary>
         /// <returns>Protocol version.</returns>
-        public static string? mysql_get_proto_info(Context ctx) => mysql_get_proto_info(LastConnection(ctx) ?? mysql_connect(ctx));
+        public static string mysql_get_proto_info(Context ctx) => mysql_get_proto_info(LastConnection(ctx) ?? mysql_connect(ctx));
 
         /// <summary>
         /// Gets version of the protocol.
         /// </summary>
         /// <param name="link">Connection resource.</param>
         /// <returns>Protocol version.</returns>
-        public static string? mysql_get_proto_info(PhpResource? link)
+        public static string mysql_get_proto_info(PhpResource link)
         {
             var connection = ValidConnection(null, link);
             if (connection == null) return null;
@@ -1075,7 +1077,7 @@ namespace Peachpie.Library.MySql
         /// <param name="link">Connection resource.</param>
         /// <returns>Escaped string.</returns>
         [return: CastToFalse]
-        public static PhpString mysql_real_escape_string(Context ctx, PhpString str, PhpResource? link = null)
+        public static PhpString mysql_real_escape_string(Context ctx, PhpString str, PhpResource link = null)
         {
             var connection = ValidConnection(ctx, link);
             if (connection == null)
@@ -1138,7 +1140,7 @@ namespace Peachpie.Library.MySql
         /// Gets the name of the client character set.
         /// </summary>
         /// <returns>Character set name.</returns>
-        public static string? mysql_client_encoding(Context ctx, PhpResource? linkIdentifier = null)
+        public static string mysql_client_encoding(Context ctx, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
             if (connection == null) return null;
@@ -1182,7 +1184,7 @@ namespace Peachpie.Library.MySql
         /// <param name="ctx"></param>
         /// <param name="linkIdentifier"></param>
         /// <returns>True if successful.</returns>
-        public static bool mysql_set_charset(Context ctx, string charset, PhpResource? linkIdentifier = null)
+        public static bool mysql_set_charset(Context ctx, string charset, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
             if (connection == null) return false;
@@ -1209,7 +1211,7 @@ namespace Peachpie.Library.MySql
         /// Ping a server connection or reconnect if there is no connection.
         /// </summary>
         /// <returns>Whether the connection to the server MySQL server is working.</returns>
-        public static bool mysql_ping(Context ctx, PhpResource? linkIdentifier = null)
+        public static bool mysql_ping(Context ctx, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
             try

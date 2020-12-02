@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
@@ -47,24 +45,24 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Prepared command.
         /// </summary>
-        private protected MySqlCommand? Command { get; private set; }
+        private protected MySqlCommand Command { get; private set; }
 
         /// <summary>
         /// Result of the command execute command.
         /// </summary>
         [PhpHidden]
-        MySqlResultResource? Result { get; set; }
+        MySqlResultResource Result { get; set; }
 
         /// <summary>
         /// Lazily bound params.
         /// </summary>
         [PhpHidden]
-        private PhpAlias[]? _bound_params = null;
+        private PhpAlias[] _bound_params = null;
 
         /// <summary>
         /// Lazily bound params type.
         /// </summary>
-        private string? _bound_params_type = null;
+        private string _bound_params_type = null;
 
         /// <summary>
         /// Constructs the object.
@@ -77,7 +75,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Constructs the object.
         /// </summary>
-        public mysqli_stmt(mysqli link, string? query)
+        public mysqli_stmt(mysqli link, string query)
         {
             __construct(link, query);
         }
@@ -113,7 +111,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Constructs the object.
         /// </summary>
-        public void __construct(mysqli link, string? query = null)
+        public void __construct(mysqli link, string query = null)
         {
             if (link == null)
             {
@@ -158,7 +156,7 @@ namespace Peachpie.Library.MySql.MySqli
                 if (_bound_params_type[param_nr] == BoundType.Blob)
                 {
                     //
-                    var alias = _bound_params![param_nr];
+                    var alias = _bound_params[param_nr];
                     var str = alias.ToPhpString(this.Connection.Context);
                     str.EnsureWritable().Add(data);
                     alias.Value = str;
@@ -237,14 +235,14 @@ namespace Peachpie.Library.MySql.MySqli
                     var variable = _bound_params[i];
 
                     // convert the type
-                    object? boxed;
+                    object boxed;
                     if (variable.Value.IsNull)
                     {
                         boxed = null;
                     }
                     else
                     {
-                        switch (_bound_params_type![i])
+                        switch (_bound_params_type[i])
                         {
                             case BoundType.Integer:
                                 boxed = variable.ToLong();
@@ -301,7 +299,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// Gets a result set from a prepared statement.
         /// </summary>
         [return: CastToFalse]
-        public mysqli_result? get_result()
+        public mysqli_result get_result()
         {
             return Result != null
                 ? new mysqli_result(Result)
