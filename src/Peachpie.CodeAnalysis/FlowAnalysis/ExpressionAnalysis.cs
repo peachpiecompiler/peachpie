@@ -1029,6 +1029,98 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return type;
         }
 
+        static Optional<object> ResolvePlusOperation(Optional<object> xobj, Optional<object> yobj)
+        {
+            if (xobj.HasValue && yobj.HasValue)
+            {
+                switch (xobj.Value)
+                {
+                    case double x:
+                        switch (yobj.Value)
+                        {
+                            case double y: return x + y;
+                            case long y: return x + y;
+                            case int y: return x + y;
+                        }
+                        break;
+                    case long x:
+                        switch (yobj.Value)
+                        {
+                            case double y: return x + y;
+                            case long y:
+                                try { return checked(x + y); }
+                                catch (OverflowException) { return (double)x + y; }
+                            case int y: return x + y;
+                        }
+                        break;
+                    case int x:
+                        switch (yobj.Value)
+                        {
+                            case double y: return x + y;
+                            case long y: return x + y;
+                            case int y: return (long)x + y;
+                        }
+                        break;
+                }
+            }
+
+            return default;
+        }
+
+        static Optional<object> ResolveOperation(Optional<object> xobj, Optional<object> yobj, Operations op)
+        {
+            if (!xobj.HasValue || !yobj.HasValue)
+            {
+                return default;
+            }
+
+            switch (op)
+            {
+                case Operations.Add:
+                    return ResolvePlusOperation(xobj, yobj);
+
+                case Operations.Mul:
+                    switch (xobj.Value)
+                    {
+                        case double x:
+                            switch (yobj.Value)
+                            {
+                                case double y: return x * y;
+                                case long y: return x * y;
+                                case int y: return x * y;
+                            }
+                            break;
+                        case int x:
+                            switch (yobj.Value)
+                            {
+                                case double y: return x * y;
+                                case long y:
+                                    try { return checked(x * y); }
+                                    catch (OverflowException) { return (double)x * y; }
+                                case int y:
+                                    try { return checked(x * y); }
+                                    catch (OverflowException) { return (double)x * y; }
+                            }
+                            break;
+                        case long x:
+                            switch (yobj.Value)
+                            {
+                                case double y: return x * y;
+                                case long y:
+                                    try { return checked(x * y); }
+                                    catch (OverflowException) { return (double)x * y; }
+                                case int y:
+                                    try { return checked(x * y); }
+                                    catch (OverflowException) { return (double)x * y; }
+                            }
+                            break;
+                    }
+                    break;
+            }
+
+            return default;
+        }
+
         /// <summary>
         /// Gets resulting type of <c>-</c> operation.
         /// </summary>
@@ -1064,7 +1156,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 #region Arithmetic Operations
 
                 case Operations.Add:
-                    return GetPlusOperationType(x.Left, x.Right);
+                    x.ConstantValue = ResolvePlusOperation(x.Left.ConstantValue, x.Right.ConstantValue);
+                    return x.ConstantValue.HasValue
+                        ? TypeCtx.GetTypeMaskFromLiteral(x.ConstantValue)
+                        : GetPlusOperationType(x.Left, x.Right);
 
                 case Operations.Sub:
                     return GetMinusOperationType(x.Left, x.Right);
@@ -1073,10 +1168,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Mul:
                 case Operations.Pow:
 
-                    if (IsDoubleOnly(x.Left.TypeRefMask) || IsDoubleOnly(x.Right.TypeRefMask)) // some operand is double and nothing else
+                    x.ConstantValue = ResolveOperation(x.Left.ConstantValue, x.Right.ConstantValue.Value, x.Operation);
+                    if (x.ConstantValue.HasValue)
+                    {
+                        return TypeCtx.GetTypeMaskFromLiteral(x.ConstantValue);
+                    }
+                    else if (IsDoubleOnly(x.Left.TypeRefMask) || IsDoubleOnly(x.Right.TypeRefMask)) // some operand is double and nothing else
+                    {
                         return TypeCtx.GetDoubleTypeMask(); // double if we are sure about operands
+                    }
                     else
+                    {
                         return TypeCtx.GetNumberTypeMask();
+                    }
 
                 case Operations.Mod:
                     return TypeCtx.GetLongTypeMask();
@@ -1204,7 +1308,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Operations.LessThanOrEqual => dl <= dr,
                     _ => default(Optional<object>),
                 };
-            }                
+            }
 
             //
             return default;
