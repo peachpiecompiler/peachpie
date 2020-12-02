@@ -51,7 +51,7 @@ namespace Peachpie.Library.XmlDom
             get
             {
                 if (_xmlNode == null) DOMException.Throw(ExceptionCode.InvalidState);
-                return _xmlNode;
+                return _xmlNode!;
             }
             set
             {
@@ -216,7 +216,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// This function returns the document the current node belongs to.
         /// </summary>
-        public DOMDocument ownerDocument => (DOMDocument)Create(XmlNode.OwnerDocument);
+        public DOMDocument? ownerDocument => (DOMDocument?)Create(XmlNode.OwnerDocument);
 
         /// <summary>
         /// Returns the namespace URI of the node.
@@ -327,7 +327,7 @@ namespace Peachpie.Library.XmlDom
         private protected virtual DOMNode CloneObjectInternal(bool deepCopyFields)
         {
             DOMException.Throw(ExceptionCode.InvalidState);
-            return null;
+            return null!;
         }
 
         #endregion
@@ -369,7 +369,7 @@ namespace Peachpie.Library.XmlDom
         {
         }
 
-        private protected delegate XmlNode NodeAction(DOMNode/*!*/ newNode, DOMNode auxNode);
+        private protected delegate XmlNode NodeAction(DOMNode/*!*/ newNode, DOMNode? auxNode);
 
         /// <summary>
         /// Performs a child-adding action with error checks.
@@ -444,7 +444,7 @@ namespace Peachpie.Library.XmlDom
             }
             else is_fragment = false;
 
-            XmlNode? result = CheckedChildOperation(newnode, refnode, delegate (DOMNode _newNode, DOMNode _refNode)
+            XmlNode? result = CheckedChildOperation(newnode, refnode, delegate (DOMNode _newNode, DOMNode? _refNode)
             {
                 return XmlNode.InsertBefore(_newNode.XmlNode, (_refNode == null ? null : _refNode.XmlNode));
             });
@@ -463,9 +463,9 @@ namespace Peachpie.Library.XmlDom
         [return: CastToFalse]
         public virtual DOMNode? replaceChild(DOMNode newnode, DOMNode oldnode)
         {
-            XmlNode? result = CheckedChildOperation(newnode, oldnode, delegate (DOMNode _newNode, DOMNode _oldNode)
+            XmlNode? result = CheckedChildOperation(newnode, oldnode, delegate (DOMNode _newNode, DOMNode? _oldNode)
             {
-                return XmlNode.ReplaceChild(_newNode.XmlNode, _oldNode.XmlNode);
+                return XmlNode.ReplaceChild(_newNode.XmlNode, _oldNode!.XmlNode);
             });
 
             if (result == null) return null;
@@ -493,7 +493,7 @@ namespace Peachpie.Library.XmlDom
             }
             else is_fragment = false;
 
-            XmlNode? result = CheckedChildOperation(newnode, null, delegate (DOMNode _newNode, DOMNode _)
+            XmlNode? result = CheckedChildOperation(newnode, null, delegate (DOMNode _newNode, DOMNode? _)
             {
                 return XmlNode.AppendChild(_newNode.XmlNode);
             });
@@ -596,7 +596,7 @@ namespace Peachpie.Library.XmlDom
         /// <returns>The cloned node.</returns>
         public virtual DOMNode cloneNode(bool deep = false)
         {
-            if (IsAssociated) return Create(XmlNode.CloneNode(deep));
+            if (IsAssociated) return Create(XmlNode.CloneNode(deep))!;
             else return CloneObjectInternal(deep);
         }
 

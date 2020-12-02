@@ -140,9 +140,6 @@ namespace Pchp.Library
         public DirectoryListing(PhpDirectory.PhpDirectoryContext dirctx, IEnumerable<string> listing)
             : base(DirectoryListingName)
         {
-            Debug.Assert(listing != null);
-            Debug.Assert(dirctx != null);
-
             _dirctx = dirctx;
 
             this.Enumerator = listing.GetEnumerator();

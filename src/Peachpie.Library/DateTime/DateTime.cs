@@ -174,7 +174,7 @@ namespace Pchp.Library.DateTime
         [PhpHidden]
         internal static System_DateTime StrToTime(Context ctx, string? timestr, System_DateTime time, TimeZoneInfo? timeZone = null)
         {
-            if (string.IsNullOrWhiteSpace(timestr) || (timestr = timestr.Trim()).EqualsOrdinalIgnoreCase("now"))
+            if (string.IsNullOrWhiteSpace(timestr) || (timestr = timestr!.Trim()).EqualsOrdinalIgnoreCase("now"))
             {
                 return System_DateTime.UtcNow;
             }
@@ -233,7 +233,7 @@ namespace Pchp.Library.DateTime
                     }
                     else
                     {
-                        timezone = PhpTimeZone.GetTimeZone(tz);
+                        timezone = PhpTimeZone.GetTimeZone(tz) ?? throw new ArgumentException(nameof(array));
                     }
                 }
                 else
@@ -380,7 +380,7 @@ namespace Pchp.Library.DateTime
         {
             if (DateTimeFunctions.GetDateTimeFromInterface(datetime, out var dt, out var tz))
             {
-                return new DateTime(ctx, dt, tz);
+                return new DateTime(ctx, dt, tz!);
             }
             else
             {

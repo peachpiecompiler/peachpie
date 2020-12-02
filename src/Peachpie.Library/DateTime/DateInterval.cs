@@ -290,7 +290,7 @@ namespace Pchp.Library.DateTime
             bool percent = false;
             var result = StringBuilderUtilities.Pool.Get();
 
-            foreach (char ch in format)
+            foreach (char ch in format!)
             {
                 if (percent)
                 {

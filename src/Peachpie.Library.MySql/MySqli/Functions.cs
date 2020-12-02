@@ -256,7 +256,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// Gets a result set from a prepared statement.
         /// </summary>
         [return: CastToFalse]
-        public static mysqli_result mysqli_stmt_get_result(mysqli_stmt stmt) => stmt.get_result();
+        public static mysqli_result? mysqli_stmt_get_result(mysqli_stmt stmt) => stmt.get_result();
 
         /// <summary>
         /// Fetch a result row as an associative array.

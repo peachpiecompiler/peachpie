@@ -31,7 +31,6 @@ namespace Pchp.Library.Reflection
         {
             get
             {
-                Debug.Assert(_tinfo != null);
                 return _tinfo.Name;
             }
             //set
@@ -63,9 +62,6 @@ namespace Pchp.Library.Reflection
 
         internal ReflectionMethod(PhpTypeInfo tinfo, RoutineInfo routine)
         {
-            Debug.Assert(tinfo != null);
-            Debug.Assert(routine != null);
-
             _tinfo = tinfo;
             _routine = routine;
         }

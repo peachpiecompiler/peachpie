@@ -158,7 +158,7 @@ namespace Peachpie.Library.MySql.MySqli
                 if (_bound_params_type[param_nr] == BoundType.Blob)
                 {
                     //
-                    var alias = _bound_params[param_nr];
+                    var alias = _bound_params![param_nr];
                     var str = alias.ToPhpString(this.Connection.Context);
                     str.EnsureWritable().Add(data);
                     alias.Value = str;
@@ -244,7 +244,7 @@ namespace Peachpie.Library.MySql.MySqli
                     }
                     else
                     {
-                        switch (_bound_params_type[i])
+                        switch (_bound_params_type![i])
                         {
                             case BoundType.Integer:
                                 boxed = variable.ToLong();

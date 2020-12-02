@@ -67,7 +67,6 @@ namespace Pchp.Library.Reflection
 
         internal ReflectionClass(PhpTypeInfo tinfo)
         {
-            Debug.Assert(tinfo != null);
             _tinfo = tinfo;
         }
 

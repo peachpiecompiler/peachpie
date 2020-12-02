@@ -27,7 +27,6 @@ namespace Pchp.Library.Reflection
 
         internal ReflectionClassConstant(PhpPropertyInfo pinfo)
         {
-            Debug.Assert(pinfo != null);
             _pinfo = pinfo;
         }
 

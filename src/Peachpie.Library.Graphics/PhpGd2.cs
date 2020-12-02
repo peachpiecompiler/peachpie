@@ -428,8 +428,11 @@ namespace Peachpie.Library.Graphics
         {
             var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), BmpFormat.Instance);
 
-            img.Image.Mutate(o => o.BackgroundColor(Color.White));
-            img.AlphaBlending = true;
+            if (img != null)
+            {
+                img.Image.Mutate(o => o.BackgroundColor(Color.White));
+                img.AlphaBlending = true; 
+            }
 
             return img;
         }
@@ -442,8 +445,11 @@ namespace Peachpie.Library.Graphics
         {
             var img = imagecreatecommon(x_size, y_size, new PngConfigurationModule(), PngFormat.Instance);
 
-            img.Image.Mutate(o => o.BackgroundColor(Color.Black));
-            img.AlphaBlending = true;
+            if (img != null)
+            {
+                img.Image.Mutate(o => o.BackgroundColor(Color.Black));
+                img.AlphaBlending = true; 
+            }
 
             return img;
         }
@@ -779,7 +785,7 @@ namespace Peachpie.Library.Graphics
             var fontStyle = FontStyle.Regular;
             if (fontInd == 3 || fontInd >= 5)
             {
-                if (fontFamily.IsStyleAvailable(FontStyle.Bold))
+                if (fontFamily!.IsStyleAvailable(FontStyle.Bold))
                 {
                     fontStyle = FontStyle.Bold;
                 }
@@ -790,7 +796,7 @@ namespace Peachpie.Library.Graphics
             if (fontInd > 1) fontSize += 4;
             if (fontInd > 3) fontSize += 4;
 
-            return fontFamily.CreateFont(fontSize, fontStyle);
+            return fontFamily!.CreateFont(fontSize, fontStyle);
         }
 
         static Font? CreateFontByFontFile(Context ctx, string font_file, double size)
@@ -814,11 +820,6 @@ namespace Peachpie.Library.Graphics
             try
             {
                 family = new FontCollection().Install(font_stream.RawStream); // TODO: perf: global font collection cache
-
-                if (family == null)
-                {
-                    throw new InvalidDataException();
-                }
             }
             catch
             {
@@ -1357,8 +1358,6 @@ namespace Peachpie.Library.Graphics
         /// <returns>True if save succeeded.</returns>
         static bool imagesave(Context ctx, PhpResource im, PhpValue to/* = null*/, Action<Image<Rgba32>, Stream> saveaction)
         {
-            Debug.Assert(saveaction != null);
-
             // check the gd2 resource
             var img = PhpGdImageResource.ValidImage(im);
             if (img == null)

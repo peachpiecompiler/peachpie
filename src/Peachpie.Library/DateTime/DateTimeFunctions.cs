@@ -177,7 +177,7 @@ namespace Pchp.Library.DateTime
         //[return:CastToFalse]
         public static DateTime date_sub(DateTime @object, DateInterval interval) => @object.sub(interval);
 
-        internal static bool GetDateTimeFromInterface(DateTimeInterface dti, out System_DateTime datetime, out TimeZoneInfo timezone)
+        internal static bool GetDateTimeFromInterface(DateTimeInterface dti, out System_DateTime datetime, /*[NotNullWhen(true)]*/ out TimeZoneInfo? timezone)  // TODO: NETSTANDARD2.1
         {
             if (dti is Library.DateTime.DateTime dt)
             {
@@ -424,8 +424,6 @@ namespace Pchp.Library.DateTime
 
         internal static string FormatDate(string format, System_DateTime utc, TimeZoneInfo zone)
         {
-            Debug.Assert(zone != null);
-
             if (string.IsNullOrEmpty(format))
             {
                 return string.Empty;

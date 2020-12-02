@@ -99,7 +99,7 @@ namespace Pchp.Library
 
             int name_length = end - start + 1;
             if (!string.IsNullOrEmpty(suffix) &&
-                suffix.Length < name_length &&
+                suffix!.Length < name_length &&
                 String.Compare(path, end - suffix.Length + 1, suffix, 0, suffix.Length, StringComparison.CurrentCultureIgnoreCase) == 0)
             {
                 name_length -= suffix.Length;
@@ -200,14 +200,14 @@ namespace Pchp.Library
 
             if ((options & PathInfoOptions.Extension) != 0)
             {
-                int last_dot = basename.LastIndexOf('.');
+                int last_dot = basename!.LastIndexOf('.');
                 if (last_dot >= 0)
                     extension = basename.Substring(last_dot + 1);
             }
 
             if ((options & PathInfoOptions.FileName) != 0)
             {
-                int last_dot = basename.LastIndexOf('.');
+                int last_dot = basename!.LastIndexOf('.');
                 if (last_dot >= 0)
                     filename = basename.Substring(0, last_dot);
                 else

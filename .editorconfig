@@ -76,3 +76,7 @@ csharp_new_line_before_catch = true
 csharp_new_line_before_finally = true
 csharp_new_line_before_members_in_object_initializers = true
 csharp_new_line_before_members_in_anonymous_types = true
+
+# CS8618: Non-nullable field is uninitialized. Consider declaring as nullable.
+# (Fields in PHP classes are initialized in the __construct method instead directly in the ctor)
+dotnet_diagnostic.CS8618.severity = suggestion

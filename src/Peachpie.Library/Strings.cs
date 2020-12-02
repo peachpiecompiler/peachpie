@@ -837,8 +837,6 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Thrown if <paramref name="pieces"/> is null.</exception>
         private static PhpString ImplodeInternal(Context ctx, PhpValue glue, PhpArray/*!*/pieces)
         {
-            Debug.Assert(pieces != null);
-
             // handle empty pieces:
             if (pieces.Count == 0)
             {
@@ -1327,11 +1325,11 @@ namespace Pchp.Library
                 {
                     var subject_string = subjects.CurrentValue.ToStringOrThrow(ctx);
 
-                    if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
-                    if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subject_string.Length;
-                    if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
+                    if (offset_list != null) int_offset = (i < offsets!.Length) ? offsets[i] : 0;
+                    if (length_list != null) int_length = (i < lengths!.Length) ? lengths[i] : subject_string.Length;
+                    if (replacement_list != null) str_replacement = (i < replacements!.Length) ? replacements[i] : string.Empty;
 
-                    result_array.SetItemValue(subjects.CurrentKey, (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length));
+                    result_array.SetItemValue(subjects.CurrentKey, (PhpValue)SubstringReplace(subject_string, str_replacement!, int_offset, int_length));
 
                     //
                     i++;
@@ -1343,11 +1341,11 @@ namespace Pchp.Library
             {
                 var subject_string = subject.ToStringOrThrow(ctx);
 
-                if (offset_list != null) int_offset = offsets.Length != 0 ? offsets[0] : 0;
-                if (length_list != null) int_length = lengths.Length != 0 ? lengths[0] : subject_string.Length;
-                if (replacement_list != null) str_replacement = replacements.Length != 0 ? replacements[0] : string.Empty;
+                if (offset_list != null) int_offset = offsets!.Length != 0 ? offsets[0] : 0;
+                if (length_list != null) int_length = lengths!.Length != 0 ? lengths[0] : subject_string.Length;
+                if (replacement_list != null) str_replacement = replacements!.Length != 0 ? replacements[0] : string.Empty;
 
-                return (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length);
+                return (PhpValue)SubstringReplace(subject_string, str_replacement!, int_offset, int_length);
             }
         }
 
@@ -1928,7 +1926,7 @@ namespace Pchp.Library
         /// <exception cref="PhpException"><paramref name="translatedStr"/> contains Unicode characters greater than '\u0800'.</exception>
         static string AddCSlashesInternal(string str, string translatedStr, string translatedMask)
         {
-            Debug.Assert(str != null && translatedMask != null && translatedStr != null && str.Length == translatedStr.Length);
+            Debug.Assert(str.Length == translatedStr.Length);
 
             // prepares the mask:
             CharMap charmap = InitializeCharMap();
@@ -2246,7 +2244,7 @@ namespace Pchp.Library
         /// <param name="charSet">The character set used in conversion. This parameter is ignored.</param>
         /// <param name="keepExisting">Whether to keep existing entities and do not encode them.</param>
         /// <returns>The converted substring.</returns>
-        internal static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string charSet, bool keepExisting)
+        internal static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string? charSet, bool keepExisting)
         {
             int maxi = index + length;
             Debug.Assert(maxi <= str.Length);
@@ -3446,8 +3444,6 @@ namespace Pchp.Library
             /// <param name="str"></param>
             public void Initialize(string str)
             {
-                Debug.Assert(str != null);
-
                 this.String = str;
                 this.Length = str.Length;
                 this.Position = 0;
@@ -3791,8 +3787,6 @@ namespace Pchp.Library
         /// <remarks>Assumes that either <paramref name="format"/> nor <paramref name="arguments"/> is null.</remarks>
         internal static string? FormatInternal(Context ctx, string format, PhpValue[] arguments)
         {
-            Debug.Assert(format != null && arguments != null);
-
             Encoding encoding = ctx.StringEncoding;
             var result = StringBuilderUtilities.Pool.Get();
             int state = 0, width = 0, precision = -1, seqIndex = 0, swapIndex = -1;
@@ -4157,7 +4151,7 @@ namespace Pchp.Library
         /// <param name="format">The format. See <c>sscanf</c> C function for details.</param>
         /// <returns>A new instance of <see cref="PhpArray"/> containing parsed values indexed by integers starting from 0.</returns>
         /// <remarks><seealso cref="ParseString"/>.</remarks>
-        public static PhpArray sscanf(string str, string format)
+        public static PhpArray? sscanf(string str, string format)
         {
             return ParseString(str, format, new PhpArray());
         }
@@ -4249,7 +4243,7 @@ namespace Pchp.Library
                         else if (format[f] == '[')
                         {
                             bool complement;
-                            CharMap charmap = ParseRangeSpecifier(format, ref f, out complement);
+                            CharMap? charmap = ParseRangeSpecifier(format, ref f, out complement);
                             if (charmap != null)
                             {
                                 int start = s;
@@ -4319,7 +4313,7 @@ namespace Pchp.Library
         /// </remarks>
         static CharMap? ParseRangeSpecifier(string format, ref int f, out bool complement)
         {
-            Debug.Assert(format != null && f > 0 && f < format.Length && format[f] == '[');
+            Debug.Assert(f > 0 && f < format.Length && format[f] == '[');
 
             complement = false;
 
@@ -4359,7 +4353,7 @@ namespace Pchp.Library
         /// <returns>The parsed value or a <B>null</B> reference on error.</returns>
         static PhpValue ParseSubstring(char specifier, int width, string str, ref int s)
         {
-            Debug.Assert(width >= 0 && str != null && s < str.Length);
+            Debug.Assert(width >= 0 && s < str.Length);
 
             PhpValue result;
             int limit = (width < str.Length - s) ? s + width : str.Length;
@@ -5176,11 +5170,11 @@ namespace Pchp.Library
                             break;
 
                         case WordCountResult.WordsArray:
-                            words.Add(word_count, str.Substring(word_start, pos - word_start));
+                            words!.Add(word_count, str.Substring(word_start, pos - word_start));
                             break;
 
                         case WordCountResult.PositionsToWordsMapping:
-                            words.Add(word_start, str.Substring(word_start, pos - word_start));
+                            words!.Add(word_start, str.Substring(word_start, pos - word_start));
                             break;
 
                         default:
@@ -5576,7 +5570,7 @@ namespace Pchp.Library
                     Debug.Assert(_ISO_8859_1_Encoding != null);
                 }
 
-                return _ISO_8859_1_Encoding;
+                return _ISO_8859_1_Encoding!;
             }
         }
         static Encoding? _ISO_8859_1_Encoding;

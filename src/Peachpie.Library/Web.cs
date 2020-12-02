@@ -99,8 +99,6 @@ namespace Pchp.Library
             /// <returns></returns>
             public static string? MatchedString(Group/*!*/g)
             {
-                Debug.Assert(g != null);
-
                 return (g.Success && g.Value.Length > 0) ? g.Value : null;
             }
 
@@ -109,8 +107,6 @@ namespace Pchp.Library
             /// </summary>
             public static string ReplaceControlCharset(string/*!*/str, char newChar)
             {
-                Debug.Assert(str != null);
-
                 StringBuilder? sb = null;
                 int last = 0;
                 for (int i = 0; i < str.Length; i++)

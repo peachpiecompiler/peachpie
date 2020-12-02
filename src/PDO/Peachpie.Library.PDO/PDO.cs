@@ -235,7 +235,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Gets the native connection instance
         /// </summary>
-        internal DbConnection? Connection => _connection?.Connection;
+        internal DbConnection Connection => _connection.Connection;
 
         /// <summary>
         /// Empty constructor.
@@ -243,7 +243,6 @@ namespace Peachpie.Library.PDO
         [PhpFieldsOnlyCtor]
         protected PDO(Context/*!*/ctx)
         {
-            Debug.Assert(ctx != null);
             _ctx = ctx;
             _ctx.RegisterDisposable(this);
         }
@@ -534,7 +533,7 @@ namespace Peachpie.Library.PDO
 
             if (TryGetAttribute(PDO_ATTR.ATTR_STATEMENT_CLASS, out var classattr) && Operators.IsSet(classattr) && classattr.IsPhpArray(out var classarr))
             {
-                if (classarr[0].IsString(out var classname))
+                if (classarr![0].IsString(out var classname))
                 {
                     var tinfo = _ctx.GetDeclaredTypeOrThrow(classname, autoload: true);
                     var args = classarr[1].IsPhpArray(out var argsarr) ? argsarr : PhpArray.Empty;
@@ -547,9 +546,9 @@ namespace Peachpie.Library.PDO
                     var construct = tinfo.RuntimeMethods[ReflectionUtils.PhpConstructorName];
                     if (construct != null)
                     {
-                        construct.Invoke(_ctx, instance, args.GetValues());
+                        construct.Invoke(_ctx, instance, args!.GetValues());
                     }
-                    else if (args.Count != 0)
+                    else if (args!.Count != 0)
                     {
                         // arguments provided but __construct() was not found
                         throw new InvalidOperationException();

@@ -419,7 +419,7 @@ namespace Pchp.Library
                 if (_connected)
                 {
                     // check whether the socket is OK
-                    bool error = _socket.Poll(_pollTime, SelectMode.SelectError);
+                    bool error = _socket!.Poll(_pollTime, SelectMode.SelectError);
 
                     if (!error)
                         // ok, we keep this connection
@@ -583,7 +583,7 @@ namespace Pchp.Library
             {
                 if (!_connected) return;
 
-                if (_reader.Peek() != -1)
+                if (_reader!.Peek() != -1)
                 {
                     // there is something on the input (should be empty)
                     ResetConnection();
@@ -694,9 +694,6 @@ namespace Pchp.Library
             /// <returns>Formatted email address.</returns>
             private static string FormatEmailAddress(string/*!*/address, string/*!*/formatString)
             {
-                Debug.Assert(address != null, "address == null");
-                Debug.Assert(formatString != null, "formatString == null");
-
                 int a, b;
                 if ((a = address.IndexOf('<')) >= 0 && (b = address.IndexOf('>', a)) >= 0)
                     address = address.Substring(a + 1, b - a - 1);
@@ -712,7 +709,7 @@ namespace Pchp.Library
             /// <param name="line"><see cref="String"/> to be written onto the internal writer.</param>
             private void Post(string line)
             {
-                this._writer.WriteLine(line);
+                this._writer!.WriteLine(line);
                 this._writer.Flush();
             }
 
@@ -736,9 +733,7 @@ namespace Pchp.Library
 
             private bool Ack(string? expected1, string? expected2, Action<string>/*!*/fail)
             {
-                Debug.Assert(fail != null);
-
-                var line = _reader.ReadLine();
+                var line = _reader!.ReadLine();
 
                 if (expected1 != null && line.StartsWith(expected1, StringComparison.Ordinal))
                     return true; // ok
@@ -802,14 +797,14 @@ namespace Pchp.Library
 
                     // if SP character is on the first place, we need to duplicate it
                     if (dataLine.Length > 0 && dataLine[0] == '.')
-                        _writer.Write('.');
+                        _writer!.Write('.');
 
                     // according to MIME, the lines must not be longer than 998 characters (1000 including CRLF)
                     // so we need to break such lines using folding
                     while (dataLine.Length - lineStart > maxLineLength - correction)
                     {
                         //break the line, inserting FWS sequence
-                        _writer.WriteLine(dataLine.Substring(lineStart, maxLineLength - correction));
+                        _writer!.WriteLine(dataLine.Substring(lineStart, maxLineLength - correction));
                         _writer.Write(' ');
                         lineStart += maxLineLength - correction;
 
@@ -818,13 +813,13 @@ namespace Pchp.Library
                     }
 
                     //output the rest of the line
-                    _writer.WriteLine(dataLine.Substring(lineStart));
+                    _writer!.WriteLine(dataLine.Substring(lineStart));
 
                     // flush the stream
                     _writer.Flush();
                 }
 
-                _writer.WriteLine(".");
+                _writer!.WriteLine(".");
 
                 // flush the stream
                 _writer.Flush();

@@ -153,7 +153,6 @@ namespace Peachpie.Library.MySql
         public static PhpResource? mysql_connect(Context ctx, string? server = null, string? username = null, string? password = null, bool new_link = false, ConnectFlags client_flags = ConnectFlags.None)
         {
             var config = ctx.Configuration.Get<MySqlConfiguration>();
-            Debug.Assert(config != null);
 
             var connection_string = config.ConnectionString ?? BuildConnectionString(config, ref server, config.Port, username, password, client_flags).ToString();
 
@@ -296,8 +295,7 @@ namespace Peachpie.Library.MySql
         /// <returns>Query resource or a <B>null</B> reference (<B>null</B> in PHP) on failure.</returns>
         internal static PhpResource QueryBinary(Encoding encoding, byte[] query, MySqlConnectionResource connection)
         {
-            Debug.Assert(query != null);
-            Debug.Assert(connection != null && connection.IsValid);
+            Debug.Assert(connection.IsValid);
 
             //
             List<IDataParameter>? parameters = null;
@@ -418,8 +416,6 @@ namespace Peachpie.Library.MySql
         /// <remarks>This method unescapes as many characters as <paramref name="dest"/> can hold.</remarks>
         private static void UnescapeString(byte[]/*!*/source, int startFrom, byte[]/*!*/dest)
         {
-            Debug.Assert(source != null);
-            Debug.Assert(dest != null);
             Debug.Assert(startFrom >= 0 && startFrom < source.Length);
             Debug.Assert(source.Length - startFrom /* - escapedChars */ >= dest.Length);
 

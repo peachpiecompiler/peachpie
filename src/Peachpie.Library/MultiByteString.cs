@@ -815,7 +815,7 @@ namespace Pchp.Library
                             var x = GetEncoding(split[i].Trim());
                             if (x == null) invalid++;
 
-                            enc_array[i] = x;
+                            enc_array[i] = x!;      // NULL values will be filtered out later
                         }
                     }
                     else
@@ -832,7 +832,7 @@ namespace Pchp.Library
             }
             else if (from_encoding.IsPhpArray(out var arr))
             {
-                if (arr.Count == 0)
+                if (arr!.Count == 0)
                 {
                     // empty array
                     return false;
@@ -853,7 +853,7 @@ namespace Pchp.Library
                         {
                             var x = GetEncoding(e.CurrentValue.ToString().Trim());
                             if (x == null) invalid++;
-                            enc_array[i++] = x;
+                            enc_array[i++] = x!;    // NULL values will be filtered out later
                         }
                         Debug.Assert(i == arr.Count);
                     }
@@ -926,7 +926,7 @@ namespace Pchp.Library
         /// <returns>Converted string.</returns>
         public static PhpString mb_convert_encoding(Context ctx, PhpString str, string to_encoding, PhpValue from_encoding = default(PhpValue))
         {
-            string decoded;
+            string? decoded;
 
             if (str.ContainsBinaryData)
             {
@@ -1011,11 +1011,11 @@ namespace Pchp.Library
                 if (visited == null)
                     visited = new HashSet<object>();
 
-                if (visited.Add(arr))
+                if (visited.Add(arr!))
                 {
                     // TODO: arr.EnsureWritable() !!
 
-                    var e = arr.GetFastEnumerator();
+                    var e = arr!.GetFastEnumerator();
                     while (e.MoveNext())
                     {
                         ref var oldvalue = ref e.CurrentValue;
@@ -1040,7 +1040,7 @@ namespace Pchp.Library
                     {
                         if (p.IsStatic) continue;
 
-                        var oldvalue = p.GetValue(null/*only for static properties*/, obj);
+                        var oldvalue = p.GetValue(null!/*needed only for static properties*/, obj);
                         var newvalue = convert_variable(oldvalue, from_encoding, ref from_enc, ref from_encs, to_enc, ref visited);
                         if (oldvalue.IsAlias)
                         {
@@ -1048,7 +1048,7 @@ namespace Pchp.Library
                         }
                         else
                         {
-                            p.SetValue(null, obj, newvalue);
+                            p.SetValue(null!/*needed only for static properties*/, obj, newvalue);
                         }
                     }
 
@@ -1516,7 +1516,7 @@ namespace Pchp.Library
                     return PhpValue.False;
                 }
 
-                GetConfig(ctx).DetectOrder = encodings ?? new[] { encoding };
+                GetConfig(ctx).DetectOrder = encodings ?? new[] { encoding! };
                 return PhpValue.True;
             }
             else
@@ -1572,7 +1572,7 @@ namespace Pchp.Library
 
                 if (TryDetectEncoding(str, encodings, out encoding, out var _))
                 {
-                    return encoding.WebName;
+                    return encoding!.WebName;
                 }
                 else
                 {

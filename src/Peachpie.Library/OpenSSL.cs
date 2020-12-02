@@ -214,7 +214,7 @@ namespace Pchp.Library
                     break;
             }
 
-            alg.Mode = cipher.Mode;
+            alg!.Mode = cipher.Mode;
             alg.Key = decodedKey;
             alg.IV = iVector;
 
@@ -619,7 +619,7 @@ namespace Pchp.Library
             {
                 builder.Append("Certificate:\n");
                 builder.Append("\tData:\n");
-                builder.AppendFormat("\t\tVersion: {0} 0x{0:X}\n", x509.Certificate.Version);
+                builder.AppendFormat("\t\tVersion: {0} 0x{0:X}\n", x509.Certificate!.Version);
                 builder.Append("\t\tSerial Number:\n");
                 builder.AppendFormat("\t\t\t{0}\n", x509.Certificate.SerialNumber);
                 builder.AppendFormat("\t\tSigniture Algorithm: {0}\n", x509.Certificate.SignatureAlgorithm.FriendlyName);
@@ -646,7 +646,7 @@ namespace Pchp.Library
             builder.Append("-----BEGIN CERTIFICATE-----\n");
 
             int alignment = 64;
-            string encoded = System.Convert.ToBase64String(x509.Certificate.Export(X509ContentType.Cert));
+            string encoded = System.Convert.ToBase64String(x509.Certificate!.Export(X509ContentType.Cert));
 
             int reminder = 0;
             while (reminder < encoded.Length - alignment)
@@ -680,7 +680,7 @@ namespace Pchp.Library
             if (resource == null)
                 return null;
 
-            return openssl_digest(resource.Certificate.Export(X509ContentType.Cert), hash_algorithm, raw_output);
+            return openssl_digest(resource.Certificate!.Export(X509ContentType.Cert), hash_algorithm, raw_output);
         }
 
         /// <summary>
@@ -737,7 +737,7 @@ namespace Pchp.Library
         /// </summary>
         public class OpenSSLKeyResource : PhpResource
         {
-            public AsymmetricAlgorithm Algorithm { get; } = null;
+            public AsymmetricAlgorithm Algorithm { get; }
             KeyType Type;
 
             public OpenSSLKeyResource(AsymmetricAlgorithm algorithm, KeyType type) : base("OpenSSL key")
