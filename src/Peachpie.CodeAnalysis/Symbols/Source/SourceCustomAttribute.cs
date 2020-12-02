@@ -106,6 +106,15 @@ namespace Pchp.CodeAnalysis.Symbols
                         compilation.CreateTypedConstant(_tref.ToString()),
                         compilation.CreateTypedConstant(Encoding.UTF8.GetBytes(ArgumentsToJson())));
                 }
+
+                // TODO: validate {type} attribute TARGET if any
+                //Attribute::TARGET_CLASS
+                //Attribute::TARGET_FUNCTION
+                //Attribute::TARGET_METHOD
+                //Attribute::TARGET_PROPERTY
+                //Attribute::TARGET_CLASS_CONSTANT
+                //Attribute::TARGET_PARAMETER
+                //Attribute::TARGET_ALL
             }
 
             //
