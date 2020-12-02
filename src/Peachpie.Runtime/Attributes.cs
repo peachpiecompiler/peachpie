@@ -556,7 +556,7 @@ namespace Pchp.Core
     /// <summary>
     /// PHP attribute annotation.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
     public sealed class PhpCustomAtribute : Attribute
     {
         /// <summary>
