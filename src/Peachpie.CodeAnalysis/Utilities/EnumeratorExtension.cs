@@ -41,13 +41,12 @@ namespace Pchp.CodeAnalysis
         /// <returns>Value corresponding to key or default of <typeparamref name="T"/>.</returns>
         public static T TryGetOrDefault<K, T>(this IDictionary<K, T> dict, K key)
         {
-            T value;
-            if (!dict.TryGetValue(key, out value))
+            if (dict.TryGetValue(key, out var value))
             {
-                value = default(T);
+                return value;
             }
 
-            return value;
+            return default;
         }
 
         /// <summary>
