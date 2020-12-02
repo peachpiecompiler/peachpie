@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_cfg == null && this.Statements != null) // ~ Statements => non abstract method
                 {
                     // build control flow graph
-                    var cfg = new ControlFlowGraph(this.Statements, CreateBinder(true));
+                    var cfg = new ControlFlowGraph(this.Statements, CreateBinder());
 
                     // create initial flow state
                     cfg.Start.FlowState = StateBinder.CreateInitialState(this);
@@ -62,9 +62,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        protected SemanticsBinder CreateBinder(bool locals)
+        protected SemanticsBinder CreateBinder()
         {
-            return SemanticsBinder.Create(DeclaringCompilation, ContainingFile.SyntaxTree, locals ? LocalsTable : null, ContainingType as SourceTypeSymbol);
+            return SemanticsBinder.Create(DeclaringCompilation, ContainingFile.SyntaxTree, LocalsTable, ContainingType as SourceTypeSymbol);
+        }
+
+        protected SemanticsBinder CreateBinderNoLocals()
+        {
+            return new SemanticsBinder(DeclaringCompilation, ContainingFile.SyntaxTree, self: ContainingType as SourceTypeSymbol);
         }
 
         /// <summary>
@@ -477,7 +482,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var phpattrs = Syntax.GetAttributes();
             if (phpattrs.Count != 0)
             {
-                attrs = attrs.AddRange(CreateBinder(false).BindAttributes(phpattrs));
+                attrs = attrs.AddRange(CreateBinderNoLocals().BindAttributes(phpattrs));
             }
 
             // attributes from PHPDoc
