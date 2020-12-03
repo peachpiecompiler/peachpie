@@ -160,6 +160,18 @@ namespace Pchp.Library.Spl
         }
     }
 
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
+    public class ValueError : Error
+    {
+        [PhpFieldsOnlyCtor]
+        protected ValueError() : base() { }
+
+        public ValueError(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
+
     /// <summary>
     /// The exception is thrown when too few arguments are passed to a user-defined function or method.<br/>
     /// This should apply to built-in functions as well if the code is in strict mode.
