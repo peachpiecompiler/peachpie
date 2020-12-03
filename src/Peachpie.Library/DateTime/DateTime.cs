@@ -129,7 +129,7 @@ namespace Pchp.Library.DateTime
         {
         }
 
-        private DateTime(Context ctx, System_DateTime time, TimeZoneInfo timezone)
+        private DateTime(Context ctx, System_DateTime time, TimeZoneInfo? timezone)
         {
             _ctx = ctx;
 
@@ -228,7 +228,7 @@ namespace Pchp.Library.DateTime
                     : System_DateTime.UtcNow;
 
                 // resolve timezone or current
-                TimeZoneInfo timezone;
+                TimeZoneInfo? timezone;
 
                 if (array.TryGetValue("timezone", out var tzval) && tzval.IsString(out var tz))
                 {

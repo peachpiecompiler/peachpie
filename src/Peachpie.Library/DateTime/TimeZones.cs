@@ -10,6 +10,8 @@
 
 */
 
+#nullable enable
+
 using System;
 using System.Globalization;
 using System.Collections;
@@ -257,22 +259,17 @@ namespace Pchp.Library.DateTime
             // add aliases and knonwn time zones from bundled XML:
             foreach (var names in LoadKnownTimeZones())
             {
-                TimeZoneInfo tz = null;
-
                 for (int i = 0; i < names.Length; i++)
                 {
-                    if (tzdict.TryGetValue(names[i], out tz))
+                    if (tzdict.TryGetValue(names[i], out var tz) && tz != null)
                     {
-                        break;
-                    }
-                }
+                        // update the map of known time zones:
+                        foreach (var n in names)
+                        {
+                            tzdict[n] = tz;
+                        }
 
-                // update the map of known time zones:
-                if (tz != null)
-                {
-                    for (int i = 0; i < names.Length; i++)
-                    {
-                        tzdict[names[i]] = tz;
+                        break;
                     }
                 }
             }
@@ -328,12 +325,14 @@ namespace Pchp.Library.DateTime
         {
             public CurrentTimeZoneCache()
             {
+                _timeZone = TimeZoneInfo.Utc;
+                _changedFunc = (_) => true;
             }
 #if DEBUG
-            internal CurrentTimeZoneCache(TimeZoneInfo timezone)
+            internal CurrentTimeZoneCache(TimeZoneInfo timezone) : this()
             {
-                this._timeZone = timezone;
-                this._changedFunc = (_) => false;
+                _timeZone = timezone;
+                _changedFunc = (_) => false;
             }
 #endif
 
@@ -344,8 +343,10 @@ namespace Pchp.Library.DateTime
             {
                 get
                 {
-                    if (_timeZone == null || _changedFunc == null || _changedFunc(_timeZone) == true)
+                    if (_changedFunc(_timeZone) == true)
+                    {
                         _timeZone = DetermineTimeZone(out _changedFunc);    // get the current timezone, update the function that determines, if the timezone has to be rechecked.
+                    }
 
                     return _timeZone;
                 }
@@ -390,12 +391,9 @@ namespace Pchp.Library.DateTime
                 //    return config.Date.TimeZone;
                 //}
 
-                // convert current system time zone to PHP zone:
-                result = SystemToPhpTimeZone(TimeZoneInfo.Local);
-
-                // UTC:
-                if (result == null)
-                    result = DateTimeUtils.UtcTimeZone;// GetTimeZone("UTC");
+                // convert current system time zone to PHP zone,
+                // or use UTC time zone by default
+                result = SystemToPhpTimeZone(TimeZoneInfo.Local) ?? TimeZoneInfo.Utc;
 
                 //PhpException.Throw(PhpError.Strict, LibResources.GetString("using_implicit_timezone", result.Id));
 
@@ -445,7 +443,7 @@ namespace Pchp.Library.DateTime
         /// </summary>
         /// <param name="phpName">PHP time zone name.</param>
         /// <returns>The time zone or a <B>null</B> reference.</returns>
-        internal static TimeZoneInfo GetTimeZone(string/*!*/ phpName)
+        internal static TimeZoneInfo? GetTimeZone(string/*!*/ phpName)
         {
             if (string.IsNullOrEmpty(phpName))
             {
@@ -486,7 +484,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Tries to match given <paramref name="systemTimeZone"/> to our fixed <see cref="s_timezones"/>.
         /// </summary>
-        static TimeZoneInfo SystemToPhpTimeZone(TimeZoneInfo systemTimeZone)
+        static TimeZoneInfo? SystemToPhpTimeZone(TimeZoneInfo systemTimeZone)
         {
             if (systemTimeZone == null)
                 return null;
@@ -519,8 +517,7 @@ namespace Pchp.Library.DateTime
 
         public static string date_default_timezone_get(Context ctx)
         {
-            var timezone = GetCurrentTimeZone(ctx);
-            return (timezone != null) ? timezone.Id : null;
+            return GetCurrentTimeZone(ctx).Id;
         }
 
         #endregion
@@ -576,7 +573,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns a numerically indexed array containing all defined timezone identifiers.
         /// </summary>
-        public static PhpArray timezone_identifiers_list(int what = DateTimeZone.ALL, string country = null)
+        public static PhpArray timezone_identifiers_list(int what = DateTimeZone.ALL, string? country = null)
         {
             if ((what & DateTimeZone.PER_COUNTRY) == DateTimeZone.PER_COUNTRY || !string.IsNullOrEmpty(country))
             {
@@ -662,10 +659,10 @@ namespace Pchp.Library.DateTime
         /// Returns the timezone name from abbreviation.
         /// </summary>
         [return: CastToFalse]
-        public static string timezone_name_from_abbr(string abbr, int gmtOffset = -1, int isdst = -1)
+        public static string? timezone_name_from_abbr(string abbr, int gmtOffset = -1, int isdst = -1)
         {
             var timezones = PhpTimeZone.s_lazyTimeZones.Value;
-            string result = null;   // candidate
+            string? result = null;   // candidate
 
             if (string.IsNullOrEmpty(abbr) && gmtOffset == -1)
             {
@@ -742,13 +739,15 @@ namespace Pchp.Library.DateTime
         /// Alias of new <see cref="DateTimeZone"/>
         /// </summary>
         [return: CastToFalse]
-        public static DateTimeZone timezone_open(string timezone)
+        public static DateTimeZone? timezone_open(string timezone)
         {
             var tz = GetTimeZone(timezone);
-            if (tz == null)
-                return null;
+            if (tz != null)
+            {
+                return new DateTimeZone(tz);
+            }
 
-            return new DateTimeZone(tz);
+            return null; // FALSE
         }
 
         /// <summary>
@@ -761,7 +760,7 @@ namespace Pchp.Library.DateTime
         }
 
         [return: CastToFalse]
-        public static PhpArray timezone_transitions_get(DateTimeZone timezone, int timestamp_begin = 0, int timestamp_end = 0)
+        public static PhpArray? timezone_transitions_get(DateTimeZone timezone, int timestamp_begin = 0, int timestamp_end = 0)
         {
             return timezone?.getTransitions(timestamp_begin, timestamp_end);
         }
