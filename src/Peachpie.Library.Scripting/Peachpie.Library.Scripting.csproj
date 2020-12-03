@@ -17,6 +17,7 @@
       you may remove this workaround once it will work using netstandard2.0 well.
     -->
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" Condition=" '$(TargetFramework)'=='netstandard2.0' " />
+    <PackageReference Include="Mono.Posix-4.5" Version="4.5.0" Condition=" '$(TargetFramework)'=='net461' " />
   </ItemGroup>
 
   <ItemGroup>
