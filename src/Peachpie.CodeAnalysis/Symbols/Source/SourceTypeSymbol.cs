@@ -1672,6 +1672,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var attrs = SourceAttributes;
 
+            // [NullableContext(2)] - everything nullable can return/receive null by default
+            attrs = attrs.Add(DeclaringCompilation.CreateNullableContextAttribute(NullableContextUtils.AnnotatedAttributeValue));
+
             // [PhpTypeAttribute]
             AttributeData phptypeattr;
             var autoload = AutoloadFlag;

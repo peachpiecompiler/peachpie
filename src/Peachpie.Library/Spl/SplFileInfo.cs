@@ -144,7 +144,6 @@ namespace Pchp.Library.Spl
         /// </summary>
         /// <returns>A string representing the type of the entry. May be one of <c>file</c>, <c>link</c>, or <c>dir</c>.</returns>
         /// <exception cref="RuntimeException">Throws a RuntimeException on error.</exception>
-        [return: NotNull]
         public virtual string getType()
         {
             // see filetype()

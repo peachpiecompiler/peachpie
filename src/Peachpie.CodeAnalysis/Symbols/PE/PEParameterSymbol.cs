@@ -45,12 +45,14 @@ namespace Pchp.CodeAnalysis.Symbols
         private struct PackedFlags
         {
             // Layout:
-            // |.............|n|rr|cccccccc|vvvvvvvv|
+            // |..........vu|n|rr|cccccccc|vvvvvvvv|
             // 
             // v = decoded well known attribute values. 8 bits.
             // c = completion states for well known attributes. 1 if given attribute has been decoded, 0 otherwise. 8 bits.
             // r = RefKind. 2 bits.
             // n = hasNameInMetadata. 1 bit.
+            // u = HasNotNull. 1 bit.
+            // v = HasNotNull populated. 1 bit.
 
             private const int WellKnownAttributeDataOffset = 0;
             private const int WellKnownAttributeCompletionFlagOffset = 10;
@@ -62,6 +64,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
             private const int HasNameInMetadataBit = 0x1 << 22;
             private const int HasDefaultValueFieldPopulatedBit = 0x1 << 23;
+
+            private const int HasNotNullBit = 0x1 << 24;
+            private const int HasNotNullPopulatedBit = 0x1 << 25;
 
             private const int AllWellKnownAttributesCompleteNoData = WellKnownAttributeCompletionFlagMask << WellKnownAttributeCompletionFlagOffset;
 
@@ -115,6 +120,19 @@ namespace Pchp.CodeAnalysis.Symbols
                 int theBits = _bits; // Read this.bits once to ensure the consistency of the value and completion flags.
                 value = (theBits & ((int)flag << WellKnownAttributeDataOffset)) != 0;
                 return (theBits & ((int)flag << WellKnownAttributeCompletionFlagOffset)) != 0;
+            }
+
+            public void SetHasNotNull(bool value)
+            {
+                int bitsToSet = HasNotNullPopulatedBit | (value ? HasNotNullBit : 0);
+                ThreadSafeFlagOperations.Set(ref _bits, bitsToSet);
+            }
+
+            public bool TryGetHasNotNull(out bool value)
+            {
+                int theBits = _bits; // Read this.bits once to ensure the consistency of the value and completion flags.
+                value = (theBits & HasNotNullBit) != 0;
+                return (theBits & HasNotNullPopulatedBit) != 0;
             }
         }
 
@@ -432,12 +450,14 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                const WellKnownAttributeFlags flag = WellKnownAttributeFlags.NotNull;
-
-                if (!_packedFlags.TryGetWellKnownAttribute(flag, out var value))
+                if (!_packedFlags.TryGetHasNotNull(out bool value))
                 {
-                    value = _packedFlags.SetWellKnownAttribute(flag, AttributeHelpers.HasNotNullAttribute(Handle, (PEModuleSymbol)ContainingModule));
+                    // C# 8.0 Nullability check for reference types
+                    value = !Type.IsValueType && AttributeHelpers.IsNotNullable(this, Handle, (PEModuleSymbol)ContainingModule);
+
+                    _packedFlags.SetHasNotNull(value);
                 }
+
                 return value;
             }
         }

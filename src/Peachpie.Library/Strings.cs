@@ -2222,7 +2222,6 @@ namespace Pchp.Library
         /// <param name="encoding">The character set used in conversion. This parameter is ignored.</param>
         /// <param name="double_encode">When double_encode is turned off PHP will not encode existing html entities, the default is to convert everything.</param>
         /// <returns>The converted string.</returns>
-        [return: NotNull]
         public static string/*!*/htmlspecialchars(string @string, QuoteStyle flags = QuoteStyle.Compatible | QuoteStyle.Html401, string encoding = "UTF-8", bool double_encode = true)
         {
             return string.IsNullOrEmpty(@string)
@@ -3706,7 +3705,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The input string.</param>
         /// <returns><paramref name="str"/> with the first character converted to uppercase.</returns>
-        [return: NotNull]
         public static string ucfirst(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -3721,7 +3719,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The input string.</param>
         /// <returns>Returns the resulting string.</returns>
-        [return: NotNull]
         public static string lcfirst(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -3736,7 +3733,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The input string.</param>
         /// <returns><paramref name="str"/> with the first character of each word in a string converted to uppercase.</returns>
-        [return: NotNull]
         public static string ucwords(string str) => ucwords(str, " \t\r\n\f\v");
 
         /// <summary>
@@ -3745,7 +3741,6 @@ namespace Pchp.Library
         /// <param name="str">The input string.</param>
         /// <param name="delimiters">The word separator characters.</param>
         /// <returns><paramref name="str"/> with the first character of each word in a string converted to uppercase.</returns>
-        [return: NotNull]
         public static string ucwords(string str, string delimiters)
         {
             if (string.IsNullOrEmpty(str))
@@ -5545,7 +5540,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The lowercased string or empty string if <paramref name="str"/> is null.</returns>
-        [return: NotNull]
         public static string strtolower(string str) => str != null ? str.ToLowerInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToLower(Locale.GetCulture(Locale.Category.CType));
@@ -5557,7 +5551,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The uppercased string or empty string if <paramref name="str"/> is null.</returns>
-        [return: NotNull]
         public static string strtoupper(string str) => str != null ? str.ToUpperInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));

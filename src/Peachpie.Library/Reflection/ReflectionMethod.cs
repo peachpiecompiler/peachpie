@@ -156,7 +156,6 @@ namespace Pchp.Library.Reflection
         /// </summary>
         /// <returns><see cref="ReflectionMethod"/> of the prototype.</returns>
         /// <exception cref="ReflectionException">If the method does not have a prototype.</exception>
-        [return: NotNull]
         public ReflectionMethod getPrototype()
         {
             // NOTE: not the same as _routine.Methods[0].GetBaseDefinition()

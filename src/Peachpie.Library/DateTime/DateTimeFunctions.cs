@@ -199,7 +199,6 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns the difference between two DateTime objects.
         /// </summary>
-        [return: NotNull]
         public static DateInterval date_diff(DateTimeInterface datetime1, DateTimeInterface datetime2, bool absolute = false)
         {
             if (GetDateTimeFromInterface(datetime1, out var dt1, out _) &&
@@ -258,7 +257,6 @@ namespace Pchp.Library.DateTime
 
         /// <summary>Returns the warnings and errors.</summary>
         /// <remarks>Unlike in PHP, we never return <c>FALSE</c>, according to the documentation and for (our) sanity.</remarks>
-        [return: NotNull]
         public static PhpArray date_get_last_errors(Context ctx) => DateTime.getLastErrors(ctx);
 
         #endregion
@@ -745,7 +743,6 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Alias to <see cref="DateInterval.format"/>.
         /// </summary>
-        [return: NotNull]
         public static string date_interval_format(DateInterval @object, string format) => @object.format(format);
 
         #endregion
@@ -755,7 +752,6 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Get info about given date formatted according to the specified format.
         /// </summary>
-        [return: NotNull]
         public static PhpArray date_parse_from_format(Context ctx, string format, string date)
         {
             var dateinfo = DateInfo.ParseFromFormat(format, date, out var errors);
@@ -1523,7 +1519,6 @@ namespace Pchp.Library.DateTime
         /// Returns associative array with detailed info about given date.
         /// </summary>
         /// <returns>Returns array with information about the parsed date on success.</returns>
-        [return: NotNull]
         public static PhpArray date_parse(Context ctx, string time)
         {
             DateTimeErrors errors = null;

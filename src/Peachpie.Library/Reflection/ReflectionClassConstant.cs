@@ -68,7 +68,6 @@ namespace Pchp.Library.Reflection
             return flags;
         }
 
-        [return: NotNull]
         public string getName() => _pinfo.PropertyName;
 
         public string __toString()

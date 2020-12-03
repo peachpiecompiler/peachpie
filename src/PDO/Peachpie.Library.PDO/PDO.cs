@@ -351,7 +351,6 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// This function returns all currently available PDO drivers which can be used in DSN parameter of <see cref="PDO" /> constructor.
         /// </summary>
-        [return: NotNull]
         public static PhpArray getAvailableDrivers()
         {
             return PDOStatic.pdo_drivers();

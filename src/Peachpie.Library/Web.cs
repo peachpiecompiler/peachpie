@@ -896,7 +896,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The URL string (e.g. "hello%20from%20foo%40bar").</param>
         /// <returns>Decoded string (e.g. "hello from foo@bar")</returns>
-        [return: NotNull]
         public static string rawurldecode(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -912,7 +911,6 @@ namespace Pchp.Library
         /// </summary>  
         /// <param name="str">The string to be encoded.</param>
         /// <returns>The encoded string.</returns>
-        [return: NotNull]
         public static string rawurlencode(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -926,7 +924,6 @@ namespace Pchp.Library
         /// <summary>
         /// Decodes a URL string.
         /// </summary>
-        [return: NotNull]
         public static string urldecode(Context ctx, string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -940,7 +937,6 @@ namespace Pchp.Library
         /// <summary>
         /// Encodes a URL string. Spaces are encoded as '+'.
         /// </summary>  
-        [return: NotNull]
         public static string urlencode(Context ctx, string str)
         {
             if (string.IsNullOrEmpty(str))

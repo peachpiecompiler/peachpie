@@ -67,7 +67,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Constructs the object.
         /// </summary>
-        public mysqli_stmt([NotNull]mysqli link)
+        public mysqli_stmt(mysqli link)
             : this(link, null)
         {
         }
@@ -75,7 +75,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Constructs the object.
         /// </summary>
-        public mysqli_stmt([NotNull]mysqli link, string query)
+        public mysqli_stmt(mysqli link, string query)
         {
             __construct(link, query);
         }
@@ -111,7 +111,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Constructs the object.
         /// </summary>
-        public void __construct([NotNull]mysqli link, string query = null)
+        public void __construct(mysqli link, string query = null)
         {
             if (link == null)
             {

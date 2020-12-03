@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 
 namespace Peachpie.CodeAnalysis.Symbols
@@ -13,8 +14,6 @@ namespace Peachpie.CodeAnalysis.Symbols
         private static readonly byte[] s_signature_HasThis_Void = new byte[] { (byte)SignatureAttributes.Instance, 0, (byte)SignatureTypeCode.Void };
 
         public static readonly AttributeDescription PhpTraitAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, CoreTypes.PhpTraitAttributeName, new[] { s_signature_HasThis_Void });
-
-        public static readonly AttributeDescription NotNullAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "NotNullAttribute", new[] { s_signature_HasThis_Void });
 
         public static readonly AttributeDescription PhpRwAttribute = new AttributeDescription(CoreTypes.PeachpieRuntimeNamespace, "PhpRwAttribute", new[] { s_signature_HasThis_Void });
 
@@ -116,11 +115,79 @@ namespace Peachpie.CodeAnalysis.Symbols
             return false;
         }
 
-        public static bool HasNotNullAttribute(EntityHandle token, PEModuleSymbol containingModule)
+        public static bool IsNotNullable(Symbol symbol, EntityHandle token, PEModuleSymbol containingModule)
         {
-            // TODO: C# 8.0 NotNull
+            // NOTE: This code must be kept in sync with the behaviour of ReflectionUtils.IsNullable in the runtime
 
-            return containingModule != null && PEModule.FindTargetAttribute(containingModule.Module.MetadataReader, token, NotNullAttribute).HasValue;
+            // C# basic 8.0 Nullability check
+            bool isNotNullable;
+            if (containingModule != null && containingModule.Module.HasNullableAttribute(token, out byte attrArg, out var attrArgs))
+            {
+                // Directly annotated [Nullable(x)] or [Nullable(new byte[]{x, y, z})]
+                isNotNullable =
+                    attrArgs.IsDefault
+                    ? attrArg == NullableContextUtils.NotAnnotatedAttributeValue
+                    : attrArgs[0] == NullableContextUtils.NotAnnotatedAttributeValue;   // For generics and arrays, the first byte represents the type itself
+            }
+            else
+            {
+                // Recursively look in containing symbols for [NullableContext(x)], which specifies the default value
+                isNotNullable = symbol.GetNullableContextValue() == NullableContextUtils.NotAnnotatedAttributeValue;
+            }
+
+            // Special C# 8.0 attributes for flow static analysis
+            if (DecodeFlowAnalysisAttributes(containingModule.Module, token) is var flowAnnotations && flowAnnotations != FlowAnalysisAnnotations.None)
+            {
+                // Specified attributes can override nullability in both directions
+                isNotNullable =
+                    isNotNullable
+                    ? (flowAnnotations & (FlowAnalysisAnnotations.AllowNull | FlowAnalysisAnnotations.MaybeNull)) == 0
+                    : ((flowAnnotations & FlowAnalysisAnnotations.DisallowNull) != 0 || (flowAnnotations & FlowAnalysisAnnotations.NotNull) == FlowAnalysisAnnotations.NotNull);
+            }
+
+            return isNotNullable;
+        }
+
+        private static FlowAnalysisAnnotations DecodeFlowAnalysisAttributes(PEModule module, EntityHandle handle)
+        {
+            // NOTE: This code must be kept in sync with the behaviour of ReflectionUtils.DecodeFlowAnalysisAttributes in the runtime
+
+            FlowAnalysisAnnotations annotations = FlowAnalysisAnnotations.None;
+
+            if (handle.IsNil)
+            {
+                return annotations;
+            }
+
+            if (module.HasAttribute(handle, AttributeDescription.AllowNullAttribute)) annotations |= FlowAnalysisAnnotations.AllowNull;
+            if (module.HasAttribute(handle, AttributeDescription.DisallowNullAttribute)) annotations |= FlowAnalysisAnnotations.DisallowNull;
+
+            if (module.HasAttribute(handle, AttributeDescription.MaybeNullAttribute))
+            {
+                annotations |= FlowAnalysisAnnotations.MaybeNull;
+            }
+            else if (module.HasMaybeNullWhenOrNotNullWhenOrDoesNotReturnIfAttribute(handle, AttributeDescription.MaybeNullWhenAttribute, out bool when))
+            {
+                annotations |= (when ? FlowAnalysisAnnotations.MaybeNullWhenTrue : FlowAnalysisAnnotations.MaybeNullWhenFalse);
+            }
+
+            if (module.HasAttribute(handle, AttributeDescription.NotNullAttribute))
+            {
+                annotations |= FlowAnalysisAnnotations.NotNull;
+            }
+            //else if (module.HasMaybeNullWhenOrNotNullWhenOrDoesNotReturnIfAttribute(handle, AttributeDescription.NotNullWhenAttribute, out bool when))
+            //{
+            //    annotations |= (when ? FlowAnalysisAnnotations.NotNullWhenTrue : FlowAnalysisAnnotations.NotNullWhenFalse);
+            //}
+
+            //if (module.HasMaybeNullWhenOrNotNullWhenOrDoesNotReturnIfAttribute(handle, AttributeDescription.DoesNotReturnIfAttribute, out bool condition))
+            //{
+            //    annotations |= (condition ? FlowAnalysisAnnotations.DoesNotReturnIfTrue : FlowAnalysisAnnotations.DoesNotReturnIfFalse);
+            //}
+
+            // NOTE: Uncomment the code above if we decide to use these attributes for our flow analysis as well
+
+            return annotations;
         }
 
         public static bool HasPhpRwAttribute(EntityHandle token, PEModuleSymbol containingModule)

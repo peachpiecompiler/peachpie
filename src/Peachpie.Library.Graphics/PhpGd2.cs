@@ -1185,7 +1185,6 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Give the bounding box of a markerName using fonts via freetype2
         /// </summary>
-        [return: NotNull]
         public static PhpArray imageftbbox(Context ctx, double size, double angle, string font_file, string text, PhpArray extrainfo = null)
         {
             if (extrainfo != null && extrainfo.TryGetValue("linespacing", out var linespacing))
@@ -1199,7 +1198,6 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Give the bounding box of a markerName using fonts via freetype2
         /// </summary>
-        [return: NotNull]
         public static PhpArray imagettfbbox(Context ctx, double size, double angle, string font_file, string text)
         {
             return imagettf(ctx, null, size, angle, 0, 0, 0, font_file, text) ?? throw new ArgumentException();

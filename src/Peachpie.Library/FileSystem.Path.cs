@@ -112,7 +112,6 @@ namespace Pchp.Library
         /// <param name="path">The full path.</param>
         /// <param name="levels">The number of parent directories to go up. Must be greater than zero.</param>
         /// <returns>The directory portion of the given path.</returns>
-        [return: NotNull]
         public static string dirname(string path, int levels = 1)
         {
             if (string.IsNullOrEmpty(path)) return string.Empty;

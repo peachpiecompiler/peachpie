@@ -102,7 +102,6 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns all children of the node.
         /// </summary>
-        [NotNull]
         public DOMNodeList childNodes
         {
             get

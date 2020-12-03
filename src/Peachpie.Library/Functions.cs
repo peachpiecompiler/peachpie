@@ -59,7 +59,6 @@ namespace Pchp.Library
         /// </summary>
         /// <remarks><seealso cref="PhpStack.GetArguments"/>
         /// Also throws warning if called from global scope.</remarks>
-        [return: NotNull]
         public static PhpArray func_get_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args)
         {
             // NOTE: when called from global code, we should return FALSE,

@@ -1004,7 +1004,6 @@ namespace Peachpie.Library.MySql
         /// Gets a version of the client library.
         /// </summary>
         /// <returns>Equivalent native library varsion.</returns>
-        [return: NotNull]
         public static string mysql_get_client_info() => EquivalentNativeLibraryVersion.ToString();
 
         /// <summary>

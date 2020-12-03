@@ -1136,7 +1136,6 @@ namespace Pchp.Library
         /// Although always returns a valid Unicode string value.
         /// </summary>
         /// <returns>A string value where any ill-formed sequence is replaced with <c>'?'</c> character.</returns>
-        [return: NotNull]
         public static string mb_scrub(Context ctx, PhpString str, string encoding = null)
         {
             Encoding enc;
@@ -1528,7 +1527,6 @@ namespace Pchp.Library
         /// Get character encoding detection order.
         /// </summary>
         /// <returns>An ordered array of the encodings is returned.</returns>
-        [return: NotNull]
         public static PhpArray/*!*/mb_detect_order(Context ctx)
         {
             return new PhpArray(GetConfig(ctx).DetectOrder.Select(enc => enc.WebName));

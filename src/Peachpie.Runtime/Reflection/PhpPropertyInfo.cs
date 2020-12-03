@@ -156,7 +156,7 @@ namespace Pchp.Core.Reflection
                 : base(tinfo, field)
             {
                 if (field == null) throw new ArgumentNullException(nameof(field));
-                
+
                 Debug.Assert(field.DeclaringType?.Name == "_statics");
                 Debug.Assert(!field.IsStatic || field.IsLiteral);
             }

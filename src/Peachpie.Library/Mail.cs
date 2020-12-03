@@ -842,7 +842,6 @@ namespace Pchp.Library
         /// <summary>
         /// Parses an address string.
         /// </summary>
-        [return: NotNull]
         public static PhpArray imap_rfc822_parse_adrlist(string addresses, string default_host = null)
         {
             if (string.IsNullOrEmpty(addresses))

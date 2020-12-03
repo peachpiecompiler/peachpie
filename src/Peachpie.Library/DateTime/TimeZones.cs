@@ -625,7 +625,6 @@ namespace Pchp.Library.DateTime
         /// Returns associative array containing dst, offset and the timezone name.
         /// Alias to <see cref="DateTimeZone.listAbbreviations"/>.
         /// </summary>
-        [return: NotNull]
         public static PhpArray timezone_abbreviations_list()
         {
             var timezones = PhpTimeZone.s_lazyTimeZones.Value;

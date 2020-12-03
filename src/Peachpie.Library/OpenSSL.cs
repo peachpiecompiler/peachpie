@@ -494,7 +494,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="aliases">Set to TRUE if digest aliases should be included within the returned array.</param>
         /// <returns>An array of available digest methods.</returns>
-        [return: NotNull]
         public static PhpArray openssl_get_md_methods(bool aliases = false)
         {
             var algos = hash_algos();

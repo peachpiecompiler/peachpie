@@ -45,7 +45,7 @@ namespace Pchp.Library.Reflection
 
             type = m.ReturnType;
             notNullFlag =
-                m.ReturnTypeCustomAttributes.IsDefined(typeof(NotNullAttribute), false) ||
+                !m.ReturnParameter.IsNullable() ||
                 m.ReturnTypeCustomAttributes.IsDefined(typeof(CastToFalse), false); // [return: CastToFalse] => NULL cannot be returned
 
             //
@@ -163,7 +163,6 @@ namespace Pchp.Library.Reflection
             return (sep < 0) ? name : name.Substring(sep + 1);
         }
 
-        [return: NotNull]
         public PhpArray getStaticVariables(Context ctx)
         {
             var arr = new PhpArray();
