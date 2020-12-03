@@ -28,12 +28,12 @@ namespace Peachpie.Library.PDO
 
         internal DbTransaction? CurrentTransaction { get; private set; }
 
-        internal DbCommand? CurrentCommand => _connection.LastCommand;
+        internal DbCommand? CurrentCommand => _connection?.LastCommand;
 
         /// <summary>
         /// Gets the native connection instance
         /// </summary>
-        internal DbConnection Connection => _connection.Connection;
+        internal DbConnection? Connection => _connection?.Connection;
 
         /// <summary>
         /// Empty constructor.
