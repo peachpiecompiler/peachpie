@@ -174,19 +174,17 @@ namespace Pchp.Library.Reflection
             }
 
             // then base classes:
-            RoutineInfo prototype = null;
             for (var t = _tinfo.BaseType; t != null; t = t.BaseType)
             {
                 var r = t.RuntimeMethods[name];
                 if (r != null)
                 {
-                    prototype = r;
+                    return new ReflectionMethod(r);
                 }
             }
 
-            return prototype != null && prototype.DeclaringType != _tinfo
-                ? new ReflectionMethod(prototype)
-                : throw new ReflectionException(string.Format(Resources.Resources.method_doesnt_have_prototype, _tinfo.Name, name));
+            //
+            throw new ReflectionException(string.Format(Resources.Resources.method_doesnt_have_prototype, _tinfo.Name, name));
         }
 
         public PhpValue invoke(Context ctx, object @object, params PhpValue[] args) => _routine.Invoke(ctx, @object, args);
