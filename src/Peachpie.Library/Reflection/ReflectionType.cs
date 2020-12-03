@@ -129,4 +129,14 @@ namespace Pchp.Library.Reflection
         public override string __toString() => getName();
     }
 
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
+    public class ReflectionUnionType : ReflectionType
+    {
+        public override bool allowsNull() => throw new NotImplementedException();
+
+        public override bool isBuiltin() => false;
+
+        public PhpArray/*<ReflectionNamedType >*/getTypes() => throw new NotImplementedException();
+    }
+
 }

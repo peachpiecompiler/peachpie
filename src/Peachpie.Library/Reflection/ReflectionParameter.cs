@@ -180,6 +180,7 @@ namespace Pchp.Library.Reflection
 
         public static string export(string function, string parameter, bool @return = false) { throw new NotImplementedException(); }
 
+        [Obsolete("Use getType() instead.")]
         public ReflectionClass getClass() =>
             (hasTypeInternal(_type) && Core.Reflection.ReflectionUtils.IsPhpClassType(_type))
                 ? new ReflectionClass(_type.GetPhpTypeInfo())
@@ -203,6 +204,7 @@ namespace Pchp.Library.Reflection
 
         public bool isArray() => _type == typeof(PhpArray);
 
+        [Obsolete("Use getType() instead.")]
         public bool isCallable() => _type == typeof(IPhpCallable);
 
         public bool isDefaultValueAvailable() => _defaultValue.HasValue; // value is initialized
