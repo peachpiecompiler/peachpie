@@ -44,11 +44,11 @@ namespace Pchp.Core.Reflection
             Debug.Assert(typeof(PhpArray).IsValueType == false); // see TODO below
 
             if (p.ParameterType.IsValueType &&
-                p.ParameterType != typeof(PhpValue) &&
                 //p.ParameterType != typeof(PhpArray) // TODO: uncomment when PhpArray will be struct
                 p.ParameterType != typeof(PhpString))
             {
-                if (p.ParameterType.IsNullable_T(out var _))
+                // There is currently no way to annotate PhpValue to be non-nullable (although [NullableContext(1)] could confuse that)
+                if (p.ParameterType == typeof(PhpValue) || p.ParameterType.IsNullable_T(out var _))
                 {
                     return true;
                 }

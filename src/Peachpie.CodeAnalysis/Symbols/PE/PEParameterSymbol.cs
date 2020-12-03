@@ -452,8 +452,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (!_packedFlags.TryGetHasNotNull(out bool value))
                 {
-                    // C# 8.0 Nullability check
-                    value = AttributeHelpers.IsNotNullable(this, Handle, (PEModuleSymbol)ContainingModule);
+                    // C# 8.0 Nullability check for reference types
+                    value = !Type.IsValueType && AttributeHelpers.IsNotNullable(this, Handle, (PEModuleSymbol)ContainingModule);
 
                     _packedFlags.SetHasNotNull(value);
                 }
