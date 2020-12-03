@@ -283,11 +283,27 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
         {
+            string nestedname = null;
+
+            var lastdot = clrName.LastIndexOf('.');
+            if (lastdot > 0)
+            {
+                // a nested class name, 1 level only
+                nestedname = clrName.Remove(lastdot) + "+" + clrName.Substring(lastdot + 1);
+            }
+
             foreach (AssemblySymbol ass in _compilation.ProbingAssemblies)
             {
                 if (ass is PEAssemblySymbol peass) // && !peass.IsPchpCorLibrary && !peass.IsExtensionLibrary)
                 {
                     var candidate = ass.GetTypeByMetadataName(clrName);
+
+                    if (candidate.IsErrorTypeOrNull() && nestedname != null)
+                    {
+                        // try a nested class, 1 level only
+                        candidate = ass.GetTypeByMetadataName(nestedname);
+                    }
+
                     if (candidate.IsValidType())
                     {
                         if (candidate is PENamedTypeSymbol pe &&

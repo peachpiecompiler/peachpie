@@ -161,6 +161,9 @@ namespace Pchp.Library.Reflection
         /// </summary>
         public virtual void setValue(Context ctx, PhpValue value) => setValue(ctx, null, value);
 
+        public virtual PhpArray getAttributes(string class_name = null, int flags = 0)
+            => ReflectionUtils.getAttributes(_pinfo.Member, class_name, flags);
+
         /// <summary>
         /// Checks whether a property is initialized.
         /// </summary>

@@ -86,12 +86,9 @@ namespace Pchp.Library.Reflection
         {
             var result = new PhpArray();
 
-            foreach (var c in ctx.GetConstants())
+            foreach (var c in ctx.GetConstants(this.name))
             {
-                if (string.Equals(c.ExtensionName, this.name, StringComparison.OrdinalIgnoreCase))
-                {
-                    result[c.Name] = c.Value;
-                }
+                result[c.Name] = c.Value;
             }
 
             return result;

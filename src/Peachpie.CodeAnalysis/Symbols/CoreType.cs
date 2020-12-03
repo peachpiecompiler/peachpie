@@ -140,7 +140,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, StrictConvert, Comparison, StrictComparison, PhpException,
-            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, DefaultValueAttribute, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute,
+            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, DefaultValueAttribute, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute, PhpCustomAtribute,
             NullableAttribute, NullableContextAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
@@ -202,6 +202,7 @@ namespace Pchp.CodeAnalysis.Symbols
             DummyFieldsOnlyCtor = Create("DummyFieldsOnlyCtor");
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
             DefaultValueAttribute = Create("DefaultValueAttribute");
+            PhpCustomAtribute = Create(nameof(PhpCustomAtribute));
             PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
             NullableAttribute = CreateFromFullName("System.Runtime.CompilerServices.NullableAttribute");
             NullableContextAttribute = CreateFromFullName("System.Runtime.CompilerServices.NullableContextAttribute");

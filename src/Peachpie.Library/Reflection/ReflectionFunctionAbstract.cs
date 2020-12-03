@@ -188,6 +188,9 @@ namespace Pchp.Library.Reflection
         public bool isVariadic() => _routine.Methods.Any(m => m.GetParameters().Any(p => p.GetCustomAttribute<ParamArrayAttribute>() != null));
         public bool returnsReference() => _routine.Methods.Any(m => m.ReturnType == typeof(PhpAlias));
 
+        public virtual PhpArray getAttributes(string class_name = null, int flags = 0)
+            => ReflectionUtils.getAttributes(_routine, class_name, flags);
+
         public virtual string __toString() { throw new NotImplementedException(); }
 
         [PhpHidden]

@@ -66,7 +66,7 @@ namespace Peachpie.CodeAnalysis.Syntax
         {
             AddAndReturn(ref _annotations, (position, obj));
         }
-        List<(int, object)> _annotations; // list of parsed custom attributes, will be taken and used for the next declaration
+        List<(int, object)> _annotations; // list of generics, will be taken and used for the preceding language element
 
         /// <summary>
         /// Gets an additional annotation if any.
@@ -96,19 +96,19 @@ namespace Peachpie.CodeAnalysis.Syntax
             return false;
         }
 
-        /// <summary>
-        /// If applicable, annotates the element with previously parsed <see cref="SourceCustomAttribute"/>.
-        /// </summary>
-        T WithCustomAttributes<T>(T element) where T : LangElement
-        {
-            while (TryGetAnotation<AttributeData>(element.Span.Start, out var attr))
-            {
-                element.AddCustomAttribute(attr);
-            }
+        ///// <summary>
+        ///// If applicable, annotates the element with previously parsed <see cref="SourceCustomAttribute"/>.
+        ///// </summary>
+        //T WithCustomAttributes<T>(T element) where T : LangElement
+        //{
+        //    while (TryGetAnotation<AttributeData>(element.Span.Start, out var attr))
+        //    {
+        //        element.AddCustomAttribute(attr);
+        //    }
 
-            //
-            return element;
-        }
+        //    //
+        //    return element;
+        //}
 
         TypeRef WithGenericTypes(TypeRef tref)
         {
@@ -136,26 +136,26 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public override LangElement Function(Span span, bool conditional, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Name name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, LangElement body)
         {
-            return AddAndReturn(ref _functions,
-                WithCustomAttributes((FunctionDecl)base.Function(span, conditional, aliasReturn, attributes, returnType, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, body)));
+            return AddAndReturn(
+                ref _functions,
+                (FunctionDecl)base.Function(span, conditional, aliasReturn, attributes, returnType, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, body));
         }
 
         public override LangElement Type(Span span, Span headingSpan, bool conditional, PhpMemberAttributes attributes, Name name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, INamedTypeRef baseClassOpt, IEnumerable<INamedTypeRef> implements, IEnumerable<LangElement> members, Span bodySpan)
         {
             var tref = (TypeDecl)base.Type(span, headingSpan, conditional, attributes, name, nameSpan, typeParamsOpt, baseClassOpt, implements, members, bodySpan);
 
-            return AddAndReturn(ref _types, WithCustomAttributes(tref));
+            return AddAndReturn(ref _types, tref);
         }
 
         public override LangElement DeclList(Span span, PhpMemberAttributes attributes, IList<LangElement> decls, TypeRef type)
         {
-            return WithCustomAttributes(base.DeclList(span, attributes, decls, type));
+            return base.DeclList(span, attributes, decls, type);
         }
 
         public override LangElement Method(Span span, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Span returnTypeSpan, string name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<ActualParam> baseCtorParams, LangElement body)
         {
-            return WithCustomAttributes(
-                base.Method(span, aliasReturn, attributes, returnType, returnTypeSpan, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, baseCtorParams, body));
+            return base.Method(span, aliasReturn, attributes, returnType, returnTypeSpan, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, baseCtorParams, body);
         }
 
         public override TypeRef AnonymousTypeReference(Span span, Span headingSpan, bool conditional, PhpMemberAttributes attributes, IEnumerable<FormalTypeParam> typeParamsOpt, INamedTypeRef baseClassOpt, IEnumerable<INamedTypeRef> implements, IEnumerable<LangElement> members, Span bodySpan)

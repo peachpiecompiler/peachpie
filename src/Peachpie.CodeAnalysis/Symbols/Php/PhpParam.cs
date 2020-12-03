@@ -12,6 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public int Index;
         public TypeRefMask Type;
         public bool IsVariadic;
+        internal ParameterSymbol ParameterSymbol { get; }
 
         public bool IsByValue => !IsPhpRw && !IsByRef && !IsAlias;
 
@@ -32,14 +33,15 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public bool IsPhpRw;
 
-        public PhpParam(int index, TypeRefMask tmask, bool isByRef, bool isVariadic, bool isPhpRw, BoundExpression defaultValue)
+        internal PhpParam(ParameterSymbol psymbol, int index, TypeRefMask tmask)
         {
+            this.ParameterSymbol = psymbol;
             this.Index = index;
             this.Type = tmask;
-            this.IsVariadic = isVariadic;
-            this.DefaultValue = defaultValue;
-            this.IsByRef = isByRef;
-            this.IsPhpRw = isPhpRw;
+            this.IsVariadic = psymbol.IsParams;
+            this.DefaultValue = psymbol.Initializer;
+            this.IsByRef = psymbol.RefKind != Microsoft.CodeAnalysis.RefKind.None;
+            this.IsPhpRw = psymbol.IsPhpRw;
         }
     }
 }

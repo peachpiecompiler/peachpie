@@ -331,6 +331,9 @@ namespace Pchp.Library.Reflection
             return result;
         }
 
+        public virtual PhpArray getAttributes(string class_name = null, int flags = 0)
+            => ReflectionUtils.getAttributes(_tinfo.Type, class_name, flags);
+
         [return: CastToFalse]
         public virtual ReflectionProperty getProperty(string name)
         {

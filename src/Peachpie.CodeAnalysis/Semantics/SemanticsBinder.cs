@@ -200,7 +200,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindExpression(AST.Expression expr) => BindExpression(expr, BoundAccess.Read);
 
-        protected BoundArgument BindArgument(AST.Expression expr, bool isByRef = false, bool isUnpack = false)
+        protected BoundArgument BindArgument(AST.Expression expr, bool isByRef = false, bool isUnpack = false, string name = null)
         {
             //if (isUnpack)
             //{
@@ -212,8 +212,8 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(!isUnpack || !isByRef);
 
             return isUnpack
-                ? BoundArgument.CreateUnpacking(bound)
-                : BoundArgument.Create(bound);
+                ? BoundArgument.CreateUnpacking(bound, name)
+                : BoundArgument.Create(bound, name);
         }
 
         protected ImmutableArray<BoundArgument> BindArguments(params AST.Expression[] expressions)
@@ -260,7 +260,7 @@ namespace Pchp.CodeAnalysis.Semantics
             for (int i = 0; i < pcount; i++)
             {
                 var p = parameters[i];
-                var arg = BindArgument(p.Expression, p.Ampersand, p.IsUnpack);
+                var arg = BindArgument(p.Expression, p.Ampersand, p.IsUnpack, p.IsNamedArgument ? p.Name.Value.Name.Value : null);
 
                 //
                 arguments[i] = arg;
@@ -303,6 +303,37 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         protected Location GetLocation(AST.ITreeNode expr) => ContainingFile.GetLocation(expr);
+
+        #endregion
+
+        #region Attributes
+
+        public ImmutableArray<AttributeData> BindAttributes(IReadOnlyList<AST.IAttributeGroup> groups)
+        {
+            if (groups == null || groups.Count == 0)
+            {
+                return ImmutableArray<AttributeData>.Empty;
+            }
+
+            var attrs = new List<AttributeData>();
+
+            foreach (var g in groups)
+            {
+                foreach (var a in g.Attributes)
+                {
+                    var attribute = new SourceCustomAttribute(
+                        DeclaringCompilation,
+                        Self,
+                        BoundTypeRefFactory.CreateFromTypeRef(a.ClassRef, this, Self),
+                        BindArguments(a.CallSignature.Parameters));
+
+                    attrs.Add(attribute);
+                }
+            }
+
+
+            return attrs.ToImmutableArray();
+        }
 
         #endregion
 

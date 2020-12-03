@@ -510,6 +510,11 @@ namespace Pchp.CodeAnalysis.Symbols
         List<Symbol> _lazyMembers;
 
         /// <summary>
+        /// Populated symbol attributes.
+        /// </summary>
+        ImmutableArray<AttributeData> _lazyAttributes;
+
+        /// <summary>
         /// In case the type is declared conditionally,
         /// postpone reporting the diagnostics so they might get ignored eventually.
         /// </summary>
@@ -1071,6 +1076,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected virtual MethodSymbol CreateSourceMethod(MethodDecl m) => new SourceMethodSymbol(this, m);
 
+        ImmutableArray<AttributeData> PopulateSourceAttributes()
+        {
+            var phpattrs = Syntax.GetAttributes();
+            if (phpattrs.Count == 0)
+            {
+                return ImmutableArray<AttributeData>.Empty;
+            }
+
+            var binder = new SemanticsBinder(DeclaringCompilation, ContainingFile.SyntaxTree, locals: null, routine: null, self: this);
+            return binder.BindAttributes(phpattrs);
+        }
+
         IEnumerable<MethodSymbol> LoadMethods()
         {
             return _syntax.Members.OfType<MethodDecl>().Select(m => CreateSourceMethod(m));
@@ -1095,8 +1112,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             p.ConstructorPropertyVisibility.GetAccessibility(),
                             phpdoc: null,
                             kind: PhpPropertyKind.InstanceField,
-                            initializer: null, // passed as argument
-                            customAttributes: default);
+                            initializer: null); // passed as argument
                     }
                 }
             }
@@ -1110,8 +1126,6 @@ namespace Pchp.CodeAnalysis.Symbols
                         ? PhpPropertyKind.AppStaticField
                         : PhpPropertyKind.StaticField;
 
-                flist.TryGetCustomAttributes(out var attrs);
-
                 foreach (var f in flist.Fields)
                 {
                     yield return new SourceFieldSymbol(this, f.Name.Value,
@@ -1119,7 +1133,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         flist.Modifiers.GetAccessibility(), flist.PHPDoc,
                         fkind,
                         initializer: (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null,
-                        customAttributes: attrs);
+                        attributes: binder.BindAttributes(flist.GetAttributes()));
                 }
             }
 
@@ -1132,7 +1146,8 @@ namespace Pchp.CodeAnalysis.Symbols
                         CreateLocation(c.Name.Span),
                         clist.Modifiers.GetAccessibility(), clist.PHPDoc,
                         PhpPropertyKind.ClassConstant,
-                        binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement());
+                        initializer: binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement(),
+                        attributes: binder.BindAttributes(clist.GetAttributes()));
                 }
             }
         }
@@ -1640,13 +1655,27 @@ namespace Pchp.CodeAnalysis.Symbols
             return 0;
         }
 
+        public ImmutableArray<AttributeData> SourceAttributes
+        {
+            get
+            {
+                if (_lazyAttributes.IsDefault)
+                {
+                    ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, PopulateSourceAttributes());
+                }
+
+                return _lazyAttributes;
+            }
+        }
+
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            var attrs = base.GetAttributes();
+            var attrs = SourceAttributes;
 
             // [NullableContext(2)] - everything nullable can return/receive null by default
             attrs = attrs.Add(DeclaringCompilation.CreateNullableContextAttribute(NullableContextUtils.AnnotatedAttributeValue));
 
+            // [PhpTypeAttribute]
             AttributeData phptypeattr;
             var autoload = AutoloadFlag;
             if (autoload == 0)
@@ -1674,21 +1703,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
             }
 
-            //
             attrs = attrs.Add(phptypeattr);
 
-            // attributes from syntax node
-            if (this.Syntax.TryGetCustomAttributes(out var customattrs))
-            {
-                // initialize attribute data if necessary:
-                customattrs
-                    .OfType<SourceCustomAttribute>()
-                    .ForEach(x => x.Bind(this, this.ContainingFile));
-
-                //
-                attrs = attrs.AddRange(customattrs);
-            }
-
+            //
             return attrs;
         }
 

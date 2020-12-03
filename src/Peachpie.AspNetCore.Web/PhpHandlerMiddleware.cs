@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyModel;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pchp.Core;
 using Pchp.Core.Utilities;
@@ -41,6 +42,11 @@ namespace Peachpie.AspNetCore.Web
             public string RootPath { get; set; }
 
             public event Action<Context> RequestStart;
+
+            public const string DefaultLoggerCategory = "PHP";
+
+            /// <inheritdoc/>
+            public string LoggerCategory { get; set; } = DefaultLoggerCategory;
 
             public void InvokeRequestStart(Context ctx) => RequestStart?.Invoke(ctx);
 
@@ -117,6 +123,9 @@ namespace Peachpie.AspNetCore.Web
             // normalize slashes
             _rootPath = NormalizeRootPath(_rootPath);
 
+            // setup logger
+            ConfigureLogger(_options, services.GetService<ILoggerFactory>());
+
             // TODO: pass hostingEnv.ContentRootFileProvider to the Context for file system functions
         }
 
@@ -176,6 +185,40 @@ namespace Peachpie.AspNetCore.Web
                 };
             }
         }
+
+        static void ConfigureLogger(IPhpOptions options, ILoggerFactory factory)
+        {
+            if (factory != null)
+            {
+                var logger = factory.CreateLogger(options.LoggerCategory ?? PhpOptions.DefaultLoggerCategory);
+                if (logger != null && !s_loggerregistered)
+                {
+                    s_loggerregistered = true;
+
+                    PhpException.OnError += (error, message) =>
+                    {
+                        switch (error)
+                        {
+                            case PhpError.Error:
+                                logger.LogError(message);
+                                break;
+
+                            case PhpError.Warning:
+                                logger.LogWarning(message);
+                                break;
+
+                            case PhpError.Notice:
+                            default:
+                                logger.LogInformation(message);
+                                break;
+                        }
+                    };
+                }
+            }
+        }
+
+        /// <summary>flag we have already registered ILogger into PhpException.OnError</summary>
+        static bool s_loggerregistered;
 
         /// <summary>
         /// Loads and reflects assemblies containing compiled PHP scripts.

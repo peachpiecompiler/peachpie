@@ -1167,15 +1167,15 @@ namespace Pchp.Core
         /// <summary>
         /// Resolves the runtime property by looking into runtime properties and eventually invoking the <c>__get</c> magic method.
         /// </summary>
-        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, object/*!*/instance, string propertyName)
+        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, object/*!*/instance, string propertyName, bool quiet)
         {
-            return RuntimePropertyGetValue(ctx, instance.GetPhpTypeInfo(), instance, propertyName);
+            return RuntimePropertyGetValue(ctx, instance.GetPhpTypeInfo(), instance, propertyName, quiet);
         }
 
         /// <summary>
         /// Resolves the runtime property by looking into runtime properties and eventually invoking the <c>__get</c> magic method.
         /// </summary>
-        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, PhpTypeInfo/*!*/type, object/*!*/instance, string propertyName)
+        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, PhpTypeInfo/*!*/type, object/*!*/instance, string propertyName, bool quiet)
         {
             var runtimeFields = type.GetRuntimeFields(instance);
             if (runtimeFields != null && runtimeFields.TryGetValue(propertyName, out var value))
@@ -1201,7 +1201,12 @@ namespace Pchp.Core
             }
 
             //
-            PhpException.UndefinedProperty(type.Name, propertyName);
+            if (!quiet)
+            {
+                PhpException.UndefinedProperty(type.Name, propertyName);
+            }
+
+            // empty
             return PhpValue.Null;
         }
 

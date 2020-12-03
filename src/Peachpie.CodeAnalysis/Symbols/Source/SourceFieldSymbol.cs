@@ -61,8 +61,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optional associated PHPDoc block defining the field type hint.
         /// </summary>
-        internal PHPDocBlock PHPDocBlock => _phpDoc;
-        readonly PHPDocBlock _phpDoc;
+        internal PHPDocBlock PHPDocBlock { get; }
 
         /// <summary>
         /// Declared accessibility - private, protected or public.
@@ -71,7 +70,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly BoundExpression _initializer;
 
-        readonly ImmutableArray<AttributeData> _customAttributes;
+        ImmutableArray<AttributeData> _attributes;
+
+        /// <summary>
+        /// Gets enumeration of property source attributes.
+        /// </summary>
+        public IEnumerable<SourceCustomAttribute> SourceAttributes => _attributes.OfType<SourceCustomAttribute>();
 
         /// <summary>
         /// Gets value indicating whether this field redefines a field from a base type.
@@ -152,7 +156,11 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         PropertySymbol _fieldAccessorProperty;
 
-        public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, PhpPropertyKind kind, BoundExpression initializer = null, ImmutableArray<AttributeData> customAttributes = default)
+        public SourceFieldSymbol(
+            SourceTypeSymbol type, string name, Location location, Accessibility accessibility,
+            PHPDocBlock phpdoc, PhpPropertyKind kind,
+            BoundExpression initializer = null,
+            ImmutableArray<AttributeData> attributes = default)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(name);
@@ -161,10 +169,18 @@ namespace Pchp.CodeAnalysis.Symbols
             _fieldName = name;
             _fieldKind = kind;
             _accessibility = accessibility;
-            _phpDoc = phpdoc;
             _initializer = initializer;
             _location = location;
-            _customAttributes = customAttributes;
+            _attributes = attributes;
+            PHPDocBlock = phpdoc;
+
+            // implicit attributes from PHPDoc
+            var deprecated = phpdoc?.GetElement<PHPDocBlock.DeprecatedTag>();
+            if (deprecated != null)
+            {
+                // [ObsoleteAttribute(message, false)]
+                _attributes = _attributes.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
+            }
         }
 
         #region FieldSymbol
@@ -199,40 +215,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override int? TypeLayoutOffset => null;
 
-        public override ImmutableArray<AttributeData> GetAttributes()
-        {
-            var attrs = _customAttributes;
-
-            // attributes from syntax node
-            if (attrs.IsDefaultOrEmpty)
-            {
-                attrs = ImmutableArray<AttributeData>.Empty;
-            }
-            else
-            {
-                // initialize attribute data if necessary:
-                attrs
-                    .OfType<SourceCustomAttribute>()
-                    .ForEach(x => x.Bind(this, _containingType.ContainingFile));
-            }
-
-            // attributes from PHPDoc
-            if (_phpDoc != null)
-            {
-                var deprecated = _phpDoc.GetElement<PHPDocBlock.DeprecatedTag>();
-                if (deprecated != null)
-                {
-                    // [ObsoleteAttribute(message, false)]
-                    attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
-                }
-
-                // ...
-            }
-
-
-            //
-            return attrs;
-        }
+        public override ImmutableArray<AttributeData> GetAttributes() => _attributes;
 
         #endregion
 
@@ -305,9 +288,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal PHPDocBlock.TypeVarDescTag FindPhpDocVarTag()
         {
-            if (_phpDoc != null)
+            if (PHPDocBlock != null)
             {
-                foreach (var vartype in _phpDoc.Elements.OfType<PHPDocBlock.TypeVarDescTag>())
+                foreach (var vartype in PHPDocBlock.Elements.OfType<PHPDocBlock.TypeVarDescTag>())
                 {
                     if (string.IsNullOrEmpty(vartype.VariableName) || vartype.VariableName.Substring(1) == this.MetadataName)
                     {
@@ -323,9 +306,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var summary = string.Empty;
 
-            if (_phpDoc != null)
+            if (PHPDocBlock != null)
             {
-                summary = _phpDoc.Summary;
+                summary = PHPDocBlock.Summary;
 
                 if (string.IsNullOrWhiteSpace(summary))
                 {

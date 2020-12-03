@@ -30,12 +30,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 _flowState = value;
             }
         }
-        FlowState _flowState;
 
-        /// <summary>
-        /// Whether to reanalyse this block regardless of the flow state convergence.
-        /// </summary>
-        internal virtual bool ForceRepeatedAnalysis => false;
+        FlowState _flowState;
 
         /// <summary>
         /// Comparer to sort the blocks in the ascending order of <see cref="Ordinal"/>.
@@ -52,15 +48,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ExitBlock
     {
-        /// <summary>
-        /// ExitBlock propagates the return type (which is not a part of a flow state) to all the callers.
-        /// Therefore, it must be reanalysed every time it is encountered, even if the flow state didn't change.
-        /// 
-        /// TODO: Consider marking the return type as dirty and return true only in that case.
-        /// </summary>
-        internal override bool ForceRepeatedAnalysis => true;
-
-        #region Callers // TODO: EdgeToCallers
+        #region Callers
 
         /// <summary>
         /// Subscribe a block to be analysed when the exit block is reached and the routine return value changes.

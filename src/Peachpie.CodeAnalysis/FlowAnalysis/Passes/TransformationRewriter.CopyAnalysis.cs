@@ -63,11 +63,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             public CopyAnalysisState WithMerge(CopyAnalysisState other)
             {
                 if (this.IsDefault)
+                {
                     return other;
-                else if (other.IsDefault)
-                    return this;
-
-                if (this.Equals(other))
+                }
+                
+                if (other.IsDefault || this.Equals(other))
                 {
                     return this;
                 }

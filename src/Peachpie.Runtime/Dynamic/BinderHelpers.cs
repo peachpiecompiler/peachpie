@@ -201,7 +201,7 @@ namespace Pchp.Core.Dynamic
             {
                 instance = new DynamicMetaObject(
                     expr,
-                    restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.ReferenceEqual(expr, Expression.Constant(null)))),
+                    restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.ReferenceEqual(expr, Cache.Expressions.Null))),
                     null);
 
                 return false;
@@ -797,10 +797,10 @@ namespace Pchp.Core.Dynamic
                 var resultvar = Expression.Variable(Cache.Types.PhpValue, "result");    // Template: PhpValue result;
 
                 // Template: runtimeflds != null && runtimeflds.TryGetValue(field, out result)
-                var trygetfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_TryGetValue, fieldkey, resultvar));
+                var trygetfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Cache.Expressions.Null), Expression.Call(runtimeflds, Cache.Operators.PhpArray_TryGetValue, fieldkey, resultvar));
 
                 // Template: runtimeflds != null && runtimeflds.ContainsKey(field)
-                var containsfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_ContainsKey, fieldkey));
+                var containsfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Cache.Expressions.Null), Expression.Call(runtimeflds, Cache.Operators.PhpArray_ContainsKey, fieldkey));
 
                 Expression result;
 
@@ -876,14 +876,14 @@ namespace Pchp.Core.Dynamic
                     if (__unset != null)
                     {
                         return Expression.IfThen(
-                            Expression.OrElse(Expression.ReferenceEqual(runtimeflds, Expression.Constant(null)), Expression.IsFalse(removekey)),
+                            Expression.OrElse(Expression.ReferenceEqual(runtimeflds, Cache.Expressions.Null), Expression.IsFalse(removekey)),
                             InvokeHandler(ctx, target, field, __unset, access, Expression.Block(), typeof(void)));
                     }
                     else
                     {
                         // if (runtimeflds != null) runtimeflds.RemoveKey(key)
                         return Expression.IfThen(
-                            Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)),
+                            Expression.ReferenceNotEqual(runtimeflds, Cache.Expressions.Null),
                             removekey);
                     }
                 }
@@ -955,8 +955,10 @@ namespace Pchp.Core.Dynamic
                 {
                     // = target->field
 
-                    // Template: Operators.GetRuntimeProperty(ctx, PhpTypeInfo, instance, propertyName)
-                    return Expression.Call(Cache.Operators.RuntimePropertyGetValue, ctx, Expression.Constant(type), target, Expression.Constant(field));
+                    // Template: Operators.RuntimePropertyGetValue(ctx, PhpTypeInfo, instance, propertyName, quiet)
+                    return Expression.Call(
+                        Cache.Operators.RuntimePropertyGetValue,
+                        ctx, Expression.Constant(type), target, Expression.Constant(field), Cache.Expressions.Create(access.Quiet()));
                 }
 
                 //
@@ -969,7 +971,7 @@ namespace Pchp.Core.Dynamic
             if (access.Isset())
             {
                 // FALSE
-                return Expression.Constant(false);
+                return Cache.Expressions.Create(false);
             }
 
             //

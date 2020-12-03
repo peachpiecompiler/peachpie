@@ -22,8 +22,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     [DebuggerDisplay("WorkList<{T}>, Size={_queue.Count}")]
     public class Worklist<T> where T : BoundBlock
     {
-        readonly object _syncRoot = new object();
-
         /// <summary>
         /// Delegate used to process <typeparamref name="T"/>.
         /// </summary>
@@ -45,7 +43,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// List of blocks to be processed.
         /// </summary>
-        readonly DistinctQueue<T> _queue = new DistinctQueue<T>(new BoundBlockComparer());
+        readonly DistinctQueue<T> _queue = new DistinctQueue<T>(new BoundBlock.OrdinalComparer());
 
         readonly CallGraph _callGraph = new CallGraph();
 
@@ -153,7 +151,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 list[i](block);
             }
-            
+
+            // block.FlowState.Routine.
+
             //CompilerLogSource.Log.Count("BoundBlockProcessings");
         }
 
@@ -164,37 +164,37 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             // Store the current batch and its count
             var todoBlocks = new T[256];
-            int n;
 
             // Deque a batch of blocks and analyse them in parallel
             while (true)
             {
-                n = Dequeue(todoBlocks);
-
-                if (n == 0)
+                var n = Dequeue(todoBlocks);
+                if (n != 0)
+                {
+                    if (concurrent)
+                    {
+                        Parallel.For(0, n, i => Process(todoBlocks[i]));
+                    }
+                    else
+                    {
+                        for (int i = 0; i < n; i++)
+                        {
+                            Process(todoBlocks[i]);
+                        }
+                    }
+                }
+                else
                 {
                     if (_dirtyCallBlocks.IsEmpty)
                     {
                         break;
                     }
-                    else
-                    {
-                        // Process also the call blocks that weren't analysed due to circular dependencies
-                        // TODO: Consider using something more advanced such as cycle detection
-                        _dirtyCallBlocks.ForEach(kvp => Enqueue(kvp.Key));
-                        continue;
-                    }
-                }
 
-                if (concurrent)
-                {
-                    Parallel.For(0, n, (i) => Process(todoBlocks[i]));
-                }
-                else
-                {
-                    for (int i = 0; i < n; i++)
+                    // Process also the call blocks that weren't analysed due to circular dependencies
+                    // TODO: Consider using something more advanced such as cycle detection
+                    foreach (var dirty in _dirtyCallBlocks)
                     {
-                        Process(todoBlocks[i]);
+                        Enqueue(dirty.Key);
                     }
                 }
             }
@@ -239,7 +239,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         // No other types could have been added, only removed (we're making the overapproximation more precise)
                         Debug.Assert(((kvp.Key.ResultTypeMask & ~TypeRefMask.FlagsMask) & ~kvp.Value) == 0);
 
-                        var callers =_callGraph.GetCallerEdges(kvp.Key)
+                        var callers = _callGraph.GetCallerEdges(kvp.Key)
                             .Select(e => e.Caller)
                             .Where(c => !_currentRoutinesLastReturnTypes.ContainsKey(c));    // These were already reanalysed in this phase
 
@@ -266,7 +266,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // Insert the blocks with the highest priority to the batch while having at most one block
             // from each routine, delaying the rest
             int n = 0;
-            while (n < todoBlocks.Length && _queue.TryDequeue(out T block)) // TODO: TryDequeue() with a predicate so we won't have to maintain {delayedBlocks}
+            while (n < todoBlocks.Length && _queue.TryDequeue(out var block)) // TODO: TryDequeue() with a predicate so we won't have to maintain {delayedBlocks}
             {
                 var typeCtx = block.FlowState.FlowContext.TypeRefContext;
 
@@ -276,11 +276,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
                 else
                 {
-                    if (delayedBlocks == null)
-                    {
-                        delayedBlocks = new List<T>();
-                    }
-
+                    delayedBlocks ??= new List<T>();
                     delayedBlocks.Add(block);
                 }
             }
@@ -295,18 +291,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             return n;
-        }
-
-        sealed class BoundBlockComparer : IComparer<BoundBlock>
-        {
-            int IComparer<BoundBlock>.Compare(BoundBlock x, BoundBlock y)
-            {
-                // Each block must be inserted only once to a worklist
-                Debug.Assert(!ReferenceEquals(x, y));
-
-                // Sort the blocks via their topological order to minimize the analysis repetition
-                return x.Ordinal - y.Ordinal;
-            }
         }
     }
 }

@@ -77,6 +77,9 @@ namespace Pchp.Library.Reflection
 
         public PhpValue getValue(Context ctx) => _pinfo.GetValue(ctx, null);
 
+        public virtual PhpArray getAttributes(string class_name = null, int flags = 0)
+            => ReflectionUtils.getAttributes(_pinfo.Member, class_name, flags);
+
         public bool isPrivate() => _pinfo.IsPrivate;
 
         public bool isProtected() => _pinfo.IsProtected;

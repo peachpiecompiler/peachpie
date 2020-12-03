@@ -70,6 +70,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Argument {0} passed to {1}() must be of the type {2}, {3} given.
+        /// </summary>
+        internal static string ERR_ArgumentTypeMismatch {
+            get {
+                return ResourceManager.GetString("ERR_ArgumentTypeMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid assembly name: {0}.
         /// </summary>
         internal static string ERR_BadAssemblyName {
@@ -561,6 +570,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_TooManyUserStrings {
             get {
                 return ResourceManager.GetString("ERR_TooManyUserStrings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot convert {0} to {1}.
+        /// </summary>
+        internal static string ERR_TypeMismatch {
+            get {
+                return ResourceManager.GetString("ERR_TypeMismatch", resourceCulture);
             }
         }
         

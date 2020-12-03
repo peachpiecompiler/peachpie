@@ -186,6 +186,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                     if (_self.IsSealed)
                     {
                         // `static` == `self` <=> self is sealed
+                        // static:: can be resolved:
                         return _self;
                     }
                     break;
@@ -700,7 +701,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public override ITypeSymbol ResolveTypeSymbol(PhpCompilation compilation)
         {
-            var result = (TypeSymbol)TypeRefs[0].ResolveTypeSymbol(compilation);
+            var result = ResolveTypeSymbol(TypeRefs[0], compilation);
 
             for (int i = 1; i < TypeRefs.Length; i++)
             {
@@ -711,7 +712,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                     continue;
                 }
 
-                result = compilation.Merge(result, (TypeSymbol)tref.ResolveTypeSymbol(compilation));
+                result = compilation.Merge(result, ResolveTypeSymbol(tref, compilation));
             }
 
             //if (IsNullable)
@@ -720,6 +721,19 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             //}
 
             return result;
+        }
+
+        static TypeSymbol ResolveTypeSymbol(BoundTypeRef tref, PhpCompilation compilation)
+        {
+            var type = (TypeSymbol)tref.ResolveTypeSymbol(compilation);
+            // special case, static
+            if (type == null)
+            {
+                if (tref.IsStatic()) return compilation.GetSpecialType(SpecialType.System_Object);
+                // else we get NullRefException ¯\_(ツ)_/¯
+            }
+
+            return type;
         }
 
         public override string ToString() => string.Join("|", TypeRefs);

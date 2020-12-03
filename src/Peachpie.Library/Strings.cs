@@ -2217,16 +2217,16 @@ namespace Pchp.Library
         /// <summary>
         /// Converts special characters to HTML entities.
         /// </summary>
-        /// <param name="str">The string to convert.</param>
-        /// <param name="quoteStyle">Quote conversion.</param>
-        /// <param name="charSet">The character set used in conversion. This parameter is ignored.</param>
-        /// <param name="doubleEncode">When double_encode is turned off PHP will not encode existing html entities, the default is to convert everything.</param>
+        /// <param name="string">The string to convert.</param>
+        /// <param name="flags">Quote conversion.</param>
+        /// <param name="encoding">The character set used in conversion. This parameter is ignored.</param>
+        /// <param name="double_encode">When double_encode is turned off PHP will not encode existing html entities, the default is to convert everything.</param>
         /// <returns>The converted string.</returns>
-        public static string/*!*/htmlspecialchars(string str, QuoteStyle quoteStyle = QuoteStyle.Compatible, string charSet = "ISO-8859-1", bool doubleEncode = true)
+        public static string/*!*/htmlspecialchars(string @string, QuoteStyle flags = QuoteStyle.Compatible | QuoteStyle.Html401, string encoding = "UTF-8", bool double_encode = true)
         {
-            return string.IsNullOrEmpty(str)
+            return string.IsNullOrEmpty(@string)
                 ? string.Empty
-                : HtmlSpecialCharsEncode(str, 0, str.Length, quoteStyle, charSet, !doubleEncode);
+                : HtmlSpecialCharsEncode(@string, 0, @string.Length, flags, encoding, !double_encode);
         }
 
         /// <summary>
@@ -4606,7 +4606,7 @@ namespace Pchp.Library
             var format = new System.Globalization.NumberFormatInfo
             {
                 NumberDecimalDigits = Math.Max(num_decimal_places, 0), // TODO: .NET throws for decimals > 99
-                NumberDecimalSeparator = dec_separator ?? ".", // NULL ~ a defalt value
+                NumberDecimalSeparator = dec_separator ?? ".", // NULL ~ a default value
                 NumberGroupSeparator = thousands_separator ?? ",", // NULL ~ a default value
             };
 

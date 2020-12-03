@@ -543,6 +543,35 @@ namespace Pchp.Core
             ScriptType = scriptType;
         }
     }
+
+    /// <summary>
+    /// PHP attribute annotation.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
+    public sealed class PhpCustomAtribute : Attribute
+    {
+        /// <summary>
+        /// The attribute full type name.
+        /// </summary>
+        public string TypeName { get; }
+
+        /// <summary>
+        /// The attribute arguments encoded as JSON string.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public byte[] Arguments { get; }
+
+        /// <summary>
+        /// Initializes the custom attribute data.
+        /// </summary>
+        /// <param name="typename">The type attribute name.</param>
+        /// <param name="utf8value">Arguments in form of associative JSON object or JSON array.</param>
+        public PhpCustomAtribute(string typename, byte[] utf8value)
+        {
+            TypeName = typename ?? throw new ArgumentNullException(nameof(typename));
+            Arguments = utf8value ?? Array.Empty<byte>();
+        }
+    }
 }
 
 namespace System.Runtime.CompilerServices

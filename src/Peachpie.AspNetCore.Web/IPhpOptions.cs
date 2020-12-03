@@ -46,5 +46,10 @@ namespace Peachpie.AspNetCore.Web
         /// right before the requested script is executed.
         /// </summary>
         event Action<Context> RequestStart;
+
+        /// <summary>
+        /// Name the logger category. Default is <c>"PHP"</c>.
+        /// </summary>
+        string LoggerCategory { get; set; }
     }
 }

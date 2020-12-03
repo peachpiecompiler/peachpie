@@ -506,6 +506,30 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Resolves type mask corresponding to given compile time value.
+        /// </summary>
+        public TypeRefMask GetTypeMaskFromLiteral(Microsoft.CodeAnalysis.Optional<object> optional)
+        {
+            if (optional.HasValue)
+            {
+                return optional.Value switch
+                {
+                    bool _ => GetBooleanTypeMask(),
+                    int _ => GetLongTypeMask(),
+                    long _ => GetLongTypeMask(),
+                    double _ => GetDoubleTypeMask(),
+                    string _ => GetStringTypeMask(),
+                    null => GetNullTypeMask(),
+                    _ => throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(optional.Value),
+                };
+            }
+            else
+            {
+                return TypeRefMask.AnyType;
+            }
+        }
+
+        /// <summary>
         /// Gets type mask corresponding to <see cref="System.Object"/>.
         /// </summary>
         public TypeRefMask GetSystemObjectTypeMask() => GetTypeMask(BoundTypeRefFactory.ObjectTypeRef, true);
