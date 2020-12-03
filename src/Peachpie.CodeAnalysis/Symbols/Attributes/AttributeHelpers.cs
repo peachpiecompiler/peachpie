@@ -117,6 +117,8 @@ namespace Peachpie.CodeAnalysis.Symbols
 
         public static bool IsNotNullable(Symbol symbol, EntityHandle token, PEModuleSymbol containingModule)
         {
+            // NOTE: This code must be kept in sync with the behaviour of ReflectionUtils.IsNullable in the runtime
+
             // C# basic 8.0 Nullability check
             bool isNotNullable;
             if (containingModule != null && containingModule.Module.HasNullableAttribute(token, out byte attrArg, out var attrArgs))
@@ -148,6 +150,8 @@ namespace Peachpie.CodeAnalysis.Symbols
 
         private static FlowAnalysisAnnotations DecodeFlowAnalysisAttributes(PEModule module, EntityHandle handle)
         {
+            // NOTE: This code must be kept in sync with the behaviour of ReflectionUtils.DecodeFlowAnalysisAttributes in the runtime
+
             FlowAnalysisAnnotations annotations = FlowAnalysisAnnotations.None;
 
             if (handle.IsNil)
