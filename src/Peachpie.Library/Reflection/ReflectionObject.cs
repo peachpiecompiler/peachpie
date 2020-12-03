@@ -1,4 +1,6 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
@@ -10,26 +12,23 @@ namespace Pchp.Library.Reflection
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionObject : ReflectionClass
     {
-        object _instance;
+        object? _instance;
 
         [PhpFieldsOnlyCtor]
         protected ReflectionObject()
-        { }
+        {
+        }
 
         public ReflectionObject(object instance)
-            :base(instance.GetPhpTypeInfo())
+            : base(instance.GetPhpTypeInfo())
         {
             _instance = instance;
         }
 
-        public void __construct(Context ctx, object _instance)
+        public void __construct(object instance)
         {
-            if (_instance == null)
-            {
-                throw new ReflectionException();
-            }
-
-            _tinfo = _instance.GetPhpTypeInfo();
+            _instance = instance ?? throw new ReflectionException();
+            _tinfo = instance.GetPhpTypeInfo();
         }
 
         public override PhpArray getProperties(int filter)
@@ -48,7 +47,7 @@ namespace Pchp.Library.Reflection
         }
 
         [return: CastToFalse]
-        public override ReflectionProperty getProperty(string name)
+        public override ReflectionProperty? getProperty(string name)
         {
             var p = _tinfo.GetDeclaredProperty(name) ?? _tinfo.GetRuntimeProperty(name, _instance);
             if (p == null)
