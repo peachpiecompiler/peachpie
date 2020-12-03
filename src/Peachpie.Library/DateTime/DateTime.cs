@@ -1,4 +1,6 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using Pchp.Library;
 using System;
 using System.Collections.Generic;
@@ -18,8 +20,8 @@ namespace Pchp.Library.DateTime
     {
         public static DateTimeErrors Empty { get; } = new DateTimeErrors();
 
-        public IList<string> Warnings { get; set; }
-        public IList<string> Errors { get; set; }
+        public IList<string>? Warnings { get; set; }
+        public IList<string>? Errors { get; set; }
 
         public bool HasErrors => Errors != null && Errors.Count != 0;
 
@@ -73,7 +75,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Get the time zone for this DateTime object
         /// </summary>
-        internal TimeZoneInfo TimeZone { get; private set; }
+        internal TimeZoneInfo TimeZone { get; private set; } = TimeZoneInfo.Utc;
 
         // used for serialization:
         // note: we incorrectly show following in reflection as well.
@@ -136,7 +138,7 @@ namespace Pchp.Library.DateTime
         }
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
-        public DateTime(Context ctx, string time = null, DateTimeZone timezone = null)
+        public DateTime(Context ctx, string? time = null, DateTimeZone? timezone = null)
         {
             _ctx = ctx;
 
@@ -145,7 +147,7 @@ namespace Pchp.Library.DateTime
         }
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
-        public void __construct(string time = null, DateTimeZone timezone = null)
+        public void __construct(string? time = null, DateTimeZone? timezone = null)
         {
             this.TimeZone = (timezone != null)
                 ? timezone._timezone
@@ -170,9 +172,16 @@ namespace Pchp.Library.DateTime
         /// In case error or warning occur, <see cref="DateTimeErrors"/> is set accordingly.
         /// </summary>
         [PhpHidden]
-        internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time, TimeZoneInfo timeZone = null)
+        internal static System_DateTime StrToTime(Context ctx, string? timestr, System_DateTime time, TimeZoneInfo? timeZone = null)
         {
-            if (string.IsNullOrWhiteSpace(timestr) || (timestr = timestr.Trim()).EqualsOrdinalIgnoreCase("now"))
+            if (string.IsNullOrEmpty(timestr))
+            {
+                return System_DateTime.UtcNow;
+            }
+
+            timestr = timestr!.Trim();
+
+            if (timestr.EqualsOrdinalIgnoreCase("now"))
             {
                 return System_DateTime.UtcNow;
             }
@@ -336,7 +345,7 @@ namespace Pchp.Library.DateTime
         }
 
         [return: CastToFalse]
-        public static DateTime createFromFormat(Context ctx, string format, string time, DateTimeZone timezone = null)
+        public static DateTime? createFromFormat(Context ctx, string format, string time, DateTimeZone? timezone = null)
         {
             // arguments
 
@@ -363,7 +372,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns new DateTime object encapsulating the given DateTimeImmutable object.
         /// </summary>
-        public static DateTime createFromImmutable(Context ctx, DateTimeImmutable datetime)
+        public static DateTime? createFromImmutable(Context ctx, DateTimeImmutable datetime)
         {
             if (datetime == null)
             {
@@ -534,7 +543,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Get the time zone for this DateTime object
         /// </summary>
-        internal TimeZoneInfo TimeZone { get; private set; }
+        internal TimeZoneInfo TimeZone { get; private set; } = TimeZoneInfo.Utc;
 
         [PhpFieldsOnlyCtor]
         protected DateTimeImmutable(Context ctx)
@@ -551,7 +560,7 @@ namespace Pchp.Library.DateTime
         }
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
-        public DateTimeImmutable(Context ctx, string time = null, DateTimeZone timezone = null)
+        public DateTimeImmutable(Context ctx, string? time = null, DateTimeZone? timezone = null)
         {
             _ctx = ctx;
 
@@ -559,7 +568,7 @@ namespace Pchp.Library.DateTime
             __construct(time, timezone);
         }
 
-        public void __construct(string time = null, DateTimeZone timezone = null)
+        public void __construct(string? time = null, DateTimeZone? timezone = null)
         {
             this.TimeZone = (timezone != null)
                 ? timezone._timezone
@@ -635,7 +644,7 @@ namespace Pchp.Library.DateTime
         public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(_ctx, interval.Apply(Time, negate: true), TimeZone);
 
         [return: CastToFalse]
-        public static DateTimeImmutable createFromFormat(Context ctx, string format, string time, DateTimeZone timezone = null)
+        public static DateTimeImmutable? createFromFormat(Context ctx, string format, string? time, DateTimeZone? timezone = null)
         {
             // arguments
             var dateinfo = DateInfo.ParseFromFormat(format, time, out var errors);
@@ -654,7 +663,7 @@ namespace Pchp.Library.DateTime
             );
         }
 
-        public static DateTimeImmutable createFromMutable(DateTime datetime)
+        public static DateTimeImmutable? createFromMutable(DateTime datetime)
         {
             if (datetime == null)
             {
