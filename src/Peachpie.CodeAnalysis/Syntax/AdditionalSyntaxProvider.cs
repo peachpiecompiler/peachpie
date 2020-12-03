@@ -111,31 +111,31 @@ namespace Peachpie.CodeAnalysis.Syntax
                 }
             }
 
-            //
-            // CUSTOM ATTRIBUTES:
-            //
+            ////
+            //// CUSTOM ATTRIBUTES:
+            ////
 
-            // [QualifiedName]
-            // [QualifiedName(Value, PropertyName = Value)]
-            // - must be followed: final|class|interface|trait|public|protected|private|static|function|abstract
-            if (t == Tokens.T_LBRACKET)
-            {
-                // must be prefixed: ;, {, }, <?
-                if (_lastToken == 0 ||
-                    _lastToken == Tokens.T_SEMI || _lastToken == Tokens.T_OPEN_TAG ||
-                    _lastToken == Tokens.T_RBRACE || _lastToken == Tokens.T_LBRACE)
-                {
-                    int p = 0;
-                    if (MatchCustomAttribute(ref p, out var attribute) && IsAtDeclarationKeyword(p))
-                    {
-                        if (_consumedCustomAttrs == null) _consumedCustomAttrs = new List<SourceCustomAttribute>(1);
-                        _consumedCustomAttrs.Add(attribute);
+            //// [QualifiedName]
+            //// [QualifiedName(Value, PropertyName = Value)]
+            //// - must be followed: final|class|interface|trait|public|protected|private|static|function|abstract
+            //if (t == Tokens.T_LBRACKET)
+            //{
+            //    // must be prefixed: ;, {, }, <?
+            //    if (_lastToken == 0 ||
+            //        _lastToken == Tokens.T_SEMI || _lastToken == Tokens.T_OPEN_TAG ||
+            //        _lastToken == Tokens.T_RBRACE || _lastToken == Tokens.T_LBRACE)
+            //    {
+            //        int p = 0;
+            //        if (MatchCustomAttribute(ref p, out var attribute) && IsAtDeclarationKeyword(p))
+            //        {
+            //            if (_consumedCustomAttrs == null) _consumedCustomAttrs = new List<SourceCustomAttribute>(1);
+            //            _consumedCustomAttrs.Add(attribute);
 
-                        _provider.Remove(0, p);
-                        return true;
-                    }
-                }
-            }
+            //            _provider.Remove(0, p);
+            //            return true;
+            //        }
+            //    }
+            //}
 
             // T_FN in a qualified name
             // allows to compile older pre-fn syntax
@@ -172,15 +172,15 @@ namespace Peachpie.CodeAnalysis.Syntax
                     _followsNewKeyword = true;
                 }
 
-                // push collected attributes to "nodes"
-                if (_consumedCustomAttrs != null)
-                {
-                    foreach (var attr in _consumedCustomAttrs)
-                    {
-                        _nodes.AddAnnotation(_provider.TokenPosition.Start, attr);
-                    }
-                    _consumedCustomAttrs = null;
-                }
+                //// push collected attributes to "nodes"
+                //if (_consumedCustomAttrs != null)
+                //{
+                //    foreach (var attr in _consumedCustomAttrs)
+                //    {
+                //        _nodes.AddAnnotation(_provider.TokenPosition.Start, attr);
+                //    }
+                //    _consumedCustomAttrs = null;
+                //}
             }
 
             return false;
@@ -188,240 +188,240 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         bool _followsNewKeyword = false;
         Tokens _lastToken = default; // last processed token so we don't lookup if not necessary
-        List<SourceCustomAttribute> _consumedCustomAttrs;
+        //List<SourceCustomAttribute> _consumedCustomAttrs;
 
-        bool IsAtDeclarationKeyword(int idx)
-        {
-            var next = NextToken(ref idx);
+        //bool IsAtDeclarationKeyword(int idx)
+        //{
+        //    var next = NextToken(ref idx);
 
-            switch (next.Token)
-            {
-                case Tokens.T_FINAL:
-                case Tokens.T_CLASS:
-                case Tokens.T_INTERFACE:
-                case Tokens.T_TRAIT:
-                case Tokens.T_PUBLIC:
-                case Tokens.T_PROTECTED:
-                case Tokens.T_PRIVATE:
-                case Tokens.T_STATIC:
-                case Tokens.T_FUNCTION:
-                case Tokens.T_ABSTRACT:
-                case Tokens.T_VAR:
-                case Tokens.T_LBRACKET:
-                    return true;
+        //    switch (next.Token)
+        //    {
+        //        case Tokens.T_FINAL:
+        //        case Tokens.T_CLASS:
+        //        case Tokens.T_INTERFACE:
+        //        case Tokens.T_TRAIT:
+        //        case Tokens.T_PUBLIC:
+        //        case Tokens.T_PROTECTED:
+        //        case Tokens.T_PRIVATE:
+        //        case Tokens.T_STATIC:
+        //        case Tokens.T_FUNCTION:
+        //        case Tokens.T_ABSTRACT:
+        //        case Tokens.T_VAR:
+        //        case Tokens.T_LBRACKET:
+        //            return true;
 
-                default:
-                    return false;
-            }
-        }
+        //        default:
+        //            return false;
+        //    }
+        //}
 
         #region Match*
 
-        /// <summary>
-        /// Matches a custom attribute syntax.
-        /// </summary>
-        bool MatchCustomAttribute(ref int idx, out SourceCustomAttribute attribute)
-        {
-            attribute = default;
-            var p = idx;
+        ///// <summary>
+        ///// Matches a custom attribute syntax.
+        ///// </summary>
+        //bool MatchCustomAttribute(ref int idx, out SourceCustomAttribute attribute)
+        //{
+        //    attribute = default;
+        //    var p = idx;
 
-            // [
-            if (MatchToken(ref p, Tokens.T_LBRACKET))
-            {
-                // "QualifiedName"
-                if (MatchQualifiedName(ref p, out var qname))
-                {
-                    List<KeyValuePair<Name, LangElement>> arguments = null;
+        //    // [
+        //    if (MatchToken(ref p, Tokens.T_LBRACKET))
+        //    {
+        //        // "QualifiedName"
+        //        if (MatchQualifiedName(ref p, out var qname))
+        //        {
+        //            List<KeyValuePair<Name, LangElement>> arguments = null;
 
-                    // ( ... )
-                    if (MatchToken(ref p, Tokens.T_LPAREN))
-                    {
-                        bool hasProperty = false;
+        //            // ( ... )
+        //            if (MatchToken(ref p, Tokens.T_LPAREN))
+        //            {
+        //                bool hasProperty = false;
 
-                        // property = value
-                        // value
-                        while (MatchAttributeValue(ref p, out var property, out var value))
-                        {
-                            // quickly check the syntax makes sense:
-                            if (property.Value != null)
-                            {
-                                hasProperty = true;
-                            }
-                            else
-                            {
-                                if (hasProperty) return false; // ERR: constructor argument after property assignment
-                            }
+        //                // property = value
+        //                // value
+        //                while (MatchAttributeValue(ref p, out var property, out var value))
+        //                {
+        //                    // quickly check the syntax makes sense:
+        //                    if (property.Value != null)
+        //                    {
+        //                        hasProperty = true;
+        //                    }
+        //                    else
+        //                    {
+        //                        if (hasProperty) return false; // ERR: constructor argument after property assignment
+        //                    }
 
-                            // property = value
-                            if (arguments == null) arguments = new List<KeyValuePair<Name, LangElement>>();
+        //                    // property = value
+        //                    if (arguments == null) arguments = new List<KeyValuePair<Name, LangElement>>();
 
-                            arguments.Add(new KeyValuePair<Name, LangElement>(property, value));
+        //                    arguments.Add(new KeyValuePair<Name, LangElement>(property, value));
 
-                            // ,
-                            if (NextToken(ref p).Token == Tokens.T_COMMA)
-                                continue;
+        //                    // ,
+        //                    if (NextToken(ref p).Token == Tokens.T_COMMA)
+        //                        continue;
 
-                            p--;
-                            break;
-                        }
+        //                    p--;
+        //                    break;
+        //                }
 
-                        if (NextToken(ref p).Token != Tokens.T_RPAREN)
-                        {
-                            return false; // ERR: ')' expected
-                        }
-                    }
+        //                if (NextToken(ref p).Token != Tokens.T_RPAREN)
+        //                {
+        //                    return false; // ERR: ')' expected
+        //                }
+        //            }
 
-                    // ]
-                    if (MatchToken(ref p, Tokens.T_RBRACKET, out var rbrtoken))
-                    {
-                        // ensure the qname ends with "Attribute":
-                        const string suffix = "Attribute";
-                        if (!qname.QualifiedName.Name.Value.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                        {
-                            qname = new QualifiedNameRef(
-                                qname.Span,
-                                new Name(qname.QualifiedName.Name.Value + suffix),
-                                qname.QualifiedName.Namespaces,
-                                qname.QualifiedName.IsFullyQualifiedName);
-                        }
+        //            // ]
+        //            if (MatchToken(ref p, Tokens.T_RBRACKET, out var rbrtoken))
+        //            {
+        //                // ensure the qname ends with "Attribute":
+        //                const string suffix = "Attribute";
+        //                if (!qname.QualifiedName.Name.Value.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+        //                {
+        //                    qname = new QualifiedNameRef(
+        //                        qname.Span,
+        //                        new Name(qname.QualifiedName.Name.Value + suffix),
+        //                        qname.QualifiedName.Namespaces,
+        //                        qname.QualifiedName.IsFullyQualifiedName);
+        //                }
 
-                        //
-                        attribute = new SourceCustomAttribute(_typeRefFactory(qname, false), arguments);
-                        idx = p;
-                        return true;
-                    }
-                }
-            }
+        //                //
+        //                attribute = new SourceCustomAttribute(_typeRefFactory(qname, false), arguments);
+        //                idx = p;
+        //                return true;
+        //            }
+        //        }
+        //    }
 
-            //
-            return false;
-        }
+        //    //
+        //    return false;
+        //}
 
-        bool MatchAttributeValue(ref int idx, out Name property, out LangElement value)
-        {
-            var oldidx = idx;
+        //bool MatchAttributeValue(ref int idx, out Name property, out LangElement value)
+        //{
+        //    var oldidx = idx;
 
-            // T_STRING = "Value"
-            if (MatchToken(ref idx, Tokens.T_STRING, out var identifier) &&
-                MatchToken(ref idx, Tokens.T_EQ))
-            {
-                property = new Name(identifier.TokenValue.String);
-            }
-            else
-            {
-                property = default;
-                idx = oldidx;
-            }
+        //    // T_STRING = "Value"
+        //    if (MatchToken(ref idx, Tokens.T_STRING, out var identifier) &&
+        //        MatchToken(ref idx, Tokens.T_EQ))
+        //    {
+        //        property = new Name(identifier.TokenValue.String);
+        //    }
+        //    else
+        //    {
+        //        property = default;
+        //        idx = oldidx;
+        //    }
 
-            // Value:
+        //    // Value:
 
-            if (MatchValue(ref idx, out value))
-            {
-                return true;
-            }
+        //    if (MatchValue(ref idx, out value))
+        //    {
+        //        return true;
+        //    }
 
-            // no match
-            idx = oldidx;
-            return false;
-        }
+        //    // no match
+        //    idx = oldidx;
+        //    return false;
+        //}
 
-        bool MatchValue(ref int idx, out LangElement value)
-        {
-            var oldidx = idx;
+        //bool MatchValue(ref int idx, out LangElement value)
+        //{
+        //    var oldidx = idx;
 
-            // T_DNUMBER, T_LNUMBER, T_CONSTANT_ENCAPSED_STRING
-            if (MatchLiteral(ref idx, out var lit))
-            {
-                value = lit;
-                return true;
-            }
+        //    // T_DNUMBER, T_LNUMBER, T_CONSTANT_ENCAPSED_STRING
+        //    if (MatchLiteral(ref idx, out var lit))
+        //    {
+        //        value = lit;
+        //        return true;
+        //    }
 
-            // typeof("QualifiedName")
-            if (MatchTypeOfQualifiedName(ref idx, out var typename))
-            {
-                // Template: TypeRef : System.Type
-                value = _typeRefFactory(typename, true);
-                return true;
-            }
+        //    // typeof("QualifiedName")
+        //    if (MatchTypeOfQualifiedName(ref idx, out var typename))
+        //    {
+        //        // Template: TypeRef : System.Type
+        //        value = _typeRefFactory(typename, true);
+        //        return true;
+        //    }
 
-            // "QualifiedName", "QualifiedName"::T_STRING
-            if (MatchQualifiedName(ref idx, out var qname))
-            {
-                var tref = _typeRefFactory(qname, false);    // translate qname using parser's current naming context
+        //    // "QualifiedName", "QualifiedName"::T_STRING
+        //    if (MatchQualifiedName(ref idx, out var qname))
+        //    {
+        //        var tref = _typeRefFactory(qname, false);    // translate qname using parser's current naming context
 
-                if (MatchToken(ref idx, Tokens.T_DOUBLE_COLON))
-                {
-                    // ::T_STRING
-                    if (MatchToken(ref idx, Tokens.T_STRING, out var nametoken))
-                    {
-                        value = _nodes.ClassConstUse(default,
-                            tref,
-                            new Name(nametoken.TokenValue.String),
-                            nametoken.TokenPosition);
-                        return true;
-                    }
-                    // ERR
-                }
-                else
-                {
-                    // GlobalConst
-                    value = _nodes.ConstUse(
-                        default,
-                        new TranslatedQualifiedName(tref.QualifiedName.Value, default));
-                    return true;
-                }
-            }
+        //        if (MatchToken(ref idx, Tokens.T_DOUBLE_COLON))
+        //        {
+        //            // ::T_STRING
+        //            if (MatchToken(ref idx, Tokens.T_STRING, out var nametoken))
+        //            {
+        //                value = _nodes.ClassConstUse(default,
+        //                    tref,
+        //                    new Name(nametoken.TokenValue.String),
+        //                    nametoken.TokenPosition);
+        //                return true;
+        //            }
+        //            // ERR
+        //        }
+        //        else
+        //        {
+        //            // GlobalConst
+        //            value = _nodes.ConstUse(
+        //                default,
+        //                new TranslatedQualifiedName(tref.QualifiedName.Value, default));
+        //            return true;
+        //        }
+        //    }
 
-            // no match
-            idx = oldidx;
-            value = default;
-            return false;
-        }
+        //    // no match
+        //    idx = oldidx;
+        //    value = default;
+        //    return false;
+        //}
 
-        bool MatchLiteral(ref int idx, out Literal value)
-        {
-            var oldidx = idx;
+        //bool MatchLiteral(ref int idx, out Literal value)
+        //{
+        //    var oldidx = idx;
 
-            var token = NextToken(ref idx);
-            switch (token.Token)
-            {
-                case Tokens.T_LNUMBER:
-                    value = _nodes.Literal(token.TokenPosition, token.TokenValue.Long);
-                    return true;
-                case Tokens.T_DNUMBER:
-                    value = _nodes.Literal(token.TokenPosition, token.TokenValue.Double);
-                    return true;
-                case Tokens.T_CONSTANT_ENCAPSED_STRING:
-                    value = (Literal)_nodes.Literal(token.TokenPosition, token.TokenValue.String, originalValue: null);
-                    return true;
-            }
+        //    var token = NextToken(ref idx);
+        //    switch (token.Token)
+        //    {
+        //        case Tokens.T_LNUMBER:
+        //            value = _nodes.Literal(token.TokenPosition, token.TokenValue.Long);
+        //            return true;
+        //        case Tokens.T_DNUMBER:
+        //            value = _nodes.Literal(token.TokenPosition, token.TokenValue.Double);
+        //            return true;
+        //        case Tokens.T_CONSTANT_ENCAPSED_STRING:
+        //            value = (Literal)_nodes.Literal(token.TokenPosition, token.TokenValue.String, originalValue: null);
+        //            return true;
+        //    }
 
-            // rollback
-            idx = oldidx;
-            value = default;
-            return false;
-        }
+        //    // rollback
+        //    idx = oldidx;
+        //    value = default;
+        //    return false;
+        //}
 
-        bool MatchTypeOfQualifiedName(ref int idx, out QualifiedNameRef qname)
-        {
-            // Template:
-            // T_STRING("typeof") '(' "QualifiedName" ')'
+        //bool MatchTypeOfQualifiedName(ref int idx, out QualifiedNameRef qname)
+        //{
+        //    // Template:
+        //    // T_STRING("typeof") '(' "QualifiedName" ')'
 
-            var p = idx;
+        //    var p = idx;
 
-            if (MatchToken(ref p, Tokens.T_STRING, out var t) && t.TokenValue.String == "typeof" && // typeof
-                MatchToken(ref p, Tokens.T_LPAREN) &&   // (
-                MatchQualifiedName(ref p, out qname) && // "QualifiedName"
-                MatchToken(ref p, Tokens.T_RPAREN))     // )
-            {
-                idx = p;
-                return true;
-            }
+        //    if (MatchToken(ref p, Tokens.T_STRING, out var t) && t.TokenValue.String == "typeof" && // typeof
+        //        MatchToken(ref p, Tokens.T_LPAREN) &&   // (
+        //        MatchQualifiedName(ref p, out qname) && // "QualifiedName"
+        //        MatchToken(ref p, Tokens.T_RPAREN))     // )
+        //    {
+        //        idx = p;
+        //        return true;
+        //    }
 
-            //
-            qname = default;
-            return false;
-        }
+        //    //
+        //    qname = default;
+        //    return false;
+        //}
 
         /// <summary>
         /// Matches token at position and advances the position to next token.

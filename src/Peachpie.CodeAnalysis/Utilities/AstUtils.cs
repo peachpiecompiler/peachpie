@@ -104,28 +104,6 @@ namespace Pchp.CodeAnalysis
         public static bool IsWhitespace(this CompleteToken t) => t.Token == Tokens.T_WHITESPACE || t.Token == Tokens.T_COMMENT; // not T_DOC_COMMENT
 
         /// <summary>
-        /// Gets attributes associated with given syntax node.
-        /// </summary>
-        public static bool TryGetCustomAttributes(this AstNode element, out ImmutableArray<AttributeData> attrs)
-        {
-            return element.TryGetProperty(out attrs);
-        }
-
-        /// <summary>
-        /// Associates an attribute with syntax node.
-        /// </summary>
-        public static void AddCustomAttribute(this AstNode element, AttributeData attribute)
-        {
-            Debug.Assert(attribute != null);
-
-            var newattrs = TryGetCustomAttributes(element, out var attrs)
-                ? attrs.Add(attribute)
-                : ImmutableArray.Create(attribute);
-
-            element.SetProperty(newattrs);
-        }
-
-        /// <summary>
         /// Determines whether method has <c>$this</c> variable.
         /// </summary>
         public static bool HasThisVariable(MethodDecl method)
@@ -319,28 +297,6 @@ namespace Pchp.CodeAnalysis
 
             //
             return element;
-        }
-
-        /// <summary>
-        /// Gets value indicating the type refers to a nullable type (<c>?TYPE</c>).
-        /// </summary>
-        public static bool IsNullable(this TypeRef tref)
-        {
-            return tref is NullableTypeRef; // && tref != null
-        }
-
-        /// <summary>
-        /// Gets value indicating the type refers to <c>callable</c> or <c>?callable</c>.
-        /// </summary>
-        public static bool IsCallable(this TypeRef tref)
-        {
-            if (tref is NullableTypeRef nullable)
-            {
-                tref = nullable.TargetType;
-            }
-
-            return tref is PrimitiveTypeRef primitiveType &&
-                primitiveType.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable;
         }
 
         public static Microsoft.CodeAnalysis.Text.TextSpan GetDeclareClauseSpan(this DeclareStmt declStmt)

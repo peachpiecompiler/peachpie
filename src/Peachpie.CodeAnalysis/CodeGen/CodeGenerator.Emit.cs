@@ -336,7 +336,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (expr.Access.IsNone)
                 {
-                    return CoreTypes.Void;
+                    return expr.ResultType = CoreTypes.Void;
                 }
 
                 if (expr.Access.IsRead)
@@ -2463,7 +2463,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             protected virtual void EmitLoadTarget(CodeGenerator cg, TypeSymbol type)
             {
-                cg.EmitConvert(Target, type);
+                cg.EmitConvert(Target, type); // TODO: DetermineConversionKind(targetp)
             }
 
             /// <summary>
@@ -2497,6 +2497,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        static ConversionKind DetermineConversionKind(ParameterSymbol targetp)
+        {
+            var t = targetp.ContainingType;
+            if (t.IsPhpSourceFile() || t.IsPhpUserType())
+            {
+                // TODO: strict mode on file level?
+                // var f = cg.ContainingFile;                    
+
+                return ConversionKind.Strict;
+            }
+            else
+            {
+                // a library function
+                return ConversionKind.Implicit;
+            }
+        }
+
         /// <summary>
         /// Loads argument from bound expression.
         /// </summary>
@@ -2504,7 +2521,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (targetp.RefKind == RefKind.None)
             {
-                EmitConvert(expr, targetp.Type, conversion: ConversionKind.Strict); // load argument
+                // load argument
+                EmitConvert(expr, targetp.Type,
+                    conversion: DetermineConversionKind(targetp),
+                    notNull: targetp.HasNotNull);
             }
             else
             {
@@ -3288,11 +3308,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             return EmitCall(ILOpCode.Call, mainmethod);
         }
 
-        public TypeSymbol EmitLoadConstant(object value, TypeSymbol targetOpt = null, bool nullable = true)
+        public TypeSymbol EmitLoadConstant(object value, TypeSymbol targetOpt = null, bool notNull = false)
         {
             if (value == null)
             {
-                Debug.Assert(nullable);
+                if (notNull)
+                {
+                    // should be reported already
+                    // Diagnostics.Add( ... )
+                    Debug.Fail("value cannot be null");
+                }
 
                 if (targetOpt != null && targetOpt.IsValueType)
                 {
@@ -3313,196 +3338,172 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                 }
             }
+            else if (value is int i)
+            {
+                switch (targetOpt.GetSpecialTypeSafe())
+                {
+                    case SpecialType.System_Boolean:
+                        _il.EmitBoolConstant(i != 0);
+                        return targetOpt;
+                    case SpecialType.System_Int64:
+                        _il.EmitLongConstant(i);
+                        return targetOpt;
+                    case SpecialType.System_Double:
+                        _il.EmitDoubleConstant(i);
+                        return targetOpt;
+                    case SpecialType.System_String:
+                        _il.EmitStringConstant(i.ToString());
+                        return targetOpt;
+                }
+
+                Builder.EmitIntConstant((int)value);
+                return CoreTypes.Int32;
+            }
+            else if (value is long l)
+            {
+                switch (targetOpt.GetSpecialTypeSafe())
+                {
+                    case SpecialType.System_Boolean:
+                        _il.EmitBoolConstant(l != 0);
+                        return targetOpt;
+                    case SpecialType.System_Int32:
+                        _il.EmitIntConstant((int)l);
+                        return targetOpt;
+                    case SpecialType.System_Double:
+                        _il.EmitDoubleConstant(l);
+                        return targetOpt;
+                    case SpecialType.System_Single:
+                        _il.EmitSingleConstant(l);
+                        return targetOpt;
+                    case SpecialType.System_String:
+                        _il.EmitStringConstant(l.ToString());
+                        return targetOpt;
+                    default:
+                        break;
+                }
+
+                Builder.EmitLongConstant(l);
+                return CoreTypes.Long;
+            }
+            else if (value is string str)
+            {
+                switch (targetOpt.GetSpecialTypeSafe())
+                {
+                    case SpecialType.System_Char:
+                        if (str != null && str.Length == 1)
+                        {
+                            Builder.EmitCharConstant(str[0]);
+                            return targetOpt;
+                        }
+                        break;
+                    case SpecialType.System_Int32:
+                        if (int.TryParse(str, out i))
+                        {
+                            Builder.EmitIntConstant(i);
+                            return targetOpt;
+                        }
+                        break;
+                    case SpecialType.System_Int64:
+                        if (long.TryParse(str, out l))
+                        {
+                            Builder.EmitLongConstant(l);
+                            return targetOpt;
+                        }
+                        break;
+                    case SpecialType.System_Double:
+                        if (double.TryParse(str, out var d))
+                        {
+                            Builder.EmitDoubleConstant(d);
+                            return targetOpt;
+                        }
+                        break;
+                }
+
+                Builder.EmitStringConstant(str);
+                return CoreTypes.String;
+            }
+            else if (value is bool b)
+            {
+                switch (targetOpt.GetSpecialTypeSafe())
+                {
+                    case SpecialType.System_Boolean:
+                        break;
+                    case SpecialType.System_String:
+                        _il.EmitStringConstant(b ? "1" : "");
+                        return targetOpt;
+                    default:
+                        if (targetOpt == CoreTypes.PhpValue)
+                        {
+                            return b ? Emit_PhpValue_True() : Emit_PhpValue_False();
+                        }
+                        break;
+                }
+
+                // template: LOAD bool
+                Builder.EmitBoolConstant(b);
+                return CoreTypes.Boolean;
+            }
+            else if (value is double d)
+            {
+                switch (targetOpt.GetSpecialTypeSafe())
+                {
+                    case SpecialType.System_Boolean:
+                        _il.EmitBoolConstant(d != 0.0);
+                        return targetOpt;
+                    case SpecialType.System_Int64:
+                        _il.EmitLongConstant((long)d);
+                        return targetOpt;
+                }
+
+                Builder.EmitDoubleConstant(d);
+                return CoreTypes.Double;
+            }
+            else if (value is float)
+            {
+                Builder.EmitSingleConstant((float)value);
+                return DeclaringCompilation.GetSpecialType(SpecialType.System_Single);
+            }
+            else if (value is uint)
+            {
+                Builder.EmitIntConstant(unchecked((int)(uint)value));
+                return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt32);
+            }
+            else if (value is ulong ul)
+            {
+                switch (targetOpt.GetSpecialTypeSafe())
+                {
+                    case SpecialType.System_Boolean:
+                        _il.EmitBoolConstant(ul != 0.0);
+                        return targetOpt;
+                    case SpecialType.System_Int64:
+                        _il.EmitLongConstant((long)ul);
+                        return targetOpt;
+                    case SpecialType.System_Double:
+                        _il.EmitDoubleConstant((double)ul);
+                        return targetOpt;
+                    case SpecialType.System_String:
+                        _il.EmitStringConstant(ul.ToString());
+                        return targetOpt;
+                }
+
+                _il.EmitLongConstant(unchecked((long)ul));
+                return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt64);
+            }
+            else if (value is char)
+            {
+                switch (targetOpt.GetSpecialTypeSafe())
+                {
+                    case SpecialType.System_String:
+                        Builder.EmitStringConstant(value.ToString());
+                        return targetOpt;
+                }
+
+                Builder.EmitCharConstant((char)value);
+                return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
+            }
             else
             {
-                if (value is int i)
-                {
-                    if (targetOpt != null)
-                    {
-                        switch (targetOpt.SpecialType)
-                        {
-                            case SpecialType.System_Boolean:
-                                _il.EmitBoolConstant(i != 0);
-                                return targetOpt;
-                            case SpecialType.System_Int64:
-                                _il.EmitLongConstant(i);
-                                return targetOpt;
-                            case SpecialType.System_Double:
-                                _il.EmitDoubleConstant(i);
-                                return targetOpt;
-                            case SpecialType.System_String:
-                                _il.EmitStringConstant(i.ToString());
-                                return targetOpt;
-                        }
-                    }
-
-                    Builder.EmitIntConstant((int)value);
-                    return CoreTypes.Int32;
-                }
-                else if (value is long l)
-                {
-                    if (targetOpt != null)
-                    {
-                        switch (targetOpt.SpecialType)
-                        {
-                            case SpecialType.System_Boolean:
-                                _il.EmitBoolConstant(l != 0);
-                                return targetOpt;
-                            case SpecialType.System_Int32:
-                                _il.EmitIntConstant((int)l);
-                                return targetOpt;
-                            case SpecialType.System_Double:
-                                _il.EmitDoubleConstant(l);
-                                return targetOpt;
-                            case SpecialType.System_Single:
-                                _il.EmitSingleConstant(l);
-                                return targetOpt;
-                            case SpecialType.System_String:
-                                _il.EmitStringConstant(l.ToString());
-                                return targetOpt;
-                            default:
-                                break;
-                        }
-                    }
-
-                    Builder.EmitLongConstant(l);
-                    return CoreTypes.Long;
-                }
-                else if (value is string str)
-                {
-                    if (targetOpt != null)
-                    {
-                        switch (targetOpt.SpecialType)
-                        {
-                            case SpecialType.System_Char:
-                                if (str != null && str.Length == 1)
-                                {
-                                    Builder.EmitCharConstant(str[0]);
-                                    return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
-                                }
-                                break;
-                            case SpecialType.System_Int32:
-                                if (int.TryParse(str, out i))
-                                {
-                                    Builder.EmitIntConstant(i);
-                                    return targetOpt;
-                                }
-                                break;
-                            case SpecialType.System_Int64:
-                                if (long.TryParse(str, out l))
-                                {
-                                    Builder.EmitLongConstant(l);
-                                    return targetOpt;
-                                }
-                                break;
-                            case SpecialType.System_Double:
-                                if (double.TryParse(str, out var d))
-                                {
-                                    Builder.EmitDoubleConstant(d);
-                                    return targetOpt;
-                                }
-                                break;
-                        }
-                    }
-
-                    Builder.EmitStringConstant(str);
-                    return CoreTypes.String;
-                }
-                else if (value is bool b)
-                {
-                    if (targetOpt != null)
-                    {
-                        switch (targetOpt.SpecialType)
-                        {
-                            case SpecialType.System_Boolean:
-                                break;
-                            case SpecialType.System_String:
-                                _il.EmitStringConstant(b ? "1" : "");
-                                return targetOpt;
-                            default:
-                                if (targetOpt == CoreTypes.PhpValue)
-                                {
-                                    return b ? Emit_PhpValue_True() : Emit_PhpValue_False();
-                                }
-                                break;
-                        }
-                    }
-
-                    // template: LOAD bool
-                    Builder.EmitBoolConstant(b);
-                    return CoreTypes.Boolean;
-                }
-                else if (value is double d)
-                {
-                    if (targetOpt != null)
-                    {
-                        switch (targetOpt.SpecialType)
-                        {
-                            case SpecialType.System_Boolean:
-                                _il.EmitBoolConstant(d != 0.0);
-                                return targetOpt;
-                            case SpecialType.System_Int64:
-                                _il.EmitLongConstant((long)d);
-                                return targetOpt;
-                        }
-                    }
-
-                    Builder.EmitDoubleConstant(d);
-                    return CoreTypes.Double;
-                }
-                else if (value is float)
-                {
-                    Builder.EmitSingleConstant((float)value);
-                    return DeclaringCompilation.GetSpecialType(SpecialType.System_Single);
-                }
-                else if (value is uint)
-                {
-                    Builder.EmitIntConstant(unchecked((int)(uint)value));
-                    return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt32);
-                }
-                else if (value is ulong ul)
-                {
-                    if (targetOpt != null)
-                    {
-                        switch (targetOpt.SpecialType)
-                        {
-                            case SpecialType.System_Boolean:
-                                _il.EmitBoolConstant(ul != 0.0);
-                                return targetOpt;
-                            case SpecialType.System_Int64:
-                                _il.EmitLongConstant((long)ul);
-                                return targetOpt;
-                            case SpecialType.System_Double:
-                                _il.EmitDoubleConstant((double)ul);
-                                return targetOpt;
-                            case SpecialType.System_String:
-                                _il.EmitStringConstant(ul.ToString());
-                                return targetOpt;
-                        }
-                    }
-
-                    _il.EmitLongConstant(unchecked((long)ul));
-                    return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt64);
-                }
-                else if (value is char)
-                {
-                    if (targetOpt != null)
-                    {
-                        switch (targetOpt.SpecialType)
-                        {
-                            case SpecialType.System_String:
-                                Builder.EmitStringConstant(value.ToString());
-                                return CoreTypes.String;
-                        }
-                    }
-
-                    Builder.EmitCharConstant((char)value);
-                    return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
-                }
-                else
-                {
-                    throw ExceptionUtilities.UnexpectedValue(value);
-                }
+                throw ExceptionUtilities.UnexpectedValue(value);
             }
         }
 

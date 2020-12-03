@@ -13,6 +13,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
 using Cci = Microsoft.Cci;
+using Peachpie.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -67,7 +68,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                receiver.ResultType = receiver.Emit(cg);
+                //receiver.ResultType = receiver.Emit(cg);
+                cg.EmitSpecialize(receiver);
 
                 if (IsEnabled) // store the result
                 {
@@ -1427,7 +1429,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (Field.IsConst)
             {
-                return cg.EmitLoadConstant(Field.ConstantValue);
+                return cg.EmitLoadConstant(Field.ConstantValue, targetOpt: access.TargetType);
             }
 
             VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);

@@ -573,7 +573,7 @@ namespace Pchp.Core.Dynamic
 
                             expr_newarr = Expression.Block(
                                 expr_newarr,
-                                Expression.Call(array_copy, _argsarray, Expression.Constant(fromarg), var_array, Expression.Constant(0), var_length),   // Array.Copy(argv, fromarg, array, 0, length)
+                                Expression.Call(array_copy, _argsarray, Expression.Constant(fromarg), var_array, Cache.Expressions.Create(0), var_length),   // Array.Copy(argv, fromarg, array, 0, length)
                                 var_array
                                 );
                         }
@@ -589,7 +589,7 @@ namespace Pchp.Core.Dynamic
                             expr_newarr,
                             Expression.Loop(
                                 Expression.IfThenElse(
-                                    Expression.GreaterThanOrEqual(Expression.PreDecrementAssign(var_length), Expression.Constant(0)),
+                                    Expression.GreaterThanOrEqual(Expression.PreDecrementAssign(var_length), Cache.Expressions.Create(0)),
                                     Expression.Assign(
                                         Expression.ArrayAccess(var_array, var_length),
                                         ConvertExpression.Bind(Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length)), element_type, _ctx)),
@@ -604,7 +604,7 @@ namespace Pchp.Core.Dynamic
                         new ParameterExpression[] { var_length, var_array },
                         Expression.Assign(var_length, Expression.Subtract(BindArgsCount(), Expression.Constant(fromarg))),  // length = argc - fromarg;
                         Expression.Condition(
-                            Expression.GreaterThan(var_length, Expression.Constant(0)), // return (length > 0) ? newarr : emptyarr;
+                            Expression.GreaterThan(var_length, Cache.Expressions.Create(0)), // return (length > 0) ? newarr : emptyarr;
                             expr_newarr, expr_emptyarr));
                 }
 
@@ -1159,7 +1159,7 @@ namespace Pchp.Core.Dynamic
                 if (expr.Type == typeof(int) || expr.Type == typeof(long))
                 {
                     // Template: test = x >= 0
-                    test = Expression.GreaterThanOrEqual(assign, Expression.Constant(0));
+                    test = Expression.GreaterThanOrEqual(assign, Cache.Expressions.Create(0));
                 }
                 else if (expr.Type == typeof(double))
                 {

@@ -107,14 +107,11 @@ namespace Pchp.Core
         {
             internal enum ConstantState
             {
-                Uninitialized = 0,
                 AppConstant = 1,
                 UserConstant = 2,
             }
 
-            internal ConstantState _flags;
-
-            public bool IsSet => _flags != ConstantState.Uninitialized;
+            internal ConstantState Flags;
 
             public string Name { get; set; }
 
@@ -122,12 +119,12 @@ namespace Pchp.Core
 
             public PhpValue Value { get; set; }
 
-            public bool IsUser => _flags == ConstantState.UserConstant;
+            public bool IsUser => Flags == ConstantState.UserConstant;
         }
 
         #endregion
 
-        struct ConstsMap : IEnumerable<ConstantInfo>
+        public struct ConstsMap
         {
             /// <summary>
             /// Maps of constant name to its ID.
@@ -353,72 +350,161 @@ namespace Pchp.Core
                 return false;
             }
 
+            public Enumerator GetEnumerator(string extension) => new Enumerator(ref this, extension);
+
+            public Enumerator GetEnumerator() => GetEnumerator(null);
+
             /// <summary>
-            /// Enumerates all defined constants available in the context (including app constants).
+            /// Enumerator traversing all defined constants.
             /// </summary>
-            public IEnumerator<ConstantInfo> GetEnumerator()
+            public struct Enumerator
             {
-                var listApp = new ConstantInfo[s_countApp];
-                var listCtx = new ConstantInfo[s_countCtx];
+                public ConstantInfo Current { get; private set; }
 
-                //
-                s_rwLock.EnterReadLock();
-                try
+                internal Enumerator(ref ConstsMap self, string extension)
                 {
-                    // initilize values
+                    Current = default;
+                    Extension = extension;
+                    CtxConstants = self._valuesCtx;
+                    CtxConstantsCount = s_countCtx;
+                    _index = 0;
+                    _ctx = self._ctx;
 
-                    var valuesApp = s_valuesApp;
-                    for (int i = 0; i < valuesApp.Length; i++)
+                    // construct inverse dictionary
+                    _names = new Dictionary<int, string>(s_map.Count);
+                    s_rwLock.EnterReadLock();
+                    try
                     {
-                        ref var data = ref valuesApp[i];
-                        if (data.HasValue)
+                        foreach (var pair in s_map)
                         {
-                            ref var item = ref listApp[i];
-                            item.Value = data.GetValue(_ctx);
-                            item.ExtensionName = data.ExtensionName;
-                            item._flags = ConstantInfo.ConstantState.AppConstant;
+                            _names[pair.Value] = pair.Key.Name;
                         }
                     }
-
-                    var valuesCtx = _valuesCtx;
-                    for (int i = 0; i < valuesCtx.Length; i++)
+                    finally
                     {
-                        var value = valuesCtx[i];
-                        if (value.HasValue)
-                        {
-                            ref var item = ref listCtx[i];
-                            item.Value = value.GetValueOrDefault();
-                            item._flags = ConstantInfo.ConstantState.UserConstant;
-                        }
+                        s_rwLock.ExitReadLock();
                     }
+                }
 
-                    // assign name from the map
-                    foreach (var pair in s_map)
+                public Enumerator GetEnumerator() => this; // im lazy
+
+                /// <summary>
+                /// Optional condition for the constant.
+                /// Specified the extension name where the constant must be defined.
+                /// If specified, user-constants are skipped.
+                /// </summary>
+                public string Extension { get; set; }
+
+                static ConstData[] AppConstants => s_valuesApp;
+
+                static int AppConstantsCount => s_countApp;
+
+                PhpValue?[] CtxConstants { get; }
+
+                int CtxConstantsCount { get; }
+
+                readonly Dictionary<int, string> _names;
+
+                readonly Context _ctx;
+
+                /// <summary>
+                /// =0 : uninitialized<br/>
+                /// &lt;0 : app constants - 1<br/>
+                /// &gt;0 : ctx constants + 1<br/>
+                /// </summary>
+                private int _index;
+
+                /// <summary>
+                /// Reset the enumeration.
+                /// </summary>
+                public void Reset()
+                {
+                    Current = default;
+                    _index = 0;
+                }
+
+                /// <summary>
+                /// No alloc enumeration over defined constants.
+                /// </summary>
+                public bool MoveNext()
+                {
+                    for (; ; )
                     {
-                        if (pair.Value < 0)
+                        // go to next index
+                        if (_index == 0)
                         {
-                            // app constant
-                            listApp[-pair.Value - 1].Name = pair.Key.Name;
+                            // start of enumeration
+                            _index = AppConstantsCount > 0 ? -1 : +1;
                         }
-                        else
+                        else if (_index < 0)
                         {
-                            // user constant
-                            listCtx[pair.Value - 1].Name = pair.Key.Name;
+                            if (--_index < -AppConstantsCount)
+                            {
+                                if (Extension != null)
+                                {
+                                    // ctx constants don't belong to any extension
+                                    // stop enumeration
+                                    Current = default;
+                                    return false;
+                                }
+
+                                _index = +1;
+                            }
+                        }
+                        else // if (_index > 0)
+                        {
+                            _index++;
+                        }
+
+                        // end of enumeration?
+                        if (_index > CtxConstantsCount)
+                        {
+                            Current = default;
+                            return false;
+                        }
+
+                        // return value if the constant is set
+                        if (_index < 0) // app constant
+                        {
+                            var value = AppConstants[-_index - 1];
+                            if (value.HasValue)
+                            {
+                                if (Extension != null && !Extension.EqualsOrdinalIgnoreCase(value.ExtensionName))
+                                {
+                                    // next
+                                    continue;
+                                }
+
+                                if (_names.TryGetValue(_index, out var name))
+                                {
+                                    Current = new ConstantInfo
+                                    {
+                                        Name = name,
+                                        Value = value.GetValue(_ctx),
+                                        ExtensionName = value.ExtensionName,
+                                        Flags = ConstantInfo.ConstantState.AppConstant,
+                                    };
+                                    return true;
+                                }
+                            }
+                        }
+                        else // _index > 0
+                        {
+                            var value = CtxConstants[_index - 1];
+                            if (value.HasValue && _names.TryGetValue(_index, out var name))
+                            {
+                                Current = new ConstantInfo
+                                {
+                                    Name = name,
+                                    Value = value.GetValueOrDefault(),
+                                    Flags = ConstantInfo.ConstantState.UserConstant,
+                                };
+                                return true;
+                            }
                         }
                     }
                 }
-                finally
-                {
-                    s_rwLock.ExitReadLock();
-                }
-
-                //
-                return listApp.Concat(listCtx)
-                    .Where(info => info.IsSet)
-                    .GetEnumerator();
             }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
     }
 }

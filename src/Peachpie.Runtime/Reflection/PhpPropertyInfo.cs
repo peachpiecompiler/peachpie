@@ -25,6 +25,8 @@ namespace Pchp.Core.Reflection
         {
             public FieldInfo Field { get; }
 
+            public override MemberInfo? Member => Field;
+
             readonly Lazy<Func<Context, object?, PhpValue>> _lazyGetter;
             readonly Lazy<Action<Context, object?, PhpValue>> _lazySetValue;
             readonly Lazy<Func<Context, object?, PhpAlias>> _lazyEnsureAlias;
@@ -219,6 +221,8 @@ namespace Pchp.Core.Reflection
         {
             public PropertyInfo Property { get; }
 
+            public override MemberInfo? Member => Property;
+
             readonly Lazy<Func<object?, PhpValue>> _lazyGetter;
             readonly Lazy<Action<Context, object?, PhpValue>> _lazySetValue;
 
@@ -322,6 +326,8 @@ namespace Pchp.Core.Reflection
         internal sealed class RuntimeProperty : PhpPropertyInfo
         {
             readonly IntStringKey _name;
+
+            public override MemberInfo? Member => null;
 
             public RuntimeProperty(PhpTypeInfo tinfo, IntStringKey name)
                 : base(tinfo)
@@ -495,6 +501,9 @@ namespace Pchp.Core.Reflection
         /// Gets accessibility attributes.
         /// </summary>
         public abstract FieldAttributes Attributes { get; }
+
+        /// <summary>Gets underlaying CLR member.</summary>
+        public abstract MemberInfo? Member { get; }
 
         /// <summary>
         /// Gets value indicating whether the property is added in runtime, i.e. as an entry in the runtime fields array.

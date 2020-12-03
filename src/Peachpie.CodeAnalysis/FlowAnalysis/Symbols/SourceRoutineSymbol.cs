@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -13,7 +14,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Routine <see cref="TypeRefContext"/> instance.
         /// </summary>
-        internal TypeRefContext TypeRefContext => _typeCtx ?? (_typeCtx = CreateTypeRefContext());
+        internal TypeRefContext TypeRefContext
+        {
+            get
+            {
+                if (_typeCtx == null)
+                {
+                    Interlocked.CompareExchange(ref _typeCtx, CreateTypeRefContext(), null);
+                }
+                return _typeCtx;
+            }
+        }
 
         TypeRefContext _typeCtx;
 

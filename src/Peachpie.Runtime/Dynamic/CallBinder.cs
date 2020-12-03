@@ -166,6 +166,25 @@ namespace Pchp.Core.Dynamic
             var routine = bound.CurrentContext.GetDeclaredFunction(name) ?? ((nameOpt != null) ? bound.CurrentContext.GetDeclaredFunction(nameOpt) : null);
             if (routine == null)
             {
+                // add restriction // https://github.com/iolevel/wpdotnet-sdk/issues/92
+
+                // restriction: ctx.GetDeclaredFunction(name) == null
+                var checkExpr = Expression.ReferenceEqual(
+                    Expression.Call(bound.Context, Cache.Operators.GetDeclaredFunction_Context_String, Expression.Constant(name)),
+                    Cache.Expressions.Null);
+
+                bound.AddRestriction(checkExpr);
+
+                if (nameOpt != null)
+                {
+                    // restriction: ctx.GetDeclaredFunction(nameOpt) == null
+                    checkExpr = Expression.ReferenceEqual(
+                        Expression.Call(bound.Context, Cache.Operators.GetDeclaredFunction_Context_String, Expression.Constant(nameOpt)),
+                        Cache.Expressions.Null);
+
+                    bound.AddRestriction(checkExpr);
+                }
+
                 return null;
             }
 

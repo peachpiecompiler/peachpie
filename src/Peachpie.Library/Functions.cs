@@ -108,21 +108,20 @@ namespace Pchp.Library
 		/// <remarks>User functions which are declared conditionally and was not declared yet is considered as not existent.</remarks>
 		public static PhpArray get_defined_functions(Context ctx)
         {
-            var result = new PhpArray(2);
             var library = new PhpArray(500);
             var user = new PhpArray();
 
             foreach (var routine in ctx.GetDeclaredFunctions())
             {
-                (routine.IsUserFunction ? user : library).AddValue((PhpValue)routine.Name);
+                (routine.IsUserFunction ? user : library).AddValue(routine.Name);
             }
 
             //
-            result["internal"] = (PhpValue)library;
-            result["user"] = (PhpValue)user;
-
-            //
-            return result;
+            return new PhpArray(2)
+            {
+                {  "internal", library },
+                { "user", user },
+            };
         }
 
         #endregion        

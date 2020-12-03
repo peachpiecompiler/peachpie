@@ -105,6 +105,10 @@ namespace Pchp.CodeAnalysis
             if (IsAString(first) && IsAString(second))
                 return CoreTypes.PhpString; // a string builder; if both are system.string, system.string is returned earlier
 
+            // void + something; is an error, ignore the void
+            if (first.IsVoid()) return second;
+            if (second.IsVoid()) return first;
+
             // TODO: simple array & PhpArray => PhpArray
 
             if (!IsAString(first) && !IsAString(second) &&

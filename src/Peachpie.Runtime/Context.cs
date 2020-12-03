@@ -376,14 +376,14 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Internal. Used by callsites cache to check whether called function is the same as the one declared.
+        /// Internal.
+        /// Used by callsites cache to check whether called function is the same as the one declared.
         /// </summary>
-        internal static bool CheckFunctionDeclared(Context ctx, int index, int expectedHashCode) => AssertFunction(ctx._functions.GetDeclaredRoutine(index - 1), expectedHashCode);
-
-        /// <summary>
-        /// Checks the routine has expected hash code. The routine can be null.
-        /// </summary>
-        static bool AssertFunction(RoutineInfo routine, int expectedHashCode) => routine != null && routine.GetHashCode() == expectedHashCode;
+        internal static bool CheckFunctionDeclared(Context ctx, int index, int expectedHashCode)
+        {
+            var routine = ctx._functions.GetDeclaredRoutine(index - 1);
+            return routine != null && routine.GetHashCode() == expectedHashCode;
+        }
 
         /// <summary>
         /// Gets declared function with given name. In case of more items they are considered as overloads.

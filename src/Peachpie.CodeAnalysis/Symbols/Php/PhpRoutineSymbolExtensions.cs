@@ -3,6 +3,7 @@ using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Peachpie.CodeAnalysis.Semantics;
 using Peachpie.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
@@ -62,6 +63,14 @@ namespace Pchp.CodeAnalysis.Symbols
             // : return type
             if (routine.SyntaxReturnType != null)
             {
+                // "static"
+                if (routine.SyntaxReturnType is ReservedTypeRef rt && rt.Type == ReservedTypeRef.ReservedType.@static &&
+                    routine.ContainingType is SourceTypeSymbol srct && !srct.IsTrait)
+                {
+                    return srct;
+                }
+
+                //
                 return compilation.GetTypeFromTypeRef(routine.SyntaxReturnType, routine.ContainingType as SourceTypeSymbol);
             }
 
@@ -206,19 +215,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 //
-                var phpparam = new PhpParam(
-                    index++,
-                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull),
-                    p.RefKind != RefKind.None,
-                    p.IsParams,
-                    isPhpRw: p.IsPhpRw,
-                    defaultValue: p.Initializer);
+                var phpparam = new PhpParam(p, index++, TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull));
 
-                if (result == null)
-                {
-                    result = new List<PhpParam>(ps.Length);
-                }
-
+                result ??= new List<PhpParam>(ps.Length);
                 result.Add(phpparam);
             }
 

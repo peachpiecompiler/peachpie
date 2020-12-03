@@ -98,6 +98,40 @@ namespace Pchp.Core
     [DebuggerNonUserCode]
     public static class PhpException
     {
+        /// <summary>
+        /// Handles a generic PHP error.
+        /// </summary>
+        /// <param name="error">The error severity.</param>
+        /// <param name="message">The error message.</param>
+        public delegate void ThrowHandler(PhpError error, string message);
+
+        /// <summary>
+        /// An event raised when a PHP error occurs.
+        /// </summary>
+        public static event ThrowHandler OnError;
+
+        static PhpException()
+        {
+            // trace output
+            OnError += (error, message) =>
+            {
+                Trace.WriteLine(message, $"PHP ({error})");
+            };
+
+            // LogEventSource
+            OnError += (error, message) =>
+            {
+                if ((error & (PhpError)PhpErrorSets.Fatal) != 0)
+                {
+                    LogEventSource.Log.HandleFatal(message);
+                }
+                else
+                {
+                    LogEventSource.Log.HandleWarning(message);
+                }
+            };
+        }
+
         static string PeachpieLibraryAssembly => "Peachpie.Library";
         static string ErrorClass => "Pchp.Library.Spl.Error";
         static string TypeErrorClass => "Pchp.Library.Spl.TypeError";
@@ -172,18 +206,13 @@ namespace Pchp.Core
 
         public static void Throw(PhpError error, string message)
         {
-            Trace.WriteLine(message, $"PHP ({error})");
+            OnError?.Invoke(error, message);
 
+            // throw PhpFatalErrorException
+            // and terminate the script on fatal error
             if ((error & (PhpError)PhpErrorSets.Fatal) != 0)
             {
-                LogEventSource.Log.HandleFatal(message);
-
-                // terminate the script with exception
                 throw new PhpFatalErrorException(message, innerException: null);
-            }
-            else
-            {
-                LogEventSource.Log.HandleWarning(message);
             }
         }
 

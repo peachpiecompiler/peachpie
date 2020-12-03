@@ -16,13 +16,14 @@ using Peachpie.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.Utilities;
+using Peachpie.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     internal partial class DiagnosticWalker<T> : GraphExplorer<T>
     {
-        private readonly DiagnosticBag _diagnostics;
-        private SourceRoutineSymbol _routine;
+        readonly DiagnosticBag _diagnostics;
+        readonly SourceRoutineSymbol _routine;
 
         private bool CallsParentCtor { get; set; }
 
@@ -389,13 +390,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
             }
 
-            // "void" return type hint ?
-            if (_routine.SyntaxReturnType is Devsense.PHP.Syntax.Ast.PrimitiveTypeRef pt && pt.PrimitiveTypeName == Devsense.PHP.Syntax.Ast.PrimitiveTypeRef.PrimitiveType.@void)
+            if (_routine.SyntaxReturnType != null)
             {
-                if (x.Returned != null)
+                // "void" return type hint ?
+                if (_routine.SyntaxReturnType.IsVoid() && x.Returned != null)
                 {
                     // A void function must not return a value
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_VoidFunctionCannotReturnValue);
+                }
+
+                if (x.Returned == null)
+                {
+                    if (!_routine.SyntaxReturnType.IsVoid())
+                    {
+                        // CONSIDER: Err or silently return NULL
+                    }
+                }
+                else if (x.Returned.ConstantValue.IsNull() && !_routine.SyntaxReturnType.CanBeNull())
+                {
+                    // not nullable return type
+                    // Cannot convert {0} to {1}
+                    _diagnostics.Add(_routine, x.Returned.PhpSyntax, ErrorCode.ERR_TypeMismatch, "NULL", _routine.SyntaxReturnType.ToString());
                 }
             }
 
@@ -495,10 +510,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             base.VisitRoutineCall(x);
 
             // check method
-            if (x.TargetMethod.IsValidMethod() && !x.HasArgumentsUnpacking)
+            if (x.TargetMethod.IsValidMethod())
             {
-                // check mandatory parameters are provided:
                 var ps = x.TargetMethod.Parameters;
+
                 var skippedps = 0; // number of implicit parameters provided by compiler
                 var expectsmin = 0;
 
@@ -512,9 +527,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     else
                     {
-                        if (!ps[i].IsPhpOptionalParameter() && (i < ps.Length - 1 /*check for IsParams only for last parameter*/ || !ps[i].IsParams))
+                        var p = ps[i];
+
+                        if (!p.IsPhpOptionalParameter() && (i < ps.Length - 1 /*check for IsParams only for last parameter*/ || !p.IsParams))
                         {
                             expectsmin = i - skippedps + 1;
+                        }
+
+                        var arg = x.ArgumentMatchingParameter(p);
+                        if (arg != null)
+                        {
+                            // TODO: check arg.Value.BoundConversion.Exists in general, instead of the following
+
+                            if (arg.Value.ConstantValue.IsNull() && p.HasNotNull)
+                            {
+                                // Argument {0} passed to {1}() must be of the type {2}, {3} given
+                                _diagnostics.Add(_routine, arg.Value.PhpSyntax,
+                                    ErrorCode.ERR_ArgumentTypeMismatch,
+                                    (i - skippedps + 1).ToString(), x.TargetMethod.RoutineName, GetNameForDiagnostic(p.Type), "NULL");
+                            }
                         }
                     }
                 }
@@ -523,8 +554,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     ? int.MaxValue
                     : ps.Length - skippedps;
 
-                //
-                if (x.ArgumentsInSourceOrder.Length < expectsmin)
+                // check mandatory parameters are provided:
+                if (x.ArgumentsInSourceOrder.Length < expectsmin && !x.HasArgumentsUnpacking)
                 {
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, GetMemberNameForDiagnostic(x), expectsmin, x.ArgumentsInSourceOrder.Length);
                 }
@@ -635,7 +666,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod, isMemberCall: true);
 
             // remember there is call to `parent::__construct`
-            if (call.TypeRef is BoundReservedTypeRef rt && rt.ReservedType == ReservedTypeRef.ReservedType.parent &&
+            if (call.TypeRef.IsParent() &&
                 call.Name.IsDirect &&
                 call.Name.NameValue.Name.IsConstructName)
             {
@@ -859,6 +890,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
 
             return name;
+        }
+
+        static string GetNameForDiagnostic(TypeSymbol t)
+        {
+            return t.SpecialType switch
+            {
+                SpecialType.System_Object => QualifiedName.Object.ToString(),
+                SpecialType.System_Double => QualifiedName.Float.ToString(),
+                SpecialType.System_Boolean => QualifiedName.Bool.ToString(),
+                SpecialType.System_Int32 => QualifiedName.Int.ToString(),
+                SpecialType.System_Int64 => QualifiedName.Int.ToString(),
+                SpecialType.System_String => QualifiedName.String.ToString(),
+                _ => t.PhpName(),
+            };
         }
 
         static TextSpan GetMemberNameSpanForDiagnostic(LangElement node)
