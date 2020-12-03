@@ -44,8 +44,6 @@ namespace Peachpie.App.Tests
         [DataTestMethod]
         public void TestNullability(bool debug)
         {
-            string fullpath = Path.GetFullPath(BaseScriptName);
-
             using (var ctx = Context.CreateConsole(BaseScriptName))
             {
                 // Script using NullabilitySubject class from C#

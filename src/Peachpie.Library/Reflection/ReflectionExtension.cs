@@ -17,7 +17,7 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Name of the extension.
         /// </summary>
-        public string name { get; private set; }
+        public string name { get; private set; } = string.Empty;
 
         [PhpFieldsOnlyCtor]
         protected ReflectionExtension()
