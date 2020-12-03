@@ -311,6 +311,10 @@ namespace Peachpie.AspNetCore.Web
             // main script exception handler
             try
             {
+                // autoload files specified in composer
+                this.AutoloadFiles();
+
+                // the main script
                 script.Evaluate(this, this.Globals, null);
             }
             catch (ScriptDiedException died)
