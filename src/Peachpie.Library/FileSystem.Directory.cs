@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -30,7 +32,7 @@ namespace Pchp.Library
         /// <summary>
         /// Reference to the directory listing resource.
         /// </summary>
-        public readonly PhpResource handle;
+        public readonly PhpResource? handle;
 
         #endregion
 
@@ -56,7 +58,7 @@ namespace Pchp.Library
         /// </summary>
         /// <returns>Filename of a contained file (including . and ..).</returns>
         [return: CastToFalse]
-        public string read(PhpResource handle = null)
+        public string? read(PhpResource? handle = null)
         {
             var res = handle ?? this.handle;
             if (res != null)
@@ -77,7 +79,7 @@ namespace Pchp.Library
         /// <summary>
         /// Restart the directory listing.
         /// </summary>
-        public virtual void rewind(PhpResource handle = null)
+        public virtual void rewind(PhpResource? handle = null)
         {
             var res = handle ?? this.handle;
             if (res != null)
@@ -86,7 +88,7 @@ namespace Pchp.Library
             }
             else
             {
-                PhpException.InvalidImplicitCast(nameof(handle), PhpResource.PhpTypeName, "rewind");
+                PhpException.InvalidImplicitCast(nameof(handle), PhpResource.PhpTypeName, nameof(rewind));
             }
         }
 
@@ -97,7 +99,7 @@ namespace Pchp.Library
         /// <summary>
         /// Finish the directory listing.
         /// </summary>
-        public virtual void close(PhpResource handle = null)
+        public virtual void close(PhpResource? handle = null)
         {
             var res = handle ?? this.handle;
             if (res != null)
@@ -138,10 +140,12 @@ namespace Pchp.Library
         public DirectoryListing(PhpDirectory.PhpDirectoryContext dirctx, IEnumerable<string> listing)
             : base(DirectoryListingName)
         {
-            Debug.Assert(listing != null);
-            Debug.Assert(dirctx != null);
+            _dirctx = dirctx ?? throw new ArgumentNullException(nameof(dirctx));
 
-            _dirctx = dirctx;
+            if (listing == null)
+            {
+                throw new ArgumentNullException(nameof(listing));
+            }
 
             this.Enumerator = listing.GetEnumerator();
         }
@@ -174,7 +178,7 @@ namespace Pchp.Library
             /// <summary>
             /// Last handle opened by <c>opendir</c>.
             /// </summary>
-            public DirectoryListing LastDirHandle { get; set; }
+            public DirectoryListing? LastDirHandle { get; set; }
 
             /// <summary>
             /// 
@@ -271,7 +275,7 @@ namespace Pchp.Library
         /// <exception cref="PhpException">In case the specified stream wrapper can not be found
         /// or the desired directory can not be opened.</exception>
         [return: CastToFalse]
-        public static PhpResource opendir(Context ctx, string directory)
+        public static PhpResource? opendir(Context ctx, string directory)
         {
             var dirctx = PhpDirectoryContext.GetContext(ctx);
 
@@ -293,7 +297,7 @@ namespace Pchp.Library
         /// Reads an entry from a directory handle. Uses last handle opened by <c>opendir</c>.
         /// </summary>
         [return: CastToFalse]
-        public static string readdir(Context ctx)
+        public static string? readdir(Context ctx)
         {
             return readdir(PhpDirectoryContext.GetContext(ctx).LastDirHandle);
         }
@@ -308,7 +312,7 @@ namespace Pchp.Library
         /// in which they are stored by the filesystem.
         /// </returns>
         [return: CastToFalse]
-        public static string readdir(PhpResource dirHandle)
+        public static string? readdir(PhpResource? dirHandle)
         {
             var enumerator = ValidListing(dirHandle);
             return (enumerator != null && enumerator.MoveNext())
@@ -333,7 +337,7 @@ namespace Pchp.Library
         /// Resets the directory stream indicated by <paramref name="dirHandle"/> to the 
         /// beginning of the directory.
         /// </remarks>
-        public static void rewinddir(PhpResource dirHandle)
+        public static void rewinddir(PhpResource? dirHandle)
         {
             ValidListing(dirHandle)?.Reset();
         }
@@ -355,7 +359,7 @@ namespace Pchp.Library
         /// Closes the directory stream indicated by <paramref name="dirHandle"/>. 
         /// The stream must have previously been opened by by <see cref="Open"/>.
         /// </remarks>
-        public static void closedir(PhpResource dirHandle)
+        public static void closedir(PhpResource? dirHandle)
         {
             // Note: PHP allows other all stream resources to be closed with closedir().
             dirHandle?.Dispose();
@@ -391,7 +395,7 @@ namespace Pchp.Library
         /// <exception cref="PhpException">In case the specified stream wrapper can not be found
         /// or the desired directory can not be opened.</exception>
         [return: CastToFalse]
-        public static PhpArray scandir(Context ctx, string directory, ScanDirSortOrder sorting_order = ScanDirSortOrder.Ascending)
+        public static PhpArray? scandir(Context ctx, string directory, ScanDirSortOrder sorting_order = ScanDirSortOrder.Ascending)
         {
             if (PhpStream.ResolvePath(ctx, ref directory, out var wrapper, CheckAccessMode.Directory, CheckAccessOptions.Empty))
             {
@@ -423,7 +427,7 @@ namespace Pchp.Library
         /// <param name="dir_handle">The handle passed to a PHP function.</param>
         /// <returns>The enumerator over the files in the DirectoryListing.</returns>
         /// <exception cref="PhpException">When the supplied argument is not a valid <see cref="DirectoryListing"/> resource.</exception>
-        static IEnumerator<string> ValidListing(PhpResource dir_handle)
+        static IEnumerator<string>? ValidListing(PhpResource? dir_handle)
         {
             if (dir_handle is DirectoryListing listing)
             {
@@ -449,7 +453,7 @@ namespace Pchp.Library
         /// <param name="recursive">Create recursively.</param>
         /// <param name="context">Stream context, can be <c>null</c> to use default context.</param>
         /// <returns><c>true</c> if successful, <c>false</c> otherwise.</returns>
-        public static bool mkdir(Context ctx, string pathname, int mode = (int)FileModeFlags.ReadWriteExecute, bool recursive = false, PhpResource context = null)
+        public static bool mkdir(Context ctx, string pathname, int mode = (int)FileModeFlags.ReadWriteExecute, bool recursive = false, PhpResource? context = null)
         {
             return PhpStream.ResolvePath(ctx, ref pathname, out var wrapper, CheckAccessMode.Directory, CheckAccessOptions.Empty)
                 && wrapper.MakeDirectory(pathname, mode,
@@ -464,7 +468,7 @@ namespace Pchp.Library
         /// <param name="dirname"></param>
         /// <param name="context">Stream context. Can be <c>null</c> to use default context.</param>
         /// <returns><c>true</c> if successful, <c>false</c> otherwise.</returns>
-        public static bool rmdir(Context ctx, string dirname, StreamContext context = null)
+        public static bool rmdir(Context ctx, string dirname, StreamContext? context = null)
         {
             return PhpStream.ResolvePath(ctx, ref dirname, out var wrapper, CheckAccessMode.Directory, CheckAccessOptions.Empty)
                 && wrapper.RemoveDirectory(dirname, StreamRemoveDirectoryOptions.Empty, (context as StreamContext) ?? StreamContext.Default);
