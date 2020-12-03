@@ -55,6 +55,14 @@ namespace Peachpie.RequestHandler
         }
 
         /// <summary>
+        /// Disposes the context at the end of the request.
+        /// </summary>
+        protected virtual void DisposeRequestContext(HttpContext context, Context phpctx)
+        {
+            phpctx.Dispose();
+        }
+
+        /// <summary>
         /// Invoked by ASP.NET when a request comes from a client.
         /// Single threaded.
         /// </summary>
@@ -87,7 +95,7 @@ namespace Peachpie.RequestHandler
             }
             finally
             {
-                phpctx.Dispose();
+                DisposeRequestContext(context, phpctx);
             }
         }
 
