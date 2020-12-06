@@ -46,5 +46,22 @@ namespace Peachpie.Runtime.Tests
         {
             Assert.AreEqual("ok", CompileAndRun("<?php echo 'ok';"));
         }
+        
+        [TestMethod]
+        public void Dictionary()
+        {
+            Assert.AreEqual(
+                "ok,key=>ok",
+                CompileAndRun(@"<?php
+$d = new \System\Collections\Generic\Dictionary<string,string>;
+
+$d['key'] = 'ok';
+echo $d['key']; // ok
+
+foreach ($d as $k => $v) {
+  echo ',', $k, '=>', $v; // ,key=>ok
+}
+"));
+        }
     }
 }
