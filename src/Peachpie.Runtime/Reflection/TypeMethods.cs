@@ -87,24 +87,26 @@ namespace Pchp.Core.Reflection
                 // ignore methods in base classes that has been "overriden" in current class
                 // in PHP we do override even if signature does not match (e.g. __construct)
                 SelectVisibleOverrides(ref overrides);
-                
-                // TODO: negative {index} in case of non-user method
 
-                var info = PhpMethodInfo.Create(++index, m.Key, overrides, type);
-
-                MagicMethods magic;
+                var magic = MagicMethods.undefined;
 
                 if (IsSpecialName(overrides))
                 {
                     // 'specialname' methods,
                     // get_Item, set_Item
-                    Enum.TryParse<MagicMethods>(m.Key.ToLowerInvariant(), out magic);
+                    if (!Enum.TryParse<MagicMethods>(m.Key.ToLowerInvariant(), out magic))
+                    {
+                        continue;
+                    }
                 }
-                else
-                {
-                    if (_methods == null)
-                        _methods = new Dictionary<string, PhpMethodInfo>(StringComparer.OrdinalIgnoreCase);
 
+                // TODO: negative {index} in case of non-user method
+
+                var info = PhpMethodInfo.Create(++index, m.Key, overrides, type);
+
+                if (magic == MagicMethods.undefined)
+                {
+                    _methods ??= new Dictionary<string, PhpMethodInfo>(StringComparer.OrdinalIgnoreCase);
                     _methods[info.Name] = info;
 
                     // resolve magic methods
@@ -113,9 +115,7 @@ namespace Pchp.Core.Reflection
 
                 if (magic != MagicMethods.undefined)
                 {
-                    if (_magicMethods == null)
-                        _magicMethods = new Dictionary<MagicMethods, PhpMethodInfo>();
-
+                    _magicMethods ??= new Dictionary<MagicMethods, PhpMethodInfo>();
                     _magicMethods[magic] = info;
                 }
             }
@@ -143,7 +143,7 @@ namespace Pchp.Core.Reflection
             return
                 access != MethodAttributes.Assembly &&
                 access != MethodAttributes.FamANDAssem &&
-                !m.IsSpecialName &&
+                // !m.IsSpecialName && // we need to handle get_item/set_item but not remember it in type's runtime methods tho
                 !IsSpecialHidden(m) &&
                 !ReflectionUtils.IsPhpHidden(m);
         };
