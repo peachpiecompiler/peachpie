@@ -239,10 +239,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected ImmutableArray<BoundArgument> BindArguments(params AST.ActualParam[] parameters)
         {
-            Debug.Assert(parameters != null);
-
             // trim trailing empty parameters (PHP >=7.3)
-            var pcount = parameters.Length;
+            var pcount = parameters != null ? parameters.Length : 0;
+
             while (pcount > 0 && parameters[pcount - 1].Expression == null)
             {
                 pcount--;
