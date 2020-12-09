@@ -171,7 +171,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _accessibility = accessibility;
             _initializer = initializer;
             _location = location;
-            _attributes = attributes;
+            _attributes = attributes.IsDefault ? ImmutableArray<AttributeData>.Empty : attributes;
             PHPDocBlock = phpdoc;
 
             // implicit attributes from PHPDoc
