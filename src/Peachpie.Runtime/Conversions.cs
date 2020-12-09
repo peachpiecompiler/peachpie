@@ -46,7 +46,7 @@ namespace Pchp.Core
         /// <summary>
         /// Converts instance to its string representation according to PHP conversion algorithm.
         /// </summary>
-        string ToString(Context ctx);
+        string ToString();
 
         /// <summary>
         /// In case of a non class object, boxes value to an object.
@@ -89,16 +89,16 @@ namespace Pchp.Core
         /// </summary>
         public static string ToString(double value) => value.ToString("G", Context.InvariantNumberFormatInfo);
 
-        public static string ToString(IPhpConvertible value, Context ctx) => value.ToString(ctx);
+        public static string ToString(IPhpConvertible value) => value.ToString();
 
         /// <summary>
         /// Converts class instance to a string.
         /// </summary>
-        public static string ToString(object value, Context ctx)
+        public static string ToString(object value)
         {
             if (value is IPhpConvertible conv)   // TODO: should be sufficient to call just ToString(), implementations of IPhpConvertible override ToString always
             {
-                return ToString(conv, ctx);
+                return conv.ToString();
             }
             else
             {
@@ -1436,19 +1436,19 @@ namespace Pchp.Core
             PhpTypeCode.Double => Convert.ToString(value.Double),
             PhpTypeCode.String => value.String,
             PhpTypeCode.MutableString => value.MutableStringBlob.ToString(ctx.StringEncoding),
-            PhpTypeCode.Object => Convert.ToString(value.Object, ctx),
+            PhpTypeCode.Object => Convert.ToString(value.Object),
             PhpTypeCode.Alias => ToString(value.Alias.Value, ctx),
             _ => throw PhpException.TypeErrorException(),
         };
 
-        public static string ToString(object obj, Context ctx)
+        public static string ToString(object obj)
         {
             if (obj == null)
             {
                 throw PhpException.TypeErrorException();
             }
 
-            return Convert.ToString(obj, ctx);
+            return Convert.ToString(obj);
         }
 
         /// <summary>

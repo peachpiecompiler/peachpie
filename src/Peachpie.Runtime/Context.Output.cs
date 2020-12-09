@@ -144,7 +144,7 @@ namespace Pchp.Core
         {
             if (value != null)
             {
-                Echo(Convert.ToString(value, this));
+                Echo(Convert.ToString(value));
             }
         }
 

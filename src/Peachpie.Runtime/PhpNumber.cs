@@ -84,7 +84,7 @@ namespace Pchp.Core
 
         #region Debug
 
-        string GetDebuggerValue { get { return IsLong ? _long.ToString() : _double.ToString(CultureInfo.InvariantCulture); } }
+        string GetDebuggerValue => ToString();
 
         string GetDebuggerType { get { return IsLong ? PhpVariable.TypeNameInteger : PhpVariable.TypeNameDouble; } }
 
@@ -1358,7 +1358,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets string representation of the number.
         /// </summary>
-        public string ToString(Context ctx)
+        public override string ToString()
         {
             return IsLong ? _long.ToString() : Convert.ToString(_double);
         }

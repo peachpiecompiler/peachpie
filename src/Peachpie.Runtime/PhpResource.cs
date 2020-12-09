@@ -202,7 +202,7 @@ namespace Pchp.Core
             return Convert.NumberInfo.LongInteger;
         }
 
-        string IPhpConvertible.ToString(Context ctx) => ToString();
+        string IPhpConvertible.ToString() => ToString();
 
         object IPhpConvertible.ToClass() => new stdClass(PhpValue.FromClass(this));
 

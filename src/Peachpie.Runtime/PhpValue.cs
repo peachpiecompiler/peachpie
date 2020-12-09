@@ -373,7 +373,7 @@ namespace Pchp.Core
             PhpTypeCode.PhpArray => (string)Array,
             PhpTypeCode.String => String,
             PhpTypeCode.MutableString => MutableStringBlob.ToString(ctx.StringEncoding),
-            PhpTypeCode.Object => Convert.ToString(Object, ctx),
+            PhpTypeCode.Object => Convert.ToString(Object),
             PhpTypeCode.Alias => Alias.Value.ToString(ctx),
             _ => throw InvalidTypeCodeException(),
         };
@@ -916,7 +916,7 @@ namespace Pchp.Core
                 case PhpTypeCode.PhpArray: ctx.Echo((string)Array); break;
                 case PhpTypeCode.String: ctx.Echo(String); break;
                 case PhpTypeCode.MutableString: MutableStringBlob.Output(ctx); break;
-                case PhpTypeCode.Object: ctx.Echo(Convert.ToString(Object, ctx)); break;
+                case PhpTypeCode.Object: ctx.Echo(Convert.ToString(Object)); break;
                 case PhpTypeCode.Alias: Alias.Value.Output(ctx); break;
             }
         }

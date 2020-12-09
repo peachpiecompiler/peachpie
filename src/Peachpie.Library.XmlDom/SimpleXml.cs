@@ -744,8 +744,6 @@ namespace Peachpie.Library.XmlDom
 
         #region Internal: IPhpConvertible, IPhpCloneable, IPhpJsonSerializable, IPhpPrintable
 
-        string IPhpConvertible.ToString(Context ctx) => ToString();
-
         /// <summary>
         /// String representation of the XML element.
         /// </summary>

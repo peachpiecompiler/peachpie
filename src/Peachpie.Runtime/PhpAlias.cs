@@ -105,8 +105,6 @@ namespace Pchp.Core
 
         public Convert.NumberInfo ToNumber(out PhpNumber number) => Value.ToNumber(out number);
 
-        public string ToString(Context ctx) => Value.ToString(ctx);
-
         public object ToClass() => Value.ToClass();
 
         public PhpArray ToArray() => Value.ToArray();
@@ -134,6 +132,10 @@ namespace Pchp.Core
         public PhpNumber ToNumber() => Convert.ToNumber(Value);
 
         public PhpString ToPhpString(Context ctx) => Value.ToPhpString(ctx);
+
+        public override string ToString() => Value.ToString();
+
+        public string ToString(Context ctx) => Value.ToString(ctx);
 
         public bool IsEmpty() => Value.IsEmpty;
 

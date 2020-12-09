@@ -397,7 +397,7 @@ namespace Pchp.Core
             return Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.LongInteger;
         }
 
-        string IPhpConvertible.ToString(Context ctx) => (string)this;
+        string IPhpConvertible.ToString() => (string)this;
 
         /// <summary>
         /// Creates <see cref="stdClass"/> with runtime instance fields copied from entries of this array.

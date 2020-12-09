@@ -1654,6 +1654,8 @@ namespace Pchp.Core
 
         public Convert.NumberInfo ToNumber(out PhpNumber number) => Convert.ToNumber(ToString(), out number);
 
+        string IPhpConvertible.ToString() => ToString(Encoding.UTF8);
+
         public string ToString(Context ctx) => ToString(ctx.StringEncoding);
 
         public object ToClass() => new stdClass(AsPhpValue(this));
