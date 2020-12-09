@@ -369,7 +369,7 @@ namespace Pchp.Core.Dynamic
                 return VoidAsConstant(expr, null, typeof(string));
 
             if (source == typeof(PhpNumber))
-                return Expression.Call(expr, Cache.Operators.PhpNumber_ToString_Context, ctx);
+                return Expression.Call(expr, Cache.Operators.PhpNumber_ToString);
 
             if (source == typeof(object))
             {
