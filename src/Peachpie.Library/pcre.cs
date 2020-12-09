@@ -98,7 +98,18 @@ namespace Pchp.Library
 
         public static int preg_last_error()
         {
+            // TODO
+            PhpException.FunctionNotSupported(nameof(preg_last_error));
+
             return 0;
+        }
+
+        public static string preg_last_error_msg()
+        {
+            // TODO
+            PhpException.FunctionNotSupported(nameof(preg_last_error_msg));
+            
+            return "No error";
         }
 
         /// <summary>
