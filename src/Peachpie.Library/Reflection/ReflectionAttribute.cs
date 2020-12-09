@@ -33,7 +33,7 @@ namespace Pchp.Library.Reflection
 
         internal ReflectionAttribute(Attribute attribute)
         {
-            _attribute = attribute;
+            _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
         }
 
         /// <summary>
@@ -48,9 +48,10 @@ namespace Pchp.Library.Reflection
         {
             if (_attribute is PhpCustomAtribute phpattr)
             {
-                // ctx.GetDeclaredType(phpattr.TypeName, true)
-                // Invoke ctor with named arguments
-                throw new NotImplementedException();
+                var tinfo = ctx.GetDeclaredTypeOrThrow(phpattr.TypeName, autoload: true);
+                // TODO: check {tinfo} has #[Attribute] attribute
+                return tinfo.Creator(ctx, getArguments().GetValues());  // TODO: Invoke ctor with named arguments ..
+                // return tinfo.Creator(ctx, getArguments());
             }
             else
             {
