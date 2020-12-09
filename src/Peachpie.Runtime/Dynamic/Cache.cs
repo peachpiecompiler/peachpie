@@ -37,7 +37,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", Types.PhpValue.MakeByRefType(), Types.PhpValue);
             public static MethodInfo IsSet_PhpValue = new Func<PhpValue, bool>(Core.Operators.IsSet).Method;
 
-            public static MethodInfo ToString_Double_Context = new Func<double, Context, string>(Core.Convert.ToString).Method;
+            public static MethodInfo ToString_Double = new Func<double, string>(Core.Convert.ToString).Method;
             public static MethodInfo ToLongOrThrow_String = new Func<string, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo ToDouble_String = new Func<string, double>(Core.Convert.StringToDouble).Method;
             public static MethodInfo ToPhpString_PhpValue_Context = new Func<PhpValue, Context, Core.PhpString>(Core.Convert.ToPhpString).Method;
@@ -166,7 +166,6 @@ namespace Pchp.Core.Dynamic
             /// <summary><see cref="System.Object"/>.</summary>
             public static new MethodInfo ToString = typeof(object).GetMethod("ToString", Types.Empty);
             public static readonly MethodInfo ToString_Bool = typeof(Core.Convert).GetMethod("ToString", Types.Bool);
-            public static readonly MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", Types.Double[0], typeof(Context));
         }
 
         public static class Expressions

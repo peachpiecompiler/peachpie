@@ -369,7 +369,7 @@ namespace Pchp.Core
             PhpTypeCode.Null => string.Empty,
             PhpTypeCode.Boolean => Convert.ToString(Boolean),
             PhpTypeCode.Long => Long.ToString(),
-            PhpTypeCode.Double => Convert.ToString(Double, ctx),
+            PhpTypeCode.Double => Convert.ToString(Double),
             PhpTypeCode.PhpArray => (string)Array,
             PhpTypeCode.String => String,
             PhpTypeCode.MutableString => MutableStringBlob.ToString(ctx.StringEncoding),

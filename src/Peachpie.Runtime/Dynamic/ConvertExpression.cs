@@ -348,10 +348,10 @@ namespace Pchp.Core.Dynamic
                 return Expression.Call(expr, Cache.Object.ToString);
 
             if (source == typeof(double))
-                return Expression.Call(Cache.Object.ToString_Double_Context, expr, ctx);
+                return Expression.Call(Cache.Operators.ToString_Double, expr);
 
             if (source == typeof(float))
-                return Expression.Call(Cache.Object.ToString_Double_Context, Expression.Convert(expr, typeof(double)), ctx);    // ToString((double)expr, ctx)
+                return Expression.Call(Cache.Operators.ToString_Double, Expression.Convert(expr, typeof(double)));    // ToString((double)expr)
 
             if (source == typeof(bool))
                 return Expression.Call(Cache.Object.ToString_Bool, expr);

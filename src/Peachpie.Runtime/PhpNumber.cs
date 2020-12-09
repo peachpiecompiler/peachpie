@@ -1360,7 +1360,7 @@ namespace Pchp.Core
         /// </summary>
         public string ToString(Context ctx)
         {
-            return IsLong ? _long.ToString() : Convert.ToString(_double, ctx);
+            return IsLong ? _long.ToString() : Convert.ToString(_double);
         }
 
         public object ToClass() => ToObject();

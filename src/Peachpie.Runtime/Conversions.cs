@@ -89,11 +89,6 @@ namespace Pchp.Core
         /// </summary>
         public static string ToString(double value) => value.ToString("G", Context.InvariantNumberFormatInfo);
 
-        /// <summary>
-        /// Gets string representation of a floating point number value.
-        /// </summary>
-        public static string ToString(double value, Context ctx) => value.ToString("G", ctx.NumberFormat);
-
         public static string ToString(IPhpConvertible value, Context ctx) => value.ToString(ctx);
 
         /// <summary>
@@ -1438,7 +1433,7 @@ namespace Pchp.Core
             PhpTypeCode.Null => null, // TODO: support nullable conversion, target parameter can be either `string` or `string?`
             PhpTypeCode.Boolean => Convert.ToString(value.Boolean),
             PhpTypeCode.Long => value.Long.ToString(),
-            PhpTypeCode.Double => Convert.ToString(value.Double, ctx),
+            PhpTypeCode.Double => Convert.ToString(value.Double),
             PhpTypeCode.String => value.String,
             PhpTypeCode.MutableString => value.MutableStringBlob.ToString(ctx.StringEncoding),
             PhpTypeCode.Object => Convert.ToString(value.Object, ctx),

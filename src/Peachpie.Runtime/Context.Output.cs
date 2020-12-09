@@ -170,7 +170,7 @@ namespace Pchp.Core
 
         public void Echo(double value)
         {
-            Output.Write(Convert.ToString(value, this));
+            Output.Write(Convert.ToString(value));
         }
 
         public void Echo(long value)

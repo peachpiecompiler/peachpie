@@ -301,7 +301,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Bool = ct.Convert.Method("ToString", ct.Boolean);
                 ToString_Int32 = ct.Convert.Method("ToString", ct.Int32);
                 ToString_Long = ct.Convert.Method("ToString", ct.Long);
-                ToString_Double_Context = ct.Convert.Method("ToString", ct.Double, ct.Context);
+                ToString_Double = ct.Convert.Method("ToString", ct.Double);
                 Long_ToString = ct.Long.Method("ToString");
                 ToChar_String = ct.Convert.Method("ToChar", ct.String);
                 ToNumber_PhpValue = ct.Convert.Method("ToNumber", ct.PhpValue);
@@ -435,7 +435,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemObject_IPhpArray_PhpValue,
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToBoolean_String, ToBoolean_PhpString,
-                ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
+                ToString_Bool, ToString_Long, ToString_Int32, ToString_Double, Long_ToString,
                 ToChar_String,
                 ToNumber_PhpValue, ToNumber_String, ToArrayOrThrow_PhpValue,
                 AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, GetArrayAccess_PhpValueRef, ToPhpString_PhpValue_Context, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue_RuntimeTypeHandle_Object, AsCallable_String_RuntimeTypeHandle_Object,
