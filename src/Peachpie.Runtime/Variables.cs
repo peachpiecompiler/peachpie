@@ -355,27 +355,45 @@ namespace Pchp.Core
         public const string False = "false";
 
         /// <summary>
-        /// Gets the PHP name of given value.
+        /// Gets the PHP name of given value, used by <c>gettype()</c>.
         /// </summary>
         /// <param name="value">The object which type name to get.</param>
         /// <returns>The PHP name of the type of <paramref name="value"/>.</returns>
         /// <remarks>Returns CLR type name for variables of unknown type.</remarks>
-        public static string GetTypeName(PhpValue value)
-        {
-            switch (value.TypeCode)
+        public static string GetTypeName(PhpValue value) =>
+            value.TypeCode switch
             {
-                case PhpTypeCode.Null: return TypeNameNull;
-                case PhpTypeCode.Boolean: return TypeNameBoolean;
-                case PhpTypeCode.Long: return TypeNameInteger;
-                case PhpTypeCode.Double: return TypeNameDouble;
-                case PhpTypeCode.PhpArray: return PhpArray.PhpTypeName;
-                case PhpTypeCode.String:
-                case PhpTypeCode.MutableString: return TypeNameString;
-                case PhpTypeCode.Object: return value.Object is PhpResource ? PhpResource.PhpTypeName : TypeNameObject;
-                case PhpTypeCode.Alias: return GetTypeName(value.Alias.Value);
-                default: throw new ArgumentException();
-            }
-        }
+                PhpTypeCode.Null => TypeNameNull,
+                PhpTypeCode.Boolean => TypeNameBoolean,
+                PhpTypeCode.Long => TypeNameInteger,
+                PhpTypeCode.Double => TypeNameDouble,
+                PhpTypeCode.PhpArray => PhpArray.PhpTypeName,
+                PhpTypeCode.String => TypeNameString,
+                PhpTypeCode.MutableString => TypeNameString,
+                PhpTypeCode.Object => value.Object is PhpResource ? PhpResource.PhpTypeName : TypeNameObject,
+                PhpTypeCode.Alias => GetTypeName(value.Alias.Value),
+                _ => throw new ArgumentException(),
+            };
+
+        /// <summary>
+        /// Gets the PHP debug type name of given value, used by <c>get_debug_type()</c>.
+        /// </summary>
+        public static string GetDebugType(PhpValue value) =>
+            value.TypeCode switch
+            {
+                PhpTypeCode.Null => "null",
+                PhpTypeCode.Boolean => TypeNameBool,
+                PhpTypeCode.Long => TypeNameInt,
+                PhpTypeCode.Double => TypeNameFloat,
+                PhpTypeCode.PhpArray => PhpArray.PhpTypeName,
+                PhpTypeCode.String => TypeNameString,
+                PhpTypeCode.MutableString => TypeNameString,
+                PhpTypeCode.Object => value.Object is PhpResource resource
+                    ? resource.IsValid ? $"{PhpResource.PhpTypeName} ({resource.TypeName})" : $"{PhpResource.PhpTypeName} (closed)"
+                    : value.Object.GetPhpTypeInfo().Name,
+                PhpTypeCode.Alias => GetTypeName(value.Alias.Value),
+                _ => throw new ArgumentException(),
+            };
 
         /// <summary>
         /// Gets the PHP class name of given object instance.

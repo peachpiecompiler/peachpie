@@ -380,11 +380,14 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>The string type identifier. See PHP manual for details.</returns>
-        public static string gettype(PhpValue variable)
-        {
-            // works well on references:
-            return PhpVariable.GetTypeName(variable);
-        }
+        public static string gettype(PhpValue variable) => PhpVariable.GetTypeName(variable);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="variable"></param>
+        /// <remarks>https://wiki.php.net/rfc/get_debug_type</remarks>
+        public static string get_debug_type(PhpValue variable) => PhpVariable.GetDebugType(variable);
 
         #endregion
 
