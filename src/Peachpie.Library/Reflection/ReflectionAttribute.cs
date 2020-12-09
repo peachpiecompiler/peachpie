@@ -49,8 +49,16 @@ namespace Pchp.Library.Reflection
             if (_attribute is PhpCustomAtribute phpattr)
             {
                 var tinfo = ctx.GetDeclaredTypeOrThrow(phpattr.TypeName, autoload: true);
-                // TODO: check {tinfo} has #[Attribute] attribute
-                return tinfo.Creator(ctx, getArguments().GetValues());  // TODO: Invoke ctor with named arguments ..
+
+                // check {tinfo} has #[Attribute] attribute
+                if (!tinfo.IsPhpAttributeClass())
+                {
+                    // Fatal error: Attempting to use non-attribute class "{0}" as attribute
+                    PhpException.Throw(PhpError.Error, Resources.Resources.non_attribute_class_used, tinfo.Name);
+                }
+
+                // TODO: Invoke ctor with named arguments ..
+                return tinfo.Creator(ctx, getArguments().GetValues());
                 // return tinfo.Creator(ctx, getArguments());
             }
             else

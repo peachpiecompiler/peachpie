@@ -17,6 +17,9 @@ namespace Pchp.Library.Reflection
     {
         public const char NameSeparator = '\\';
 
+        /// <summary>Name of attribute annotating a PHP attribute class.</summary>
+        public static string AttributeClassName => "Attribute";
+
         public const string ExtensionName = PhpExtensionAttribute.KnownExtensionNames.Reflection;
 
         /// <summary>
@@ -262,6 +265,22 @@ namespace Pchp.Library.Reflection
             }
 
             return result;
+        }
+
+        /// <summary>Gets value indicating whether given type is annotated with #[Attribute] attribute.</summary>
+        public static bool IsPhpAttributeClass(this PhpTypeInfo tinfo)
+        {
+            if (tinfo != null)
+            {
+                foreach (var attr in tinfo.Type.GetCustomAttributes<PhpCustomAtribute>())
+                {
+                    if (attr.TypeName.EqualsOrdinalIgnoreCase(AttributeClassName))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }

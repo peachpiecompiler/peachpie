@@ -723,4 +723,7 @@
   <data name="serialization_max_depth" xml:space="preserve">
     <value>Maximum stack depth exceeded</value>
   </data>
+  <data name="non_attribute_class_used" xml:space="preserve">
+    <value>Attempting to use non-attribute class "{0}" as attribute</value>
+  </data>
 </root>

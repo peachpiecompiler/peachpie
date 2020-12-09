@@ -1168,6 +1168,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Attempting to use non-attribute class &quot;{0}&quot; as attribute.
+        /// </summary>
+        public static string non_attribute_class_used {
+            get {
+                return ResourceManager.GetString("non_attribute_class_used", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Type &apos;{0}&apos;: not enough arguments.
         /// </summary>
         public static string not_enought_arguments {
