@@ -115,7 +115,19 @@ namespace Peachpie.Library.MySql
         /// </summary>
         public IReadOnlyList<DbColumn> ColumnSchema => (IReadOnlyList<DbColumn>)GetRowCustomData();
 
-        public MySqlDbColumn GetColumnSchema(int fieldIndex) => CheckFieldIndex(fieldIndex) ? (MySqlDbColumn)ColumnSchema[fieldIndex] : null;
+        public MySqlDbColumn GetColumnSchema(int fieldIndex)
+        {
+            if (CheckFieldIndex(fieldIndex))
+            {
+                var schema = ColumnSchema;
+                if (schema != null)
+                {
+                    return (MySqlDbColumn)schema[fieldIndex];
+                }
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Collect additional information about current row of Reader.
