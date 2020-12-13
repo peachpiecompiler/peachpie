@@ -249,6 +249,11 @@ namespace Peachpie.AspNetCore.Web
                         continue;
                     }
 
+                    if (lib.Name == "Peachpie.App")
+                    {
+                        continue;
+                    }
+
                     // process assembly if it has a dependency to runtime
                     var dependencies = lib.Dependencies;
                     for (int i = 0; i < dependencies.Count; i++)
