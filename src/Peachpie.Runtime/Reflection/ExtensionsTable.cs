@@ -113,7 +113,7 @@ namespace Pchp.Core.Reflection
             Debug.Assert(type != null);
 
             var extensionName = type.ExtensionName;
-            if (extensionName != null)
+            if (extensionName != null && type.IsPhpType)
             {
                 EnsureExtensionInfo(extensionName).Types.Add(type);
             }
