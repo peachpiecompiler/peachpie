@@ -624,12 +624,6 @@ namespace Pchp.Library
             return false;
         }
 
-        /// <summary>
-        /// Get the resource ID for a given resource.
-        /// </summary>
-        /// <exception cref="Spl.TypeError">Argument is not a resource or <c>null</c>.</exception>
-        public static int get_resource_id(PhpResource res) => res != null ? res.Id : throw new Spl.TypeError();
-
         #endregion
 
         #region compact, extract
@@ -1541,5 +1535,11 @@ namespace Pchp.Library
         public static string get_resource_type(PhpValue res) => res.AsResource()?.TypeName;
 
         #endregion
+
+        /// <summary>
+        /// Get the resource ID for a given resource.
+        /// </summary>
+        /// <exception cref="Spl.TypeError">Argument is not a resource or <c>null</c>.</exception>
+        public static int get_resource_id(PhpResource res) => res != null ? res.Id : throw new Spl.TypeError();
     }
 }
