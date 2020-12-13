@@ -207,7 +207,7 @@ namespace Pchp.CodeAnalysis
                 return CoreTypes.Object;
             }
 
-            if (type.IsValueType || type.IsOfType(CoreTypes.IPhpArray))
+            if (type.IsValueType || type.IsOfType(CoreTypes.IPhpArray)) // TODO: remove IPhpArray and check for null in emitted code
             {
                 return CoreTypes.PhpValue;    // Nullable bool|long|double -> PhpValue
             }
