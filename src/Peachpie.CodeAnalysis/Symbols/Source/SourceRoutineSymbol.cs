@@ -458,11 +458,17 @@ namespace Pchp.CodeAnalysis.Symbols
                     // always possible it may return null
                     return true;
                 }
+                else if (SyntaxSignature.AliasReturn)
+                {
+                    // returns an aliased value,
+                    // can be anything
+                    return true;
+                }
 
                 // use the result of type analysis
                 var tmask = ResultTypeMask;
 
-                return tmask.IsAnyType || tmask.IsRef || this.TypeRefContext.IsNull(tmask);
+                return tmask.IsAnyType || tmask.IsRef || this.TypeRefContext.IsNullOrVoid(tmask);
             }
         }
 

@@ -3757,7 +3757,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (IsCopiable(thint))
             {
-                return EmitDeepCopy(t, thint.IsAnyType || thint.IsUninitialized || this.TypeRefContext.IsNull(thint));
+                return EmitDeepCopy(t, thint.IsAnyType || this.TypeRefContext.IsNullOrVoid(thint));
             }
             else
             {

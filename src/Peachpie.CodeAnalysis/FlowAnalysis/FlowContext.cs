@@ -81,8 +81,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Merged return expressions type.
         /// </summary>
-        internal TypeRefMask ReturnType { get { return _returnType; } set { _returnType = value; } }
-        TypeRefMask _returnType;
+        internal TypeRefMask ReturnType { get; set; }
 
         /// <summary>
         /// Version of the analysis, incremented whenever a set of semantic tree transformations happen.

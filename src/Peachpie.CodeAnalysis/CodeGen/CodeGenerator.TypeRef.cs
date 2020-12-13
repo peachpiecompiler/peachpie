@@ -78,8 +78,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             return tmask.IsAnyType  // mixed
                 || tmask.IsRef      // &
-                || tmask.IsUninitialized    // void (???)
-                || this.TypeRefContext.IsNull(tmask); // type analysis determined there might be NULL
+                || this.TypeRefContext.IsNullOrVoid(tmask); // type analysis determined there might be NULL
         }
 
         /// <summary>

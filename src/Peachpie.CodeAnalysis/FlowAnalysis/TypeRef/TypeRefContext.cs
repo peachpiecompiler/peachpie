@@ -834,12 +834,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public string ToString(TypeRefMask mask)
         {
+            if (mask.IsAnyType)
+            {
+                return TypeRefMask.MixedTypeName;
+            }
+
             if (!mask.IsVoid)
             {
-                if (mask.IsAnyType)
-                    return TypeRefMask.MixedTypeName;
-
-                //
                 var types = new List<string>(1);
 
                 // handle arrays separately
@@ -900,9 +901,35 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsNumber(TypeRefMask mask) { return (mask.Mask & IsNumberMask) != 0; }
 
         /// <summary>
-        /// Gets value indicating the type represents <c>NULL</c>.
+        /// Gets value indicating the type represents <c>NULL</c> (not <c>mixed</c>).
         /// </summary>
         public bool IsNull(TypeRefMask mask) { return (mask.Mask & _isNullMask) != 0 && !mask.IsAnyType; }
+
+        /// <summary>
+        /// Gets value indicating the type represents <c>NULL</c> or <c>void</c> (not <c>mixed</c>).
+        /// </summary>
+        public bool IsNullOrVoid(TypeRefMask mask)
+        {
+            if (mask.IsAnyType)
+            {
+                return false;
+            }
+
+            if (mask.IsVoid || (mask.Mask & _isNullMask) != 0)
+            {
+                return true;
+            }
+
+            foreach (var t in GetTypes(mask, ~(IsNumberMask | IsAStringMask | _isArrayMask | _isObjectMask)))
+            {
+                if (t is BoundPrimitiveTypeRef pt && pt.TypeCode == PhpTypeCode.Void)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Gets value indicating whether given type mask represents a string type (readonly or writable).
@@ -1007,10 +1034,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask WithoutNull(TypeRefMask mask)
         {
-            if (IsNull(mask))
+            if ((mask & _isNullMask) != 0 && !mask.IsAnyType)
             {
-                Debug.Assert(!mask.IsAnyType);
-                mask = mask & ~_isNullMask;
+                mask &= ~_isNullMask;
             }
 
             return mask;

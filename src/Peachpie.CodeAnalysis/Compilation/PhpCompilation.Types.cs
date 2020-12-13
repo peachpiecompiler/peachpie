@@ -202,9 +202,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal TypeSymbol MergeNull(TypeSymbol type)
         {
-            Contract.ThrowIfNull(type);
-
-            if (type.IsVoid())
+            if (type == null || type.IsVoid())
             {
                 return CoreTypes.Object;
             }
@@ -362,7 +360,7 @@ namespace Pchp.CodeAnalysis
             if (value is ulong) return GetSpecialType(SpecialType.System_UInt64);
             if (value is float) return GetSpecialType(SpecialType.System_Single);
             if (value is char) return GetSpecialType(SpecialType.System_Char);
-            
+
             //
             throw ExceptionUtilities.UnexpectedValue(value);
         }
@@ -659,28 +657,43 @@ namespace Pchp.CodeAnalysis
                     Debug.Assert(!typeCtx.IsNull(typeMask));
                 }
 
+                bool returnsvoid = false;
+
                 //
-                TypeSymbol result;
+                TypeSymbol result = null;
 
-                var typesEnum = typeCtx.GetTypes(typeMask).GetEnumerator();
-                if (typesEnum.MoveNext())
+                // determine best fitting CLR type based on defined PHP types hierarchy
+                foreach (var t in typeCtx.GetTypes(typeMask))
                 {
-                    // determine best fitting CLR type based on defined PHP types hierarchy
-                    result = typesEnum.Current.ResolveRuntimeType(this);
+                    var tdesc = t.ResolveRuntimeType(this);
+                    Debug.Assert(!tdesc.IsErrorType());
 
-                    while (typesEnum.MoveNext())
+                    if (tdesc.IsVoid())
                     {
-                        var tdesc = typesEnum.Current.ResolveRuntimeType(this);
-                        Debug.Assert(!tdesc.IsErrorType());
-                        result = Merge(result, tdesc);
+                        returnsvoid = true;
+                    }
+                    else
+                    {
+                        result = result == null ? tdesc : Merge(result, tdesc);
                     }
                 }
-                else
+
+                if (returnsvoid)
                 {
-                    result = CoreTypes.Void;
+                    if (result == null)
+                    {
+                        // only returns void
+                        return CoreTypes.Void;
+                    }
+                    else
+                    {
+                        // returns a value or void,
+                        // represent the void as NULL:
+                        maybenull = true;
+                    }
                 }
 
-                result = maybenull ? MergeNull(result) : result;
+                result = maybenull ? MergeNull(result) : result ?? CoreTypes.Void;
 
                 Debug.Assert(result.IsValidType());
 
