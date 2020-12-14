@@ -194,20 +194,27 @@ namespace Pchp.Library
                 // return null; // PHP < 8
             }
 
-            Rational result;
+            var result = bcmod(a, b);
 
-            if (a.IsZero)
+            return ToString(result, GetScale(ctx, scale));
+        }
+
+        static Rational bcmod(Rational num, Rational mod)
+        {
+            if (mod.IsZero)
             {
-                result = Rational.Zero;
+                throw new DivisionByZeroError("Modulo by zero");
+                // return null; // PHP < 8
+            }
+
+            if (num.IsZero)
+            {
+                return Rational.Zero;
             }
             else
             {
-                // a - (trunc(a / b) * b)
-
-                result = a - Trunc(a / b) * b;
+                return num - Trunc(num / mod) * mod;
             }
-
-            return ToString(result, GetScale(ctx, scale));
         }
 
         /// <summary>
@@ -239,6 +246,21 @@ namespace Pchp.Library
             return oldscale;
         }
 
-        //TODO: function bcpowmod
+        /// <summary>
+        /// Raise an arbitrary precision number to another, reduced by a specified modulus.
+        /// </summary>
+        public static string bcpowmod(Context ctx, string num, string exponent, string modulus, int? scale = default)
+        {
+            var x = Parse(num);
+            var mod = Parse(modulus);
+
+            // bcmod(bcpow($x, $y), $mod)
+
+            x = Rational.Pow(x, int.Parse(exponent));
+
+            var result = bcmod(x, mod);
+
+            return ToString(result, GetScale(ctx, scale));
+        }
     }
 }
