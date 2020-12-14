@@ -259,6 +259,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to bcmath function argument is not well-formed.
+        /// </summary>
+        public static string bcmath_wrong_argument {
+            get {
+                return ResourceManager.GetString("bcmath_wrong_argument", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid bcrypt cost parameter specified: {0}).
         /// </summary>
         public static string bcrypt_invalid_cost {
