@@ -1067,7 +1067,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 members.AddRange(LoadFields());
 
                 //
-                _lazyMembers = members;
                 Interlocked.CompareExchange(ref _lazyMembers, members, null);
             }
 
