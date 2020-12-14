@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -132,6 +134,8 @@ namespace Pchp.Library
             return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
+        static Rational Trunc(this Rational num) => num.Sign >= 0 ? num.WholePart : (-(-num).WholePart);
+
         static Rational Parse(string num)
         {
             if (!Rational.TryParseDecimal(num, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out var value))
@@ -172,10 +176,39 @@ namespace Pchp.Library
         /// </summary>
         public static string bcdiv(Context ctx, string num1, string num2, int? scale = default) => ToString(Parse(num1) / Parse(num2), GetScale(ctx, scale));
 
-        ///// <summary>
-        ///// Get modulus of an arbitrary precision number.
-        ///// </summary>
-        //TODO: public static string bcmod(Context ctx, string num1, string num2, int? scale = default) => ToString(Parse(num1) % Parse(num2), GetScale(ctx, scale));
+        /// <summary>
+        /// Get modulus of an arbitrary precision number.
+        /// </summary>
+        /// <returns>
+        /// Get the remainder of dividing <paramref name="num1"/> by <paramref name="num2"/>.
+        /// Unless <paramref name="num2"/> is zero, the result has the same sign as <paramref name="num1"/>.
+        /// </returns>
+        public static string bcmod(Context ctx, string num1, string num2, int? scale = default)
+        {
+            var a = Parse(num1);
+            var b = Parse(num2);
+
+            if (b.IsZero)
+            {
+                throw new DivisionByZeroError("Modulo by zero");
+                // return null; // PHP < 8
+            }
+
+            Rational result;
+
+            if (a.IsZero)
+            {
+                result = Rational.Zero;
+            }
+            else
+            {
+                // a - (trunc(a / b) * b)
+
+                result = a - Trunc(a / b) * b;
+            }
+
+            return ToString(result, GetScale(ctx, scale));
+        }
 
         /// <summary>
         /// Raise an arbitrary precision number to another.
