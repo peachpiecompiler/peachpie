@@ -15,7 +15,7 @@ using Rationals;
 namespace Pchp.Library
 {
     [PhpExtension("bcmath")]
-    /*public*/ static class BCMath
+    public static class BCMath
     {
         sealed class BCMathOptions
         {
@@ -43,13 +43,58 @@ namespace Pchp.Library
 
         static string ToString(Rational num, int? scale = default)
         {
-            // TODO
-            return num.ToString();
+            var remainingscale = scale.GetValueOrDefault();
+
+            var numerator = BigInteger.Abs(num.Numerator);
+            var denominator = BigInteger.Abs(num.Denominator);
+            var hasdecimal = false;
+
+            var result = StringBuilderUtilities.Pool.Get();
+
+            if (num.Sign < 0)
+            {
+                result.Append('-');
+            }
+
+            for (; ; )
+            {
+                var digits = BigInteger
+                    .DivRem(numerator, denominator, out var rem)
+                    .ToString(NumberFormatInfo.InvariantInfo);
+
+                result.Append(digits);
+
+                if (remainingscale <= 0)
+                {
+                    break;
+                }
+
+                // .
+                if (!hasdecimal)
+                {
+                    hasdecimal = true;
+                    result.Append(NumberFormatInfo.InvariantInfo.NumberDecimalSeparator);
+                }
+
+                // done?
+                if (rem.IsZero)
+                {
+                    result.Append('0', remainingscale);
+                    break;
+                }
+
+                // next decimals
+                numerator = rem * 10;
+                remainingscale--;
+            }
+
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         static Rational Parse(string num)
         {
-            if (!Rational.TryParseDecimal(num, out var value))
+            if (!Rational.TryParseDecimal(num, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out var value))
             {
                 // Warning: bcmath function argument is not well-formed
                 PhpException.InvalidArgument("num", Resources.Resources.bcmath_wrong_argument);
