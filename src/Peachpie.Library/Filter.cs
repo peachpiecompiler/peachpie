@@ -134,6 +134,9 @@ namespace Pchp.Library
         public const int FILTER_VALIDATE_MAC = (int)FilterValidate.MAC;
         public const int FILTER_VALIDATE_DOMAIN = (int)FilterValidate.DOMAIN;
 
+        /// <summary>Alias to <see cref="FILTER_VALIDATE_BOOLEAN"/>, introduced in PHP 8.</summary>
+        public const int FILTER_VALIDATE_BOOL = (int)FilterValidate.BOOLEAN;
+
         /// <summary>
         /// Sanitize filters.
         /// </summary>
