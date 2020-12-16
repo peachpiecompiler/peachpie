@@ -1,14 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Data.Common;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Security.Policy;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Pchp.Core;
-using Peachpie.Library.PDO;
 
 namespace Peachpie.App.Tests
 {
