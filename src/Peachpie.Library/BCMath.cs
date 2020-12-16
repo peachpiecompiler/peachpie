@@ -100,11 +100,17 @@ namespace Pchp.Library
 
             for (; ; )
             {
-                var digits = BigInteger
-                    .DivRem(numerator, denominator, out var rem)
-                    .ToString(NumberFormatInfo.InvariantInfo);
-
-                result.Append(digits);
+                var number = BigInteger.DivRem(numerator, denominator, out var rem);
+                if (number >= 10)
+                {
+                    var digits = number.ToString(NumberFormatInfo.InvariantInfo);
+                    result.Append(digits);
+                }
+                else
+                {
+                    Debug.Assert(number >= 0);
+                    result.Append((char)('0' + (int)number));
+                }
 
                 if (scale <= 0)
                 {
