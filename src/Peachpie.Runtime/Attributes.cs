@@ -177,21 +177,6 @@ namespace Pchp.Core
     }
 
     /// <summary>
-    /// Indicates to compiler that a symbol should be ignored unless a specified conditional compilation scope is valid.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Field, AllowMultiple = true)]
-    public sealed class PhpConditionalAttribute : Attribute
-    {
-        public string ConditionString => _scope;
-        readonly string _scope;
-
-        public PhpConditionalAttribute(string scope)
-        {
-            _scope = scope;
-        }
-    }
-
-    /// <summary>
     /// Marks public class or interface declaration as a PHP type visible to the scripts from extension libraries.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]

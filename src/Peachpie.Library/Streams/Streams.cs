@@ -30,8 +30,6 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Streams
 {
-    #region Stream Context functions
-
     /// <summary>
     /// Class containing implementations of PHP functions accessing the <see cref="StreamContext"/>s.
     /// </summary>
@@ -238,8 +236,6 @@ namespace Pchp.Library.Streams
 
         #endregion
     }
-
-    #endregion
 
     /// <summary>
 	/// Gives access to the stream filter chains.
@@ -538,15 +534,6 @@ namespace Pchp.Library.Streams
 
         public const int STREAM_IS_URL = (int)StreamWrapperRegisterFlags.IsUrl;
 
-        [PhpConditional("CLI")]
-        public static PhpStream STDIN => InputOutputStreamWrapper.In;
-
-        [PhpConditional("CLI")]
-        public static PhpStream STDOUT => InputOutputStreamWrapper.Out;
-
-        [PhpConditional("CLI")]
-        public static PhpStream STDERR => InputOutputStreamWrapper.Error;
-
         /// <summary>
         /// Registers a user-wrapper specified by the name of a defining user-class.
         /// </summary>
@@ -609,6 +596,20 @@ namespace Pchp.Library.Streams
             //
             return ret;
         }
+
+        #endregion
+    }
+
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
+    public static class PhpStdStreams
+    {
+        #region STDIN, STDOUT, STDERR
+
+        public static PhpStream STDIN => InputOutputStreamWrapper.In;
+
+        public static PhpStream STDOUT => InputOutputStreamWrapper.Out;
+
+        public static PhpStream STDERR => InputOutputStreamWrapper.Error;
 
         #endregion
     }

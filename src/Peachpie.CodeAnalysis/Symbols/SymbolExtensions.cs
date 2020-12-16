@@ -40,9 +40,6 @@ namespace Pchp.CodeAnalysis.Symbols
             var attrs = s.GetAttributes();
             if (attrs.Length != 0)
             {
-                bool hascond = false;
-                bool hasmatch = false;
-
                 foreach (var attr in attrs)
                 {
                     // [PhpHiddenAttribute]
@@ -50,18 +47,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         return true; // => hide
                     }
-
-                    // [PhpConditionalAttribute]
-                    if (attr.AttributeClass.MetadataName == "PhpConditionalAttribute")
-                    {
-                        hascond = true;
-
-                        var condition = (string)attr.ConstructorArguments[0].Value;
-                        hasmatch = compilation == null || compilation.ConditionalOptions.Contains(condition);
-                    }
                 }
-
-                if (hascond && !hasmatch) return true;  // conditions defined but not satisfied => hide
             }
             //
             return false;
