@@ -1126,7 +1126,7 @@ namespace Peachpie.Library.Network
             if (string.Equals(OptionValue, "-", StringComparison.Ordinal))
             {
                 // curl writes to STDOUT, and so do we:
-                output = PhpWrappers.STDOUT;
+                output = InputOutputStreamWrapper.Out;
             }
             else
             {
