@@ -326,10 +326,7 @@ namespace Pchp.Library.Streams
         /// <exception cref="ArgumentException">If the <paramref name="mode"/> is not valid.</exception>
         internal bool ParseMode(Context ctx, string mode, StreamOpenOptions options, out StreamAccessOptions accessOptions)
         {
-            FileMode fileMode;
-            FileAccess fileAccess;
-
-            return ParseMode(ctx, mode, options, out fileMode, out fileAccess, out accessOptions);
+            return ParseMode(ctx, mode, options, out _, out _, out accessOptions);
         }
 
         /// <summary>
@@ -343,12 +340,12 @@ namespace Pchp.Library.Streams
         {
             FileAccess requiredAccess = (FileAccess)accessOptions & FileAccess.ReadWrite;
             FileAccess faultyAccess = requiredAccess & ~supportedAccess;
-            if ((faultyAccess & FileAccess.Read) > 0)
+            if ((faultyAccess & FileAccess.Read) != 0)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_open_read_unsupported, FileSystemUtils.StripPassword(path));
                 return false;
             }
-            else if ((faultyAccess & FileAccess.Write) > 0)
+            else if ((faultyAccess & FileAccess.Write) != 0)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_open_write_unsupported, FileSystemUtils.StripPassword(path));
                 return false;
@@ -1478,10 +1475,7 @@ namespace Pchp.Library.Streams
 
         public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
         {
-            Stream native = null;
-
-            StreamAccessOptions accessOptions;
-            if (!ParseMode(ctx, mode, options, out accessOptions))
+            if (!ParseMode(ctx, mode, options, out var accessOptions))
                 return null;
 
             // Do not close the system I/O streams.
@@ -1491,6 +1485,7 @@ namespace Pchp.Library.Streams
 
             // TODO: path may be case insensitive
 
+            Stream native;
             FileAccess supportedAccess;
             switch (path)
             {
@@ -1548,9 +1543,8 @@ namespace Pchp.Library.Streams
                         }
 
                         // No URL resource specified.
-                        //PhpException.Throw(PhpError.Warning, CoreResources.GetString("url_resource_missing"));
-                        //return null;
-                        throw new ArgumentException("No URL resource specified.");  // TODO: Err
+                        PhpException.Throw(PhpError.Warning, ErrResources.url_resource_missing);
+                        return null;
                     }
                     else if (path.StartsWith(temp_uri, StringComparison.OrdinalIgnoreCase))
                     {
@@ -1563,10 +1557,8 @@ namespace Pchp.Library.Streams
                     else
                     {
                         // Unrecognized php:// stream name
-                        //PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_file_invalid",
-                        //  FileSystemUtils.StripPassword(path)));
-                        //return null;
-                        throw new ArgumentException("Unrecognized php:// stream name.");  // TODO: Err
+                        PhpException.Throw(PhpError.Warning, ErrResources.stream_file_invalid, FileSystemUtils.StripPassword(path));
+                        return null;
                     }
             }
 
@@ -1575,15 +1567,15 @@ namespace Pchp.Library.Streams
 
             if (native == null)
             {
-                //PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_file_invalid",
-                //  FileSystemUtils.StripPassword(path)));
-                //return null;
-                throw new ArgumentException("stream_file_invalid");  // TODO: Err
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_file_invalid, FileSystemUtils.StripPassword(path));
+                return null;
             }
 
-            var rv = new NativeStream(ctx, native, this, accessOptions, path, context);
-            rv.IsReadBuffered = rv.IsWriteBuffered = false;
-            return rv;
+            return new NativeStream(ctx, native, this, accessOptions, path, context)
+            {
+                IsReadBuffered = false,
+                IsWriteBuffered = false,
+            };
         }
 
         /// <summary>
@@ -1643,14 +1635,11 @@ namespace Pchp.Library.Streams
         public static PhpStream ScriptInput(Context ctx)
         {
             PhpStream input = null;
-            if (input == null)
+            input = new NativeStream(ctx, OpenScriptInput(ctx), null, StreamAccessOptions.Read | StreamAccessOptions.Persistent, "php://input", StreamContext.Default)
             {
-                input = new NativeStream(ctx, OpenScriptInput(ctx), null, StreamAccessOptions.Read | StreamAccessOptions.Persistent, "php://input", StreamContext.Default)
-                {
-                    IsReadBuffered = false
-                };
-                // EX: cache this as a persistent stream
-            }
+                IsReadBuffered = false
+            };
+            // EX: cache this as a persistent stream
             return input;
         }
 

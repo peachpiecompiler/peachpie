@@ -68,6 +68,9 @@ namespace Pchp.Core
                     InitOutput(Console.OpenStandardOutput(), Console.Out);
                 }
 
+                // Constants
+                InitConstants();
+
                 // Globals
                 InitSuperglobals();
                 InitializeServerVars(mainscript);
@@ -85,6 +88,14 @@ namespace Pchp.Core
 
                 // autoload files
                 AutoloadFiles();
+            }
+
+            static void InitConstants()
+            {
+                // TODO: register following constants here
+                //ConstsMap.DefineAppConstant("STDIN", new Func<PhpValue>(() => InputOutputStreamWrapper.In), false, PhpExtensionAttribute.KnownExtensionNames.Core);
+                //ConstsMap.DefineAppConstant("STDOUT", new Func<PhpValue>(() => InputOutputStreamWrapper.Out), false, PhpExtensionAttribute.KnownExtensionNames.Core);
+                //ConstsMap.DefineAppConstant("STDERR", new Func<PhpValue>(() => InputOutputStreamWrapper.Err), false, PhpExtensionAttribute.KnownExtensionNames.Core);
             }
 
             public override void ApplyExecutionTimeout(TimeSpan span)

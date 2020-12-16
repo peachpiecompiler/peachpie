@@ -297,7 +297,7 @@ namespace Pchp.Core
 
             static void DefineCoreConstant(string name, PhpValue value)
             {
-                ConstsMap.DefineAppConstant(name, value, false, "Core");
+                ConstsMap.DefineAppConstant(name, value, false, PhpExtensionAttribute.KnownExtensionNames.Core);
             }
         }
 
