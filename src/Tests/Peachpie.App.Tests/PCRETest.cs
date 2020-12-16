@@ -12,22 +12,15 @@ using Peachpie.Library.PDO;
 
 namespace Peachpie.App.Tests
 {
-    /// <summary>
-    /// In order to run on .NET Framework properly,
-    /// all the referenced assemblies must have a strong signature.
-    /// </summary>
     [TestClass]
     public class PCRETest
     {
-       [TestMethod]
+        [TestMethod]
         public void PregMatchPerf()
         {
-            //for (int i = 0; i < 1000000; i++)
-            {
-                Pchp.Library.PCRE.preg_match(
-                    "/^(([A-Za-z0-9!#$%&'*+\\/=?^_`{|}~-][A-Za-z0-9!#$%&'*+\\/=?^_`{|}~\\.-]{0,63})|(\"[^(\\|\")]{0,62}\"))$/",
-                    "something@example.org");
-            }
+            Pchp.Library.PCRE.preg_match(
+                "/^(([A-Za-z0-9!#$%&'*+\\/=?^_`{|}~-][A-Za-z0-9!#$%&'*+\\/=?^_`{|}~\\.-]{0,63})|(\"[^(\\|\")]{0,62}\"))$/",
+                "something@example.org");
         }
     }
 }
