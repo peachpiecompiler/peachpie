@@ -14,12 +14,13 @@ namespace Pchp.Library.Reflection
     {
         #region Constants
 
-        public const int IS_STATIC = 1;
-        public const int IS_ABSTRACT = 2;
-        public const int IS_FINAL = 4;
-        public const int IS_PUBLIC = 256;
-        public const int IS_PROTECTED = 512;
-        public const int IS_PRIVATE = 1024;
+        public const int IS_PUBLIC = 1;
+        public const int IS_PROTECTED = 2;
+        public const int IS_PRIVATE = 4;
+
+        public const int IS_STATIC = 16;
+        public const int IS_FINAL = 32;
+        public const int IS_ABSTRACT = 64;
 
         #endregion
 
