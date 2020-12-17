@@ -221,39 +221,79 @@ namespace Pchp.Library
         /// Gets the properties of the given object.
         /// </summary>
         /// <param name="caller">Caller context.</param>
-        /// <param name="obj"></param>
+        /// <param name="object"></param>
         /// <returns>Returns an associative array of defined object accessible non-static properties for the specified object in scope.
         /// If a property has not been assigned a value, it will be returned with a NULL value.</returns>
-        public static PhpArray get_object_vars([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, object obj)
+        public static PhpArray get_object_vars([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, object @object)
         {
-            Debug.Assert(!(obj is PhpAlias), "obj must be dereferenced");
+            Debug.Assert(!(@object is PhpAlias), "obj must be dereferenced");
 
-            if (obj == null)
+            if (@object == null)
             {
                 return null; // not FALSE since PHP 5.3
             }
-            else if (obj.GetType() == typeof(stdClass))
+
+            if (@object is stdClass stdclass)
             {
                 // optimization for stdClass:
-                var arr = ((stdClass)obj).GetRuntimeFields();
+                var arr = stdclass.GetRuntimeFields();
                 return (arr != null) ? arr.DeepCopy() : PhpArray.NewEmpty();
             }
-            else if (obj is PhpResource || obj is __PHP_Incomplete_Class)
+
+            if (@object is PhpResource || @object is __PHP_Incomplete_Class)
             {
-                PhpException.InvalidArgument(nameof(obj));
+                PhpException.InvalidArgumentType(nameof(@object), PhpVariable.TypeNameObject);
                 return null;
             }
-            else
+
+            var result = PhpArray.NewEmpty();
+
+            foreach (var pair in TypeMembersUtils.EnumerateVisibleInstanceFields(@object, caller))
             {
-                var result = PhpArray.NewEmpty();
-
-                foreach (var pair in TypeMembersUtils.EnumerateVisibleInstanceFields(obj, caller))
-                {
-                    result.Add(pair.Key, pair.Value.DeepCopy());
-                }
-
-                return result;
+                result.Add(pair.Key, pair.Value.DeepCopy());
             }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns an array of mangled object properties.
+        /// Does not respect property visibility.
+        /// </summary>
+        /// <returns>Returns an associative array of defined object accessible non-static properties.</returns>
+        public static PhpArray get_mangled_object_vars(object @object)
+        {
+            Debug.Assert(!(@object is PhpAlias), "obj must be dereferenced");
+
+            if (@object == null)
+            {
+                return null;
+            }
+
+            if (@object is stdClass stdclass)
+            {
+                // optimization for stdClass:
+                var arr = stdclass.GetRuntimeFields();
+                return (arr != null) ? arr.DeepCopy() : PhpArray.NewEmpty();
+            }
+
+            if (@object is PhpResource || @object is __PHP_Incomplete_Class)
+            {
+                PhpException.InvalidArgumentType(nameof(@object), PhpVariable.TypeNameObject);
+                return null;
+            }
+
+            var result = PhpArray.NewEmpty();
+
+            foreach (var pair in TypeMembersUtils.EnumerateInstanceFields(
+                instance: @object,
+                keyFormatter: p => new IntStringKey(p.PropertyName),
+                keyFormatter2: key => key))
+            {
+                result.Add(pair.Key, pair.Value.DeepCopy());
+            }
+
+            return result;
         }
 
         /// <summary>
