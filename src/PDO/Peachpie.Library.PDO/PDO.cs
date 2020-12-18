@@ -53,7 +53,7 @@ namespace Peachpie.Library.PDO
         /// <param name="username">The user name for the DSN string.</param>
         /// <param name="password">The password for the DSN string.</param>
         /// <param name="options">A key=&gt;value array of driver-specific connection options.</param>
-        public PDO(Context ctx, string dsn, string username = null, string password = null, PhpArray options = null)
+        public PDO(Context ctx, string dsn, string? username = null, string? password = null, PhpArray? options = null)
             : this(ctx)
         {
             __construct(dsn, username, password, options);
