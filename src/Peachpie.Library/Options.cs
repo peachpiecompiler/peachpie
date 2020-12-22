@@ -157,7 +157,7 @@ namespace Pchp.Library
                     return GetSet(ref config.Core.docref_ext, "", value, action);
 
                 case "open_basedir":
-                    Debug.Assert(action == IniAction.Get);
+                    AssertGet(option, action);
                     return string.Empty;
 
                 case "max_execution_time":
@@ -487,15 +487,19 @@ namespace Pchp.Library
                 // skips configuration which don't belong to the specified extension:
                 if ((extension == null || extension.Equals(def.Extension, StringComparison.Ordinal)))
                 {
-                    var opt = new OptionDump() { Name = name, Definition = def };
+                    var opt = new OptionDump
+                    {
+                        Name = name,
+                        Definition = def,
+                    };
 
                     if ((def.Flags & IniFlags.Supported) == 0)
                     {
-                        opt.LocalValue = opt.DefaultValue = (PhpValue)"Not Supported";
+                        opt.LocalValue = opt.DefaultValue = "Not Supported";
                     }
                     else if ((def.Flags & IniFlags.Http) != 0 && !ctx.IsWebApplication)
                     {
-                        opt.LocalValue = opt.DefaultValue = (PhpValue)"Http Context Required";
+                        opt.LocalValue = opt.DefaultValue = "Http Context Required";
                     }
                     else
                     {
