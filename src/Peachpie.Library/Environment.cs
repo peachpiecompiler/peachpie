@@ -89,6 +89,21 @@ namespace Pchp.Library
         /// https://github.com/dotnet/runtime/blob/ca1a6842d796d95b44a64222b023263f023a6c5e/src/libraries/System.Net.Sockets/src/System/Net/Sockets/SocketPal.Unix.cs#L1491
         /// </remarks>
         public const int PHP_FD_SETSIZE = 65536;
+
+        /// <summary>
+        /// Default "include_path" option.
+        /// </summary>
+        public const string DEFAULT_INCLUDE_PATH = PhpCoreConfiguration.DefaultIncludePaths;
+
+        /// <summary>
+        /// Always true.
+        /// </summary>
+        public const bool ZEND_THREAD_SAFE = true;
+
+        /// <summary>
+        /// Whether the runtime was built in debug configuration.
+        /// </summary>
+        public static bool ZEND_DEBUG_BUILD => ContextExtensions.IsDebugRuntime();
     }
 }
 

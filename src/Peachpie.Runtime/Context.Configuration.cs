@@ -177,7 +177,12 @@ namespace Pchp.Core
         /// A list of semicolon-separated separated by ';' (<c>PATH_SEPARATOR</c>) where file system functions and dynamic 
         /// inclusion constructs searches for files. A <B>null</B> or an empty string means empty list.
         /// </summary>
-        public string IncludePaths = ".";
+        public string IncludePaths = DefaultIncludePaths;
+
+        /// <summary>
+        /// Default <see cref="IncludePaths"/> value.
+        /// </summary>
+        public const string DefaultIncludePaths = ".";
 
         /// <summary>
         /// Gets <see cref="IncludePaths"/> split into array.
