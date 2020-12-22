@@ -114,18 +114,18 @@ namespace Pchp.Library
             switch (option)
             {
                 case "precision":
-                    // TODO: this can be set in .NET <see cref="Core.Convert.ToString(double, Context)"/> by specifying "G{precision}", consider performance
+                    // CONSIDER: this can be set in our Context.InvariantNumberFormatInfo ?
                     AssertGet(option, action);
-                    return (PhpValue)15;    // default Double precision in .NET
+                    return 15;    // default Double precision in .NET
 
                 case "register_globals":
                     AssertGet(option, action);
                     return PhpValue.False;  // always Off
 
                 case "allow_url_fopen":
-                    return (PhpValue)GetSet(ref config.Core.AllowUrlFopen, true, value, action);
+                    return GetSet(ref config.Core.AllowUrlFopen, true, value, action);
                 case "include_path":
-                    return (PhpValue)GetSet(ref config.Core.IncludePaths, ".", value, action);
+                    return GetSet(ref config.Core.IncludePaths, ".", value, action);
                 case "allow_url_include":
                     AssertGet(option, action);
                     return PhpValue.False;
@@ -133,25 +133,32 @@ namespace Pchp.Library
                 case "disable_functions":
                 case "disable_classes":
                     AssertGet(option, action);
-                    return (PhpValue)string.Empty;
+                    return string.Empty;
+
+                case "file_uploads":
+                    AssertGet(option, action);
+                    return PhpValue.True;
+
+                //case "max_file_uploads":
+                //    return 20;
 
                 case "memory_limit":
                     AssertGet(option, action);
-                    return (PhpValue)(-1); // no memory limit
+                    return -1; // no memory limit
 
                 case "post_max_size":
                 case "upload_max_filesize":
                     AssertGet(option, action);
-                    return ctx.HttpPhpContext != null ? ctx.HttpPhpContext.MaxRequestSize : (8_000_000/*cli mode, just return something*/);
+                    return ctx.HttpPhpContext != null ? ctx.HttpPhpContext.MaxRequestSize : (16_000_000/*cli mode, just return something*/);
 
                 case "docref_root":
-                    return (PhpValue)GetSet(ref config.Core.docref_root, "", value, action);
+                    return GetSet(ref config.Core.docref_root, "", value, action);
                 case "docref_ext":
-                    return (PhpValue)GetSet(ref config.Core.docref_ext, "", value, action);
+                    return GetSet(ref config.Core.docref_ext, "", value, action);
 
                 case "open_basedir":
                     Debug.Assert(action == IniAction.Get);
-                    return (PhpValue)string.Empty;
+                    return string.Empty;
 
                 case "max_execution_time":
                     if (action == IniAction.Set)
@@ -257,7 +264,7 @@ namespace Pchp.Library
             Register("expose_php", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("extension_dir", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("fastcgi.impersonate", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
-            Register("file_uploads", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("file_uploads", IniFlags.Supported | IniFlags.Global, gsrcore);
             Register("from", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("gpc_order", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
             Register("html_errors", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
