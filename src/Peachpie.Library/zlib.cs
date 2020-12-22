@@ -42,15 +42,15 @@ namespace Pchp.Library
 
                     case "zlib.output_compression_level":
                         Debug.Assert(action == IniAction.Get, "Setting zlib.output_compression_level is not currently implemented.");
-                        return PhpValue.Create(-1);
+                        return -1;
 
                     case "zlib.output_handler":
                         Debug.Assert(action == IniAction.Get, "Setting zlib.output_handler is not currently implemented.");
-                        return PhpValue.Create("");
+                        return "";
                 }
 
                 Debug.Fail("Option '" + option + "' is not currently supported.");
-                return PhpValue.Null;
+                return PhpValue.False;
             }
 
             /// <summary>

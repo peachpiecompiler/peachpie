@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using static Pchp.Library.StandardPhpOptions;
+using Pchp.Library;
 
 namespace Peachpie.Library.MySql
 {
@@ -70,36 +71,36 @@ namespace Peachpie.Library.MySql
             {
                 // local:
 
-                case "mysql.connect_timeout": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.ConnectTimeout, 0, value, action);
+                case "mysql.connect_timeout": return StandardPhpOptions.GetSet(ref local.ConnectTimeout, 0, value, action);
 
                 case "mysqli.default_port":
-                case "mysql.default_port": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Port, 3306, value, action);
+                case "mysql.default_port": return StandardPhpOptions.GetSet(ref local.Port, 3306, value, action);
 
                 case "mysqli.default_host":
-                case "mysql.default_host": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Server, null, value, action);
+                case "mysql.default_host": return StandardPhpOptions.GetSet(ref local.Server, null, value, action);
 
                 case "mysqli.default_user":
-                case "mysql.default_user": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.User, "root", value, action);
+                case "mysql.default_user": return StandardPhpOptions.GetSet(ref local.User, "root", value, action);
 
                 case "mysqli.default_pw":
-                case "mysql.default_password": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Password, "", value, action);
+                case "mysql.default_password": return StandardPhpOptions.GetSet(ref local.Password, "", value, action);
 
-                case "mysql.default_command_timeout": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.DefaultCommandTimeout, -1, value, action);
+                case "mysql.default_command_timeout": return StandardPhpOptions.GetSet(ref local.DefaultCommandTimeout, -1, value, action);
 
-                case "mysql.connection_string": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.ConnectionString, null, value, action);
+                case "mysql.connection_string": return StandardPhpOptions.GetSet(ref local.ConnectionString, null, value, action);
 
                 // global:
 
                 case "mysql.max_links":
                     Debug.Assert(action == IniAction.Get);
-                    return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.MaxConnections, -1, value, action);
+                    return StandardPhpOptions.GetSet(ref local.MaxConnections, -1, value, action);
 
                 case "mysql.max_pool_size":
-                    return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.MaxPoolSize, 100, value, action);
+                    return StandardPhpOptions.GetSet(ref local.MaxPoolSize, 100, value, action);
             }
 
             Debug.Fail("Option '" + option + "' is supported but not implemented.");
-            return PhpValue.Null;
+            return PhpValue.False;
         }
 
         /// <summary>

@@ -239,8 +239,12 @@ namespace Pchp.Library
             public static PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
             {
                 var sessionconfig = config.GetSessionConfiguration();
+                if (sessionconfig == null)
+                {
+                    return false;
+                }
 
-                switch (option.ToLowerInvariant())
+                switch (option)
                 {
                     case "session.auto_start":
                         if (action != IniAction.Get)

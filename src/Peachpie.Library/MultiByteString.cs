@@ -40,7 +40,7 @@ namespace Pchp.Library
                 var local = config.Get<MbConfig>();
                 if (local == null)
                 {
-                    return PhpValue.Null;
+                    return PhpValue.False;
                 }
 
                 switch (option)
@@ -65,7 +65,7 @@ namespace Pchp.Library
                 }
 
                 Debug.Fail("Option '" + option + "' is not currently supported.");
-                return PhpValue.Null;
+                return PhpValue.False;
             }
 
             /// <summary>

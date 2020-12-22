@@ -34,23 +34,22 @@ namespace Pchp.Library
                 var local = config.Get<IconvConfig>();
                 if (local == null)
                 {
-                    return PhpValue.Null;
+                    return PhpValue.False;
                 }
 
                 switch (option)
                 {
                     case "iconv.input_encoding":
-                        return (PhpValue)StandardPhpOptions.GetSet(ref local.InputEncoding, "ISO-8859-1", value, action);
+                        return StandardPhpOptions.GetSet(ref local.InputEncoding, "ISO-8859-1", value, action);
 
                     case "iconv.internal_encoding":
-                        return (PhpValue)StandardPhpOptions.GetSet(ref local.InternalEncoding, "ISO-8859-1", value, action);
+                        return StandardPhpOptions.GetSet(ref local.InternalEncoding, "ISO-8859-1", value, action);
 
                     case "iconv.output_encoding":
-                        return (PhpValue)StandardPhpOptions.GetSet(ref local.OutputEncoding, "ISO-8859-1", value, action);
+                        return StandardPhpOptions.GetSet(ref local.OutputEncoding, "ISO-8859-1", value, action);
                 }
 
-                Debug.Fail("Option '" + option + "' is not currently supported.");
-                return PhpValue.Null;
+                return PhpValue.False;
             }
 
             /// <summary>

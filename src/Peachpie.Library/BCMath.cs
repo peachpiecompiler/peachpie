@@ -30,7 +30,9 @@ namespace Pchp.Library
             {
                 Context.RegisterConfiguration(new BCMathConfig());
 
-                Register(BCMathOptions.Scale, IniFlags.Supported | IniFlags.Local, GetSetOption, BCMath.ExtensionName);
+                Register<BCMathConfig>(BCMathOptions.Scale, BCMath.ExtensionName,
+                    (local) => local.Scale,
+                    (local, value) => local.Scale = Math.Max(0, (int)value));
             }
         }
 
@@ -49,27 +51,6 @@ namespace Pchp.Library
         struct BCMathOptions
         {
             public static string Scale => "bcmath.scale";
-        }
-
-        static PhpValue GetSetOption(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
-        {
-            var local = config.Get<BCMathConfig>();
-            if (local == null)
-            {
-                return PhpValue.Null;
-            }
-
-            if (string.Equals(option, BCMathOptions.Scale))
-            {
-                var oldvalue = local.Scale;
-                if (action == IniAction.Set) local.Scale = Math.Max(0, (int)value);
-                return oldvalue;
-            }
-            else
-            {
-                Debug.Fail("Option '" + option + "' is not currently supported.");
-                return PhpValue.Null;
-            }
         }
 
         #endregion

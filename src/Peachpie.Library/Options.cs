@@ -98,7 +98,7 @@ namespace Pchp.Library
         static readonly GetSetDelegate s_emptyGsr = new GetSetDelegate((ctx, s, name, value, action) =>
         {
             Debug.WriteLine($"INI option '{name}' is not implemented.");
-            return PhpValue.Null;
+            return PhpValue.False;
         });
 
         static void AssertGet(string option, IniAction action)
@@ -111,7 +111,7 @@ namespace Pchp.Library
 
         static PhpValue GsrCore(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
-            switch (option.ToLowerInvariant())
+            switch (option)
             {
                 case "precision":
                     // TODO: this can be set in .NET <see cref="Core.Convert.ToString(double, Context)"/> by specifying "G{precision}", consider performance
@@ -172,34 +172,34 @@ namespace Pchp.Library
 
         static PhpValue GsrMail(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
-            switch (option.ToLowerInvariant())
+            switch (option)
             {
-                case "smtp":
-                    return (PhpValue)GetSet(ref config.Core.SmtpServer, null, value, action);
+                case "SMTP":
+                    return GetSet(ref config.Core.SmtpServer, null, value, action);
 
                 case "smtp_port":
-                    return (PhpValue)GetSet(ref config.Core.SmtpPort, 25, value, action);
+                    return GetSet(ref config.Core.SmtpPort, 25, value, action);
 
                 case "sendmail_from":
-                    return (PhpValue)GetSet(ref config.Core.DefaultFromHeader, null, value, action);
+                    return GetSet(ref config.Core.DefaultFromHeader, null, value, action);
 
                 case "mail.add_x_header":
-                    return (PhpValue)GetSet(ref config.Core.AddXHeader, false, value, action);
+                    return GetSet(ref config.Core.AddXHeader, false, value, action);
 
                 case "mail.force_extra_parameters":
-                    return (PhpValue)GetSet(ref config.Core.ForceExtraMailParameters, null, value, action);
+                    return GetSet(ref config.Core.ForceExtraMailParameters, null, value, action);
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(option));
             }
         }
 
-        static Dictionary<string, OptionDefinition> _options = new Dictionary<string, OptionDefinition>(150, StringComparer.Ordinal);
+        static Dictionary<string, OptionDefinition> s_options = new Dictionary<string, OptionDefinition>(150, StringComparer.Ordinal);
 
         /// <summary>
         /// Gets a number of registered options.
         /// </summary>
-        public static int Count => _options.Count;
+        public static int Count => s_options.Count;
 
         static StandardPhpOptions()
         {
@@ -332,7 +332,42 @@ namespace Pchp.Library
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (gsr == null) throw new ArgumentNullException(nameof(gsr));
 
-            _options.Add(name, new OptionDefinition(flags, gsr, extension));
+            s_options.Add(name, new OptionDefinition(flags, gsr, extension));
+        }
+
+        /// <summary>
+        /// Registeres a standard configuration option.
+        /// Not thread safe.
+        /// </summary>
+        public static void Register<TOptions>(string name, string extension, Func<TOptions, PhpValue> getter, Action<TOptions, PhpValue> setter) where TOptions : class, IPhpConfiguration
+        {
+            if (getter == null)
+                throw new ArgumentNullException(nameof(getter));
+
+            Register(name, IniFlags.Local | IniFlags.Supported,
+                (ctx, config, option, value, action) =>
+                {
+                    var local = config.Get<TOptions>();
+                    if (local == null)
+                    {
+                        return PhpValue.False;
+                    }
+
+                    var oldvalue = getter(local);
+                    if (action == IniAction.Set)
+                    {
+                        if (setter != null)
+                        {
+                            setter(local, value);
+                        }
+                        else
+                        {
+                            PhpException.ArgumentValueNotSupported(option, action);
+                        }
+                    }
+                    return oldvalue;
+                },
+                extension);
         }
 
         public static OptionDefinition GetOption(string name)
@@ -341,7 +376,7 @@ namespace Pchp.Library
                 throw new ArgumentNullException("name");
 
             OptionDefinition value;
-            return _options.TryGetValue(name, out value) ? value : default(OptionDefinition);
+            return s_options.TryGetValue(name, out value) ? value : default(OptionDefinition);
         }
 
         /// <summary>
@@ -437,7 +472,7 @@ namespace Pchp.Library
         {
             var config = ctx.Configuration;
 
-            foreach (var entry in _options)
+            foreach (var entry in s_options)
             {
                 var name = entry.Key;
                 var def = entry.Value;

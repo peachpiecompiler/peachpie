@@ -42,7 +42,7 @@ namespace Peachpie.Library.Scripting
                 var local = config.Get<Config>();
                 if (local == null)
                 {
-                    return PhpValue.Null;
+                    return PhpValue.False;
                 }
 
                 return option switch
@@ -53,7 +53,7 @@ namespace Peachpie.Library.Scripting
                     "highlight.string" => StandardPhpOptions.GetSet(ref local.@string, null, value, action),
                     "highlight.html" => StandardPhpOptions.GetSet(ref local.html, null, value, action),
 
-                    _ => PhpValue.Null,
+                    _ => throw new ArgumentOutOfRangeException(nameof(option)),
                 };
             }
 
