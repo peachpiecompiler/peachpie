@@ -156,21 +156,21 @@ namespace Pchp.Library.Streams
             {
                 // No scheme, no root directory, it's a relative path.
                 filename = path;
-                return "file";
+                return FileStreamWrapper.scheme;
             }
 
             if (Path.IsPathRooted(path))
             {
                 // It already is an absolute path.
                 filename = path;
-                return "file";
+                return FileStreamWrapper.scheme;
             }
 
             if (path.Length < colon_index + 3 || path[colon_index + 1] != '/' || path[colon_index + 2] != '/')
             {
                 // There is no "//" following the colon.
                 filename = path;
-                return "file";
+                return FileStreamWrapper.scheme;
             }
 
             // Otherwise it is an URL (including file://), set the filename and return the scheme.
@@ -286,7 +286,7 @@ namespace Pchp.Library.Streams
                     string.Format("'{0}' should not contain '{1}' char.", path, Path.AltDirectorySeparatorChar));
 
                 // The file wrapper expects an absolute path w/o the scheme, others expect the scheme://url.
-                if (scheme != "file")
+                if (scheme != FileStreamWrapper.scheme)
                 {
                     path = $"{scheme}://{path}";
                 }

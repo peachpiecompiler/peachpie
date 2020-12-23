@@ -1093,12 +1093,13 @@ namespace Pchp.Library
         /// <returns><c>true</c> on success or <c>false</c> on failure.</returns>
         public static bool copy(Context ctx, string source, string dest)
         {
-            StreamWrapper reader, writer;
-            if ((!PhpStream.ResolvePath(ctx, ref source, out reader, CheckAccessMode.FileExists, CheckAccessOptions.Empty))
-                || (!PhpStream.ResolvePath(ctx, ref dest, out writer, CheckAccessMode.FileExists, CheckAccessOptions.Empty)))
+            if ((!PhpStream.ResolvePath(ctx, ref source, out var reader, CheckAccessMode.FileExists, CheckAccessOptions.Empty)) ||
+                (!PhpStream.ResolvePath(ctx, ref dest, out var writer, CheckAccessMode.FileExists, CheckAccessOptions.Empty)))
+            {
                 return false;
+            }
 
-            if ((reader.Scheme == "file") && (writer.Scheme == "file"))
+            if ((reader.Scheme == FileStreamWrapper.scheme) && (writer.Scheme == FileStreamWrapper.scheme))
             {
                 // Copy the file.
                 try

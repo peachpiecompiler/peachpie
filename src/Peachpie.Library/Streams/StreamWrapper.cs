@@ -424,7 +424,7 @@ namespace Pchp.Library.Streams
                 PhpException.Throw(PhpError.Notice, ErrResources.stream_bad_wrapper, scheme);
                 // Notice:  fopen(): Unable to find the wrapper "*" - did you forget to enable it when you configured PHP? in C:\Inetpub\wwwroot\php\index.php on line 23
 
-                wrapper = GetWrapperInternal(ctx, "file");
+                wrapper = GetWrapperInternal(ctx, FileStreamWrapper.scheme);
                 // There should always be the FileStreamWrapper present.
             }
 
