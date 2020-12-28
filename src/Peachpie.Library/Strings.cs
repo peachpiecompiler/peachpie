@@ -4616,6 +4616,7 @@ namespace Pchp.Library
         /// <summary>
         /// Not supported.
         /// </summary>
+        [Obsolete]
         public static string money_format(string format, double number)
         {
             throw new NotImplementedException();
