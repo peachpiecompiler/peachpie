@@ -9,7 +9,7 @@ using Pchp.Core;
 
 namespace Peachpie.Library.Graphics
 {
-    [PhpExtension("image")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class PhpImage
     {
         #region ImageType
