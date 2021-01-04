@@ -215,7 +215,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 //
-                var phpparam = new PhpParam(p, index++, TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull));
+                var phpparam = p.IsParams
+                    ? new PhpParam(p, index++, TypeRefMask.AnyType.WithIsRef(((ArrayTypeSymbol)p.Type).ElementType.Is_PhpAlias()))
+                    : new PhpParam(p, index++, TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull));
 
                 result ??= new List<PhpParam>(ps.Length);
                 result.Add(phpparam);

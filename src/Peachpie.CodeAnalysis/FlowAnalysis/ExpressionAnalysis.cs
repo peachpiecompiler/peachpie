@@ -1764,10 +1764,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     if (expectedparams[i].IsVariadic)
                     {
-                        break;
-                    }
+                        var expected = expectedparams[i];
+                        for (;  i < givenargs.Length; i++)
+                        {
+                            if (givenargs[i].IsUnpacking)
+                            {
+                                break; // CONSIDER
+                            }
 
-                    BindParam(expectedparams[i], givenargs[i]);
+                            BindParam(expected, givenargs[i]);
+                        }
+                    }
+                    else
+                    {
+                        BindParam(expectedparams[i], givenargs[i]);
+                    }
                 }
                 else
                 {
