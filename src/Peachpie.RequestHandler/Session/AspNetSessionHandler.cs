@@ -13,7 +13,11 @@ namespace Peachpie.RequestHandler.Session
 
         const string PhpNetSessionVars = "Peachpie.SessionVars";
 
-        public const string AspNetSessionName = "ASP.NET_SessionId";
+        /// <summary>
+        /// The default value of "cookieName" configuration property.
+        /// Defined in <see cref="System.Web.SessionState.SessionIDManager"/>.<c>SESSION_COOKIE_DEFAULT</c>.
+        /// </summary>
+        public const string AspNetSessionCookieName = "ASP.NET_SessionId";
 
         static PhpSerialization.PhpSerializer Serializer => PhpSerialization.PhpSerializer.Instance;
 
@@ -33,7 +37,7 @@ namespace Peachpie.RequestHandler.Session
 		/// Ensures that Session ID is set, so calls to Flush() don't cause issues
 		/// (if flush() is called, session ID can't be set because cookie can't be created).
 		/// </summary>
-        void EnsureSessionId(HttpContext httpContext)
+        string EnsureSessionId(HttpContext httpContext)
         {
             Debug.Assert(httpContext != null);
             if (httpContext.Session != null && httpContext.Session.IsNewSession && httpContext.Session.Count == 0)
@@ -44,13 +48,17 @@ namespace Peachpie.RequestHandler.Session
                 var ensureId = httpContext.Session.SessionID;
 
                 Debug.WriteLine("SessionId: " + ensureId);
+
+                return ensureId;
             }
+
+            return null;
         }
 
         /// <summary>
         /// Gets the session name.
         /// </summary>
-        public override string GetSessionName(IHttpPhpContext webctx) => AspNetSessionName;
+        public override string GetSessionName(IHttpPhpContext webctx) => GetHttpContext(webctx).Session.SessionID;
 
         /// <summary>
         /// Sets the session name.
