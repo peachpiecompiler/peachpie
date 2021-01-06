@@ -42,12 +42,18 @@ namespace Peachpie.RequestHandler.Session
         }
 
         /// <summary>
+        /// The default value of "cookieName" configuration property.
+        /// Defined in <see cref="System.Web.SessionState.SessionIDManager"/>.<c>SESSION_COOKIE_DEFAULT</c>.
+        /// </summary>
+        public const string AspNetSessionCookieName = "ASP.NET_SessionId";
+
+        /// <summary>
         /// private static SessionStateSection s_config
         /// </summary>
         static FieldInfo s_SessionIDManager_config = typeof(SessionIDManager).GetField("s_config", BindingFlags.Static | BindingFlags.NonPublic);
 
         /// <summary>
-        /// Gets the configured session cookie name, or <c>null</c> if the value cannot be determined.
+        /// Gets the configured session cookie name, or default value if configuration cannot be obtained.
         /// </summary>
         /// <returns></returns>
         public static string GetConfigCookieName()
@@ -61,7 +67,7 @@ namespace Peachpie.RequestHandler.Session
                 }
             }
 
-            return null;
+            return AspNetSessionCookieName;
         }
     }
 }
