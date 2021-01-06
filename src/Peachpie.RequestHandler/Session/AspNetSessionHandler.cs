@@ -11,6 +11,9 @@ namespace Peachpie.RequestHandler.Session
     {
         public static readonly PhpSessionHandler Default = new AspNetSessionHandler();
 
+        /// <summary>
+        /// The session item with serialized PHP $_SESSION.
+        /// </summary>
         const string PhpNetSessionVars = "Peachpie.SessionVars";
 
         /// <summary>
@@ -58,7 +61,7 @@ namespace Peachpie.RequestHandler.Session
         /// <summary>
         /// Gets the session name.
         /// </summary>
-        public override string GetSessionName(IHttpPhpContext webctx) => GetHttpContext(webctx).Session.SessionID;
+        public override string GetSessionName(IHttpPhpContext webctx) => AspNetSessionHelpers.GetConfigCookieName() ?? AspNetSessionCookieName;
 
         /// <summary>
         /// Sets the session name.
@@ -72,10 +75,7 @@ namespace Peachpie.RequestHandler.Session
             GetHttpContext(webctx).Session.Abandon();
         }
 
-        public override string GetSessionId(IHttpPhpContext webctx)
-        {
-            return GetHttpContext(webctx).Session.SessionID;
-        }
+        public override string GetSessionId(IHttpPhpContext webctx) => GetHttpContext(webctx).Session.SessionID;
 
         public override PhpArray Load(IHttpPhpContext webctx)
         {
