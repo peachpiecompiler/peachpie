@@ -192,15 +192,15 @@ namespace Peachpie.RequestHandler.Session
         /// </summary>
         public override void CloseSession(Context ctx, IHttpPhpContext webctx, bool abandon)
         {
-            base.CloseSession(ctx, webctx, abandon);
-
             // set the original IHttpSessionState back
             var session = GetHttpContext(webctx).Session;
-            var container = session.GetContainer();
-            if (container is SharedSession shared && ReferenceEquals(shared.PhpSession, ctx.Session))
+            if (session.GetContainer() is PhpSessionStateContainer shared)
             {
                 session.SetContainer(shared.UnderlayingContainer);
             }
+
+            // persist $_SESSION
+            base.CloseSession(ctx, webctx, abandon);
         }
     }
 }
