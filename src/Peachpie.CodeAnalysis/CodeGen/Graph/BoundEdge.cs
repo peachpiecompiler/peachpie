@@ -821,10 +821,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 enumeratorType = cg.CoreTypes.Iterator; // cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_Iterator);
             }
             // TODO: IPhpArray
-            else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && enumereeType.IsReferenceType)
+            else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && !getEnumeratorMethod.IsStatic && getEnumeratorMethod.DeclaredAccessibility == Accessibility.Public)
             {
                 // enumeree.GetEnumerator()
-                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, getEnumeratorMethod);
+                if (enumereeType.IsReferenceType)
+                {
+                    enumeratorType = cg.EmitCall(ILOpCode.Callvirt, getEnumeratorMethod);
+                }
+                else
+                {
+                    cg.EmitStructAddr(enumereeType);
+                    enumeratorType = cg.EmitCall(ILOpCode.Call, getEnumeratorMethod);
+                }
             }
             else
             {
@@ -859,15 +867,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
+                // TODO: declaredaccessibility
                 // bind methods
                 _current = enumeratorType.LookupMember<PropertySymbol>(WellKnownMemberNames.CurrentPropertyName)?.GetMethod;   // TODO: Err if no Current
                 _currentValue = enumeratorType.LookupMember<PropertySymbol>(_aliasedValues ? "CurrentValueAliased" : "CurrentValue")?.GetMethod;
                 _currentKey = enumeratorType.LookupMember<PropertySymbol>("CurrentKey")?.GetMethod;
-                _disposeMethod = enumeratorType.LookupMember<MethodSymbol>("Dispose", m => m.ParameterCount == 0 && !m.IsStatic);
+                _disposeMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.DisposeMethodName, m => !m.IsStatic && m.ParameterCount == 0);
 
-                _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.MoveNextMethodName);    // TODO: Err if there is no MoveNext()
+                _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.MoveNextMethodName, m => !m.IsStatic && m.ParameterCount == 0);
                 Debug.Assert(_moveNextMethod.ReturnType.SpecialType == SpecialType.System_Boolean);
-                Debug.Assert(_moveNextMethod.IsStatic == false);
             }
 
             if (_disposeMethod != null
