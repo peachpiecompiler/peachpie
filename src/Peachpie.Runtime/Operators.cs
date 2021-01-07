@@ -1759,17 +1759,20 @@ namespace Pchp.Core
             if (array.Count == 0)
             {
                 // follows call to MoveNext() which ends the enumeration
-                return array.GetFastEnumerator();
+                // keep array as it is, it won't be accessed anyways
             }
-
-            if (aliasedValue)
+            else if (aliasedValue)
             {
-                array.EnsureWritable(); // ensure array is not shared with another variable
-                return array.GetFastEnumerator();
+                // ensure array is not shared with another variable
+                array.EnsureWritable();
+            }
+            else
+            {
+                // create lazy copy
+                array.table.AddRef();
             }
 
-            //return array.GetFastEnumerator();
-            throw new InvalidOperationException();
+            return array.GetFastEnumerator();
         }
 
         #endregion
