@@ -798,12 +798,22 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             if (enumereeType.IsOfType(cg.CoreTypes.PhpArray))
             {
-                cg.Builder.EmitBoolConstant(_aliasedValues);
+                // optimized array enumeration if possible
+                // does not make sense in state machines
+                if (cg.GeneratorStateMachineMethod == null && _aliasedValues)
+                {
+                    // Operators.GetFastEnumerator(PhpArray, bool)
+                    cg.Builder.EmitBoolConstant(_aliasedValues);
+                    enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetFastEnumerator_PhpArray_Boolean);
+                }
+                else
+                {
+                    Debug.Assert(enumereeType.IsReferenceType);
 
-                // TODO: FastEnumerator if possible (addref on PhpArray ion readonly mode, not in generator, .. ) ?
-
-                // PhpArray.GetForeachEnumerator(bool)
-                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator_Boolean);  // TODO: IPhpArray
+                    // PhpArray.GetForeachEnumerator(bool aliasedValues)
+                    cg.Builder.EmitBoolConstant(_aliasedValues);
+                    enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator_Boolean);  // TODO: IPhpArray
+                }
             }
             else if (enumereeType.IsOfType(cg.CoreTypes.IPhpEnumerable))
             {

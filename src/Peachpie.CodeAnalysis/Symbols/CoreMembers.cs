@@ -336,6 +336,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Boolean, ct.RuntimeTypeHandle);
                 GetForeachEnumerator_Iterator = ct.Operators.Method("GetForeachEnumerator", ct.Iterator);
+                GetFastEnumerator_PhpArray_Boolean = ct.Operators.Method("GetFastEnumerator", ct.PhpArray, ct.Boolean);
 
                 GetSelf_RuntimeTypeHandle = ct.Operators.Method("GetSelf", ct.RuntimeTypeHandle);
                 GetSelfOrNull_RuntimeTypeHandle = ct.Operators.Method("GetSelfOrNull", ct.RuntimeTypeHandle);
@@ -449,6 +450,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
                 GetForeachEnumerator_Iterator,
+                GetFastEnumerator_PhpArray_Boolean,
 
                 GetSelf_RuntimeTypeHandle, GetSelfOrNull_RuntimeTypeHandle, GetParent_RuntimeTypeHandle, GetParent_PhpTypeInfo,
                 TypeNameOrObjectToType_Context_PhpValue,

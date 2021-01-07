@@ -1748,6 +1748,30 @@ namespace Pchp.Core
         /// </summary>
         public static IPhpEnumerator GetForeachEnumerator(PhpValue value, bool aliasedValues, RuntimeTypeHandle caller) => value.GetForeachEnumerator(aliasedValues, caller);
 
+        /// <summary>
+        /// Gets enumerator of array entries.
+        /// This is internal implementation that avoids allocations in common cases.
+        /// </summary>
+        public static OrderedDictionary.FastEnumerator GetFastEnumerator(PhpArray array, bool aliasedValue)
+        {
+            Debug.Assert(array != null);
+
+            if (array.Count == 0)
+            {
+                // follows call to MoveNext() which ends the enumeration
+                return array.GetFastEnumerator();
+            }
+
+            if (aliasedValue)
+            {
+                array.EnsureWritable(); // ensure array is not shared with another variable
+                return array.GetFastEnumerator();
+            }
+
+            //return array.GetFastEnumerator();
+            throw new InvalidOperationException();
+        }
+
         #endregion
 
         #region Copy, Unpack
