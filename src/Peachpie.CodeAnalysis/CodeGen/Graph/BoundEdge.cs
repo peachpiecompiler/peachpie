@@ -821,7 +821,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 enumeratorType = cg.CoreTypes.Iterator; // cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_Iterator);
             }
             // TODO: IPhpArray
-            else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && !getEnumeratorMethod.IsStatic && getEnumeratorMethod.DeclaredAccessibility == Accessibility.Public)
+            else if (getEnumeratorMethod != null &&
+                getEnumeratorMethod.ParameterCount == 0 &&
+                getEnumeratorMethod.DeclaredAccessibility == Accessibility.Public &&
+                !getEnumeratorMethod.IsStatic &&
+                !enumereeType.Is_PhpValue())
             {
                 // enumeree.GetEnumerator()
                 if (enumereeType.IsReferenceType)
@@ -859,6 +863,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 _enumeratorLoc.EmitLoad(cg.Builder);
                 cg.EmitPop(cg.EmitCall(ILOpCode.Callvirt, enumeratorType.LookupMember<MethodSymbol>("rewind")));
 
+                // TODO: declaredaccessibility
                 // bind methods
                 _iterator_next = enumeratorType.LookupMember<MethodSymbol>("next"); // next()
                 _current = _currentValue = enumeratorType.LookupMember<MethodSymbol>("current");    // current()
