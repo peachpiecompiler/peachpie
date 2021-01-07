@@ -42,9 +42,9 @@ namespace ScriptsTest
 
         [SkippableTheory]
         [ScriptsListData]
-        public void ScriptRunTest(string path)
+        public void ScriptRunTest(string fname, string subdir, string testsdir)
         {
-            var fname = Path.GetFileName(path);
+            var path = Path.Combine(testsdir, subdir, fname);
             var isSkipTest = new Regex(@"^skip(\([^)]*\))?_.*$"); // matches either skip_<smth>.php or skip(<reason>)_<smth>.php
             Skip.If(isSkipTest.IsMatch(fname));
 
