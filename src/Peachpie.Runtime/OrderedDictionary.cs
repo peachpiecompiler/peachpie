@@ -37,6 +37,12 @@ namespace Pchp.Core
         /// </summary>
         internal static readonly IntStringKey EmptyStringKey = new IntStringKey(string.Empty);
 
+        /// <summary>An invalid <see cref="IntStringKey"/> value.</summary>
+        internal static readonly IntStringKey InvalidKey = new IntStringKey(~"".GetHashCode(), "");
+
+        /// <summary>Whether this is the <see cref="InvalidKey"/>.</summary>
+        internal bool IsInvalid => this.Equals(InvalidKey);
+
         [DebuggerNonUserCode, DebuggerStepThrough]
         public class EqualityComparer : IEqualityComparer<IntStringKey>
         {
@@ -75,19 +81,17 @@ namespace Pchp.Core
         /// </summary>
         public bool IsEmpty => Equals(EmptyStringKey);
 
-        public IntStringKey(long key)
+        IntStringKey(long ikey, string skey)
         {
-            _ikey = key;
-            _skey = null;
+            _ikey = ikey;
+            _skey = skey;
         }
 
-        public IntStringKey(string/*!*/ key)
-        {
-            Debug.Assert(key != null);
+        public IntStringKey(long key) : this(key, null)
+        { }
 
-            _skey = key;
-            _ikey = key.GetHashCode();
-        }
+        public IntStringKey(string/*!*/ key) : this(key.GetHashCode(), key)
+        { }
 
         public static implicit operator IntStringKey(int value) => new IntStringKey(value);
 
@@ -175,7 +179,6 @@ namespace Pchp.Core
 
             /// <summary>
             /// Collision detection chain.
-            /// Order is not defined.
             /// </summary>
             public int Next;
 
@@ -196,8 +199,11 @@ namespace Pchp.Core
             /// <summary>
             /// The value has been deleted - is not initialized.
             /// </summary>
-            public readonly bool IsDeleted => Value.IsInvalid;
+            public readonly bool IsDeleted => Key.IsInvalid;
         }
+
+        /// <summary>Bucket representing a missing entry.</summary>
+        static Bucket s_missingBucket = new Bucket { Key = IntStringKey.InvalidKey, Value = default/*NULL*/, Next = -1 };
 
         /// <summary>Minimal internal table capacity. Must be power of 2.</summary>
         const uint _minCapacity = 8;
@@ -447,15 +453,8 @@ namespace Pchp.Core
 
         public TValue this[IntStringKey key]
         {
-            get
-            {
-                int i = FindIndex(key);
-                return (i >= 0) ? _data[i].Value : TValue.Null; // PERF: double array lookup
-            }
-            set
-            {
-                SetValue(key, value);
-            }
+            get => FindBucket(key).Value;
+            set => SetValue(key, value);
         }
 
         /// <summary>
@@ -587,10 +586,8 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="key">Key to find.</param>
         /// <returns>Index of the bucket or <see cref="_invalidIndex"/> if key was not found.</returns>
-        private int FindIndex(IntStringKey key)
+        private ref Bucket FindBucket(IntStringKey key)
         {
-            int index;
-
             if (IsPacked)
             {
                 // packed array
@@ -599,34 +596,37 @@ namespace Pchp.Core
                 if (key.IsInteger && key.Integer >= 0 && key.Integer < _dataUsed)
                 {
                     Debug.Assert(!_data[key.Integer].IsDeleted);
-                    index = (int)key.Integer;
+                    return ref _data[key.Integer];
                 }
                 else
                 {
-                    index = _invalidIndex;
+                    Debug.Assert(s_missingBucket.IsDeleted);
+                    Debug.Assert(s_missingBucket.Value.IsNull);
+                    return ref s_missingBucket;
                 }
             }
             else
             {
                 // indexed array
 
-                index = _hash[_index(key)];
+                var index = _hash[_index(key)];
 
                 while (index >= 0)
                 {
                     ref var bucket = ref _data[index];
                     if (key.Equals(bucket.Key))
                     {
-                        break;
+                        return ref bucket;
                     }
 
                     index = bucket.Next;
                 }
+
+                //
+                Debug.Assert(s_missingBucket.IsDeleted);
+                Debug.Assert(s_missingBucket.Value.IsNull);
+                return ref s_missingBucket;
             }
-
-            //
-
-            return index;
         }
 
         /// <summary>
@@ -637,15 +637,15 @@ namespace Pchp.Core
         /// <returns>True if the item was found in the collection.</returns>
         public bool TryGetValue(IntStringKey key, out TValue value)
         {
-            var i = FindIndex(key);
-            if (i >= 0)
+            ref var bucket = ref FindBucket(key);
+            if (bucket.Key.IsInvalid == false)
             {
-                value = _data[i].Value; // TODO // PERF: double array lookup
+                value = bucket.Value;
                 return true;
             }
             else
             {
-                value = default; // NULL
+                value = default;
                 return false;
             }
         }
@@ -655,19 +655,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public TValue GetValueOrNull(IntStringKey key)
-        {
-            var i = FindIndex(key);
-            if (i >= 0)
-            {
-                return _data[i].Value; // PERF: double array lookup
-            }
-            else
-            {
-                // TODO: warning
-                return TValue.Null;
-            }
-        }
+        public TValue GetValueOrNull(IntStringKey key) => FindBucket(key).Value;
 
         /// <summary>
         /// Ensures the item is present in the collection and gets a reference to it.
@@ -676,15 +664,15 @@ namespace Pchp.Core
         {
             Debug.Assert(!IsShared);
 
-            int i = FindIndex(key);
-            if (i < 0)
+            ref var bucket = ref FindBucket(key);
+            if (bucket.Key.IsInvalid == false)
             {
-                // add NULL item:
-                return ref Add_Impl(key, TValue.Null);
+                return ref bucket.Value;
             }
             else
             {
-                return ref _data[i].Value; // PERF: double array lookup
+                // add NULL item:
+                return ref Add_Impl(key, TValue.Null);
             }
         }
 
@@ -693,7 +681,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="key">Key to be checked.</param>
         /// <returns><c>true</c> iff an item with the key exists.</returns>
-        public bool ContainsKey(IntStringKey key) => FindIndex(key) >= 0;
+        public bool ContainsKey(IntStringKey key) => FindBucket(key).Key.IsInvalid == false;
 
         /// <summary>
         /// Assigns value using PHP's assign operator.
@@ -704,14 +692,14 @@ namespace Pchp.Core
         {
             Debug.Assert(!IsShared);
 
-            var i = FindIndex(key);
-            if (i < 0)
+            ref var bucket = ref FindBucket(key);
+            if (bucket.Key.IsInvalid == false)
             {
-                Add_Impl(key, value);
+                Operators.SetValue(ref bucket.Value, value);
             }
             else
             {
-                Operators.SetValue(ref _data[i].Value, value);
+                Add_Impl(key, value);
             }
         }
 
@@ -723,14 +711,14 @@ namespace Pchp.Core
         {
             Debug.Assert(!IsShared);
 
-            var i = FindIndex(key);
-            if (i < 0)
+            ref var bucket = ref FindBucket(key);
+            if (bucket.Key.IsInvalid == false)
             {
-                Add_Impl(key, value);
+                bucket.Value = value;
             }
             else
             {
-                _data[i].Value = value;
+                Add_Impl(key, value);
             }
         }
 
@@ -778,7 +766,7 @@ namespace Pchp.Core
         /// <param name="value">Item value.</param>
         private ref Bucket Add_NoCheck(IntStringKey key, TValue value)
         {
-            Debug.Assert(FindIndex(key) < 0);
+            Debug.Assert(FindBucket(key).Key.IsInvalid);
             Debug.Assert(!IsShared);
 
             var i = _dataUsed;
@@ -836,16 +824,14 @@ namespace Pchp.Core
             //    return false;
             //}
 
-            if (this._hash == null)
+            if (IsPacked)
             {
                 // packed array
 
                 var i = key.Integer;
                 if (i >= 0 && i < this._dataUsed && key.IsInteger)
                 {
-                    ref var bucket = ref this._data[i];
-                    bucket.Key = default;
-                    bucket.Value = TValue.CreateInvalid();
+                    _data[i] = new Bucket { Key = IntStringKey.InvalidKey };
 
                     if (i == _dataUsed - 1)
                     {
@@ -876,8 +862,8 @@ namespace Pchp.Core
                     ref var bucket = ref this._data[i];
                     if (key.Equals(bucket.Key))
                     {
-                        bucket.Key = default;
-                        bucket.Value = TValue.CreateInvalid();
+                        bucket.Key = IntStringKey.InvalidKey;
+                        bucket.Value = default;
 
                         if (i == _dataUsed - 1)
                         {
@@ -941,16 +927,16 @@ namespace Pchp.Core
         {
             Debug.Assert(!IsShared);
 
-            if (FindIndex(key) >= 0)
-            {
-                throw new ArgumentException();
-            }
-
             if (Count == 0)
             {
                 // no items, normal add:
                 Add_Impl(key, value);
                 return;
+            }
+
+            if (ContainsKey(key))
+            {
+                throw new ArgumentException();
             }
 
             if (this._dataDeleted == 0 || !this._data[0].IsDeleted)
@@ -963,7 +949,7 @@ namespace Pchp.Core
 
                 Array.Copy(this._data, 0, this._data, 1, this._dataUsed); // faster
                 //this.arData.AsMemory(0, this._dataUsed).CopyTo(this.arData.AsMemory(1, this._dataUsed)); // slower
-                this._data[0].Value = TValue.CreateInvalid();
+                _data[0] = new Bucket { Key = IntStringKey.InvalidKey };
                 Debug.Assert(this._data[0].IsDeleted);
 
                 this._dataUsed++;
@@ -1395,7 +1381,7 @@ namespace Pchp.Core
                     }
                     else if (cmp < 0 ^ op == SetOperations.Difference) // cmp == 0 && difference || cmp < 0 && intersect
                     {
-                        resultData[result_i].Value = TValue.CreateInvalid();
+                        resultData[result_i] = new Bucket { Key = IntStringKey.InvalidKey };
                         Debug.Assert(resultData[result_i].IsDeleted);
 
                         result._dataDeleted++;
@@ -1411,7 +1397,7 @@ namespace Pchp.Core
                 {
                     while (result_i < result._dataUsed)
                     {
-                        resultData[result_i].Value = TValue.CreateInvalid();
+                        resultData[result_i] = new Bucket { Key = IntStringKey.InvalidKey };
                         Debug.Assert(resultData[result_i].IsDeleted);
                         result._dataDeleted++;
                         result_i++;

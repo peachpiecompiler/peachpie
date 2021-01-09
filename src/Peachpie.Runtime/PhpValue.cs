@@ -112,12 +112,6 @@ namespace Pchp.Core
         [Obsolete]
         public bool IsDefault => TypeCode == 0; // NULL
 
-        /// <summary>INTERNAL. Checks if the value has been marked as invalid.</summary>
-        internal bool IsInvalid => TypeCode == InvalidTypeCode; // CONSIDER: (TypeCode >= PhpTypeCode.Count)
-
-        /// <summary>INTERNAL. Type code of an invalid value.</summary>
-        internal static PhpTypeCode InvalidTypeCode => ~(PhpTypeCode)0;
-
         /// <summary>
         /// Gets value indicating the value is <c>FALSE</c> or <c>&amp;FALSE</c>.
         /// </summary>
@@ -1178,12 +1172,6 @@ namespace Pchp.Core
             _value = default;
             _obj = default;
         }
-
-        /// <summary>
-        /// INTERNAL.
-        /// Creates an invalid value with the type code of <c>-1</c>.
-        /// </summary>
-        internal static PhpValue CreateInvalid() => new PhpValue(InvalidTypeCode);
 
         public static PhpValue Create(PhpNumber number) => number.ToPhpValue();
 
