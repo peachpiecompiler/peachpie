@@ -240,6 +240,23 @@ namespace Pchp.Library
 
         #endregion
 
+        #region password_algos
+
+        /// <summary>
+        /// Get available password hashing algorithm IDs.
+        /// </summary>
+        public static PhpArray/*!*/password_algos()
+        {
+            return new PhpArray(3)
+            {
+                PASSWORD_BCRYPT,
+                PASSWORD_ARGON2I,
+                PASSWORD_ARGON2ID,
+            };
+        }
+
+        #endregion
+
         #region password_hash, password_verify, password_needs_rehash, password_get_info
 
         /// <summary>
@@ -842,7 +859,7 @@ namespace Pchp.Library
 
             // Prepare for the real work.
 
-            HashPhpResource sha = null;
+            HashPhpResource sha;
             if (sha256)
                 sha = new HashPhpResource.SHA256();
             else
@@ -854,7 +871,7 @@ namespace Pchp.Library
 
             /*Compute alternate SHA512 sum with input KEY, SALT, and KEY.The
              final result will be added to the first context.  */
-            HashPhpResource shaAlt = null;
+            HashPhpResource shaAlt;
             if (sha256)
                 shaAlt = new HashPhpResource.SHA256();
             else
@@ -1412,7 +1429,7 @@ namespace Pchp.Library
                         algs["fnv164"] = () => new FNV164();
                         algs["fnv1a64"] = () => new FNV1a64();
 
-                        _HashAlgorithms = algs;
+                        Interlocked.CompareExchange(ref _HashAlgorithms, algs, null);
                     }
 
                     return _HashAlgorithms;
