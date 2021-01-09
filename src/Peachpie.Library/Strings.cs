@@ -4070,27 +4070,22 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string vsprintf(Context ctx, string format, PhpArray arguments)
         {
-            if (format == null) return string.Empty;
-
-            PhpValue[] array;
-            if (arguments != null && arguments.Count != 0)
+            if (string.IsNullOrEmpty(format))
             {
-                array = new PhpValue[arguments.Count];
-                arguments.Values.CopyTo(array, 0);
+                return string.Empty;
+            }
+
+            var array = arguments != null ? arguments.GetValues() : Array.Empty<PhpValue>();
+            var result = FormatInternal(ctx, format, array);
+            if (result != null)
+            {
+                return result;
             }
             else
             {
-                array = Core.Utilities.ArrayUtils.EmptyValues;
-            }
-
-            var result = FormatInternal(ctx, format, array);
-            if (result == null)
-            {
                 PhpException.Throw(PhpError.Warning, LibResources.too_few_arguments);
-
                 return null;
             }
-            return result;
         }
 
         #endregion
