@@ -248,11 +248,28 @@ namespace Pchp.Library
         /// <param name="arguments">The arguments.
         /// See <A href="http://www.php.net/manual/en/function.sprintf.php">PHP manual</A> for details.
         /// Besides, a type specifier "%C" is applicable. It converts an integer value to Unicode character.</param>
-        /// <returns>Number of characters written of <c>false</c> in case of an error.</returns>
+        /// <returns>Number of characters written or <c>false</c> in case of an error.</returns>
         [return: CastToFalse]
         public static int fprintf(Context ctx, PhpResource handle, string format, params PhpValue[] arguments)
         {
             var formatted = Strings.sprintf(ctx, format, arguments);
+            return string.IsNullOrEmpty(formatted)
+                ? 0
+                : WriteInternal(ctx, handle, new PhpString(formatted), -1);
+        }
+
+        /// <summary>
+        /// Writes the string formatted using <c>sprintf</c> to the given stream.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="handle">A stream opened for writing.</param>
+        /// <param name="format">The format string. For details, see PHP manual.</param>
+        /// <param name="arguments">The arguments.</param>
+        /// <returns>Number of characters written or <c>false</c> in case of an error.</returns>
+        [return: CastToFalse]
+        public static int vfprintf(Context ctx, PhpResource handle, string format, PhpArray arguments)
+        {
+            var formatted = Strings.vsprintf(ctx, format, arguments);
             return string.IsNullOrEmpty(formatted)
                 ? 0
                 : WriteInternal(ctx, handle, new PhpString(formatted), -1);
@@ -267,11 +284,12 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray fscanf(PhpResource handle, string format)
         {
-            //PhpStream stream = PhpStream.GetValid(handle);
-            //if (stream == null) return null;
-            //string line = stream.ReadLine(-1, null);
-            //return Strings.sscanf(line, format);
-            throw new NotImplementedException();
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null) return null;
+
+            // Each call to fscanf() reads one line from the file.
+            var line = stream.ReadLine(-1, null);
+            return Strings.sscanf(line, format);
         }
 
         /// <summary>
@@ -285,11 +303,12 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int fscanf(PhpResource handle, string format, PhpAlias arg, params PhpAlias[] arguments)
         {
-            //PhpStream stream = PhpStream.GetValid(handle);
-            //if (stream == null) return -1;
-            //string line = stream.ReadLine(-1, null);
-            //return Strings.sscanf(line, format, arg, arguments);
-            throw new NotImplementedException();
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null) return -1;
+
+            // Each call to fscanf() reads one line from the file.
+            var line = stream.ReadLine(-1, null);
+            return Strings.sscanf(line, format, arg, arguments);
         }
 
         #endregion
