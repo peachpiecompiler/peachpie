@@ -438,8 +438,18 @@ namespace Peachpie.Library.MySql.MySqli
         }
 
         //string stat(void )
-        //mysqli_stmt stmt_init(void )
+
+        /// <summary>
+        /// Initializes a statement and returns an object for use with mysqli_stmt_prepare.
+        /// </summary>
+        public mysqli_stmt stmt_init() => new mysqli_stmt(this);
+
         //mysqli_result store_result([ int $option ] )
         //mysqli_result use_result(void )
+
+        /// <summary>
+        /// Returns whether thread safety is given or not.
+        /// </summary>
+        public bool thread_safe() => true;
     }
 }

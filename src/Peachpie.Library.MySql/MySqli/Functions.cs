@@ -227,8 +227,20 @@ namespace Peachpie.Library.MySql.MySqli
 
         /// <summary>
         /// Executes a prepared Query.
+        /// Alias for <see cref="mysqli_stmt_execute"/>.
+        /// </summary>
+        [Obsolete]
+        public static bool mysqli_execute(mysqli_stmt stmt) => stmt.execute();
+
+        /// <summary>
+        /// Executes a prepared Query.
         /// </summary>
         public static bool mysqli_stmt_execute(mysqli_stmt stmt) => stmt.execute();
+
+        /// <summary>
+        /// Initializes a statement and returns an object for use with mysqli_stmt_prepare.
+        /// </summary>
+        public static mysqli_stmt mysqli_stmt_init(mysqli link) => new mysqli_stmt(link);
 
         /// <summary>
         /// Closes a prepared statement.
@@ -333,5 +345,10 @@ namespace Peachpie.Library.MySql.MySqli
         /// Alias to <see cref="mysqli_result.close"/>
         /// </summary>
         public static void mysqli_free_result(mysqli_result result) => result.close();
+
+        /// <summary>
+        /// Returns whether thread safety is given or not.
+        /// </summary>
+        public static bool mysqli_thread_safe() => true;
     }
 }
