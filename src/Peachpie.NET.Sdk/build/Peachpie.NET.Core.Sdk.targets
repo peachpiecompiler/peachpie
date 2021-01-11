@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
-    <DefaultLanguageSourceExtension>.php</DefaultLanguageSourceExtension>
     <Language>PHP</Language>
     <TargetRuntime>Managed</TargetRuntime>
     <AlwaysUseNumericalSuffixInItemNames>true</AlwaysUseNumericalSuffixInItemNames>
@@ -14,10 +13,9 @@
   <UsingTask AssemblyFile="$(PeachpieToolFullPath)" TaskName="Peachpie.NET.Sdk.Tools.BuildTask" />
   <UsingTask AssemblyFile="$(PeachpieToolFullPath)" TaskName="Peachpie.NET.Sdk.Tools.ComposerTask" />
 
-  <!-- well-known non-compile items -->
   <ItemGroup>
-    <Compile Include="**/*.phar;**/*.php" Exclude="obj/**;bin/**;.*/**" Condition=" '$(EnableDefaultPeachpieCompileItems)'=='true' " />
-    <Compile Remove="**/.phpstorm.meta.php/**;**/.phpstorm.meta.php" />
+    <!-- well-known items -->
+    <Compile Remove="$(DefaultItemExcludes)" />
   </ItemGroup>
 
   <ItemGroup>

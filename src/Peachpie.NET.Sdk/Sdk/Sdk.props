@@ -4,6 +4,19 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DefaultLanguageSourceExtension>.php</DefaultLanguageSourceExtension>
+
+    <!-- disable wilcard include of Compile items, file ordering is a feature -->
+    <EnableDefaultCompileItems Condition=" '$(EnableDefaultCompileItems)'=='' ">false</EnableDefaultCompileItems>
+
+    <!-- DefaultItems.props -->
+    <EnableDefaultItems Condition=" '$(EnableDefaultItems)' == '' ">true</EnableDefaultItems>
+    <EnableDefaultNoneItems Condition=" '$(EnableDefaultNoneItems)' == '' ">true</EnableDefaultNoneItems>
+    <EnableDefaultEmbeddedResourceItems Condition=" '$(EnableDefaultEmbeddedResourceItems)' == '' ">false</EnableDefaultEmbeddedResourceItems>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/.phpstorm.meta.php/**;**/.phpstorm.meta.php</DefaultItemExcludes>
+  </PropertyGroup>
+
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk"/>
 
   <Import Project="$(MSBuildThisFileDirectory)..\build\Peachpie.NET.Sdk.props"/>
