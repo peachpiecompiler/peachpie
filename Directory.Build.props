@@ -39,8 +39,8 @@
   <PropertyGroup>
     
     <PeachpieLibraryRegularExpressionsVersion>1.5.0</PeachpieLibraryRegularExpressionsVersion>
-    <MySqlConnectorVersion>1.0.1</MySqlConnectorVersion>
-    <ParserVersion>8.0.5543</ParserVersion>
+    <MySqlConnectorVersion>1.2.1</MySqlConnectorVersion>
+    <ParserVersion>8.0.5815</ParserVersion>
     
   </PropertyGroup>
 

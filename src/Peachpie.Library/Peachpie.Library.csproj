@@ -23,9 +23,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.0" />
-    <PackageReference Include="FluentFTP" Version="33.0.0" />
-    <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.9" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.2" />
+    <PackageReference Include="FluentFTP" Version="33.0.3" />
+    <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.10" />
     <PackageReference Include="NGettext" Version="0.6.6" />
     <PackageReference Include="Peachpie.Library.RegularExpressions" Version="$(PeachpieLibraryRegularExpressionsVersion)" />
     <PackageReference Include="Rationals" Version="1.4.0" />
