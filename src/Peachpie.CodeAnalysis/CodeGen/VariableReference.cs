@@ -347,8 +347,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // STACK: PhpAlias, PhpValue
 
                     // Template: <alias>.Value = STACK
-                    cg.Builder.EmitOpCode(ILOpCode.Stfld);
-                    cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value.Symbol, null);
+                    cg.Emit_PhpAlias_SetValue();
                     return;
                 }
 
