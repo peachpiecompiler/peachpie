@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Web;
 using System.Web.SessionState;
@@ -95,33 +96,27 @@ namespace Peachpie.RequestHandler.Session
                 }
             }
 
-            // .NET session items
-            if (session.Mode == SessionStateMode.InProc)
+            foreach (string name in session)
             {
-                foreach (string name in session)
+                if (name == PhpSessionVars)
                 {
-                    if (name == PhpSessionVars)
-                    {
-                        continue;
-                    }
-
-                    if (result == null)
-                    {
-                        result = new PhpArray(session.Count);
-                    }
-
-                    var value = PhpValue.FromClr(session[name]);
-                    //if (value.IsObject)
-                    //{
-                    //    // CONSIDER: what if value has reference to a different Context - change it? clone the value? do not store it into the session in the first place?
-                    //}
-                    result[name] = value;
+                    continue;
                 }
-            }
-            else
-            {
-                // TODO: deserialize .NET session variables
-                // CONSIDER: isn't it too much of overhead?
+
+                if (result == null)
+                {
+                    result = new PhpArray(session.Count);
+                }
+
+                //var value = PhpValue.FromClr(session[name]);
+                //if (value.IsObject)
+                //{
+                //    // NOTE: values that are bound to specific Context are stored using PHP serialization into PhpSessionVars array
+                //    // CONSIDER: what if value has a reference to a Context - clone the value?
+                //}
+                //result[name] = value;
+
+                result[name] = new SessionValue(session, name);
             }
 
             return result ?? PhpArray.NewEmpty();
@@ -174,37 +169,56 @@ namespace Peachpie.RequestHandler.Session
             // store non-PHP objects into ASP.NET session state, serialize the rest as PHP array
             PhpArray sessionvars = null;
 
-            if (state.Mode == SessionStateMode.InProc)
+            // remove session variables that were removed from $_SESSION
+            List<string> removed = null;
+            foreach (string name in state)
             {
-                // removes all items (some could be changed or removed in PHP):
-                state.Clear();
-
-                // populates session collection from variables:
-                var enumerator = session.GetFastEnumerator();
-                while (enumerator.MoveNext())
+                if (name != PhpSessionVars && !session.ContainsKey(name))
                 {
-                    var value = enumerator.CurrentValue.GetValue(); // dereferenced value
-
-                    // skips resources
-                    if (value.IsResource) continue;
-
-                    if (value.IsObject && value.Object.GetPhpTypeInfo().IsPhpType)
-                    {
-                        // PHP objects will be serialized using PHP serializer
-                        if (sessionvars == null) sessionvars = new PhpArray(session.Count);
-                        sessionvars[enumerator.CurrentKey] = value;
-                    }
-                    else
-                    {
-                        state[enumerator.CurrentKey.ToString()] = value.ToClr();
-                    }
+                    removed ??= new List<string>();
+                    removed.Add(name);
                 }
             }
-            else
+
+            if (removed != null)
             {
-                // If the session is maintained out-of-process,
-                // serialize the entire $_SESSION autoglobal as it is.
-                sessionvars = session;
+                foreach (var name in removed)
+                {
+                    state.Remove(name);
+                }
+            }
+
+            // populates session collection from variables:
+            var enumerator = session.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var value = enumerator.CurrentValue.GetValue(); // dereferenced value
+
+                if (value.Object is SessionValue)
+                {
+                    // SessionValue is alias to underlying session state variable,
+                    // the value is already in session state.
+                    // Avoid modifying it to avoid unnecessary serialization to out-of-proc session state.
+                    continue;
+                }
+
+                // skips resources
+                if (value.IsResource)
+                {
+                    continue;
+                }
+
+                if ((value.IsObject && value.Object.GetPhpTypeInfo().IsPhpType) ||
+                    (value.IsBinaryString(out _)))
+                {
+                    // PHP objects will be serialized using PHP serializer
+                    if (sessionvars == null) sessionvars = new PhpArray(session.Count);
+                    sessionvars[enumerator.CurrentKey] = value;
+                }
+                else
+                {
+                    state[enumerator.CurrentKey.ToString()] = value.ToClr();
+                }
             }
 
             // Add the serialized $_SESSION to ASP.NET session.
