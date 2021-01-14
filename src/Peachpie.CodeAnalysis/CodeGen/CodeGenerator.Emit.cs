@@ -795,9 +795,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol Emit_PhpValue_MakeAlias()
         {
-            // new PhpAlias(<STACK>, 1)
-            _il.EmitIntConstant(1);
-            return EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpAlias_PhpValue_int);
+            //// new PhpAlias(<STACK>, 1)
+            //_il.EmitIntConstant(1);
+            //return EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpAlias_PhpValue_int);
+
+            // PhpAlias.Create( <STACK> )
+            return EmitCall(ILOpCode.Call, CoreMethods.PhpAlias.Create_PhpValue);
         }
 
         /// <summary>

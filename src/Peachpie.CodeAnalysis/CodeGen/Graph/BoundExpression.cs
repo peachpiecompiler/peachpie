@@ -4355,10 +4355,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else if (Access.IsReadRef)
                     {
-                        // tmp = new PhpAlias(NULL, 1)
+                        // tmp = PhpAlias.Create(NULL)
                         cg.Emit_PhpValue_Null();
-                        cg.Builder.EmitIntConstant(1);
-                        tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpAlias_PhpValue_int));
+                        tmp = cg.GetTemporaryLocal(cg.Emit_PhpValue_MakeAlias());
                     }
                     else
                     {

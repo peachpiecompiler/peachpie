@@ -562,6 +562,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 Value = ct.PhpAlias.Property("Value");
 
+                Create_PhpValue = ct.PhpAlias.Method("Create", ct.PhpValue);
                 EnsureObject = ct.PhpAlias.Method("EnsureObject");
                 EnsureArray = ct.PhpAlias.Method("EnsureArray");
                 EnsureWritableString = ct.PhpAlias.Method("EnsureWritableString");
@@ -572,6 +573,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Value;
 
             public readonly CoreMethod
+                Create_PhpValue,
                 ReleaseRef,
                 EnsureObject, EnsureArray, EnsureWritableString;
         }
@@ -863,7 +865,6 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public ConstructorsHolder(CoreTypes ct)
             {
-                PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
                 PhpString_Blob = ct.PhpString.Ctor(ct.PhpString_Blob);
                 PhpString_string_string = ct.PhpString.Ctor(ct.String, ct.String);
                 PhpString_PhpValue_Context = ct.PhpString.Ctor(ct.PhpValue, ct.Context);
@@ -892,7 +893,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreConstructor
-                PhpAlias_PhpValue_int,
                 PhpArray, PhpArray_int,
                 PhpString_Blob, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
                 Blob,

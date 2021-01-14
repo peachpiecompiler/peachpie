@@ -144,7 +144,7 @@ namespace Pchp.Core.Dynamic
         public static class PhpAlias
         {
             public static readonly PropertyInfo Value = Types.PhpAlias[0].GetProperty("Value");
-            public static ConstructorInfo ctor_PhpValue_int => Types.PhpAlias[0].GetCtor(Types.PhpValue, Types.Int[0]);
+            public static MethodInfo Create_PhpValue => new Func<Core.PhpValue, Core.PhpAlias>(Core.PhpAlias.Create).Method;
         }
 
         public static class IndirectLocal

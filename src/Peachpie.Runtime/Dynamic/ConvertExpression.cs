@@ -54,8 +54,8 @@ namespace Pchp.Core.Dynamic
             {
                 if (target == typeof(PhpAlias))
                 {
-                    // new PhppAlias(PhpValue.Null, 1)
-                    return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Cache.Expressions.Create(1));
+                    // PhppAlias.Create(PhpValue.Null)
+                    return Expression.Call(Cache.PhpAlias.Create_PhpValue, BindToValue(arg));
                 }
 
                 // (T)null
@@ -107,7 +107,7 @@ namespace Pchp.Core.Dynamic
             {
                 //Debug.Assert(arg.Type.IsByRef && arg.Type == typeof(PhpValue), "Variable should be PhpValue and passed by ref so things will work out!");
                 if (arg.Type == typeof(PhpValue)) return Expression.Call(Cache.Operators.EnsureAlias_PhpValueRef, arg);
-                return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Cache.Expressions.Create(1));
+                return Expression.Call(Cache.PhpAlias.Create_PhpValue, BindToValue(arg));
             }
 
             if (target.IsByRef)
