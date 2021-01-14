@@ -676,31 +676,22 @@ namespace Pchp.Library
         #region explode, implode
 
         /// <summary>
-        /// Splits a string by string separators.
-        /// </summary>
-        /// <param name="separator">The substrings separator. Must not be empty.</param>
-        /// <param name="str">The string to be split.</param>
-        /// <returns>The array of strings.</returns>
-        [return: CastToFalse]
-        public static PhpArray explode(string separator, string str) => explode(separator, str, int.MaxValue);
-
-        /// <summary>
         /// Splits a string by string separators with limited resulting array size.
         /// </summary>
         /// <param name="separator">The substrings separator. Must not be empty.</param>
-        /// <param name="str">The string to be split.</param>
+        /// <param name="string">The string to be split.</param>
         /// <param name="limit">
         /// The maximum number of elements in the resultant array. Zero value is treated in the same way as 1.
         /// If negative, then the number of separators found in the string + 1 is added to the limit.
         /// </param>
         /// <returns>The array of strings.</returns>
         /// <remarks>
-        /// If <paramref name="str"/> is empty an array consisting of exacty one empty string is returned.
+        /// If <paramref name="string"/> is empty an array consisting of exacty one empty string is returned.
         /// If <paramref name="limit"/> is zero
         /// </remarks>
         /// <exception cref="PhpException">Thrown if the <paramref name="separator"/> is null or empty or if <paramref name="limit"/>is not positive nor -1.</exception>
         [return: CastToFalse]
-        public static PhpArray explode(string separator, string str, int limit)
+        public static PhpArray explode(string separator, string @string, int limit = int.MaxValue)
         {
             // validate parameters:
             if (string.IsNullOrEmpty(separator))
@@ -710,14 +701,14 @@ namespace Pchp.Library
                 throw new ArgumentException();
             }
 
-            if (str == null) str = String.Empty;
+            if (@string == null) @string = String.Empty;
 
             bool last_part_is_the_rest = limit >= 0;
 
             if (limit == 0)
                 limit = 1;
             else if (limit < 0)
-                limit += SubstringCountInternal(str, separator, 0, str.Length) + 2;
+                limit += SubstringCountInternal(@string, separator, 0, @string.Length) + 2;
 
             // splits <str> by <separator>:
             int sep_len = separator.Length;
@@ -729,18 +720,18 @@ namespace Pchp.Library
 
             while (--limit > 0)
             {
-                pos = compareInfo.IndexOf(str, separator, i, str.Length - i, System.Globalization.CompareOptions.Ordinal);
+                pos = compareInfo.IndexOf(@string, separator, i, @string.Length - i, System.Globalization.CompareOptions.Ordinal);
 
                 if (pos < 0) break; // not found
 
-                result.AddValue(PhpValue.Create(str.Substring(i, pos - i))); // faster than Add()
+                result.AddValue(PhpValue.Create(@string.Substring(i, pos - i))); // faster than Add()
                 i = pos + sep_len;
             }
 
             // Adds last chunk. If separator ends the string, it will add empty string (as PHP do).
-            if (i <= str.Length && last_part_is_the_rest)
+            if (i <= @string.Length && last_part_is_the_rest)
             {
-                result.AddValue(PhpValue.Create(str.Substring(i)));
+                result.AddValue(PhpValue.Create(@string.Substring(i)));
             }
 
             return result;
