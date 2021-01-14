@@ -622,12 +622,9 @@ namespace Pchp.Library
 
                 PhpAlias/*!*/AddSeq()
                 {
-                    if (_lazyObjects == null)
-                    {
-                        _lazyObjects = new Dictionary<int, PhpAlias>();
-                    }
+                    _lazyObjects ??= new Dictionary<int, PhpAlias>();
 
-                    return (_lazyObjects[_lazyObjects.Count + 1] = new PhpAlias(PhpValue.Null));
+                    return _lazyObjects[_lazyObjects.Count + 1] = PhpAlias.Create(PhpValue.Null);
                 }
 
                 public ObjectReader(Context ctx, Stream stream, RuntimeTypeHandle caller)
@@ -1225,7 +1222,7 @@ namespace Pchp.Library
         /// <param name="caller">Caller class context.</param>
         /// <param name="value">The value to be serialized.</param>
         /// <returns></returns>
-        public static PhpString serialize(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpValue value)
+        public static PhpString serialize(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpValue value)
         {
             return PhpSerializer.Instance.Serialize(ctx, value, caller);
         }
@@ -1241,7 +1238,7 @@ namespace Pchp.Library
         /// The converted value is returned, and can be a boolean, integer, float, string, array or object.
         /// In case the passed string is not unserializeable, <c>FALSE</c> is returned and <b>E_NOTICE</b> is issued.
         /// </returns>
-        public static PhpValue unserialize(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpString str, PhpArray options = null)
+        public static PhpValue unserialize(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpString str, PhpArray options = null)
         {
             return PhpSerializer.Instance.Deserialize(ctx, str, caller);
         }

@@ -796,7 +796,7 @@ namespace Pchp.Core
                     PhpException.IllegalOffsetType();
                 }
 
-                return new PhpAlias(PhpValue.Null);
+                return PhpAlias.Create(PhpValue.Null);
             }
         }
 
@@ -994,7 +994,7 @@ namespace Pchp.Core
             }
 
             // TODO: Warning
-            return new PhpAlias(PhpValue.Null);
+            return PhpAlias.Create(PhpValue.Null);
         }
 
         public static bool offsetExists(this PhpArray value, long index) =>
@@ -1442,7 +1442,7 @@ namespace Pchp.Core
 
             public PhpValue CurrentValue => PhpValue.Null;
 
-            public PhpAlias CurrentValueAliased => new PhpAlias(PhpValue.Null);
+            public PhpAlias CurrentValueAliased => PhpAlias.Create(PhpValue.Null);
 
             object IEnumerator.Current => null;
 

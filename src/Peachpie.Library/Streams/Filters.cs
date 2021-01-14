@@ -549,7 +549,7 @@ namespace Pchp.Library.Streams
         {
             var @in = new UserFilterBucketBrigade() { bucket = input.ToPhpString() };
             var @out = new UserFilterBucketBrigade();
-            var consumed = new PhpAlias(0L);
+            var consumed = PhpAlias.Create(0L);
 
             switch ((PhpFilters.FilterStatus)filter(@in, @out, consumed, closing))
             {

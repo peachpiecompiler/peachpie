@@ -1867,7 +1867,7 @@ namespace Pchp.Library.Streams
 
         public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
         {
-            var opened_path_ref = new PhpAlias((PhpValue)path);
+            var opened_path_ref = PhpAlias.Create(path);
             var result = InvokeWrapperMethod(PhpUserStream.USERSTREAM_OPEN, (PhpValue)path, (PhpValue)mode, (PhpValue)(int)options, PhpValue.Create(opened_path_ref));
 
             if (result.ToBoolean() == true)

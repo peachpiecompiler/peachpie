@@ -57,7 +57,7 @@ namespace Peachpie.Runtime.Tests
 
             // ENSURE $$->prop->prop = 123
 
-            var alias = (PhpValue)new PhpAlias(PhpValue.Null);
+            var alias = PhpValue.CreateAlias(PhpValue.Null);
             var propertyref = chain1.GetAlias(ref alias, _context, null);
             propertyref.Value = 123;
 
@@ -86,7 +86,7 @@ namespace Peachpie.Runtime.Tests
 
             // ENSURE $$[0] = 666
 
-            var alias = (PhpValue)new PhpAlias(PhpValue.Null);
+            var alias = PhpValue.CreateAlias(PhpValue.Null);
             var itemref = chain1.GetAlias(ref alias, _context, null);
             itemref.Value = 666;
 

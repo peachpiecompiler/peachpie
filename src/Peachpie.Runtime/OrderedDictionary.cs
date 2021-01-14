@@ -342,7 +342,7 @@ namespace Pchp.Core
 
                 if (bucket.Value.Object is PhpAlias alias && alias.Value.Object is PhpArray array && ReferenceEquals(array.table, cloned_from))
                 {
-                    bucket.Value = PhpValue.Create(aliased_self ?? (aliased_self = new PhpAlias(new PhpArray(this))));
+                    bucket.Value = PhpValue.Create(aliased_self ?? (aliased_self = PhpAlias.Create(new PhpArray(this))));
                 }
                 else
                 {

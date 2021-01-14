@@ -491,7 +491,7 @@ namespace Pchp.Core
         /// Wraps the value into <see cref="PhpAlias"/>,
         /// if value already contains the aliased value, it is returned as it is.
         /// </summary>
-        public PhpAlias/*!*/AsPhpAlias() => _obj.@object as PhpAlias ?? new PhpAlias(this);
+        public PhpAlias/*!*/AsPhpAlias() => _obj.@object as PhpAlias ?? PhpAlias.Create(this);
 
         #endregion
 
@@ -844,7 +844,7 @@ namespace Pchp.Core
             }
 
             // create alias to the value:
-            var alias = new PhpAlias(value, 1);
+            var alias = PhpAlias.Create(value);
             value = Create(alias);
             return alias;
         }
@@ -1214,7 +1214,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates value containing new <see cref="PhpAlias"/>.
         /// </summary>
-        public static PhpValue CreateAlias(PhpValue value) => Create(new PhpAlias(value));
+        public static PhpValue CreateAlias(PhpValue value) => Create(PhpAlias.Create(value));
 
         public static PhpValue Create(IntStringKey value) => value.IsInteger ? Create(value.Integer) : Create(value.String);
 
