@@ -3657,7 +3657,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // Template: target.Alias.EnsureWritableString().Add( .. )
                     inplace = true;
                     target_place.EmitLoadValue(cg, ref lhs, target.Access);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureWritableString)
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpAlias.EnsureWritableString)
                         .Expect(cg.CoreTypes.PhpString_Blob);
                 }
                 else if (target_place.Type == cg.CoreTypes.PhpString)
@@ -4586,7 +4586,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (tArray == cg.CoreTypes.PhpAlias)
                 {
                     // PhpAlias.EnsureArray
-                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureArray);
+                    tArray = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpAlias.EnsureArray);
                 }
                 else
                 {

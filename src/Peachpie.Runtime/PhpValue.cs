@@ -1193,7 +1193,10 @@ namespace Pchp.Core
 
         public static PhpValue Create(PhpArray value) => new PhpValue(PhpTypeCode.PhpArray, value);
 
-        public static PhpValue Create(IPhpArray value) => value is PhpArray arr ? Create(arr) : FromClass(value);
+        public static PhpValue Create(IPhpArray value) =>
+            value is PhpArray arr ? Create(arr) :
+            value is PhpString.Blob blob ? Create(blob) :
+            FromClass(value);
 
         public static PhpValue Create(PhpAlias value) => new PhpValue(PhpTypeCode.Alias, value);
 
@@ -1236,7 +1239,7 @@ namespace Pchp.Core
 
         public static PhpValue FromClass(object value)
         {
-            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias || value is PhpString || value is PhpArray));
+            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias || value is PhpString || value is PhpArray || value is PhpString.Blob));
             return new PhpValue(PhpTypeCode.Object, value);
         }
 
