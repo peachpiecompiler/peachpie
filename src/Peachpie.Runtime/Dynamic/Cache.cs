@@ -143,7 +143,7 @@ namespace Pchp.Core.Dynamic
 
         public static class PhpAlias
         {
-            public static readonly FieldInfo Value = Types.PhpAlias[0].GetField("Value");
+            public static readonly PropertyInfo Value = Types.PhpAlias[0].GetProperty("Value");
             public static ConstructorInfo ctor_PhpValue_int => Types.PhpAlias[0].GetCtor(Types.PhpValue, Types.Int[0]);
         }
 

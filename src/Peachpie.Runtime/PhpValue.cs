@@ -742,7 +742,7 @@ namespace Pchp.Core
                     break;
 
                 case PhpTypeCode.Alias:
-                    result = EnsureObject(ref value.Alias.Value);
+                    result = value.Alias.EnsureObject();
                     break;
 
                 default:
@@ -810,7 +810,7 @@ namespace Pchp.Core
                     return Operators.EnsureArray(value.Object);
 
                 case PhpTypeCode.Alias:
-                    return EnsureArray(ref value.Alias.Value);
+                    return value.Alias.EnsureArray();
 
                 default:
                     throw InvalidTypeCodeException();

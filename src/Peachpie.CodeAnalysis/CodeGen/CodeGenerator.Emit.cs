@@ -776,22 +776,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol Emit_PhpAlias_GetValue()
         {
-            // <stack>.Value
-            EmitOpCode(ILOpCode.Ldfld);
-            EmitSymbolToken(CoreMethods.PhpAlias.Value, null);
-            return this.CoreTypes.PhpValue;
-        }
-
-        /// <summary>
-        /// Emits load of <c>PhpAlias.Value</c>,
-        /// expecting <c>PhpAlias</c> on top of evaluation stack,
-        /// pushing <c>PhpValue</c> on top of the stack.
-        /// </summary>
-        public void Emit_PhpAlias_GetValueAddr()
-        {
-            // ref <stack>.Value
-            EmitOpCode(ILOpCode.Ldflda);
-            EmitSymbolToken(CoreMethods.PhpAlias.Value, null);
+            // CALL <stack>.get_Value()
+            return EmitCall(ILOpCode.Callvirt, CoreMethods.PhpAlias.Value.Getter);
         }
 
         /// <summary>
@@ -801,8 +787,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void Emit_PhpAlias_SetValue()
         {
             // <stack_1>.Value = <stack_2>
-            EmitOpCode(ILOpCode.Stfld);
-            EmitSymbolToken(CoreMethods.PhpAlias.Value, null);
+            EmitCall(ILOpCode.Callvirt, CoreMethods.PhpAlias.Value.Setter);
         }
 
         /// <summary>
@@ -818,18 +803,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits load of PhpValue representing void.
         /// </summary>
-        public TypeSymbol Emit_PhpValue_Void()
-            => Emit_PhpValue_Void(_il, _moduleBuilder, _diagnostics);
-
-        /// <summary>
-        /// Emits load of PhpValue representing void.
-        /// </summary>
-        static TypeSymbol Emit_PhpValue_Void(ILBuilder il, Emit.PEModuleBuilder module, DiagnosticBag diagnostic)
-        {
-            il.EmitOpCode(ILOpCode.Ldsfld);
-            il.EmitSymbolToken(module, diagnostic, module.Compilation.CoreMethods.PhpValue.Void, null);
-            return module.Compilation.CoreTypes.PhpValue;
-        }
+        public TypeSymbol Emit_PhpValue_Void() => Emit_PhpValue_Null();
 
         /// <summary>
         /// Emits load of PhpValue representing null.
@@ -2033,16 +2007,17 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     if (stack == CoreTypes.PhpAlias)
                     {
-                        // <stack>.Value.GetArrayAccess()
-                        Emit_PhpAlias_GetValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.Operators.GetArrayAccess_PhpValueRef);
+                        // <stack>.EnsureArray()
+                        return EmitCall(ILOpCode.Callvirt, CoreMethods.PhpAlias.EnsureArray);
                     }
+
                     if (stack == CoreTypes.PhpValue)
                     {
                         // <stack>.GetArrayAccess()
                         EmitPhpValueAddr();
                         return EmitCall(ILOpCode.Call, CoreMethods.Operators.GetArrayAccess_PhpValueRef);
                     }
+
                     if (stack.IsReferenceType)
                     {
                         if (stack.ImplementsInterface(CoreTypes.IPhpArray))
@@ -2061,10 +2036,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     if (stack == CoreTypes.PhpAlias)
                     {
-                        // <stack>.Value.AsObject()
-                        Emit_PhpAlias_GetValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsObject);
+                        // <stack>.EnsureObject()
+                        return EmitCall(ILOpCode.Callvirt, CoreMethods.PhpAlias.EnsureObject);
                     }
+
                     if (stack == CoreTypes.PhpValue)
                     {
                         // <stack>.AsObject()
@@ -3763,43 +3738,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 return t;
             }
-        }
-
-        /// <summary>
-        /// Emit dereference and deep copy if necessary.
-        /// </summary>
-        public TypeSymbol EmitReadCopy(TypeSymbol targetOpt, TypeSymbol type, TypeRefMask thint = default(TypeRefMask))
-        {
-            // dereference & copy
-
-            // if target type is not a copiable type, we don't have to perform deep copy since the result will be converted to a value anyway
-            var deepcopy = IsCopiable(thint) && (targetOpt == null || IsCopiable(targetOpt));
-            if (!deepcopy)
-            {
-                return type;
-            }
-
-            // dereference
-
-            if (type == CoreTypes.PhpValue)
-            {
-                if (thint.IsRef || thint.IsUninitialized)
-                {
-                    // ref.GetValue()
-                    EmitPhpValueAddr();
-                    type = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetValue);
-                }
-            }
-            else if (type == CoreTypes.PhpAlias)
-            {
-                // ref.Value.DeepCopy()
-                Emit_PhpAlias_GetValueAddr();
-                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
-            }
-
-            // copy
-
-            return EmitDeepCopy(type, thint);
         }
     }
 

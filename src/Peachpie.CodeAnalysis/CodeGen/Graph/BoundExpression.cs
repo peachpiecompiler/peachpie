@@ -3654,11 +3654,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else if (target_place.Type == cg.CoreTypes.PhpAlias)
                 {
-                    // Template: Operators.EnsureWritableString(ref PhpValue target.Alias.Value).Add( .. )
+                    // Template: target.Alias.EnsureWritableString().Add( .. )
                     inplace = true;
                     target_place.EmitLoadValue(cg, ref lhs, target.Access);
-                    cg.Emit_PhpAlias_GetValueAddr();    // ref PhpValue
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureWritableString_PhpArrayRef)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureWritableString)
                         .Expect(cg.CoreTypes.PhpString_Blob);
                 }
                 else if (target_place.Type == cg.CoreTypes.PhpString)

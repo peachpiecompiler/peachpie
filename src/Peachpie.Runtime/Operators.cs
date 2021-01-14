@@ -161,7 +161,7 @@ namespace Pchp.Core
             {
                 case PhpTypeCode.Long: return PhpValue.Create(~x.Long);
 
-                case PhpTypeCode.Alias: return BitNot(in x.Alias.Value);
+                case PhpTypeCode.Alias: return ~x.Alias.Value;
 
                 case PhpTypeCode.String:
                 case PhpTypeCode.MutableString:
@@ -286,7 +286,7 @@ namespace Pchp.Core
                     break;
 
                 case PhpTypeCode.Alias:
-                    blob = EnsureWritableString(ref value.Alias.Value);
+                    blob = value.Alias.EnsureWritableString();
                     break;
 
                 default:
@@ -594,7 +594,7 @@ namespace Pchp.Core
             PhpTypeCode.String => PhpValue.EnsureArray(ref value),
             PhpTypeCode.MutableString => value.MutableStringBlob,
             PhpTypeCode.Object => EnsureArray(value.Object),
-            PhpTypeCode.Alias => GetArrayAccess(ref value.Alias.Value),
+            PhpTypeCode.Alias => value.Alias.EnsureArray(),
             _ => null,
         };
 
@@ -990,7 +990,7 @@ namespace Pchp.Core
                     break;
 
                 case PhpTypeCode.Alias:
-                    return EnsureItemAlias(ref value.Alias.Value, index, quiet);
+                    return value.Alias.EnsureItemAlias(index, quiet);
             }
 
             // TODO: Warning

@@ -534,7 +534,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 FromClr_Object = ct.PhpValue.Method("FromClr", ct.Object);
                 FromClass_Object = ct.PhpValue.Method("FromClass", ct.Object);
 
-                Void = ct.PhpValue.Field("Void");
                 Null = ct.PhpValue.Field("Null");
                 True = ct.PhpValue.Field("True");
                 False = ct.PhpValue.Field("False");
@@ -550,7 +549,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 FromClr_Object, FromClass_Object;
 
             public readonly CoreField
-                Void, Null, True, False;
+                Null, True, False;
 
             public readonly CoreProperty
                 Object, Long, Double, Boolean, String, Array;
@@ -561,19 +560,20 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public PhpAliasHolder(CoreTypes ct)
             {
-                Value = ct.PhpAlias.Field("Value");
+                Value = ct.PhpAlias.Property("Value");
 
                 EnsureObject = ct.PhpAlias.Method("EnsureObject");
                 EnsureArray = ct.PhpAlias.Method("EnsureArray");
+                EnsureWritableString = ct.PhpAlias.Method("EnsureWritableString");
                 ReleaseRef = ct.PhpAlias.Method("ReleaseRef");
             }
 
-            public readonly CoreField
+            public readonly CoreProperty
                 Value;
 
             public readonly CoreMethod
                 ReleaseRef,
-                EnsureObject, EnsureArray;
+                EnsureObject, EnsureArray, EnsureWritableString;
         }
 
         public struct PhpNumberHolder

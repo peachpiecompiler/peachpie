@@ -23,7 +23,13 @@ namespace Pchp.Core
         /// </summary>
         /// <remarks>The field is not wrapped into a property, some internals need to access the raw field.</remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public PhpValue Value;
+        public virtual PhpValue Value
+        {
+            get => _value;
+            set => _value = value;
+        }
+
+        private PhpValue _value;
 
         #endregion
 
@@ -76,13 +82,24 @@ namespace Pchp.Core
         /// Ensures the underlying value is an object and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public object EnsureObject() => PhpValue.EnsureObject(ref Value);
+        public virtual object EnsureObject() => PhpValue.EnsureObject(ref _value);
 
         /// <summary>
         /// Ensures the underlying value is an array and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public IPhpArray EnsureArray() => PhpValue.EnsureArray(ref Value);
+        public virtual IPhpArray EnsureArray() => PhpValue.EnsureArray(ref _value);
+
+        /// <summary>
+        /// Ensures underlying value as a writable string and gets the containing <see cref="PhpString.Blob"/>.
+        /// </summary>
+        public virtual PhpString.Blob EnsureWritableString() => Operators.EnsureWritableString(ref _value);
+
+        /// <summary>
+        /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
+        /// Ensures the value is an array and item at given <paramref name="index"/> is an alias.
+        /// </summary>
+        public virtual PhpAlias EnsureItemAlias(PhpValue index, bool quiet = false) => Operators.EnsureItemAlias(ref _value, index, quiet);
 
         /// <summary>
         /// Performs deep copy of the value.

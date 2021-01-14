@@ -337,9 +337,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             // dereference
             if (from == CoreTypes.PhpAlias)
             {
-                // <alias>.Value.AsObject()
-                Emit_PhpAlias_GetValueAddr();
-                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsObject);
+                // value = <alias>.Value
+                from = Emit_PhpAlias_GetValue();
             }
 
             // PhpValue -> object
@@ -448,10 +447,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             // dereference
             if (from == CoreTypes.PhpAlias)
             {
-                // <alias>.Value.AsObject() : object
-                Emit_PhpAlias_GetValueAddr();
-                from = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsObject)
-                    .Expect(SpecialType.System_Object);
+                // <alias>.Value : PhpValue
+                from = Emit_PhpAlias_GetValue();
             }
 
             if (from.IsReferenceType && from.IsOfType(to))

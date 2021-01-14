@@ -36,7 +36,7 @@ namespace Pchp.Core.Dynamic
             // dereference
             if (arg.Type == Cache.Types.PhpAlias[0])
             {
-                return Bind(Expression.Field(arg, Cache.PhpAlias.Value), target, ctx);
+                return Bind(Expression.Property(arg, Cache.PhpAlias.Value), target, ctx);
             }
 
             // from Nullable<T>
@@ -690,7 +690,7 @@ namespace Pchp.Core.Dynamic
 
             if (t == typeof(PhpAlias))
             {
-                return BindCost(Expression.Field(arg, Cache.PhpAlias.Value), target); // PhpValue -> target
+                return BindCost(Expression.Property(arg, Cache.PhpAlias.Value), target); // PhpValue -> target
             }
 
             if (t == Cache.Types.IndirectLocal)

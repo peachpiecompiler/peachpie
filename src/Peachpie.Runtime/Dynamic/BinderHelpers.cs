@@ -211,7 +211,7 @@ namespace Pchp.Core.Dynamic
             if (expr.Type == typeof(PhpAlias))
             {
                 // PhpAlias.Value
-                expr = Expression.Field(expr, Cache.PhpAlias.Value);
+                expr = Expression.Property(expr, Cache.PhpAlias.Value);
                 value = ((PhpAlias)value).Value;
 
                 //
@@ -555,7 +555,7 @@ namespace Pchp.Core.Dynamic
                 if (expr.Type == typeof(PhpAlias))
                 {
                     // Template: fld.Value = (PhpValue)value
-                    expr = Expression.Assign(Expression.Field(expr, Cache.PhpAlias.Value), ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
+                    expr = Expression.Assign(Expression.Property(expr, Cache.PhpAlias.Value), ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
                 }
                 else if (expr.Type == typeof(PhpValue))
                 {
@@ -573,7 +573,7 @@ namespace Pchp.Core.Dynamic
             {
                 if (expr.Type == typeof(PhpAlias))
                 {
-                    expr = Expression.Field(expr, Cache.PhpAlias.Value);
+                    expr = Expression.Property(expr, Cache.PhpAlias.Value);
                 }
 
                 //
