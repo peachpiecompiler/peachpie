@@ -20,6 +20,7 @@ namespace Peachpie.Library.MySql
 
         readonly MySqlConnectionManager _manager;
         readonly MySqlConnection _connection;
+        readonly bool _leaveopen = false;
 
         /// <summary>
         /// Lazily set server name used to initiate connection.
@@ -38,9 +39,27 @@ namespace Peachpie.Library.MySql
             _connection = new MySqlConnection(this.ConnectionString);
         }
 
+        public MySqlConnectionResource(MySqlConnectionManager manager, MySqlConnection connection)
+            : base(connection.ConnectionString, ResourceName)
+        {
+            _manager = manager;
+            _connection = connection;
+            _leaveopen = true;
+        }
+
         protected override void FreeManaged()
         {
-            base.FreeManaged();
+            if (_leaveopen)
+            {
+                // do not close the underlying connection,
+                // just dispose the reader
+                ClosePendingReader();
+            }
+            else
+            {
+                base.FreeManaged();
+            }
+
             _manager.RemoveConnection(this);
         }
 

@@ -173,6 +173,15 @@ namespace Peachpie.Library.MySql
         }
 
         /// <summary>
+        /// Creates a connection resource using an existing <see cref="MySqlConnection"/> instance.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Provided instance is <c>null</c>.</exception>
+        public static PhpResource mysql_connect(Context ctx, MySqlConnection dbconnection/*, bool leaveOpen*/)
+        {
+            return new MySqlConnectionResource(MySqlConnectionManager.GetInstance(ctx), dbconnection ?? throw new ArgumentNullException(nameof(dbconnection)));
+        }
+
+        /// <summary>
         /// Establishes a connection to MySQL server using a specified server, user, password, and flags.
         /// </summary>
         /// <returns>
