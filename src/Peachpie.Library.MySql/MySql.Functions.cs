@@ -155,9 +155,9 @@ namespace Peachpie.Library.MySql
 
             var connection_string = config.ConnectionString ?? BuildConnectionString(config, ref server, config.Port, username, password, client_flags).ToString();
 
-            bool success;
-            var connection = MySqlConnectionManager.GetInstance(ctx)
-                .CreateConnection(connection_string, new_link, -1, out success);
+            var connection = MySqlConnectionManager
+                .GetInstance(ctx)
+                .CreateConnection(connection_string, new_link, -1, out var success);
 
             if (success)
             {

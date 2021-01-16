@@ -20,6 +20,11 @@ namespace Peachpie.Library.MySql
 
         readonly MySqlConnectionManager _manager;
         readonly MySqlConnection _connection;
+
+        /// <summary>
+        /// Whether to keep the underlying connection open after disposing this resource.
+        /// (The owner of the connection is someone else)
+        /// </summary>
         readonly bool _leaveopen = false;
 
         /// <summary>
@@ -65,8 +70,11 @@ namespace Peachpie.Library.MySql
 
         public override void ClosePendingReader()
         {
-            _pendingReader?.Dispose();
-            _pendingReader = null;
+            if (_pendingReader != null)
+            {
+                _pendingReader.Dispose();
+                _pendingReader = null;
+            }
         }
 
         protected override IDbConnection ActiveConnection => _connection;
