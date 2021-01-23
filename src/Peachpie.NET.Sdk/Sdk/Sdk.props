@@ -6,6 +6,7 @@
 
   <PropertyGroup>
     <DefaultLanguageSourceExtension>.php</DefaultLanguageSourceExtension>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
 
     <!-- disable wilcard include of Compile items, file ordering is a feature -->
     <EnableDefaultCompileItems Condition=" '$(EnableDefaultCompileItems)'=='' ">false</EnableDefaultCompileItems>
