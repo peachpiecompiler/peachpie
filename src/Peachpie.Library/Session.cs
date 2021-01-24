@@ -236,6 +236,8 @@ namespace Pchp.Library
 
             public bool CookieHttpOnly = false;
 
+            public bool SameSite = false;
+
             public static PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
             {
                 var sessionconfig = config.GetSessionConfiguration();
@@ -808,6 +810,41 @@ namespace Pchp.Library
         /// <summary>
         /// Set the session cookie parameters
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="options">lifetime, path, domain, secure, httponly, samesite</param>
+        public static bool session_set_cookie_params(Context ctx, PhpArray options)
+        {
+            PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
+
+            if (options != null && options.Count != 0)
+            {
+                var config = ctx.Configuration.GetSessionConfiguration();
+
+                if (options.TryGetValue("lifetime", out var lifetime))
+                    config.CookieLifetime = lifetime.ToInt();
+
+                if (options.TryGetValue("path", out var path))
+                    config.CookiePath = path.ToString(ctx);
+
+                if (options.TryGetValue("domain", out var domain))
+                    config.CookieDomain = domain.ToString(ctx);
+
+                if (options.TryGetValue("secure", out var secure))
+                    config.CookieSecure = secure.ToBoolean();
+
+                if (options.TryGetValue("httponly", out var httponly))
+                    config.CookieHttpOnly = httponly.ToBoolean();
+
+                if (options.TryGetValue("samesite", out var samesite))
+                    config.SameSite = samesite.ToBoolean();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Set the session cookie parameters
+        /// </summary>
         public static bool session_set_cookie_params(Context ctx, int lifetime)
         {
             PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
@@ -870,13 +907,14 @@ namespace Pchp.Library
         public static PhpArray session_get_cookie_params(Context ctx)
         {
             var config = ctx.Configuration.GetSessionConfiguration();
-            return new PhpArray(5)
+            return new PhpArray(6)
             {
                 { "lifetime", config.CookieLifetime },
                 { "path", config.CookiePath},
                 { "domain", config.CookieDomain},
                 { "secure", config.CookieSecure},
                 { "httponly", config.CookieHttpOnly},
+                { "samesite", config.SameSite},
             };
         }
 
