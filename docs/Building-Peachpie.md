@@ -37,3 +37,11 @@ or
 ```xml
 <PackageReference Include="Peachpie.Library.PDO.MySql" Version="1.0.0-dev" />
 ```
+or when using `global.json` to specify Sdks versions:
+```json
+{
+    "msbuild-sdks": {
+        "Peachpie.NET.Sdk": "1.0.0-dev"
+    }
+}
+```
