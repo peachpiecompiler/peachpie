@@ -360,6 +360,11 @@ namespace Pchp.Core
             /// The parameter must be of type <see cref="RuntimeTypeHandle"/>.
             /// </summary>
             CallerScript,
+
+            /// <summary>
+            /// Provides reference to local variable with same name as the parameter name.
+            /// </summary>
+            LocalVariable,
         }
 
         public ValueSpec Value { get; }
