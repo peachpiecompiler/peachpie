@@ -1107,6 +1107,11 @@ namespace Pchp.Core.Dynamic
                                 // TODO: if we create IPhpCallback in compile-time, we know the routine needs the locals, ...
                                 break;
 
+                            case ImportValueAttribute.ValueSpec.LocalVariable:
+                                boundargs[i] = Expression.Default(p.ParameterType); // null
+                                PhpException.Throw(PhpError.Notice, "Cannot reference local variable $" + p.Name + " in call to " + method.Name);
+                                break;
+
                             case ImportValueAttribute.ValueSpec.This:
                                 // $this is unknown, get NULL
                                 boundargs[i] = Expression.Default(p.ParameterType);
@@ -1120,6 +1125,9 @@ namespace Pchp.Core.Dynamic
 
                             case ImportValueAttribute.ValueSpec.CallerStaticClass:
                                 throw new NotSupportedException("ImportCallerStaticClassAttribute dynamically."); // we don't know current late static bound type
+
+                            default:
+                                throw new NotSupportedException(value.ToString());
                         }
 
                         continue;
