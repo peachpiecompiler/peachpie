@@ -5,7 +5,7 @@
 
 param([string]$version = "1.0.0", [string]$suffix = "dev")
 
-# We suppose the global package source is in the default location 
+# We suppose the global package source is in the default location
 $rootDir = [System.IO.Path]::GetFullPath("$PSScriptRoot/..")
 Write-Host "Root at" $rootDir
 $packagesSource = (Resolve-Path "~/.nuget/packages").Path
@@ -20,7 +20,7 @@ Write-Host -f green "Deleting '$version-$suffix' packages from '$packagesSource'
     }
 }
 
-## Clean up the installed tool settings so that no old dependencies hang in there 
+## Clean up the installed tool settings so that no old dependencies hang in there
 #$toolFolder = "$packagesSource/.tools/Peachpie.Compiler.Tools/$version-$suffix"
 #if (Test-Path $toolFolder) {
 #    Remove-Item -Recurse -Force $toolFolder
@@ -35,3 +35,4 @@ Write-Host -f green "Deleting '$version-$suffix' packages from '$packagesSource'
 # Reinstall the packages by restoring a dummy project that depends on them
 Write-Host -f green "Installing packages to nuget cache ..."
 dotnet restore "$rootDir/build/dummy"
+dotnet restore "$rootDir/build/dummy-net"

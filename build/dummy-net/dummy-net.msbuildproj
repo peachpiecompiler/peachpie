@@ -1,0 +1,16 @@
+﻿<Project Sdk="Peachpie.NET.Sdk/1.0.0-dev">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+  </PropertyGroup>
+  
+  <ItemGroup Condition=" '$(DisableImplicitPeachpieReferences)' != 'true' ">
+	<PackageReference Include="Peachpie.RequestHandler" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.App" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.SqlSrv" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.Sqlite" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+  </ItemGroup>
+
+</Project>
