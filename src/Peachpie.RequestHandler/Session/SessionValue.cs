@@ -18,10 +18,10 @@ namespace Peachpie.RequestHandler.Session
     /// </remarks>
     sealed class SessionValue : PhpAlias
     {
-        readonly HttpSessionState _session;
+        readonly IHttpSessionState _session;
         readonly string _name;
 
-        public SessionValue(HttpSessionState session, string name) : base()
+        public SessionValue(IHttpSessionState session, string name) : base()
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));
             _name = name ?? throw new ArgumentNullException(nameof(name));

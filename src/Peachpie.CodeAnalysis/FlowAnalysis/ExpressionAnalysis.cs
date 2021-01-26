@@ -1887,7 +1887,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (Routine != null)
             {
-                var rflags = method.InvocationFlags();
+                var rflags = method.InvocationFlags(out var localaccess);
                 Routine.Flags |= rflags;
 
                 if ((rflags & RoutineFlags.UsesLocals) != 0
@@ -1896,6 +1896,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     // function may change/add local variables
                     State.SetAllUnknown(true);
+                }
+
+                if (localaccess != null)
+                {
+                    foreach (var lname in localaccess)
+                    {
+                        // the variable will be used as reference here
+                        State.MarkLocalByRef(State.GetLocalHandle(lname));
+                    }
                 }
             }
 

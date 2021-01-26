@@ -82,6 +82,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Public methods
 
+        public bool TryGetVariable(VariableName varname, out LocalVariableReference variable) => _dict.TryGetValue(varname, out variable);
+
         IVariableReference BindVariable(VariableName varname, TextSpan span, Func<VariableName, TextSpan, LocalVariableReference> factory)
         {
             if (!_dict.TryGetValue(varname, out var value))

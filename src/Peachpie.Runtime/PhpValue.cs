@@ -648,7 +648,7 @@ namespace Pchp.Core
             PhpTypeCode.Double => Comparison.Compare(Double, right),
             PhpTypeCode.PhpArray => Array.Compare(right),
             PhpTypeCode.String => Comparison.Compare(String, right),
-            PhpTypeCode.MutableString => Comparison.Compare(MutableStringBlob.ToString(), right),
+            PhpTypeCode.MutableString => Comparison.Compare(MutableStringBlob, right),
             PhpTypeCode.Object => Comparison.Compare(Object, right),
             PhpTypeCode.Alias => Alias.Value.Compare(right),
             _ => throw InvalidTypeCodeException(),

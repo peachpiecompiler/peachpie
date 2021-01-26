@@ -106,11 +106,6 @@ namespace Pchp.Library
         /// </summary>
         public const int FILE_APPEND = (int)WriteContentsOptions.AppendContents;
 
-        /// <summary>
-        /// Name of variable that is filled with response headers in case of file_get_contents and http protocol.
-        /// </summary>
-        private const string HttpResponseHeaderName = "http_response_header";
-
         #endregion
 
         #region fopen, tmpfile, fclose, feof, fflush
@@ -119,13 +114,17 @@ namespace Pchp.Library
         /// Opens filename or URL using a registered StreamWrapper.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
+        /// <param name="http_response_header">Optional. Outputs the response headers in case HTTP stream is opened.</param>
         /// <param name="path">The file to be opened. The schema part of the URL specifies the wrapper to be used.</param>
         /// <param name="mode">The read/write and text/binary file open mode.</param>
         /// <param name="flags">If set to true, then the include path is searched for relative filenames too.</param>
         /// <param name="context">A script context to be provided to the StreamWrapper.</param>
         /// <returns>The file resource or false in case of failure.</returns>
         [return: CastToFalse]
-        public static PhpResource fopen(Context ctx, string path, string mode, FileOpenOptions flags = FileOpenOptions.Empty, PhpResource context = null)
+        public static PhpResource fopen(
+            Context ctx,
+            [ImportValue(ImportValueAttribute.ValueSpec.LocalVariable)] PhpAlias http_response_header,
+            string path, string mode, FileOpenOptions flags = FileOpenOptions.Empty, PhpResource context = null)
         {
             StreamContext sc = StreamContext.GetValid(context, true);
             if (sc == null) return null;
@@ -144,7 +143,13 @@ namespace Pchp.Library
                 throw new ArgumentException(nameof(mode));
             }
 
-            return PhpStream.Open(ctx, path, mode, ProcessOptions(ctx, flags), sc);
+            var stream = PhpStream.Open(ctx, path, mode, ProcessOptions(ctx, flags), sc);
+            if (stream != null && http_response_header != null && stream.Wrapper.Scheme == HttpStreamWrapper.scheme)
+            {
+                http_response_header.Value = stream.WrapperSpecificData as PhpArray;
+            }
+
+            return stream;
         }
 
         /// <summary>
@@ -957,7 +962,10 @@ namespace Pchp.Library
         /// Reads entire file into a string.
         /// </summary>
         [return: CastToFalse]
-        public static PhpString file_get_contents(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.Locals)] PhpArray locals, string path, FileOpenOptions flags = FileOpenOptions.Empty, PhpResource context = null, int offset = -1, int maxLength = -1)
+        public static PhpString file_get_contents(
+            Context ctx,
+            [ImportValue(ImportValueAttribute.ValueSpec.LocalVariable)] PhpAlias http_response_header,
+            string path, FileOpenOptions flags = FileOpenOptions.Empty, PhpResource context = null, int offset = -1, int maxLength = -1)
         {
             var sc = StreamContext.GetValid(context, true);
             if (sc == null)
@@ -973,10 +981,9 @@ namespace Pchp.Library
                 }
 
                 // when HTTP protocol requested, store responded headers into local variable $http_response_header:
-                if (string.Compare(stream.Wrapper.Scheme, HttpStreamWrapper.scheme, StringComparison.OrdinalIgnoreCase) == 0)
+                if (stream.Wrapper.Scheme == HttpStreamWrapper.scheme && http_response_header != null)
                 {
-                    var headers = stream.WrapperSpecificData as PhpArray;
-                    locals.SetItemValue(new IntStringKey(HttpResponseHeaderName), (PhpValue)headers);
+                    http_response_header.Value = stream.WrapperSpecificData as PhpArray;
                 }
 
                 //
@@ -986,12 +993,14 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public static int file_put_contents(Context ctx, string path, PhpValue data, WriteContentsOptions flags = WriteContentsOptions.Empty, PhpResource context = null)
+        public static int file_put_contents(
+            Context ctx,
+            string path, PhpValue data, WriteContentsOptions flags = WriteContentsOptions.Empty, PhpResource context = null)
         {
             StreamContext sc = StreamContext.GetValid(context, true);
             if (sc == null) return -1;
 
-            string mode = (flags & WriteContentsOptions.AppendContents) > 0 ? "ab" : "wb";
+            string mode = (flags & WriteContentsOptions.AppendContents) != 0 ? "ab" : "wb";
             using (PhpStream to = PhpStream.Open(ctx, path, mode, ProcessOptions(ctx, (FileOpenOptions)flags), sc))
             {
                 if (to == null) return -1;

@@ -267,8 +267,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets additional flags of the caller routine.
         /// </summary>
-        public static RoutineFlags InvocationFlags(this IPhpRoutineSymbol routine)
+        /// <param name="routine">The routine.</param>
+        /// <param name="localaccess">Gets local variables that will be accessed by the routine. <c>NULL</c> if none (a common case).</param>
+        public static RoutineFlags InvocationFlags(this IPhpRoutineSymbol routine, out IList<VariableName> localaccess)
         {
+            localaccess = null;
+
             var f = RoutineFlags.None;
 
             var ps = /*routine is SourceRoutineSymbol sr ? sr.ImplicitParameters :*/ routine.Parameters;
@@ -286,6 +290,13 @@ namespace Pchp.CodeAnalysis.Symbols
                             break;
                         case ImportValueAttributeData.ValueSpec.CallerStaticClass:
                             f |= RoutineFlags.UsesLateStatic;
+                            break;
+                        case ImportValueAttributeData.ValueSpec.LocalVariable:
+                            if (p.Type.Is_PhpAlias())
+                            {
+                                if (localaccess == null) localaccess = new List<VariableName>(1);
+                                localaccess.Add(new VariableName(p.Name));
+                            }
                             break;
                     }
                 }

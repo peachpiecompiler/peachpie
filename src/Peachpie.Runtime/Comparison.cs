@@ -164,6 +164,24 @@ namespace Pchp.Core
             throw new NotImplementedException($"compare(String, {y.TypeCode})");
         }
 
+        public static int Compare(PhpString.Blob sx, PhpValue y)
+        {
+            switch (y.TypeCode)
+            {
+                case PhpTypeCode.Boolean: return Compare(sx.ToBoolean(), y.Boolean);
+                case PhpTypeCode.Long: return Compare(sx.ToString(), y.Long);
+                case PhpTypeCode.Double: return Compare(sx.ToString(), y.Double);
+                case PhpTypeCode.PhpArray: return -1;   // - 1 * (array.CompareTo(string))
+                case PhpTypeCode.String: return Compare(sx.ToString(), y.String);
+                case PhpTypeCode.MutableString: return Compare(sx, y.MutableStringBlob);
+                case PhpTypeCode.Object: return CompareStringToObject(sx.ToString(), y.Object);
+                case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
+                case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
+            }
+
+            throw new NotImplementedException($"compare(String, {y.TypeCode})");
+        }
+
         static int CompareStringToObject(string sx, object y)
         {
             Debug.Assert(y != null);
@@ -364,6 +382,14 @@ namespace Pchp.Core
             return (((info_x | info_y) & Convert.NumberInfo.Double) != 0)
                 ? Compare(dx, dy)   // at least one operand has been converted to double:
                 : Compare(lx, ly);  // compare integers:
+        }
+
+        /// <summary>
+		/// Compares string in a manner of PHP, same as <see cref="Compare(string, string)"/>.
+		/// </summary>
+		public static int Compare(PhpString.Blob sx, PhpString.Blob sy)
+        {
+            return Compare(sx.ToString(), sy.ToString()); // TODO: convert non-Unicode strings properly and efficiently // https://github.com/peachpiecompiler/peachpie/issues/775
         }
 
         /// <summary>

@@ -1536,6 +1536,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // note, can be obtain dynamically (global code, closure)
                         return EmitLoadCurrentClassContext(p.Type);
 
+                    case ImportValueAttributeData.ValueSpec.LocalVariable:
+                        // load local variable with the name {p.Name}
+                        if (this.Routine.LocalsTable.TryGetVariable(new VariableName(p.Name), out var variable))
+                        {
+                            var lhs = default(LhsStack);
+                            // TODO: get alias without increasing reference count
+                            EmitConvert(variable.EmitLoadValue(this, ref lhs, p.Type.Is_PhpAlias() ? BoundAccess.ReadRef : BoundAccess.Read), 0, p.Type);
+                            return p.Type;
+                        }
+                        else if (p.Type.IsReferenceType) // PhpAlias
+                        {
+                            this.Builder.EmitNullConstant();
+                            return p.Type;
+                        }
+                        else
+                        {
+                            return EmitLoadDefault(p.Type);
+                        }
+
                     default:
                         throw ExceptionUtilities.UnexpectedValue(value);
                 }
