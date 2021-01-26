@@ -82,7 +82,8 @@ namespace Peachpie.RequestHandler.Session
             EnsureSessionId(httpContext);
 
             var session = httpContext.Session;
-
+            var underlayingstate = session.GetContainer(); // use the underlaying IHttpSessionState because Session will be changed to our handler then
+            
             // session contains both ASP.NET session and PHP session variables
 
             PhpArray result = null;
@@ -108,15 +109,22 @@ namespace Peachpie.RequestHandler.Session
                     result = new PhpArray(session.Count);
                 }
 
-                //var value = PhpValue.FromClr(session[name]);
-                //if (value.IsObject)
-                //{
-                //    // NOTE: values that are bound to specific Context are stored using PHP serialization into PhpSessionVars array
-                //    // CONSIDER: what if value has a reference to a Context - clone the value?
-                //}
-                //result[name] = value;
+                if (underlayingstate != null)
+                {
+                    result[name] = new SessionValue(underlayingstate, name);
+                }
+                else
+                {
+                    // in case we won't get IHttpSessionState:
 
-                result[name] = new SessionValue(session, name);
+                    var value = PhpValue.FromClr(session[name]);
+                    //if (value.IsObject)
+                    //{
+                    //    // NOTE: values that are bound to specific Context are stored using PHP serialization into PhpSessionVars array
+                    //    // CONSIDER: what if value has a reference to a Context - clone the value?
+                    //}
+                    result[name] = value;
+                }
             }
 
             return result ?? PhpArray.NewEmpty();
