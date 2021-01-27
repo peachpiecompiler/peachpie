@@ -319,7 +319,23 @@ namespace Pchp.Library
         #region setcookie, setrawcookie
 
         /// <summary>
-        /// Sends a cookie with specified name, value and expiration timestamp.
+        /// Sends a cookie with specified name, and value.
+        /// </summary>
+        public static bool setcookie(Context ctx, string name, string value = null)
+        {
+            return SetCookieInternal(ctx, name, value, raw: false);
+        }
+
+        /// <summary>
+        /// Sends a cookie with specified name, value and options.
+        /// </summary>
+        public static bool setcookie(Context ctx, string name, string value, PhpArray options)
+        {
+            return SetCookieInternal(ctx, name, value, options, raw: false);
+        }
+
+        /// <summary>
+        /// Sends a cookie with specified name, value and options.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="name">The name of the cookie to send.</param>
@@ -333,23 +349,58 @@ namespace Pchp.Library
         /// This setting can effectively help to reduce identity theft through XSS attacks
         /// (although it is not supported by all browsers).</param>
         /// <returns>Whether a cookie has been successfully send.</returns>
-        public static bool setcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
+        public static bool setcookie(Context ctx, string name, string value, int expire, string path = null, string domain = null, bool secure = false, bool httponly = false)
         {
-            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, false);
+            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, raw: false);
+        }
+
+        /// <summary>
+        /// The same as <see cref="setcookie(Context, string, string)"/> except for that value is not <see cref="UrlEncode"/>d.
+        /// </summary>
+        public static bool setrawcookie(Context ctx, string name, string value = null)
+        {
+            return SetCookieInternal(ctx, name, value, raw: true);
+        }
+
+        /// <summary>
+        /// The same as <see cref="setcookie(Context, string, string, PhpArray)"/> except for that value is not <see cref="UrlEncode"/>d.
+        /// </summary>
+        public static bool setrawcookie(Context ctx, string name, string value, PhpArray options)
+        {
+            return SetCookieInternal(ctx, name, value, options, raw: true);
         }
 
         /// <summary>
         /// The same as <see cref="setcookie(Context, string, string, int, string, string, bool, bool)"/> except for that value is not <see cref="UrlEncode"/>d.
         /// </summary>
-        public static bool setrawcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
+        public static bool setrawcookie(Context ctx, string name, string value, int expire, string path = null, string domain = null, bool secure = false, bool httponly = false)
         {
-            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, true);
+            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, raw: true);
+        }
+
+        static bool SetCookieInternal(Context ctx, string name, string value, PhpArray options, bool raw)
+        {
+            if (options == null || options.Count == 0)
+            {
+                return SetCookieInternal(ctx, name, value, raw: raw);
+            }
+
+            PhpValue tmp;
+
+            return SetCookieInternal(ctx, name, value,
+                expire: options.TryGetValue("expire", out tmp) ? tmp.ToInt() : 0,
+                path: options.TryGetValue("path", out tmp) ? tmp.ToString(ctx) : null,
+                domain: options.TryGetValue("domain", out tmp) ? tmp.ToString(ctx) : null,
+                secure: options.TryGetValue("secure", out tmp) ? tmp.ToBoolean() : false,
+                httponly: options.TryGetValue("httponly", out tmp) ? tmp.ToBoolean() : false,
+                samesite: options.TryGetValue("samesite", out tmp) ? tmp.ToString() : null,
+                raw: raw);
         }
 
         /// <summary>
-        /// Internal version common for <see cref="setcookie"/> and <see cref="setrawcookie"/>.
+        /// Internal version common for <see cref="setcookie(Context, string, string)"/> and <see cref="setrawcookie(Context, string, string)"/>.
         /// </summary>
-        internal static bool SetCookieInternal(Context ctx, string name, string value, int expire, string path, string domain, bool secure, bool httponly, bool raw)
+        static bool SetCookieInternal(Context ctx, string name, string value, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false, string samesite = null/* None|Lax|Strict */, bool raw = false)
         {
             var httpctx = ctx.HttpPhpContext;
             if (httpctx == null)
@@ -375,7 +426,7 @@ namespace Pchp.Library
                 expires = null;
             }
 
-            httpctx.AddCookie(name, raw ? value : WebUtility.UrlEncode(value), expires, path ?? "/", domain, secure, httponly);
+            httpctx.AddCookie(name, raw ? value : WebUtility.UrlEncode(value), expires, path ?? "/", domain, secure, httponly, samesite);
 
             return true;
         }

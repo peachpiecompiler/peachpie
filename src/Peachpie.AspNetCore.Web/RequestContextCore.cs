@@ -121,16 +121,23 @@ namespace Peachpie.AspNetCore.Web
         /// </summary>
         Stream IHttpPhpContext.InputStream => _httpctx.Request.Body;
 
-        void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly)
+        void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly, string samesite)
         {
-            _httpctx.Response.Cookies.Append(name, value ?? string.Empty, new CookieOptions()
+            var cookie = new CookieOptions
             {
                 Expires = expires,
                 Path = path,
                 Domain = string.IsNullOrEmpty(domain) ? null : domain,  // IE, Edge: cookie with the empty domain was not passed to request
                 Secure = secure,
-                HttpOnly = httpOnly
-            });
+                HttpOnly = httpOnly,
+            };
+
+            if (HttpContextHelpers.TryParseSameSite(samesite, out var samesitemode))
+            {
+                cookie.SameSite = samesitemode;
+            }
+
+            _httpctx.Response.Cookies.Append(name, value ?? string.Empty, cookie);
         }
 
         void IHttpPhpContext.Flush(bool endRequest)

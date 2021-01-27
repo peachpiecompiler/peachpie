@@ -228,8 +228,14 @@ namespace Peachpie.RequestHandler
         /// </summary>
         Stream IHttpPhpContext.InputStream => this.HttpContext.Request.InputStream;
 
-        void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly)
+        void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly, string samesite /*none|lax|strict*/)
         {
+            if (samesite != null)
+            {
+                PhpException.ArgumentValueNotSupported(nameof(samesite), samesite);
+                PhpException.Throw(PhpError.Notice, "SameSite has to be set in <system.web> configuration.");
+            }
+
             var cookie = new HttpCookie(name, value)
             {
                 Path = path,
@@ -644,7 +650,7 @@ namespace Peachpie.RequestHandler
                 // round it up,
                 // convert to seconds
                 var seconds = (totaltimeout.Ticks + TimeSpan.TicksPerSecond / 2) / TimeSpan.TicksPerSecond;
-                
+
                 this.HttpContext.Server.ScriptTimeout = (int)seconds;
             }
             else
