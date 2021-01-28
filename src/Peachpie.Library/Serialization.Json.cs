@@ -324,9 +324,16 @@ namespace Pchp.Library
                 {
                     var str = StringBuilderUtilities.Pool.Get();
 
-                    variable.Accept(new ObjectWriter(ctx, str, encodeOptions, caller, depth));
+                    try
+                    {
+                        variable.Accept(new ObjectWriter(ctx, str, encodeOptions, caller, depth));
 
-                    return StringBuilderUtilities.GetStringAndReturn(str);
+                        return str.ToString();
+                    }
+                    finally
+                    {
+                        StringBuilderUtilities.Pool.Return(str);
+                    }
                 }
 
                 /// <summary>
@@ -336,7 +343,7 @@ namespace Pchp.Library
                 /// <param name="message">Error message.</param>
                 void HandleError(JsonError code, string message)
                 {
-                    if (PartialOutputOnError || !ThrowOnError)
+                    if (PartialOutputOnError)
                     {
                         SetLastJsonError(_ctx/*, message*/, (int)code);
                     }
@@ -1305,6 +1312,7 @@ namespace Pchp.Library
         /// All string data must be UTF-8 encoded.</param>
         /// <param name="options"></param>
         /// <param name="depth">Set the maximum depth. Must be greater than zero.</param>
+        [return: CastToFalse]
         public static string json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, long depth = 512)
         {
             // TODO: depth
@@ -1313,20 +1321,20 @@ namespace Pchp.Library
 
             //return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
 
-            //try
+            try
             {
                 return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default, depth);
             }
-            //catch (JsonException jsonex)
-            //{
-            //    if ((options & JsonEncodeOptions.JSON_THROW_ON_ERROR) != 0)
-            //    {
-            //        throw;
-            //    }
+            catch (JsonException jsonex)
+            {
+                if ((options & JsonEncodeOptions.JSON_THROW_ON_ERROR) != 0)
+                {
+                    throw;
+                }
 
-            //    PhpSerialization.SetLastJsonError(ctx, jsonex.getCode());
-            //    return null;
-            //}
+                PhpSerialization.SetLastJsonError(ctx, jsonex.getCode());
+                return null;
+            }
         }
 
         /// <summary>
