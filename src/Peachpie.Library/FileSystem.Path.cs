@@ -247,21 +247,23 @@ namespace Pchp.Library
         /// If the directory does not exist, <c>tempnam()</c> may generate 
         /// a file in the system's temporary directory, and return the name of that.
         /// </summary>
+        /// <param name="ctx">The current runtime context.</param>
         /// <param name="dir">The directory where the temporary file should be created.</param>
         /// <param name="prefix">The prefix of the unique path.</param>
         /// <returns>A unique path for a temporary file 
         /// in the given <paramref name="dir"/>.</returns>
-        public static string tempnam(string dir, string prefix)
+        [return: CastToFalse]
+        public static string tempnam(Context ctx, string dir, string prefix)
         {
             // makes "dir" a valid directory:
-            // TODO: dir should be resolved to current working directory (Context.WorkingDirectory)
+            dir = FileSystemUtils.AbsolutePath(ctx, dir);                       // Resolve to current working directory (Context.WorkingDirectory)
             if (string.IsNullOrEmpty(dir) || !System.IO.Directory.Exists(dir))
             {
                 dir = Path.GetTempPath();
             }
             else
             {
-                dir = Path.GetFullPath(dir + Path.DirectorySeparatorChar);
+                dir += Path.DirectorySeparatorChar;
             }
 
             // makes "prefix" a valid file prefix:
@@ -273,30 +275,35 @@ namespace Pchp.Library
             var suffix = unchecked((ulong)System.DateTime.UtcNow.Ticks / 5) & 0xffff;
             string result;
 
-            for (; ; suffix++)
+            try
             {
-                result = string.Concat(dir, prefix, suffix.ToString("x4"), ".tmp");
-                if (!File.Exists(result))
+                for (; ; suffix++)
                 {
-                    try
+                    result = string.Concat(dir, prefix, suffix.ToString("x4"), ".tmp");
+                    if (!File.Exists(result))
                     {
-                        File.Open(result, FileMode.CreateNew).Close();
-                        break;
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        // try system temp directory:
-                        dir = Path.GetTempPath();
-                    }
-                    catch (PathTooLongException e)
-                    {
-                        PhpException.Throw(PhpError.Notice, PhpException.ToErrorMessage(e.Message));
-                        return Path.GetTempFileName();
-                    }
-                    catch (Exception)
-                    {
+                        try
+                        {
+                            File.Open(result, FileMode.CreateNew).Close();
+                            break;
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            // try system temp directory:
+                            dir = Path.GetTempPath();
+                        }
+                        catch (PathTooLongException e)
+                        {
+                            PhpException.Throw(PhpError.Notice, PhpException.ToErrorMessage(e.Message));
+                            return Path.GetTempFileName();
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                PhpException.Throw(PhpError.Notice, PhpException.ToErrorMessage(e.Message));
+                return null;
             }
 
             return result;

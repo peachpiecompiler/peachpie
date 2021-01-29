@@ -183,7 +183,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpResource tmpfile(Context ctx)
         {
-            string path = tempnam(string.Empty, "php");
+            string path = tempnam(ctx, string.Empty, "php");
 
             StreamWrapper wrapper;
             if (!PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileMayExist, CheckAccessOptions.Empty))
