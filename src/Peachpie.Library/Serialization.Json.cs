@@ -209,6 +209,12 @@ namespace Pchp.Library
 
                 #endregion
 
+                /// <summary>
+                /// Binary strings passed to json_encode are required to be in UTF-8, we can enforce it using this special encoding instance.
+                /// </summary>
+                private static readonly Encoding Utf8CheckedEncoding =
+                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
                 //Encoding Encoding => _ctx.StringEncoding;
 
                 StackHelper _recursion;
@@ -398,8 +404,16 @@ namespace Pchp.Library
 
                 public override void Accept(PhpString obj)
                 {
-                    // TODO: escape single-byte characters properly
-                    WriteString(obj.ToString(_ctx));
+                    try
+                    {
+                        // TODO: escape single-byte characters properly
+                        WriteString(obj.ToString(Utf8CheckedEncoding));
+                    }
+                    catch (DecoderFallbackException)
+                    {
+                        HandleError(JsonError.Utf8, Resources.LibResources.serialization_json_utf8_error);
+                        WriteNull();
+                    }
                 }
 
                 public override void Accept(double obj)

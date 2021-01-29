@@ -729,4 +729,7 @@
   <data name="bcmath_wrong_argument" xml:space="preserve">
     <value>bcmath function argument is not well-formed</value>
   </data>
+  <data name="serialization_json_utf8_error" xml:space="preserve">
+    <value>Malformed UTF-8 characters, possibly incorrectly encoded</value>
+  </data>
 </root>

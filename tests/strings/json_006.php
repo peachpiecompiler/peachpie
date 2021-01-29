@@ -44,3 +44,9 @@ $res = \imagecreate(1, 1);
 test_json($res);
 test_json($res, JSON_PARTIAL_OUTPUT_ON_ERROR);
 test_json($res, JSON_THROW_ON_ERROR);
+
+// Incorrect binary UTF-8 string (inspired by https://github.com/cargomedia/cm/issues/2482#issuecomment-270626888)
+$txt = hex2bin("B131");
+test_json($txt);
+test_json($txt, JSON_PARTIAL_OUTPUT_ON_ERROR);
+test_json($txt, JSON_THROW_ON_ERROR);

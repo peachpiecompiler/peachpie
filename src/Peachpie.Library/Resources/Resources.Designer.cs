@@ -1501,6 +1501,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Malformed UTF-8 characters, possibly incorrectly encoded.
+        /// </summary>
+        public static string serialization_json_utf8_error {
+            get {
+                return ResourceManager.GetString("serialization_json_utf8_error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Maximum stack depth exceeded.
         /// </summary>
         public static string serialization_max_depth {
