@@ -738,6 +738,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Alias of <see cref="DateInterval.createFromDateString(string)"/>.
         /// </summary>
+        [return: CastToFalse]
         public static DateInterval date_interval_create_from_date_string(string time) => DateInterval.createFromDateString(time);
 
         /// <summary>
