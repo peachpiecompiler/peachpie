@@ -1,11 +1,11 @@
 <?php
 namespace xml\dom_010;
 
-function test($xmlStr, $flags = 0) {
+function test($xmlStr, $flags = 0, $schema_file = 'schemas/dom_010.xsd') {
   $xml = new \DOMDocument();
   $xml->loadXML($xmlStr);
   $root = $xml->firstChild;
-  $valid = $xml->schemaValidate('dom_010.xsd', $flags);
+  $valid = $xml->schemaValidate($schema_file, $flags);
   echo (int)$valid;
   if ($valid) {
     echo ' '. $root->getAttribute('bar') .' '. $root->getAttribute('baz') .' '. $root->getAttribute('bay');
@@ -27,3 +27,5 @@ test('<foo baz="bazDifferent" />');
 test('<foo baz="bazDifferent" />', LIBXML_SCHEMA_CREATE);
 test('<foo bay="bayValue" />');
 test('<foo bay="bayValue" />', LIBXML_SCHEMA_CREATE);
+
+test('<foo bar="barNondefault" baz="bazFixed" bay="bayValue" />', 0, 'schemas/dom_010_ref.xsd');

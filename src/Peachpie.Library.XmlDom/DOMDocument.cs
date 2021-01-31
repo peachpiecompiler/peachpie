@@ -7,6 +7,7 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 namespace Peachpie.Library.XmlDom
@@ -1013,29 +1014,10 @@ namespace Peachpie.Library.XmlDom
         /// <returns><B>True</B> or <B>false</B>.</returns>
         public virtual bool schemaValidate(Context ctx, string schemaFile, int flags = 0)
         {
-            XmlSchema schema;
-
-            using (PhpStream stream = PhpStream.Open(ctx, schemaFile, "rt"))
-            {
-                if (stream == null) return false;
-
-                try
-                {
-                    schema = XmlSchema.Read(stream.RawStream, null);
-                }
-                catch (XmlException e)
-                {
-                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, schemaFile);
-                    return false;
-                }
-                catch (IOException e)
-                {
-                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, schemaFile);
-                    return false;
-                }
-            }
-
-            return ValidateSchemaInternal(schema, flags);
+            return
+                TryLoadSchema(ctx, schemaFile, out var rootSchema, out string rootSchemaPath)
+                && TryLoadIncludedSchemas(ctx, rootSchema, rootSchemaPath)
+                && ValidateSchemaInternal(rootSchema, flags);
         }
 
         /// <summary>
@@ -1048,7 +1030,7 @@ namespace Peachpie.Library.XmlDom
         public virtual bool schemaValidateSource(Context ctx, string schemaString, int flags = 0)
         {
             XmlSchema schema;
-
+            
             try
             {
                 schema = XmlSchema.Read(new System.IO.StringReader(schemaString), null);
@@ -1059,7 +1041,125 @@ namespace Peachpie.Library.XmlDom
                 return false;
             }
 
-            return ValidateSchemaInternal(schema, flags);
+            return
+                TryLoadIncludedSchemas(ctx, schema, null)
+                && ValidateSchemaInternal(schema, flags);
+        }
+
+        private static bool TryLoadSchema(Context ctx, string url, out XmlSchema schema, out string fullPath)
+        {
+            schema = default;
+            fullPath = default;
+
+            using var stream = PhpStream.Open(ctx, url, "rt");
+
+            if (stream == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                schema = XmlSchema.Read(stream.RawStream, null);
+                fullPath = stream.OpenedPath;
+                return true;
+            }
+            catch (XmlException e)
+            {
+                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, url);
+                return false;
+            }
+            catch (IOException e)
+            {
+                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, url);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Attempts to load all the schemas referenced from <paramref name="rootSchema"/> using <code>xs:include</code> etc.
+        /// </summary>
+        /// <remarks>
+        /// We need to do it explicitly, because attempts to utilize a custom <see cref="XmlResolver"/> did not work.
+        /// </remarks>
+        private static bool TryLoadIncludedSchemas(Context ctx, XmlSchema rootSchema, string rootSchemaPath)
+        {
+            Dictionary<string, XmlSchema> includesCache;
+
+            if (rootSchema.Includes.Count > 0)
+            {
+                includesCache = new Dictionary<string, XmlSchema>();
+                if (rootSchemaPath != null)
+                {
+                    includesCache.Add(rootSchemaPath, rootSchema);
+                }
+
+                return LoadRecursive(rootSchema, rootSchemaPath);
+            }
+            else
+            {
+                return true;
+            }
+
+            bool LoadRecursive(XmlSchema schema, string schemaPath)
+            {
+                foreach (XmlSchemaExternal include in schema.Includes)
+                {
+                    string includePath = ResolveIncludePath(schemaPath, include.SchemaLocation);
+                    if (includesCache.TryGetValue(includePath, out var cachedSchema))
+                    {
+                        include.Schema = cachedSchema;
+                    }
+                    else
+                    {
+                        if (!TryLoadSchema(ctx, includePath, out var loadedSchema, out string loadedPath))
+                        {
+                            return false;
+                        }
+
+                        includesCache[includePath] = loadedSchema;
+                        if (!LoadRecursive(loadedSchema, loadedPath))
+                        {
+                            return false;
+                        }
+
+                        include.Schema = loadedSchema;
+                    }
+                }
+
+                return true;
+            }
+
+            static string ResolveIncludePath(string includer, string included)
+            {
+                if (includer == null)
+                {
+                    // Importing from a schema loaded from a string
+                    return included;
+                }
+
+                // Remove the "file://" protocol prefix if present
+                includer = FileSystemUtils.GetFilename(includer) ?? includer;
+                included = FileSystemUtils.GetFilename(included) ?? included;
+
+                if (Path.IsPathRooted(included) || FileSystemUtils.TryGetScheme(included, out _))
+                {
+                    // Absolute path or other scheme than file:// (e.g. https://www.example.com/schema.xsd)
+                    return included;
+                }
+                else if (Uri.TryCreate(includer, UriKind.Absolute, out var includerUri)
+                         && Uri.TryCreate(includerUri, included, out var includedUri))
+                {
+                    // Relative path
+                    // (e.g. "schema2.xsd" included from "C:\schemas\schema1.xsd" or "http://www.example.com/schemas/schema1.xsd")
+                    return (includedUri.Scheme == "file") ? includedUri.LocalPath : includedUri.AbsoluteUri;
+                }
+                else
+                {
+                    // Unrecognized pattern, just try to resolve the original path
+                    return included;
+                }
+            }
         }
 
         private bool ValidateSchemaInternal(XmlSchema schema, int flags)
