@@ -218,17 +218,38 @@ namespace Pchp.Library.DateTime
 
         private protected void Initialize(DateInfo ts, bool negative)
         {
-            Initialize(new TimeSpan(
+            m = ts.m > 0 ? ts.m : 0;
+            y = ts.y > 0 ? ts.y : 0;
+
+            // have_date, have_time, or zero
+            var span = new TimeSpan(
                 ts.d > 0 ? ts.d : 0,
                 ts.h > 0 ? ts.h : 0,
                 ts.i > 0 ? ts.i : 0,
                 ts.s > 0 ? ts.s : 0,
                 ts.f > 0 ? (int)(ts.f * 1000.0) : 0
-            ));
+            );
 
-            m = ts.m > 0 ? ts.m : 0;
-            y = ts.y > 0 ? ts.y : 0;
+            if (ts.have_relative != 0)
+            {
+                m += ts.relative.m;
+                y += ts.relative.y;
 
+                span = span + new TimeSpan(
+                    days: (int)ts.relative.d,
+                    hours: (int)ts.relative.h,
+                    minutes: (int)ts.relative.i,
+                    seconds: (int)ts.relative.s
+                    );
+            }
+
+            if (ts.have_weekday_relative != 0)
+            {
+                // counted in "d" already
+            }
+
+            Initialize(span);
+            
             invert = negative ? 1 : 0;
         }
 
