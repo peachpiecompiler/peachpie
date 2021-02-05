@@ -1146,7 +1146,7 @@ namespace Pchp.CodeAnalysis
                 var table = this.SourceSymbolCollection;
                 var symbols =
                     // global functions
-                    table.GetFunctions().OfType<SourceRoutineSymbol>()
+                    table.GetFunctions()
                     // classes, interfaces, traits
                     .Concat<Symbol>(table.GetDeclaredTypes())
                     // type members - properties, constants

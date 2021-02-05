@@ -67,7 +67,7 @@ namespace Pchp.Library.Spl
 
         #region Fields & Properties
 
-        readonly protected Context @_ctx;
+        readonly protected Context _ctx;
 
         // private PhpValue storage => ...
 
