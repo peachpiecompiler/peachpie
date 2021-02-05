@@ -514,11 +514,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 return optional.Value switch
                 {
-                    bool => GetBooleanTypeMask(),
-                    int => GetLongTypeMask(),
-                    long => GetLongTypeMask(),
-                    double => GetDoubleTypeMask(),
-                    string => GetStringTypeMask(),
+                    bool _ => GetBooleanTypeMask(),
+                    int _ => GetLongTypeMask(),
+                    long _ => GetLongTypeMask(),
+                    double _ => GetDoubleTypeMask(),
+                    string _ => GetStringTypeMask(),
                     null => GetNullTypeMask(),
                     _ => throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(optional.Value),
                 };
