@@ -126,7 +126,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #region TraitUse
 
-        protected sealed class TraitUse
+        internal sealed class TraitUse
         {
             /// <summary>
             /// Type using the trait.
@@ -1417,18 +1417,21 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Bound trait uses.
         /// </summary>
-        protected ImmutableArray<TraitUse> TraitUses
+        internal ImmutableArray<TraitUse> TraitUses
         {
             get
             {
-                if (!HasTraitUses)
+                if (_lazyTraitUses.IsDefault)
                 {
-                    _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
-                }
-                else
-                {
-                    // resolve slowly:
-                    ResolveBaseTypes();
+                    if (!HasTraitUses)
+                    {
+                        _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
+                    }
+                    else
+                    {
+                        // resolve slowly:
+                        ResolveBaseTypes();
+                    }
                 }
 
                 Debug.Assert(!_lazyTraitUses.IsDefault);
