@@ -356,7 +356,7 @@ namespace Peachpie.RequestHandler
             foreach (string name in collection)
             {
                 // gets all values associated with the name:
-                string[] values = collection.GetValues(name);
+                var values = collection.GetValues(name);
 
                 if (values == null)
                     continue;   // http://phalanger.codeplex.com/workitem/30132
@@ -364,7 +364,7 @@ namespace Peachpie.RequestHandler
                 // adds all items:
                 if (name != null)
                 {
-                    foreach (string value in values)
+                    foreach (var value in values)
                     {
                         Superglobals.AddVariable(result, name, value, null);
                     }
@@ -373,8 +373,8 @@ namespace Peachpie.RequestHandler
                 {
                     // if name is null, only name of the variable is stated:
                     // e.g. for GET variables, URL looks like this: ...&test&...
-                    // we add the name of the variable and an emtpy string to get what PHP gets:
-                    foreach (string value in values)
+                    // we add the name of the variable and an empty string to get what PHP gets:
+                    foreach (var value in values)
                     {
                         Superglobals.AddVariable(result, value, string.Empty, null);
                     }
@@ -396,7 +396,7 @@ namespace Peachpie.RequestHandler
             foreach (string name in serverVariables)
             {
                 // gets all values associated with the name:
-                string[] values = serverVariables.GetValues(name);
+                var values = serverVariables.GetValues(name);
 
                 if (values == null)
                 {
@@ -407,7 +407,7 @@ namespace Peachpie.RequestHandler
                 // adds all items:
                 if (name != null)
                 {
-                    foreach (string value in values)
+                    foreach (var value in values)
                     {
                         Superglobals.AddVariable(array, name, value, null);
                     }
@@ -416,8 +416,8 @@ namespace Peachpie.RequestHandler
                 {
                     // if name is null, only name of the variable is stated:
                     // e.g. for GET variables, URL looks like this: ...&test&...
-                    // we add the name of the variable and an emtpy string to get what PHP gets:
-                    foreach (string value in values)
+                    // we add the name of the variable and an empty string to get what PHP gets:
+                    foreach (var value in values)
                     {
                         Superglobals.AddVariable(array, value, string.Empty, null);
                     }

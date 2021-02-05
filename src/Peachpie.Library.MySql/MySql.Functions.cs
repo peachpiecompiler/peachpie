@@ -315,7 +315,7 @@ namespace Peachpie.Library.MySql
             // non-encodable values convert to byte[] parameter:
             int lastQuote = -1;
             bool escaped = false;
-            bool containsNonAscii = false;  // whether encosing may corrupt value when storing into BLOB column
+            bool containsNonAscii = false;  // whether encoding may corrupt value when storing into BLOB column
             int escapedChars = 0;    // amount of '\' chars (> 0 means we have to unescape the value)
 
             for (int i = 0; i < query.Length; i++)
@@ -611,7 +611,7 @@ namespace Peachpie.Library.MySql
         #region mysql_free_result
 
         /// <summary>
-        /// Releases a resource represening a query result.
+        /// Releases a resource representing a query result.
         /// </summary>
         /// <param name="resultHandle">Query result resource.</param>
         /// <returns><B>true</B> on success, <B>false</B> on failure (invalid resource).</returns>
@@ -1012,7 +1012,7 @@ namespace Peachpie.Library.MySql
         /// <summary>
         /// Gets a version of the client library.
         /// </summary>
-        /// <returns>Equivalent native library varsion.</returns>
+        /// <returns>Equivalent native library version.</returns>
         public static string mysql_get_client_info() => EquivalentNativeLibraryVersion.ToString();
 
         /// <summary>

@@ -91,20 +91,20 @@ namespace Pchp.Library
         /// <summary>
         /// Escapes argument to be passed to shell command.
         /// </summary>
-        /// <param name="arg">The argument to excape.</param>
+        /// <param name="arg">The argument to escape.</param>
         /// <returns>
         /// <para>
-        /// On Windows platform, each occurance of double quote (") and ampersand (&amp;) 
+        /// On Windows platform, each occurence of double quote (") and ampersand (&amp;) 
         /// is replaced with a single space. The resulting string is then put into double quotes.
         /// </para>
         /// <para>
-        /// On Unix platform, each occurance of single quote (')
+        /// On Unix platform, each occurence of single quote (')
         /// is replaced with characters '\'''. The resulting string is then put into single quotes.
         /// </para>
         /// </returns>
         public static string escapeshellarg(string arg)
         {
-            if (arg == null || arg.Length == 0) return string.Empty;
+            if (string.IsNullOrEmpty(arg)) return string.Empty;
 
             var sb = new StringBuilder(arg.Length + 2);
             sb.Append(' ');
@@ -119,9 +119,9 @@ namespace Pchp.Library
         /// <summary>
         /// Escape shell metacharacters in a specified shell command.
         /// </summary>
-        /// <param name="command">The command to excape.</param>
+        /// <param name="command">The command to escape.</param>
         /// <para>
-        /// On Windows platform, each occurance of a character that might be used to trick a shell command
+        /// On Windows platform, each occurrence of a character that might be used to trick a shell command
         /// is replaced with space. These characters are 
         /// <c>", ', #, &amp;, ;, `, |, *, ?, ~, &lt;, &gt;, ^, (, ), [, ], {, }, $, \, \u000A, \u00FF, %</c>.
         /// </para>
@@ -585,9 +585,9 @@ namespace Pchp.Library
         /// <summary>
         /// Escape shell metacharacters in a specified shell command.
         /// </summary>
-        /// <param name="command">The command to excape.</param>
+        /// <param name="command">The command to escape.</param>
         /// <para>
-        /// On Windows platform, each occurance of a character that might be used to trick a shell command
+        /// On Windows platform, each occurence of a character that might be used to trick a shell command
         /// is replaced with space. These characters are 
         /// <c>", ', #, &amp;, ;, `, |, *, ?, ~, &lt;, &gt;, ^, (, ), [, ], {, }, $, \, \u000A, \u00FF, %</c>.
         /// </para>

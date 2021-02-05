@@ -248,7 +248,7 @@ namespace Peachpie.RequestHandler.Session
             var session = GetHttpContext(webctx).Session;
             if (session.GetContainer() is PhpSessionStateContainer shared)
             {
-                session.SetContainer(shared.UnderlayingContainer);
+                session.SetContainer(shared.UnderlyingContainer);
             }
 
             // persist $_SESSION

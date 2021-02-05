@@ -19,7 +19,7 @@ namespace Peachpie.RequestHandler.Session
         /// <summary>
         /// The original session container.
         /// </summary>
-        public IHttpSessionState UnderlayingContainer { get; private set; }
+        public IHttpSessionState UnderlyingContainer { get; }
 
         /// <summary>
         /// The PHP <c>$_SESSION</c> variable.
@@ -32,7 +32,7 @@ namespace Peachpie.RequestHandler.Session
 
         public PhpSessionStateContainer(IHttpSessionState container, PhpArray phpsession)
         {
-            UnderlayingContainer = container ?? throw new ArgumentNullException(nameof(container));
+            UnderlyingContainer = container ?? throw new ArgumentNullException(nameof(container));
             PhpSession = phpsession ?? throw new ArgumentNullException(nameof(phpsession));
         }
 
@@ -42,15 +42,15 @@ namespace Peachpie.RequestHandler.Session
             {
                 return PhpSession.TryGetValue(name, out var value)
                     ? value.ToClr()
-                    : UnderlayingContainer[name];
+                    : UnderlyingContainer[name];
             }
             set
             {
                 PhpSession[name] = PhpValue.FromClr(value);
 
-                // copy to underlaying container as well
+                // copy to underlying container as well
                 // in case PhpSession won't get persisted
-                UnderlayingContainer[name] = value;
+                UnderlyingContainer[name] = value;
             }
         }
 
@@ -85,63 +85,63 @@ namespace Peachpie.RequestHandler.Session
             }
         }
 
-        public string SessionID => UnderlayingContainer.SessionID;
+        public string SessionID => UnderlyingContainer.SessionID;
 
         public int Timeout
         {
-            get => UnderlayingContainer.Timeout;
-            set => UnderlayingContainer.Timeout = value;
+            get => UnderlyingContainer.Timeout;
+            set => UnderlyingContainer.Timeout = value;
         }
 
-        public bool IsNewSession => UnderlayingContainer.IsNewSession;
+        public bool IsNewSession => UnderlyingContainer.IsNewSession;
 
-        public SessionStateMode Mode => UnderlayingContainer.Mode;
+        public SessionStateMode Mode => UnderlyingContainer.Mode;
 
-        public bool IsCookieless => UnderlayingContainer.IsCookieless;
+        public bool IsCookieless => UnderlyingContainer.IsCookieless;
 
-        public HttpCookieMode CookieMode => UnderlayingContainer.CookieMode;
+        public HttpCookieMode CookieMode => UnderlyingContainer.CookieMode;
 
         public int LCID
         {
-            get => UnderlayingContainer.LCID;
-            set => UnderlayingContainer.LCID = value;
+            get => UnderlyingContainer.LCID;
+            set => UnderlyingContainer.LCID = value;
         }
 
         public int CodePage
         {
-            get => UnderlayingContainer.CodePage;
-            set => UnderlayingContainer.CodePage = value;
+            get => UnderlyingContainer.CodePage;
+            set => UnderlyingContainer.CodePage = value;
         }
 
-        public HttpStaticObjectsCollection StaticObjects => UnderlayingContainer.StaticObjects;
+        public HttpStaticObjectsCollection StaticObjects => UnderlyingContainer.StaticObjects;
 
         public int Count => PhpSession.Count;
 
-        public NameObjectCollectionBase.KeysCollection Keys => UnderlayingContainer.Keys; // TODO
+        public NameObjectCollectionBase.KeysCollection Keys => UnderlyingContainer.Keys; // TODO
 
-        public object SyncRoot => UnderlayingContainer.SyncRoot;
+        public object SyncRoot => UnderlyingContainer.SyncRoot;
 
-        public bool IsReadOnly => UnderlayingContainer.IsReadOnly;
+        public bool IsReadOnly => UnderlyingContainer.IsReadOnly;
 
-        public bool IsSynchronized => UnderlayingContainer.IsSynchronized;
+        public bool IsSynchronized => UnderlyingContainer.IsSynchronized;
 
         public void Abandon()
         {
-            UnderlayingContainer.Abandon();
+            UnderlyingContainer.Abandon();
         }
 
         public void Add(string name, object value)
         {
             PhpSession[name] = PhpValue.FromClr(value);
 
-            // copy to underlaying container as well
+            // copy to underlying container as well
             // in case PhpSession won't get persisted
-            UnderlayingContainer[name] = value;
+            UnderlyingContainer[name] = value;
         }
 
         public void Clear()
         {
-            UnderlayingContainer.Clear();
+            UnderlyingContainer.Clear();
             PhpSession.Clear();
         }
 
@@ -150,7 +150,7 @@ namespace Peachpie.RequestHandler.Session
         /// </summary>
         public void CopyTo(Array array, int index)
         {
-            // UnderlayingContainer.CopyTo(array, index);
+            // UnderlyingContainer.CopyTo(array, index);
 
             var enumerator = PhpSession.GetFastEnumerator();
             while (enumerator.MoveNext())
@@ -164,9 +164,9 @@ namespace Peachpie.RequestHandler.Session
         /// </summary>
         public IEnumerator GetEnumerator()
         {
-            // return UnderlayingContainer.GetEnumerator();
+            // return UnderlyingContainer.GetEnumerator();
 
-            // PhpSession conains all the keys from UnderlayingSession
+            // PhpSession contains all the keys from UnderlyingSession
             var enumerator = PhpSession.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
@@ -176,13 +176,13 @@ namespace Peachpie.RequestHandler.Session
 
         public void Remove(string name)
         {
-            UnderlayingContainer.Remove(name);
+            UnderlyingContainer.Remove(name);
             PhpSession.Remove(name);
         }
 
         public void RemoveAll()
         {
-            UnderlayingContainer.RemoveAll();
+            UnderlyingContainer.RemoveAll();
             PhpSession.Clear();
         }
 
@@ -195,7 +195,7 @@ namespace Peachpie.RequestHandler.Session
                 {
                     var key = enumerator.CurrentKey;
                     PhpSession.Remove(key);
-                    UnderlayingContainer.Remove(key.ToString());
+                    UnderlyingContainer.Remove(key.ToString());
                     return;
                 }
             }

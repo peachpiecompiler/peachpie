@@ -98,12 +98,12 @@ namespace Peachpie.Library.Graphics
             TGA = 128,
 
             /// <summary>
-            /// A combinanation of IMG_ constants that are supported.
+            /// A combination of IMG_ constants that are supported.
             /// </summary>
             Supported = GIF | JPEG | PNG,
 
             /// <summary>
-            /// UNknown image type.
+            /// Unknown image type.
             /// </summary>
             Unknown = -1
         }
@@ -769,7 +769,7 @@ namespace Peachpie.Library.Graphics
             // Get the first available of specified sans serif system fonts
             var result = SystemFonts.TryFind("Consolas", out var fontFamily) || SystemFonts.TryFind("Lucida Console", out fontFamily) || SystemFonts.TryFind("Arial", out fontFamily) || SystemFonts.TryFind("Verdana", out fontFamily) || SystemFonts.TryFind("Tahoma", out fontFamily);
 
-            // Counl'd find the system font.
+            // Couldn't find the system font.
             if (!result)
                 return null;
 
@@ -1135,7 +1135,7 @@ namespace Peachpie.Library.Graphics
                 }
             }
 
-            // calculate drawen text boundaries:
+            // calculate drawn text boundaries:
             var pts = new Vector2[]
             {
                 new Vector2(0, textsize.Height), // lower left
@@ -1325,7 +1325,7 @@ namespace Peachpie.Library.Graphics
                 var encoder = img.GetConfiguration().ImageFormatsManager.FindEncoder(GifFormat.Instance) as GifEncoder;
 
                 // or use default encoding options
-                encoder ??= new GifEncoder(); // TODO: ColorTableMode from alocated colors count?
+                encoder ??= new GifEncoder(); // TODO: ColorTableMode from allocated colors count?
 
                 img.Mutate(o => o.BackgroundColor(Color.Transparent));
                 img.SaveAsGif(stream, encoder);
@@ -1350,7 +1350,7 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="im">Image resource.</param>
-        /// <param name="to">Optional. Filename or stream. If not specified the functiona saves the image to output stream.</param>
+        /// <param name="to">Optional. Filename or stream. If not specified the function saves the image to output stream.</param>
         /// <param name="saveaction">Callback that actually save the image to given stream. Called when all checks pass.</param>
         /// <returns>True if save succeeded.</returns>
         static bool imagesave(Context ctx, PhpResource im, PhpValue to/* = null*/, Action<Image<Rgba32>, Stream> saveaction)
@@ -1836,7 +1836,7 @@ namespace Peachpie.Library.Graphics
                 // All PIE variants - IMG_ARC_PIE = 0
                 if ((style & FilledArcStyles.CHORD) == 0)
                 {
-                    // Negative range meens that starting point is greater than the ending one. Then we will create a correct arc by using the rest to 360 from range from the starting point
+                    // Negative range means that starting point is greater than the ending one. Then we will create a correct arc by using the rest to 360 from range from the starting point
                     while (range < 0)
                         range += 360;
 

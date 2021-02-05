@@ -255,7 +255,7 @@ namespace Peachpie.Library.MsSql
         }
 
         /// <summary>
-		/// Releases a resource represening a query result.
+		/// Releases a resource representing a query result.
 		/// </summary>
 		/// <param name="resultHandle">Query result resource.</param>
 		/// <returns><B>true</B> on success, <B>false</B> on failure (invalid resource).</returns>
@@ -650,7 +650,7 @@ namespace Peachpie.Library.MsSql
         }
 
         /// <summary>
-		/// Inicializes a stored procedure of a given name.
+		/// Initializes a stored procedure of a given name.
 		/// </summary>
 		/// <param name="ctx">PHP context.</param>
 		/// <param name="procedureName">Name of the stored procedure.</param>
@@ -672,7 +672,7 @@ namespace Peachpie.Library.MsSql
         }
 
         /// <summary>
-        /// Releases a resource represening a statement.
+        /// Releases a resource representing a statement.
         /// </summary>
         /// <param name="statement">Statement resource.</param>
         /// <returns><B>true</B> on success, <B>false</B> on failure (invalid resource).</returns>

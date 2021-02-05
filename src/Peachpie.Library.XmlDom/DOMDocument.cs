@@ -497,7 +497,7 @@ namespace Peachpie.Library.XmlDom
         /// Imports a node from another document to the current document.
         /// </summary>
         /// <param name="importedNode">The node being imported.</param>
-        /// <param name="deep"><B>True</B> to perform deep clone; otheriwse <B>false</B>.</param>
+        /// <param name="deep"><B>True</B> to perform deep clone; otherwise <B>false</B>.</param>
         /// <returns>The imported <see cref="DOMNode"/>.</returns>
         public virtual DOMNode importNode(DOMNode importedNode, bool deep = false)
         {

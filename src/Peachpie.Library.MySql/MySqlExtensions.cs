@@ -13,7 +13,7 @@ namespace Peachpie.Library.MySql
     public static class MySqlExtensions
     {
         /// <summary>
-        /// Whether the column is typed as unsugned integer.
+        /// Whether the column is typed as unsigned integer.
         /// </summary>
         public static bool IsUnsigned(this MySqlDbColumn col)
         {

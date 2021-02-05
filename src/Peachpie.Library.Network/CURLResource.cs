@@ -525,7 +525,7 @@ namespace Peachpie.Library.Network
 
         private CURLResponse()
         {
-            // everything to default, not exected request
+            // everything to default, not expected request
         }
     }
 }

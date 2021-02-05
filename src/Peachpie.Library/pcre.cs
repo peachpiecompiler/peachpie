@@ -752,7 +752,7 @@ namespace Pchp.Library
                 {
                     if ((flags & PREG_SPLIT_DELIM_CAPTURE) != 0) // add all captures but not whole pattern match (start at 1)
                     {
-                        List<object> lastUnsucessfulGroups = null;  // value of groups that was not successful since last succesful one
+                        List<object> lastUnsucessfulGroups = null;  // value of groups that was not successful since last successful one
                         for (int i = 1; i < m.Groups.Count; i++)
                         {
                             var g = m.Groups[i];
@@ -764,7 +764,7 @@ namespace Pchp.Library
                                 if (g.Success)
                                 {
                                     // group {i} was matched:
-                                    // if there was some unsuccesfull matches before, add them now:
+                                    // if there was some unsuccessfully matches before, add them now:
                                     if (lastUnsucessfulGroups != null && lastUnsucessfulGroups.Count > 0)
                                     {
                                         foreach (var x in lastUnsucessfulGroups)
@@ -776,8 +776,8 @@ namespace Pchp.Library
                                 }
                                 else
                                 {
-                                    // The match was unsuccesful, remember all the unsuccesful matches
-                                    // and add them only if some succesful match will follow.
+                                    // The match was unsuccessful, remember all the unsuccessful matches
+                                    // and add them only if some successful match will follow.
                                     // In PHP, unsuccessfully matched groups are trimmed by the end
                                     // (regexp processing stops when other groups cannot be matched):
                                     if (lastUnsucessfulGroups == null) lastUnsucessfulGroups = new List<object>();

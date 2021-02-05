@@ -315,7 +315,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Removes all occurances of characters.
+        /// Removes all occurrences of characters.
         /// </summary>
         public static string RemoveAny(this string text, params char[] anyOf)
         {
@@ -522,8 +522,7 @@ namespace Pchp.Library
         /// </summary>
         public static byte[] GetBuffer(this MemoryStream stream)
         {
-            ArraySegment<byte> buffer;
-            if (!stream.TryGetBuffer(out buffer)) throw new ArgumentException();    //  stream is not exposable
+            if (!stream.TryGetBuffer(out var buffer)) throw new ArgumentException();    //  stream is not exposable
             return buffer.Array;
         }
 

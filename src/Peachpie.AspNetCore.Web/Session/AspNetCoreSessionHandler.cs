@@ -168,7 +168,7 @@ namespace Peachpie.AspNetCore.Web.Session
                 while (enumerator.MoveNext())
                 {
                     // serialize value using php serializer
-                    // and save to underlaying ISession
+                    // and save to underlying ISession
                     var bytes = Serializer.Serialize(ctx, enumerator.CurrentValue.GetValue(), default(RuntimeTypeHandle));
                     isession.Set(enumerator.CurrentKey.ToString(), bytes.ToBytes(ctx));
                 }

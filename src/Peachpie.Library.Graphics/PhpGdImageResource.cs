@@ -21,7 +21,7 @@ namespace Peachpie.Library.Graphics
     internal class PhpGdImageResource : PhpResource
     {
         /// <summary>
-        /// Underlaying <see cref="Image"/> object.
+        /// Underlying <see cref="Image"/> object.
         /// Cannot be <c>null</c> reference until it is not disposed.
         /// </summary>
         public TImage/*!*/Image

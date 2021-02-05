@@ -22,7 +22,10 @@ namespace Peachpie.Library.PDO.MySQL
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
-            var csb = new MySqlConnectionStringBuilder();
+            var csb = new MySqlConnectionStringBuilder
+            {
+                
+            };
 
             // parse and validate the datasource string:
             DataSourceString.ParseNameValue(dsn, csb, (_csb, name, value) =>

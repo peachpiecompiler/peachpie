@@ -1132,7 +1132,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Replace ill-formed byte sequence with subsitute character.
+        /// Replace ill-formed byte sequence with substitute character.
         /// Although always returns a valid Unicode string value.
         /// </summary>
         /// <returns>A string value where any ill-formed sequence is replaced with <c>'?'</c> character.</returns>

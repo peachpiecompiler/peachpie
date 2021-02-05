@@ -266,7 +266,7 @@ namespace Peachpie.AspNetCore.Web
         /// </summary>
         /// <param name="span">
         /// Time span of the time limit.
-        /// Use <see cref="Timeout.InfiniteTimeSpan"/> (or <c>-1</c> miliseconds) to cancel the pending time limit.
+        /// Use <see cref="Timeout.InfiniteTimeSpan"/> (or <c>-1</c> milliseconds) to cancel the pending time limit.
         /// </param>
         internal void TrySetTimeLimit(TimeSpan span)
         {
@@ -498,7 +498,7 @@ namespace Peachpie.AspNetCore.Web
             //        {
             //            // if name is null, only name of the variable is stated:
             //            // e.g. for GET variables, URL looks like this: ...&test&...
-            //            // we add the name of the variable and an emtpy string to get what PHP gets:
+            //            // we add the name of the variable and an empty string to get what PHP gets:
             //            foreach (string value in values)
             //            {
             //                Superglobals.AddVariable(array, value, string.Empty, null);

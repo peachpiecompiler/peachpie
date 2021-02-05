@@ -87,7 +87,7 @@ namespace Peachpie.Library.PDO
         /// </summary>
         /// <param name="pdo">Containing <see cref="PDO"/> object reference.</param>
         /// <param name="stringify">Whether to stringify fetched values.</param>
-        /// <returns>Value indicating the attribute was set succesfuly.</returns>
+        /// <returns>Value indicating the attribute was set successfully.</returns>
         public virtual bool TrySetStringifyFetches(PDO pdo, bool stringify)
         {
             // NOTE: this method should be removed and stringify handled when actually used in PdoResultResource.GetValues()

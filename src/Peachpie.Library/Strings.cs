@@ -686,7 +686,7 @@ namespace Pchp.Library
         /// </param>
         /// <returns>The array of strings.</returns>
         /// <remarks>
-        /// If <paramref name="string"/> is empty an array consisting of exacty one empty string is returned.
+        /// If <paramref name="string"/> is empty an array consisting of exactly one empty string is returned.
         /// If <paramref name="limit"/> is zero
         /// </remarks>
         /// <exception cref="PhpException">Thrown if the <paramref name="separator"/> is null or empty or if <paramref name="limit"/>is not positive nor -1.</exception>
@@ -701,7 +701,7 @@ namespace Pchp.Library
                 throw new ArgumentException();
             }
 
-            if (@string == null) @string = String.Empty;
+            @string ??= string.Empty;
 
             bool last_part_is_the_rest = limit >= 0;
 
@@ -1602,12 +1602,12 @@ namespace Pchp.Library
         /// Converts a string to an array.
         /// </summary>
         /// <param name="str">The string to split.</param>
-        /// <returns>An array with keys being character indeces and values being characters.</returns>
+        /// <returns>An array with keys being character indexes and values being characters.</returns>
         public static PhpArray str_split(string str)
         {
             if (string.IsNullOrEmpty(str))
             {
-                // seems like an incosistency, but in PHP they really return this for an empty string:
+                // seems like an inconsistency, but in PHP they really return this for an empty string:
                 return new PhpArray(1) { string.Empty }; // array(1){ [0] => "" }
             }
             else
@@ -1622,7 +1622,7 @@ namespace Pchp.Library
         /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
         /// <param name="str">The string to split.</param>
         /// <param name="splitLength">Length of chunks <paramref name="str"/> should be split into.</param>
-        /// <returns>An array with keys being chunk indeces and values being chunks of <paramref name="splitLength"/>
+        /// <returns>An array with keys being chunk indexes and values being chunks of <paramref name="splitLength"/>
         /// length.</returns>
         /// <exception cref="PhpException">The <paramref name="splitLength"/> parameter is not positive (Warning).</exception>
         // [return: CastToFalse]
@@ -1636,7 +1636,7 @@ namespace Pchp.Library
             }
             if (str.IsEmpty)
             {
-                // seems like an incosistency, but in PHP they really return this for an empty string:
+                // seems like an inconsistency, but in PHP they really return this for an empty string:
                 return new PhpArray(1) { string.Empty }; // array(1){ [0] => "" }
             }
 
@@ -4028,7 +4028,7 @@ namespace Pchp.Library
         /// See <A href="http://www.php.net/manual/en/function.sprintf.php">PHP manual</A> for details.
         /// Besides, a type specifier "%C" is applicable. It converts an integer value to Unicode character.</param>
         /// <returns>The formatted string.</returns>
-        /// <exception cref="PhpException">Thrown when there is less arguments than expeceted by formatting string.</exception>
+        /// <exception cref="PhpException">Thrown when there is less arguments than expected by formatting string.</exception>
         [return: CastToFalse]
         public static string sprintf(Context ctx, string format, params PhpValue[] arguments)
         {
@@ -4057,7 +4057,7 @@ namespace Pchp.Library
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">The format string. For details, see PHP manual.</param>
         /// <param name="arguments">The arguments.</param>
-        /// <returns>The formatted string on success, or <c>false</c> if there is less arguments than expeceted by formatting string.</returns>
+        /// <returns>The formatted string on success, or <c>false</c> if there is less arguments than expected by formatting string.</returns>
         [return: CastToFalse]
         public static string vsprintf(Context ctx, string format, PhpArray arguments)
         {
@@ -4804,7 +4804,7 @@ namespace Pchp.Library
         /// Converts logical Hebrew text to visual text.
         /// </summary>
         /// <param name="str">The string to convert.</param>
-        /// <returns>The comverted string.</returns>
+        /// <returns>The converted string.</returns>
         /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
         public static string hebrev(string str)
         {
@@ -4816,7 +4816,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <param name="maxCharactersPerLine">Maximum number of characters per line.</param>
-        /// <returns>The comverted string.</returns>
+        /// <returns>The converted string.</returns>
         /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
         public static string hebrev(string str, int maxCharactersPerLine)
         {
@@ -4839,7 +4839,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <param name="maxCharactersPerLine">Maximum number of characters per line.</param>
-        /// <returns>The comverted string.</returns>
+        /// <returns>The converted string.</returns>
         /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
         public static string hebrevc(string str, int maxCharactersPerLine)
         {

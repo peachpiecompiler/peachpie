@@ -48,7 +48,7 @@ namespace Peachpie.Library.XmlDom
         #region CLR Fields
 
         /// <summary>
-        /// Hash map of the names to the nodex.
+        /// Hash map of the names to nodes.
         /// </summary>
         private protected Dictionary<MapKey, DOMNode>/*!*/ _map;
 

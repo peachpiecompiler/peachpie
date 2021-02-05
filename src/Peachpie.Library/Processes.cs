@@ -136,7 +136,7 @@ namespace Pchp.Library
         #region proc_open
 
         /// <summary>
-        /// Starts a process and otpionally redirects its input/output/error streams to specified PHP streams.
+        /// Starts a process and optionally redirects its input/output/error streams to specified PHP streams.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="command"></param>

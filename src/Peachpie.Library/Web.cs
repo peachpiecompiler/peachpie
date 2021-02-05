@@ -501,7 +501,7 @@ namespace Pchp.Library
 		/// <para>
 		/// If <paramref name="http_response_code"/> is positive than the response status code is set to this value.
 		/// Otherwise, if <paramref name="str"/> has format "{spaces}HTTP/{no spaces} {response code}{whatever}" 
-		/// then the response code is set to the {responce code} and the method returns.
+		/// then the response code is set to the {response code} and the method returns.
 		/// </para>
 		/// <para>
 		/// If <paramref name="str"/> has format "{name}:{value}" then the respective header is set (both name and value 

@@ -982,7 +982,7 @@ namespace Pchp.Library
         /// <param name="data">Data to be compressed.</param>
         /// <param name="mode">Compression mode.</param>
         /// <returns>Compressed data or <c>FALSE</c>.</returns>
-        /// <remarks>The function does not support subsequent calls to compress more chunks of data subsequentally.</remarks>
+        /// <remarks>The function does not support subsequent calls to compress more chunks of data subsequently.</remarks>
         public static PhpValue ob_gzhandler(Context ctx, PhpValue data, int mode)
         {
             //// TODO: mode is not passed by Core properly. Therefore it is not possible to make subsequent calls to this handler.

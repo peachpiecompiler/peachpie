@@ -541,7 +541,7 @@ namespace Pchp.Library
         #region Helpers
 
         /// <summary>
-        /// Gets <see cref="IHttpPhpContext"/> if available. Otherwise <c>null</c> is returned and warning throwed.
+        /// Gets <see cref="IHttpPhpContext"/> if available. Otherwise <c>null</c> is returned and warning thrown.
         /// </summary>
         static IHttpPhpContext GetHttpPhpContext(Context ctx)
         {

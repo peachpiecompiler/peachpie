@@ -1889,7 +1889,7 @@ namespace Peachpie.Library.XmlDom
         #region SPL.Countable
 
         /// <summary>
-        /// Count childs in the element.
+        /// Count children in the element.
         /// </summary>
         /// <returns></returns>
         public virtual long count() => this.Count();
@@ -2005,19 +2005,19 @@ namespace Peachpie.Library.XmlDom
         }
 
         /// <summary>
-        /// Gets <see cref="SimpleXMLIterator"/> or devided class.
+        /// Gets <see cref="SimpleXMLIterator"/> or a derided class.
         /// </summary>
         /// <param name="element">XmlElement of the class.</param>
-        /// <returns><see cref="SimpleXMLIterator"/> or devided class.</returns>
+        /// <returns><see cref="SimpleXMLIterator"/> or a derided class.</returns>
         protected SimpleXMLIterator GetIterator(XmlElement element)
         {
-            if (this is SimpleXMLIterator)
+            if (this.GetType() == typeof(SimpleXMLIterator))
             {
                 return new SimpleXMLIterator(_ctx, element);
             }
             else
             {
-                SimpleXMLIterator res = (SimpleXMLIterator)(this.GetPhpTypeInfo().CreateUninitializedInstance(_ctx));
+                var res = (SimpleXMLIterator)(this.GetPhpTypeInfo().CreateUninitializedInstance(_ctx));
                 res.XmlElement = element;
                 return res;
             }

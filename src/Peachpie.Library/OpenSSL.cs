@@ -1,17 +1,17 @@
 ﻿/*
  * What is almost implemented, but something missing.
  * - Hash and crypto algorithms. There are supported the most useful algos.
- * - There are new useful methods and options avaible in .NET standart 2.1.
+ * - There are new useful methods and options available in .NET standard 2.1.
  * - Export method in X509 region is almost finished. Parameter notext adds human-readable information to output. 
  *   There are missing two pieces of info.
  * What is not implemented and can be almost done with base .NET
  * - CSR and Key resource. I think that base functionality can be done with .NET
  * What is not implemented and can not be done with base .NET
- * - openssl_pkey_export .NET standart 2.0 does not support export PEM format of private key (2.1 does)
+ * - openssl_pkey_export .NET standard 2.0 does not support export PEM format of private key (2.1 does)
  * - Loading Key resource from PEM format because of same reason as above.
  * - Advanced functionality in methods, like some special properties. 
  */
-//TODO: Waiting for .NetStandart 2.1  to implement the rest of functions.
+//TODO: Waiting for .NetStandard 2.1  to implement the rest of functions.
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -38,7 +38,7 @@ namespace Pchp.Library
 
         public const int OPENSSL_DONT_ZERO_PAD_KEY = (int)Options.OPENSSL_DONT_ZERO_PAD_KEY;
 
-        private static Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher>(StringComparer.OrdinalIgnoreCase)
         {
             {"aes-256-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC,256)},
             {"aes-192-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC, 192)},
@@ -52,10 +52,10 @@ namespace Pchp.Library
             {"des-ede3-cbc", new Cipher(CipherType.TripleDES, Cipher.IVLengthDES, CipherMode.CBC, Cipher.KeyLengthTripleDES)}
         // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
         // RC2 is ok when there is right length of password, but when it is longer, PHP transforms password in some way, but i can not figure out how.
-        // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1 (standart 2.1))
+        // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1 (standard 2.1))
         };
 
-        private static Dictionary<string, string> CiphersAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> CiphersAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             {"aes128", "aes-128-cbc"},
             {"aes192", "aes-192-cbc"},
@@ -68,7 +68,7 @@ namespace Pchp.Library
         /// <summary>
         /// Information about supported cipher.
         /// </summary>
-        private struct Cipher
+        private readonly struct Cipher
         {
             public const int KeyLengthDES = 64;
             public const int KeyLengthTripleDES = 192;

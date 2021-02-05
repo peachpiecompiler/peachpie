@@ -184,7 +184,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable which items to count.</param>
         /// <param name="mode">Whether to count recursively.</param>
-        /// <returns>The number of items in all arrays contained recursivelly in <paramref name="variable"/>.</returns>
+        /// <returns>The number of items in all arrays contained recursively in <paramref name="variable"/>.</returns>
         /// <remarks>If any item of the <paramref name="variable"/> contains infinite recursion 
         /// skips items that are repeating because of such recursion.
         /// </remarks>
@@ -195,7 +195,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable which items to count.</param>
         /// <param name="mode">Whether to count recursively.</param>
-        /// <returns>The number of items in all arrays contained recursivelly in <paramref name="variable"/>.</returns>
+        /// <returns>The number of items in all arrays contained recursively in <paramref name="variable"/>.</returns>
         /// <remarks>If any item of the <paramref name="variable"/> contains infinite recursion 
         /// skips items that are repeating because of such recursion.
         /// </remarks>
@@ -633,7 +633,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="locals">The table of defined variables.</param>
         /// <param name="names">Names of the variables - each chan be either 
-        /// <see cref="string"/> or <see cref="PhpArray"/>. Names are retrived recursively from an array.</param>
+        /// <see cref="string"/> or <see cref="PhpArray"/>. Names are retrieved recursively from an array.</param>
         /// <returns>The <see cref="PhpArray"/> which keys are names of variables and values are deep copies of 
         /// their values.</returns>
         /// <remarks>

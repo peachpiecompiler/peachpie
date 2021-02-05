@@ -112,7 +112,7 @@ namespace Peachpie.Library.XmlDom
         #region XPath
 
         /// <summary>
-        /// Registeres the given namespace with the collection of known namespaces.
+        /// Registers the given namespace with the collection of known namespaces.
         /// </summary>
         /// <param name="prefix">The prefix to associate with the namespace being registered.</param>
         /// <param name="uri">The namespace to register.</param>
@@ -131,11 +131,11 @@ namespace Peachpie.Library.XmlDom
         /// <param name="contextnode">The context node for doing relative XPath queries. By default, the queries are
         /// relative to the root element.</param>
         /// <param name="registerNodeNS">Can be specified to disable automatic registration of the context node namespace.</param>
-        /// <returns>The <see cref="DOMNodeList"/> containg the result or <B>false</B> on error.</returns>
+        /// <returns>The <see cref="DOMNodeList"/> containing the result or <B>false</B> on error.</returns>
         [return: CastToFalse]
         public DOMNodeList query(string expr, DOMNode contextnode = null, bool registerNodeNS = true)
         {
-            XPathNavigator navigator = GetNavigator(contextnode);
+            var navigator = GetNavigator(contextnode);
             if (navigator == null) return null;
 
             var nsManager = registerNodeNS ? NamespaceManagerFull : NamespaceManagerExplicit;
