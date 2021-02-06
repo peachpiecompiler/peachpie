@@ -25,7 +25,7 @@ namespace Pchp.Core.Reflection
         {
             public FieldInfo Field { get; }
 
-            public override MemberInfo? Member => Field;
+            public override MemberInfo Member => Field;
 
             readonly Lazy<Func<Context, object?, PhpValue>> _lazyGetter;
             readonly Lazy<Action<Context, object?, PhpValue>> _lazySetValue;

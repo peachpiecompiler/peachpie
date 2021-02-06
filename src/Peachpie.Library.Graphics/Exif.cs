@@ -87,7 +87,6 @@ namespace Peachpie.Library.Graphics
 
             PhpArray array = new PhpArray();
 
-
             var bytes = Utils.ReadPhpBytes(ctx, filename);
             if (bytes == null)
             {
@@ -110,9 +109,6 @@ namespace Peachpie.Library.Graphics
                 {
                     return null;
                 }
-
-                var encoding = System.Text.Encoding.ASCII;
-                var unicode = System.Text.Encoding.Unicode;
 
                 // TODO: image.MetaData.Properties, image.MetaData.IccProfile, image.MetaData.***Resolution
 
@@ -335,8 +331,7 @@ namespace Peachpie.Library.Graphics
             PhpImage.ImageType type;
             try
             {
-                PhpImage.ImageSignature.ImageInfo info;
-                type = PhpImage.ImageSignature.ProcessImageType(stream, true, out info, false, false);
+                type = PhpImage.ImageSignature.ProcessImageType(stream, true, out _, false, false);
             }
             catch
             {

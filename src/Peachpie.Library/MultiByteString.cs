@@ -147,9 +147,9 @@ namespace Pchp.Library
         /// Encoding name.
         /// Provides case insensitive comparison.
         /// </summary>
-        struct EncodingName : IEquatable<EncodingName>, IEquatable<string>
+        readonly struct EncodingName : IEquatable<EncodingName>, IEquatable<string>
         {
-            public string Name { get; set; }
+            public string Name { get; }
 
             static readonly HashSet<string> s_unicodenames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -205,9 +205,9 @@ namespace Pchp.Library
             public bool Equals(string other) => Equals(Name, other);
 
             public override bool Equals(object obj)
-                => obj is EncodingName encname ? Equals(encname)
-                : obj is string str ? Equals(new EncodingName { Name = str })
-                : false;
+                => obj is EncodingName encname
+                    ? Equals(encname)
+                    : obj is string str && Equals(new EncodingName(str));
 
             public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Name ?? "");
 

@@ -307,13 +307,13 @@ namespace Peachpie.Library.Scripting
         /// </summary>
         private static Script CreateInvalid(ImmutableArray<Diagnostic> diagnostics)
         {
-            string errors = string.Join(Environment.NewLine, diagnostics.Select(d => $"{d.Severity} {d.Id}: {d.GetMessage()}"));
+            var errors = string.Join(Environment.NewLine, diagnostics.Select(d => $"{d.Severity} {d.Id}: {d.GetMessage()}"));
 
             return new Script((ctx, locals, @this, self) =>
             {
                 // TODO: throw new \ParseError( ... )
 
-                PhpException.Throw(PhpError.Error, string.Format("The script cannot be compiled due to following errors:\n{0}", errors));
+                PhpException.Throw(PhpError.Error, $"The script cannot be compiled due to following errors:\n{errors}");
 
                 //
                 return PhpValue.False;

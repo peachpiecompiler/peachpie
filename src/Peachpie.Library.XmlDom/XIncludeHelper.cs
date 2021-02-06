@@ -66,7 +66,7 @@ namespace Peachpie.Library.XmlDom
         /// If resolvingUri is relative, combines it with absoluteUriOfDirectory.
         /// </summary>
         /// <returns>Returns absolute uri</returns>
-        static public string UriResolver(string resolvingUri, string absoluteUriOfDirectory)
+        public static string UriResolver(string resolvingUri, string absoluteUriOfDirectory)
         {
             if (!Uri.TryCreate(resolvingUri, UriKind.Absolute, out var result)) // try, if resolvingUri is not absolute path
             {

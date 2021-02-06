@@ -570,8 +570,6 @@ namespace Peachpie.Library.Graphics
             {
                 stream.Seek(5, SeekOrigin.Current); // skip file version, and file size
 
-                byte[] b = new byte[128];
-
                 if (compressed)
                 {
                     stream.Seek(2, SeekOrigin.Current);

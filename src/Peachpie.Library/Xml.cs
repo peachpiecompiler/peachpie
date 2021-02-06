@@ -112,11 +112,10 @@ namespace Pchp.Library
             /// <summary>
             /// Bound <see cref="Context"/>. Cannot be <c>null</c>.
             /// </summary>
-            public Context Context => _ctx;
             readonly Context _ctx;
 
             private Encoding _outputEncoding;
-            private bool _processNamespaces;
+            private readonly bool _processNamespaces;
             private string _namespaceSeparator;
             private Queue<string> _inputQueue;
 
