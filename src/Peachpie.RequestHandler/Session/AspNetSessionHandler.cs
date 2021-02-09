@@ -82,7 +82,7 @@ namespace Peachpie.RequestHandler.Session
             EnsureSessionId(httpContext);
 
             var session = httpContext.Session;
-            var underlayingstate = session.GetContainer(); // use the underlaying IHttpSessionState because Session will be changed to our handler then
+            var underlyingstate = session.GetContainer(); // use the underlying IHttpSessionState because Session will be changed to our handler then
             
             // session contains both ASP.NET session and PHP session variables
 
@@ -109,9 +109,9 @@ namespace Peachpie.RequestHandler.Session
                     result = new PhpArray(session.Count);
                 }
 
-                if (underlayingstate != null)
+                if (underlyingstate != null)
                 {
-                    result[name] = new SessionValue(underlayingstate, name);
+                    result[name] = new SessionValue(underlyingstate, name);
                 }
                 else
                 {
