@@ -569,11 +569,12 @@ namespace Pchp.Core
             // IList
             if (obj is IList) return new ListAsPhpArray((IList)obj);
 
-            // TODO: IDictionary
 
             // get_Item
             if (obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item] != null)
             {
+                // IDictionary,
+                // and item getters in general:
                 return new GetSetItemAsPhpArray(obj);
             }
 
@@ -872,11 +873,13 @@ namespace Pchp.Core
                 return PhpValue.Null;
             }
 
-            // TODO: IDictionary
 
             // get_Item
             if (obj != null)
             {
+                // IDictionary
+                // and item getter in general:
+
                 var getter = obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item];
                 if (getter != null)
                 {
@@ -1030,19 +1033,41 @@ namespace Pchp.Core
 
         public static bool offsetExists(object obj, PhpValue index)
         {
-            if (obj is ArrayAccess arrrayAccess)
+            return obj switch
             {
-                return arrrayAccess.offsetExists(index);
-            }
-            else if (obj is IPhpArray arr)
+                // PHP ArrayAccess
+                ArrayAccess arrrayAccess => arrrayAccess.offsetExists(index),
+
+                // object implementing PeachPie's IPhpArray
+                IPhpArray arr => IsSet(arr.GetItemValue(index)),
+
+                // IList, checks the integer key is in range
+                IList list => index.TryToIntStringKey(out var key) && key.IsInteger && key.Integer >= 0 && key.Integer < list.Count,
+
+                // IDictionary
+                IDictionary dict => offsetExists(dict, index),
+
+                // TODO: generic get_Item() getter
+                _ => false,
+            };
+        }
+
+        public static bool offsetExists(IDictionary obj, PhpValue index)
+        {
+            if (obj != null)
             {
-                return IsSet(arr.GetItemValue(index));
+                // return obj.Contains(index.ToClr()); // <-- cannot be used, index might need to be converted to specific Dictionary's TKey type
+
+                var getter = obj.GetPhpTypeInfo().RuntimeMethods[/*nameof(IDictionary<,>.ContainsKey)*/"ContainsKey"];
+                if (getter != null)
+                {
+                    return getter.Invoke(null, obj, index).ToBoolean();
+                }
+
+                // fallback to generic behavior,
+                // might get false if index is of a wrong type
+                return obj.Contains(index.ToClr());
             }
-            else if (obj is IList list)
-            {
-                return index.TryToIntStringKey(out var key) && key.IsInteger && key.Integer >= 0 && key.Integer < list.Count;
-            }
-            // TODO: IDictionary
 
             return false;
         }
