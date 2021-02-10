@@ -2654,6 +2654,18 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // eventually convert emitted value to target parameter type
             EmitConvert(ptype, 0, targetp.Type);
+
+            // ref, out
+            if (targetp.RefKind == RefKind.Ref || targetp.RefKind == RefKind.Out) // this usually won't happen, ref parameters are not optional
+            {
+                // T tmp = <DEFAULT>
+                var tmp = GetTemporaryLocal(targetp.Type, true); // TODO: should not be returned immediatelly, remember tmp and return it postcall
+                Builder.EmitLocalStore(tmp);
+
+                // ref tmp, 
+                Builder.EmitLocalAddress(tmp);
+                return;
+            }
         }
 
         internal TypeSymbol EmitGetProperty(IPlace holder, PropertySymbol prop)
