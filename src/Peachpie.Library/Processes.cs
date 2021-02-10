@@ -226,7 +226,7 @@ namespace Pchp.Library
                 return null;
 
             if (envVariables != null)
-                SetupEnvironment(process, envVariables);
+                SetupEnvironment(ctx, process, envVariables);
 
             if (workingDirectory != null)
                 process.StartInfo.WorkingDirectory = workingDirectory;
@@ -290,15 +290,15 @@ namespace Pchp.Library
             }
         }
 
-        private static void SetupEnvironment(Process/*!*/ process, PhpArray/*!*/ envVariables)
+        private static void SetupEnvironment(Context ctx, Process/*!*/ process, PhpArray/*!*/ envVariables)
         {
             var e = envVariables.GetFastEnumerator();
             while (e.MoveNext())
             {
-                string s = e.CurrentKey.String;
+                var s = e.CurrentKey.String;
                 if (s != null)
                 {
-                    // TODO: process.StartInfo.EnvironmentVariables.Add(s, e.CurrentValue.ToString(ctx));
+                    process.StartInfo.EnvironmentVariables[s] = e.CurrentValue.ToString(ctx);
                 }
             }
         }
