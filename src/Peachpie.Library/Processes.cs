@@ -349,7 +349,7 @@ namespace Pchp.Library
                 }
 
                 PhpResource resource;
-                
+
                 var value = descriptors_enum.CurrentValue;
                 if (value.IsPhpArray(out var array))
                 {
@@ -385,7 +385,14 @@ namespace Pchp.Library
                                 }
 
                                 var php_stream = PhpStream.Open(ctx, pathObj.ToString(ctx), modeObj.ToString(ctx), StreamOpenOptions.Empty, StreamContext.Default);
-                                if (php_stream == null || !ActivePipe.BeginIO(stream, php_stream, access, desc_no))
+                                if (php_stream == null)
+                                {
+                                    return false;
+                                }
+
+                                php_stream.IsWriteBuffered = false;
+
+                                if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no))
                                 {
                                     return false;
                                 }
@@ -401,7 +408,12 @@ namespace Pchp.Library
                 else if ((resource = value.AsResource()) != null)
                 {
                     var php_stream = PhpStream.GetValid(resource);
-                    if (php_stream == null || !ActivePipe.BeginIO(stream, php_stream, access, desc_no))
+                    if (php_stream == null)
+                    {
+                        return false;
+                    }
+
+                    if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no))
                     {
                         return false;
                     }
@@ -485,6 +497,7 @@ namespace Pchp.Library
                     }
                     else
                     {
+                        phpStream.Flush();
                         stream.Dispose();
                     }
                 }
