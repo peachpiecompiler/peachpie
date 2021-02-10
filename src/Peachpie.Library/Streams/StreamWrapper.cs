@@ -583,11 +583,7 @@ namespace Pchp.Library.Streams
             //Debug.Assert(PhpPath.IsLocalFile(path));
 
             // Get the File.Open modes from the mode string
-            FileMode fileMode;
-            FileAccess fileAccess;
-            StreamAccessOptions ao;
-
-            if (!ParseMode(ctx, mode, options, out fileMode, out fileAccess, out ao)) return null;
+            if (!ParseMode(ctx, mode, options, out var fileMode, out var fileAccess, out var ao)) return null;
 
             // Open the native stream
             FileStream stream = null;
