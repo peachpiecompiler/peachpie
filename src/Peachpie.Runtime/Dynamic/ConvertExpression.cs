@@ -531,6 +531,11 @@ namespace Pchp.Core.Dynamic
                     return BindToValue(Expression.Convert(expr, source.GetEnumUnderlyingType()));
                 }
 
+                if (source == typeof(System.DateTime))
+                {
+                    return BindToValue(Expression.Convert(expr, typeof(object)));
+                }
+
                 throw new NotImplementedException(source.FullName);
             }
             else if (
