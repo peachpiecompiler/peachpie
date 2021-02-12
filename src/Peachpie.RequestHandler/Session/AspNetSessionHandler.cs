@@ -89,7 +89,7 @@ namespace Peachpie.RequestHandler.Session
             PhpArray result = null;
 
             // serialized $_SESSION array
-            if (session[PhpSessionVars] is byte[] data)
+            if (session[PhpSessionVars] is byte[] data && data.Length != 0)
             {
                 if (Serializer.TryDeserialize(ctx, data, out var value))
                 {
