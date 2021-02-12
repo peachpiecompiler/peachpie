@@ -94,7 +94,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // emit dummy locals showing indirect (unoptimized) locals in debugger's Watch and Locals window
-            if (cg.HasUnoptimizedLocals && cg.EmitPdbSequencePoints && cg.IsDebug && cg.CoreTypes.IndirectLocal.Symbol != null)
+            if (cg.HasUnoptimizedLocals && cg.EmitPdbSequencePoints && cg.IsDebug &&
+                cg.CoreTypes.IndirectLocal.Symbol != null && // only if runtime provides this type (v1.0.0+)
+                cg.IsGlobalScope == false && // don't bother in global code
+                cg.Routine.LocalsTable.Count < 16) // emit IndirectLocal only there is not so many locals, otherwise it might use significant portion of stack
             {
                 EmitIndirectLocalsDebugWatch(cg);
             }
