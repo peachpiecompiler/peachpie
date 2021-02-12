@@ -889,7 +889,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ScriptDiedException_Long = ct.ScriptDiedException.Ctor(ct.Long);
                 ScriptDiedException_PhpValue = ct.ScriptDiedException.Ctor(ct.PhpValue);
 
-                IndirectLocal_PhpArray_IntStringKey = ct.IndirectLocal.Ctor(ct.PhpArray, ct.IntStringKey);
+                IndirectLocal_PhpArray_String = ct.IndirectLocal.Ctor(ct.PhpArray, ct.String);
             }
 
             public readonly CoreConstructor
@@ -901,7 +901,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DefaultValueAttribute_string,
                 NullableAttribute_byte, NullableContextAttribute_byte,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue,
-                IndirectLocal_PhpArray_IntStringKey;
+                IndirectLocal_PhpArray_String;
         }
 
         public struct ContextHolder

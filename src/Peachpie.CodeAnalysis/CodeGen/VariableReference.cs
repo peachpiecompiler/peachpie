@@ -827,8 +827,8 @@ namespace Pchp.CodeAnalysis.Semantics
         internal TypeSymbol LoadIndirectLocal(CodeGenerator cg)
         {
             LoadVariablesArray(cg);
-            BoundName.EmitIntStringKey(cg);
-            return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.IndirectLocal_PhpArray_IntStringKey);
+            BoundName.EmitVariableName(cg);
+            return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.IndirectLocal_PhpArray_String);
         }
     }
 

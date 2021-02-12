@@ -19,7 +19,7 @@ namespace Pchp.Core
         readonly OrderedDictionary _locals;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        readonly IntStringKey _name;
+        readonly string _name;
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         object DebugValue
@@ -47,19 +47,14 @@ namespace Pchp.Core
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         string DebugTypeName => GetValue().DebugTypeName;
 
-        public IndirectLocal(OrderedDictionary/*!*/locals, IntStringKey/*!*/name)
+        public IndirectLocal(OrderedDictionary/*!*/locals, string/*!*/name)
         {
             _locals = locals;
             _name = name;
         }
 
-        public IndirectLocal(PhpArray/*!*/locals, IntStringKey/*!*/name)
-            : this(locals.table, name)
-        {
-        }
-
         public IndirectLocal(PhpArray/*!*/locals, string/*!*/name)
-            : this(locals, new IntStringKey(name))
+            : this(locals.table, name)
         {
         }
 
