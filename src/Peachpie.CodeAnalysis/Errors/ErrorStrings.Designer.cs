@@ -124,6 +124,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; is a binary file instead of a text file.
+        /// </summary>
+        internal static string ERR_BinaryFile {
+            get {
+                return ResourceManager.GetString("ERR_BinaryFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot re-assign $this.
         /// </summary>
         internal static string ERR_CannotAssignToThis {
