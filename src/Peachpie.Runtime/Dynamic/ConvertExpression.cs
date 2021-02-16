@@ -335,7 +335,16 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(void)) return VoidAsConstant(expr, false, typeof(bool));
             if (source == typeof(bool)) return expr;
 
-            return Expression.Call(Cache.Operators.ToBoolean_Object, expr);
+            if (source.IsValueType)
+            {
+                if (source == typeof(decimal)) return Expression.NotEqual(expr, Expression.Constant(decimal.Zero));    // <decimal> != 0
+            }
+            else
+            {
+                return Expression.Call(Cache.Operators.ToBoolean_Object, expr);
+            }
+
+            throw new NotImplementedException($"{source.FullName} -> bool");
         }
 
         private static Expression BindToString(Expression expr, Expression ctx)
@@ -518,7 +527,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpAlias)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpAlias), expr);   // PhpValue.Create(PhpAlias)
             if (source == typeof(IndirectLocal)) return Expression.Call(expr, Cache.IndirectLocal.GetValue);   // IndirectLocal.GetValue()
 
-            if (source.GetTypeInfo().IsValueType)
+            if (source.IsValueType)
             {
                 if (source == typeof(void)) return VoidAsConstant(expr, PhpValue.Null, Cache.Types.PhpValue);
                 if (source == typeof(uint)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), Expression.Convert(expr, typeof(long)));
@@ -536,7 +545,7 @@ namespace Pchp.Core.Dynamic
                     return BindToValue(Expression.Convert(expr, typeof(object)));
                 }
 
-                throw new NotImplementedException(source.FullName);
+                throw new NotImplementedException($"{source.FullName} -> PhpValue");
             }
             else if (
                 source == typeof(IPhpArray) ||
