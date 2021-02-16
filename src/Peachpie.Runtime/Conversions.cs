@@ -455,6 +455,11 @@ namespace Pchp.Core
             {
                 return convertible.ToNumber(out number);
             }
+            else if (obj is decimal d)
+            {
+                number = PhpNumber.Create((double)d);
+                return NumberInfo.IsNumber | NumberInfo.Double;
+            }
             else
             {
                 PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
@@ -478,8 +483,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpNumber ToNumber(PhpValue value)
         {
-            PhpNumber n;
-            if ((value.ToNumber(out n) & NumberInfo.IsNumber) == 0)
+            if ((value.ToNumber(out var n) & NumberInfo.IsNumber) == 0)
             {
                 // TODO: Err
             }
