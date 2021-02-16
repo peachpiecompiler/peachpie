@@ -62,6 +62,15 @@ foreach ($d as $k => $v) {
   echo ',', $k, '=>', $v; // ,key=>ok
 }
 "));
+
+            Assert.AreEqual(
+                "ok",
+                CompileAndRun(@"<?php
+$d = new \System\Collections\Generic\Dictionary<string,string>;
+
+$d['key'] = 'ok';
+if (isset($d['key'])) echo 'ok';
+"));
         }
     }
 }
