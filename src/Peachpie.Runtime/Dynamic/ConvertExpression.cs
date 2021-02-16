@@ -532,8 +532,8 @@ namespace Pchp.Core.Dynamic
                 if (source == typeof(void)) return VoidAsConstant(expr, PhpValue.Null, Cache.Types.PhpValue);
                 if (source == typeof(uint)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), Expression.Convert(expr, typeof(long)));
                 if (source == typeof(ulong)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.UInt64), expr);
-                if (source == typeof(byte)) return BindToValue(Expression.Convert(expr, typeof(int)));
-
+                if (source == typeof(byte) || source == typeof(sbyte) || source == typeof(short) || source == typeof(ushort)) return BindToValue(Expression.Convert(expr, typeof(int)));
+                
                 if (source.IsEnum)
                 {
                     // (PhpValue)(int)enum
