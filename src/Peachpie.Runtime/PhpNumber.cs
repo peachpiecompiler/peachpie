@@ -348,9 +348,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpNumber operator +(PhpValue x, PhpNumber y)
         {
-            PhpNumber x_number;
-
-            var x_info = x.ToNumber(out x_number);
+            var x_info = x.ToNumber(out var x_number);
             if ((x_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new NotImplementedException();
@@ -364,9 +362,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpNumber operator +(PhpNumber x, PhpValue y)
         {
-            PhpNumber y_number;
-
-            var y_info = y.ToNumber(out y_number);
+            var y_info = y.ToNumber(out var y_number);
             if ((y_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new NotImplementedException();    // TODO: PhpException; return 0
@@ -413,9 +409,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpNumber Add(PhpValue x, long y)
         {
-            PhpNumber x_number;
-
-            var x_info = x.ToNumber(out x_number);
+            var x_info = x.ToNumber(out var x_number);
             if ((x_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new ArgumentException();
@@ -429,9 +423,7 @@ namespace Pchp.Core
         /// </summary>
         public static double Add(PhpValue x, double y)
         {
-            PhpNumber x_number;
-
-            var x_info = x.ToNumber(out x_number);
+            var x_info = x.ToNumber(out var x_number);
             if ((x_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new ArgumentException();
@@ -445,8 +437,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpNumber Add(long x, PhpValue y)
         {
-            PhpNumber number;
-            if ((y.ToNumber(out number) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            if ((y.ToNumber(out var number) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 //PhpException.UnsupportedOperandTypes();
                 //return 0.0;
@@ -462,8 +453,7 @@ namespace Pchp.Core
         /// </summary>
         public static double Add(double x, PhpValue y)
         {
-            PhpNumber number;
-            if ((y.ToNumber(out number) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            if ((y.ToNumber(out var number) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 //PhpException.UnsupportedOperandTypes();
                 //return 0.0;
@@ -479,10 +469,8 @@ namespace Pchp.Core
         /// </summary>
         public static PhpValue Add(PhpValue x, PhpValue y)
         {
-            PhpNumber xnumber, ynumber;
-
             // converts x and y to numbers:
-            if (((x.ToNumber(out xnumber) | y.ToNumber(out ynumber)) & (Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.Unconvertible)) != 0)
+            if (((x.ToNumber(out var xnumber) | y.ToNumber(out var ynumber)) & (Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.Unconvertible)) != 0)
             {
                 return AddNonNumbers(ref x, ref y);
             }

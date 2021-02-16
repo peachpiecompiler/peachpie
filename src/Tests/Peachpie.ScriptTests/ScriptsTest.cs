@@ -80,7 +80,6 @@ namespace ScriptsTest
             }
         }
 
-
         string CompileAndRun(string path)
         {
             var outputStream = new MemoryStream();
