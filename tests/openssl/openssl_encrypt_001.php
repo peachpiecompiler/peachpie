@@ -4,7 +4,7 @@ $plaintext = "The plaintext message data to be encrypted.";
 $key="Fs9H083h5TtLdkAePgmgOxxIPEEptSOz59MzCR4sh5w=";
 $iv="FuK2LSE8rnYPLU/P9Z7d2w==";
 
-$supportedMethods = array("aes-256-cbc", "aes-192-cbc", "aes-128-cbc", "aes-256-ecb", "aes-192-ecb", "aes-128-ecb");
+$supportedMethods = array("aes-256-cbc", "aes-192-cbc", "aes-128-cbc", "aes-256-ecb", "aes-192-ecb", "aes-128-ecb", "aes-256-ctr", "aes-192-ctr", "aes-128-ctr");
 
 foreach ($supportedMethods as $cipher)
 {
