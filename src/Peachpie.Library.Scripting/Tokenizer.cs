@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -8,6 +10,139 @@ using Pchp.Core;
 
 namespace Peachpie.Library.Scripting
 {
+    /// <summary>
+    /// Represents a token returned by <see cref="PhpToken.tokenize"/>.
+    /// </summary>
+    [PhpExtension("tokenizer")]
+    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly)]
+    public class PhpToken : Stringable
+    {
+        /// <summary>One of the T_* constants, or an ASCII codepoint representing a single-char token.</summary>
+        public int id { get; set; }
+
+        /// <summary>The textual content of the token.</summary>
+        public string text { get; set; }
+
+        /// <summary>The line number (1-based) of the token.</summary>
+        public int line { get; set; }
+
+        /// <summary>The position (0-based) in the tokenized string.</summary>
+        public int pos { get; set; }
+
+        public PhpToken(int id, string text, int line = -1, int pos = -1)
+        {
+            this.id = id;
+            this.text = text;
+            this.line = line;
+            this.pos = pos;
+        }
+
+        /// <summary>
+        /// Initializes the object.
+        /// </summary>
+        public void __construct(int id, string text, int line = -1, int pos = -1)
+        {
+            this.id = id;
+            this.text = text;
+            this.line = line;
+            this.pos = pos;
+        }
+
+        /// <summary>
+        /// Returns the name of the token or <c>NULL</c>.
+        /// </summary>
+        public virtual string getTokenName() => Enum.GetName(typeof(Tokens), id);
+
+        /// <summary>
+        /// Tells whether the token is of given kind.
+        /// </summary>
+        public virtual bool @is(PhpValue/*int|string|array*/ kind)
+        {
+            bool iskind(PhpValue kind)
+            {
+                if (kind.IsLong(out var id)) return this.id == id;
+                if (kind.IsString(out var text)) return this.text == text;
+                return false;
+            }
+
+            if (kind.IsPhpArray(out var array))
+            {
+                if (array != null)
+                {
+                    var e = array.GetFastEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if (iskind(e.CurrentValue)) return true;
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                return iskind(kind);
+            }
+        }
+
+        /// <summary>
+        /// Tells whether the token would be ignored by the PHP parser.
+        /// </summary>
+        public bool isIgnorable() => (Tokens)id switch
+        {
+            Tokens.T_WHITESPACE => true,
+            Tokens.T_COMMENT => true,
+            Tokens.T_DOC_COMMENT => true,
+            Tokens.T_OPEN_TAG => true,
+            _ => false,
+        };
+
+        /// <summary>
+        /// Gets the textual content of the token.
+        /// </summary>
+        public string __toString() => text ?? ((Tokens)id).ToString();
+
+        /// <summary>
+        /// Gets the textual content of the token.
+        /// </summary>
+        public override string ToString() => __toString();
+
+        /// <summary>
+        /// Returns an array of PhpToken objects.
+        /// </summary>
+        public static PhpArray tokenize(string code, int flags/*TOKEN_PARSE*/ = 0)
+        {
+            var tokens = new PhpArray();
+
+            if (string.IsNullOrEmpty(code))
+            {
+                return tokens;
+            }
+
+            var lines = LineBreaks.Create(code);
+            using (var tokenizer = new Lexer(new StringReader(code), Encoding.UTF8))
+            {
+                Tokens t;
+                while ((t = tokenizer.GetNextToken()) != Tokens.EOF)
+                {
+                    var token = new PhpToken(
+                        (int)t,
+                        tokenizer.TokenText,
+                        lines.GetLineFromPosition(tokenizer.TokenSpan.Start) + 1,
+                        tokenizer.TokenSpan.Start);
+
+                    tokens.Add(PhpValue.FromClass(token));
+                    
+                    //
+                    if (t == Tokens.T_ERROR)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return tokens;
+        }
+    }
+
     [PhpExtension("tokenizer")]
     public static class Tokenizer
     {
@@ -430,6 +565,15 @@ namespace Peachpie.Library.Scripting
         ///<summary>yield from generators(available since PHP 7.0.0)</summary>
         public const int T_YIELD_FROM = (int)Tokens.T_YIELD_FROM;
 
+        ///<summary>match (available since PHP 8.0.0)</summary>
+        public const int T_MATCH = (int)Tokens.T_MATCH;
+
+        /// <summary>?-> (available since PHP 8.0.0)</summary>
+        public const int T_NULLSAFE_OBJECT_OPERATOR = (int)Tokens.T_NULLSAFE_OBJECT_OPERATOR;
+
+        ///<summary>#[ (available since PHP 8.0.0)</summary>
+        public const int T_ATTRIBUTE = (int)Tokens.T_ATTRIBUTE;
+
         /// <summary>
         /// Not used.
         /// Our lexer does not report T_BAD_CHARACTER on long script (&gt; Int32.MaxValue characters)
@@ -446,10 +590,9 @@ namespace Peachpie.Library.Scripting
         /// <summary>
         /// Get the symbolic name of a given PHP token.
         /// </summary>
-        [return: NotNull]
         public static string token_name(int token)
         {
-            return ((Tokens)token).ToString();
+            return Enum.GetName(typeof(Tokens), token) ?? "UNKNOWN";
         }
 
         /// <summary>
@@ -462,7 +605,6 @@ namespace Peachpie.Library.Scripting
         /// Each individual token identifier is either a single character (i.e.: ;, ., >, !, etc...),
         /// or a three element array containing the token index in element 0, the string content of the original token in element 1 and the line number in element 2.
         /// </returns>
-        [return: NotNull]
         public static PhpArray/*!*/token_get_all(string source, int flags = 0)
         {
             var tokens = new PhpArray();

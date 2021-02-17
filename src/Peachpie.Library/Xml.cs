@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using Pchp.Core;
 
@@ -114,11 +112,10 @@ namespace Pchp.Library
             /// <summary>
             /// Bound <see cref="Context"/>. Cannot be <c>null</c>.
             /// </summary>
-            public Context Context => _ctx;
             readonly Context _ctx;
 
             private Encoding _outputEncoding;
-            private bool _processNamespaces;
+            private readonly bool _processNamespaces;
             private string _namespaceSeparator;
             private Queue<string> _inputQueue;
 
@@ -127,15 +124,12 @@ namespace Pchp.Library
             /// </summary>
             internal bool InputQueueIsEmpty { get { return _inputQueue == null || _inputQueue.Count == 0; } }
 
-            public int CurrentLineNumber { get { return _lastLineNumber; } }
-            private int _lastLineNumber;
-
-            public int CurrentColumnNumber { get { return _lastColumnNumber; } }
-            private int _lastColumnNumber;
-
-            public int CurrentByteIndex { get { return _lastByteIndex; } }
-            private int _lastByteIndex;
-
+            public int CurrentLineNumber { get; private set; }
+            
+            public int CurrentColumnNumber { get; private set; }
+            
+            public int CurrentByteIndex { get; private set; }
+            
             public IPhpCallable DefaultHandler { get; set; }
 
             public IPhpCallable StartElementHandler { get; set; }
@@ -156,8 +150,7 @@ namespace Pchp.Library
 
             public bool EnableSkipWhitespace { get; set; }
 
-            public int ErrorCode { get { return _errorCode; } }
-            private int _errorCode;
+            public int ErrorCode { get; private set; }
 
             #endregion
 
@@ -170,8 +163,7 @@ namespace Pchp.Library
 
             internal static XmlParserResource ValidResource(PhpResource handle)
             {
-                var xmlParserResource = handle as XmlParserResource;
-                if (xmlParserResource != null && xmlParserResource.IsValid)
+                if (handle is XmlParserResource xmlParserResource && xmlParserResource.IsValid)
                 {
                     return xmlParserResource;
                 }
@@ -228,27 +220,28 @@ namespace Pchp.Library
 
                 if (isFinal)
                 {
-                    if (input == null) input = string.Empty;
-                    StringBuilder sb = new StringBuilder(input.Length);
+                    input ??= string.Empty;
+                    var sb = StringBuilderUtilities.Pool.Get();
 
                     if (_inputQueue != null)
                     {
                         foreach (string s in _inputQueue)
+                        {
                             sb.Append(s);
+                        }
 
                         _inputQueue = null;
                     }
 
                     sb.Append(input);
 
-                    return ParseInternal(sb.ToString(), null, null);
+                    return ParseInternal(StringBuilderUtilities.GetStringAndReturn(sb), null, null);
                 }
                 else
                 {
                     //just reset these values - we are still in the beginning
-                    _lastLineNumber = 0;
-                    _lastColumnNumber = 0;
-                    _lastLineNumber = 0;
+                    CurrentLineNumber = 0;
+                    CurrentColumnNumber = 0;
 
                     if (!string.IsNullOrEmpty(input))
                     {
@@ -267,6 +260,18 @@ namespace Pchp.Library
                 return ParseInternal(input, values, indices);
             }
 
+            private bool HandleException(XmlException exception)
+            {
+                CurrentLineNumber = exception.LineNumber; // ((IXmlLineInfo)reader).LineNumber;
+                CurrentColumnNumber = exception.LinePosition; // ((IXmlLineInfo)reader).LinePosition;
+                CurrentByteIndex = -1; // dunno
+                ErrorCode = (int)XmlParserError.XML_ERROR_GENERIC;
+
+                PhpException.Throw(PhpError.E_NOTICE, exception.Message); // TODO: is it the same as in PHP ?
+
+                return false;
+            }
+
             private bool ParseInternal(string xml, PhpArray values, PhpArray indices)
             {
                 var stringReader = new StringReader(xml);
@@ -280,22 +285,17 @@ namespace Pchp.Library
                     {
                         reader.Read();
                     }
-                    catch (XmlException)
+                    catch (XmlException exception)
                     {
-                        _lastLineNumber = ((IXmlLineInfo)reader).LineNumber;
-                        _lastColumnNumber = ((IXmlLineInfo)reader).LinePosition;
-                        _lastByteIndex = -1;
-                        _errorCode = (int)XmlParserError.XML_ERROR_GENERIC;
-                        return false;
+                        return HandleException(exception);
                     }
 
                     //these are usually required
-                    _lastLineNumber = ((IXmlLineInfo)reader).LineNumber;
-                    _lastColumnNumber = ((IXmlLineInfo)reader).LinePosition;
+                    CurrentLineNumber = ((IXmlLineInfo)reader).LineNumber;
+                    CurrentColumnNumber = ((IXmlLineInfo)reader).LinePosition;
 
                     // we cannot do this - we could if we had underlying stream, but that would require
                     // encoding string -> byte[] which is pointless
-
 
                     switch (reader.ReadState)
                     {
@@ -313,7 +313,16 @@ namespace Pchp.Library
                         case ReadState.Interactive:
                             //debug step, that prints out the current state of the parser (pretty printed)
                             //Debug_ParseStep(reader);
-                            ParseStep(reader, elementStack, ref textChunk, values, indices);
+
+                            try
+                            {
+                                ParseStep(reader, elementStack, ref textChunk, values, indices);
+                            }
+                            catch (XmlException exception)
+                            {
+                                return HandleException(exception);
+                            }
+
                             break;
                     }
 
@@ -502,88 +511,6 @@ namespace Pchp.Library
                 EnableCaseFolding = true;
                 EnableSkipWhitespace = false;
             }
-        }
-
-        #endregion
-
-        #region utf8_encode, utf8_decode
-
-        /// <summary>
-        /// ISO-8859-1 <see cref="Encoding"/>.
-        /// </summary>
-        static Encoding/*!*/ISO_8859_1_Encoding
-        {
-            get
-            {
-                if (_ISO_8859_1_Encoding == null)
-                {
-                    _ISO_8859_1_Encoding = Encoding.GetEncoding("ISO-8859-1");
-                    Debug.Assert(_ISO_8859_1_Encoding != null);
-                }
-
-                return _ISO_8859_1_Encoding;
-            }
-        }
-        static Encoding _ISO_8859_1_Encoding = null;
-
-        /// <summary>
-        /// This function encodes the string data to UTF-8, and returns the encoded version. UTF-8 is
-        /// a standard mechanism used by Unicode for encoding wide character values into a byte stream.
-        /// UTF-8 is transparent to plain ASCII characters, is self-synchronized (meaning it is 
-        /// possible for a program to figure out where in the bytestream characters start) and can be
-        /// used with normal string comparison functions for sorting and such. PHP encodes UTF-8
-        /// characters in up to four bytes.
-        /// </summary>
-        /// <param name="data">An ISO-8859-1 string. </param>
-        /// <returns>Returns the UTF-8 translation of data.</returns>
-        //[return:CastToFalse]
-        public static string utf8_encode(string data)
-        {
-            if (string.IsNullOrEmpty(data))
-            {
-                return string.Empty;
-            }
-
-            // this function transforms ISO-8859-1 binary string into UTF8 string
-            // since our internal representation is native CLR string - UTF16, we have changed this semantic
-
-            //string encoded;
-
-            //if (!data.ContainsBinayString)
-            //{
-            //    encoded = (string)data;
-            //}
-            //else
-            //{
-            //    // if we got binary string, assume it's ISO-8859-1 encoded string and convert it to System.String
-            //    encoded = ISO_8859_1_Encoding.GetString((data).ToBytes);
-            //}
-
-            //// return utf8 encoded data
-            //return (Configuration.Application.Globalization.PageEncoding == Encoding.UTF8) ?
-            //    (object)encoded : // PageEncoding is UTF8, we can keep .NET string, which will be converted to UTF8 byte stream as it would be needed
-            //    (object)new PhpBytes(Encoding.UTF8.GetBytes(encoded));   // conversion of string to byte[] would not respect UTF8 encoding, convert it now
-
-            return data;
-        }
-
-        /// <summary>
-        /// This function decodes data, assumed to be UTF-8 encoded, to ISO-8859-1.
-        /// </summary>
-        /// <param name="data">An ISO-8859-1 string. </param>
-        /// <returns>Returns the UTF-8 translation of data.</returns>
-        public static PhpString utf8_decode(string data)
-        {
-            if (data == null)
-            {
-                return new PhpString();  // empty (binary) string
-            }
-
-            // this function converts the UTF8 representation to ISO-8859-1 representation
-            // we assume CLR string (UTF16) as input as it is our internal representation
-
-            // if we got System.String string, convert it from UTF16 CLR representation into ISO-8859-1 binary representation
-            return new PhpString(ISO_8859_1_Encoding.GetBytes(data));
         }
 
         #endregion
@@ -979,18 +906,18 @@ namespace Pchp.Library
         /// <param name="parser">
         /// A reference to the XML parser to set up unparsed entity declaration handler function. 
         /// </param>
-        /// <param name="unparsed_entity_decl_handler">
+        /// <param name="hdl">
         /// String (or array) containing the name of a function that must exist when xml_parse() is 
         /// called for parser. 
         /// </param>
         /// <returns>Returns TRUE on success or FALSE on failure. </returns>
-        public static bool SetUnparsedEntityDeclHandler(PhpResource parser, PhpValue unparsed_entity_decl_handler)
+        public static bool xml_set_unparsed_entity_decl_handler(PhpResource parser, PhpValue hdl)
         {
             var xmlParser = XmlParserResource.ValidResource(parser);
             if (xmlParser == null)
                 return false;
 
-            PhpException.FunctionNotSupported("xml_set_unparsed_entity_decl_handler");
+            PhpException.FunctionNotSupported(nameof(xml_set_unparsed_entity_decl_handler));
             return false;
         }
 

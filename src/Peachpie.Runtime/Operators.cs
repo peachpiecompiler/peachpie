@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 
 namespace Pchp.Core
 {
@@ -160,7 +161,7 @@ namespace Pchp.Core
             {
                 case PhpTypeCode.Long: return PhpValue.Create(~x.Long);
 
-                case PhpTypeCode.Alias: return BitNot(in x.Alias.Value);
+                case PhpTypeCode.Alias: return ~x.Alias.Value;
 
                 case PhpTypeCode.String:
                 case PhpTypeCode.MutableString:
@@ -191,9 +192,7 @@ namespace Pchp.Core
 
             if ((info & Convert.NumberInfo.IsPhpArray) != 0)
             {
-                //PhpException.UnsupportedOperandTypes();
-                //return PhpNumber.Create(0.0);
-                throw new NotImplementedException();     // PhpException
+                throw PhpException.ErrorException(ErrResources.unsupported_operand_types);
             }
 
             // TODO: // division by zero:
@@ -287,7 +286,7 @@ namespace Pchp.Core
                     break;
 
                 case PhpTypeCode.Alias:
-                    blob = EnsureWritableString(ref value.Alias.Value);
+                    blob = value.Alias.EnsureWritableString();
                     break;
 
                 default:
@@ -570,11 +569,12 @@ namespace Pchp.Core
             // IList
             if (obj is IList) return new ListAsPhpArray((IList)obj);
 
-            // TODO: IDictionary
 
             // get_Item
             if (obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item] != null)
             {
+                // IDictionary,
+                // and item getters in general:
                 return new GetSetItemAsPhpArray(obj);
             }
 
@@ -595,7 +595,7 @@ namespace Pchp.Core
             PhpTypeCode.String => PhpValue.EnsureArray(ref value),
             PhpTypeCode.MutableString => value.MutableStringBlob,
             PhpTypeCode.Object => EnsureArray(value.Object),
-            PhpTypeCode.Alias => GetArrayAccess(ref value.Alias.Value),
+            PhpTypeCode.Alias => value.Alias.EnsureArray(),
             _ => null,
         };
 
@@ -797,7 +797,7 @@ namespace Pchp.Core
                     PhpException.IllegalOffsetType();
                 }
 
-                return new PhpAlias(PhpValue.Null);
+                return PhpAlias.Create(PhpValue.Null);
             }
         }
 
@@ -808,8 +808,11 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
+                case PhpTypeCode.PhpArray:
+                    return value.Array.GetItemValue(index); // , quiet);
+
                 case PhpTypeCode.String:
-                    var item = Operators.GetItemValue(value.String, index, quiet);
+                    var item = GetItemValue(value.String, index, quiet);
                     if (quiet && string.IsNullOrEmpty(item))
                     {
                         return PhpValue.Null;
@@ -817,10 +820,7 @@ namespace Pchp.Core
                     return item;
 
                 case PhpTypeCode.MutableString:
-                    return ((IPhpArray)value.MutableStringBlob).GetItemValue(index); // quiet);
-
-                case PhpTypeCode.PhpArray:
-                    return value.Array.GetItemValue(index); // , quiet);
+                    return value.MutableStringBlob.GetItemValue(index); // quiet);
 
                 case PhpTypeCode.Object:
                     return Operators.GetItemValue(value.Object, index, quiet);
@@ -829,6 +829,7 @@ namespace Pchp.Core
                     return value.Alias.Value.GetArrayItem(index, quiet);
 
                 default:
+                    // TODO: warning
                     return PhpValue.Null;
             }
         }
@@ -872,11 +873,13 @@ namespace Pchp.Core
                 return PhpValue.Null;
             }
 
-            // TODO: IDictionary
 
             // get_Item
             if (obj != null)
             {
+                // IDictionary
+                // and item getter in general:
+
                 var getter = obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item];
                 if (getter != null)
                 {
@@ -887,9 +890,7 @@ namespace Pchp.Core
             //
             if (!quiet)
             {
-                PhpException.Throw(
-                    PhpError.Error,
-                    Resources.ErrResources.object_used_as_array, obj != null ? obj.GetPhpTypeInfo().Name : PhpVariable.TypeNameNull);
+                PhpException.ObjectUsedAsArray(PhpVariable.GetClassName(obj));
             }
 
             //
@@ -992,11 +993,11 @@ namespace Pchp.Core
                     break;
 
                 case PhpTypeCode.Alias:
-                    return EnsureItemAlias(ref value.Alias.Value, index, quiet);
+                    return value.Alias.EnsureItemAlias(index, quiet);
             }
 
             // TODO: Warning
-            return new PhpAlias(PhpValue.Null);
+            return PhpAlias.Create(PhpValue.Null);
         }
 
         public static bool offsetExists(this PhpArray value, long index) =>
@@ -1032,19 +1033,41 @@ namespace Pchp.Core
 
         public static bool offsetExists(object obj, PhpValue index)
         {
-            if (obj is ArrayAccess arrrayAccess)
+            return obj switch
             {
-                return arrrayAccess.offsetExists(index);
-            }
-            else if (obj is IPhpArray arr)
+                // PHP ArrayAccess
+                ArrayAccess arrrayAccess => arrrayAccess.offsetExists(index),
+
+                // object implementing PeachPie's IPhpArray
+                IPhpArray arr => IsSet(arr.GetItemValue(index)),
+
+                // IList, checks the integer key is in range
+                IList list => index.TryToIntStringKey(out var key) && key.IsInteger && key.Integer >= 0 && key.Integer < list.Count,
+
+                // IDictionary
+                IDictionary dict => offsetExists(dict, index),
+
+                // TODO: generic get_Item() getter
+                _ => false,
+            };
+        }
+
+        public static bool offsetExists(IDictionary obj, PhpValue index)
+        {
+            if (obj != null)
             {
-                return IsSet(arr.GetItemValue(index));
+                // return obj.Contains(index.ToClr()); // <-- cannot be used, index might need to be converted to specific Dictionary's TKey type
+
+                var getter = obj.GetPhpTypeInfo().RuntimeMethods[/*nameof(IDictionary<,>.ContainsKey)*/"ContainsKey"];
+                if (getter != null)
+                {
+                    return getter.Invoke(null, obj, index).ToBoolean();
+                }
+
+                // fallback to generic behavior,
+                // might get false if index is of a wrong type
+                return obj.Contains(index.ToClr());
             }
-            else if (obj is IList list)
-            {
-                return index.TryToIntStringKey(out var key) && key.IsInteger && key.Integer >= 0 && key.Integer < list.Count;
-            }
-            // TODO: IDictionary
 
             return false;
         }
@@ -1169,15 +1192,15 @@ namespace Pchp.Core
         /// <summary>
         /// Resolves the runtime property by looking into runtime properties and eventually invoking the <c>__get</c> magic method.
         /// </summary>
-        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, object/*!*/instance, string propertyName)
+        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, object/*!*/instance, string propertyName, bool quiet)
         {
-            return RuntimePropertyGetValue(ctx, instance.GetPhpTypeInfo(), instance, propertyName);
+            return RuntimePropertyGetValue(ctx, instance.GetPhpTypeInfo(), instance, propertyName, quiet);
         }
 
         /// <summary>
         /// Resolves the runtime property by looking into runtime properties and eventually invoking the <c>__get</c> magic method.
         /// </summary>
-        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, PhpTypeInfo/*!*/type, object/*!*/instance, string propertyName)
+        public static PhpValue RuntimePropertyGetValue(Context/*!*/ctx, PhpTypeInfo/*!*/type, object/*!*/instance, string propertyName, bool quiet)
         {
             var runtimeFields = type.GetRuntimeFields(instance);
             if (runtimeFields != null && runtimeFields.TryGetValue(propertyName, out var value))
@@ -1203,7 +1226,12 @@ namespace Pchp.Core
             }
 
             //
-            PhpException.UndefinedProperty(type.Name, propertyName);
+            if (!quiet)
+            {
+                PhpException.UndefinedProperty(type.Name, propertyName);
+            }
+
+            // empty
             return PhpValue.Null;
         }
 
@@ -1439,7 +1467,7 @@ namespace Pchp.Core
 
             public PhpValue CurrentValue => PhpValue.Null;
 
-            public PhpAlias CurrentValueAliased => new PhpAlias(PhpValue.Null);
+            public PhpAlias CurrentValueAliased => PhpAlias.Create(PhpValue.Null);
 
             object IEnumerator.Current => null;
 
@@ -1744,6 +1772,33 @@ namespace Pchp.Core
         /// Gets enumerator object for given value.
         /// </summary>
         public static IPhpEnumerator GetForeachEnumerator(PhpValue value, bool aliasedValues, RuntimeTypeHandle caller) => value.GetForeachEnumerator(aliasedValues, caller);
+
+        /// <summary>
+        /// Gets enumerator of array entries.
+        /// This is internal implementation that avoids allocations in common cases.
+        /// </summary>
+        public static OrderedDictionary.FastEnumerator GetFastEnumerator(PhpArray array, bool aliasedValue)
+        {
+            Debug.Assert(array != null);
+
+            if (array.Count == 0)
+            {
+                // follows call to MoveNext() which ends the enumeration
+                // keep array as it is, it won't be accessed anyways
+            }
+            else if (aliasedValue)
+            {
+                // ensure array is not shared with another variable
+                array.EnsureWritable();
+            }
+            else
+            {
+                // create lazy copy
+                array.table.AddRef();
+            }
+
+            return array.GetFastEnumerator();
+        }
 
         #endregion
 

@@ -48,7 +48,7 @@ namespace Pchp.Library
 
     #endregion
 
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Processes
     {
         #region popen, pclose
@@ -136,11 +136,33 @@ namespace Pchp.Library
         #region proc_open
 
         /// <summary>
-        /// Starts a process and otpionally redirects its input/output/error streams to specified PHP streams.
+        /// Starts a process and optionally redirects its input/output/error streams to specified PHP streams.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="command"></param>
-        /// <param name="descriptors"></param>
+        /// <param name="cmd">The commandline to execute as string. Special characters have to be properly escaped, and proper quoting has to be applied.</param>
+        /// <param name="descriptorspec"></param>
+        /// Indexed array where the key represents the descriptor number (0 for STDIN, 1 for STDOUT, 2 for STDERR)
+        /// and the value represents how to pass that descriptor to the child process. 
+        /// A descriptor is either an opened file resources or an integer indexed arrays 
+        /// containing descriptor name followed by options. Supported descriptors:
+        /// <list type="bullet">
+        /// <term><c>array("pipe",{mode})</c></term><description>Pipe is opened in the specified mode .</description>
+        /// <term><c>array("file",{path},{mode})</c></term><description>The file is opened in the specified mode.</description>
+        /// </list>
+        /// <returns>
+        /// Resource representing the process.
+        /// </returns>
+        public static PhpResource proc_open(Context ctx, string cmd, PhpArray descriptorspec)
+        {
+            return proc_open(ctx, cmd, descriptorspec, out _);
+        }
+
+        /// <summary>
+        /// Starts a process and optionally redirects its input/output/error streams to specified PHP streams.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="cmd">The commandline to execute as string. Special characters have to be properly escaped, and proper quoting has to be applied.</param>
+        /// <param name="descriptorspec"></param>
         /// Indexed array where the key represents the descriptor number (0 for STDIN, 1 for STDOUT, 2 for STDERR)
         /// and the value represents how to pass that descriptor to the child process. 
         /// A descriptor is either an opened file resources or an integer indexed arrays 
@@ -152,11 +174,11 @@ namespace Pchp.Library
         /// <param name="pipes">
         /// Set to indexed array of file resources corresponding to the current process's ends of created pipes.
         /// </param>
-        /// <param name="workingDirectory">
+        /// <param name="cwd">
         /// Working directory.
         /// </param>
-        /// <param name="envVariables"></param>
-        /// <param name="options">
+        /// <param name="env"></param>
+        /// <param name="other_options">
         /// Associative array containing following key-value pairs.
         ///   <list type="bullet">
         ///     <term>"suppress_errors"</term><description></description>
@@ -165,19 +187,21 @@ namespace Pchp.Library
         /// <returns>
         /// Resource representing the process.
         /// </returns>
-        public static PhpResource proc_open(Context ctx,
-            string command, PhpArray descriptors, out PhpArray pipes,
-            string workingDirectory = null, PhpArray envVariables = null, PhpArray options = null)
+        public static PhpResource proc_open(
+            Context ctx,
+            string cmd, PhpArray descriptorspec,
+            out PhpArray pipes,
+            string cwd = null, PhpArray env = null, PhpArray other_options = null)
         {
-            if (descriptors == null)
+            if (descriptorspec == null)
             {
-                PhpException.ArgumentNull("descriptors");
+                PhpException.ArgumentNull(nameof(descriptorspec));
                 pipes = null;
                 return null;
             }
 
             pipes = new PhpArray();
-            return Open(ctx, command, descriptors, pipes, workingDirectory, envVariables, options);
+            return Open(ctx, cmd, descriptorspec, pipes, cwd, env, other_options);
         }
 
         /// <summary>
@@ -187,13 +211,14 @@ namespace Pchp.Library
           string workingDirectory, PhpArray envVariables, PhpArray options)
         {
             if (descriptors == null)
-                throw new ArgumentNullException("descriptors");
+                throw new ArgumentNullException(nameof(descriptors));
+
             if (pipes == null)
-                throw new ArgumentNullException("pipes");
+                throw new ArgumentNullException(nameof(pipes));
 
             bool bypass_shell = options != null && options["bypass_shell"].ToBoolean();   // quiet
 
-            Process process = CreateProcessExecutingCommand(ctx, ref command, bypass_shell);
+            var process = CreateProcessExecutingCommand(ctx, ref command, bypass_shell);
             if (process == null)
                 return null;
 
@@ -201,7 +226,7 @@ namespace Pchp.Library
                 return null;
 
             if (envVariables != null)
-                SetupEnvironment(process, envVariables);
+                SetupEnvironment(ctx, process, envVariables);
 
             if (workingDirectory != null)
                 process.StartInfo.WorkingDirectory = workingDirectory;
@@ -225,7 +250,7 @@ namespace Pchp.Library
             if (!Execution.MakeCommandSafe(ref command))
                 return null;
 
-            Process process = new Process();
+            var process = new Process();
 
             if (bypass_shell)
             {
@@ -265,15 +290,15 @@ namespace Pchp.Library
             }
         }
 
-        private static void SetupEnvironment(Process/*!*/ process, PhpArray/*!*/ envVariables)
+        private static void SetupEnvironment(Context ctx, Process/*!*/ process, PhpArray/*!*/ envVariables)
         {
             var e = envVariables.GetFastEnumerator();
             while (e.MoveNext())
             {
-                string s = e.CurrentKey.String;
+                var s = e.CurrentKey.String;
                 if (s != null)
                 {
-                    // TODO: process.StartInfo.EnvironmentVariables.Add(s, e.CurrentValue.ToString(ctx));
+                    process.StartInfo.EnvironmentVariables[s] = e.CurrentValue.ToString(ctx);
                 }
             }
         }
@@ -310,10 +335,11 @@ namespace Pchp.Library
             var descriptors_enum = descriptors.GetFastEnumerator();
             while (descriptors_enum.MoveNext())
             {
-                var desc_no = descriptors_enum.CurrentKey.Integer;
+                var desc_no = (int)descriptors_enum.CurrentKey.Integer;
 
                 StreamAccessOptions access;
                 Stream stream;
+
                 switch (desc_no)
                 {
                     case 0: stream = process.StandardInput.BaseStream; access = StreamAccessOptions.Write; break;
@@ -322,69 +348,75 @@ namespace Pchp.Library
                     default: Debug.Fail(null); return false;
                 }
 
-                var value = descriptors_enum.CurrentValue;
                 PhpResource resource;
-                PhpArray array;
 
-                if ((array = value.AsArray()) != null)
+                var value = descriptors_enum.CurrentValue;
+                if (value.IsPhpArray(out var array))
                 {
-                    if (!array.Contains(0))
+                    if (!array.TryGetValue(0, out var qualifierObj))
                     {
                         // value must be either a resource or an array:
                         PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_missing_qualifier, desc_no.ToString());
                         return false;
                     }
 
-                    string qualifier = array[0].ToString(ctx);
-
-                    switch (qualifier)
+                    switch (qualifierObj.ToString(ctx))
                     {
                         case "pipe":
                             {
                                 // mode is ignored (it's determined by the stream):
-                                PhpStream php_stream = new NativeStream(ctx, stream, null, access, String.Empty, StreamContext.Default);
+                                var php_stream = new NativeStream(ctx, stream, null, access, string.Empty, StreamContext.Default);
                                 pipes.Add(desc_no, php_stream);
                                 break;
                             }
 
                         case "file":
                             {
-                                if (!array.Contains(1))
+                                if (!array.TryGetValue(1, out var pathObj))
                                 {
                                     PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_missing_file_name, desc_no.ToString());
                                     return false;
                                 }
 
-                                if (!array.Contains(2))
+                                if (!array.TryGetValue(2, out var modeObj))
                                 {
                                     PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_missing_mode, desc_no.ToString());
                                     return false;
                                 }
 
-                                string path = array[1].ToString(ctx);
-                                string mode = array[2].ToString(ctx);
-
-                                PhpStream php_stream = PhpStream.Open(ctx, path, mode, StreamOpenOptions.Empty, StreamContext.Default);
+                                var php_stream = PhpStream.Open(ctx, pathObj.ToString(ctx), modeObj.ToString(ctx), StreamOpenOptions.Empty, StreamContext.Default);
                                 if (php_stream == null)
+                                {
                                     return false;
+                                }
 
-                                //if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no)) return false;
-                                //break;
-                                throw new NotImplementedException();
+                                php_stream.IsWriteBuffered = false;
+
+                                if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no))
+                                {
+                                    return false;
+                                }
+
+                                break;
                             }
 
                         default:
-                            PhpException.Throw(PhpError.Warning, Resources.LibResources.invalid_handle_qualifier, qualifier);
+                            PhpException.Throw(PhpError.Warning, Resources.LibResources.invalid_handle_qualifier, qualifierObj.ToString(ctx));
                             return false;
                     }
                 }
                 else if ((resource = value.AsResource()) != null)
                 {
-                    PhpStream php_stream = PhpStream.GetValid(resource);
-                    if (php_stream == null) return false;
+                    var php_stream = PhpStream.GetValid(resource);
+                    if (php_stream == null)
+                    {
+                        return false;
+                    }
 
-                    //if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no)) return false;
-                    throw new NotImplementedException();
+                    if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no))
+                    {
+                        return false;
+                    }
                 }
                 else
                 {
@@ -397,90 +429,93 @@ namespace Pchp.Library
             return true;
         }
 
-        //private sealed class ActivePipe
-        //{
-        //    private const int BufferSize = 1024;
+        sealed class ActivePipe
+        {
+            private const int BufferSize = 1024;
 
-        //    Stream stream;
-        //    StreamAccessOptions access;
-        //    PhpStream phpStream;
-        //    public AsyncCallback callback;
-        //    public byte[] buffer;
+            Stream stream;
+            StreamAccessOptions access;
+            PhpStream phpStream;
+            public AsyncCallback callback;
+            public byte[] buffer;
 
-        //    public static bool BeginIO(Stream stream, PhpStream phpStream, StreamAccessOptions access, int desc_no)
-        //    {
-        //        if (access == StreamAccessOptions.Read && !phpStream.CanWrite ||
-        //          access == StreamAccessOptions.Write && !phpStream.CanRead)
-        //        {
-        //            PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_invalid_mode, desc_no.ToString());
-        //            return false;
-        //        }
+            public static bool BeginIO(Stream stream, PhpStream phpStream, StreamAccessOptions access, int desc_no)
+            {
+                if (access == StreamAccessOptions.Read && !phpStream.CanWrite ||
+                  access == StreamAccessOptions.Write && !phpStream.CanRead)
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_invalid_mode, desc_no.ToString());
+                    return false;
+                }
 
-        //        ActivePipe pipe = new ActivePipe();
-        //        pipe.stream = stream;
-        //        pipe.phpStream = phpStream;
-        //        pipe.access = access;
-        //        pipe.callback = new AsyncCallback(pipe.Callback);
+                var pipe = new ActivePipe
+                {
+                    stream = stream,
+                    phpStream = phpStream,
+                    access = access
+                };
+                pipe.callback = new AsyncCallback(pipe.Callback);
 
-        //        if (access == StreamAccessOptions.Read)
-        //        {
-        //            var buffer = new byte[BufferSize];
-        //            stream.BeginRead(buffer, 0, buffer.Length, pipe.callback, null);
-        //            pipe.buffer = buffer;
-        //        }
-        //        else
-        //        {
-        //            pipe.buffer = phpStream.ReadBytes(BufferSize);
-        //            if (pipe.buffer != null)
-        //                stream.BeginWrite(pipe.buffer, 0, pipe.buffer.Length, pipe.callback, null);
-        //            else
-        //                stream.Dispose();
-        //        }
+                if (access == StreamAccessOptions.Read)
+                {
+                    var buffer = new byte[BufferSize];
+                    stream.BeginRead(buffer, 0, buffer.Length, pipe.callback, null);
+                    pipe.buffer = buffer;
+                }
+                else
+                {
+                    pipe.buffer = phpStream.ReadBytes(BufferSize);
+                    if (pipe.buffer != null)
+                        stream.BeginWrite(pipe.buffer, 0, pipe.buffer.Length, pipe.callback, null);
+                    else
+                        stream.Dispose();
+                }
 
-        //        return true;
-        //    }
+                return true;
+            }
 
-        //    private void Callback(IAsyncResult ar)
-        //    {
-        //        if (access == StreamAccessOptions.Read)
-        //        {
-        //            int count = stream.EndRead(ar);
-        //            if (count > 0)
-        //            {
-        //                if (count != buffer.Length)
-        //                {
-        //                    // TODO: improve streams
-        //                    var buf = new byte[count];
-        //                    Buffer.BlockCopy(buffer, 0, buf, 0, count);
-        //                    phpStream.WriteBytes(buf);
-        //                }
-        //                else
-        //                {
-        //                    phpStream.WriteBytes(buffer);
-        //                }
+            private void Callback(IAsyncResult ar)
+            {
+                if (access == StreamAccessOptions.Read)
+                {
+                    int count = stream.EndRead(ar);
+                    if (count > 0)
+                    {
+                        if (count != buffer.Length)
+                        {
+                            // TODO: improve streams
+                            var buf = new byte[count];
+                            Buffer.BlockCopy(buffer, 0, buf, 0, count);
+                            phpStream.WriteBytes(buf);
+                        }
+                        else
+                        {
+                            phpStream.WriteBytes(buffer);
+                        }
 
-        //                stream.BeginRead(buffer, 0, buffer.Length, callback, ar.AsyncState);
-        //            }
-        //            else
-        //            {
-        //                stream.Dispose();
-        //            }
-        //        }
-        //        else
-        //        {
-        //            buffer = phpStream.ReadBytes(BufferSize);
-        //            if (buffer != null)
-        //            {
-        //                stream.BeginWrite(buffer, 0, buffer.Length, callback, ar.AsyncState);
-        //            }
-        //            else
-        //            {
-        //                stream.EndWrite(ar);
-        //                stream.Dispose();
-        //            }
-        //        }
-        //    }
-        //}
+                        stream.BeginRead(buffer, 0, buffer.Length, callback, ar.AsyncState);
+                    }
+                    else
+                    {
+                        phpStream.Flush();
+                        stream.Dispose();
+                    }
+                }
+                else
+                {
+                    buffer = phpStream.ReadBytes(BufferSize);
+                    if (buffer != null)
+                    {
+                        stream.BeginWrite(buffer, 0, buffer.Length, callback, ar.AsyncState);
+                    }
+                    else
+                    {
+                        stream.EndWrite(ar);
+                        stream.Dispose();
+                    }
+                }
+            }
+        }
 
         #endregion
 

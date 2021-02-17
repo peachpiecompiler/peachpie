@@ -11,7 +11,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// 
         /// </summary>
-        [PhpHidden]
+        [PhpHidden, Flags]
         public enum PDO_FETCH
         {
             /// <summary>
@@ -108,11 +108,6 @@ namespace Peachpie.Library.PDO
             /// Additional flags mask combined with fetch mode.
             /// </summary>
             Flags = 0xff0000,
-
-            /// <summary>
-            /// must be last
-            /// </summary>
-            Count,
         }
 
         /// <summary>

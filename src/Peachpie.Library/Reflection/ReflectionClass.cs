@@ -108,7 +108,6 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets class constants.
         /// </summary>
-        [return: NotNull]
         public PhpArray getReflectionConstants()
         {
             var result = new PhpArray();
@@ -139,7 +138,6 @@ namespace Pchp.Library.Reflection
                 : null;
         }
 
-        [return: NotNull]
         public PhpArray getDefaultProperties(Context ctx)
         {
             var tinfo = _tinfo;
@@ -333,6 +331,9 @@ namespace Pchp.Library.Reflection
             return result;
         }
 
+        public virtual PhpArray getAttributes(string class_name = null, int flags = 0)
+            => ReflectionUtils.getAttributes(_tinfo.Type, class_name, flags);
+
         [return: CastToFalse]
         public virtual ReflectionProperty getProperty(string name)
         {
@@ -360,7 +361,6 @@ namespace Pchp.Library.Reflection
             return -1;
         }
 
-        [return: NotNull]
         public PhpArray getStaticProperties(Context ctx)
         {
             var array = new PhpArray();

@@ -608,9 +608,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x.Update((BoundExpression)Accept(x.Returned));
         }
 
-        public override object VisitThrow(BoundThrowStatement x)
+        public override object VisitThrow(BoundThrowExpression x)
         {
-            return x.Update((BoundExpression)x.Thrown);
+            return x.Update(x.Thrown);
         }
 
         public override object VisitFunctionDeclaration(BoundFunctionDeclStatement x)

@@ -8,6 +8,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <NoWarn>$(NoWarn),NU5128</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

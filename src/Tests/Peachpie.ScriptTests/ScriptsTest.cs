@@ -42,17 +42,13 @@ namespace ScriptsTest
 
         [SkippableTheory]
         [ScriptsListData]
-        public void ScriptRunTest(string dir, string fname)
+        public void ScriptRunTest(string fname, string subdir, string testsdir)
         {
+            var path = Path.Combine(testsdir, subdir, fname);
             var isSkipTest = new Regex(@"^skip(\([^)]*\))?_.*$"); // matches either skip_<smth>.php or skip(<reason>)_<smth>.php
             Skip.If(isSkipTest.IsMatch(fname));
 
-            var path = Path.Combine(dir, fname);
-
-            _output.WriteLine("Testing {0} ...", path);
-
-            // 
-            Directory.SetCurrentDirectory(dir);
+            _output.WriteLine("Testing {0} ...", fname);
 
             // test script compilation and run it
             var result = CompileAndRun(path);
@@ -84,7 +80,6 @@ namespace ScriptsTest
             }
         }
 
-
         string CompileAndRun(string path)
         {
             var outputStream = new MemoryStream();
@@ -92,8 +87,7 @@ namespace ScriptsTest
             using (var ctx = Context.CreateEmpty())
             {
                 // mimic the execution in the given folder
-                ctx.WorkingDirectory = Path.GetDirectoryName(path);
-                ctx.RootPath = ctx.WorkingDirectory;
+                ctx.RootPath = ctx.WorkingDirectory = Path.GetDirectoryName(path);
 
                 // redirect text output
                 ctx.Output = new StreamWriter(outputStream, Encoding.UTF8) { AutoFlush = true };

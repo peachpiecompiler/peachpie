@@ -70,6 +70,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Argument {0} passed to {1}() must be of the type {2}, {3} given.
+        /// </summary>
+        internal static string ERR_ArgumentTypeMismatch {
+            get {
+                return ResourceManager.GetString("ERR_ArgumentTypeMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid assembly name: {0}.
         /// </summary>
         internal static string ERR_BadAssemblyName {
@@ -111,6 +120,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_BadSwitch {
             get {
                 return ResourceManager.GetString("ERR_BadSwitch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; is a binary file instead of a text file.
+        /// </summary>
+        internal static string ERR_BinaryFile {
+            get {
+                return ResourceManager.GetString("ERR_BinaryFile", resourceCulture);
             }
         }
         
@@ -210,6 +228,42 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_CompileCancelled {
             get {
                 return ResourceManager.GetString("ERR_CompileCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot declare promoted property in an abstract constructor.
+        /// </summary>
+        internal static string ERR_CtorPropertyAbstractCtor {
+            get {
+                return ResourceManager.GetString("ERR_CtorPropertyAbstractCtor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot declare promoted property outside a constructor.
+        /// </summary>
+        internal static string ERR_CtorPropertyNotCtor {
+            get {
+                return ResourceManager.GetString("ERR_CtorPropertyNotCtor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot declare promoted property in a static constructor.
+        /// </summary>
+        internal static string ERR_CtorPropertyStaticCtor {
+            get {
+                return ResourceManager.GetString("ERR_CtorPropertyStaticCtor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot declare variadic promoted property.
+        /// </summary>
+        internal static string ERR_CtorPropertyVariadic {
+            get {
+                return ResourceManager.GetString("ERR_CtorPropertyVariadic", resourceCulture);
             }
         }
         
@@ -340,6 +394,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Multiple analyzer config files cannot be in the same directory (&apos;{0}&apos;)..
+        /// </summary>
+        internal static string ERR_MultipleAnalyzerConfigsInSameDir {
+            get {
+                return ResourceManager.GetString("ERR_MultipleAnalyzerConfigsInSameDir", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} {1}() must take exactly {2} arguments.
         /// </summary>
         internal static string ERR_MustTakeArgs {
@@ -457,6 +520,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Property {0}::${1} cannot have type {2}.
+        /// </summary>
+        internal static string ERR_PropertyTypeNotAllowed {
+            get {
+                return ResourceManager.GetString("ERR_PropertyTypeNotAllowed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot set read-only property {0}::${1}.
         /// </summary>
         internal static string ERR_ReadOnlyPropertyWritten {
@@ -507,6 +579,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_TooManyUserStrings {
             get {
                 return ResourceManager.GetString("ERR_TooManyUserStrings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot convert {0} to {1}.
+        /// </summary>
+        internal static string ERR_TypeMismatch {
+            get {
+                return ResourceManager.GetString("ERR_TypeMismatch", resourceCulture);
             }
         }
         
@@ -570,6 +651,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string FTL_InvalidInputFileName {
             get {
                 return ResourceManager.GetString("FTL_InvalidInputFileName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Constant &apos;{0}&apos; with the same name is already defined.
+        /// </summary>
+        internal static string INF_ConstantAlreadyDefined {
+            get {
+                return ResourceManager.GetString("INF_ConstantAlreadyDefined", resourceCulture);
             }
         }
         
@@ -655,6 +745,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Called from the global scope.
+        /// </summary>
+        internal static string WRN_CalledFromGlobalScope {
+            get {
+                return ResourceManager.GetString("WRN_CalledFromGlobalScope", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Script file &apos;{0}&apos; could not be resolved, the script inclusion is unbound..
         /// </summary>
         internal static string WRN_CannotIncludeFile {
@@ -714,6 +813,24 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string WRN_FormatStringWrongArgCount {
             get {
                 return ResourceManager.GetString("WRN_FormatStringWrongArgCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Generator &apos;{0}&apos; failed to generate source. It will not contribute to the output and compilation errors may occur as a result. Exception was of type &apos;{1}&apos; with message &apos;{2}&apos;.
+        /// </summary>
+        internal static string WRN_GeneratorFailedDuringGeneration {
+            get {
+                return ResourceManager.GetString("WRN_GeneratorFailedDuringGeneration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Generator &apos;{0}&apos; failed to initialize. It will not contribute to the output and compilation errors may occur as a result. Exception was of type &apos;{1}&apos; with message &apos;{2}&apos;.
+        /// </summary>
+        internal static string WRN_GeneratorFailedDuringInitialization {
+            get {
+                return ResourceManager.GetString("WRN_GeneratorFailedDuringInitialization", resourceCulture);
             }
         }
         

@@ -95,7 +95,11 @@ namespace Pchp.Library
                 DefaultValue;
         }
 
-        static readonly GetSetDelegate s_emptyGsr = new GetSetDelegate((ctx, s, name, value, action) => PhpValue.Null);
+        static readonly GetSetDelegate s_emptyGsr = new GetSetDelegate((ctx, s, name, value, action) =>
+        {
+            Debug.WriteLine($"INI option '{name}' is not implemented.");
+            return PhpValue.False;
+        });
 
         static void AssertGet(string option, IniAction action)
         {
@@ -107,21 +111,21 @@ namespace Pchp.Library
 
         static PhpValue GsrCore(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
-            switch (option.ToLowerInvariant())
+            switch (option)
             {
                 case "precision":
-                    // TODO: this can be set in .NET <see cref="Core.Convert.ToString(double, Context)"/> by specifying "G{precision}", consider performance
+                    // CONSIDER: this can be set in our Context.InvariantNumberFormatInfo ?
                     AssertGet(option, action);
-                    return (PhpValue)15;    // default Double precision in .NET
+                    return 15;    // default Double precision in .NET
 
                 case "register_globals":
                     AssertGet(option, action);
                     return PhpValue.False;  // always Off
 
                 case "allow_url_fopen":
-                    return (PhpValue)GetSet(ref config.Core.AllowUrlFopen, true, value, action);
+                    return GetSet(ref config.Core.AllowUrlFopen, true, value, action);
                 case "include_path":
-                    return (PhpValue)GetSet(ref config.Core.IncludePaths, ".", value, action);
+                    return GetSet(ref config.Core.IncludePaths, ".", value, action);
                 case "allow_url_include":
                     AssertGet(option, action);
                     return PhpValue.False;
@@ -129,25 +133,44 @@ namespace Pchp.Library
                 case "disable_functions":
                 case "disable_classes":
                     AssertGet(option, action);
-                    return (PhpValue)string.Empty;
+                    return string.Empty;
+
+                case "file_uploads":
+                    AssertGet(option, action);
+                    return PhpValue.True;
+
+                //case "max_file_uploads":
+                //    return 20;
 
                 case "memory_limit":
                     AssertGet(option, action);
-                    return (PhpValue)(-1); // no memory limit
+                    return -1; // no memory limit
 
                 case "post_max_size":
                 case "upload_max_filesize":
                     AssertGet(option, action);
-                    return ctx.HttpPhpContext != null ? ctx.HttpPhpContext.MaxRequestSize : (8_000_000/*cli mode, just return something*/);
+                    return ctx.HttpPhpContext != null ? ctx.HttpPhpContext.MaxRequestSize : (16_000_000/*cli mode, just return something*/);
 
                 case "docref_root":
-                    return (PhpValue)GetSet(ref config.Core.docref_root, "", value, action);
+                    return GetSet(ref config.Core.docref_root, "", value, action);
                 case "docref_ext":
-                    return (PhpValue)GetSet(ref config.Core.docref_ext, "", value, action);
+                    return GetSet(ref config.Core.docref_ext, "", value, action);
 
                 case "open_basedir":
-                    Debug.Assert(action == IniAction.Get);
-                    return (PhpValue)string.Empty;
+                    AssertGet(option, action);
+                    return string.Empty;
+
+                case "max_execution_time":
+                    if (action == IniAction.Set)
+                    {
+                        var oldvalue = config.Core.ExecutionTimeout;
+                        ctx.ApplyExecutionTimeout(config.Core.ExecutionTimeout = Math.Max(0, value.ToInt()));
+                        return oldvalue;
+                    }
+                    else
+                    {
+                        return config.Core.ExecutionTimeout;
+                    }
 
                 default:
                     throw new ArgumentException();
@@ -156,39 +179,34 @@ namespace Pchp.Library
 
         static PhpValue GsrMail(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
-            switch (option.ToLowerInvariant())
+            switch (option)
             {
-                case "smtp":
-                    return (PhpValue)GetSet(ref config.Core.SmtpServer, null, value, action);
+                case "SMTP":
+                    return GetSet(ref config.Core.SmtpServer, null, value, action);
 
                 case "smtp_port":
-                    return (PhpValue)GetSet(ref config.Core.SmtpPort, 25, value, action);
+                    return GetSet(ref config.Core.SmtpPort, 25, value, action);
 
                 case "sendmail_from":
-                    return (PhpValue)GetSet(ref config.Core.DefaultFromHeader, null, value, action);
+                    return GetSet(ref config.Core.DefaultFromHeader, null, value, action);
 
                 case "mail.add_x_header":
-                    return (PhpValue)GetSet(ref config.Core.AddXHeader, false, value, action);
+                    return GetSet(ref config.Core.AddXHeader, false, value, action);
 
                 case "mail.force_extra_parameters":
-                    return (PhpValue)GetSet(ref config.Core.ForceExtraMailParameters, null, value, action);
+                    return GetSet(ref config.Core.ForceExtraMailParameters, null, value, action);
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(option));
             }
         }
 
-        static PhpValue GsrSession(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
-        {
-            return config.Get<SessionConfiguration>().Gsr(ctx, config, option, value, action);
-        }
-
-        static Dictionary<string, OptionDefinition> _options = new Dictionary<string, OptionDefinition>(150, StringComparer.Ordinal);
+        static Dictionary<string, OptionDefinition> s_options = new Dictionary<string, OptionDefinition>(150, StringComparer.Ordinal);
 
         /// <summary>
         /// Gets a number of registered options.
         /// </summary>
-        public static int Count => _options.Count;
+        public static int Count => s_options.Count;
 
         static StandardPhpOptions()
         {
@@ -199,7 +217,6 @@ namespace Pchp.Library
         {
             // single instances of the delegate:
             var gsrcore = new GetSetDelegate(GsrCore);
-            var gsrsession = new GetSetDelegate(GsrSession);
             var gsrmail = new GetSetDelegate(GsrMail);
 
             //
@@ -247,7 +264,7 @@ namespace Pchp.Library
             Register("expose_php", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("extension_dir", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("fastcgi.impersonate", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
-            Register("file_uploads", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("file_uploads", IniFlags.Supported | IniFlags.Global, gsrcore);
             Register("from", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("gpc_order", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
             Register("html_errors", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
@@ -264,7 +281,7 @@ namespace Pchp.Library
             Register("magic_quotes_gpc", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("magic_quotes_runtime", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("magic_quotes_sybase", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
-            Register("max_execution_time", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("max_execution_time", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("max_input_time", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("memory_limit", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("mime_magic.magicfile", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
@@ -282,15 +299,6 @@ namespace Pchp.Library
             Register("safe_mode_gid", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("safe_mode_include_dir", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("safe_mode_protected_env_vars", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
-            Register("session.auto_start", IniFlags.Supported | IniFlags.Global | IniFlags.Http, s_emptyGsr);
-            Register("session.save_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, s_emptyGsr);
-            Register("session.serialize_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, gsrsession);
-            Register("session.name", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
-            Register("session.cookie_lifetime", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
-            Register("session.cookie_path", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
-            Register("session.cookie_domain", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
-            Register("session.cookie_secure", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
-            Register("session.cookie_httponly", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
             Register("short_open_tag", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("sql.safe_mode", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("track_errors", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
@@ -331,7 +339,42 @@ namespace Pchp.Library
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (gsr == null) throw new ArgumentNullException(nameof(gsr));
 
-            _options.Add(name, new OptionDefinition(flags, gsr, extension));
+            s_options.Add(name, new OptionDefinition(flags, gsr, extension));
+        }
+
+        /// <summary>
+        /// Registeres a standard configuration option.
+        /// Not thread safe.
+        /// </summary>
+        public static void Register<TOptions>(string name, string extension, Func<TOptions, PhpValue> getter, Action<TOptions, PhpValue> setter) where TOptions : class, IPhpConfiguration
+        {
+            if (getter == null)
+                throw new ArgumentNullException(nameof(getter));
+
+            Register(name, IniFlags.Local | IniFlags.Supported,
+                (ctx, config, option, value, action) =>
+                {
+                    var local = config.Get<TOptions>();
+                    if (local == null)
+                    {
+                        return PhpValue.False;
+                    }
+
+                    var oldvalue = getter(local);
+                    if (action == IniAction.Set)
+                    {
+                        if (setter != null)
+                        {
+                            setter(local, value);
+                        }
+                        else
+                        {
+                            PhpException.ArgumentValueNotSupported(option, action);
+                        }
+                    }
+                    return oldvalue;
+                },
+                extension);
         }
 
         public static OptionDefinition GetOption(string name)
@@ -340,7 +383,7 @@ namespace Pchp.Library
                 throw new ArgumentNullException("name");
 
             OptionDefinition value;
-            return _options.TryGetValue(name, out value) ? value : default(OptionDefinition);
+            return s_options.TryGetValue(name, out value) ? value : default(OptionDefinition);
         }
 
         /// <summary>
@@ -436,7 +479,7 @@ namespace Pchp.Library
         {
             var config = ctx.Configuration;
 
-            foreach (var entry in _options)
+            foreach (var entry in s_options)
             {
                 var name = entry.Key;
                 var def = entry.Value;
@@ -444,15 +487,19 @@ namespace Pchp.Library
                 // skips configuration which don't belong to the specified extension:
                 if ((extension == null || extension.Equals(def.Extension, StringComparison.Ordinal)))
                 {
-                    var opt = new OptionDump() { Name = name, Definition = def };
+                    var opt = new OptionDump
+                    {
+                        Name = name,
+                        Definition = def,
+                    };
 
                     if ((def.Flags & IniFlags.Supported) == 0)
                     {
-                        opt.LocalValue = opt.DefaultValue = (PhpValue)"Not Supported";
+                        opt.LocalValue = opt.DefaultValue = "Not Supported";
                     }
                     else if ((def.Flags & IniFlags.Http) != 0 && !ctx.IsWebApplication)
                     {
-                        opt.LocalValue = opt.DefaultValue = (PhpValue)"Http Context Required";
+                        opt.LocalValue = opt.DefaultValue = "Http Context Required";
                     }
                     else
                     {
@@ -545,7 +592,7 @@ namespace Pchp.Library
         #endregion
     }
 
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Options
     {
         public const int INI_USER = (int)StandardPhpOptions.IniAccessability.User; // 1

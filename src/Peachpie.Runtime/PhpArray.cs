@@ -329,7 +329,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="name">Key, respecting <c>[subkey]</c> notation.</param>
         /// <param name="value">The value.</param>
-        /// <remarks>See <see cref="NameValueCollectionUtils.AddVariable(PhpArray, string, PhpValue, string)"/> for details.</remarks>
+        /// <remarks>See <see cref="NameValueCollectionUtils.AddVariable(PhpArray, string, PhpValue, string, bool)"/> for details.</remarks>
         public void AddVariable(string name, string value) => NameValueCollectionUtils.AddVariable(this, name, value);
 
         /// <summary>
@@ -397,7 +397,7 @@ namespace Pchp.Core
             return Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.LongInteger;
         }
 
-        string IPhpConvertible.ToString(Context ctx) => (string)this;
+        string IPhpConvertible.ToString() => (string)this;
 
         /// <summary>
         /// Creates <see cref="stdClass"/> with runtime instance fields copied from entries of this array.

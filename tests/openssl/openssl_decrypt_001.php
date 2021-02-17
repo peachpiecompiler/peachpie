@@ -7,8 +7,11 @@ $supportedMethods = array(
     "aes-192-cbc" =>  "S2Uc5lUHhcPE7+4L+WFZeFNbhLEmWw0SwcTtBI26HtPBp+uHLiaM9AHWzmnpceRA",
     "aes-128-cbc" => "MJH2DwCJxOYU8dHydTZ+AzOR9MoyIr/nlBOx+oMkG5Baqgwfc1pA6ZlRkpGWfliF",
     "aes-256-ecb" => "K93+IDFZxoC3vpDQeVsMC902Yt/eBBjaq/6LET6/PztoiZr/pzOgaaesaTY8bagE",
-    "aes-192-ecb" => "ZMdNPoD/xq8HE/3efJ/V10pptQRNwDEz2oscVNQunnXbgNUqIbe/tL26Uh9MK78t", 
-    "aes-128-ecb" => "67CmNRreDbJuIHzeBpZKrltRffUG/ym8Vwyq0V6PP3Yd8cux4/5ivbpG0GcE2uM6"
+    "aes-192-ecb" => "ZMdNPoD/xq8HE/3efJ/V10pptQRNwDEz2oscVNQunnXbgNUqIbe/tL26Uh9MK78t",
+    "aes-128-ecb" => "67CmNRreDbJuIHzeBpZKrltRffUG/ym8Vwyq0V6PP3Yd8cux4/5ivbpG0GcE2uM6",
+    "aes-256-ctr" => "71D4szTvuqkZShZcT9CE1FJptM9ktGOMcroTOVdduZNkRYvtfmy2SJWPwg==",
+    "aes-192-ctr" => "SYMckmpg/oKAa+3YUzlBp32C3EF5ORINEymNgUTMeIhMM7feY5jy39s0yg==",
+    "aes-128-ctr" => "cLOHzTA0qIAMs5KXPGulqZSNCkhOEx9Aa5/pQy/EYqJrgc99C7oEVdb0cQ=="
 );
 
 $cipher= "aes-256-cbc";

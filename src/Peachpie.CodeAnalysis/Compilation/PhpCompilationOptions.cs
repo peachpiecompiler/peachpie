@@ -65,6 +65,12 @@ namespace Pchp.CodeAnalysis
         public string SdkDirectory { get; private set; }
 
         /// <summary>
+        /// What framework is the compiled assembly supposed to run on,
+        /// e.g. <c>.NETCoreApp,Version=v3.1</c>.
+        /// </summary>
+        public string TargetFramework { get; private set; }
+
+        /// <summary>
         /// Options for getting type information from correspodning PHPDoc comments.
         /// </summary>
         public PhpDocTypes PhpDocTypes { get; private set; }
@@ -80,6 +86,12 @@ namespace Pchp.CodeAnalysis
         /// Source language options.
         /// </summary>
         public PhpParseOptions ParseOptions { get; private set; }
+
+        /// <summary>
+        /// The compilation language version.
+        /// Gets <see cref="PhpParseOptions.LanguageVersion"/> or default language version if not specified.
+        /// </summary>
+        public Version LanguageVersion => ParseOptions?.LanguageVersion ?? PhpSyntaxTree.DefaultLanguageVersion;
 
         /// <summary>
         /// Options diagnostics.
@@ -123,6 +135,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public IReadOnlyCollection<(string prefix, string path)> Autoload_PSR4 { get; internal set; }
 
+        /// <summary>
+        /// Global Nullable context options.
+        /// </summary>
+        public override NullableContextOptions NullableContextOptions { get; protected set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -136,6 +153,7 @@ namespace Pchp.CodeAnalysis
             string baseDirectory,
             string sdkDirectory,
             string subDirectory = null,
+            string targetFramework = null,
             bool reportSuppressedDiagnostics = false,
             string moduleName = null,
             string mainTypeName = null,
@@ -165,8 +183,9 @@ namespace Pchp.CodeAnalysis
             ImmutableArray<Diagnostic> diagnostics = default,
             PhpParseOptions parseOptions = null,
             ImmutableDictionary<string, string> defines = default,
-            bool referencesSupersedeLowerVersions = false)
-            : this(outputKind, baseDirectory, sdkDirectory, subDirectory,
+            bool referencesSupersedeLowerVersions = false,
+            NullableContextOptions nullableContextOptions = NullableContextOptions.Disable)
+            : this(outputKind, baseDirectory, sdkDirectory, subDirectory, targetFramework,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    versionString,
                    optimizationLevel, checkOverflow,
@@ -187,7 +206,8 @@ namespace Pchp.CodeAnalysis
                    diagnostics: diagnostics,
                    defines: defines,
                    parseOptions: parseOptions,
-                   referencesSupersedeLowerVersions: referencesSupersedeLowerVersions)
+                   referencesSupersedeLowerVersions: referencesSupersedeLowerVersions,
+                   nullableContextOptions: nullableContextOptions)
         {
         }
 
@@ -197,6 +217,7 @@ namespace Pchp.CodeAnalysis
             string baseDirectory,
             string sdkDirectory,
             string subDirectory,
+            string targetFramework,
             bool reportSuppressedDiagnostics,
             string moduleName,
             string mainTypeName,
@@ -228,7 +249,8 @@ namespace Pchp.CodeAnalysis
             ImmutableArray<Diagnostic> diagnostics,
             PhpParseOptions parseOptions,
             ImmutableDictionary<string, string> defines,
-            bool referencesSupersedeLowerVersions)
+            bool referencesSupersedeLowerVersions,
+            NullableContextOptions nullableContextOptions)
             : base(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel.AsOptimizationLevel(), checkOverflow,
                    platform, generalDiagnosticOption, warningLevel, specificDiagnosticOptions.ToImmutableDictionaryOrEmpty(),
@@ -239,6 +261,7 @@ namespace Pchp.CodeAnalysis
             this.BaseDirectory = baseDirectory;
             this.SdkDirectory = sdkDirectory;
             this.SubDirectory = subDirectory;
+            this.TargetFramework = targetFramework;
             this.PhpDocTypes = phpdocTypes;
             this.EmbedSourceMetadata = embedSourceMetadata;
             this.ParseOptions = parseOptions;
@@ -246,6 +269,7 @@ namespace Pchp.CodeAnalysis
             this.VersionString = versionString;
             this.OptimizationLevel = optimizationLevel;
             this.Defines = defines;
+            this.NullableContextOptions = nullableContextOptions;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
@@ -253,6 +277,7 @@ namespace Pchp.CodeAnalysis
             baseDirectory: other.BaseDirectory,
             sdkDirectory: other.SdkDirectory,
             subDirectory: other.SubDirectory,
+            targetFramework: other.TargetFramework,
             moduleName: other.ModuleName,
             mainTypeName: other.MainTypeName,
             scriptClassName: other.ScriptClassName,
@@ -284,7 +309,8 @@ namespace Pchp.CodeAnalysis
             diagnostics: other.Diagnostics,
             parseOptions: other.ParseOptions,
             defines: other.Defines,
-            referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions)
+            referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions,
+            nullableContextOptions: other.NullableContextOptions)
         {
             EventSources = other.EventSources;
             Autoload_ClassMapFiles = other.Autoload_ClassMapFiles;
@@ -419,6 +445,16 @@ namespace Pchp.CodeAnalysis
             }
 
             return new PhpCompilationOptions(this) { PublicSign = publicSign };
+        }
+
+        public PhpCompilationOptions WithParseOptions(PhpParseOptions parseoptions)
+        {
+            if (ReferenceEquals(this.ParseOptions, parseoptions))
+            {
+                return this;
+            }
+
+            return new PhpCompilationOptions(this) { ParseOptions = parseoptions };
         }
 
         protected override CompilationOptions CommonWithGeneralDiagnosticOption(ReportDiagnostic value) => WithGeneralDiagnosticOption(value);

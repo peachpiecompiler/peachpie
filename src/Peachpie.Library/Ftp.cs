@@ -712,7 +712,7 @@ namespace Pchp.Library
 
             try
             {
-                return DateTimeUtils.UtcToUnixTimeStamp(resource.Client.GetModifiedTime(remote_file, FtpDate.Original).ToUniversalTime());
+                return DateTimeUtils.UtcToUnixTimeStamp(resource.Client.GetModifiedTime(remote_file).ToUniversalTime());
             }
             catch (FtpCommandException ex)
             {
@@ -1139,7 +1139,7 @@ namespace Pchp.Library
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public static bool ftp_get(Context ctx, PhpResource ftp_stream, string local_file, string remote_file, int mode = FTP_BINARY, int resumepos = 0)
         {
-            using (var stream = PhpPath.fopen(ctx, local_file, "w"))
+            using (var stream = PhpPath.fopen(ctx, null, local_file, "w"))
             {
                 return ftp_fget(ftp_stream, stream, remote_file, mode, resumepos);
             }

@@ -711,4 +711,25 @@
   <data name="openssl_cannot_set_iv_length" xml:space="preserve">
     <value>Key length cannot be set for the cipher method</value>
   </data>
+  <data name="invalid_scanner_mode" xml:space="preserve">
+    <value>Invalid scanner mode</value>
+  </data>
+  <data name="min_must_be_less_or_equal_to_max" xml:space="preserve">
+    <value>Minimum value must be less than or equal to the maximum value</value>
+  </data>
+  <data name="serialization_json_inf_nan_error" xml:space="preserve">
+    <value>Inf and NaN cannot be JSON encoded</value>
+  </data>
+  <data name="serialization_max_depth" xml:space="preserve">
+    <value>Maximum stack depth exceeded</value>
+  </data>
+  <data name="non_attribute_class_used" xml:space="preserve">
+    <value>Attempting to use non-attribute class "{0}" as attribute</value>
+  </data>
+  <data name="bcmath_wrong_argument" xml:space="preserve">
+    <value>bcmath function argument is not well-formed</value>
+  </data>
+  <data name="serialization_json_utf8_error" xml:space="preserve">
+    <value>Malformed UTF-8 characters, possibly incorrectly encoded</value>
+  </data>
 </root>

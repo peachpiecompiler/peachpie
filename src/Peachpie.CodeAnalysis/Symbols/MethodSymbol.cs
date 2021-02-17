@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using System.Reflection;
 using System.Diagnostics;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -17,7 +19,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// Represents a method or method-like symbol (including constructor,
     /// destructor, operator, or property/event accessor).
     /// </summary>
-    internal abstract partial class MethodSymbol : Symbol, IMethodSymbol, IPhpRoutineSymbol
+    internal abstract partial class MethodSymbol : Symbol, IMethodSymbol, IMethodSymbolInternal, IPhpRoutineSymbol
     {
         public virtual int Arity => 0;
 
@@ -271,6 +273,18 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
+        IMethodSymbol IMethodSymbol.Construct(ImmutableArray<ITypeSymbol> typeArguments, ImmutableArray<NullableAnnotation> typeArgumentNullableAnnotations)
+        {
+            if (typeArgumentNullableAnnotations.All(annotation => annotation != NullableAnnotation.Annotated))
+            {
+                return this.Construct(typeArguments.CastArray<TypeSymbol>());
+            }
+            else
+            {
+                throw new NotImplementedException(); 
+            }
+        }
+
         /// <summary>
         /// Gets value indicating the method is annotated with [PhpHiddenAttribute] metadata.
         /// </summary>
@@ -288,7 +302,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// For source routines, gets their control flow graph.
         /// Can be <c>null</c> for routines from PE or synthesized routines.
         /// </summary>
-        public virtual ControlFlowGraph ControlFlowGraph { get => null; internal set { } }
+        public virtual ControlFlowGraph ControlFlowGraph => null;
 
         /// <summary>
         /// Gets the routine name, equivalent to a PHP pseudoconstant <c>__FUNCTION__</c>.
@@ -301,6 +315,31 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual bool IsGlobalScope => false;
 
         public BoundExpression Initializer => null; // not applicable for methods
+
+        NullableAnnotation IMethodSymbol.ReturnNullableAnnotation => NullableAnnotation.None;
+
+        ImmutableArray<NullableAnnotation> IMethodSymbol.TypeArgumentNullableAnnotations => TypeArguments.SelectAsArray(a => NullableAnnotation.None);
+
+        bool IMethodSymbol.IsReadOnly => false;
+
+        bool IMethodSymbol.IsInitOnly => false;
+
+        NullableAnnotation IMethodSymbol.ReceiverNullableAnnotation => NullableAnnotation.None;
+
+        bool IMethodSymbol.IsConditional => throw new NotImplementedException();
+
+        #endregion
+
+        #region IMethodSymbolInternal
+
+        int IMethodSymbolInternal.CalculateLocalSyntaxOffset(int declaratorPosition, SyntaxTree declaratorTree)
+        {
+            throw new NotImplementedException();
+        }
+
+        IMethodSymbolInternal IMethodSymbolInternal.Construct(params ITypeSymbolInternal[] typeArguments) => Construct(typeArguments.CastToArray<ITypeSymbol>());
+
+        bool IMethodSymbolInternal.IsIterator => false;     // Peachpie produces only PHP generators, which is of a different type.
 
         #endregion
     }

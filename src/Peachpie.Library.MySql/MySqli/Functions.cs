@@ -24,7 +24,6 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Initializes MySQLi and returns a resource for use with mysqli_real_connect().
         /// </summary>
-        [return: NotNull]
         public static mysqli/*!*/mysqli_init() => new mysqli();
 
         /// <summary>
@@ -184,6 +183,11 @@ namespace Peachpie.Library.MySql.MySqli
         }
 
         /// <summary>
+        /// Returns the number of columns for the most recent query on the connection.
+        /// </summary>
+        public static int mysqli_field_count(mysqli link) => link.field_count;
+
+        /// <summary>
         /// Returns the auto generated id used in the latest query.
         /// </summary>
         public static long mysqli_insert_id(mysqli link) => link.insert_id;
@@ -204,53 +208,65 @@ namespace Peachpie.Library.MySql.MySqli
         /// Prepare an SQL statement for execution.
         /// </summary>
         //[return: CastToFalse]
-        public static mysqli_stmt mysqli_prepare([NotNull]mysqli link, string query = null) => new mysqli_stmt(link, query);
+        public static mysqli_stmt mysqli_prepare(mysqli link, string query = null) => new mysqli_stmt(link, query);
 
         /// <summary>
         /// Prepare an SQL statement for execution.
         /// </summary>
-        public static bool mysqli_stmt_prepare([NotNull]mysqli_stmt stmt, string query) => stmt.prepare(query);
+        public static bool mysqli_stmt_prepare(mysqli_stmt stmt, string query) => stmt.prepare(query);
 
         /// <summary>
         /// Binds variables to a prepared statement as parameters.
         /// </summary>
-        public static bool mysqli_stmt_bind_param([NotNull]mysqli_stmt stmt, string types, params PhpAlias[] variables) => stmt.bind_param(types, variables);
+        public static bool mysqli_stmt_bind_param(mysqli_stmt stmt, string types, params PhpAlias[] variables) => stmt.bind_param(types, variables);
 
         /// <summary>
         /// Send data in blocks.
         /// </summary>
-        public static bool mysqli_stmt_send_long_data([NotNull]mysqli_stmt stmt, int param_nr, PhpString data) => stmt.send_long_data(param_nr, data);
+        public static bool mysqli_stmt_send_long_data(mysqli_stmt stmt, int param_nr, PhpString data) => stmt.send_long_data(param_nr, data);
+
+        /// <summary>
+        /// Executes a prepared Query.
+        /// Alias for <see cref="mysqli_stmt_execute"/>.
+        /// </summary>
+        [Obsolete]
+        public static bool mysqli_execute(mysqli_stmt stmt) => stmt.execute();
 
         /// <summary>
         /// Executes a prepared Query.
         /// </summary>
-        public static bool mysqli_stmt_execute([NotNull]mysqli_stmt stmt) => stmt.execute();
+        public static bool mysqli_stmt_execute(mysqli_stmt stmt) => stmt.execute();
+
+        /// <summary>
+        /// Initializes a statement and returns an object for use with mysqli_stmt_prepare.
+        /// </summary>
+        public static mysqli_stmt mysqli_stmt_init(mysqli link) => new mysqli_stmt(link);
 
         /// <summary>
         /// Closes a prepared statement.
         /// </summary>
-        public static bool mysqli_stmt_close([NotNull]mysqli_stmt stmt) => stmt.close();
+        public static bool mysqli_stmt_close(mysqli_stmt stmt) => stmt.close();
 
         /// <summary>
         /// Get the ID generated from the previous INSERT operation.
         /// </summary>
-        public static long mysqli_stmt_insert_id([NotNull]mysqli_stmt stmt) => stmt.insert_id;
+        public static long mysqli_stmt_insert_id(mysqli_stmt stmt) => stmt.insert_id;
 
         /// <summary>
         /// Returns the total number of rows changed, deleted, or inserted by the last executed statement .
         /// </summary>
-        public static int mysqli_stmt_affected_rows([NotNull]mysqli_stmt stmt) => stmt.affected_rows;
+        public static int mysqli_stmt_affected_rows(mysqli_stmt stmt) => stmt.affected_rows;
 
         /// <summary>
         /// Seeks to an arbitrary row in statement result set.
         /// </summary>
-        public static void mysqli_stmt_data_seek([NotNull]mysqli_stmt stmt, int offset) => stmt.data_seek(offset);
+        public static void mysqli_stmt_data_seek(mysqli_stmt stmt, int offset) => stmt.data_seek(offset);
 
         /// <summary>
         /// Gets a result set from a prepared statement.
         /// </summary>
         [return: CastToFalse]
-        public static mysqli_result mysqli_stmt_get_result([NotNull]mysqli_stmt stmt) => stmt.get_result();
+        public static mysqli_result mysqli_stmt_get_result(mysqli_stmt stmt) => stmt.get_result();
 
         /// <summary>
         /// Fetch a result row as an associative array.
@@ -329,5 +345,10 @@ namespace Peachpie.Library.MySql.MySqli
         /// Alias to <see cref="mysqli_result.close"/>
         /// </summary>
         public static void mysqli_free_result(mysqli_result result) => result.close();
+
+        /// <summary>
+        /// Returns whether thread safety is given or not.
+        /// </summary>
+        public static bool mysqli_thread_safe() => true;
     }
 }

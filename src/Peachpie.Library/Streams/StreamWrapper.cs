@@ -5,11 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Pchp.Core.Reflection;
 using System.Text;
 using System.Net;
+using System.Runtime.InteropServices;
+using Mono.Unix;
 
 namespace Pchp.Library.Streams
 {
@@ -80,7 +80,7 @@ namespace Pchp.Library.Streams
         /// The method can return a <c>null</c> reference.
         /// The method throws PHP warning in case of not supported operation or insufficient permissions.
         /// </summary>
-        public virtual IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
+        public virtual List<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
             // php_stream *(*dir_opener)(php_stream_wrapper *wrapper, char *filename, char *mode, int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC);
             PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Opendir");
@@ -109,7 +109,7 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        public virtual StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        public virtual StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
         {
             // int (*url_stat)(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC);
             return StatUnsupported();
@@ -150,6 +150,14 @@ namespace Pchp.Library.Streams
         {
             script = default;
             return false;
+        }
+
+        /// <summary>
+        /// Allows the wrapper to get the full path.
+        /// </summary>
+        public virtual void ResolvePath(Context ctx, ref string path)
+        {
+            // to be overriden
         }
 
         #endregion
@@ -318,10 +326,7 @@ namespace Pchp.Library.Streams
         /// <exception cref="ArgumentException">If the <paramref name="mode"/> is not valid.</exception>
         internal bool ParseMode(Context ctx, string mode, StreamOpenOptions options, out StreamAccessOptions accessOptions)
         {
-            FileMode fileMode;
-            FileAccess fileAccess;
-
-            return ParseMode(ctx, mode, options, out fileMode, out fileAccess, out accessOptions);
+            return ParseMode(ctx, mode, options, out _, out _, out accessOptions);
         }
 
         /// <summary>
@@ -335,12 +340,12 @@ namespace Pchp.Library.Streams
         {
             FileAccess requiredAccess = (FileAccess)accessOptions & FileAccess.ReadWrite;
             FileAccess faultyAccess = requiredAccess & ~supportedAccess;
-            if ((faultyAccess & FileAccess.Read) > 0)
+            if ((faultyAccess & FileAccess.Read) != 0)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_open_read_unsupported, FileSystemUtils.StripPassword(path));
                 return false;
             }
-            else if ((faultyAccess & FileAccess.Write) > 0)
+            else if ((faultyAccess & FileAccess.Write) != 0)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_open_write_unsupported, FileSystemUtils.StripPassword(path));
                 return false;
@@ -419,7 +424,7 @@ namespace Pchp.Library.Streams
                 PhpException.Throw(PhpError.Notice, ErrResources.stream_bad_wrapper, scheme);
                 // Notice:  fopen(): Unable to find the wrapper "*" - did you forget to enable it when you configured PHP? in C:\Inetpub\wwwroot\php\index.php on line 23
 
-                wrapper = GetWrapperInternal(ctx, "file");
+                wrapper = GetWrapperInternal(ctx, FileStreamWrapper.scheme);
                 // There should always be the FileStreamWrapper present.
             }
 
@@ -462,6 +467,11 @@ namespace Pchp.Library.Streams
         }
 
         /// <summary>
+        /// Gets the gobally registered  <see cref="FileStreamWrapper"/> singleton.
+        /// </summary>
+        internal static StreamWrapper GetFileStreamWrapper() => GetWrapperInternal(null, scheme: FileStreamWrapper.scheme);
+
+        /// <summary>
         /// Search the lists of registered StreamWrappers to find the 
         /// appropriate wrapper for a given scheme. When the scheme
         /// is empty, the FileStreamWrapper is returned.
@@ -497,7 +507,7 @@ namespace Pchp.Library.Streams
                         break;
                 }
 
-                if (wrapper == null)
+                if (wrapper == null && ctx != null)
                 {
                     // Next search the user wrappers (if present)
                     var data = ContextData.GetData(ctx);
@@ -573,11 +583,7 @@ namespace Pchp.Library.Streams
             //Debug.Assert(PhpPath.IsLocalFile(path));
 
             // Get the File.Open modes from the mode string
-            FileMode fileMode;
-            FileAccess fileAccess;
-            StreamAccessOptions ao;
-
-            if (!ParseMode(ctx, mode, options, out fileMode, out fileAccess, out ao)) return null;
+            if (!ParseMode(ctx, mode, options, out var fileMode, out var fileAccess, out var ao)) return null;
 
             // Open the native stream
             FileStream stream = null;
@@ -694,43 +700,39 @@ namespace Pchp.Library.Streams
         /// </remarks>
         /// <param name="info">A <see cref="FileInfo"/> or <see cref="DirectoryInfo"/>
         /// of the <c>stat()</c>ed filesystem entry.</param>
-        /// <param name="attributes">The file or directory attributes.</param>
         /// <param name="path">The path to the file / directory.</param>
         /// <returns>A <see cref="StatStruct"/> for use in the <c>stat()</c> related functions.</returns>    
-        internal static StatStruct BuildStatStruct(FileSystemInfo info, FileAttributes attributes, string path)
+        internal static StatStruct BuildStatStruct(FileSystemInfo info, string path)
         {
-            StatStruct result;//  = new StatStruct();
-            uint device = unchecked((uint)(char.ToLower(info.FullName[0]) - 'a')); // index of the disk
+            uint device = unchecked((uint)(char.ToLowerInvariant(info.FullName[0]) - 'a')); // index of the disk // TODO: unix
 
-            ushort mode = (ushort)BuildMode(info, attributes, path);
+            //result.st_blksize = -1;   // blocksize of filesystem IO (-1)
+            //result.st_blocks = -1;    // number of blocks allocated  (-1)
 
-            long atime, mtime, ctime;
-            atime = ToStatUnixTimeStamp(info, (_info) => _info.LastAccessTimeUtc);
-            mtime = ToStatUnixTimeStamp(info, (_info) => _info.LastWriteTimeUtc);
-            ctime = ToStatUnixTimeStamp(info, (_info) => _info.CreationTimeUtc);
+            return new StatStruct(
+                st_dev: device,
+                st_mode: BuildMode(info, path),
+                st_nlink: 1,
+                st_rdev: device,
+                st_size: info is FileInfo finfo ? finfo.Length : 0,
+                st_atime: ToStatUnixTimeStamp(info, (_info) => _info.LastAccessTimeUtc),
+                st_mtime: ToStatUnixTimeStamp(info, (_info) => _info.LastWriteTimeUtc),
+                st_ctime: ToStatUnixTimeStamp(info, (_info) => _info.CreationTimeUtc)
+                );
+        }
 
-            result.st_dev = device;         // device number 
-            result.st_ino = 0;              // inode number 
-            result.st_mode = mode;          // inode protection mode 
-            result.st_nlink = 1;            // number of links 
-            result.st_uid = 0;              // userid of owner 
-            result.st_gid = 0;              // groupid of owner 
-            result.st_rdev = device;        // device type, if inode device -1
-            result.st_size = 0;             // size in bytes
-
-            FileInfo file_info = info as FileInfo;
-            if (file_info != null)
+        internal static bool TryBuildStatStructUnix(string path, out StatStruct stat)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && UnixFileSystemInfo.TryGetFileSystemEntry(path, out var entry) && entry.Exists)
             {
-                result.st_size = file_info.Length;
+                stat = new StatStruct(entry.ToStat());
+                return true;
             }
-
-            result.st_atime = atime;        // time of last access (unix timestamp) 
-            result.st_mtime = mtime;        // time of last modification (unix timestamp) 
-            result.st_ctime = ctime;        // time of last change (unix timestamp) 
-                                            //result.st_blksize = -1;   // blocksize of filesystem IO (-1)
-                                            //result.st_blocks = -1;    // number of blocks allocated  (-1)
-
-            return result;
+            else
+            {
+                stat = default;
+                return false;
+            }
         }
 
         /// <summary>
@@ -855,11 +857,12 @@ namespace Pchp.Library.Streams
         /// Creates the UNIX-like file mode depending on the file or directory attributes.
         /// </summary>
         /// <param name="info">Information about file system object.</param>
-        /// <param name="attributes">Attributes of the file.</param>
         /// <param name="path">Paths to the file.</param>
         /// <returns>UNIX-like file mode.</returns>
-        private static FileModeFlags BuildMode(FileSystemInfo/*!*/info, FileAttributes attributes, string path)
+        private static FileModeFlags BuildMode(FileSystemInfo/*!*/info, string path)
         {
+            var attributes = info.Attributes;
+
             // Simulates the UNIX file mode.
             FileModeFlags rv;
 
@@ -911,33 +914,74 @@ namespace Pchp.Library.Streams
                 }
             }
 
+            if ((attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                // symblic link on NTFS
+                rv |= FileModeFlags.Link;
+            }
+
             //
             return rv;
         }
 
-        public override StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
         {
             Debug.Assert(path != null);
 
             // TODO: no cache here
-
             // Note: path is already absolute w/o the scheme, the permissions have already been checked.
-            return PhpPath.HandleFileSystemInfo(StatStruct.Invalid, path, (p) =>
-            {
-                FileSystemInfo info = null;
 
-                info = new DirectoryInfo(p);
-                if (!info.Exists)
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && TryBuildStatStructUnix(path, out var stat))
+            {
+                return stat;
+            }
+
+            var info = PhpPath.HandleFileSystemInfo<FileSystemInfo>(null, path, p =>
+            {
+                var finfo = new FileInfo(p);
+                if (finfo.Exists)
                 {
-                    info = new FileInfo(p);
-                    if (!info.Exists)
-                    {
-                        return StatStruct.Invalid;
-                    }
+                    return finfo;
                 }
 
-                return BuildStatStruct(info, info.Attributes, p);
-            });
+                var dinfo = new DirectoryInfo(p);
+                if (dinfo.Exists)
+                {
+                    return dinfo;
+                }
+
+                // not found
+                return null;
+            },
+            quiet: (options & StreamStatOptions.Quiet) != 0);
+
+            if (info != null)
+            {
+                return BuildStatStruct(info, path);
+            }
+
+            // compiled script
+            var script = Context.TryResolveScript(root, path);
+            if (script.IsValid)
+            {
+                // TODO: get file time from [ScriptAttribute.LastModifiedTime]
+
+                return new StatStruct(
+                    st_mode: FileModeFlags.File | FileModeFlags.Read // CONSIDER: signalize the READ access?
+                );
+            }
+
+            if (Context.TryGetScriptsInDirectory(root, path, out _))
+            {
+                return new StatStruct(
+                    st_mode: FileModeFlags.Directory | FileModeFlags.Read
+                );
+            }
+
+            // TODO: embedded files
+
+            //
+            return StatStruct.Invalid;
         }
 
         #endregion
@@ -972,20 +1016,35 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        static readonly string[] s_default_files = new[] { ".", ".." };
-        static readonly Func<Context.ScriptInfo, string> s_script_fname_func = new Func<Context.ScriptInfo, string>(s => Path.GetFileName(s.Path));
-
-        public override IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
+        public override List<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
             Debug.Assert(path != null);
             Debug.Assert(Path.IsPathRooted(path));
 
             var isCompiledDir = Context.TryGetScriptsInDirectory(root, path, out var scripts);
-            string[] listing = Array.Empty<string>();
+            // TODO: embedded files
+
+            var listing = new List<string>();
+
+            if (Path.GetPathRoot(path) != path) // => is not root path
+            {
+                // .
+                listing.Add(".");
+
+                // ..
+                if (Core.Utilities.PathUtils.GetFileName(path.AsSpan()).Length != 0)
+                {
+                    listing.Add("..");
+                }
+            }
 
             try
             {
-                listing = System.IO.Directory.GetFileSystemEntries(path);
+                // entries (files and directories) in the file system directory:
+                foreach (var entry in System.IO.Directory.EnumerateFileSystemEntries(path))
+                {
+                    listing.Add(Path.GetFileName(entry));
+                }
             }
             catch (DirectoryNotFoundException)
             {
@@ -1003,25 +1062,24 @@ namespace Pchp.Library.Streams
                     PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
             }
 
-            // entries (files and directories) in the file system directory:
-            IEnumerable<string> result = listing.Select(Path.GetFileName);
-
             if (isCompiledDir)
             {
+                var fscount = listing.Count;
+
                 // merge with compiled scripts:
-                result = result
-                    .Concat(scripts.Select(s_script_fname_func))
-                    .Distinct(CurrentPlatform.PathComparer);
+                foreach (var script in scripts)
+                {
+                    var fname = Path.GetFileName(script.Path);
+                    if (listing.IndexOf(fname, 0, fscount) < 0)
+                    {
+                        listing.Add(fname);
+                    }
+                }
+
+                // .Distinct(CurrentPlatform.PathComparer);
             }
 
-            if (Path.GetPathRoot(path) != path) // => is not root path
-            {
-                // .
-                // ..
-                result = s_default_files.Concat(result);
-            }
-
-            return result;
+            return listing;
         }
 
         public override bool Rename(string fromPath, string toPath, StreamRenameOptions options, StreamContext context)
@@ -1413,10 +1471,7 @@ namespace Pchp.Library.Streams
 
         public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
         {
-            Stream native = null;
-
-            StreamAccessOptions accessOptions;
-            if (!ParseMode(ctx, mode, options, out accessOptions))
+            if (!ParseMode(ctx, mode, options, out var accessOptions))
                 return null;
 
             // Do not close the system I/O streams.
@@ -1426,6 +1481,7 @@ namespace Pchp.Library.Streams
 
             // TODO: path may be case insensitive
 
+            Stream native;
             FileAccess supportedAccess;
             switch (path)
             {
@@ -1483,9 +1539,8 @@ namespace Pchp.Library.Streams
                         }
 
                         // No URL resource specified.
-                        //PhpException.Throw(PhpError.Warning, CoreResources.GetString("url_resource_missing"));
-                        //return null;
-                        throw new ArgumentException("No URL resource specified.");  // TODO: Err
+                        PhpException.Throw(PhpError.Warning, ErrResources.url_resource_missing);
+                        return null;
                     }
                     else if (path.StartsWith(temp_uri, StringComparison.OrdinalIgnoreCase))
                     {
@@ -1498,10 +1553,8 @@ namespace Pchp.Library.Streams
                     else
                     {
                         // Unrecognized php:// stream name
-                        //PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_file_invalid",
-                        //  FileSystemUtils.StripPassword(path)));
-                        //return null;
-                        throw new ArgumentException("Unrecognized php:// stream name.");  // TODO: Err
+                        PhpException.Throw(PhpError.Warning, ErrResources.stream_file_invalid, FileSystemUtils.StripPassword(path));
+                        return null;
                     }
             }
 
@@ -1510,15 +1563,15 @@ namespace Pchp.Library.Streams
 
             if (native == null)
             {
-                //PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_file_invalid",
-                //  FileSystemUtils.StripPassword(path)));
-                //return null;
-                throw new ArgumentException("stream_file_invalid");  // TODO: Err
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_file_invalid, FileSystemUtils.StripPassword(path));
+                return null;
             }
 
-            var rv = new NativeStream(ctx, native, this, accessOptions, path, context);
-            rv.IsReadBuffered = rv.IsWriteBuffered = false;
-            return rv;
+            return new NativeStream(ctx, native, this, accessOptions, path, context)
+            {
+                IsReadBuffered = false,
+                IsWriteBuffered = false,
+            };
         }
 
         /// <summary>
@@ -1578,14 +1631,11 @@ namespace Pchp.Library.Streams
         public static PhpStream ScriptInput(Context ctx)
         {
             PhpStream input = null;
-            if (input == null)
+            input = new NativeStream(ctx, OpenScriptInput(ctx), null, StreamAccessOptions.Read | StreamAccessOptions.Persistent, "php://input", StreamContext.Default)
             {
-                input = new NativeStream(ctx, OpenScriptInput(ctx), null, StreamAccessOptions.Read | StreamAccessOptions.Persistent, "php://input", StreamContext.Default)
-                {
-                    IsReadBuffered = false
-                };
-                // EX: cache this as a persistent stream
-            }
+                IsReadBuffered = false
+            };
+            // EX: cache this as a persistent stream
             return input;
         }
 
@@ -1617,7 +1667,7 @@ namespace Pchp.Library.Streams
             var httpctx = ctx.HttpPhpContext;
             return (httpctx != null)
                 ? httpctx.InputStream   // HttpContext.Request.InputStream
-                : Console.OpenStandardInput();
+                : Stream.Null;          // Empty stream if not present (e.g. called from console)
         }
 
         /// <summary>
@@ -1649,7 +1699,7 @@ namespace Pchp.Library.Streams
         // EX: cache this as a persistent stream
         static Lazy<PhpStream> s_stdin = new Lazy<PhpStream>(() => new NativeStream(
             Utf8EncodingProvider.Instance, Console.OpenStandardInput(), null,
-            StreamAccessOptions.Read | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, 
+            StreamAccessOptions.Read | StreamAccessOptions.UseText | StreamAccessOptions.Persistent,
             "php://stdin", StreamContext.Default)
         {
             IsReadBuffered = false,
@@ -1813,7 +1863,7 @@ namespace Pchp.Library.Streams
 
         public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
         {
-            var opened_path_ref = new PhpAlias((PhpValue)path);
+            var opened_path_ref = PhpAlias.Create(path);
             var result = InvokeWrapperMethod(PhpUserStream.USERSTREAM_OPEN, (PhpValue)path, (PhpValue)mode, (PhpValue)(int)options, PhpValue.Create(opened_path_ref));
 
             if (result.ToBoolean() == true)
@@ -1865,7 +1915,7 @@ namespace Pchp.Library.Streams
             return base.Rename(fromPath, toPath, options, context);
         }
 
-        public override StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
         {
             PhpArray arr = (streamStat ?
                 InvokeWrapperMethod(PhpUserStream.USERSTREAM_STAT) :
@@ -1873,27 +1923,26 @@ namespace Pchp.Library.Streams
 
             if (arr != null)
             {
-                return new StatStruct()
-                {
-                    st_dev = (uint)(arr["dev"]),
-                    st_ino = (ushort)(arr["ino"]),
-                    st_mode = (ushort)(arr["mode"]),
-                    st_nlink = (short)(arr["nlink"]),
-                    st_uid = (short)(arr["uid"]),
-                    st_gid = (short)(arr["gid"]),
-                    st_rdev = (uint)(arr["rdev"]),
-                    st_size = (long)(arr["size"]),
+                return new StatStruct(
+                    st_dev: (uint)(arr["dev"]),
+                    st_ino: (ushort)(arr["ino"]),
+                    st_mode: (FileModeFlags)(ushort)(arr["mode"]),
+                    st_nlink: (short)(arr["nlink"]),
+                    st_uid: (short)(arr["uid"]),
+                    st_gid: (short)(arr["gid"]),
+                    st_rdev: (uint)(arr["rdev"]),
+                    st_size: (long)(arr["size"]),
 
-                    st_atime = (long)(arr["atime"]),
-                    st_mtime = (long)(arr["mtime"]),
-                    st_ctime = (long)(arr["ctime"]),
+                    st_atime: (long)(arr["atime"]),
+                    st_mtime: (long)(arr["mtime"]),
+                    st_ctime: (long)(arr["ctime"])
 
-                    //st_blksize = (long)Convert.ObjectToLongInteger(arr["blksize"]),
-                    //st_blocks = (long)Convert.ObjectToLongInteger(arr["blocks"]),
-                };
+                //st_blksize = (long)Convert.ObjectToLongInteger(arr["blksize"]),
+                //st_blocks = (long)Convert.ObjectToLongInteger(arr["blocks"]),
+                );
             }
 
-            return new StatStruct();
+            return StatStruct.Invalid;
         }
 
         public override bool Unlink(string path, StreamUnlinkOptions options, StreamContext context)
@@ -1901,7 +1950,7 @@ namespace Pchp.Library.Streams
             return InvokeWrapperMethod(PhpUserStream.USERSTREAM_UNLINK, (PhpValue)path).ToBoolean();
         }
 
-        public override IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
+        public override List<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
             return base.Listing(root, path, options, context);
         }

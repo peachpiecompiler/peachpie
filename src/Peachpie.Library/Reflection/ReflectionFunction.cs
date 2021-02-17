@@ -77,6 +77,7 @@ namespace Pchp.Library.Reflection
 
         public PhpValue invokeArgs(Context ctx, PhpArray args) => invoke(ctx, args.GetValues());
 
+        [Obsolete]
         public bool isDisabled() => false;
 
         public override bool isClosure() => _closure != null;

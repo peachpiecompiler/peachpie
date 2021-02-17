@@ -106,6 +106,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual TResult VisitLambda(BoundLambda x) => DefaultVisitOperation(x);
 
+        public virtual TResult VisitThrow(BoundThrowExpression x) => DefaultVisitOperation(x);
+
         public virtual TResult VisitEval(BoundEvalEx x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitYieldEx(BoundYieldEx x) => DefaultVisitOperation(x);
@@ -125,8 +127,6 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual TResult VisitExpressionStatement(BoundExpressionStatement x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitReturn(BoundReturnStatement x) => DefaultVisitOperation(x);
-
-        public virtual TResult VisitThrow(BoundThrowStatement x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitFunctionDeclaration(BoundFunctionDeclStatement x) => DefaultVisitOperation(x);
 

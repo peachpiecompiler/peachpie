@@ -67,7 +67,7 @@ namespace Pchp.Library.Spl
 
         #region Fields & Properties
 
-        readonly protected Context @_ctx;
+        readonly protected Context _ctx;
 
         // private PhpValue storage => ...
 
@@ -118,7 +118,7 @@ namespace Pchp.Library.Spl
                         {
                             if (obj.GetType() == typeof(stdClass))
                             {
-                                _underlayingArray = ((stdClass)obj).GetRuntimeFields();
+                                _underlayingArray = obj.GetPhpTypeInfo().EnsureRuntimeFields(obj);
                                 _underlayingObject = null;
                             }
                             else
@@ -248,13 +248,15 @@ namespace Pchp.Library.Spl
 
         public virtual PhpArray __serialize()
         {
-            return new PhpArray(4)
+            var arr = new PhpArray(4)
             {
                 _flags,
                 PhpValue.FromClr(_underlayingArray ?? _underlayingObject),
                 __peach__runtimeFields ?? PhpArray.NewEmpty(),
                 _iteratorClass, // = NULL for ArrayIterator
             };
+
+            return arr;
         }
 
         public virtual void __unserialize(PhpArray array)

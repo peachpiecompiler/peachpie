@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using Pchp.Core.Utilities;
 
 namespace Pchp.Core
@@ -51,6 +50,9 @@ namespace Pchp.Core
             {
                 RootPath = WorkingDirectory = rootPath ?? Directory.GetCurrentDirectory();
 
+                // TODO: CLI app configuration from json .setting ?
+                DefaultPhpConfigurationService.Instance.Core.ExecutionTimeout = 0; // default timeout on CLI
+
                 //
                 if (output != null)
                 {
@@ -65,6 +67,9 @@ namespace Pchp.Core
                     // use the default Console output stream
                     InitOutput(Console.OpenStandardOutput(), Console.Out);
                 }
+
+                // Constants
+                InitConstants();
 
                 // Globals
                 InitSuperglobals();
@@ -83,6 +88,22 @@ namespace Pchp.Core
 
                 // autoload files
                 AutoloadFiles();
+            }
+
+            static void InitConstants()
+            {
+                // TODO: register following constants here
+                //ConstsMap.DefineAppConstant("STDIN", new Func<PhpValue>(() => InputOutputStreamWrapper.In), false, PhpExtensionAttribute.KnownExtensionNames.Core);
+                //ConstsMap.DefineAppConstant("STDOUT", new Func<PhpValue>(() => InputOutputStreamWrapper.Out), false, PhpExtensionAttribute.KnownExtensionNames.Core);
+                //ConstsMap.DefineAppConstant("STDERR", new Func<PhpValue>(() => InputOutputStreamWrapper.Err), false, PhpExtensionAttribute.KnownExtensionNames.Core);
+            }
+
+            public override void ApplyExecutionTimeout(TimeSpan span)
+            {
+                if (span != Timeout.InfiniteTimeSpan)
+                {
+                    throw new NotSupportedException();
+                }
             }
         }
 
@@ -107,7 +128,7 @@ namespace Pchp.Core
         protected void InitializeArgvArgc(string mianscript, params string[] args)
         {
             Debug.Assert(args != null);
-            
+
             // PHP array with command line arguments
             // including 0-th argument corresponding to program executable
             var argv = new PhpArray(1 + args.Length);

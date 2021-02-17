@@ -308,16 +308,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundFunctionCall, BoundArgument, BoundEcho, BoundConcatEx, BoundNewEx
 
-    public partial class BoundArgument : BoundOperation, IArgumentOperation, IPhpOperation
+    public partial class BoundArgument : BoundOperation, IArgumentOperation, IPhpArgumentOperation
     {
         public ArgumentKind ArgumentKind { get; private set; }
 
         public CommonConversion InConversion => default(CommonConversion);
 
-        /// <summary>
-        /// Variable unpacking in PHP, the triple-dot syntax.
-        /// </summary>
+        /// <inheritdoc/>
         public bool IsUnpacking => this.ArgumentKind == ArgumentKind.ParamArray;
+
+        /// <inheritdoc/>
+        public string ParameterName { get; }
 
         public override OperationKind Kind => OperationKind.Argument;
 
@@ -340,28 +341,29 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Creates the argument.
         /// </summary>
-        public static BoundArgument Create(BoundExpression value)
+        public static BoundArgument Create(BoundExpression value, string name = null)
         {
-            return new BoundArgument(value, ArgumentKind.Explicit);
+            return new BoundArgument(value, ArgumentKind.Explicit, name);
         }
 
         /// <summary>
         /// Creates the argument that will be unpacked.
         /// The argument is an array which elements will be passed as actual arguments.
         /// </summary>
-        public static BoundArgument CreateUnpacking(BoundExpression value)
+        public static BoundArgument CreateUnpacking(BoundExpression value, string name = null)
         {
             Debug.Assert(!value.Access.IsReadRef);
-            return new BoundArgument(value, ArgumentKind.ParamArray);
+            return new BoundArgument(value, ArgumentKind.ParamArray, name);
         }
 
-        private BoundArgument(BoundExpression value, ArgumentKind kind = ArgumentKind.Explicit)
+        private BoundArgument(BoundExpression value, ArgumentKind kind = ArgumentKind.Explicit, string name = null)
         {
             Contract.ThrowIfNull(value);
             Debug.Assert(value.Access.IsRead);  // we do not support OUT parameters in PHP I guess, just aliasing ~ IsReadRef
 
             this.Value = value;
             this.ArgumentKind = kind;
+            this.ParameterName = name;
         }
 
         public BoundArgument Update(BoundExpression value, ArgumentKind kind)
@@ -372,7 +374,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundArgument(value, kind);
+                return new BoundArgument(value, kind, ParameterName);
             }
         }
 
@@ -393,6 +395,7 @@ namespace Pchp.CodeAnalysis.Semantics
     public abstract partial class BoundRoutineCall : BoundExpression, IInvocationOperation
     {
         protected ImmutableArray<BoundArgument> _arguments;
+
         protected ImmutableArray<IBoundTypeRef> _typeargs = ImmutableArray<IBoundTypeRef>.Empty;
 
         ImmutableArray<IArgumentOperation> IInvocationOperation.Arguments => StaticCast<IArgumentOperation>.From(_arguments);
@@ -403,12 +406,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public ImmutableArray<IBoundTypeRef> TypeArguments { get => _typeargs; internal set => _typeargs = value; }
 
-        public IArgumentOperation ArgumentMatchingParameter(IParameterSymbol parameter)
+        public BoundArgument ArgumentMatchingParameter(IParameterSymbol parameter)
         {
             foreach (var arg in _arguments)
             {
-                if (arg.Parameter == parameter)
+                if (SymbolEqualityComparer.Default.Equals(arg.Parameter, parameter))
+                {
                     return arg;
+                }
             }
 
             return null;
@@ -883,6 +888,52 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitAssert(this);
+    }
+
+    #endregion
+
+    #region BoundThrowStatement
+
+    /// <summary>
+    /// throw <c>Thrown</c>;
+    /// </summary>
+    public sealed partial class BoundThrowExpression : BoundExpression, IThrowOperation
+    {
+        public override OperationKind Kind => OperationKind.Throw;
+
+        internal BoundExpression Thrown { get; set; }
+
+        IOperation IThrowOperation.Exception => this.Thrown;
+
+        public BoundThrowExpression(BoundExpression thrown)
+            : base()
+        {
+            Debug.Assert(thrown != null);
+            this.Thrown = thrown;
+        }
+
+        public BoundThrowExpression Update(BoundExpression thrown)
+        {
+            if (thrown == Thrown)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundThrowExpression(thrown);
+            }
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitThrow(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitThrow(this, argument);
+
+        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
+        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
+        /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitThrow(this);
     }
 
     #endregion
@@ -1680,6 +1731,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.LocalReference;
 
+        internal bool IsLowerTemp() => this is BoundTemporalVariableRef || (_name.IsDirect && _name.NameValue.Value.StartsWith("<match>'"));
+
         /// <summary>
         /// The type of variable before it gets accessed by this expression.
         /// </summary>
@@ -1742,7 +1795,15 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitTemporalVariableRef(this);
 
-        public BoundTemporalVariableRef(string name) : base(new BoundVariableName(new VariableName(name))) { }
+        public BoundTemporalVariableRef(VariableName name)
+            : base(new BoundVariableName(name))
+        {
+        }
+
+        public BoundTemporalVariableRef(string name)
+            : this(new VariableName(name))
+        {
+        }
 
         public BoundTemporalVariableRef Update(string name)
         {
@@ -2222,16 +2283,48 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.None;
 
-        public Ast.PseudoConstUse.Types ConstType { get; private set; }
+        /// <summary>
+        /// Pseudo-constant type.
+        /// </summary>
+        public enum Types
+        {
+            /// <summary>__LINE__</summary>
+            Line = Ast.PseudoConstUse.Types.Line,
+            /// <summary>__FILE__</summary>
+            File = Ast.PseudoConstUse.Types.File,
+            /// <summary>__CLASS__</summary>
+            Class = Ast.PseudoConstUse.Types.Class,
+            /// <summary>__TRAIT__</summary>
+            Trait = Ast.PseudoConstUse.Types.Trait,
+            /// <summary>__FUNCTION__</summary>
+            Function = Ast.PseudoConstUse.Types.Function,
+            /// <summary>__METHOD__</summary>
+            Method = Ast.PseudoConstUse.Types.Method,
+            /// <summary>__NAMESPACE__</summary>
+            Namespace = Ast.PseudoConstUse.Types.Namespace,
+            /// <summary>__DIR__</summary>
+            Dir = Ast.PseudoConstUse.Types.Dir,
+
+            /// <summary><code>Context.RootPath</code></summary>
+            RootPath,
+        }
+
+        public Types ConstType { get; private set; }
 
         public override bool IsDeeplyCopied => false;
 
-        public BoundPseudoConst(Ast.PseudoConstUse.Types type)
+        public BoundPseudoConst(Types type)
         {
             this.ConstType = type;
         }
 
-        public BoundPseudoConst Update(Ast.PseudoConstUse.Types type)
+        public BoundPseudoConst(Ast.PseudoConstUse.Types type)
+            : this((Types)type)
+        {
+            Debug.Assert(Enum.IsDefined(typeof(Ast.PseudoConstUse.Types), type));
+        }
+
+        public BoundPseudoConst Update(Types type)
         {
             if (type == ConstType)
             {

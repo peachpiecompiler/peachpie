@@ -250,7 +250,7 @@ namespace Pchp.Core
             globals[CommonPhpArrayKeys._REQUEST] = PhpValue.Create(_superglobals.request);
             globals[CommonPhpArrayKeys._SERVER] = PhpValue.Create(_superglobals.server);
             globals[CommonPhpArrayKeys._SESSION] = PhpValue.Create(_superglobals.session);
-            globals[CommonPhpArrayKeys.GLOBALS] = PhpValue.Create(new PhpAlias(PhpValue.Create(globals)));   // &$GLOBALS
+            globals[CommonPhpArrayKeys.GLOBALS] = PhpValue.CreateAlias(globals);   // &$GLOBALS
 
             //// adds long arrays:
             //if (Configuration.Global.GlobalVariables.RegisterLongArrays)
@@ -334,7 +334,7 @@ namespace Pchp.Core
             get { return _superglobals.globals; }
             set
             {
-                _superglobals.globals[CommonPhpArrayKeys.GLOBALS] = new PhpAlias(_superglobals.globals = value ?? throw new ArgumentNullException());
+                _superglobals.globals[CommonPhpArrayKeys.GLOBALS] = PhpValue.CreateAlias(_superglobals.globals = value ?? throw new ArgumentNullException());
             }
         }
 

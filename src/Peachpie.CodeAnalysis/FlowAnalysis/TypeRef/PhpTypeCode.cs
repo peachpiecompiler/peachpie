@@ -76,5 +76,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Used in combination with <see cref="Object"/> (?).
         /// </summary>
         Null,
+
+        /// <summary>
+        /// Any type, used for compatibility with <c>mixed</c> primitive type.
+        /// </summary>
+        Mixed,
     }
 }

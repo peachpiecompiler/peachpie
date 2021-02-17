@@ -63,7 +63,7 @@ namespace Pchp.Core
         /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>New instance of <typeparamref name="T"/>.</returns>
-        public T Create<T>([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, params PhpValue[] arguments)
+        public T Create<T>([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, params PhpValue[] arguments)
             => (T)TypeInfoHolder<T>.TypeInfo.ResolveCreator(Type.GetTypeFromHandle(caller))(this, arguments);
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace Pchp.Core
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>The object instance.</returns>
         /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
-        public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, string classname, params PhpValue[] arguments)
+        public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, string classname, params PhpValue[] arguments)
         {
             var tinfo = this.GetDeclaredTypeOrThrow(classname, true);
             return Create(caller, tinfo, arguments);
@@ -116,7 +116,7 @@ namespace Pchp.Core
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>The object instance.</returns>
         /// <exception cref="ArgumentNullException">If provided <paramref name="tinfo"/> is <c>null</c>.</exception>
-        public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)]RuntimeTypeHandle caller, PhpTypeInfo tinfo, params PhpValue[] arguments)
+        public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpTypeInfo tinfo, params PhpValue[] arguments)
         {
             if (tinfo != null)
             {
@@ -182,7 +182,7 @@ namespace Pchp.Core
         /// <summary>
         /// Tries to resolve compiled script according to given path.
         /// </summary>
-        public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, null, null, null);
+        public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, include_path: null, working_dir: root, script_dir: null);
 
         /// <summary>
         /// Gets script according to its relative path as it was declared in <see cref="Context"/>.
@@ -194,10 +194,10 @@ namespace Pchp.Core
         /// <summary>
         /// Gets scripts in given directory.
         /// </summary>
-        public static bool TryGetScriptsInDirectory(string root, string path, out IEnumerable<ScriptInfo> scripts)
+        public static bool TryGetScriptsInDirectory(string root, string path, out ScriptInfo[] scripts)
         {
             // assert: root is not suffixed with directory separator
-            
+
             // trim leading {root} path:
             if (!string.IsNullOrEmpty(root) && path.StartsWith(root, CurrentPlatform.PathStringComparison))
             {
@@ -211,7 +211,7 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    scripts = Enumerable.Empty<ScriptInfo>();
+                    scripts = Array.Empty<ScriptInfo>();
                     return false;
                 }
             }
@@ -250,17 +250,26 @@ namespace Pchp.Core
         /// <summary>
         /// Defines a user constant.
         /// </summary>
-        internal bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false) => ConstsMap.DefineConstant(ref _constants, name, value, ref idx, ignorecase);
+        internal bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false)
+        {
+            var success = ConstsMap.DefineConstant(ref _constants, name, value, ref idx, ignorecase);
+            if (success == false)
+            {
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.constant_redefined, name));
+            }
+            return success;
+        }
 
         /// <summary>
         /// Determines whether a constant with given name is defined.
         /// </summary>
-        public bool IsConstantDefined(string name) => _constants.IsDefined(name);
+        public bool IsConstantDefined(string name) => _constants.TryGetConstant(name, out _);
 
         /// <summary>
         /// Gets enumeration of all available constants and their values.
         /// </summary>
-        public IEnumerable<ConstantInfo> GetConstants() => _constants;
+        /// <param name="extension">Optionally specify the extension name; only constants defined within this extension will be enumerated.</param>
+        public ConstsMap.Enumerator GetConstants(string? extension = null) => _constants.GetEnumerator(extension);
 
         #endregion
     }

@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         readonly MethodSymbol _single;
-        readonly MethodSymbol[] _methods;
+        readonly List<MethodSymbol> _methods;
 
         public OverloadsList(MethodSymbol method)
         {
@@ -62,9 +62,9 @@ namespace Pchp.CodeAnalysis.Symbols
             _methods = default;
         }
 
-        public OverloadsList(MethodSymbol[] methods)
+        public OverloadsList(List<MethodSymbol> methods)
         {
-            if (methods.Length == 1)
+            if (methods.Count == 1)
             {
                 _single = methods[0];
                 _methods = default;
@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     : new InaccessibleMethodSymbol(ImmutableArray.Create(_single));
             }
 
-            if (_methods == null || _methods.Length == 0)
+            if (_methods == null || _methods.Count == 0)
             {
                 return new MissingMethodSymbol();
             }
@@ -227,7 +227,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 m.DeclaredAccessibility != Accessibility.Internal && // "internal"
                 (scope.ScopeIsDynamic || m.IsAccessible(scope.Scope)) &&  // method is accessible (or might be in runtime)
                 !m.IsInitFieldsOnly &&    // method is not a special .ctor which is not accessible from user's code
-                !m.IsPhpHidden() // ignore [PhpHidden] methods
+                !m.IsPhpHidden // ignore [PhpHidden] methods
                 );
         }
     }

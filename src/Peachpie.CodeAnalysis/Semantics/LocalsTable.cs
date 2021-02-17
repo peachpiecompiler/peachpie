@@ -74,22 +74,15 @@ namespace Pchp.CodeAnalysis.Semantics
             return new SuperglobalVariableReference(name, Routine);
         }
 
-        LocalVariableReference CreateLocal(VariableName name, TextSpan span)
+        LocalVariableReference CreateLocal(VariableName name, VariableKind kind, TextSpan span)
         {
             Debug.Assert(!name.IsAutoGlobal);
-            return new LocalVariableReference(VariableKind.LocalVariable, Routine, new SourceLocalSymbol(Routine, name.Value, span), new BoundVariableName(name));
-        }
-
-        LocalVariableReference CreateTemporal(VariableName name, TextSpan span)
-        {
-            return new LocalVariableReference(
-                VariableKind.LocalTemporalVariable,
-                Routine,
-                new SourceLocalSymbol(Routine, name.Value, span),
-                new BoundVariableName(name));
+            return new LocalVariableReference(kind, Routine, new SourceLocalSymbol(Routine, name.Value, span), new BoundVariableName(name));
         }
 
         #region Public methods
+
+        public bool TryGetVariable(VariableName varname, out LocalVariableReference variable) => _dict.TryGetValue(varname, out variable);
 
         IVariableReference BindVariable(VariableName varname, TextSpan span, Func<VariableName, TextSpan, LocalVariableReference> factory)
         {
@@ -106,11 +99,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets local variable or create local if not yet.
         /// </summary>
-        public IVariableReference BindLocalVariable(VariableName varname, TextSpan span) => BindVariable(varname, span, CreateLocal);
+        public IVariableReference BindLocalVariable(VariableName varname, TextSpan span) => BindVariable(varname, span, (name, span) => CreateLocal(name, VariableKind.LocalVariable, span));
 
-        public IVariableReference BindTemporalVariable(VariableName varname) => BindVariable(varname, default, CreateTemporal);
+        public IVariableReference BindTemporalVariable(VariableName varname) => BindVariable(varname, default, (name, span) => CreateLocal(name, VariableKind.LocalTemporalVariable, span));
 
-        public IVariableReference BindAutoGlobalVariable(VariableName varname) => BindVariable(varname, default, CreateAutoGlobal);
+        public IVariableReference BindAutoGlobalVariable(VariableName varname) => BindVariable(varname, default, (name, span) => CreateAutoGlobal(name, span));
 
         #endregion
     }

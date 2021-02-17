@@ -98,6 +98,40 @@ namespace Pchp.Core
     [DebuggerNonUserCode]
     public static class PhpException
     {
+        /// <summary>
+        /// Handles a generic PHP error.
+        /// </summary>
+        /// <param name="error">The error severity.</param>
+        /// <param name="message">The error message.</param>
+        public delegate void ThrowHandler(PhpError error, string message);
+
+        /// <summary>
+        /// An event raised when a PHP error occurs.
+        /// </summary>
+        public static event ThrowHandler OnError;
+
+        static PhpException()
+        {
+            // trace output
+            OnError += (error, message) =>
+            {
+                Trace.WriteLine(message, $"PHP ({error})");
+            };
+
+            // LogEventSource
+            OnError += (error, message) =>
+            {
+                if ((error & (PhpError)PhpErrorSets.Fatal) != 0)
+                {
+                    LogEventSource.Log.HandleFatal(message);
+                }
+                else
+                {
+                    LogEventSource.Log.HandleWarning(message);
+                }
+            };
+        }
+
         static string PeachpieLibraryAssembly => "Peachpie.Library";
         static string ErrorClass => "Pchp.Library.Spl.Error";
         static string TypeErrorClass => "Pchp.Library.Spl.TypeError";
@@ -172,20 +206,19 @@ namespace Pchp.Core
 
         public static void Throw(PhpError error, string message)
         {
-            Trace.WriteLine(message, $"PHP ({error})");
+            OnError?.Invoke(error, message);
 
+            // throw PhpFatalErrorException
+            // and terminate the script on fatal error
             if ((error & (PhpError)PhpErrorSets.Fatal) != 0)
             {
-                LogEventSource.Log.HandleFatal(message);
-
-                // terminate the script
-                throw new InvalidOperationException(message);
-            }
-            else
-            {
-                LogEventSource.Log.HandleWarning(message);
+                throw new PhpFatalErrorException(message, innerException: null);
             }
         }
+
+        public static void Throw(PhpError error, string formatString, string arg0) => Throw(error, string.Format(formatString, arg0));
+
+        public static void Throw(PhpError error, string formatString, string arg0, string arg1) => Throw(error, string.Format(formatString, arg0, arg1));
 
         public static void Throw(PhpError error, string formatString, params string[] args) => Throw(error, string.Format(formatString, args));
 
@@ -303,6 +336,14 @@ namespace Pchp.Core
             }
         }
 
+        public static void TooFewArguments(string function, /*bool funcUser,*/ int actual, int expected)
+        {
+            // TODO: TargetPhpLanguage.Version >= 7.1
+
+            // "Too few arguments to function {function}(), {actual} passed and at least {expected} expected"
+            throw ArgumentCountErrorException(string.Format(ErrResources.too_few_arguments, function, actual.ToString(), expected.ToString()));
+        }
+
         /// <summary>
         /// Emitted to the foreach statement if the variable to be enumerated doesn't implement 
         /// the <see cref="IPhpEnumerable"/> interface.
@@ -408,6 +449,11 @@ namespace Pchp.Core
             {
                 Throw(PhpError.Warning, ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(var));
             }
+        }
+
+        public static void ObjectUsedAsArray(string typename)
+        {
+            throw ErrorException(ErrResources.object_used_as_array, typename);
         }
 
         /// <summary>

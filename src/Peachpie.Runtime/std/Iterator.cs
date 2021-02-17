@@ -47,7 +47,7 @@ public interface Iterator : Traversable
 /// This interface contains only arg-less stubs as signatures should not be restricted.
 /// </remarks>
 [EditorBrowsable(EditorBrowsableState.Advanced)]
-[PhpType(PhpTypeAttribute.InheritName), PhpExtension("Core")]
+[PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
 public interface IteratorAggregate : Traversable
 {
     /// <summary>

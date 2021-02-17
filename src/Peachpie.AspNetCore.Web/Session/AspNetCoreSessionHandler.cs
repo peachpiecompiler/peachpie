@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -27,7 +26,13 @@ namespace Peachpie.AspNetCore.Web.Session
         /// <summary>
         /// Gets the session name.
         /// </summary>
-        public override string GetSessionName(IHttpPhpContext webctx) => SessionDefaults.CookieName;
+        public override string GetSessionName(IHttpPhpContext webctx)
+        {
+            // TODO: SessionOptions.CookieName
+            // var config = ((Context)webctx).GetService<IConfigureOptions<Microsoft.AspNetCore.Builder.SessionOptions>>();
+            
+            return SessionDefaults.CookieName;
+        }
 
         /// <summary>
         /// Sets the session name.
@@ -55,8 +60,15 @@ namespace Peachpie.AspNetCore.Web.Session
 
         public override void Abandon(IHttpPhpContext webctx)
         {
-            // TODO: abandon asp.net core session
-            throw new NotImplementedException();
+            // abandon asp.net core session
+            var isession = GeHttpContext(webctx).Session;
+            if (isession != null)
+            {
+                isession.Clear();
+                isession.CommitAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            }
         }
 
         public override string GetSessionId(IHttpPhpContext webctx)
@@ -156,14 +168,16 @@ namespace Peachpie.AspNetCore.Web.Session
                 while (enumerator.MoveNext())
                 {
                     // serialize value using php serializer
-                    // and save to underlaying ISession
+                    // and save to underlying ISession
                     var bytes = Serializer.Serialize(ctx, enumerator.CurrentValue.GetValue(), default(RuntimeTypeHandle));
                     isession.Set(enumerator.CurrentKey.ToString(), bytes.ToBytes(ctx));
                 }
             }
 
             //
-            isession.CommitAsync();
+            isession.CommitAsync()
+                .GetAwaiter()
+                .GetResult();
 
             //
             return true;

@@ -8,6 +8,7 @@ using Roslyn.Utilities;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Symbols;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis
 {
@@ -17,7 +18,7 @@ namespace Pchp.CodeAnalysis
         {
             ImmutableArray<MetadataReference> _lazyExplicitReferences;
             ImmutableArray<MetadataReference> _lazyImplicitReferences = ImmutableArray<MetadataReference>.Empty;
-            ImmutableDictionary<MetadataReference, IAssemblySymbol> _referencesMap;
+            ImmutableDictionary<MetadataReference, IAssemblySymbolInternal> _referencesMap;
             ImmutableDictionary<IAssemblySymbol, MetadataReference> _metadataMap;
             AssemblySymbol _lazyCorLibrary, _lazyPhpCorLibrary;
 
@@ -53,32 +54,25 @@ namespace Pchp.CodeAnalysis
 
             internal override ImmutableArray<MetadataReference> ExplicitReferences => _lazyExplicitReferences;
 
-            internal override ImmutableArray<MetadataReference> ImplicitReferences => _lazyImplicitReferences;
+            internal override ImmutableDictionary<AssemblyIdentity, PortableExecutableReference> ImplicitReferenceResolutions =>
+                _metadataMap
+                    .Where(kvp => kvp.Value is PortableExecutableReference)
+                    .ToImmutableDictionary(kvp => kvp.Key.Identity, kvp => (PortableExecutableReference)kvp.Value);
 
-            internal override IEnumerable<KeyValuePair<AssemblyIdentity, PortableExecutableReference>> GetImplicitlyResolvedAssemblyReferences()
-            {
-                foreach (var pair in _metadataMap)
-                {
-                    var per = pair.Value as PortableExecutableReference;
-                    if (per != null)
-                    {
-                        yield return new KeyValuePair<AssemblyIdentity, PortableExecutableReference>(pair.Key.Identity, per);
-                    }
-                }
-            }
+            internal override MetadataReference GetMetadataReference(IAssemblySymbolInternal assemblySymbol) => _metadataMap.TryGetOrDefault((IAssemblySymbol)assemblySymbol);
 
-            internal override MetadataReference GetMetadataReference(IAssemblySymbol assemblySymbol) => _metadataMap.TryGetOrDefault(assemblySymbol);
+            internal override IEnumerable<KeyValuePair<MetadataReference, IAssemblySymbolInternal>> GetReferencedAssemblies() => _referencesMap;
 
-            internal override IEnumerable<KeyValuePair<MetadataReference, IAssemblySymbol>> GetReferencedAssemblies() => _referencesMap;
-
-            internal override IEnumerable<ValueTuple<IAssemblySymbol, ImmutableArray<string>>> GetReferencedAssemblyAliases()
+            internal override IEnumerable<ValueTuple<IAssemblySymbolInternal, ImmutableArray<string>>> GetReferencedAssemblyAliases()
             {
                 yield break;
             }
 
-            internal IEnumerable<IAssemblySymbol> ExplicitReferencesSymbols => ExplicitReferences.Select(r => _referencesMap[r]).WhereNotNull();
+            internal IEnumerable<IAssemblySymbolInternal> ExplicitReferencesSymbols => ExplicitReferences.Select(r => _referencesMap[r]).WhereNotNull();
 
             internal DiagnosticBag Diagnostics => _diagnostics;
+
+            internal ISymbol GetReferencedAssemblySymbol(MetadataReference reference) => (ISymbol)_referencesMap.TryGetOrDefault(reference);
 
             public ReferenceManager(
                 string simpleAssemblyName,
@@ -190,7 +184,7 @@ namespace Pchp.CodeAnalysis
                 {
                     //
                     var externalRefs = compilation.ExternalReferences;
-                    var referencesMap = new Dictionary<MetadataReference, IAssemblySymbol>();
+                    var referencesMap = new Dictionary<MetadataReference, IAssemblySymbolInternal>();
                     var metadataMap = new Dictionary<IAssemblySymbol, MetadataReference>();
                     var assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
                     var observed = new HashSet<AssemblyIdentity>();

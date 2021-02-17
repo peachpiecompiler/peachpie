@@ -42,7 +42,7 @@ namespace Peachpie.Library.Scripting
         readonly ImmutableArray<byte> _image;
 
         /// <summary>
-        /// Siubmission assembly name.
+        /// Submission assembly name.
         /// </summary>
         readonly AssemblyName _assemblyName;
 
@@ -52,7 +52,7 @@ namespace Peachpie.Library.Scripting
         readonly Type _script;
 
         /// <summary>
-        /// Refernces to scripts that preceeds this one.
+        /// References to scripts that precedes this one.
         /// Current script requires these to be evaluated first.
         /// </summary>
         public IReadOnlyList<Script> DependingSubmissions => _previousSubmissions;    // TODO: resolve the compiled code dependencies - referenced types and declared functions. Also, this might cause a huge memory leak.
@@ -184,18 +184,18 @@ namespace Peachpie.Library.Scripting
         /// <param name="code">Code to be compiled.</param>
         /// <param name="builder">Assembly builder.</param>
         /// <param name="previousSubmissions">Enumeration of scripts that were evaluated within current context. New submission may reference them.</param>
-        /// <returns>New script reepresenting the compiled code.</returns>
+        /// <returns>New script representing the compiled code.</returns>
         public static Script Create(Context.ScriptOptions options, string code, PhpCompilationFactory builder, IEnumerable<Script> previousSubmissions)
         {
             // use the language version of the requesting context
-            Version languageVersion = null;
+            var languageVersion = options.LanguageVersion;
             bool shortOpenTags = false;
 
             var language = options.Context.TargetPhpLanguage;
             if (language != null)
             {
                 shortOpenTags = language.ShortOpenTag;
-                Version.TryParse(language.LanguageVersion, out languageVersion);
+                languageVersion ??= language.LanguageVersion;
             }
 
             // unique in-memory assembly name
@@ -244,6 +244,7 @@ namespace Peachpie.Library.Scripting
                 // create the compilation object
                 // TODO: add conditionally declared types into the compilation tables
                 var compilation = (PhpCompilation)builder.CoreCompilation
+                    .WithLangVersion(languageVersion)
                     .WithAssemblyName(name.Name)
                     .AddSyntaxTrees(tree)
                     .AddReferences(metadatareferences);
@@ -306,13 +307,13 @@ namespace Peachpie.Library.Scripting
         /// </summary>
         private static Script CreateInvalid(ImmutableArray<Diagnostic> diagnostics)
         {
-            string errors = string.Join(Environment.NewLine, diagnostics.Select(d => $"{d.Severity} {d.Id}: {d.GetMessage()}"));
+            var errors = string.Join(Environment.NewLine, diagnostics.Select(d => $"{d.Severity} {d.Id}: {d.GetMessage()}"));
 
             return new Script((ctx, locals, @this, self) =>
             {
                 // TODO: throw new \ParseError( ... )
 
-                PhpException.Throw(PhpError.Error, string.Format("The script cannot be compiled due to following errors:\n{0}", errors));
+                PhpException.Throw(PhpError.Error, $"The script cannot be compiled due to following errors:\n{errors}");
 
                 //
                 return PhpValue.False;

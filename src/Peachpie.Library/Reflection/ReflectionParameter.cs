@@ -30,6 +30,7 @@ namespace Pchp.Library.Reflection
         internal bool _allowsNull;
         internal bool _isVariadic;
         internal string _name;
+        private protected ParameterInfo _p;
 
         /// <summary>Zero-based index of the parameter.</summary>
         internal int _index;
@@ -42,24 +43,27 @@ namespace Pchp.Library.Reflection
         [PhpFieldsOnlyCtor]
         protected ReflectionParameter() { }
 
-        internal ReflectionParameter(ReflectionFunctionAbstract function, int index, Type type, bool allowsNull, bool isVariadic, string name, PhpValue? defaultValue = default)
+        internal ReflectionParameter(ReflectionFunctionAbstract function, int index, ParameterInfo p, bool allowsNull, bool isVariadic, PhpValue? defaultValue = default)
         {
             Debug.Assert(function != null);
             Debug.Assert(index >= 0);
-            Debug.Assert(!string.IsNullOrEmpty(name));
 
+            _p = p ?? throw new ArgumentNullException(nameof(p));
             _function = function;
             _index = index;
-            _type = type;
+            _type = p.ParameterType;
             _allowsNull = allowsNull;
             _isVariadic = isVariadic;
-            _name = name;
+            _name = p.Name;
             _defaultValue = defaultValue;
         }
 
         /// <summary>Updates the parameter information with an overloaded parameter information.</summary>
-        internal void AddOverload(Type type, bool allowsNull, bool isVariadic, string name, PhpValue? defaultValue = default)
+        internal void AddOverload(ParameterInfo p, bool allowsNull, bool isVariadic, PhpValue? defaultValue = default)
         {
+            var type = p.ParameterType;
+            var name = p.Name;
+
             if (!hasTypeInternal(_type) && hasTypeInternal(type))
             {
                 _type = type;
@@ -76,6 +80,8 @@ namespace Pchp.Library.Reflection
             {
                 if (Core.Reflection.ReflectionUtils.IsAllowedPhpName(name))
                 {
+                    _p = p;
+                    _name = name; // override the name from the variadic version
                     _isVariadic |= isVariadic;
                 }
             }
@@ -83,6 +89,7 @@ namespace Pchp.Library.Reflection
             {
                 // previous parameter definition was synthesized,
                 // override the reflection info
+                _p = p;
                 _name = name;
                 _isVariadic = isVariadic;
             }
@@ -173,6 +180,7 @@ namespace Pchp.Library.Reflection
 
         public static string export(string function, string parameter, bool @return = false) { throw new NotImplementedException(); }
 
+        [Obsolete("Use getType() instead.")]
         public ReflectionClass getClass() =>
             (hasTypeInternal(_type) && Core.Reflection.ReflectionUtils.IsPhpClassType(_type))
                 ? new ReflectionClass(_type.GetPhpTypeInfo())
@@ -196,6 +204,7 @@ namespace Pchp.Library.Reflection
 
         public bool isArray() => _type == typeof(PhpArray);
 
+        [Obsolete("Use getType() instead.")]
         public bool isCallable() => _type == typeof(IPhpCallable);
 
         public bool isDefaultValueAvailable() => _defaultValue.HasValue; // value is initialized
@@ -208,8 +217,12 @@ namespace Pchp.Library.Reflection
 
         public bool isVariadic() => _isVariadic;
 
+        public virtual PhpArray getAttributes(string class_name = null, int flags = 0)
+            => ReflectionUtils.getAttributes(_p, class_name, flags);
+
         public virtual string __toString() => $"Parameter #{_index} [ <{(_defaultValue.HasValue ? "optional" : "required")}>{_debugTypeName} ${_name}{_debugDefaultValue} ]";
 
+        [PhpHidden]
         public override string ToString() => __toString();
 
         private protected static bool hasTypeInternal(Type t) => t != null && t != typeof(PhpValue) && t != typeof(PhpAlias) && t != typeof(PhpValue[]) && t != typeof(PhpAlias[]);

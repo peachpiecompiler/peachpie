@@ -3,6 +3,7 @@ using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Peachpie.CodeAnalysis.Semantics;
 using Peachpie.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
@@ -62,6 +63,14 @@ namespace Pchp.CodeAnalysis.Symbols
             // : return type
             if (routine.SyntaxReturnType != null)
             {
+                // "static"
+                if (routine.SyntaxReturnType is ReservedTypeRef rt && rt.Type == ReservedTypeRef.ReservedType.@static &&
+                    routine.ContainingType is SourceTypeSymbol srct && !srct.IsTrait)
+                {
+                    return srct;
+                }
+
+                //
                 return compilation.GetTypeFromTypeRef(routine.SyntaxReturnType, routine.ContainingType as SourceTypeSymbol);
             }
 
@@ -154,6 +163,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     return callableMask;
                 }
+
+                // TODO: handle union types precisely, now we resolve them mostly as PhpValue which results in AnyType mask
             }
             else
             {
@@ -204,19 +215,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 //
-                var phpparam = new PhpParam(
-                    index++,
-                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull),
-                    p.RefKind != RefKind.None,
-                    p.IsParams,
-                    isPhpRw: p.IsPhpRw,
-                    defaultValue: p.Initializer);
+                var phpparam = p.IsParams
+                    ? new PhpParam(p, index++, TypeRefMask.AnyType.WithIsRef(((ArrayTypeSymbol)p.Type).ElementType.Is_PhpAlias()))
+                    : new PhpParam(p, index++, TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNull));
 
-                if (result == null)
-                {
-                    result = new List<PhpParam>(ps.Length);
-                }
-
+                result ??= new List<PhpParam>(ps.Length);
                 result.Add(phpparam);
             }
 
@@ -264,8 +267,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets additional flags of the caller routine.
         /// </summary>
-        public static RoutineFlags InvocationFlags(this IPhpRoutineSymbol routine)
+        /// <param name="routine">The routine.</param>
+        /// <param name="localaccess">Gets local variables that will be accessed by the routine. <c>NULL</c> if none (a common case).</param>
+        public static RoutineFlags InvocationFlags(this IPhpRoutineSymbol routine, out IList<VariableName> localaccess)
         {
+            localaccess = null;
+
             var f = RoutineFlags.None;
 
             var ps = /*routine is SourceRoutineSymbol sr ? sr.ImplicitParameters :*/ routine.Parameters;
@@ -283,6 +290,13 @@ namespace Pchp.CodeAnalysis.Symbols
                             break;
                         case ImportValueAttributeData.ValueSpec.CallerStaticClass:
                             f |= RoutineFlags.UsesLateStatic;
+                            break;
+                        case ImportValueAttributeData.ValueSpec.LocalVariable:
+                            if (p.Type.Is_PhpAlias())
+                            {
+                                if (localaccess == null) localaccess = new List<VariableName>(1);
+                                localaccess.Add(new VariableName(p.Name));
+                            }
                             break;
                     }
                 }

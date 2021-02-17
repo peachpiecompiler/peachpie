@@ -40,7 +40,7 @@ namespace Pchp.Library
                 var local = config.Get<MbConfig>();
                 if (local == null)
                 {
-                    return PhpValue.Null;
+                    return PhpValue.False;
                 }
 
                 switch (option)
@@ -65,7 +65,7 @@ namespace Pchp.Library
                 }
 
                 Debug.Fail("Option '" + option + "' is not currently supported.");
-                return PhpValue.Null;
+                return PhpValue.False;
             }
 
             /// <summary>
@@ -147,9 +147,9 @@ namespace Pchp.Library
         /// Encoding name.
         /// Provides case insensitive comparison.
         /// </summary>
-        struct EncodingName : IEquatable<EncodingName>, IEquatable<string>
+        readonly struct EncodingName : IEquatable<EncodingName>, IEquatable<string>
         {
-            public string Name { get; set; }
+            public string Name { get; }
 
             static readonly HashSet<string> s_unicodenames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -205,9 +205,9 @@ namespace Pchp.Library
             public bool Equals(string other) => Equals(Name, other);
 
             public override bool Equals(object obj)
-                => obj is EncodingName encname ? Equals(encname)
-                : obj is string str ? Equals(new EncodingName { Name = str })
-                : false;
+                => obj is EncodingName encname
+                    ? Equals(encname)
+                    : obj is string str && Equals(new EncodingName(str));
 
             public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Name ?? "");
 
@@ -1104,22 +1104,16 @@ namespace Pchp.Library
 
         #endregion
 
-        #region mb_check_encoding
+        #region mb_check_encoding, mb_scrub
 
         /// <summary>
         /// Check if the string is valid for the specified encoding
         /// </summary>
         public static bool mb_check_encoding(Context ctx, PhpString var = default(PhpString), string encoding = null/*mb_internal_encoding()*/)
         {
-            if (var.IsDefault)
-            {
-                // NS: check all the input from the beginning of the request
-                throw new NotSupportedException();
-            }
-
             if (var.ContainsBinaryData)
             {
-                var enc = GetEncoding(encoding) ?? ctx.StringEncoding;
+                var enc = GetEncoding(encoding) ?? GetInternalEncoding(ctx);
 
                 // create encoding with exception fallbacks:
                 enc = Encoding.GetEncoding(enc.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
@@ -1135,6 +1129,28 @@ namespace Pchp.Library
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Replace ill-formed byte sequence with substitute character.
+        /// Although always returns a valid Unicode string value.
+        /// </summary>
+        /// <returns>A string value where any ill-formed sequence is replaced with <c>'?'</c> character.</returns>
+        public static string mb_scrub(Context ctx, PhpString str, string encoding = null)
+        {
+            Encoding enc;
+
+            if (str.ContainsBinaryData)
+            {
+                enc = GetEncoding(encoding) ?? GetInternalEncoding(ctx);
+                enc = Encoding.GetEncoding(enc.CodePage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback);
+            }
+            else
+            {
+                enc = Encoding.UTF8; // does not matter
+            }
+
+            return str.ToString(enc);
         }
 
         #endregion
@@ -1355,10 +1371,12 @@ namespace Pchp.Library
             return false;
         }
 
-        #region mb_send_mail(), TODO: use mb_language
+        #region mb_send_mail()
 
         public static bool mb_send_mail(Context ctx, string to, string subject, string message, string additional_headers = null, string additional_parameter = null)
         {
+            // TODO: use mb_language
+
             return Mail.mail(
                 ctx,
                 to,
@@ -1509,7 +1527,6 @@ namespace Pchp.Library
         /// Get character encoding detection order.
         /// </summary>
         /// <returns>An ordered array of the encodings is returned.</returns>
-        [return: NotNull]
         public static PhpArray/*!*/mb_detect_order(Context ctx)
         {
             return new PhpArray(GetConfig(ctx).DetectOrder.Select(enc => enc.WebName));

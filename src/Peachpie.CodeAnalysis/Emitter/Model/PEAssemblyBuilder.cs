@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Cci = Microsoft.Cci;
 using Pchp.CodeAnalysis.Symbols;
 
@@ -104,7 +105,7 @@ namespace Pchp.CodeAnalysis.Emit
                     var modules = _sourceAssembly.Modules;
                     for (int i = 1; i < modules.Length; i++)
                     {
-                        builder.Add((Cci.IFileReference)Translate(modules[i] as IAssemblySymbol, context.Diagnostics));
+                        builder.Add((Cci.IFileReference)Translate(modules[i] as IAssemblySymbolInternal, context.Diagnostics));
                     }
 
                     foreach (ResourceDescription resource in ManifestResources)
@@ -140,7 +141,7 @@ namespace Pchp.CodeAnalysis.Emit
 
             for (int i = 1; i < count; i++)
             {
-                var file = (Cci.IFileReference)Translate(modules[i] as IAssemblySymbol, diagnostics);
+                var file = (Cci.IFileReference)Translate(modules[i] as IAssemblySymbolInternal, diagnostics);
 
                 //try
                 //{

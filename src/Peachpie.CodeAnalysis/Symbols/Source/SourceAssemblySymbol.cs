@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.PooledObjects;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal sealed class SourceAssemblySymbol : NonMissingAssemblySymbol, ISourceAssemblySymbolInternal
+    internal sealed class SourceAssemblySymbol : NonMissingAssemblySymbol, ISourceAssemblySymbol, ISourceAssemblySymbolInternal
     {
         readonly string _simpleName;
         readonly PhpCompilation _compilation;
@@ -71,7 +72,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (!compilation.Options.CryptoPublicKey.IsEmpty)
             {
                 // Private key is not necessary for assembly identity, only when emitting.  For this reason, the private key can remain null.
-                _lazyStrongNameKeys = StrongNameKeys.Create(compilation.Options.CryptoPublicKey, null, Errors.MessageProvider.Instance);
+                _lazyStrongNameKeys = StrongNameKeys.Create(compilation.Options.CryptoPublicKey, privateKey: null, hasCounterSignature: false, Errors.MessageProvider.Instance);
             }
         }
 
@@ -248,7 +249,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 //}
             }
 
-            return StrongNameKeys.Create(DeclaringCompilation.Options.StrongNameProvider, keyFile, keyContainer, Errors.MessageProvider.Instance);
+            bool hasCounterSignature = !string.IsNullOrEmpty(this.SignatureKey);
+            return StrongNameKeys.Create(DeclaringCompilation.Options.StrongNameProvider, keyFile, keyContainer, hasCounterSignature, Errors.MessageProvider.Instance);
         }
 
         Version AssemblyVersionAttributeSetting
@@ -308,7 +310,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         AssemblyHashAlgorithm ISourceAssemblySymbolInternal.HashAlgorithm => HashAlgorithm;
 
-        Version ISourceAssemblySymbolInternal.AssemblyVersionPattern => AssemblyVersionPattern;
+        Version IAssemblySymbolInternal.AssemblyVersionPattern => AssemblyVersionPattern;
 
         bool ISourceAssemblySymbolInternal.InternalsAreVisible => false;
 

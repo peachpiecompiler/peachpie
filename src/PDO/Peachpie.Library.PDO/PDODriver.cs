@@ -1,4 +1,6 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -48,7 +50,7 @@ namespace Peachpie.Library.PDO
         /// <param name="password">The password.</param>
         /// <param name="options">The options.</param>
         /// <returns></returns>
-        protected abstract string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options);
+        protected abstract string BuildConnectionString(ReadOnlySpan<char> dsn, string? user, string? password, PhpArray options);
 
         /// <summary>
         /// Opens a new database connection.
@@ -58,7 +60,7 @@ namespace Peachpie.Library.PDO
         /// <param name="password">The password.</param>
         /// <param name="options">The options.</param>
         /// <returns></returns>
-        public virtual DbConnection OpenConnection(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
+        public virtual DbConnection OpenConnection(ReadOnlySpan<char> dsn, string? user, string? password, PhpArray options)
         {
             var connection = this.DbFactory.CreateConnection();
             connection.ConnectionString = this.BuildConnectionString(dsn, user, password, options);
@@ -70,7 +72,7 @@ namespace Peachpie.Library.PDO
         /// Gets the methods added to the PDO instance when this driver is used.
         /// Returns <c>null</c> if the method is not defined.
         /// </summary>
-        public virtual ExtensionMethodDelegate TryGetExtensionMethod(string name) => null;
+        public virtual ExtensionMethodDelegate? TryGetExtensionMethod(string name) => null;
 
         /// <summary>
         /// Gets the last insert identifier.
@@ -78,14 +80,14 @@ namespace Peachpie.Library.PDO
         /// <param name="pdo">Reference to corresponding <see cref="PDO"/> instance.</param>
         /// <param name="name">The name.</param>
         /// <returns></returns>
-        public abstract string GetLastInsertId(PDO pdo, string name);
+        public abstract string GetLastInsertId(PDO pdo, string? name);
 
         /// <summary>
         /// Sets <see cref="PDO.PDO_ATTR.ATTR_STRINGIFY_FETCHES"/> attribute value.
         /// </summary>
-        /// <param name="pdo"><see cref="PDO"/> object reference.</param>
+        /// <param name="pdo">Containing <see cref="PDO"/> object reference.</param>
         /// <param name="stringify">Whether to stringify fetched values.</param>
-        /// <returns>Value indicating the attribute was set succesfuly.</returns>
+        /// <returns>Value indicating the attribute was set successfully.</returns>
         public virtual bool TrySetStringifyFetches(PDO pdo, bool stringify)
         {
             // NOTE: this method should be removed and stringify handled when actually used in PdoResultResource.GetValues()
@@ -97,11 +99,12 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Tries to set a driver specific attribute value.
         /// </summary>
+        /// <param name="pdo">Containing <see cref="PDO"/> object reference.</param>
         /// <param name="attributes">The current attributes collection.</param>
         /// <param name="attribute">The attribute to set.</param>
         /// <param name="value">The value.</param>
         /// <returns>true if value is valid, or false if value can't be set.</returns>
-        public virtual bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
+        public virtual bool TrySetAttribute(PDO pdo, Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
         {
             return false;
         }
@@ -125,7 +128,7 @@ namespace Peachpie.Library.PDO
         /// <param name="queryString">The original command text.</param>
         /// <param name="options">Custom options.</param>
         /// <param name="bound_param_map">Will be set to <c>null</c> or a map of user-provided names to rewritten parameter names.</param>
-        public virtual string RewriteCommand(string queryString, PhpArray options, out Dictionary<IntStringKey, IntStringKey> bound_param_map)
+        public virtual string RewriteCommand(string queryString, PhpArray options, out Dictionary<IntStringKey, IntStringKey>? bound_param_map)
         {
             using (var rewriter = new StatementStringRewriter() { TranslateNamedParams = true, })
             {
@@ -141,12 +144,12 @@ namespace Peachpie.Library.PDO
 
         private class StatementStringRewriter : StatementStringParser, IDisposable
         {
-            StringBuilder _stringBuilder = StringBuilderUtilities.Pool.Get();
+            readonly StringBuilder _stringBuilder = StringBuilderUtilities.Pool.Get();
             int _unnamedParamIndex = 0;
 
-            public string RewrittenQueryString => _stringBuilder?.ToString();
+            public string RewrittenQueryString => _stringBuilder.ToString();
 
-            public Dictionary<IntStringKey, IntStringKey> BoundParamMap { get; private set; }
+            public Dictionary<IntStringKey, IntStringKey>? BoundParamMap { get; private set; }
 
             /// <summary>
             /// Translate `:name` syntax to `@name` syntax.
@@ -201,7 +204,6 @@ namespace Peachpie.Library.PDO
             void IDisposable.Dispose()
             {
                 StringBuilderUtilities.Pool.Return(_stringBuilder);
-                _stringBuilder = null;
             }
         }
 
@@ -216,7 +218,7 @@ namespace Peachpie.Library.PDO
             }
             else
             {
-                errorInfo = PDO.ErrorInfo.Create(string.Empty, null, ex.Message);
+                errorInfo = PDO.ErrorInfo.Create(string.Empty, string.Empty, ex.Message);
             }
         }
 

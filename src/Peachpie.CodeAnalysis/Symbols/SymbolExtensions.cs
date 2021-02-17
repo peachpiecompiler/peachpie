@@ -32,12 +32,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 return m.IsPhpHidden;
             }
 
+            if (s is FieldSymbol f)
+            {
+                return f.IsPhpHidden;
+            }
+
             var attrs = s.GetAttributes();
             if (attrs.Length != 0)
             {
-                bool hascond = false;
-                bool hasmatch = false;
-
                 foreach (var attr in attrs)
                 {
                     // [PhpHiddenAttribute]
@@ -45,18 +47,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         return true; // => hide
                     }
-
-                    // [PhpConditionalAttribute]
-                    if (attr.AttributeClass.MetadataName == "PhpConditionalAttribute")
-                    {
-                        hascond = true;
-
-                        var condition = (string)attr.ConstructorArguments[0].Value;
-                        hasmatch = compilation == null || compilation.ConditionalOptions.Contains(condition);
-                    }
                 }
-
-                if (hascond && !hasmatch) return true;  // conditions defined but not satisfied => hide
             }
             //
             return false;
@@ -82,17 +73,13 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Determines whethere given PE type symbol is an exported PHP type.
-        /// </summary>
-        public static bool IsPhpTypeName(this PENamedTypeSymbol s) => !s.IsStatic && !GetPhpTypeNameOrNull(s).IsEmpty();
-
-        /// <summary>
         /// Gets file symbol containing given symbol.
         /// </summary>
         public static SourceFileSymbol GetContainingFileSymbol(this Symbol s)
         {
             return s?.OriginalDefinition switch
             {
+                SourceFileSymbol file => file,
                 SourceRoutineSymbol routine => routine.ContainingFile,
                 SourceTypeSymbol type => type.ContainingFile,
                 _ => s != null ? GetContainingFileSymbol(s.ContainingSymbol) : null,
@@ -100,19 +87,24 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Determines PHP type name of an exported PHP type.
-        /// Gets default&lt;QualifiedName&gt; if type is not exported PHP type.
+        /// Resolves [PhpTypeAttribute] and resulting type name.
+        /// Returns <c>false</c> in case the type is not declared as a PHP type.
         /// </summary>
-        public static QualifiedName GetPhpTypeNameOrNull(this PENamedTypeSymbol s)
+        public static bool TryGetPhpTypeAttribute(this PENamedTypeSymbol s, out QualifiedName resolvedFullName, out Version minLangVersion)
         {
-            if (TryGetPhpTypeAttribute(s, out var tname, out _, out _))
+            if (TryGetPhpTypeAttribute(s, out var tname, out _, out _, out minLangVersion))
             {
-                return tname != null
+                resolvedFullName = tname != null
                     ? QualifiedName.Parse(tname, true)
                     : s.MakeQualifiedName();
-            }
 
-            return default;
+                return true;
+            }
+            else
+            {
+                resolvedFullName = default;
+                return false;
+            }
         }
 
         /// <summary>
@@ -181,29 +173,47 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets [PhpType] attribute and its parameters.
         /// </summary>
-        public static bool TryGetPhpTypeAttribute(this TypeSymbol symbol, out string typename, out string filename, out byte autoload)
+        public static bool TryGetPhpTypeAttribute(this TypeSymbol symbol, out string typename, out string filename, out byte autoload) =>
+            TryGetPhpTypeAttribute(symbol, out typename, out filename, out autoload, out _);
+
+        /// <summary>
+        /// Gets [PhpType] attribute and its parameters.
+        /// </summary>
+        public static bool TryGetPhpTypeAttribute(this TypeSymbol symbol, out string typename, out string filename, out byte autoload, out Version minLangVersion)
         {
             typename = filename = null;
             autoload = 0;
+            minLangVersion = null;
 
             var a = symbol.GetAttribute(CoreTypes.PhpTypeAttributeFullName);
             if (a != null)
             {
-                var args = a.CommonConstructorArguments;
+                var args = a.ConstructorArguments;
                 if (args.Length >= 2)
                 {
                     typename = (string)args[0].Value;
                     filename = (string)args[1].Value;
                     autoload = args.Length >= 3 ? (byte)args[2].Value : (byte)0;
-                    return true;
                 }
                 else if (args.Length == 1)
                 {
                     var phptype = (byte)args[0].Value; // see PhpTypeAttribute.PhpTypeName
                     if (phptype == 1/*PhpTypeName.NameOnly*/) typename = symbol.Name;
-
-                    return true;
                 }
+
+                var named = a.NamedArguments;
+                if (named.IsDefaultOrEmpty == false)
+                {
+                    foreach (var pair in named)
+                    {
+                        if (pair.Key == "MinimumLangVersion")
+                            Version.TryParse((string)pair.Value.Value, out minLangVersion);
+                        else
+                            Debug.Fail($"Unexpected named attribute PhpType::{pair.Key}");
+                    }
+                }
+
+                return true;
             }
 
             //

@@ -14,7 +14,7 @@ namespace Pchp.Library.Phar
     [PhpExtension(PharExtension.ExtensionName)]
     public sealed class PharFileInfo : SplFileInfo
     {
-        public PharFileInfo(Context ctx, string entry) : base(ctx, entry)
+        public PharFileInfo(Context ctx, string filename) : base(ctx, filename)
         {
             throw new NotImplementedException();
         }

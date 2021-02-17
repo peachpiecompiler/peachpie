@@ -34,9 +34,9 @@ namespace Pchp.Library
         /// <exception cref="ArgumentNullException"><paramref name="str"/> is a <B>null</B> reference.</exception>
         public static string/*!*/ AddCSlashes(string/*!*/ str, bool singleQuotes = true, bool doubleQuotes = true, bool nul = true)
         {
-            if (str == null) throw new ArgumentNullException("str");
+            if (str == null) throw new ArgumentNullException(nameof(str));
 
-            StringBuilder result = new StringBuilder(str.Length);
+            var result = StringBuilderUtilities.Pool.Get();
 
             string double_quotes = doubleQuotes ? "\\\"" : "\"";
             string single_quotes = singleQuotes ? @"\'" : "'";
@@ -55,7 +55,7 @@ namespace Pchp.Library
                 }
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -119,9 +119,9 @@ namespace Pchp.Library
         /// <exception cref="ArgumentNullException"><paramref name="str"/> is a <B>null</B> reference.</exception>
         public static string/*!*/ AddDbSlashes(string/*!*/ str)
         {
-            if (str == null) throw new ArgumentNullException("str");
+            if (str == null) throw new ArgumentNullException(nameof(str));
 
-            StringBuilder result = new StringBuilder(str.Length);
+            StringBuilder result = StringBuilderUtilities.Pool.Get();
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -134,7 +134,7 @@ namespace Pchp.Library
                 }
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -144,9 +144,9 @@ namespace Pchp.Library
         /// <returns>String with replaced characters.</returns>
         public static string/*!*/ StripDbSlashes(string/*!*/ str)
         {
-            if (str == null) throw new ArgumentNullException("str");
+            if (str == null) throw new ArgumentNullException(nameof(str));
 
-            StringBuilder result = new StringBuilder(str.Length);
+            var result = StringBuilderUtilities.Pool.Get();
 
             int i = 0;
             while (i < str.Length - 1)
@@ -170,7 +170,7 @@ namespace Pchp.Library
             if (i < str.Length)
                 result.Append(str[i]);
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -278,18 +278,20 @@ namespace Pchp.Library
         public static bool EqualsOrdinalIgnoreCase(this ReadOnlySpan<char> str1, ReadOnlySpan<char> str2) => Core.Utilities.StringUtils.EqualsOrdinalIgnoreCase(str1, str2);
 
         /// <summary>
+        /// Determines whether two strings are equal while ignoring casing.
+        /// </summary>
+        public static bool EqualsOrdinalIgnoreCase(this ReadOnlySpan<char> str1, string str2) => Core.Utilities.StringUtils.EqualsOrdinalIgnoreCase(str1, str2);
+
+        /// <summary>
         /// Decodes given json encoded string.
         /// </summary>
         public static PhpValue JsonDecode(string value)
         {
-            var options = new PhpSerialization.JsonSerializer.DecodeOptions();
-            var scanner = new Json.JsonScanner(new StringReader(value), options);
-            var parser = new Json.Parser(options)
+            return PhpSerialization.JsonSerializer.ObjectReader.Deserialize(Encoding.UTF8.GetBytes(value).AsSpan(), new System.Text.Json.JsonReaderOptions
             {
-                Scanner = scanner,
-            };
-
-            return parser.Parse() ? parser.Result : throw new FormatException();
+                AllowTrailingCommas = true,
+                CommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+            }, JsonSerialization.JsonDecodeOptions.JSON_THROW_ON_ERROR);
         }
 
         /// <summary>
@@ -313,7 +315,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Removes all occurances of characters.
+        /// Removes all occurrences of characters.
         /// </summary>
         public static string RemoveAny(this string text, params char[] anyOf)
         {
@@ -520,8 +522,7 @@ namespace Pchp.Library
         /// </summary>
         public static byte[] GetBuffer(this MemoryStream stream)
         {
-            ArraySegment<byte> buffer;
-            if (!stream.TryGetBuffer(out buffer)) throw new ArgumentException();    //  stream is not exposable
+            if (!stream.TryGetBuffer(out var buffer)) throw new ArgumentException();    //  stream is not exposable
             return buffer.Array;
         }
 
@@ -768,11 +769,11 @@ namespace Pchp.Library
         /// Gets object pool singleton.
         /// Uses <see cref="StringBuilderPooledObjectPolicy"/> policy (automatically clears the string builder upon return).
         /// </summary>
-        public static ObjectPool<StringBuilder> Pool => s_lazyObjectPool.Value;
+        public static ObjectPool<StringBuilder> Pool { get; } = new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy());
 
-        static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(
-            () => new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy()),
-            System.Threading.LazyThreadSafetyMode.PublicationOnly);
+        //static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(
+        //    () => new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy()),
+        //    System.Threading.LazyThreadSafetyMode.PublicationOnly);
 
         /// <summary>
         /// Gets the <paramref name="sb"/> value as string and return the instance to the <see cref="Pool"/>.

@@ -144,6 +144,35 @@ namespace Peachpie.NET.Sdk.Tools
         [Output]
         public ITaskItem[] Autoload_Files { get; private set; }
 
+        enum ErrorCodes
+        {
+            ERR_SyntaxError = 1000,
+            WRN_EmptyDescription,
+            WRN_InvalidHomepage,
+            WRN_EmptyName,
+            WRN_Unhandled,
+            WRN_SPDX,
+            WRN_InvalidVersion,
+            WRN_InvalidReleaseDate,
+            WRN_InvalidDependencyVersion,
+        }
+
+        static string ErrorCode(ErrorCodes code) => "CSDK" + ((int)code).ToString("D4");
+
+        void LogError(ErrorCodes code, Location location, string message)
+        {
+            var path = Path.GetFullPath(ComposerJsonPath); // normalize slashes
+
+            if (code.ToString().StartsWith("ERR_")) // error
+            {
+                Log.LogError(null, ErrorCode(code), null, path, location.Start.Line, location.Start.Col, location.End.Line, location.End.Col, message);
+            }
+            else
+            {
+                Log.LogWarning(null, ErrorCode(code), null, path, location.Start.Line, location.Start.Col, location.End.Line, location.End.Col, message);
+            }
+        }
+
         /// <summary>
         /// Processes the <c>composer.json</c> file.
         /// </summary>
@@ -154,6 +183,11 @@ namespace Peachpie.NET.Sdk.Tools
             try
             {
                 json = JSON.Parse(File.ReadAllText(ComposerJsonPath));
+            }
+            catch (JSONFormatException f)
+            {
+                LogError(ErrorCodes.ERR_SyntaxError, new Location { Start = f.Position }, f.Message);
+                return false;
             }
             catch (Exception ex)
             {
@@ -191,7 +225,11 @@ namespace Peachpie.NET.Sdk.Tools
                         break;
 
                     case "license":
-                        License = SpdxHelpers.SanitizeSpdx(node.Value);
+                        License = SpdxHelpers.SanitizeSpdx(node.Value, out var spdxwarning);
+                        if (spdxwarning != null)
+                        {
+                            LogError(ErrorCodes.WRN_SPDX, node.Value.Location, spdxwarning);
+                        }
                         break;
 
                     case "version":
@@ -276,7 +314,7 @@ namespace Peachpie.NET.Sdk.Tools
 
                                 default:
                                     // ???
-                                    this.Log.LogWarning($"autoload \"{autoload.Key}\" key is not handled.");
+                                    LogError(ErrorCodes.WRN_Unhandled, node.Value.Location, $"autoload \"{autoload.Key}\" key is not handled.");
                                     break;
                             }
                         }
@@ -288,7 +326,15 @@ namespace Peachpie.NET.Sdk.Tools
             return true;
         }
 
-        string GetName(JSONNode name) => IdToNuGetId(name.Value);
+        string GetName(JSONNode name)
+        {
+            if (string.IsNullOrWhiteSpace(name.Value))
+            {
+                LogError(ErrorCodes.WRN_EmptyName, name.Location, "Name should not be empty.");
+            }
+
+            return IdToNuGetId(name.Value);
+        }
 
         string GetDescription(JSONNode desc)
         {
@@ -300,16 +346,31 @@ namespace Peachpie.NET.Sdk.Tools
 
             if (description.Length == 0)
             {
+                LogError(ErrorCodes.WRN_EmptyDescription, desc.Location, "Description should not be empty.");
+
                 // CONSIDER: fill in something instead of `"Package Description"` filled in by nuget task
             }
 
             return description;
         }
 
-        string GetHomepage(JSONNode url) => new Uri(url.Value, UriKind.Absolute).AbsoluteUri; // validate
-
-        string SanitizeVersionValue(string value)
+        string GetHomepage(JSONNode url)
         {
+            if (Uri.TryCreate(url.Value, UriKind.Absolute, out var uri))
+            {
+                return uri.AbsoluteUri;
+            }
+            else
+            {
+                LogError(ErrorCodes.WRN_InvalidHomepage, url.Location, "Invalid URI.");
+                return string.Empty;
+            }
+        }
+
+        string SanitizeVersionValue(JSONNode node)
+        {
+            var value = node.Value;
+
             if (string.IsNullOrWhiteSpace(value))
             {
                 return null;
@@ -328,7 +389,7 @@ namespace Peachpie.NET.Sdk.Tools
             // prefix must be in form of X.Y.Z
             if (!System.Version.TryParse(prefix, out var v))
             {
-                Log.LogWarning($"Invalid \"version\" = \"{prefix}\".");
+                LogError(ErrorCodes.WRN_InvalidVersion, node.Location, $"Invalid \"version\" = \"{prefix}\".");
                 return null;
             }
 
@@ -344,7 +405,18 @@ namespace Peachpie.NET.Sdk.Tools
             return resultVersionString;
         }
 
-        DateTime GetReleaseDate(JSONNode date) => DateTime.Parse(date.Value);
+        DateTime GetReleaseDate(JSONNode date)
+        {
+            if (DateTime.TryParse(date.Value, out var dt))
+            {
+                return dt;
+            }
+            else
+            {
+                LogError(ErrorCodes.WRN_InvalidReleaseDate, date.Location, "Invalid date format.");
+                return default;
+            }
+        }
 
         IEnumerable<ITaskItem> GetAuthors(JSONArray authors)
         {
@@ -621,7 +693,7 @@ namespace Peachpie.NET.Sdk.Tools
 
                 yield return PackageDependencyItem(
                     name: IdToNuGetId(name),
-                    version: VersionRangeToPackageVersion(ignoreVersion ? string.Empty : r.Value.Value, ForcePreReleaseDependency));
+                    version: VersionRangeToPackageVersion(ignoreVersion ? string.Empty : r.Value.Value, ForcePreReleaseDependency, r.Value.Location));
             }
         }
 
@@ -648,7 +720,7 @@ namespace Peachpie.NET.Sdk.Tools
             return value.ToLowerInvariant();
         }
 
-        string VersionRangeToPackageVersion(string value, bool forcePreRelease)
+        string VersionRangeToPackageVersion(string value, bool forcePreRelease, Location location)
         {
             // https://getcomposer.org/doc/articles/versions.md
             // https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#floating-versions
@@ -665,9 +737,17 @@ namespace Peachpie.NET.Sdk.Tools
             //1 - 2
             //1.0.0 - 2.1.0
 
-            var version = Versioning.ComposerVersionExpression.TryParse(value, out var expression)
-                ? expression.Evaluate()
-                : new Versioning.FloatingVersion(); // any version
+            Versioning.FloatingVersion version;
+
+            if (Versioning.ComposerVersionExpression.TryParse(value, out var expression))
+            {
+                version = expression.Evaluate();
+            }
+            else
+            {
+                LogError(ErrorCodes.WRN_InvalidDependencyVersion, location, $"Version expression '{value}' is invalid.");
+                version = new Versioning.FloatingVersion(); // any version
+            }
 
             //
             return version.ToString(forcePreRelease: forcePreRelease);

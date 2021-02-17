@@ -8,91 +8,74 @@ using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Peachpie.CodeAnalysis.Utilities;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    sealed class SourceCustomAttribute : BaseAttributeData
+    sealed partial class SourceCustomAttribute : BaseAttributeData
     {
-        readonly TypeRef _tref;
-        readonly ImmutableArray<LangElement> _arguments;
-        readonly ImmutableArray<KeyValuePair<Name, LangElement>> _properties;
+        readonly IBoundTypeRef _tref;
+
+        readonly ImmutableArray<BoundArgument> _arguments;
+
+        readonly PhpCompilation _compilation;
+
+        /// <summary>
+        /// Attribute arguments.
+        /// </summary>
+        public ImmutableArray<BoundArgument> Arguments => _arguments;
 
         NamedTypeSymbol _type;
         MethodSymbol _ctor;
         ImmutableArray<TypedConstant> _ctorArgs;
         ImmutableArray<KeyValuePair<string, TypedConstant>> _namedArgs;
 
-        public SourceCustomAttribute(TypeRef tref, IList<KeyValuePair<Name, LangElement>> arguments)
+        public SourceCustomAttribute(PhpCompilation compilation, SourceTypeSymbol containingType, IBoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
         {
+            _compilation = compilation;
             _tref = tref;
+            _arguments = arguments;
 
-            if (arguments != null && arguments.Count != 0)
-            {
-                // count args
-                int nargs = 0;
-                while (nargs < arguments.Count && arguments[nargs].Key.Value == null)
-                    nargs++;
-
-                //
-                _arguments = arguments.Take(nargs).Select(x => x.Value).AsImmutable();
-                _properties = arguments.Skip(nargs).AsImmutable();
-            }
-            else
-            {
-                _arguments = ImmutableArray<LangElement>.Empty;
-                _properties = ImmutableArray<KeyValuePair<Name, LangElement>>.Empty;
-            }
+            TypeCtx = new FlowAnalysis.TypeRefContext(compilation, containingType);
         }
 
         #region Bind to Symbol and TypedConstant
 
-        internal void Bind(Symbol symbol, SourceFileSymbol file)
+        bool Bind()
         {
-            Debug.Assert(symbol != null);
+            var compilation = _compilation;
 
             if (_type == null)
             {
-                // TODO: check the attribute can bi bound to symbol
+                _namedArgs = ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty;
 
-                var type = (NamedTypeSymbol)symbol.DeclaringCompilation.GetTypeFromTypeRef(_tref);
+                // TODO: check the attribute can be bound to symbol
 
-                if (type.IsErrorTypeOrNull() || type.SpecialType == SpecialType.System_Object)
+                var type = _tref.ResolveRuntimeType(compilation);
+                if (type.IsValidType() && compilation.GetWellKnownType(WellKnownType.System_Attribute).IsAssignableFrom(type))
                 {
-                    symbol.DeclaringCompilation.DeclarationDiagnostics.Add(
-                        Location.Create(file.SyntaxTree, _tref.Span.ToTextSpan()),
-                        Errors.ErrorCode.ERR_TypeNameCannotBeResolved,
-                        _tref.ToString());
+                    // valid CLR attribute
+                    // bind strictly
 
-                    type = new MissingMetadataTypeSymbol(_tref.ToString(), 0, false);
-                }
-
-                // bind arguments
-                if (!TryResolveCtor(type, symbol.DeclaringCompilation, out _ctor, out _ctorArgs) && type.IsValidType())
-                {
-                    symbol.DeclaringCompilation.DeclarationDiagnostics.Add(
-                        Location.Create(file.SyntaxTree, _tref.Span.ToTextSpan()),
-                        Errors.ErrorCode.ERR_NoMatchingOverload,
-                        type.Name + "..ctor");
-                }
-
-                // bind named parameters
-                if (type.IsErrorTypeOrNull() || _properties.IsDefaultOrEmpty)
-                {
-                    _namedArgs = ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty;
-                }
-                else
-                {
-                    var namedArgs = new KeyValuePair<string, TypedConstant>[_properties.Length];
-                    for (int i = 0; i < namedArgs.Length; i++)
+                    // bind arguments
+                    if (!TryResolveCtor((NamedTypeSymbol)type, compilation, out _ctor, out _ctorArgs))
                     {
-                        var prop = _properties[i];
-                        var member =
-                            (Symbol)type.LookupMember<PropertySymbol>(prop.Key.Value) ??
-                            (Symbol)type.LookupMember<FieldSymbol>(prop.Key.Value);
+                        throw new InvalidOperationException("no matching .ctor");
+                    }
 
-                        if (member != null && TryBindTypedConstant(member.GetTypeOrReturnType(), prop.Value, symbol.DeclaringCompilation, out var arg))
+                    // bind named parameters to CLR attribute properties
+                    foreach (var arg in _arguments)
+                    {
+                        if (arg.ParameterName == null)
+                            continue;
+
+                        var member =
+                           (Symbol)type.LookupMember<PropertySymbol>(arg.ParameterName) ??
+                           (Symbol)type.LookupMember<FieldSymbol>(arg.ParameterName);
+
+                        if (member != null && TryBindTypedConstant(member.GetTypeOrReturnType(), arg.Value.ConstantValue, out var constant))
                         {
-                            namedArgs[i] = new KeyValuePair<string, TypedConstant>(prop.Key.Value, arg);
+                            _namedArgs = _namedArgs.Add(new KeyValuePair<string, TypedConstant>(arg.ParameterName, constant));
                         }
                         else
                         {
@@ -100,12 +83,178 @@ namespace Pchp.CodeAnalysis.Symbols
                         }
                     }
 
-                    _namedArgs = namedArgs.AsImmutable();
+                    //
+                    _type = (NamedTypeSymbol)type;
+                }
+                else
+                {
+                    // store just the metadata
+                    _type = compilation.CoreTypes.PhpCustomAtribute ?? throw new InvalidOperationException("PhpCustomAtribute not defined.");
+                    _ctor = _type.Constructors.Single(m =>
+                        m.ParameterCount == 2 &&
+                        m.Parameters[0].Type.IsStringType() &&
+                        m.Parameters[1].Type.IsByteArray());
+
+                    //compilation.DeclarationDiagnostics.Add(
+                    //    Location.Create(file.SyntaxTree, _tref.Span.ToTextSpan()),
+                    //    Errors.ErrorCode.ERR_TypeNameCannotBeResolved,
+                    //    _tref.ToString());
+
+                    //type = new MissingMetadataTypeSymbol(_tref.ToString(), 0, false);
+
+                    _ctorArgs = ImmutableArray.Create(
+                        compilation.CreateTypedConstant(_tref.ToString()),
+                        compilation.CreateTypedConstant(Encoding.UTF8.GetBytes(ArgumentsToJson())));
                 }
 
-                //
-                _type = type;
+                // TODO: validate {type} attribute TARGET if any
+                //Attribute::TARGET_CLASS
+                //Attribute::TARGET_FUNCTION
+                //Attribute::TARGET_METHOD
+                //Attribute::TARGET_PROPERTY
+                //Attribute::TARGET_CLASS_CONSTANT
+                //Attribute::TARGET_PARAMETER
+                //Attribute::TARGET_ALL
             }
+
+            //
+            return _type != null;
+        }
+
+        /// <summary>Simple AST to JSON serialization.</summary>
+        string ArgumentsToJson()
+        {
+            void ExpressionToJson(BoundExpression element, StringBuilder output)
+            {
+                if (element.ConstantValue.HasValue)
+                {
+                    switch (element.ConstantValue.Value)
+                    {
+                        case int i:
+                            output.Append(i);
+                            break;
+                        case long l:
+                            output.Append(l);
+                            break;
+                        case double d:
+                            output.Append(d.ToString("N", System.Globalization.CultureInfo.InvariantCulture));
+                            break;
+                        case string s:
+                            using (var writer = new System.IO.StringWriter(output))
+                            using (var json = new Roslyn.Utilities.JsonWriter(writer))
+                            {
+                                json.Write(s);
+                            }
+                            break;
+                        case bool b:
+                            output.Append(b ? "true" : "false");
+                            break;
+                        case null:
+                            output.Append("null");
+                            break;
+                        default:
+                            throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(element.ConstantValue.Value);
+                    }
+                }
+                else
+                {
+                    switch (element)
+                    {
+
+                        case BoundPseudoClassConst pc: // TYPE::class
+                            if (pc.TargetType is Semantics.TypeRef.BoundClassTypeRef cref) // not good
+                            {
+                                output.Append('"');
+                                output.Append(cref.ClassName.ToString());
+                                output.Append('"');
+                                break;
+                            }
+                            goto default;
+
+                        case BoundArrayEx array:
+                            if (array.Items.Length == 0)
+                            {
+                                output.Append("[]");
+                            }
+                            else if (array.Items.All(x => x.Key == null))
+                            {
+                                output.Append('[');
+                                for (int i = 0; i < array.Items.Length; i++)
+                                {
+                                    if (i != 0) output.Append(',');
+                                    ExpressionToJson(array.Items[i].Value, output);
+                                }
+                                output.Append(']');
+                            }
+                            else
+                            {
+                                output.Append('{');
+                                for (int i = 0; i < array.Items.Length; i++)
+                                {
+                                    if (i != 0) output.Append(',');
+                                    output.Append('"');
+                                    output.Append(array.Items[i].Key switch
+                                    {
+                                        BoundLiteral lit => lit.ConstantValue.Value.ToString(),
+                                        null => i.ToString(),
+                                        _ => Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(array.Items[i].Key),
+                                    });
+                                    output.Append('"');
+                                    output.Append(':');
+                                    ExpressionToJson(array.Items[i].Value, output);
+                                }
+                                output.Append('}');
+                            }
+                            break;
+                        default:
+                            throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(element);
+                    }
+                }
+            }
+
+            void AppendKey(StringBuilder json, string key)
+            {
+                json.Append('"');
+                json.Append(key);
+                json.Append('"');
+                json.Append(':');
+            }
+
+            if (_arguments.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            var json = new StringBuilder();
+
+            if (_arguments.All(a => a.ParameterName == null))
+            {
+                // use array syntax
+                json.Append('[');
+                for (int i = 0; i < _arguments.Length; i++)
+                {
+                    if (json.Length > 1) json.Append(',');
+                    ExpressionToJson(_arguments[i].Value, json);
+                }
+                json.Append(']');
+            }
+            else
+            {
+                // use object syntax
+                json.Append('{');
+
+                for (int i = 0; i < _arguments.Length; i++)
+                {
+                    if (json.Length > 1) json.Append(',');
+                    AppendKey(json, _arguments[i].ParameterName ?? i.ToString()); // "i":
+                    ExpressionToJson(_arguments[i].Value, json);
+                }
+
+                json.Append('}');
+            }
+
+            //
+            return json.ToString();
         }
 
         static bool TryBindTypedConstant(TypeSymbol target, long value, out TypedConstant result)
@@ -191,82 +340,28 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        static bool TryBindTypedConstant(TypeSymbol target, object value, out TypedConstant result)
+        static bool TryBindTypedConstant(TypeSymbol target, Optional<object> constant, out TypedConstant result)
         {
-            Debug.Assert(!(value is LangElement));
-
-            if (ReferenceEquals(value, null))
+            if (constant.HasValue)
             {
-                // NULL
-                result = new TypedConstant(target, TypedConstantKind.Primitive, null);
-                return true && target.IsReferenceType;
-            }
-
-            if (value is int i) return TryBindTypedConstant(target, i, out result);
-            if (value is long l) return TryBindTypedConstant(target, l, out result);
-            if (value is uint u) return TryBindTypedConstant(target, u, out result);
-            if (value is byte b8) return TryBindTypedConstant(target, b8, out result);
-            if (value is double d) return TryBindTypedConstant(target, d, out result);
-            if (value is float f) return TryBindTypedConstant(target, f, out result);
-            if (value is string s) return TryBindTypedConstant(target, s, out result);
-            if (value is char c) return TryBindTypedConstant(target, c.ToString(), out result);
-            if (value is bool b) return TryBindTypedConstant(target, b, out result);
-
-            //
-            result = default;
-            return false;
-        }
-
-        static bool TryBindTypedConstant(TypeSymbol target, LangElement element, PhpCompilation compilation, out TypedConstant result)
-        {
-
-            if (element is LongIntLiteral llit) return TryBindTypedConstant(target, llit.Value, out result);
-            if (element is DoubleLiteral dlit) return TryBindTypedConstant(target, dlit.Value, out result);
-            if (element is StringLiteral slit) return TryBindTypedConstant(target, slit.Value, out result);
-
-            if (element is TypeRef tref)
-            {
-                var system_type = compilation.GetWellKnownType(WellKnownType.System_Type);
-                result = new TypedConstant(system_type, TypedConstantKind.Type, compilation.GetTypeFromTypeRef(tref));
-                return target == system_type;
-            }
-
-            if (element is GlobalConstUse gconst)
-            {
-                var qname = gconst.FullName.Name.QualifiedName;
-                if (qname.IsSimpleName)
+                var value = constant.Value;
+                if (ReferenceEquals(value, null))
                 {
-                    // common constants
-                    if (qname == QualifiedName.True) return TryBindTypedConstant(target, true, out result);
-                    if (qname == QualifiedName.False) return TryBindTypedConstant(target, true, out result);
-                    if (qname == QualifiedName.Null) return TryBindTypedConstant(target, (object)null, out result);
-
-                    // lookup constant
-                    var csymbol = compilation.GlobalSemantics.ResolveConstant(qname.Name.Value);
-                    if (csymbol is FieldSymbol fld && fld.HasConstantValue)
-                    {
-                        return TryBindTypedConstant(target, fld.ConstantValue, out result);
-                    }
+                    // NULL
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, null);
+                    return true && target.IsReferenceType;
                 }
 
-                // note: namespaced constants are unreachable
+                if (value is int i) return TryBindTypedConstant(target, i, out result);
+                if (value is long l) return TryBindTypedConstant(target, l, out result);
+                if (value is uint u) return TryBindTypedConstant(target, u, out result);
+                if (value is byte b8) return TryBindTypedConstant(target, b8, out result);
+                if (value is double d) return TryBindTypedConstant(target, d, out result);
+                if (value is float f) return TryBindTypedConstant(target, f, out result);
+                if (value is string s) return TryBindTypedConstant(target, s, out result);
+                if (value is char c) return TryBindTypedConstant(target, c.ToString(), out result);
+                if (value is bool b) return TryBindTypedConstant(target, b, out result);
             }
-
-            if (element is ClassConstUse cconst)
-            {
-                // lookup the type container
-                var ctype = compilation.GetTypeFromTypeRef(cconst.TargetType);
-                if (ctype.IsValidType())
-                {
-                    // lookup constant/enum field (both are FieldSymbol)
-                    var member = ctype.LookupMember<FieldSymbol>(cconst.Name.Value);
-                    if (member != null && member.HasConstantValue)
-                    {
-                        return TryBindTypedConstant(target, member.ConstantValue, out result);
-                    }
-                }
-            }
-
             //
             result = default;
             return false;
@@ -291,7 +386,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     for (var pi = 0; match && pi < ps.Length; pi++)
                     {
-                        if (pi >= _arguments.Length)
+                        if (pi >= _arguments.Length || _arguments[pi].ParameterName != null)
                         {
                             //if (ps[pi].IsOptional)
                             //{
@@ -305,7 +400,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             }
                         }
 
-                        if (TryBindTypedConstant(ps[pi].Type, _arguments[pi], compilation, out var arg))
+                        if (TryBindTypedConstant(ps[pi].Type, _arguments[pi].Value.ConstantValue, out var arg))
                         {
                             boundargs[pi] = arg;
                         }
@@ -333,15 +428,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
-        public override NamedTypeSymbol AttributeClass => _type ?? throw ExceptionUtilities.Unreachable;
+        public override NamedTypeSymbol AttributeClass => Bind() ? _type : throw ExceptionUtilities.Unreachable;
 
-        public override MethodSymbol AttributeConstructor => _ctor ?? throw ExceptionUtilities.Unreachable;
+        public override MethodSymbol AttributeConstructor => Bind() ? _ctor : throw ExceptionUtilities.Unreachable;
 
         public override SyntaxReference ApplicationSyntaxReference => throw new NotImplementedException();
 
-        protected internal override ImmutableArray<TypedConstant> CommonConstructorArguments => _ctorArgs;
+        protected internal override ImmutableArray<TypedConstant> CommonConstructorArguments => Bind() ? _ctorArgs : throw ExceptionUtilities.Unreachable;
 
-        protected internal override ImmutableArray<KeyValuePair<string, TypedConstant>> CommonNamedArguments => _namedArgs;
+        protected internal override ImmutableArray<KeyValuePair<string, TypedConstant>> CommonNamedArguments => Bind() ? _namedArgs : throw ExceptionUtilities.Unreachable;
 
         internal override int GetTargetAttributeSignatureIndex(Symbol targetSymbol, AttributeDescription description)
         {

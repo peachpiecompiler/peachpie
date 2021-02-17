@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.ComponentModel;
 
 namespace Pchp.Core
 {
@@ -72,6 +73,20 @@ namespace Pchp.Core
     public class PhpExtensionAttribute : Attribute
     {
         /// <summary>
+        /// Well known PHP extension names.
+        /// </summary>
+        public struct KnownExtensionNames
+        {
+            public const string Core = "Core";
+            public const string Standard = "standard";
+            public const string SPL = "SPL";
+            public const string Date = "date";
+            public const string Reflection = "Reflection";
+            public const string Json = "json";
+            public const string Ctype = "ctype";
+        }
+
+        /// <summary>
         /// Extensions name list.
         /// Cannot be <c>null</c>.
         /// </summary>
@@ -133,20 +148,23 @@ namespace Pchp.Core
         /// <summary>
         /// Whether short open tags were enabled to compile the sources.
         /// </summary>
-        public bool ShortOpenTag { get; set; }
+        public bool ShortOpenTag { get; }
 
         /// <summary>
         /// The language version of compiled sources.
+        /// Can be <c>null</c> in case the version was not specified.
         /// </summary>
-        public string LanguageVersion { get; set; }
+        public Version? LanguageVersion { get; }
 
         /// <summary>
         /// Construct the attribute.
         /// </summary>
+        /// <exception cref="FormatException"><paramref name="langVersion"/> is an invalid version string.</exception>
+        /// <exception cref="ArgumentException"><paramref name="langVersion"/> is empty or invalid version string.</exception>
         public TargetPhpLanguageAttribute(string langVersion, bool shortOpenTag)
         {
             this.ShortOpenTag = shortOpenTag;
-            this.LanguageVersion = langVersion;
+            this.LanguageVersion = langVersion != null ? Version.Parse(langVersion) : null;
         }
     }
 
@@ -156,21 +174,6 @@ namespace Pchp.Core
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class PhpHiddenAttribute : Attribute
     {
-    }
-
-    /// <summary>
-    /// Indicates to compiler that a symbol should be ignored unless a specified conditional compilation scope is valid.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Field, AllowMultiple = true)]
-    public sealed class PhpConditionalAttribute : Attribute
-    {
-        public string ConditionString => _scope;
-        readonly string _scope;
-
-        public PhpConditionalAttribute(string scope)
-        {
-            _scope = scope;
-        }
     }
 
     /// <summary>
@@ -230,6 +233,17 @@ namespace Pchp.Core
             /// The name is set explicitly overriding the CLR's type name.
             /// </summary>
             CustomName = 2,
+        }
+
+        /// <summary>
+        /// Named property used annotate the type declaration with minimum language version.
+        /// Used only in compile-time.
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string MinimumLangVersion
+        {
+            get { throw new NotSupportedException(); }
+            set { }
         }
 
         /// <summary>
@@ -346,6 +360,11 @@ namespace Pchp.Core
             /// The parameter must be of type <see cref="RuntimeTypeHandle"/>.
             /// </summary>
             CallerScript,
+
+            /// <summary>
+            /// Provides reference to local variable with same name as the parameter name.
+            /// </summary>
+            LocalVariable,
         }
 
         public ValueSpec Value { get; }
@@ -386,20 +405,33 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Annotates a compile time constant value.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class PhpConstantAttribute : Attribute
+    {
+        /// <summary>
+        /// The constant value expression.
+        /// </summary>
+        public string? Expression { get; }
+
+        public PhpConstantAttribute()
+        {
+            Expression = null;
+        }
+
+        public PhpConstantAttribute(string expression)
+        {
+            Expression = expression;
+        }
+    }
+
+    /// <summary>
     /// Compiler generated attribute denoting constructor that initializes only fields and calls minimal base .ctor.
     /// Such constructor is used for emitting derived class constructor that calls PHP constructor function by itself.
     /// </summary>
     [AttributeUsage(AttributeTargets.Constructor)]
     public sealed class PhpFieldsOnlyCtorAttribute : Attribute
-    {
-
-    }
-
-    /// <summary>
-    /// Attribute denoting that associated value cannot be <c>null</c>.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Field | AttributeTargets.Property)]
-    public sealed class NotNullAttribute : Attribute
     {
 
     }
@@ -499,6 +531,77 @@ namespace Pchp.Core
         public PhpPackageReferenceAttribute(Type scriptType)
         {
             ScriptType = scriptType;
+        }
+    }
+
+    /// <summary>
+    /// PHP attribute annotation.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
+    public sealed class PhpCustomAtribute : Attribute
+    {
+        /// <summary>
+        /// The attribute full type name.
+        /// </summary>
+        public string TypeName { get; }
+
+        /// <summary>
+        /// The attribute arguments encoded as JSON string.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public byte[] Arguments { get; }
+
+        /// <summary>
+        /// Initializes the custom attribute data.
+        /// </summary>
+        /// <param name="typename">The type attribute name.</param>
+        /// <param name="utf8value">Arguments in form of associative JSON object or JSON array.</param>
+        public PhpCustomAtribute(string typename, byte[] utf8value)
+        {
+            TypeName = typename ?? throw new ArgumentNullException(nameof(typename));
+            Arguments = utf8value ?? Array.Empty<byte>();
+        }
+    }
+}
+
+namespace System.Runtime.CompilerServices
+{
+    /// <summary>
+    /// Attribute for compiler use only, used to indicate the nullability of contained type references without a <see cref="NullableAttribute"/> annotation.
+    /// </summary>
+    /// <remarks>
+    /// Whereas the C# compiler embeds the definition in the compiled assembly, the assemblies produced by Peachpie refer to this definition.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
+    public sealed class NullableContextAttribute : Attribute
+    {
+        public readonly byte Flag;
+
+        public NullableContextAttribute(byte flag)
+        {
+            Flag = flag;
+        }
+    }
+
+    /// <summary>
+    /// Attribute for compiler use only, used to indicate the nullability of type references.
+    /// </summary>
+    /// <remarks>
+    /// Whereas the C# compiler embeds the definition in the compiled assembly, the assemblies produced by Peachpie refer to this definition.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = false)]
+    public sealed class NullableAttribute : Attribute
+    {
+        public readonly byte[] NullableFlags;
+
+        public NullableAttribute(byte nullableFlag)
+        {
+            NullableFlags = new byte[1] { nullableFlag };
+        }
+
+        public NullableAttribute(byte[] nullableFlags)
+        {
+            NullableFlags = nullableFlags;
         }
     }
 }

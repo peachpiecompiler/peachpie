@@ -16,6 +16,7 @@ using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
 using System.Globalization;
 using System.Threading;
+using Peachpie.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -46,14 +47,11 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_cfg == null && this.Statements != null) // ~ Statements => non abstract method
                 {
-                    // create initial flow state
-                    var state = StateBinder.CreateInitialState(this);
-
                     // build control flow graph
-                    var cfg = new ControlFlowGraph(
-                        this.Statements,
-                        SemanticsBinder.Create(DeclaringCompilation, ContainingFile.SyntaxTree, LocalsTable, ContainingType as SourceTypeSymbol));
-                    cfg.Start.FlowState = state;
+                    var cfg = new ControlFlowGraph(this.Statements, CreateBinder());
+
+                    // create initial flow state
+                    cfg.Start.FlowState = StateBinder.CreateInitialState(this);
 
                     //
                     Interlocked.CompareExchange(ref _cfg, cfg, null);
@@ -62,10 +60,24 @@ namespace Pchp.CodeAnalysis.Symbols
                 //
                 return _cfg;
             }
-            internal set
-            {
-                _cfg = value;
-            }
+        }
+
+        protected SemanticsBinder CreateBinder()
+        {
+            return SemanticsBinder.Create(DeclaringCompilation, ContainingFile.SyntaxTree, LocalsTable, ContainingType as SourceTypeSymbol);
+        }
+
+        protected SemanticsBinder CreateBinderNoLocals()
+        {
+            return new SemanticsBinder(DeclaringCompilation, ContainingFile.SyntaxTree, self: ContainingType as SourceTypeSymbol);
+        }
+
+        /// <summary>
+        /// Sets the new value of <see cref="ControlFlowGraph"/>.
+        /// </summary>
+        internal void UpdateControlFlowGraph(ControlFlowGraph newcfg)
+        {
+            _cfg = newcfg ?? throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(null);
         }
 
         /// <summary>
@@ -110,6 +122,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Reference to a containing file symbol.
         /// </summary>
         internal abstract SourceFileSymbol ContainingFile { get; }
+
+        ImmutableArray<AttributeData> _lazyAttributes;
 
         public override ImmutableArray<Location> Locations =>
             ImmutableArray.Create(
@@ -157,6 +171,10 @@ namespace Pchp.CodeAnalysis.Symbols
             for (int i = 0; i < ps.Length; i++)
             {
                 var p = ps[i];
+                if (p == null)
+                {
+                    continue;
+                }
 
                 if (p.InitValue == null)
                 {
@@ -176,6 +194,40 @@ namespace Pchp.CodeAnalysis.Symbols
                     // Fatal Error: variadic parameter (...) must be the last parameter
                     diagnostic.Add(this, p, Errors.ErrorCode.ERR_VariadicParameterNotLast);
                 }
+
+                // constructor property
+                if (p.IsConstructorProperty)
+                {
+                    if (!string.Equals(this.Name, Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value, StringComparison.InvariantCultureIgnoreCase) ||
+                        !(this is SourceMethodSymbol))
+                    {
+                        // ERR: not a constructor
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_CtorPropertyNotCtor);
+                    }
+                    else if (this.IsAbstract || this.ContainingType.IsInterface)
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_CtorPropertyAbstractCtor);
+                    }
+                    else if (this.IsStatic) // function, static method, static ctor
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_CtorPropertyStaticCtor);
+                    }
+                    else if (p.TypeHint is PrimitiveTypeRef pt && (
+                        pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable ||
+                        pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.iterable))
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_PropertyTypeNotAllowed, this.ContainingType.PhpName(), p.Name, pt.PrimitiveTypeName.ToString());
+                    }
+                    else if (p.TypeHint is ReservedTypeRef rt && (
+                        rt.Type == ReservedTypeRef.ReservedType.@static))
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_PropertyTypeNotAllowed, this.ContainingType.PhpName(), p.Name, rt.Type.ToString());
+                    }
+                    else if (p.IsVariadic)
+                    {
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_CtorPropertyVariadic);
+                    }
+                }
             }
         }
 
@@ -188,6 +240,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var p in formalparams)
             {
+                if (p == null)
+                {
+                    continue;
+                }
+
                 var ptag = (phpdocOpt != null) ? PHPDoc.GetParamTag(phpdocOpt, pindex, p.Name.Name.Value) : null;
 
                 yield return new SourceParameterSymbol(this, p, relindex: pindex++, ptagOpt: ptag);
@@ -389,22 +446,29 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 var thint = SyntaxReturnType;
-
-                if (thint == null)
-                {
-                    // use the result of type analysis if possible
-                    var tmask = ResultTypeMask;
-
-                    return this.IsOverrideable()
-                        ? true
-                        : tmask.IsAnyType || tmask.IsRef || this.TypeRefContext.IsNull(tmask);
-                }
-                else
+                if (thint != null)
                 {
                     // if type hint is provided,
                     // only can be NULL if specified
-                    return thint.IsNullable();
+                    return thint.CanBeNull();
                 }
+                else if (this.IsOverrideable())
+                {
+                    // a virtual method can be overriden with anything
+                    // always possible it may return null
+                    return true;
+                }
+                else if (SyntaxSignature.AliasReturn)
+                {
+                    // returns an aliased value,
+                    // can be anything
+                    return true;
+                }
+
+                // use the result of type analysis
+                var tmask = ResultTypeMask;
+
+                return tmask.IsAnyType || tmask.IsRef || this.TypeRefContext.IsNullOrVoid(tmask);
             }
         }
 
@@ -412,48 +476,52 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override TypeSymbol ReturnType => PhpRoutineSymbolExtensions.ConstructClrReturnType(this);
 
-        public override ImmutableArray<AttributeData> GetAttributes()
+        /// <summary>
+        /// Gets enumeration of function attributes.
+        /// </summary>
+        public IEnumerable<SourceCustomAttribute> SourceAttributes => GetAttributes().OfType<SourceCustomAttribute>();
+
+        ImmutableArray<AttributeData> PopulateSourceAttributes()
         {
-            // attributes from syntax node
-            if (this.Syntax.TryGetCustomAttributes(out var attrs))
+            var attrs = ImmutableArray<AttributeData>.Empty;
+
+            var phpattrs = Syntax.GetAttributes();
+            if (phpattrs.Count != 0)
             {
-                // initialize attribute data if necessary:
-                attrs
-                    .OfType<SourceCustomAttribute>()
-                    .ForEach(x => x.Bind(this, this.ContainingFile));
-            }
-            else
-            {
-                attrs = ImmutableArray<AttributeData>.Empty;
+                attrs = attrs.AddRange(CreateBinderNoLocals().BindAttributes(phpattrs));
             }
 
             // attributes from PHPDoc
-            var phpdoc = this.PHPDocBlock;
-            if (phpdoc != null)
+            var deprecated = PHPDocBlock?.GetElement<PHPDocBlock.DeprecatedTag>();
+            if (deprecated != null)
             {
-                var deprecated = phpdoc.GetElement<PHPDocBlock.DeprecatedTag>();
-                if (deprecated != null)
-                {
-                    // [ObsoleteAttribute(message, false)]
-                    attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
-                }
+                // [ObsoleteAttribute(message, false)]
+                attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
+            }
 
-                // ...
+            return attrs;
+        }
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            if (_lazyAttributes.IsDefault)
+            {
+                ImmutableInterlocked.InterlockedInitialize(ref _lazyAttributes, PopulateSourceAttributes());
             }
 
             //
-            return base.GetAttributes().AddRange(attrs);
+            return _lazyAttributes;
         }
 
         public override ImmutableArray<AttributeData> GetReturnTypeAttributes()
         {
             if (!ReturnsNull)
             {
-                // [return: NotNull]
+                // [return: Nullable(1)] - does not return null
                 var returnType = this.ReturnType;
                 if (returnType != null && (returnType.IsReferenceType || returnType.Is_PhpValue())) // only if it makes sense to check for NULL
                 {
-                    return ImmutableArray.Create<AttributeData>(DeclaringCompilation.CreateNotNullAttribute());
+                    return ImmutableArray.Create<AttributeData>(DeclaringCompilation.CreateNullableAttribute(NullableContextUtils.NotAnnotatedAttributeValue));
                 }
             }
 
@@ -468,7 +536,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var deprecated = this.PHPDocBlock?.GetElement<PHPDocBlock.DeprecatedTag>();
                 if (deprecated != null)
                 {
-                    return new ObsoleteAttributeData(ObsoleteAttributeKind.Deprecated, deprecated.Version/*==Text*/, isError: false);
+                    return new ObsoleteAttributeData(ObsoleteAttributeKind.Deprecated, deprecated.Version/*==Text*/, isError: false, diagnosticId: null, urlFormat: null);
                 }
 
                 return null;

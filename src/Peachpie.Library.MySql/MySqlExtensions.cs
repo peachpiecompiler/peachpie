@@ -1,12 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
+using Pchp.Core;
+using Pchp.Library.Database;
 
 namespace Peachpie.Library.MySql
 {
-    internal static class Extensions
+    /// <summary>
+    /// Helper MySql methods.
+    /// </summary>
+    public static class MySqlExtensions
     {
+        /// <summary>
+        /// Whether the column is typed as unsigned integer.
+        /// </summary>
         public static bool IsUnsigned(this MySqlDbColumn col)
         {
             switch (col.ProviderType)
@@ -22,6 +30,9 @@ namespace Peachpie.Library.MySql
             }
         }
 
+        /// <summary>
+        /// True for any blob type.
+        /// </summary>
         public static bool IsBlob(this MySqlDbColumn col)
         {
             switch (col.ProviderType)
@@ -36,6 +47,9 @@ namespace Peachpie.Library.MySql
             }
         }
 
+        /// <summary>
+        /// True for any numeric type.
+        /// </summary>
         public static bool IsNumeric(this MySqlDbColumn col)
         {
             switch (col.ProviderType)
@@ -58,6 +72,18 @@ namespace Peachpie.Library.MySql
                 default:
                     return false;
             }
+        }
+
+        /// <summary>
+        /// Returns <paramref name="link"/> as MySql connection or last opened MySql connection for given <paramref name="ctx"/>.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="link">Optional, an existing MySql connection resource.</param>
+        /// <returns>MySql connection resource or <c>null</c> if there is no connection.</returns>
+        public static ConnectionResource ValidConnection(Context ctx, PhpResource link = null)
+        {
+            var resource = link ?? MySqlConnectionManager.GetInstance(ctx).GetLastConnection();
+            return resource as MySqlConnectionResource;
         }
     }
 }

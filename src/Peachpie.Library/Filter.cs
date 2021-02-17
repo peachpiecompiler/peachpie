@@ -134,6 +134,9 @@ namespace Pchp.Library
         public const int FILTER_VALIDATE_MAC = (int)FilterValidate.MAC;
         public const int FILTER_VALIDATE_DOMAIN = (int)FilterValidate.DOMAIN;
 
+        /// <summary>Alias to <see cref="FILTER_VALIDATE_BOOLEAN"/>, introduced in PHP 8.</summary>
+        public const int FILTER_VALIDATE_BOOL = (int)FilterValidate.BOOLEAN;
+
         /// <summary>
         /// Sanitize filters.
         /// </summary>
@@ -470,14 +473,12 @@ namespace Pchp.Library
 
         #region (NS) filter_input_array, filter_var_array, filter_id, filter_list
 
-        public static PhpValue filter_input_array(int type) => filter_input_array(type, PhpValue.Null);
-
         /// <summary>
         /// Gets external variables and optionally filters them.
         /// </summary>
-        public static PhpValue filter_input_array(int type, PhpValue definition, bool add_empty = true)
+        public static PhpValue filter_input_array(int type, PhpValue definition = default, bool add_empty = true)
         {
-            PhpException.FunctionNotSupported("filter_input_array");
+            PhpException.FunctionNotSupported(nameof(filter_input_array));
             return PhpValue.False;
         }
 
@@ -487,7 +488,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int filter_id(string filtername)
         {
-            PhpException.FunctionNotSupported("filter_id");
+            PhpException.FunctionNotSupported(nameof(filter_id));
             return -1;
         }
 
@@ -496,18 +497,16 @@ namespace Pchp.Library
         /// </summary>
         public static PhpArray/*!*/filter_list()
         {
-            PhpException.FunctionNotSupported("filter_list");
+            PhpException.FunctionNotSupported(nameof(filter_list));
             return new PhpArray();
         }
-
-        public static PhpValue filter_var_array(PhpArray data) => filter_var_array(data, PhpValue.Null);
 
         /// <summary>
         /// Gets multiple variables and optionally filters them.
         /// </summary>
-        public static PhpValue filter_var_array(PhpArray data, object definition)
+        public static PhpValue filter_var_array(PhpArray data, PhpValue definition = default, bool add_empty = true)
         {
-            PhpException.FunctionNotSupported("filter_list");
+            PhpException.FunctionNotSupported(nameof(filter_var_array));
             return PhpValue.False;
         }
 

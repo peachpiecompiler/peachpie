@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         internal bool IsFunction(MethodSymbol method)
         {
-            return method != null && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden(_compilation);
+            return method != null && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden;
         }
 
         internal bool IsGlobalConstant(Symbol symbol)
@@ -85,7 +85,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             {
                 return (field.IsConst || (field.IsReadOnly && field.IsStatic)) &&
                     field.DeclaredAccessibility == Accessibility.Public &&
-                    !field.IsPhpHidden(_compilation);
+                    !field.IsPhpHidden;
             }
 
             if (symbol is PropertySymbol prop)
@@ -119,6 +119,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 if (_lazyExportedTypes == null)
                 {
                     var result = new Dictionary<QualifiedName, NamedTypeSymbol>();
+                    var langVersion = _compilation.Options.LanguageVersion;
 
                     // lookup extensions and cor library for exported types
                     var libs = GetExtensionLibraries(_compilation).ToList();
@@ -129,43 +130,52 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                     {
                         foreach (var t in lib.PrimaryModule.GlobalNamespace.GetTypeMembers().OfType<PENamedTypeSymbol>())
                         {
-                            if (t.DeclaredAccessibility == Accessibility.Public)
+                            if (t.DeclaredAccessibility != Accessibility.Public)
                             {
-                                var qname = t.GetPhpTypeNameOrNull();
-                                if (!qname.IsEmpty())
+                                continue;
+                            }
+
+                            if (t.TryGetPhpTypeAttribute(out var fullname, out var minLangVersion) == false)
+                            {
+                                continue;
+                            }
+
+                            if (minLangVersion != null && langVersion < minLangVersion)
+                            {
+                                // PHP type not valid in current language version:
+                                continue;
+                            }
+
+                            NamedTypeSymbol tsymbol = t;
+
+                            if (result.TryGetValue(fullname, out var existing))
+                            {
+                                // merge {t} and {existing}:
+                                if (t.IsPhpUserType() && !existing.IsPhpUserType())
                                 {
-                                    NamedTypeSymbol tsymbol = t;
-
-                                    if (result.TryGetValue(qname, out var existing))
-                                    {
-                                        // merge {t} and {existing}:
-                                        if (t.IsPhpUserType() && !existing.IsPhpUserType())
-                                        {
-                                            // ignore {t}
-                                            continue;
-                                        }
-                                        else if (existing.IsPhpUserType() && !t.IsPhpUserType())
-                                        {
-                                            // replace existing (user type) with t (library type)
-                                            tsymbol = t;
-                                        }
-                                        else if (existing is AmbiguousErrorTypeSymbol ambiguous)
-                                        {
-                                            // just collect possible types, there is perf. penalty for that
-                                            // TODO: if there are user & library types mixed together, we expect compilation assertions and errors, fix that
-                                            // this will be fixed once we stop declare unreachable types
-                                            ambiguous._candidates = ambiguous._candidates.Add(t);
-                                            continue;
-                                        }
-                                        else
-                                        {
-                                            tsymbol = new AmbiguousErrorTypeSymbol(ImmutableArray.Create(existing, t));
-                                        }
-                                    }
-
-                                    result[qname] = tsymbol;
+                                    // ignore {t}
+                                    continue;
+                                }
+                                else if (existing.IsPhpUserType() && !t.IsPhpUserType())
+                                {
+                                    // replace existing (user type) with t (library type)
+                                    tsymbol = t;
+                                }
+                                else if (existing is AmbiguousErrorTypeSymbol ambiguous)
+                                {
+                                    // just collect possible types, there is perf. penalty for that
+                                    // TODO: if there are user & library types mixed together, we expect compilation assertions and errors, fix that
+                                    // this will be fixed once we stop declare unreachable types
+                                    ambiguous._candidates = ambiguous._candidates.Add(t);
+                                    continue;
+                                }
+                                else
+                                {
+                                    tsymbol = new AmbiguousErrorTypeSymbol(ImmutableArray.Create(existing, t));
                                 }
                             }
+
+                            result[fullname] = tsymbol;
                         }
                     }
 
@@ -273,13 +283,39 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
         {
+            string nestedname = null;
+
+            var lastdot = clrName.LastIndexOf('.');
+            if (lastdot > 0)
+            {
+                // a nested class name, 1 level only
+                nestedname = clrName.Remove(lastdot) + "+" + clrName.Substring(lastdot + 1);
+            }
+
             foreach (AssemblySymbol ass in _compilation.ProbingAssemblies)
             {
                 if (ass is PEAssemblySymbol peass) // && !peass.IsPchpCorLibrary && !peass.IsExtensionLibrary)
                 {
                     var candidate = ass.GetTypeByMetadataName(clrName);
+
+                    if (candidate.IsErrorTypeOrNull() && nestedname != null)
+                    {
+                        // try a nested class, 1 level only
+                        candidate = ass.GetTypeByMetadataName(nestedname);
+                    }
+
                     if (candidate.IsValidType())
                     {
+                        if (candidate is PENamedTypeSymbol pe &&
+                            pe.TryGetPhpTypeAttribute(out _, out var minLangVersion) && minLangVersion != null)
+                        {
+                            if (minLangVersion > _compilation.Options.LanguageVersion)
+                            {
+                                // PHP type not valid in current language version:
+                                continue;
+                            }
+                        }
+
                         return candidate;
                     }
                 }

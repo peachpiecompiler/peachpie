@@ -13,7 +13,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Mail
     {
         public static bool mail(Context ctx, string to, string subject, string message, string additional_headers = null, string additional_parameters = null)
@@ -842,7 +842,6 @@ namespace Pchp.Library
         /// <summary>
         /// Parses an address string.
         /// </summary>
-        [return: NotNull]
         public static PhpArray imap_rfc822_parse_adrlist(string addresses, string default_host = null)
         {
             if (string.IsNullOrEmpty(addresses))

@@ -155,7 +155,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
                 }
                 else
                 {
-                    value = Operators.RuntimePropertyGetValue(ctx, t, receiver, propertyName: Name);
+                    value = Operators.RuntimePropertyGetValue(ctx, t, receiver, propertyName: Name, quiet: false);
                 }
 
                 return Next.GetValue(value, ctx, classContext);

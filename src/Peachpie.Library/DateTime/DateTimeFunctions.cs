@@ -11,7 +11,7 @@ using System.IO;
 
 namespace Pchp.Library.DateTime
 {
-    [PhpExtension("date")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Date)]
     public static class DateTimeFunctions
     {
         /// <summary>
@@ -175,28 +175,47 @@ namespace Pchp.Library.DateTime
         //[return:CastToFalse]
         public static DateTime date_sub(DateTime @object, DateInterval interval) => @object.sub(interval);
 
-        internal static System_DateTime TimeFromInterface(DateTimeInterface dti)
+        internal static bool GetDateTimeFromInterface(DateTimeInterface dti, out System_DateTime datetime, out TimeZoneInfo timezone)
         {
-            if (dti is Library.DateTime.DateTime dt) return dt.Time;
-            if (dti is DateTimeImmutable dtimmutable) return dtimmutable.Time;
+            if (dti is Library.DateTime.DateTime dt)
+            {
+                datetime = dt.Time;
+                timezone = dt.TimeZone;
+                return true;
+            }
 
-            throw new ArgumentException();
+            if (dti is DateTimeImmutable dtimmutable)
+            {
+                datetime = dtimmutable.Time;
+                timezone = dtimmutable.TimeZone;
+                return true;
+            }
+
+            datetime = default;
+            timezone = default;
+            return false;
         }
 
         /// <summary>
         /// Returns the difference between two DateTime objects.
         /// </summary>
-        [return: NotNull]
         public static DateInterval date_diff(DateTimeInterface datetime1, DateTimeInterface datetime2, bool absolute = false)
         {
-            var interval = new DateInterval(TimeFromInterface(datetime1), TimeFromInterface(datetime2));
-
-            if (absolute)
+            if (GetDateTimeFromInterface(datetime1, out var dt1, out _) &&
+                GetDateTimeFromInterface(datetime2, out var dt2, out _))
             {
-                interval.invert = 0;
-            }
+                var interval = new DateInterval(dt1, dt2);
+                if (absolute)
+                {
+                    interval.invert = 0;
+                }
 
-            return interval;
+                return interval;
+            }
+            else
+            {
+                throw new Spl.InvalidArgumentException();
+            }
         }
 
         /// <summary>
@@ -238,7 +257,6 @@ namespace Pchp.Library.DateTime
 
         /// <summary>Returns the warnings and errors.</summary>
         /// <remarks>Unlike in PHP, we never return <c>FALSE</c>, according to the documentation and for (our) sanity.</remarks>
-        [return: NotNull]
         public static PhpArray date_get_last_errors(Context ctx) => DateTime.getLastErrors(ctx);
 
         #endregion
@@ -720,12 +738,12 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Alias of <see cref="DateInterval.createFromDateString(string)"/>.
         /// </summary>
+        [return: CastToFalse]
         public static DateInterval date_interval_create_from_date_string(string time) => DateInterval.createFromDateString(time);
 
         /// <summary>
         /// Alias to <see cref="DateInterval.format"/>.
         /// </summary>
-        [return: NotNull]
         public static string date_interval_format(DateInterval @object, string format) => @object.format(format);
 
         #endregion
@@ -735,7 +753,6 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Get info about given date formatted according to the specified format.
         /// </summary>
-        [return: NotNull]
         public static PhpArray date_parse_from_format(Context ctx, string format, string date)
         {
             var dateinfo = DateInfo.ParseFromFormat(format, date, out var errors);
@@ -1371,71 +1388,6 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region gettimeofday
-
-        /// <summary>
-        /// Gets time information.
-        /// </summary>
-        /// <remarks>
-        /// It returns <see cref="PhpArray"/> containing the following 4 entries:
-        /// <list type="table">
-        /// <item><term><c>"sec"</c></term><description>Unix timestamp (seconds since the Unix Epoch)</description></item>
-        /// <item><term><c>"usec"</c></term><description>microseconds</description></item>
-        /// <item><term><c>"minuteswest"</c></term><description>minutes west of Greenwich (doesn't take daylight savings time in consideration)</description></item>
-        /// <item><term><c>"dsttime"</c></term><description>type of DST correction (+1 or 0, determined only by the current time zone not by the time)</description></item>
-        /// </list>
-        /// </remarks>
-        /// <returns>Associative array</returns>
-        public static PhpArray gettimeofday(Context ctx)
-        {
-            return GetTimeOfDay(System_DateTime.UtcNow, PhpTimeZone.GetCurrentTimeZone(ctx));
-        }
-
-        public static object gettimeofday(Context ctx, bool returnDouble)
-        {
-            if (returnDouble)
-            {
-                return (GetNow(ctx) - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds;
-            }
-            else
-            {
-                return gettimeofday(ctx);
-            }
-        }
-
-        internal static PhpArray GetTimeOfDay(System_DateTime utc, TimeZoneInfo/*!*/ zone)
-        {
-            var result = new PhpArray(4);
-
-            var local = TimeZoneInfo.ConvertTime(utc, zone);
-
-            //int current_dst = 0;
-            if (zone.IsDaylightSavingTime(local))
-            {
-                // TODO: current_dst
-                //var rules = zone.GetAdjustmentRules();
-                //for (int i = 0; i < rules.Length; i++)
-                //{
-                //    if (rules[i].DateStart <= local && rules[i].DateEnd >= local)
-                //    {
-                //        current_dst = (int)rules[i].DaylightDelta.TotalHours;
-                //        break;
-                //    }
-                //}
-            }
-
-            const int ticks_per_microsecond = (int)TimeSpan.TicksPerMillisecond / 1000;
-
-            result["sec"] = PhpValue.Create(DateTimeUtils.UtcToUnixTimeStamp(utc));
-            result["usec"] = PhpValue.Create((int)(local.Ticks % TimeSpan.TicksPerSecond) / ticks_per_microsecond);
-            result["minuteswest"] = PhpValue.Create((int)(utc - local).TotalMinutes);
-            //result["dsttime"] = PhpValue.Create(current_dst);
-
-            return result;
-        }
-
-        #endregion
-
         #region localtime
 
         /// <summary>
@@ -1513,78 +1465,6 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region microtime, hrtime
-
-        /// <summary>
-        /// Returns the string "msec sec" where sec is the current time measured in the number of seconds
-        /// since the Unix Epoch (0:00:00 January 1, 1970 GMT), and msec is the microseconds part.
-        /// </summary>
-        /// <returns>String containing number of miliseconds, space and number of seconds.</returns>
-        public static string microtime()
-        {
-            // time from 1970
-            TimeSpan fromUnixEpoch = System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch;
-
-            // seconds part to return
-            long seconds = (long)fromUnixEpoch.TotalSeconds;
-
-            // only remaining time less than one second
-            TimeSpan mSec = fromUnixEpoch.Subtract(new TimeSpan(seconds * 10000000)); // convert seconds to 100 ns
-            double remaining = ((double)mSec.Ticks) / 10000000; // convert from 100ns to seconds
-
-            return remaining.ToString("G", NumberFormatInfo.InvariantInfo) + " " + seconds.ToString();
-        }
-
-        /// <summary>
-        /// Returns the fractional time in seconds from the start of the UNIX epoch.
-        /// </summary>
-        /// <param name="returnDouble"><c>true</c> to return the double, <c>false</c> to return string.</param>
-        /// <returns><see cref="string"/> containing number of miliseconds, space and number of seconds
-        /// if <paramref name="returnDouble"/> is <c>false</c> and <see cref="double"/>
-        /// containing the fractional count of seconds otherwise.</returns>
-        public static PhpValue microtime(bool returnDouble)
-        {
-            if (returnDouble)
-                return PhpValue.Create((System_DateTime.UtcNow - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds);
-            else
-                return PhpValue.Create(microtime());
-        }
-
-        /// <summary>
-        /// Get the system's high resolution time.
-        /// </summary>
-        /// <param name="get_as_number">
-        /// Whether the high resolution time should be returned as array or number.
-        /// Default is to return the value as array.
-        /// </param>
-        /// <returns>
-        /// Returns nanoseconds of internal system counter.
-        /// If <paramref name="get_as_number"/> is <c>false</c>, the return value is split to array <code>[seconds, nanoseconds]</code>.
-        /// </returns>
-        /// <remarks>Internally the function uses <see cref="Stopwatch"/> which depends on the current platform implementation.</remarks>
-        public static PhpValue hrtime(bool get_as_number = false)
-        {
-            var ticks = Stopwatch.GetTimestamp();
-
-            const long ns = 1_000_000_000;
-
-            // convert ticks to nanoseconds
-            var seconds = ticks / Stopwatch.Frequency;
-            var nanoseconds = (ticks - (seconds * Stopwatch.Frequency)) * ns / Stopwatch.Frequency;
-
-            if (get_as_number)
-            {
-                return seconds * ns + nanoseconds;
-            }
-            else
-            {
-                // [seconds, nanoseconds]
-                return new PhpArray(2) { seconds, nanoseconds };
-            }
-        }
-
-        #endregion
-
         #region strtotime, date_parse
 
         /// <summary>
@@ -1640,7 +1520,6 @@ namespace Pchp.Library.DateTime
         /// Returns associative array with detailed info about given date.
         /// </summary>
         /// <returns>Returns array with information about the parsed date on success.</returns>
-        [return: NotNull]
         public static PhpArray date_parse(Context ctx, string time)
         {
             DateTimeErrors errors = null;

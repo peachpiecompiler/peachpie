@@ -79,6 +79,11 @@ namespace Pchp.Core
         /// <returns>'Resource id #{ID}'</returns>
         public override string ToString() => PhpTypeName + " id #" + _resourceId;
 
+        /// <summary>
+        /// Implicit conversion to <see cref="PhpValue"/>.
+        /// </summary>
+        public static implicit operator PhpValue(PhpResource @object) => PhpValue.FromClass(@object);
+
         #region IDisposable
 
         /// <summary>
@@ -197,7 +202,7 @@ namespace Pchp.Core
             return Convert.NumberInfo.LongInteger;
         }
 
-        string IPhpConvertible.ToString(Context ctx) => ToString();
+        string IPhpConvertible.ToString() => ToString();
 
         object IPhpConvertible.ToClass() => new stdClass(PhpValue.FromClass(this));
 

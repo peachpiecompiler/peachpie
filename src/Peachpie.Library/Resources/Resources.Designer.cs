@@ -259,6 +259,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to bcmath function argument is not well-formed.
+        /// </summary>
+        public static string bcmath_wrong_argument {
+            get {
+                return ResourceManager.GetString("bcmath_wrong_argument", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid bcrypt cost parameter specified: {0}).
         /// </summary>
         public static string bcrypt_invalid_cost {
@@ -943,6 +952,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid scanner mode.
+        /// </summary>
+        public static string invalid_scanner_mode {
+            get {
+                return ResourceManager.GetString("invalid_scanner_mode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid session save path &apos;{0}&apos;..
         /// </summary>
         public static string invalid_session_save_path {
@@ -1105,6 +1123,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Minimum value must be less than or equal to the maximum value.
+        /// </summary>
+        public static string min_must_be_less_or_equal_to_max {
+            get {
+                return ResourceManager.GetString("min_must_be_less_or_equal_to_max", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Type &apos;{0}&apos;: multi-byte characters are not supported.
         /// </summary>
         public static string multibyte_chars_unsupported {
@@ -1146,6 +1173,15 @@ namespace Pchp.Library.Resources {
         public static string no_prefix_specified {
             get {
                 return ResourceManager.GetString("no_prefix_specified", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Attempting to use non-attribute class &quot;{0}&quot; as attribute.
+        /// </summary>
+        public static string non_attribute_class_used {
+            get {
+                return ResourceManager.GetString("non_attribute_class_used", resourceCulture);
             }
         }
         
@@ -1452,6 +1488,33 @@ namespace Pchp.Library.Resources {
         public static string serialization_failed {
             get {
                 return ResourceManager.GetString("serialization_failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Inf and NaN cannot be JSON encoded.
+        /// </summary>
+        public static string serialization_json_inf_nan_error {
+            get {
+                return ResourceManager.GetString("serialization_json_inf_nan_error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Malformed UTF-8 characters, possibly incorrectly encoded.
+        /// </summary>
+        public static string serialization_json_utf8_error {
+            get {
+                return ResourceManager.GetString("serialization_json_utf8_error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Maximum stack depth exceeded.
+        /// </summary>
+        public static string serialization_max_depth {
+            get {
+                return ResourceManager.GetString("serialization_max_depth", resourceCulture);
             }
         }
         

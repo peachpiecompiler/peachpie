@@ -12,6 +12,7 @@ namespace Peachpie.NET.Sdk
     {
         static readonly Dictionary<string, string> s_spdx_fixes = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
+            { "Apache2", "Apache-2.0" },
             { "Apache 2.0", "Apache-2.0" },
             { "Apache License", "Apache-2.0" },
             { "Apache License 2", "Apache-2.0" },
@@ -24,6 +25,7 @@ namespace Peachpie.NET.Sdk
             { "PHP License v3.0", "PHP-3.0" },
             { "PHP License", "PHP-3.0" },
             // deprecations:
+            { "GPL", "GPL-2.0-or-later" },
             { "GPL-1.0", "GPL-1.0-or-later" },
             { "GPL-1.0+", "GPL-1.0-or-later" },
             { "GPL-2.0", "GPL-2.0-or-later" },
@@ -33,6 +35,7 @@ namespace Peachpie.NET.Sdk
             { "AGPL-1.0", "AGPL-1.0-or-later" },
             { "AGPL-3.0", "AGPL-3.0-or-later" },
             { "AGPL-3.0+", "AGPL-3.0-or-later" },
+            { "LGPL-2.0", "LGPL-2.0-or-later" },
             { "LGPL-2.0+", "LGPL-2.0-or-later" },
             { "LGPL-2.1", "LGPL-2.1-or-later" },
             { "LGPL-2.1+", "LGPL-2.1-or-later" },
@@ -48,11 +51,25 @@ namespace Peachpie.NET.Sdk
         /// Handles common typos and invalid license strings,
         /// translates it to valid SPDX recognized by NuGet task.
         /// </summary>
-        public static string SanitizeSpdx(string spdx)
+        public static string SanitizeSpdx(string spdx) => SanitizeSpdx(spdx, out _);
+
+        /// <summary>
+        /// Handles common typos and invalid license strings,
+        /// translates it to valid SPDX recognized by NuGet task.
+        /// </summary>
+        public static string SanitizeSpdx(string spdx, out string warning)
         {
+            warning = null;
+
             if (string.IsNullOrEmpty(spdx))
             {
+                warning = "Empty value.";
                 return string.Empty;
+            }
+
+            string LicenseWarning(string old, string newspdx)
+            {
+                return $"License '{old}' is invalid. Resolved as '{newspdx}'. ";
             }
 
             // there are commonly used deprecations and invalid expressions,
@@ -60,6 +77,7 @@ namespace Peachpie.NET.Sdk
 
             if (s_spdx_fixes.TryGetValue(spdx, out var newspdx))
             {
+                warning = LicenseWarning(spdx, newspdx);
                 spdx = newspdx;
             }
             else if (spdx.IndexOfAny(s_spdx_separators) != -1) // might be an expression
@@ -89,6 +107,7 @@ namespace Peachpie.NET.Sdk
                                 // replace matched pair.Key with pair.Value:
                                 spdx = spdx.Remove(index) + pair.Value + spdx.Substring(index + pair.Key.Length);
                                 sep = index + pair.Value.Length;
+                                warning += LicenseWarning(pair.Key, pair.Value);
                                 break;
                             }
                         }

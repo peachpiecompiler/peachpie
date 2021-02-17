@@ -469,6 +469,12 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return this.ReducedFrom; }
         }
 
+        NullableAnnotation ITypeParameterSymbol.ReferenceTypeConstraintNullableAnnotation => NullableAnnotation.None;
+
+        bool ITypeParameterSymbol.HasNotNullConstraint => false;
+
+        ImmutableArray<NullableAnnotation> ITypeParameterSymbol.ConstraintNullableAnnotations => ConstraintTypes.SelectAsArray(c => ((ITypeSymbol)c).NullableAnnotation);
+
         #endregion
 
         #region ISymbol Members

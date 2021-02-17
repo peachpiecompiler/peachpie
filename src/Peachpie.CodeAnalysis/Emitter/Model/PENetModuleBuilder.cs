@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.CodeAnalysis.Emit;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Emit

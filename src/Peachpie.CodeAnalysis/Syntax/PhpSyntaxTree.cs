@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -81,11 +82,13 @@ namespace Pchp.CodeAnalysis
             { new Version(7, 2), LanguageFeatures.Php72Set },
             { new Version(7, 3), LanguageFeatures.Php73Set },
             { new Version(7, 4), LanguageFeatures.Php74Set },
+
+            { new Version(8, 0), LanguageFeatures.Php80Set },
         };
 
-        public static Version LatestLanguageVersion => new Version(7, 4); // s_langversions.Keys.Max();
+        public static Version LatestLanguageVersion => SupportedLanguageVersions.Max();
 
-        public static Version DefaultLanguageVersion => LatestLanguageVersion;
+        public static Version DefaultLanguageVersion => new Version(7, 4);
 
         public static IReadOnlyCollection<Version> SupportedLanguageVersions => s_langversions.Keys;
 

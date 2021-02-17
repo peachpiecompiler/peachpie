@@ -19,7 +19,7 @@ using Pchp.Library.Resources;
 namespace Peachpie.Library.MsSql
 {
 	/// <summary>
-	/// Represets a stored procedure statement.
+	/// Represents a stored procedure statement.
 	/// </summary>
 	internal sealed class PhpSqlDbProcedure : StatementResource
 	{

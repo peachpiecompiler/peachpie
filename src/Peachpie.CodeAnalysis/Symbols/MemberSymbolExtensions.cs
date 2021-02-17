@@ -14,12 +14,6 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal static partial class SymbolExtensions
     {
-        internal static bool HasParamsParameter(this Symbol member)
-        {
-            var @params = member.GetParameters();
-            return !@params.IsEmpty && @params.Last().IsParams;
-        }
-
         /// <summary>
         /// Get the parameters of a member symbol.  Should be a method, property, or event.
         /// </summary>

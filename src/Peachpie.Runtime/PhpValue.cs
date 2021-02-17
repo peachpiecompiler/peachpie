@@ -17,7 +17,7 @@ namespace Pchp.Core
     /// Represents a PHP value.
     /// </summary>
     /// <remarks>
-    /// Note, <c>default(PhpValue)</c> does not represent a valid state of the object.
+    /// Note, <c>default(PhpValue)</c> represents a <c>NULL</c> value, equivalent to <see cref="PhpValue.Null"/>.
     /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
     public readonly partial struct PhpValue : IPhpConvertible, IEquatable<PhpValue> // <T>
@@ -112,12 +112,6 @@ namespace Pchp.Core
         [Obsolete]
         public bool IsDefault => TypeCode == 0; // NULL
 
-        /// <summary>INTERNAL. Checks if the value has been marked as invalid.</summary>
-        internal bool IsInvalid => TypeCode == InvalidTypeCode; // CONSIDER: (TypeCode >= PhpTypeCode.Count)
-
-        /// <summary>INTERNAL. Type code of an invalid value.</summary>
-        internal static PhpTypeCode InvalidTypeCode => ~(PhpTypeCode)0;
-
         /// <summary>
         /// Gets value indicating the value is <c>FALSE</c> or <c>&amp;FALSE</c>.
         /// </summary>
@@ -131,7 +125,15 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating the value represents an object.
         /// </summary>
+        /// <remarks>
+        /// Note, the object instance may be a <see cref="PhpResource"/> (<c>resource</c>) instance as well.
+        /// </remarks>
         public bool IsObject => _type == PhpTypeCode.Object;
+
+        /// <summary>
+        /// Gets value indicating the value represents a <c>resource</c> object.
+        /// </summary>
+        public bool IsResource => _obj.@object is PhpResource;
 
         /// <summary>
         /// Gets value indicating the value represents PHP array.
@@ -233,7 +235,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets the underlaying value type.
         /// </summary>
-        public PhpTypeCode TypeCode => _type;
+        public readonly PhpTypeCode TypeCode => _type;
 
         /// <summary>
         /// Explicit conversion to <see cref="bool"/>.
@@ -361,11 +363,11 @@ namespace Pchp.Core
             PhpTypeCode.Null => string.Empty,
             PhpTypeCode.Boolean => Convert.ToString(Boolean),
             PhpTypeCode.Long => Long.ToString(),
-            PhpTypeCode.Double => Convert.ToString(Double, ctx),
+            PhpTypeCode.Double => Convert.ToString(Double),
             PhpTypeCode.PhpArray => (string)Array,
             PhpTypeCode.String => String,
             PhpTypeCode.MutableString => MutableStringBlob.ToString(ctx.StringEncoding),
-            PhpTypeCode.Object => Convert.ToString(Object, ctx),
+            PhpTypeCode.Object => Convert.ToString(Object),
             PhpTypeCode.Alias => Alias.Value.ToString(ctx),
             _ => throw InvalidTypeCodeException(),
         };
@@ -403,11 +405,13 @@ namespace Pchp.Core
         public static implicit operator PhpValue(PhpArray value) => Create(value);
         public static implicit operator PhpValue(Delegate value) => FromClass(value);
 
-        public static implicit operator bool(PhpValue value) => value.ToBoolean();
+        public static explicit operator bool(PhpValue value) => value.ToBoolean();
 
         public static explicit operator long(PhpValue value) => value.ToLong();
 
         public static explicit operator ushort(PhpValue value) => checked((ushort)(long)value);
+
+        public static explicit operator short(PhpValue value) => checked((short)(long)value);
 
         public static explicit operator int(PhpValue value) => checked((int)(long)value);
 
@@ -487,7 +491,7 @@ namespace Pchp.Core
         /// Wraps the value into <see cref="PhpAlias"/>,
         /// if value already contains the aliased value, it is returned as it is.
         /// </summary>
-        public PhpAlias/*!*/AsPhpAlias() => _obj.@object as PhpAlias ?? new PhpAlias(this);
+        public PhpAlias/*!*/AsPhpAlias() => _obj.@object as PhpAlias ?? PhpAlias.Create(this);
 
         #endregion
 
@@ -529,8 +533,7 @@ namespace Pchp.Core
 
         public static PhpNumber operator /(long lx, PhpValue y)
         {
-            PhpNumber ny;
-            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            if ((y.ToNumber(out var ny) & Convert.NumberInfo.IsPhpArray) != 0)
             {
                 //PhpException.UnsupportedOperandTypes();
                 //return PhpNumber.Create(0.0);
@@ -542,8 +545,7 @@ namespace Pchp.Core
 
         public static double operator /(double dx, PhpValue y)
         {
-            PhpNumber ny;
-            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            if ((y.ToNumber(out var ny) & Convert.NumberInfo.IsPhpArray) != 0)
             {
                 //PhpException.UnsupportedOperandTypes();
                 //return PhpNumber.Create(0.0);
@@ -592,7 +594,7 @@ namespace Pchp.Core
                     return true;
 
                 case PhpTypeCode.MutableString:
-                    key = Convert.StringToArrayKey(MutableStringBlob.ToString());
+                    key = Convert.StringToArrayKey(MutableStringBlob.ToString()); // TODO: corrupts non-Unicode strings https://github.com/peachpiecompiler/peachpie/issues/802
                     return true;
 
                 case PhpTypeCode.PhpArray:
@@ -646,7 +648,7 @@ namespace Pchp.Core
             PhpTypeCode.Double => Comparison.Compare(Double, right),
             PhpTypeCode.PhpArray => Array.Compare(right),
             PhpTypeCode.String => Comparison.Compare(String, right),
-            PhpTypeCode.MutableString => Comparison.Compare(MutableStringBlob.ToString(), right),
+            PhpTypeCode.MutableString => Comparison.Compare(MutableStringBlob, right),
             PhpTypeCode.Object => Comparison.Compare(Object, right),
             PhpTypeCode.Alias => Alias.Value.Compare(right),
             _ => throw InvalidTypeCodeException(),
@@ -740,7 +742,7 @@ namespace Pchp.Core
                     break;
 
                 case PhpTypeCode.Alias:
-                    result = EnsureObject(ref value.Alias.Value);
+                    result = value.Alias.EnsureObject();
                     break;
 
                 default:
@@ -808,7 +810,7 @@ namespace Pchp.Core
                     return Operators.EnsureArray(value.Object);
 
                 case PhpTypeCode.Alias:
-                    return EnsureArray(ref value.Alias.Value);
+                    return value.Alias.EnsureArray();
 
                 default:
                     throw InvalidTypeCodeException();
@@ -842,7 +844,7 @@ namespace Pchp.Core
             }
 
             // create alias to the value:
-            var alias = new PhpAlias(value, 1);
+            var alias = PhpAlias.Create(value);
             value = Create(alias);
             return alias;
         }
@@ -851,7 +853,7 @@ namespace Pchp.Core
         /// Dereferences in case of an alias.
         /// </summary>
         /// <returns>Not aliased value.</returns>
-        public PhpValue GetValue() => Object is PhpAlias alias ? alias.Value : this;
+        public readonly PhpValue GetValue() => Object is PhpAlias alias ? alias.Value : this;
 
         /// <summary>
         /// Accesses the value as an array and gets item at given index.
@@ -866,34 +868,32 @@ namespace Pchp.Core
         /// In case of array or string, its copy is returned.
         /// In case of aliased value, the same alias is returned.
         /// </summary>
-        public PhpValue DeepCopy()
+        public readonly PhpValue DeepCopy()
         {
-            switch (TypeCode)
+            if (((1 << (int)_type) & ((1 << (int)PhpTypeCode.PhpArray) | (1 << (int)PhpTypeCode.MutableString) | (1 << (int)PhpTypeCode.Alias))) != 0)
             {
-                case PhpTypeCode.Null:
-                case PhpTypeCode.Boolean:
-                case PhpTypeCode.Long:
-                case PhpTypeCode.Double:
-                    return this;
+                return DeepCopyImpl();
+            }
+            else
+            {
+                // value is immutable (scalar, class):
+                return this;
+            }
+        }
 
+        readonly PhpValue DeepCopyImpl()
+        {
+            switch (_type)
+            {
                 case PhpTypeCode.PhpArray:
                     return Array.DeepCopy();
-
-                case PhpTypeCode.String:
-                    return this;
-
                 case PhpTypeCode.MutableString:
                     return new PhpValue(MutableStringBlob.AddRef());
-
-                case PhpTypeCode.Object:
-                    return this;
-
                 case PhpTypeCode.Alias:
                     return Alias.DeepCopy();
-
-                default:
-                    throw InvalidTypeCodeException();
             }
+
+            return this;
         }
 
         /// <summary>
@@ -910,7 +910,7 @@ namespace Pchp.Core
                 case PhpTypeCode.PhpArray: ctx.Echo((string)Array); break;
                 case PhpTypeCode.String: ctx.Echo(String); break;
                 case PhpTypeCode.MutableString: MutableStringBlob.Output(ctx); break;
-                case PhpTypeCode.Object: ctx.Echo(Convert.ToString(Object, ctx)); break;
+                case PhpTypeCode.Object: ctx.Echo(Convert.ToString(Object)); break;
                 case PhpTypeCode.Alias: Alias.Value.Output(ctx); break;
             }
         }
@@ -1173,12 +1173,6 @@ namespace Pchp.Core
             _obj = default;
         }
 
-        /// <summary>
-        /// INTERNAL.
-        /// Creates an invalid value with the type code of <c>-1</c>.
-        /// </summary>
-        internal static PhpValue CreateInvalid() => new PhpValue(InvalidTypeCode);
-
         public static PhpValue Create(PhpNumber number) => number.ToPhpValue();
 
         public static PhpValue Create(long value) => new PhpValue(value);
@@ -1199,7 +1193,10 @@ namespace Pchp.Core
 
         public static PhpValue Create(PhpArray value) => new PhpValue(PhpTypeCode.PhpArray, value);
 
-        public static PhpValue Create(IPhpArray value) => value is PhpArray arr ? Create(arr) : FromClass(value);
+        public static PhpValue Create(IPhpArray value) =>
+            value is PhpArray arr ? Create(arr) :
+            value is PhpString.Blob blob ? Create(blob) :
+            FromClass(value);
 
         public static PhpValue Create(PhpAlias value) => new PhpValue(PhpTypeCode.Alias, value);
 
@@ -1220,7 +1217,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates value containing new <see cref="PhpAlias"/>.
         /// </summary>
-        public static PhpValue CreateAlias(PhpValue value) => Create(new PhpAlias(value));
+        public static PhpValue CreateAlias(PhpValue value) => Create(PhpAlias.Create(value));
 
         public static PhpValue Create(IntStringKey value) => value.IsInteger ? Create(value.Integer) : Create(value.String);
 
@@ -1242,7 +1239,7 @@ namespace Pchp.Core
 
         public static PhpValue FromClass(object value)
         {
-            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias || value is PhpString || value is PhpArray));
+            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias || value is PhpString || value is PhpArray || value is PhpString.Blob));
             return new PhpValue(PhpTypeCode.Object, value);
         }
 

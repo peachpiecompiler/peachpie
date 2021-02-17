@@ -13,7 +13,7 @@
 
   <!-- Schemas -->
   <ItemGroup>
-    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)PeachPie.ProjectItemsSchema.xaml;"/>
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)ProjectItemsSchema.xaml;"/>
     <PropertyPageSchema Include="$(ManagedXamlResourcesDirectory)Compile.xaml;">
       <Context>File</Context>
     </PropertyPageSchema>

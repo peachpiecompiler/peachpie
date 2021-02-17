@@ -15,8 +15,8 @@ class A
 function print_params($params) {
     echo "| ";
     foreach ($params as $param) {
-        echo $param->name;
-        echo ($param->isOptional()) ? '?' : '!';
+        echo $param->name == "str" ? "string" : $param->name; // explode() has $str in PHP <=7.4 and $string in PHP >=8
+        echo $param->isOptional() ? '?' : '!';
         echo " ";
     }
 }

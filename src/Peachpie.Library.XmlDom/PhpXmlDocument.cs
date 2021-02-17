@@ -17,7 +17,6 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Creates an instance of <see cref="XmlDocument"/>.
         /// </summary>
-        /// <returns></returns>
         public static XmlDocument Create()
         {
             return new PhpXmlDocument()

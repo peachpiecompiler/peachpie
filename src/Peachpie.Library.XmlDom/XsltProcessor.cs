@@ -21,7 +21,7 @@ namespace Peachpie.Library.XmlDom
         Always = -1
     }
 
-    [PhpExtension("dom")]
+    [PhpExtension("xsl")]
     public static class XsltConstants
     {
         public const int XSL_CLONE_AUTO = (int)CloneType.Auto;
@@ -54,7 +54,7 @@ namespace Peachpie.Library.XmlDom
         private XsltArgumentList xsltArgumentList;
         private XsltUserFunctionHandler xsltUserFunctionHandler;
 
-        private const string PhpNameSpaceUri = "http://php.net/xsl";
+        private protected const string PhpNameSpaceUri = "http://php.net/xsl";
 
         private static bool mvpXmlAvailable;
         private static Type mvpXmlType;
@@ -151,6 +151,33 @@ namespace Peachpie.Library.XmlDom
             try
             {
                 Load(doc.XmlDocument);
+            }
+            catch (XsltException e)
+            {
+                PhpException.Throw(PhpError.Warning, e.Message);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Import a stylesheet.
+        /// </summary>
+        /// <param name="stylesheet">The imported style sheet passed as a <see cref="SimpleXMLElement"/> object.</param>
+        /// <returns><B>True</B> or <B>false</B>.</returns>
+        public bool importStylesheet(SimpleXMLElement stylesheet)
+        {
+            try
+            {
+                if (stylesheet.XmlElement.ParentNode is XmlDocument)
+                {
+                    Load(stylesheet.XmlElement.ParentNode.GetXmlDocument());
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.InvalidDocument);
+                    return false;
+                }
             }
             catch (XsltException e)
             {

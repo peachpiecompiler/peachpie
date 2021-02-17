@@ -10,6 +10,8 @@ using Pchp.Core.Reflection;
 using static Pchp.Library.JsonSerialization;
 using Microsoft.Extensions.ObjectPool;
 using Pchp.Core.Utilities;
+using System.Text.Json;
+using Pchp.Library.Spl;
 
 namespace Pchp.Library
 {
@@ -88,110 +90,134 @@ namespace Pchp.Library
 
             #endregion
 
-            #region Nested struct: MiniSet // helper data structure
-
-            /// <summary>
-            /// Helper data structure maintaining "Stack" of objects.
-            /// Does not allocate for less than 2 objects.
-            /// </summary>
-            struct MiniSet
-            {
-                /// <summary>
-                /// Internal data, either object reference or reference to <see cref="object"/>[] representing the set.
-                /// </summary>
-                object value;
-
-                /// <summary>
-                /// Stack size if <see cref="value"/> referes to <see cref="object"/>[].
-                /// </summary>
-                int top;
-
-                /// <summary>
-                /// Counts object refereces in the set;
-                /// </summary>
-                public int Count(object obj)
-                {
-                    if (ReferenceEquals(value, obj))
-                    {
-                        return 1;
-                    }
-                    else if (value is object[] array)
-                    {
-                        Debug.Assert(top <= array.Length);
-
-                        int count = 0;
-                        for (int i = 0; i < top; i++)
-                        {
-                            if (ReferenceEquals(array[i], obj))
-                            {
-                                count++;
-                            }
-                        }
-                        return count;
-                    }
-
-                    //
-                    return 0;
-                }
-
-                public static void Push(ref MiniSet set, object obj)
-                {
-                    if (ReferenceEquals(set.value, null))
-                    {
-                        set.value = obj;
-                    }
-                    else if (set.value is object[] array)
-                    {
-                        Debug.Assert(set.top <= array.Length);
-                        if (set.top == array.Length)
-                        {
-                            Array.Resize(ref array, array.Length * 2);
-                            set.value = array;
-                        }
-
-                        array[set.top++] = obj;
-                    }
-                    else
-                    {
-                        // upgrade _value to object[4]
-                        set.value = new[] { set.value, obj, null, null, };
-                        set.top = 2;
-                    }
-                }
-
-                /// <summary>
-                /// Removes one occurence of the given object reference from the set.
-                /// </summary>
-                public static bool Pop(ref MiniSet set, object obj)
-                {
-                    if (ReferenceEquals(set.value, obj))
-                    {
-                        set.value = null;
-                        return true;
-                    }
-                    else if (
-                        set.top > 0 &&
-                        set.value is object[] array &&
-                        ReferenceEquals(array[set.top - 1], obj))
-                    {
-                        set.top--;
-                        return true;
-                    }
-
-                    // ERR
-                    return false;
-                }
-            }
-
-            #endregion
-
             #region ObjectWriter
 
             internal sealed class ObjectWriter : PhpVariableVisitor
             {
+                #region Nested struct: StackHelper
+
+                /// <summary>
+                /// Helper data structure maintaining "Stack" of objects.
+                /// Does not allocate for 0 to 3 items.
+                /// </summary>
+                readonly struct StackHelper
+                {
+                    readonly object _0, _1, _2;
+                    readonly object[] _3; // additional set of items > 3, gets actually modified across operations
+
+                    /// <summary>
+                    /// Count of objects in the set.
+                    /// </summary>
+                    readonly int _count;
+
+                    StackHelper(object o0, object o1, object o2, object[] orest, int count)
+                    {
+                        _0 = o0;
+                        _1 = o1;
+                        _2 = o2;
+                        _3 = orest;
+                        _count = count;
+                        Debug.Assert(_count >= 0);
+                        Debug.Assert(_count <= 3 || _3.Length >= _count - 3);
+                    }
+
+                    /// <summary>
+                    /// Gets count of objects.
+                    /// </summary>
+                    public int Count() => _count;
+
+                    /// <summary>
+                    /// Counts object refereces in the set.
+                    /// </summary>
+                    public readonly int Count(object obj)
+                    {
+                        int count = 0;
+
+                        for (int i = 0; i < _count; i++)
+                        {
+                            if (this[i] == obj)
+                            {
+                                count++;
+                            }
+                        }
+
+                        return count;
+                    }
+
+                    public readonly object this[int index]
+                    {
+                        get
+                        {
+                            return index switch
+                            {
+                                0 => _0,
+                                1 => _1,
+                                2 => _2,
+                                _ => _3?[index - 3],
+                            };
+                        }
+                    }
+
+                    /// <summary>
+                    /// Creates set with the given object on top.
+                    /// </summary>
+                    public readonly StackHelper Push(object obj)
+                    {
+                        switch (_count)
+                        {
+                            case 0: return new StackHelper(obj, null, null, _3, 1);
+                            case 1: return new StackHelper(_0, obj, null, _3, 2);
+                            case 2: return new StackHelper(_0, _1, obj, _3, 3);
+                            default:
+                                var index = _count - 3;
+                                var array = _3 ?? new object[4];
+                                if (array.Length <= index)
+                                    Array.Resize(ref array, index * 2);
+                                array[index] = obj;
+
+                                return new StackHelper(_0, _1, _2, array, _count + 1);
+                        }
+                    }
+
+                    /// <summary>
+                    /// Creates set without the last object.
+                    /// </summary>
+                    public readonly StackHelper Pop(out object popped)
+                    {
+                        switch (_count)
+                        {
+                            case 0:
+                                popped = null;
+                                return this;
+                            case 1:
+                                popped = _0;
+                                return new StackHelper(null, null, null, _3, 0);
+                            case 2:
+                                popped = _1;
+                                return new StackHelper(_0, null, null, _3, 1);
+                            case 3:
+                                popped = _2;
+                                return new StackHelper(_0, _1, null, _3, 2);
+                            default:
+                                var index = _count - 1 - 3;
+                                popped = _3[index];
+                                _3[index] = null;
+                                return new StackHelper(_0, _1, _2, _3, _count - 1);
+                        }
+                    }
+                }
+
+                #endregion
+
+                /// <summary>
+                /// Binary strings passed to json_encode are required to be in UTF-8, we can enforce it using this special encoding instance.
+                /// </summary>
+                private static readonly Encoding Utf8CheckedEncoding =
+                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
                 //Encoding Encoding => _ctx.StringEncoding;
 
-                MiniSet _recursion;
+                StackHelper _recursion;
 
                 /// <summary>
                 /// Result data.
@@ -202,6 +228,7 @@ namespace Pchp.Library
                 //readonly RuntimeTypeHandle _caller;
                 readonly JsonEncodeOptions _encodeOptions;
                 readonly IPrettyPrinter _pretty;
+                readonly int _maxdepth;
 
                 const int LastAsciiCharacter = 0x7F;
 
@@ -281,48 +308,78 @@ namespace Pchp.Library
                 bool HasUnescapedSlashes => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_SLASHES) != 0;
                 bool HasUnescapedUnicode => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_UNICODE) != 0;
                 bool HasPreserveZeroFraction => (_encodeOptions & JsonEncodeOptions.JSON_PRESERVE_ZERO_FRACTION) != 0;
+                bool PartialOutputOnError => (_encodeOptions & JsonEncodeOptions.JSON_PARTIAL_OUTPUT_ON_ERROR) != 0;
+                bool ThrowOnError => (_encodeOptions & JsonEncodeOptions.JSON_THROW_ON_ERROR) != 0;
 
                 #endregion
 
-                private ObjectWriter(Context ctx, StringBuilder result, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                private ObjectWriter(Context ctx, StringBuilder result, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller, long depth)
                 {
                     Debug.Assert(ctx != null);
+                    // Debug.Assert(depth >= 0); // NOTE: negative values allowed
+
                     _ctx = ctx;
                     _encodeOptions = encodeOptions;
                     _result = result ?? throw new ArgumentNullException(nameof(result));
                     //_caller = caller;
                     _pretty = HasPrettyPrint ? (IPrettyPrinter)new PrettyPrintOn(_result) : PrettyPrintOff.Instance;
+                    _maxdepth = depth < 0 ? 0 : depth < int.MaxValue ? (int)depth : int.MaxValue;
                 }
 
-                public static string Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                public static string Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller, long depth)
                 {
                     var str = StringBuilderUtilities.Pool.Get();
 
-                    variable.Accept(new ObjectWriter(ctx, str, encodeOptions, caller));
+                    try
+                    {
+                        variable.Accept(new ObjectWriter(ctx, str, encodeOptions, caller, depth));
 
-                    return StringBuilderUtilities.GetStringAndReturn(str); // note: str is cleared
+                        return str.ToString();
+                    }
+                    finally
+                    {
+                        StringBuilderUtilities.Pool.Return(str);
+                    }
+                }
+
+                /// <summary>
+                /// handles the error - either remembers its code or throws exception.
+                /// </summary>
+                /// <param name="code">Error code.</param>
+                /// <param name="message">Error message.</param>
+                void HandleError(JsonError code, string message)
+                {
+                    if (PartialOutputOnError)
+                    {
+                        SetLastJsonError(_ctx/*, message*/, (int)code);
+                    }
+                    else
+                    {
+                        throw new JsonException(message, (long)code);
+                    }
                 }
 
                 bool PushObject(object obj)
                 {
                     if (_recursion.Count(obj) < 2)
                     {
-                        MiniSet.Push(ref _recursion, obj);
+                        _recursion = _recursion.Push(obj);
                         return true;
                     }
                     else
                     {
-                        PhpException.Throw(PhpError.Warning, Resources.LibResources.recursion_detected);
                         return false;
                     }
                 }
 
                 void PopObject(object obj)
                 {
-                    MiniSet.Pop(ref _recursion, obj);
+                    _recursion = _recursion.Pop(out var popped);
+                    Debug.Assert(popped == obj);
                 }
 
                 void WriteRaw(string str) => _result.Append(str);
+
                 void WriteRaw(char c) => _result.Append(c);
 
                 public override void AcceptNull()
@@ -347,8 +404,16 @@ namespace Pchp.Library
 
                 public override void Accept(PhpString obj)
                 {
-                    // TODO: escape single-byte characters properly
-                    WriteString(obj.ToString(_ctx));
+                    try
+                    {
+                        // TODO: escape single-byte characters properly
+                        WriteString(obj.ToString(Utf8CheckedEncoding));
+                    }
+                    catch (DecoderFallbackException)
+                    {
+                        HandleError(JsonError.Utf8, Resources.LibResources.serialization_json_utf8_error);
+                        WriteNull();
+                    }
                 }
 
                 public override void Accept(double obj)
@@ -359,6 +424,11 @@ namespace Pchp.Library
                     {
                         WriteRaw(aslong.ToString());
                         WriteRaw(".0"); // as PHP does
+                    }
+                    else if (double.IsNaN(obj) || double.IsInfinity(obj))
+                    {
+                        HandleError(JsonError.InfOrNan, Resources.LibResources.serialization_json_inf_nan_error);
+                        WriteRaw("0"); // always "0", without .0 fraction
                     }
                     else
                     {
@@ -395,7 +465,13 @@ namespace Pchp.Library
 
                 public override void Accept(PhpArray array)
                 {
-                    if (PushObject(array))
+                    if (_recursion.Count() >= _maxdepth)
+                    {
+                        HandleError(JsonError.Depth, Resources.LibResources.serialization_max_depth);
+                        // TODO: on partial output, write top level elements
+                        WriteNull();
+                    }
+                    else if (PushObject(array))
                     {
                         if (HasForceObject || !IsSequentialArray(array))
                         {
@@ -413,6 +489,7 @@ namespace Pchp.Library
                     }
                     else
                     {
+                        HandleError(JsonError.Recursion, Resources.LibResources.recursion_detected);
                         WriteNull();
                     }
                 }
@@ -433,19 +510,25 @@ namespace Pchp.Library
                         }
                     }
 
-                    if (obj is PhpResource)
+                    if (_recursion.Count() >= _maxdepth)
                     {
-                        WriteUnsupported(PhpResource.PhpTypeName);
-                        return;
+                        HandleError(JsonError.Depth, Resources.LibResources.serialization_max_depth);
+                        // TODO: on partial output, write top level properties
+                        WriteNull();
                     }
-
-                    if (PushObject(obj))
+                    else if (obj is PhpResource)
+                    {
+                        HandleError(JsonError.UnsupportedType, string.Format(Resources.LibResources.serialization_unsupported_type, PhpResource.PhpTypeName));
+                        WriteNull();
+                    }
+                    else if (PushObject(obj))
                     {
                         WriteObject(JsonObjectProperties(obj));
                         PopObject(obj);
                     }
                     else
                     {
+                        HandleError(JsonError.Recursion, Resources.LibResources.recursion_detected);
                         WriteNull();
                     }
                 }
@@ -580,16 +663,6 @@ namespace Pchp.Library
                 }
 
                 #endregion
-
-                /// <summary>
-                /// Serializes null and throws an exception.
-                /// </summary>
-                /// <param name="TypeName"></param>
-                private void WriteUnsupported(string TypeName)
-                {
-                    PhpException.Throw(PhpError.Warning, Resources.LibResources.serialization_unsupported_type, TypeName);
-                    WriteNull();
-                }
 
                 void WriteNull()
                 {
@@ -769,7 +842,204 @@ namespace Pchp.Library
 
                 static IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(object/*!*/obj)
                 {
-                    return TypeMembersUtils.EnumerateInstanceFields(obj, TypeMembersUtils.s_propertyName, TypeMembersUtils.s_keyToString);
+                    if (obj is IPhpJsonSerializable serializable_internal)
+                    {
+                        return serializable_internal.Properties;
+                    }
+                    else
+                    {
+                        return TypeMembersUtils.EnumerateInstanceFields(obj, TypeMembersUtils.s_propertyName, TypeMembersUtils.s_keyToString);
+                    }
+                }
+            }
+
+            #endregion
+
+            #region ObjectReader
+
+            internal sealed class ObjectReader
+            {
+                /// <summary>
+                /// Deserializes the value, sets json_last_error or throws <see cref="JsonException"/> eventually.
+                /// </summary>
+                public static PhpValue DeserializeWithError(Context ctx, ReadOnlySpan<byte> utf8bytes, JsonReaderOptions options, JsonDecodeOptions phpoptions)
+                {
+                    try
+                    {
+                        var value = Deserialize(utf8bytes, options, phpoptions);
+
+                        SetLastJsonError(ctx, JSON_ERROR_NONE);
+
+                        return value;
+                    }
+                    catch (JsonException jsonex)
+                    {
+                        if ((phpoptions & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
+                        {
+                            SetLastJsonError(ctx, jsonex.getCode());
+                            return PhpValue.Null;
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        // internal error,
+                        // treat as syntax error
+
+                        if ((phpoptions & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
+                        {
+                            SetLastJsonError(ctx, JSON_ERROR_SYNTAX);
+                            return PhpValue.Null;
+                        }
+                        else
+                        {
+                            throw new JsonException(ex.Message, JSON_ERROR_SYNTAX, ex as Throwable);
+                        }
+                    }
+                }
+
+                public static PhpValue Deserialize(ReadOnlySpan<byte> utf8bytes, JsonReaderOptions options, JsonDecodeOptions phpoptions)
+                {
+                    var reader = new Utf8JsonReader(utf8bytes, options);
+                    return ReadValue(ref reader, phpoptions);
+                }
+
+                static PhpValue ReadValue(ref Utf8JsonReader reader, JsonDecodeOptions phpoptions)
+                {
+                    if (reader.Read())
+                    {
+                        return GetValue(ref reader, phpoptions);
+                    }
+
+                    // EOF
+                    return PhpValue.Null;
+                }
+
+                static PhpValue GetValue(ref Utf8JsonReader reader, JsonDecodeOptions phpoptions)
+                {
+                    switch (reader.TokenType)
+                    {
+                        case JsonTokenType.StartObject:
+                            var props = new PhpArray(ReadObject(ref reader, phpoptions));
+                            return (phpoptions & JsonDecodeOptions.JSON_OBJECT_AS_ARRAY) != 0
+                                ? PhpValue.Create(props)
+                                : PhpValue.FromClass(props.AsStdClass());
+
+                        case JsonTokenType.StartArray:
+                            return new PhpArray(ReadArray(ref reader, phpoptions));
+
+                        case JsonTokenType.String:
+                            return reader.GetString();
+
+                        case JsonTokenType.Number:
+                            if (reader.TryGetInt64(out var l)) return l;
+                            if ((phpoptions & JsonDecodeOptions.JSON_BIGINT_AS_STRING) != 0 && IsIntegerType(reader.ValueSpan))
+                            {
+                                // big int encode as string
+                                //return Encoding.ASCII.GetString(reader.ValueSpan); // NETSTANDARD2.1: ReadOnlySpan<byte>
+                                return JsonEncodedText.Encode(reader.ValueSpan).ToString();
+                            }
+                            if (reader.TryGetDouble(out var d)) return d;
+                            ThrowError(JSON_ERROR_INF_OR_NAN);
+                            break;
+
+                        case JsonTokenType.True:
+                            return PhpValue.True;
+
+                        case JsonTokenType.False:
+                            return PhpValue.False;
+
+                        case JsonTokenType.Null:
+                            return PhpValue.Null;
+                    }
+
+                    //
+                    ThrowError(JSON_ERROR_SYNTAX);
+                    return PhpValue.Null;
+                }
+
+                static bool IsIntegerType(ReadOnlySpan<byte> value)
+                {
+                    // -?[0-9]
+                    foreach (var c in value)
+                    {
+                        if (c >= '0' && c <= '9')
+                        {
+                            // ok
+                        }
+                        else if (c == '-')
+                        {
+                            // ok
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                static OrderedDictionary ReadObject(ref Utf8JsonReader reader, JsonDecodeOptions phpoptions)
+                {
+                    var props = new OrderedDictionary();
+
+                    // read properties until EndObject
+                    for (; ; )
+                    {
+                        if (reader.Read())
+                        {
+                            if (reader.TokenType == JsonTokenType.PropertyName)
+                            {
+                                props[reader.GetString()] = ReadValue(ref reader, phpoptions);
+                                continue;
+                            }
+                            else if (reader.TokenType == JsonTokenType.EndObject)
+                            {
+                                break;
+                            }
+                        }
+
+                        ThrowError(JSON_ERROR_SYNTAX);
+                    }
+
+                    //
+                    return props;
+                }
+
+                static OrderedDictionary ReadArray(ref Utf8JsonReader reader, JsonDecodeOptions phpoptions)
+                {
+                    var props = new OrderedDictionary();
+
+                    // read values until EndArray
+                    for (; ; )
+                    {
+                        if (reader.Read())
+                        {
+                            if (reader.TokenType == JsonTokenType.EndArray)
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                props.Add(GetValue(ref reader, phpoptions));
+                                continue;
+                            }
+                        }
+
+                        ThrowError(JSON_ERROR_SYNTAX);
+                    }
+
+                    //
+                    return props;
+                }
+
+                static void ThrowError(int code)
+                {
+                    throw new JsonException(string.Empty, code);
                 }
             }
 
@@ -781,38 +1051,26 @@ namespace Pchp.Library
 
             protected override PhpValue CommonDeserialize(Context ctx, Stream data, RuntimeTypeHandle caller)
             {
-                var options = _decodeOptions ?? new DecodeOptions();
-                var scanner = new Json.JsonScanner(new StreamReader(data), options);
-                var parser = new Json.Parser(options) { Scanner = scanner };
-
-                if (parser.Parse())
+                return ObjectReader.DeserializeWithError(ctx, StreamToSpan(data), new JsonReaderOptions
                 {
-                    SetLastJsonError(ctx, 0);
-                }
-                else
-                {
-                    var errorcode = JSON_ERROR_SYNTAX;
+                    CommentHandling = JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true,
+                    MaxDepth = this._decodeOptions.Depth,
+                }, this._decodeOptions.Options);
+            }
 
-                    if ((options.Options & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
-                    {
-                        SetLastJsonError(ctx, errorcode);
-                        return PhpValue.Null;
-                    }
-                    else
-                    {
-                        throw new JsonException(code: errorcode);
-                    }
-                }
-
-                //
-                return parser.Result;
+            static ReadOnlySpan<byte> StreamToSpan(Stream data)
+            {
+                var ms = new MemoryStream();
+                data.CopyTo(ms);
+                return ms.GetBuffer().AsSpan(0, (int)ms.Length);
             }
 
             protected override PhpString CommonSerialize(Context ctx, PhpValue variable, RuntimeTypeHandle caller)
             {
                 SetLastJsonError(ctx, 0);
 
-                return ObjectWriter.Serialize(ctx, variable, _encodeOptions, caller);
+                return ObjectWriter.Serialize(ctx, variable, _encodeOptions, caller, 512);
             }
 
             #endregion
@@ -854,7 +1112,18 @@ namespace Pchp.Library
         #endregion
     }
 
-    [PhpExtension("json")]
+    /// <summary>
+    /// Provides explicit object behavior for <see cref="JsonSerialization.json_encode"/>.
+    /// </summary>
+    public interface IPhpJsonSerializable
+    {
+        /// <summary>
+        /// Returns properties to be serialized.
+        /// </summary>
+        IEnumerable<KeyValuePair<string, PhpValue>> Properties { get; }
+    }
+
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]
     public static class JsonSerialization
     {
         #region Constants
@@ -862,7 +1131,7 @@ namespace Pchp.Library
         // 
         // Values returned by json_last_error function.
         //
-        enum JsonError
+        internal enum JsonError
         {
             None = JSON_ERROR_NONE,
             Depth = JSON_ERROR_DEPTH,
@@ -994,6 +1263,11 @@ namespace Pchp.Library
             JSON_UNESCAPED_UNICODE = 256,
 
             /// <summary>
+            /// Substitute some unencodable values instead of failing.
+            /// </summary>
+            JSON_PARTIAL_OUTPUT_ON_ERROR = 512,
+
+            /// <summary>
             /// Ensures that float values are always encoded as a float value.
             /// </summary>
             JSON_PRESERVE_ZERO_FRACTION = 1024,
@@ -1010,6 +1284,7 @@ namespace Pchp.Library
         public const int JSON_UNESCAPED_SLASHES = (int)JsonEncodeOptions.JSON_UNESCAPED_SLASHES;
         public const int JSON_PRETTY_PRINT = (int)JsonEncodeOptions.JSON_PRETTY_PRINT;
         public const int JSON_UNESCAPED_UNICODE = (int)JsonEncodeOptions.JSON_UNESCAPED_UNICODE;
+        public const int JSON_PARTIAL_OUTPUT_ON_ERROR = (int)JsonEncodeOptions.JSON_PARTIAL_OUTPUT_ON_ERROR;
         public const int JSON_PRESERVE_ZERO_FRACTION = (int)JsonEncodeOptions.JSON_PRESERVE_ZERO_FRACTION;
 
         /// <summary>
@@ -1051,14 +1326,29 @@ namespace Pchp.Library
         /// All string data must be UTF-8 encoded.</param>
         /// <param name="options"></param>
         /// <param name="depth">Set the maximum depth. Must be greater than zero.</param>
-        public static string json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, int depth = 512)
+        [return: CastToFalse]
+        public static string json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default, long depth = 512)
         {
             // TODO: depth
 
             PhpSerialization.SetLastJsonError(ctx, 0);
 
             //return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
-            return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default);
+
+            try
+            {
+                return PhpSerialization.JsonSerializer.ObjectWriter.Serialize(ctx, value, options, default, depth);
+            }
+            catch (JsonException jsonex)
+            {
+                if ((options & JsonEncodeOptions.JSON_THROW_ON_ERROR) != 0)
+                {
+                    throw;
+                }
+
+                PhpSerialization.SetLastJsonError(ctx, jsonex.getCode());
+                return null;
+            }
         }
 
         /// <summary>
@@ -1066,26 +1356,41 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="json"></param>
-        /// <param name="assoc">When TRUE, returned object's will be converted into associative array s. </param>
+        /// <param name="assoc">When TRUE, returned objects will be converted into associative arrays. </param>
         /// <param name="depth">User specified recursion depth. </param>
         /// <param name="options"></param>
         /// <returns>Returns the value encoded in json in appropriate PHP type. Values true, false and null are returned as TRUE, FALSE and NULL respectively. NULL is returned if the json cannot be decoded or if the encoded data is deeper than the recursion limit.</returns>
         public static PhpValue json_decode(Context ctx, PhpString json, bool assoc = false, int depth = 512, JsonDecodeOptions options = JsonDecodeOptions.Default)
         {
-            if (json.IsEmpty) return PhpValue.Null;
-
-            var decodeoptions = new PhpSerialization.JsonSerializer.DecodeOptions()
+            if (json.IsEmpty)
             {
-                Depth = depth,
-                Options = options,
-            };
+                return PhpValue.Null;
+            }
 
             if (assoc)
             {
-                decodeoptions.Options |= JsonDecodeOptions.JSON_OBJECT_AS_ARRAY;
+                options |= JsonDecodeOptions.JSON_OBJECT_AS_ARRAY;
             }
 
-            return new PhpSerialization.JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, json, default);
+            //var decodeoptions = new PhpSerialization.JsonSerializer.DecodeOptions()
+            //{
+            //    Depth = depth,
+            //    Options = options,
+            //};
+
+            //return new PhpSerialization.JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, new PhpString(json.ToBytes(Encoding.UTF8)), default);
+
+            //
+            return PhpSerialization.JsonSerializer.ObjectReader.DeserializeWithError(
+                ctx,
+                json.ToBytes(Encoding.UTF8).AsSpan(),
+                new JsonReaderOptions
+                {
+                    AllowTrailingCommas = true,
+                    CommentHandling = JsonCommentHandling.Skip,
+                    MaxDepth = depth,
+                },
+                options);
         }
 
         public static int json_last_error(Context ctx) => PhpSerialization.GetLastJsonError(ctx);
@@ -1099,22 +1404,20 @@ namespace Pchp.Library
 
             // TODO: to resources
 
-            switch (error)
+            return error switch
             {
-                case JsonError.None: return "No error";
-                case JsonError.Depth: return "Maximum stack depth exceeded";
-                case JsonError.StateMismatch: return "State mismatch (invalid or malformed JSON)";
-                case JsonError.CtrlChar: return "Control character error, possibly incorrectly encoded";
-                case JsonError.Syntax: return "Syntax error";
-                case JsonError.Utf8: return "Malformed UTF-8 characters, possibly incorrectly encoded";
-                case JsonError.Recursion:
-                case JsonError.InfOrNan:
-                case JsonError.UnsupportedType:
-                case JsonError.InvalidPropertyName:
-                    return error.ToString();
-
-                default: throw new ArgumentOutOfRangeException();
-            }
+                JsonError.None => "No error",
+                JsonError.Depth => Resources.LibResources.serialization_max_depth,
+                JsonError.StateMismatch => "State mismatch (invalid or malformed JSON)",
+                JsonError.CtrlChar => "Control character error, possibly incorrectly encoded",
+                JsonError.Syntax => "Syntax error",
+                JsonError.Utf8 => "Malformed UTF-8 characters, possibly incorrectly encoded",
+                JsonError.Recursion => Resources.LibResources.recursion_detected,
+                JsonError.InfOrNan => Resources.LibResources.serialization_json_inf_nan_error,
+                JsonError.UnsupportedType => error.ToString(),
+                JsonError.InvalidPropertyName => error.ToString(),
+                _ => throw new ArgumentOutOfRangeException(),
+            };
         }
 
         #endregion
@@ -1125,7 +1428,7 @@ namespace Pchp.Library
     /// if <see cref="JSON_THROW_ON_ERROR"/> flag is specified.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    [PhpExtension("json")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]
     public class JsonException : Spl.Exception
     {
         [PhpFieldsOnlyCtor]
@@ -1142,7 +1445,7 @@ namespace Pchp.Library
 /// Objects implementing JsonSerializable can customize their JSON representation when encoded with <see cref="Pchp.Library.JsonSerialization.json_encode"/>.
 /// </summary>
 [PhpType(PhpTypeAttribute.InheritName)]
-[PhpExtension("json")]
+[PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Json)]
 public interface JsonSerializable
 {
     /// <summary>

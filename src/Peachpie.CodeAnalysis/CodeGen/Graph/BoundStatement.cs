@@ -95,7 +95,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitConvert(this.Returned, rtype);
 
                 // TODO: check for null, if return type is not nullable
-                if (cg.Routine.SyntaxReturnType != null && cg.Routine.SyntaxReturnType.IsNullable() == false)
+                if (cg.Routine.SyntaxReturnType != null && !cg.Routine.ReturnsNull)
                 {
                     //// Template: Debug.Assert( <STACK> != null )
                     //cg.Builder.EmitOpCode(ILOpCode.Dup);
@@ -106,20 +106,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // .ret
             cg.EmitRet(rtype);
-        }
-    }
-
-    partial class BoundThrowStatement
-    {
-        internal override void Emit(CodeGenerator cg)
-        {
-            cg.EmitSequencePoint(this.PhpSyntax);
-
-            //
-            cg.EmitConvert(Thrown, cg.CoreTypes.Exception);
-
-            // throw <stack>;
-            cg.Builder.EmitThrow(false);
         }
     }
 

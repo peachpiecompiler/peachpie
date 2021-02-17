@@ -519,7 +519,43 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Add(x);
 
-            VisitElement(x.Expression as ExitEx);
+            if (x.Expression is ExitEx ee)
+            {
+                // NOTE: Added by VisitExpressionStmt already
+                // NOTE: similar to ThrowEx but unhandleable
+
+                // connect to Exception block
+                Connect(_current, this.GetExceptionBlock());
+                _current = NewDeadBlock();  // unreachable
+            }
+            else if (x.Expression is ThrowEx te)
+            {
+                //var tryedge = GetTryTarget();
+                //if (tryedge != null)
+                //{
+                //    // find handling catch block
+                //    QualifiedName qname;
+                //    var newex = x.Expression as NewEx;
+                //    if (newex != null && newex.ClassNameRef is DirectTypeRef)
+                //    {
+                //        qname = ((DirectTypeRef)newex.ClassNameRef).ClassName;
+                //    }
+                //    else
+                //    {
+                //        qname = new QualifiedName(Name.EmptyBaseName);
+                //    }
+
+                //    CatchBlock handlingCatch = tryedge.HandlingCatch(qname);
+                //    if (handlingCatch != null)
+                //    {
+                //        // throw jumps to a catch item in runtime
+                //    }
+                //}
+
+                // connect to Exception block
+                Connect(_current, this.GetExceptionBlock());
+                _current = NewDeadBlock();  // unreachable
+            }
         }
 
         public override void VisitUnsetStmt(UnsetStmt x)
@@ -543,16 +579,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override void VisitConditionalStmt(ConditionalStmt x)
         {
             throw new InvalidOperationException();  // should be handled by IfStmt
-        }
-
-        public override void VisitExitEx(ExitEx x)
-        {
-            // NOTE: Added by VisitExpressionStmt already
-            // NOTE: similar to ThrowEx but unhandleable
-
-            // connect to Exception block
-            Connect(_current, this.GetExceptionBlock());    // unreachable
-            _current = NewDeadBlock();
         }
 
         public override void VisitForeachStmt(ForeachStmt x)
@@ -858,35 +884,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(_current == end);
         }
 
-        public override void VisitThrowStmt(ThrowStmt x)
+        public override void VisitThrowEx(ThrowEx x)
         {
-            Add(x);
-
-            //var tryedge = GetTryTarget();
-            //if (tryedge != null)
-            //{
-            //    // find handling catch block
-            //    QualifiedName qname;
-            //    var newex = x.Expression as NewEx;
-            //    if (newex != null && newex.ClassNameRef is DirectTypeRef)
-            //    {
-            //        qname = ((DirectTypeRef)newex.ClassNameRef).ClassName;
-            //    }
-            //    else
-            //    {
-            //        qname = new QualifiedName(Name.EmptyBaseName);
-            //    }
-
-            //    CatchBlock handlingCatch = tryedge.HandlingCatch(qname);
-            //    if (handlingCatch != null)
-            //    {
-            //        // throw jumps to a catch item in runtime
-            //    }
-            //}
-
-            // connect to Exception block
-            Connect(_current, this.GetExceptionBlock());
-            _current = NewDeadBlock();  // unreachable
+            base.VisitThrowEx(x);
         }
 
         public override void VisitTryStmt(TryStmt x)

@@ -14,20 +14,16 @@ namespace Pchp.Core
     /// </summary>
     [DebuggerDisplay("{Value.DisplayString,nq}, Refs#{ReferenceCount}", Type = "&{Value.DebugTypeName,nq}")]
     [DebuggerNonUserCode]
-    public class PhpAlias : IPhpConvertible
+    public abstract class PhpAlias : IPhpConvertible
     {
-        #region Fields
+        #region Properties
 
         /// <summary>
         /// Gets or sets the underlying value.
         /// </summary>
         /// <remarks>The field is not wrapped into a property, some internals need to access the raw field.</remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public PhpValue Value;
-
-        #endregion
-
-        #region Properties
+        public abstract PhpValue Value { get; set; }
 
         /// <summary>
         /// Gets references count.
@@ -43,12 +39,9 @@ namespace Pchp.Core
         /// <summary>
         /// Creates an aliased value.
         /// </summary>
-        public PhpAlias(PhpValue value, int refcount = 1)
+        public PhpAlias(int refcount = 1)
         {
-            Debug.Assert(refcount >= 1);
-            Debug.Assert(value.TypeCode != PhpTypeCode.Alias);
-
-            Value = value;
+            Debug.Assert(refcount >= 1);            
             ReferenceCount = refcount;
         }
 
@@ -72,17 +65,30 @@ namespace Pchp.Core
             return this;
         }
 
+        public static PhpAlias Create(PhpValue value) => new PhpValueAlias(value, 1);
+
         /// <summary>
         /// Ensures the underlying value is an object and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public object EnsureObject() => PhpValue.EnsureObject(ref Value);
+        public abstract object EnsureObject();
 
         /// <summary>
         /// Ensures the underlying value is an array and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public IPhpArray EnsureArray() => PhpValue.EnsureArray(ref Value);
+        public abstract IPhpArray EnsureArray();
+
+        /// <summary>
+        /// Ensures underlying value as a writable string and gets the containing <see cref="PhpString.Blob"/>.
+        /// </summary>
+        public abstract PhpString.Blob EnsureWritableString();
+
+        /// <summary>
+        /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
+        /// Ensures the value is an array and item at given <paramref name="index"/> is an alias.
+        /// </summary>
+        public abstract PhpAlias EnsureItemAlias(PhpValue index, bool quiet = false);
 
         /// <summary>
         /// Performs deep copy of the value.
@@ -105,8 +111,6 @@ namespace Pchp.Core
 
         public Convert.NumberInfo ToNumber(out PhpNumber number) => Value.ToNumber(out number);
 
-        public string ToString(Context ctx) => Value.ToString(ctx);
-
         public object ToClass() => Value.ToClass();
 
         public PhpArray ToArray() => Value.ToArray();
@@ -119,9 +123,9 @@ namespace Pchp.Core
 
         public static implicit operator PhpValue(PhpAlias alias) => PhpValue.Create(alias);
 
-        public static implicit operator bool(PhpAlias value) => value.Value;
+        public static explicit operator bool(PhpAlias value) => value.ToBoolean();
 
-        public static implicit operator IntStringKey(PhpAlias value) => value.Value;
+        public static explicit operator IntStringKey(PhpAlias value) => value.Value;
 
         /// <summary>
         /// Casts the value to object instance.
@@ -135,8 +139,38 @@ namespace Pchp.Core
 
         public PhpString ToPhpString(Context ctx) => Value.ToPhpString(ctx);
 
+        public override string ToString() => Value.ToString();
+
+        public string ToString(Context ctx) => Value.ToString(ctx);
+
         public bool IsEmpty() => Value.IsEmpty;
 
         #endregion
+    }
+
+    sealed class PhpValueAlias : PhpAlias
+    {
+        PhpValue _value;
+
+        public PhpValueAlias(PhpValue value, int refcount = 1)
+            : base(refcount)
+        {
+            Debug.Assert(!value.IsAlias);
+            _value = value;
+        }
+
+        public override PhpValue Value
+        {
+            get => _value;
+            set => _value = value;
+        }
+
+        public override PhpAlias EnsureItemAlias(PhpValue index, bool quiet = false) => Operators.EnsureItemAlias(ref _value, index, quiet);
+
+        public override IPhpArray EnsureArray() => PhpValue.EnsureArray(ref _value);
+
+        public override object EnsureObject() => PhpValue.EnsureObject(ref _value);
+
+        public override PhpString.Blob EnsureWritableString() => Operators.EnsureWritableString(ref _value);
     }
 }

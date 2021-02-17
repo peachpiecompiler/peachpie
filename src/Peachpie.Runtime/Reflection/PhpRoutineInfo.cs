@@ -22,20 +22,18 @@ namespace Pchp.Core.Reflection
         /// Index to the routine slot.
         /// <c>0</c> is an uninitialized index.
         /// </summary>
-        public int Index { get { return _index; } internal set { _index = value; } }
-        protected int _index;
+        public int Index { get; internal set; }
 
         /// <summary>
         /// Gets value indicating the routine was declared in a users code.
         /// Otherwise the function is a library function.
         /// </summary>
-        public bool IsUserFunction => _index > 0;
+        public bool IsUserFunction => Index > 0;
 
         /// <summary>
         /// Gets the routine name, cannot be <c>null</c> or empty.
         /// </summary>
-        public string Name => _name;
-        protected readonly string _name;
+        public string Name { get; }
 
         /// <summary>
         /// Gets routine callable delegate.
@@ -68,8 +66,8 @@ namespace Pchp.Core.Reflection
 
         protected RoutineInfo(int index, string name)
         {
-            _index = index;
-            _name = name;
+            Index = index;
+            Name = name;
         }
 
         /// <summary>
@@ -83,7 +81,7 @@ namespace Pchp.Core.Reflection
         public static RoutineInfo CreateUserRoutine(string name, RuntimeMethodHandle handle, params RuntimeMethodHandle[] overloads) => PhpRoutineInfo.Create(name, handle, overloads);
 
         /// <summary>
-        /// Creates instance of <see cref="RoutineInfo"/> representing a CLR methods (handling ovberloads).
+        /// Creates instance of <see cref="RoutineInfo"/> representing a CLR methods (handling overloads).
         /// </summary>
         /// <param name="name">Function name.</param>
         /// <param name="handles">CLR methods.</param>

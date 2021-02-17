@@ -46,7 +46,7 @@ namespace Pchp.Core
         /// <summary>
         /// Converts instance to its string representation according to PHP conversion algorithm.
         /// </summary>
-        string ToString(Context ctx);
+        string ToString();
 
         /// <summary>
         /// In case of a non class object, boxes value to an object.
@@ -87,23 +87,18 @@ namespace Pchp.Core
         /// <summary>
         /// Gets string representation of a floating point number value.
         /// </summary>
-        public static string ToString(double value) => value.ToString("G", NumberFormatInfo.InvariantInfo);
+        public static string ToString(double value) => value.ToString("G", Context.InvariantNumberFormatInfo);
 
-        /// <summary>
-        /// Gets string representation of a floating point number value.
-        /// </summary>
-        public static string ToString(double value, Context ctx) => value.ToString("G", ctx.NumberFormat);
-
-        public static string ToString(IPhpConvertible value, Context ctx) => value.ToString(ctx);
+        public static string ToString(IPhpConvertible value) => value.ToString();
 
         /// <summary>
         /// Converts class instance to a string.
         /// </summary>
-        public static string ToString(object value, Context ctx)
+        public static string ToString(object value)
         {
             if (value is IPhpConvertible conv)   // TODO: should be sufficient to call just ToString(), implementations of IPhpConvertible override ToString always
             {
-                return ToString(conv, ctx);
+                return conv.ToString();
             }
             else
             {
@@ -460,6 +455,11 @@ namespace Pchp.Core
             {
                 return convertible.ToNumber(out number);
             }
+            else if (obj is decimal d)
+            {
+                number = PhpNumber.Create((double)d);
+                return NumberInfo.IsNumber | NumberInfo.Double;
+            }
             else
             {
                 PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
@@ -483,8 +483,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpNumber ToNumber(PhpValue value)
         {
-            PhpNumber n;
-            if ((value.ToNumber(out n) & NumberInfo.IsNumber) == 0)
+            if ((value.ToNumber(out var n) & NumberInfo.IsNumber) == 0)
             {
                 // TODO: Err
             }
@@ -1185,7 +1184,7 @@ namespace Pchp.Core
 		public static long SubstringToLongStrict(string str, int length, int @base, long maxValue, ref int position)
         {
             if (maxValue <= 0)
-                throw new ArgumentOutOfRangeException("maxValue");
+                throw new ArgumentOutOfRangeException(nameof(maxValue));
 
             if (@base < 2 || @base > 'Z' - 'A' + 1)
             {
@@ -1243,18 +1242,18 @@ namespace Pchp.Core
         ///   1. If eatDigits is true, then additional digits will be silently discarded (don't count towards numDigits)
         ///   2. If eatDigits is false, an overflow exception is thrown
         /// </summary>
-        public static bool TryParseDigits(string s, ref int offset, bool eatDigits, out int result, out int numDigits)
+        public static bool TryParseDigits(ReadOnlySpan<char> s, ref int offset, bool eatDigits, out int result, out int numDigits)
         {
+            Debug.Assert(offset >= 0);
+
             int offsetStart = offset;
-            int offsetEnd = s.Length;
-            int digit;
 
             result = 0;
             numDigits = 0;
 
-            while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+            while (offset < s.Length && s[offset] >= '0' && s[offset] <= '9')
             {
-                digit = s[offset] - '0';
+                var digit = s[offset] - '0';
 
                 if (result > (int.MaxValue - digit) / 10)
                 {
@@ -1268,7 +1267,7 @@ namespace Pchp.Core
                     // Skip past any remaining digits
                     numDigits = offset - offsetStart;
 
-                    while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+                    while (offset < s.Length && s[offset] >= '0' && s[offset] <= '9')
                     {
                         offset++;
                     }
@@ -1438,22 +1437,22 @@ namespace Pchp.Core
             PhpTypeCode.Null => null, // TODO: support nullable conversion, target parameter can be either `string` or `string?`
             PhpTypeCode.Boolean => Convert.ToString(value.Boolean),
             PhpTypeCode.Long => value.Long.ToString(),
-            PhpTypeCode.Double => Convert.ToString(value.Double, ctx),
+            PhpTypeCode.Double => Convert.ToString(value.Double),
             PhpTypeCode.String => value.String,
             PhpTypeCode.MutableString => value.MutableStringBlob.ToString(ctx.StringEncoding),
-            PhpTypeCode.Object => Convert.ToString(value.Object, ctx),
+            PhpTypeCode.Object => Convert.ToString(value.Object),
             PhpTypeCode.Alias => ToString(value.Alias.Value, ctx),
             _ => throw PhpException.TypeErrorException(),
         };
 
-        public static string ToString(object obj, Context ctx)
+        public static string ToString(object obj)
         {
             if (obj == null)
             {
                 throw PhpException.TypeErrorException();
             }
 
-            return Convert.ToString(obj, ctx);
+            return Convert.ToString(obj);
         }
 
         /// <summary>

@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using MySql.Data.MySqlClient;
-
+using MySqlConnector;
 using Pchp.Core;
 using Peachpie.Library.PDO.Utilities;
 
@@ -18,12 +17,15 @@ namespace Peachpie.Library.PDO.MySQL
         public override string Name => "mysql";
 
         /// <inheritDoc />
-        public override DbProviderFactory DbFactory => MySqlClientFactory.Instance;
+        public override DbProviderFactory DbFactory => MySqlConnectorFactory.Instance;
 
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
-            var csb = new MySqlConnectionStringBuilder();
+            var csb = new MySqlConnectionStringBuilder
+            {
+                
+            };
 
             // parse and validate the datasource string:
             DataSourceString.ParseNameValue(dsn, csb, (_csb, name, value) =>
@@ -64,7 +66,7 @@ namespace Peachpie.Library.PDO.MySQL
         }
 
         /// <inheritDoc />
-        public override bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
+        public override bool TrySetAttribute(PDO pdo, Dictionary<PDO.PDO_ATTR, PhpValue> attributes, int attribute, PhpValue value)
         {
             return false;
         }

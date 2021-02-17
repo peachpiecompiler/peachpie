@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>    
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Peachpie.Library.Scripting\Peachpie.Library.Scripting.csproj" />
     <ProjectReference Include="..\..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
   </ItemGroup>
 

@@ -1,17 +1,17 @@
 ﻿/*
  * What is almost implemented, but something missing.
  * - Hash and crypto algorithms. There are supported the most useful algos.
- * - There are new useful methods and options avaible in .NET standart 2.1.
+ * - There are new useful methods and options available in .NET standard 2.1.
  * - Export method in X509 region is almost finished. Parameter notext adds human-readable information to output. 
  *   There are missing two pieces of info.
  * What is not implemented and can be almost done with base .NET
  * - CSR and Key resource. I think that base functionality can be done with .NET
  * What is not implemented and can not be done with base .NET
- * - openssl_pkey_export .NET standart 2.0 does not support export PEM format of private key (2.1 does)
+ * - openssl_pkey_export .NET standard 2.0 does not support export PEM format of private key (2.1 does)
  * - Loading Key resource from PEM format because of same reason as above.
  * - Advanced functionality in methods, like some special properties. 
  */
-//TODO: Waiting for .NetStandart 2.1  to implement the rest of functions.
+//TODO: Waiting for .NetStandard 2.1  to implement the rest of functions.
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -38,24 +38,27 @@ namespace Pchp.Library
 
         public const int OPENSSL_DONT_ZERO_PAD_KEY = (int)Options.OPENSSL_DONT_ZERO_PAD_KEY;
 
-        private static Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, Cipher> Ciphers = new Dictionary<string, Cipher>(StringComparer.OrdinalIgnoreCase)
         {
-            {"aes-256-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC,256)},
-            {"aes-192-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC, 192)},
-            {"aes-128-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.CBC,128)},
-            {"aes-256-ecb", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.ECB, 256)},
-            {"aes-192-ecb", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.ECB,192)},
-            {"aes-128-ecb", new Cipher(CipherType.AES, Cipher.IVLengthAES, CipherMode.ECB, 128)},
-            {"des-ecb", new Cipher(CipherType.DES, Cipher.IVLengthDES, CipherMode.ECB, Cipher.KeyLengthDES)},
-            {"des-cbc", new Cipher(CipherType.DES, Cipher.IVLengthDES,CipherMode.CBC, Cipher.KeyLengthDES)},
-            {"des-ede3", new Cipher(CipherType.TripleDES, Cipher.IVLengthDES, CipherMode.ECB, Cipher.KeyLengthTripleDES)},
-            {"des-ede3-cbc", new Cipher(CipherType.TripleDES, Cipher.IVLengthDES, CipherMode.CBC, Cipher.KeyLengthTripleDES)}
+            {"aes-256-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, SupportedCipherMode.CBC,256)},
+            {"aes-192-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, SupportedCipherMode.CBC, 192)},
+            {"aes-128-cbc", new Cipher(CipherType.AES, Cipher.IVLengthAES, SupportedCipherMode.CBC,128)},
+            {"aes-256-ecb", new Cipher(CipherType.AES, Cipher.IVLengthAES, SupportedCipherMode.ECB, 256)},
+            {"aes-192-ecb", new Cipher(CipherType.AES, Cipher.IVLengthAES, SupportedCipherMode.ECB,192)},
+            {"aes-128-ecb", new Cipher(CipherType.AES, Cipher.IVLengthAES, SupportedCipherMode.ECB, 128)},
+            {"aes-256-ctr", new Cipher(CipherType.AES, Cipher.IVLengthAES, SupportedCipherMode.CTR, 256)},
+            {"aes-192-ctr", new Cipher(CipherType.AES, Cipher.IVLengthAES, SupportedCipherMode.CTR, 192)},
+            {"aes-128-ctr", new Cipher(CipherType.AES, Cipher.IVLengthAES, SupportedCipherMode.CTR, 128)},
+            {"des-ecb", new Cipher(CipherType.DES, Cipher.IVLengthDES, SupportedCipherMode.ECB, Cipher.KeyLengthDES)},
+            {"des-cbc", new Cipher(CipherType.DES, Cipher.IVLengthDES,SupportedCipherMode.CBC, Cipher.KeyLengthDES)},
+            {"des-ede3", new Cipher(CipherType.TripleDES, Cipher.IVLengthDES, SupportedCipherMode.ECB, Cipher.KeyLengthTripleDES)},
+            {"des-ede3-cbc", new Cipher(CipherType.TripleDES, Cipher.IVLengthDES, SupportedCipherMode.CBC, Cipher.KeyLengthTripleDES)}
         // CFB mode is not supported in .NET Core yet https://github.com/dotnet/runtime/issues/15771
         // RC2 is ok when there is right length of password, but when it is longer, PHP transforms password in some way, but i can not figure out how.
-        // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1 (standart 2.1))
+        // Parameters tag and add are for gcm and ccm cipher mode. (I found implementation in version .Net Core 3.0 and 3.1 (standard 2.1))
         };
 
-        private static Dictionary<string, string> CiphersAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> CiphersAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             {"aes128", "aes-128-cbc"},
             {"aes192", "aes-192-cbc"},
@@ -68,7 +71,7 @@ namespace Pchp.Library
         /// <summary>
         /// Information about supported cipher.
         /// </summary>
-        private struct Cipher
+        private readonly struct Cipher
         {
             public const int KeyLengthDES = 64;
             public const int KeyLengthTripleDES = 192;
@@ -77,10 +80,10 @@ namespace Pchp.Library
 
             public readonly CipherType Type;
             public readonly int IVLength;
-            public readonly CipherMode Mode;
+            public readonly SupportedCipherMode Mode;
             public readonly int KeyLength; // In Bits
 
-            public Cipher(CipherType type, int iVLength, CipherMode mode, int keyLength)
+            public Cipher(CipherType type, int iVLength, SupportedCipherMode mode, int keyLength)
             {
                 // Initialization
                 Type = type;
@@ -99,6 +102,154 @@ namespace Pchp.Library
         };
 
         private enum CipherType { AES, DES, TripleDES };
+
+        private enum SupportedCipherMode { CBC, ECB, CTR }
+
+        private static bool TryGetDotNetCipherMode(SupportedCipherMode mode, out CipherMode result)
+        {
+            switch (mode)
+            {
+                case SupportedCipherMode.CBC:
+                    result = CipherMode.CBC;
+                    return true;
+                case SupportedCipherMode.ECB:
+                    result = CipherMode.ECB;
+                    return true;
+                default:
+                    result = default;
+                    return false;
+            }
+        }
+
+        #endregion
+
+        #region Customized encryption algorithms
+
+        /// <remarks>
+        /// Based on the code of Hans Wolff published under The MIT License:
+        /// https://gist.github.com/hanswolff/8809275
+        /// </remarks>
+        private class AesCounterMode : SymmetricAlgorithm
+        {
+            private readonly AesManaged _aes;
+
+            public override KeySizes[] LegalKeySizes => _aes.LegalKeySizes;
+
+            public override KeySizes[] LegalBlockSizes => _aes.LegalBlockSizes;
+
+            public AesCounterMode()
+            {
+                _aes = new AesManaged
+                {
+                    Mode = CipherMode.ECB,
+                    Padding = PaddingMode.None
+                };
+
+                BlockSizeValue = _aes.BlockSize;
+            }
+
+            public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] ignoredParameter)
+            {
+                return new CounterModeCryptoTransform(_aes, rgbKey, IV);
+            }
+
+            public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] ignoredParameter)
+            {
+                return new CounterModeCryptoTransform(_aes, rgbKey, IV);
+            }
+
+            public override void GenerateKey()
+            {
+                _aes.GenerateKey();
+            }
+
+            public override void GenerateIV()
+            {
+                // IV not needed in Counter Mode
+            }
+
+            private class CounterModeCryptoTransform : ICryptoTransform
+            {
+                private readonly byte[] _counter;
+                private readonly ICryptoTransform _counterEncryptor;
+                private readonly Queue<byte> _xorMask = new Queue<byte>();
+                private readonly SymmetricAlgorithm _symmetricAlgorithm;
+
+                public CounterModeCryptoTransform(SymmetricAlgorithm symmetricAlgorithm, byte[] key, byte[] counter)
+                {
+                    if (key == null) throw new ArgumentNullException(nameof(key));
+
+                    _symmetricAlgorithm = symmetricAlgorithm ?? throw new ArgumentNullException(nameof(symmetricAlgorithm));
+                    _counter = counter;
+
+                    var zeroIv = new byte[_symmetricAlgorithm.BlockSize / 8];
+                    _counterEncryptor = symmetricAlgorithm.CreateEncryptor(key, zeroIv);
+                }
+
+                public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+                {
+                    var output = new byte[inputCount];
+                    TransformBlock(inputBuffer, inputOffset, inputCount, output, 0);
+                    return output;
+                }
+
+                public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer,
+                    int outputOffset)
+                {
+                    for (var i = 0; i < inputCount; i++)
+                    {
+                        if (NeedMoreXorMaskBytes())
+                        {
+                            EncryptCounterThenIncrement();
+                        }
+
+                        var mask = _xorMask.Dequeue();
+                        outputBuffer[outputOffset + i] = (byte)(inputBuffer[inputOffset + i] ^ mask);
+                    }
+
+                    return inputCount;
+                }
+
+                private bool NeedMoreXorMaskBytes()
+                {
+                    return _xorMask.Count == 0;
+                }
+
+                private byte[] _counterModeBlock;
+                private void EncryptCounterThenIncrement()
+                {
+                    _counterModeBlock ??= new byte[_symmetricAlgorithm.BlockSize / 8];
+
+                    _counterEncryptor.TransformBlock(_counter, 0, _counter.Length, _counterModeBlock, 0);
+                    IncrementCounter();
+
+                    foreach (var b in _counterModeBlock)
+                    {
+                        _xorMask.Enqueue(b);
+                    }
+                }
+
+                private void IncrementCounter()
+                {
+                    // Big endian incrementation, according to the specification
+                    for (var i = _counter.Length - 1; i >= 0; i--)
+                    {
+                        if (++_counter[i] != 0)
+                            break;
+                    }
+                }
+
+                public int InputBlockSize => _symmetricAlgorithm.BlockSize / 8;
+                public int OutputBlockSize => _symmetricAlgorithm.BlockSize / 8;
+                public bool CanTransformMultipleBlocks => true;
+                public bool CanReuseTransform => false;
+
+                public void Dispose()
+                {
+                    _counterEncryptor.Dispose();
+                }
+            }
+        }
 
         #endregion
 
@@ -202,7 +353,10 @@ namespace Pchp.Library
             switch (cipher.Type)
             {
                 case CipherType.AES:
-                    alg = new RijndaelManaged { Padding = PaddingMode.PKCS7, KeySize = cipher.KeyLength };
+                    if (cipher.Mode == SupportedCipherMode.CTR)
+                        alg = new AesCounterMode();
+                    else
+                        alg = new RijndaelManaged {Padding = PaddingMode.PKCS7, KeySize = cipher.KeyLength};
                     break;
                 case CipherType.DES:
                     alg = DES.Create();
@@ -212,7 +366,11 @@ namespace Pchp.Library
                     break;
             }
 
-            alg.Mode = cipher.Mode;
+            if (TryGetDotNetCipherMode(cipher.Mode, out var cipherMode))
+            {
+                alg.Mode = cipherMode;
+            }
+
             alg.Key = decodedKey;
             alg.IV = iVector;
 
@@ -271,12 +429,12 @@ namespace Pchp.Library
                 ? data.ToBytes(ctx)
                 : System.Convert.FromBase64String(data.ToString(ctx));
 
-            var aesAlg = PrepareCipher(key, cipher, iv, options);
-            ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+            using var aesAlg = PrepareCipher(key, cipher, iv, options);
+            using ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
             using MemoryStream msDecrypt = new MemoryStream(encryptedBytes);
             using CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
-            using StreamReader srDecrypt = new StreamReader(csDecrypt);
+            using StreamReader srDecrypt = new StreamReader(csDecrypt, ctx.StringEncoding);
 
             return srDecrypt.ReadToEnd();
         }
@@ -295,7 +453,7 @@ namespace Pchp.Library
         /// <param name="tag_length">The length of the authentication tag. Its value can be between 4 and 16 for GCM mode.</param>
         /// <returns>Returns the encrypted string on success or FALSE on failure.</returns>
         [return: CastToFalse]
-        public static PhpString openssl_encrypt(Context ctx, string data, string method, byte[] key, Options options, byte[] iv, string tag = "", string aad = "", int tag_length = 16)
+        public static PhpString openssl_encrypt(Context ctx, byte[] data, string method, byte[] key, Options options, byte[] iv, string tag = "", string aad = "", int tag_length = 16)
         {
             if (CiphersAliases.TryGetValue(method, out var aliasName))
             {
@@ -331,25 +489,29 @@ namespace Pchp.Library
             }
         }
 
-        private static PhpString Encrypt(string data, byte[] key, Cipher cipher, byte[] iv, Options options)
+        private static PhpString Encrypt(byte[] data, byte[] key, Cipher cipher, byte[] iv, Options options)
         {
             var aesAlg = PrepareCipher(key, cipher, iv, options);
-            ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+            var encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
-            using MemoryStream msEncrypt = new MemoryStream();
-            using CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
+            var msEncrypt = new MemoryStream();
 
-            using (var swEncrypt = new StreamWriter(csEncrypt))
+            using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
             {
-                swEncrypt.Write(data);
+                csEncrypt.Write(data);
             }
 
+            // TODO: msEncrypt.GetBuffer() // to avoid an unnecessary allocation
             var encrypted = msEncrypt.ToArray();
 
             if ((options & Options.OPENSSL_RAW_DATA) != 0)
+            {
                 return (PhpString)encrypted;
+            }
             else
+            {
                 return System.Convert.ToBase64String(encrypted);
+            }
         }
 
         #endregion
@@ -376,7 +538,7 @@ namespace Pchp.Library
 
             // In .NET there must be non zero length IV, but in PHP cipher mode ECB has zero length. 
             // Due to compatibility in openssl_cipher_iv_length, there is this wierd thing.         
-            return (cipherMethod.Mode == CipherMode.ECB) ? 0 : cipherMethod.IVLength;
+            return (cipherMethod.Mode == SupportedCipherMode.ECB) ? 0 : cipherMethod.IVLength;
         }
 
         /// <summary>
@@ -490,7 +652,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="aliases">Set to TRUE if digest aliases should be included within the returned array.</param>
         /// <returns>An array of available digest methods.</returns>
-        [return: NotNull]
         public static PhpArray openssl_get_md_methods(bool aliases = false)
         {
             var algos = hash_algos();

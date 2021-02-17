@@ -12,7 +12,7 @@ namespace Pchp.Library
     /// <summary>
 	/// This class manages locale information for PHP and interacts .NET Framework.
 	/// </summary>
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Locale
     {
         public const int CHAR_MAX = 127;

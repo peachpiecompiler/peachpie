@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +17,7 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Name of the extension.
         /// </summary>
-        public string name { get; private set; }
+        public string name { get; private set; } = string.Empty;
 
         [PhpFieldsOnlyCtor]
         protected ReflectionExtension()
@@ -57,7 +59,6 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets classes.
         /// </summary>
-        [return: NotNull]
         public PhpArray getClasses()
         {
             var result = new PhpArray();
@@ -73,7 +74,6 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets class names.
         /// </summary>
-        [return: NotNull]
         public PhpArray getClassNames()
         {
             return new PhpArray(Context.GetTypesByExtension(name).Select(tinfo => tinfo.Name));
@@ -82,17 +82,13 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets constants.
         /// </summary>
-        [return: NotNull]
         public PhpArray getConstants(Context ctx)
         {
             var result = new PhpArray();
 
-            foreach (var c in ctx.GetConstants())
+            foreach (var c in ctx.GetConstants(this.name))
             {
-                if (string.Equals(c.ExtensionName, this.name, StringComparison.OrdinalIgnoreCase))
-                {
-                    result[c.Name] = c.Value;
-                }
+                result[c.Name] = c.Value;
             }
 
             return result;
@@ -101,13 +97,11 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets dependencies.
         /// </summary>
-        [return: NotNull]
         public PhpArray getDependencies() { throw new NotImplementedException(); }
 
         /// <summary>
         /// Gets function names.
         /// </summary>
-        [return: NotNull]
         public PhpArray getFunctions()
         {
             var result = new PhpArray();
@@ -124,13 +118,11 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Gets extension name.
         /// </summary>
-        [return: NotNull]
         public string getName() => name;
 
         /// <summary>
         /// Gets extension version.
         /// </summary>
-        [return: NotNull]
         public string getVersion() { throw new NotImplementedException(); }
 
         /// <summary>
@@ -156,7 +148,6 @@ namespace Pchp.Library.Reflection
         /// <summary>
         /// Exports the extension and returns it.
         /// </summary>
-        [return: NotNull]
         public string __toString() => name;
     }
 }

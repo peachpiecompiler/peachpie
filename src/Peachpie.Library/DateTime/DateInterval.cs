@@ -13,7 +13,7 @@ namespace Pchp.Library.DateTime
     /// Represents a date interval.
     /// A date interval stores either a fixed amount of time(in years, months, days, hours etc) or a relative time string in the format that DateTime's constructor supports.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Date)]
     [DebuggerDisplay(nameof(DateInterval), Type = PhpVariable.TypeNameObject)]
     public class DateInterval
     {
@@ -58,12 +58,22 @@ namespace Pchp.Library.DateTime
         }
 
         /// <summary>
-        /// </summary>
-        /// <remarks>
         /// If the <see cref="DateInterval"/> object was created by <see cref="DateTime.diff"/>,
         /// then this is the total number of days between the start and end dates.
-        /// </remarks>
-        public int days { get; set; }
+        /// </summary>
+        private protected readonly int? _days = null;
+
+        /// <summary>
+        /// Exposed interface to access the total number of days, see <see cref="_days"/>
+        /// </summary>
+        public PhpValue days
+        {
+            get
+            {
+                return _days.HasValue ? _days.Value : PhpValue.False;
+            }
+            set { /* will not throw, but will do nothing */ }
+        }
 
         public int invert;
 
@@ -83,8 +93,15 @@ namespace Pchp.Library.DateTime
         {
             var span = date2 - date1;
 
-            days = (int)span.TotalDays;
             invert = span.Ticks < 0 ? 1 : 0;
+
+            // For computing the total number of day, we do this without taking account the time part
+            //_days = Math.Abs((int)date2.Date.Subtract(date1.Date).TotalDays); // gives different results than in PHP
+
+            // this seems to work as expected:
+            var days = span.TotalDays;
+            //_days = days >= 0.0 ? (int)days : (int)(1.0 - days);
+            _days = (int)Math.Abs(days);
 
             CalculateDifference(date1, date2, out y, out m, out span);
 
@@ -169,6 +186,7 @@ namespace Pchp.Library.DateTime
                 }
                 else if (toMonthDays == date2.Day)
                 {
+                    months++;
                     days += fromMonthDays - date1.Day;
                 }
                 // For all the other cases
@@ -200,24 +218,44 @@ namespace Pchp.Library.DateTime
 
         private protected void Initialize(DateInfo ts, bool negative)
         {
-            Initialize(new TimeSpan(
+            m = ts.m > 0 ? ts.m : 0;
+            y = ts.y > 0 ? ts.y : 0;
+
+            // have_date, have_time, or zero
+            var span = new TimeSpan(
                 ts.d > 0 ? ts.d : 0,
                 ts.h > 0 ? ts.h : 0,
                 ts.i > 0 ? ts.i : 0,
                 ts.s > 0 ? ts.s : 0,
                 ts.f > 0 ? (int)(ts.f * 1000.0) : 0
-            ));
+            );
 
-            m = ts.m > 0 ? ts.m : 0;
-            y = ts.y > 0 ? ts.y : 0;
+            if (ts.have_relative != 0)
+            {
+                m += ts.relative.m;
+                y += ts.relative.y;
 
+                span = span + new TimeSpan(
+                    days: (int)ts.relative.d,
+                    hours: (int)ts.relative.h,
+                    minutes: (int)ts.relative.i,
+                    seconds: (int)ts.relative.s
+                    );
+            }
+
+            if (ts.have_weekday_relative != 0)
+            {
+                // counted in "d" already
+            }
+
+            Initialize(span);
+            
             invert = negative ? 1 : 0;
         }
 
         private protected void Initialize(TimeSpan ts)
         {
             _span = ts.Duration(); // absolutize the range
-            days = (int)ts.TotalDays;
             invert = ts.Ticks < 0 ? 1 : 0;
         }
 
@@ -239,6 +277,7 @@ namespace Pchp.Library.DateTime
             }
         }
 
+        [return: CastToFalse]
         public static DateInterval createFromDateString(string time)
         {
             var scanner = new Scanner(new StringReader(time.ToLowerInvariant()));
@@ -247,7 +286,8 @@ namespace Pchp.Library.DateTime
                 var token = scanner.GetNextToken();
                 if (token == Tokens.ERROR || scanner.Errors > 0)
                 {
-                    break;
+                    PhpException.Throw(PhpError.Warning, LibResources.parse_error, scanner.Position.ToString(), time.Substring(scanner.Position));
+                    return null;
                 }
 
                 if (token == Tokens.EOF)
@@ -260,7 +300,6 @@ namespace Pchp.Library.DateTime
             return new DateInterval(scanner.Time, negative: false);
         }
 
-        [return: NotNull]
         public virtual string format(string format)
         {
             if (string.IsNullOrEmpty(format))
@@ -316,6 +355,9 @@ namespace Pchp.Library.DateTime
                             break;
 
                         //a Total number of days as a result of a DateTime::diff() or(unknown) otherwise   4, 18, 8123
+                        case 'a':
+                            result.Append(_days?.ToString(CultureInfo.InvariantCulture) ?? "(unknown)");
+                            break;
 
                         //H Hours, numeric, at least 2 digits with leading 0    01, 03, 23
                         case 'H':

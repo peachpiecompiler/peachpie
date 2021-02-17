@@ -39,7 +39,7 @@ namespace Peachpie.Library.XmlDom
         #endregion
 
         /// <summary>
-        /// When IncludeXml detects tag include, pushes curent document to documents stack and resolves next documents,
+        /// When IncludeXml detects tag include, pushes current document to documents stack and resolves next documents,
         /// after that, pulls previous document in other to includes probing document.
         /// </summary>
         Stack<XmlDocument> _documents;
@@ -66,10 +66,9 @@ namespace Peachpie.Library.XmlDom
         /// If resolvingUri is relative, combines it with absoluteUriOfDirectory.
         /// </summary>
         /// <returns>Returns absolute uri</returns>
-        static public string UriResolver(string resolvingUri, string absoluteUriOfDirectory)
+        public static string UriResolver(string resolvingUri, string absoluteUriOfDirectory)
         {
-            Uri result;
-            if (!Uri.TryCreate(resolvingUri, UriKind.Absolute, out result)) // try, if resolvingUri is not absolute path
+            if (!Uri.TryCreate(resolvingUri, UriKind.Absolute, out var result)) // try, if resolvingUri is not absolute path
             {
                 result = new Uri(new Uri("file://"), Path.Combine(absoluteUriOfDirectory, resolvingUri));
             }
@@ -117,8 +116,8 @@ namespace Peachpie.Library.XmlDom
                 document = MasterDocument;
             }
 
-            // Recursion on nsPrefix resolver, decleration must be in root
-            string nsPrefix = document.DocumentElement.GetPrefixOfNamespace(nsOfXIncludeNew);
+            // Recursion on nsPrefix resolver, declaration must be in root
+            var nsPrefix = document.DocumentElement.GetPrefixOfNamespace(nsOfXIncludeNew);
             if (string.IsNullOrEmpty(nsPrefix))
             {
                 nsPrefix = document.DocumentElement.GetPrefixOfNamespace(nsOfXIncludeOld);
@@ -199,7 +198,7 @@ namespace Peachpie.Library.XmlDom
             _replaceCount++;
         }
         /// <summary>
-        /// Treats all include tags, if there are bad reference on document, cathes exception and tries to find fallback, which is treated as document.
+        /// Treats all include tags, if there are bad reference on document, catches exception and tries to find fallback, which is treated as document.
         /// </summary>
         /// <param name="includeNodes">Nodes, which will be replace</param>
         /// <param name="document">Document, which contains includeNodes</param>

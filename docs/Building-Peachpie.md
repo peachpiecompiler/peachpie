@@ -26,7 +26,7 @@ Peachpie platform is distributed as NuGet packages (`Peachpie.*`). After buildin
 In order to use your development packages, after successful build run the helper script `.\update-cache.ps1`. It copies packages from `/.nugs` to your local NuGet packages cache.
    
 ```shell
-PS \build\> .\update-packages.ps1
+PS \build\> .\update-cache.ps1
 ```
 
 Reference the development packages by your projects, i.e.
@@ -36,4 +36,12 @@ Reference the development packages by your projects, i.e.
 or
 ```xml
 <PackageReference Include="Peachpie.Library.PDO.MySql" Version="1.0.0-dev" />
+```
+or when using `global.json` to specify Sdks versions:
+```json
+{
+    "msbuild-sdks": {
+        "Peachpie.NET.Sdk": "1.0.0-dev"
+    }
+}
 ```

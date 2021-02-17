@@ -33,13 +33,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var phpname = this.GetPhpTypeNameOrNull();
-                if (phpname.IsEmpty())
-                {
-                    phpname = this.MakeQualifiedName();
-                }
-
-                return phpname;
+                return this.TryGetPhpTypeAttribute(out var fullname, out _) ? fullname : this.MakeQualifiedName();
             }
         }
 
@@ -560,6 +554,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         TypeKind _lazyKind;
 
+        private NullableContextKind _lazyNullableContextValue;
+
         NamedTypeSymbol _lazyUnderlayingType;
 
         private KeyValuePair<CultureInfo, string> _lazyDocComment;
@@ -740,7 +736,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override IModuleSymbol ContainingModule
+        internal override ModuleSymbol ContainingModule
         {
             get
             {
@@ -851,9 +847,8 @@ namespace Pchp.CodeAnalysis.Symbols
                         if ((fieldFlags & FieldAttributes.Static) == 0)
                         {
                             // Instance field used to determine underlying type.
-                            bool isVolatile;
                             ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers;
-                            TypeSymbol type = decoder.DecodeFieldSignature(fieldDef, out isVolatile, out customModifiers);
+                            TypeSymbol type = decoder.DecodeFieldSignature(fieldDef, out customModifiers);
 
                             if (type.SpecialType.IsValidEnumUnderlyingType())
                             {
@@ -1025,9 +1020,9 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 EnsureAllMembersAreLoaded();
                 Interlocked.CompareExchange(ref _lazyMembersByPhpName,
-                    Microsoft.CodeAnalysis.EnumerableExtensions.ToDictionary(
+                    Roslyn.Utilities.EnumerableExtensions.ToDictionary(
                         _lazyMembersInDeclarationOrder
-                        .Where(x => x is MethodSymbol || x is FieldSymbol),
+                            .Where(x => x is MethodSymbol || x is FieldSymbol), // TODO: PropertySymbol ????
                         x => x.PhpName(), StringComparer.InvariantCultureIgnoreCase),
                     null);
             }
@@ -1641,5 +1636,27 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return PEDocumentationCommentUtils.GetDocumentationComment(this, ContainingPEModule, preferredCulture, cancellationToken, ref _lazyDocComment);
         }
+
+        #region Nullability
+
+        internal override byte? GetNullableContextValue()
+        {
+            byte? value;
+            if (!_lazyNullableContextValue.TryGetByte(out value))
+            {
+                value = ContainingPEModule.Module.HasNullableContextAttribute(_handle, out byte arg) ?
+                    arg :
+                    _container.GetNullableContextValue();
+                _lazyNullableContextValue = value.ToNullableContextFlags();
+            }
+            return value;
+        }
+
+        internal override byte? GetLocalNullableContextValue()
+        {
+            throw ExceptionUtilities.Unreachable;
+        }
+
+        #endregion
     }
 }

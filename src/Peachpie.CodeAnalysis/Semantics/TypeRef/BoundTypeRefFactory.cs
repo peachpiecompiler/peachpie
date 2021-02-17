@@ -9,7 +9,8 @@ using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Pchp.CodeAnalysis.Symbols;
-using Peachpie.CodeAnalysis.Utilities;
+using Peachpie.CodeAnalysis.Semantics;
+using Roslyn.Utilities;
 using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics
@@ -30,6 +31,7 @@ namespace Pchp.CodeAnalysis.Semantics
         internal readonly BoundPrimitiveTypeRef/*!*/IterableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Iterable);
         internal readonly BoundPrimitiveTypeRef/*!*/CallableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Callable);
         internal readonly BoundPrimitiveTypeRef/*!*/ResourceTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Resource);
+        internal readonly BoundPrimitiveTypeRef/*!*/MixedTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Mixed);
 
         #endregion
 
@@ -37,6 +39,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal readonly BoundClassTypeRef/*!*/TraversableTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.Traversable, null, null);
         internal readonly BoundClassTypeRef/*!*/ClosureTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.Closure, null, null);
+        internal readonly BoundClassTypeRef/*!*/stdClassTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.stdClass, null, null);
 
         #endregion
 
@@ -112,6 +115,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     case Ast.PrimitiveTypeRef.PrimitiveType.@void: return VoidTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.iterable: return IterableTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.@object: return ObjectTypeRef;
+                    case Ast.PrimitiveTypeRef.PrimitiveType.mixed: return MixedTypeRef;
                     default: throw ExceptionUtilities.UnexpectedValue(pt.PrimitiveTypeName);
                 }
             }
@@ -132,7 +136,7 @@ namespace Pchp.CodeAnalysis.Semantics
             else if (tref is Ast.AnonymousTypeRef at) return new BoundTypeRefFromSymbol(at.TypeDeclaration.GetProperty<SourceTypeSymbol>());
             else if (tref is Ast.MultipleTypeRef mt)
             {
-                return new BoundMultipleTypeRef(Create(mt.MultipleTypes, binder, self));
+                return new BoundMultipleTypeRef(Create(mt.MultipleTypes, binder, self, nullClassSemantic: true));
             }
             else if (tref is Ast.NullableTypeRef nullable)
             {
@@ -167,11 +171,17 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        ImmutableArray<BoundTypeRef> Create(IList<Ast.TypeRef> trefs, SemanticsBinder binder, SourceTypeSymbol self)
+        ImmutableArray<BoundTypeRef> Create(IList<Ast.TypeRef> trefs, SemanticsBinder binder, SourceTypeSymbol self, bool nullClassSemantic = false)
         {
-            return trefs
-                .Select(t => CreateFromTypeRef(t, binder, self, objectTypeInfoSemantic: false).WithSyntax(t))
-                .AsImmutable();
+            return trefs.SelectAsArray(t =>
+            {
+                if (nullClassSemantic && t.IsNullClass())
+                {
+                    return NullTypeRef;
+                }
+
+                return CreateFromTypeRef(t, binder, self, objectTypeInfoSemantic: false).WithSyntax(t);
+            });
         }
 
         public static IBoundTypeRef Create(QualifiedName qname, SourceTypeSymbol self) => new BoundClassTypeRef(qname, null, self);

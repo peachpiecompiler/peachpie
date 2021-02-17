@@ -451,7 +451,7 @@ namespace Pchp.Library
             /// <param name="characters">String containing all characters that are to be in the range.</param>
             /// <param name="result">Integer specifying an error. Value 1 means characters specified cannot
             /// be expressed in current encoding, value of 2 first character is greater than second.</param>
-            /// <returns><B>True</B> if range was succesfuly counted, <B>false</B> otherwise.</returns>
+            /// <returns><B>True</B> if range was successfully counted, <B>false</B> otherwise.</returns>
             internal static bool CountRange(Context ctx, char firstCharacter, char secondCharacter, out string characters, out int result)
             {
                 // initialize out parameters
@@ -1007,7 +1007,7 @@ namespace Pchp.Library
                 if (!allOK)
                     return false;
 
-                // creates new empty part - causes optimization of previous part (the last one, that was not omptimized,
+                // creates new empty part - causes optimization of previous part (the last one, that was not optimized,
                 // previous parts were optimized while calling StartNextPart()).
                 StartNextPart();
 
@@ -1058,7 +1058,7 @@ namespace Pchp.Library
         #region Regular expression conversion functions
 
         /// <summary>
-        /// <c>CharMap</c> containing characters that must be preppended by '\'.
+        /// <c>CharMap</c> containing characters that must be prepended by '\'.
         /// </summary>
         private static readonly CharMap controlCharsMap = new CharMap(new uint[] { 0x0, 0x8f20001, 0x1a, 0x18 });
 

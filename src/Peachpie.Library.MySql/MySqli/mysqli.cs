@@ -4,7 +4,7 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Pchp.Core;
 using static Peachpie.Library.MySql.MySqli.Functions;
 
@@ -73,7 +73,10 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public string error => Connection.GetLastErrorMessage();
 
-        //int $field_count;
+        /// <summary>
+        /// Returns the number of columns for the most recent query.
+        /// </summary>
+        public int field_count => Connection.LastResult.FieldCount;
 
         /// <summary>
         /// Get MySQL client info.
@@ -90,7 +93,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public string host_info => string.Concat(Connection.Server, " via TCP/IP"); // TODO: how to get the protocol?
 
-        //string $protocol_version;
+        //public string protocol_version => Connection.
 
         /// <summary>
         /// Returns the version of the MySQL server.
@@ -323,7 +326,7 @@ namespace Peachpie.Library.MySql.MySqli
                     {
                         case Constants.MYSQLI_OPT_CONNECT_TIMEOUT: connection_string.ConnectionTimeout = (uint)pair.value.ToLong(); break;
                         case Constants.MYSQLI_SERVER_PUBLIC_KEY: connection_string.ServerRsaPublicKeyFile = StrictConvert.ToString(pair.value, ctx); break;
-                        case Constants.MYSQLI_OPT_SSL_VERIFY_SERVER_CERT: if (pair.value) { connection_string.SslMode = MySqlSslMode.VerifyCA; } break;
+                        case Constants.MYSQLI_OPT_SSL_VERIFY_SERVER_CERT: if ((bool)pair.value) { connection_string.SslMode = MySqlSslMode.VerifyCA; } break;
                         case Constants.MYSQLI_CACertificateFile: connection_string.SslCa = Path.Combine(ctx.WorkingDirectory, pair.value.String); break;
                         case Constants.MYSQLI_CertificateFile: connection_string.CertificateFile = Path.Combine(ctx.WorkingDirectory, pair.value.String); break;
                         default: Debug.WriteLine($"MySqli option {pair.option} not handled!"); break;
@@ -435,8 +438,18 @@ namespace Peachpie.Library.MySql.MySqli
         }
 
         //string stat(void )
-        //mysqli_stmt stmt_init(void )
+
+        /// <summary>
+        /// Initializes a statement and returns an object for use with mysqli_stmt_prepare.
+        /// </summary>
+        public mysqli_stmt stmt_init() => new mysqli_stmt(this);
+
         //mysqli_result store_result([ int $option ] )
         //mysqli_result use_result(void )
+
+        /// <summary>
+        /// Returns whether thread safety is given or not.
+        /// </summary>
+        public bool thread_safe() => true;
     }
 }

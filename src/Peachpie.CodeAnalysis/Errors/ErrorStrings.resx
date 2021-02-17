@@ -391,4 +391,43 @@
   <data name="WRN_CannotIncludeFile" xml:space="preserve">
     <value>Script file '{0}' could not be resolved, the script inclusion is unbound.</value>
   </data>
+  <data name="WRN_CalledFromGlobalScope" xml:space="preserve">
+    <value>Called from the global scope</value>
+  </data>
+  <data name="ERR_CtorPropertyAbstractCtor" xml:space="preserve">
+    <value>Cannot declare promoted property in an abstract constructor</value>
+  </data>
+  <data name="ERR_CtorPropertyNotCtor" xml:space="preserve">
+    <value>Cannot declare promoted property outside a constructor</value>
+  </data>
+  <data name="ERR_CtorPropertyStaticCtor" xml:space="preserve">
+    <value>Cannot declare promoted property in a static constructor</value>
+  </data>
+  <data name="ERR_CtorPropertyVariadic" xml:space="preserve">
+    <value>Cannot declare variadic promoted property</value>
+  </data>
+  <data name="ERR_PropertyTypeNotAllowed" xml:space="preserve">
+    <value>Property {0}::${1} cannot have type {2}</value>
+  </data>
+  <data name="ERR_MultipleAnalyzerConfigsInSameDir" xml:space="preserve">
+    <value>Multiple analyzer config files cannot be in the same directory ('{0}').</value>
+  </data>
+  <data name="WRN_GeneratorFailedDuringGeneration" xml:space="preserve">
+    <value>Generator '{0}' failed to generate source. It will not contribute to the output and compilation errors may occur as a result. Exception was of type '{1}' with message '{2}'</value>
+  </data>
+  <data name="WRN_GeneratorFailedDuringInitialization" xml:space="preserve">
+    <value>Generator '{0}' failed to initialize. It will not contribute to the output and compilation errors may occur as a result. Exception was of type '{1}' with message '{2}'</value>
+  </data>
+  <data name="INF_ConstantAlreadyDefined" xml:space="preserve">
+    <value>Constant '{0}' with the same name is already defined</value>
+  </data>
+  <data name="ERR_ArgumentTypeMismatch" xml:space="preserve">
+    <value>Argument {0} passed to {1}() must be of the type {2}, {3} given</value>
+  </data>
+  <data name="ERR_TypeMismatch" xml:space="preserve">
+    <value>Cannot convert {0} to {1}</value>
+  </data>
+  <data name="ERR_BinaryFile" xml:space="preserve">
+    <value>'{0}' is a binary file instead of a text file</value>
+  </data>
 </root>

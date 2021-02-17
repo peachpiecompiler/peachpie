@@ -1,4 +1,4 @@
-﻿using MySql.Data.MySqlClient;
+﻿using MySqlConnector;
 using Pchp.Core;
 using Pchp.Library.Database;
 using System;
@@ -22,6 +22,12 @@ namespace Peachpie.Library.MySql
         readonly MySqlConnection _connection;
 
         /// <summary>
+        /// Whether to keep the underlying connection open after disposing this resource.
+        /// (The owner of the connection is someone else)
+        /// </summary>
+        readonly bool _leaveopen = false;
+
+        /// <summary>
         /// Lazily set server name used to initiate connection.
         /// </summary>
         internal string Server { get; set; }
@@ -38,16 +44,37 @@ namespace Peachpie.Library.MySql
             _connection = new MySqlConnection(this.ConnectionString);
         }
 
+        public MySqlConnectionResource(MySqlConnectionManager manager, MySqlConnection connection)
+            : base(connection.ConnectionString, ResourceName)
+        {
+            _manager = manager;
+            _connection = connection;
+            _leaveopen = true;
+        }
+
         protected override void FreeManaged()
         {
-            base.FreeManaged();
+            if (_leaveopen)
+            {
+                // do not close the underlying connection,
+                // just dispose the reader
+                ClosePendingReader();
+            }
+            else
+            {
+                base.FreeManaged();
+            }
+
             _manager.RemoveConnection(this);
         }
 
         public override void ClosePendingReader()
         {
-            _pendingReader?.Dispose();
-            _pendingReader = null;
+            if (_pendingReader != null)
+            {
+                _pendingReader.Dispose();
+                _pendingReader = null;
+            }
         }
 
         protected override IDbConnection ActiveConnection => _connection;

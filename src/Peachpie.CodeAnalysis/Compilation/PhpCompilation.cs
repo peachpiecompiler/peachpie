@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using Devsense.PHP.Syntax;
+using Microsoft.Cci;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -181,6 +182,15 @@ namespace Pchp.CodeAnalysis
             bool reuseReferenceManager = false,
             IEnumerable<PhpSyntaxTree> syntaxTrees = null)
         {
+            if (assemblyName == null &&
+                (options == null || ReferenceEquals(options, _options)) &&
+                references == null &&
+                reuseReferenceManager == true &&
+                syntaxTrees == null)
+            {
+                return this;
+            }
+
             var compilation = new PhpCompilation(
                 assemblyName ?? this.AssemblyName,
                 options ?? _options,
@@ -208,6 +218,11 @@ namespace Pchp.CodeAnalysis
         public PhpCompilation WithPhpOptions(PhpCompilationOptions options)
         {
             return Update(options: options);
+        }
+
+        public PhpCompilation WithLangVersion(Version langVersion)
+        {
+            return Update(options: this.Options.WithParseOptions((this.Options.ParseOptions ?? PhpParseOptions.Default).WithLanguageVersion(langVersion)));
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences
@@ -241,6 +256,8 @@ namespace Pchp.CodeAnalysis
                 throw new NotImplementedException();
             }
         }
+
+        protected override ITypeSymbol CommonScriptGlobalsType => null;
 
         protected override INamespaceSymbol CommonGlobalNamespace
         {
@@ -385,12 +402,12 @@ namespace Pchp.CodeAnalysis
             return new MissingNamespaceSymbol((NamespaceSymbol)container, name);
         }
 
-        protected override INamedTypeSymbol CommonCreateTupleTypeSymbol(ImmutableArray<ITypeSymbol> elementTypes, ImmutableArray<string> elementNames, ImmutableArray<Location> elementLocations)
+        protected override INamedTypeSymbol CommonCreateTupleTypeSymbol(ImmutableArray<ITypeSymbol> elementTypes, ImmutableArray<string> elementNames, ImmutableArray<Location> elementLocations, ImmutableArray<NullableAnnotation> elementNullableAnnotations)
         {
             throw new NotImplementedException();
         }
 
-        protected override INamedTypeSymbol CommonCreateTupleTypeSymbol(INamedTypeSymbol underlyingType, ImmutableArray<string> elementNames, ImmutableArray<Location> elementLocations)
+        protected override INamedTypeSymbol CommonCreateTupleTypeSymbol(INamedTypeSymbol underlyingType, ImmutableArray<string> elementNames, ImmutableArray<Location> elementLocations, ImmutableArray<NullableAnnotation> elementNullableAnnotations)
         {
             throw new NotImplementedException();
         }
@@ -413,6 +430,11 @@ namespace Pchp.CodeAnalysis
         }
 
         private DiagnosticBag _lazyDeclarationDiagnostics;
+
+        private protected override bool IsSymbolAccessibleWithinCore(ISymbol symbol, ISymbol within, ITypeSymbol throughType)
+        {
+            throw new NotImplementedException();
+        }
 
         public override ImmutableArray<Diagnostic> GetParseDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -590,7 +612,7 @@ namespace Pchp.CodeAnalysis
             return Clone();
         }
 
-        protected override IArrayTypeSymbol CommonCreateArrayTypeSymbol(ITypeSymbol elementType, int rank)
+        protected override IArrayTypeSymbol CommonCreateArrayTypeSymbol(ITypeSymbol elementType, int rank, NullableAnnotation elementNullableAnnotation)
         {
             return ArrayTypeSymbol.CreateCSharpArray(SourceAssembly, (TypeSymbol)elementType, rank: rank);
         }
@@ -600,15 +622,45 @@ namespace Pchp.CodeAnalysis
             return new PointerTypeSymbol((TypeSymbol)elementType);
         }
 
-        protected override INamedTypeSymbol CommonCreateAnonymousTypeSymbol(ImmutableArray<ITypeSymbol> memberTypes, ImmutableArray<string> memberNames, ImmutableArray<Location> memberLocations, ImmutableArray<bool> memberIsReadOnly)
+        protected override IFunctionPointerTypeSymbol CommonCreateFunctionPointerTypeSymbol(ITypeSymbol returnType, RefKind returnRefKind,
+            ImmutableArray<ITypeSymbol> parameterTypes, ImmutableArray<RefKind> parameterRefKinds)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override INamedTypeSymbol CommonCreateNativeIntegerTypeSymbol(bool signed)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override INamedTypeSymbol CommonCreateAnonymousTypeSymbol(ImmutableArray<ITypeSymbol> memberTypes, ImmutableArray<string> memberNames, ImmutableArray<Location> memberLocations, ImmutableArray<bool> memberIsReadOnly, ImmutableArray<NullableAnnotation> memberNullableAnnotations)
         {
             throw new NotImplementedException();
         }
 
         protected override ISymbol CommonGetAssemblyOrModuleSymbol(MetadataReference reference)
         {
-            throw new NotImplementedException();
+            if (reference == null)
+            {
+                throw new ArgumentNullException(nameof(reference));
+            }
+
+            if (reference.Properties.Kind == MetadataImageKind.Assembly)
+            {
+                return GetBoundReferenceManager().GetReferencedAssemblySymbol(reference);
+            }
+            else
+            {
+                Debug.Assert(reference.Properties.Kind == MetadataImageKind.Module);
+                throw new NotImplementedException();
+
+                //int index = GetBoundReferenceManager().GetReferencedModuleIndex(reference);
+                //return index < 0 ? null : this.Assembly.Modules[index];
+            }
         }
+
+        private protected override MetadataReference CommonGetMetadataReference(IAssemblySymbol assemblySymbol) =>
+            GetBoundReferenceManager().GetMetadataReference((IAssemblySymbolInternal)assemblySymbol);
 
         protected override INamespaceSymbol CommonGetCompilationNamespace(INamespaceSymbol namespaceSymbol)
         {
@@ -777,11 +829,45 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
-        internal override AnalyzerDriver AnalyzerForLanguage(ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerManager analyzerManager)
+        internal override AnalyzerDriver CreateAnalyzerDriver(ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerManager analyzerManager, SeverityFilter severityFilter)
         {
-            Func<SyntaxNode, int> getKind = node => node.RawKind;
-            Func<SyntaxTrivia, bool> isComment = trivia => false;
-            return new AnalyzerDriver<int>(analyzers, getKind, analyzerManager, isComment);
+            static int GetKind(SyntaxNode node) => node.RawKind;
+            static bool IsComment(SyntaxTrivia trivia) => false;
+            return new AnalyzerDriver<int>(analyzers, GetKind, analyzerManager, severityFilter, IsComment);
+        }
+
+        internal override void SerializePdbEmbeddedCompilationOptions(BlobBuilder builder)
+        {
+            WriteValue(CompilationOptionNames.LanguageVersion, Options.LanguageVersion.ToString());
+
+            if (Options.CheckOverflow)
+            {
+                WriteValue(CompilationOptionNames.Checked, Options.CheckOverflow.ToString());
+            }
+
+            if (Options.NullableContextOptions != NullableContextOptions.Disable)
+            {
+                WriteValue(CompilationOptionNames.Nullable, Options.NullableContextOptions.ToString());
+            }
+
+            //if (Options.AllowUnsafe)
+            //{
+            //    WriteValue(CompilationOptionNames.Unsafe, Options.AllowUnsafe.ToString());
+            //}
+
+            //var preprocessorSymbols = GetPreprocessorSymbols();
+            //if (preprocessorSymbols.Any())
+            //{
+            //    WriteValue(CompilationOptionNames.Define, string.Join(",", preprocessorSymbols));
+            //}
+
+            void WriteValue(string key, string value)
+            {
+                builder.WriteUTF8(key);
+                builder.WriteByte(0);
+                builder.WriteUTF8(value);
+                builder.WriteByte(0);
+            }
         }
 
         internal override CommonReferenceManager CommonGetBoundReferenceManager()
@@ -805,9 +891,14 @@ namespace Pchp.CodeAnalysis
             return _referenceManager;
         }
 
-        internal override ISymbol CommonGetWellKnownTypeMember(WellKnownMember member)
+        internal override ISymbolInternal CommonGetWellKnownTypeMember(WellKnownMember member)
         {
             return GetWellKnownTypeMember(member);
+        }
+
+        internal override ITypeSymbolInternal CommonGetWellKnownType(WellKnownType wellknownType)
+        {
+            return GetWellKnownType(wellknownType);
         }
 
         internal override int CompareSourceLocations(Location loc1, Location loc2)
@@ -849,7 +940,7 @@ namespace Pchp.CodeAnalysis
             return await _lazyAnalysisTask.ConfigureAwait(false);
         }
 
-        internal override bool CompileMethods(CommonPEModuleBuilder moduleBuilder, bool emittingPdb, bool emitMetadataOnly, bool emitTestCoverageData, DiagnosticBag diagnostics, Predicate<ISymbol> filterOpt, CancellationToken cancellationToken)
+        internal override bool CompileMethods(CommonPEModuleBuilder moduleBuilder, bool emittingPdb, bool emitMetadataOnly, bool emitTestCoverageData, DiagnosticBag diagnostics, Predicate<ISymbolInternal> filterOpt, CancellationToken cancellationToken)
         {
             // The diagnostics should include syntax and declaration errors. We insert these before calling Emitter.Emit, so that the emitter
             // does not attempt to emit if there are declaration errors (but we do insert all errors from method body binding...)
@@ -1055,7 +1146,7 @@ namespace Pchp.CodeAnalysis
                 var table = this.SourceSymbolCollection;
                 var symbols =
                     // global functions
-                    table.GetFunctions().OfType<SourceRoutineSymbol>()
+                    table.GetFunctions()
                     // classes, interfaces, traits
                     .Concat<Symbol>(table.GetDeclaredTypes())
                     // type members - properties, constants
@@ -1143,7 +1234,7 @@ namespace Pchp.CodeAnalysis
 
             if (debugEntryPoint != null)
             {
-                moduleBeingBuilt.SetDebugEntryPoint(debugEntryPoint, diagnostics);
+                moduleBeingBuilt.SetDebugEntryPoint((IMethodSymbolInternal)debugEntryPoint, diagnostics);
             }
 
             moduleBeingBuilt.SourceLinkStreamOpt = sourceLinkStream;

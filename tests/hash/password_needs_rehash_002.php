@@ -4,7 +4,7 @@ namespace hash\password_needs_rehash_002;
 $password = "rasmuslerdorf";
 $memory_cost = 512;
 $time_cost = 11;
-$threads = 1;
+$threads = 3;
 
 $options = [
     'threads' => $threads,

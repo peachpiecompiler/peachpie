@@ -12,44 +12,53 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFileInfo
     {
-        private protected string _relativePath;     // Path string supplied in constructor (may be relative, non-cannonical etc.)
+        /// <summary>
+        /// Path string supplied in constructor (may be relative, non-cannonical etc.)
+        /// </summary>
+        private protected string _originalPath;
+
+        /// <summary>
+        /// Real path (full resolved path).
+        /// </summary>
         private protected string _fullpath;
-        private protected FileSystemInfo _entry;
+
+        /// <summary>
+        /// Context root path. Used for resolving <see cref="_stat"/> properly.
+        /// </summary>
+        private protected string _root;
+
+        /// <summary>
+        /// Lazily populated stat struct.
+        /// </summary>
+        private protected StatStruct? _lazystat;
 
         /// <summary>
         /// Resolves <see cref="FileSystemInfo"/> in case it is not initialized explicitly.
         /// Only applies to <see cref="SplFileInfo"/>.
         /// </summary>
-        private protected FileSystemInfo ResolvedInfo
+        private protected StatStruct Stat
         {
             get
             {
-                var entry = _entry;
-                if (entry == null)
+                if (_lazystat.HasValue == false && _fullpath != null)
                 {
-                    if (System.IO.Directory.Exists(_fullpath))
-                    {
-                        entry = new DirectoryInfo(_fullpath);
-                    }
-                    else
-                    {
-                        entry = new FileInfo(_fullpath);
-                    }
-
-                    _entry = entry;
+                    _lazystat = StreamWrapper
+                        .GetFileStreamWrapper()
+                        .Stat(_root, _fullpath, StreamStatOptions.Quiet, StreamContext.Default, false);
                 }
 
-                return entry;
+                return _lazystat.GetValueOrDefault();
             }
         }
 
-        private protected string _info_class = "SplFileInfo";
-        private protected string _file_class = "SplFileObject";
+        private protected string _info_class = nameof(SplFileInfo);
+
+        private protected string _file_class = nameof(SplFileObject);
 
         private protected SplFileInfo CreateFileInfo(Context ctx, string class_name, string file_name)
         {
             if (string.IsNullOrEmpty(class_name) ||
-                string.Equals(class_name, "SplFileInfo", StringComparison.OrdinalIgnoreCase))
+                string.Equals(class_name, nameof(SplFileInfo), StringComparison.OrdinalIgnoreCase))
             {
                 return new SplFileInfo(ctx, file_name);
             }
@@ -59,6 +68,8 @@ namespace Pchp.Library.Spl
             }
         }
 
+        public static implicit operator PhpValue(SplFileInfo @object) => PhpValue.FromClass(@object);
+
         public SplFileInfo(Context ctx, string file_name)
         {
             __construct(ctx, file_name);
@@ -67,23 +78,20 @@ namespace Pchp.Library.Spl
         [PhpFieldsOnlyCtor]
         protected SplFileInfo()
         {
+            // implementor is responsible for calling __construct
         }
 
-        internal SplFileInfo(FileSystemInfo/*!*/entry, string file_name)
+        internal SplFileInfo(string root, string fullPath, string originalPath)
         {
-            __construct(entry, file_name);
+            _root = root;
+            _originalPath = originalPath ?? throw new ArgumentNullException(nameof(originalPath));
+            _fullpath = fullPath ?? throw new ArgumentNullException(nameof(fullPath));
         }
 
-        private protected void __construct(FileSystemInfo/*!*/entry, string file_name)
+        public void __construct(Context ctx, string file_name)
         {
-            _entry = entry;
-            _fullpath = entry.FullName;
-            _relativePath = file_name;
-        }
-
-        public virtual void __construct(Context ctx, string file_name)
-        {
-            _relativePath = file_name;
+            _root = ctx.RootPath;
+            _originalPath = file_name;
             _fullpath = FileSystemUtils.AbsolutePath(ctx, file_name);
         }
 
@@ -91,102 +99,86 @@ namespace Pchp.Library.Spl
 
         public virtual long getATime()
         {
-            if (ResolvedInfo.Exists)
-            {
-                return DateTimeUtils.UtcToUnixTimeStamp(ResolvedInfo.LastAccessTimeUtc);
-            }
-
-            throw new RuntimeException();
+            var stat = this.Stat;
+            return stat.IsValid ? stat.st_atime : throw new RuntimeException();
         }
 
         public virtual long getCTime()
         {
-            if (ResolvedInfo.Exists)
-            {
-                return DateTimeUtils.UtcToUnixTimeStamp(ResolvedInfo.CreationTimeUtc);
-            }
-
-            throw new RuntimeException();
+            var stat = this.Stat;
+            return stat.IsValid ? stat.st_ctime : throw new RuntimeException();
         }
 
         public virtual long getMTime()
         {
-            if (ResolvedInfo.Exists)
-            {
-                return DateTimeUtils.UtcToUnixTimeStamp(ResolvedInfo.LastWriteTimeUtc);
-            }
-
-            throw new RuntimeException();
+            var stat = this.Stat;
+            return stat.IsValid ? stat.st_mtime : throw new RuntimeException();
         }
 
         public virtual string getExtension()
         {
-            var ext = ResolvedInfo.Extension;
-            if (string.IsNullOrEmpty(ext))
-            {
-                return string.Empty;
-            }
-            Debug.Assert(ext[0] == '.');
-            return ext.Substring(1);
+            var ext = Core.Utilities.PathUtils.GetExtension(_fullpath.AsSpan());
+            return ext.ToString(); // extension without the dot
         }
 
         public virtual SplFileInfo getFileInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, _fullpath);
-        public virtual string getFilename() => PhpPath.basename(_relativePath);
-        public virtual long getGroup() { throw new NotImplementedException(); }
-        public virtual long getInode() { throw new NotImplementedException(); }
-        public virtual string getLinkTarget() { throw new NotImplementedException(); }
-        public virtual long getOwner() { throw new NotImplementedException(); }
-        public virtual string getPath() => PhpPath.dirname(_relativePath);
+        public virtual string getFilename() => PhpPath.basename(_originalPath);
+        public virtual long getGroup() => Stat.st_gid;
+        public virtual long getInode() => Stat.st_ino;
+        public virtual string getLinkTarget() => throw new NotImplementedException();
+        public virtual long getOwner() => throw new NotImplementedException();
+        public virtual string getPath() => PhpPath.dirname(_originalPath);
         public virtual SplFileInfo getPathInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, PhpPath.dirname(_fullpath));
-        public virtual string getPathname() => _relativePath;
-        public virtual long getPerms() { throw new NotImplementedException(); }
+        /// <summary>Gets the path to the file</summary>
+        public virtual string getPathname() => _originalPath;
+        public virtual long getPerms() => (long)Stat.st_mode;
 
+        /// <summary>This method expands all symbolic links, resolves relative references and returns the real path to the file.</summary>
         [return: CastToFalse]
-        public virtual string getRealPath(Context ctx) => ResolvedInfo.FullName;
+        public virtual string getRealPath() => _fullpath;
 
-        public virtual long getSize() => (ResolvedInfo is FileInfo finfo) ? finfo.Length : 0;
+        public virtual long getSize() => Stat.st_size;
 
         /// <summary>
         /// Returns the type of the file referenced.
         /// </summary>
         /// <returns>A string representing the type of the entry. May be one of <c>file</c>, <c>link</c>, or <c>dir</c>.</returns>
         /// <exception cref="RuntimeException">Throws a RuntimeException on error.</exception>
-        [return: NotNull]
         public virtual string getType()
         {
-            if (ResolvedInfo.Exists)
+            // see filetype()
+            return (Stat.st_mode & FileModeFlags.FileTypeMask) switch
             {
-                //var attrs = ResolvedInfo.Attributes;
-                //if ((attrs & FileAttributes.Directory) != 0) return "dir";
-                if (ResolvedInfo is FileInfo) return "file";
-                if (ResolvedInfo is DirectoryInfo) return "dir";
-                // TODO: symbolic link
-            }
-
-            throw new RuntimeException();
+                FileModeFlags.Directory => "dir",
+                FileModeFlags.File => "file",
+                _ => throw new RuntimeException(),
+            };
         }
 
-        public virtual bool isDir() => ResolvedInfo.Exists && ResolvedInfo is DirectoryInfo;
-        public virtual bool isExecutable() { throw new NotImplementedException(); }
-        public virtual bool isFile() => ResolvedInfo.Exists && ResolvedInfo is FileInfo;
-        public virtual bool isLink() => ResolvedInfo.Exists && (ResolvedInfo.Attributes & FileAttributes.ReparsePoint) != 0; // TODO: review determining symbolic links, ReparsePoint is usually right (at least on NTFS)
-        public virtual bool isReadable() => ResolvedInfo.Exists;
-        public virtual bool isWritable() => ResolvedInfo.Exists && !(ResolvedInfo is FileInfo && ResolvedInfo.Attributes.HasFlag(FileAttributes.ReadOnly));
+        public virtual bool isDir() => Stat.IsDirectory;
+        public virtual bool isExecutable() => (Stat.st_mode & FileModeFlags.Execute) != 0;
+        public virtual bool isFile() => Stat.IsFile;
+        public virtual bool isLink() => Stat.IsLink;
+        public virtual bool isReadable() => (Stat.st_mode & FileModeFlags.Read) != 0;
+        public virtual bool isWritable() => (Stat.st_mode & FileModeFlags.Write) != 0;
         public virtual SplFileObject openFile(Context ctx, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
         {
-            if (string.IsNullOrEmpty(_file_class) || string.Equals(_file_class, nameof(SplFileObject), StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(_file_class) ||
+                string.Equals(_file_class, nameof(SplFileObject), StringComparison.OrdinalIgnoreCase))
             {
                 return new SplFileObject(ctx, _fullpath, open_mode, use_include_path, context);
             }
             else
             {
-                return (SplFileObject)ctx.Create(_file_class, _fullpath, open_mode, use_include_path, PhpValue.FromClass(context));
+                return (SplFileObject)ctx.Create(_file_class, _fullpath, open_mode, use_include_path, context);
             }
         }
         public virtual void setFileClass(string class_name = nameof(SplFileObject)) => _file_class = class_name;
         public virtual void setInfoClass(string class_name = nameof(SplFileInfo)) => _info_class = class_name;
-        public virtual string __toString() => _relativePath;
-        public override string ToString() => _relativePath;
+        public virtual string __toString() => _originalPath;
+
+        [PhpHidden]
+        public override string ToString() => __toString();
     }
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
@@ -197,37 +189,43 @@ namespace Pchp.Library.Spl
         public const long SKIP_EMPTY = 4;
         public const long READ_CSV = 8;
 
-        protected Context _ctx;
+        protected readonly Context _ctx;
 
         private protected PhpStream _stream;
 
         public SplFileObject(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
+            : this(ctx)
         {
-            __construct(ctx, file_name, open_mode, use_include_path, context);
+            __construct(file_name, open_mode, use_include_path, context);
         }
 
-        public sealed override void __construct(Context ctx, string file_name)
+        public void __construct(string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
         {
-            __construct(ctx, file_name);
-        }
+            _root = _ctx.RootPath;
+            _originalPath = file_name;
 
-        public virtual void __construct(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
-        {
-            _ctx = ctx;
-            base.__construct(ctx, file_name);
-            _entry = new FileInfo(_fullpath);
+            // fopen:
+            var sc = StreamContext.GetValid(context, allowNull: true) ?? StreamContext.Default;
+            var openFlags = StreamOpenOptions.ReportErrors;
+            if (use_include_path) openFlags |= StreamOpenOptions.UseIncludePath;
 
-            var openFlags = use_include_path ? PhpPath.FileOpenOptions.UseIncludePath : PhpPath.FileOpenOptions.Empty;
-            _stream = (PhpStream)PhpPath.fopen(ctx, file_name, open_mode, openFlags, context);
-            if (_stream == null)
+            _stream = PhpStream.Open(_ctx, file_name, open_mode, openFlags, sc);
+
+            if (_stream != null)
+            {
+                _fullpath = _stream.OpenedPath;
+            }
+            else
             {
                 throw new RuntimeException(string.Format(Resources.Resources.file_cannot_open, file_name));
             }
         }
 
         [PhpFieldsOnlyCtor]
-        protected SplFileObject()
+        protected SplFileObject(Context ctx) : base()
         {
+            _ctx = ctx;
+            // implementor is responsible for calling __construct
         }
 
         #region SeekableIterator, RecursiveIterator
@@ -417,7 +415,7 @@ namespace Pchp.Library.Spl
         }
 
         [PhpFieldsOnlyCtor]
-        protected SplTempFileObject()
+        protected SplTempFileObject(Context ctx) : base(ctx)
         {
         }
 
@@ -429,32 +427,26 @@ namespace Pchp.Library.Spl
         /// If the temporary file exceeds this size, it will be moved to a file in the system's temp directory.
         /// If max_memory is negative, only memory will be used. If max_memory is zero, no memory will be used.</param>
         public SplTempFileObject(Context ctx, long max_memory = 2 * 1024 * 1024 /*2MB*/)
+            : this(ctx)
         {
-            __construct(ctx, max_memory);
-        }
-
-        public sealed override void __construct(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
-        {
-            __construct(ctx);
+            __construct(max_memory);
         }
 
         /// <summary>
         /// Construct a new temporary file object.
         /// </summary>
-        /// <param name="ctx">The current runtime context.</param>
         /// <param name="max_memory">The maximum amount of memory (in bytes, default is 2 MB) for the temporary file to use.
         /// If the temporary file exceeds this size, it will be moved to a file in the system's temp directory.
         /// If max_memory is negative, only memory will be used. If max_memory is zero, no memory will be used.</param>
-        public virtual void __construct(Context ctx, long max_memory = 2 * 1024 * 1024 /*2MB*/)
+        public void __construct(long max_memory = 2 * 1024 * 1024 /*2MB*/)
         {
-            _ctx = ctx;
             _fullpath = max_memory >= 0 ? $"php://temp/maxmemory:{max_memory}" : "php://memory";
 
             var streamState =
                 max_memory > 0 ? MemoryTempFileStream.State.FileWhenExceeded :
                 max_memory == 0 ? MemoryTempFileStream.State.File :
                 MemoryTempFileStream.State.AlwaysMemory;
-            _stream = new MemoryTempFileStream(ctx, streamState, max_memory, Path.GetTempFileName());
+            _stream = new MemoryTempFileStream(_ctx, streamState, max_memory, Path.GetTempFileName());
             _ctx.RegisterDisposable(_stream);
         }
 
@@ -467,7 +459,7 @@ namespace Pchp.Library.Spl
         public override string getPathname() => _fullpath;
 
         [return: CastToFalse]
-        public override string getRealPath(Context ctx) => null;
+        public override string getRealPath() => null;
 
         public override bool isDir() => false;
 

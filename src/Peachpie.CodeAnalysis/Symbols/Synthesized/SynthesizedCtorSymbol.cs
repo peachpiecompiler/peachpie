@@ -253,7 +253,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     c.DeclaredAccessibility != Accessibility.Private &&
                     c.DeclaredAccessibility != Accessibility.Internal &&
                     c.DeclaredAccessibility != Accessibility.ProtectedAndInternal &&
-                    !c.IsPhpHidden()
+                    !c.IsPhpHidden
                     )
                 {
                     var calledparams = c.Parameters.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).ToImmutableArray();

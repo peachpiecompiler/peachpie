@@ -1,4 +1,4 @@
-﻿using MySql.Data.MySqlClient;
+﻿using MySqlConnector;
 using Pchp.Core;
 using System;
 using System.Collections.Generic;
@@ -155,9 +155,9 @@ namespace Peachpie.Library.MySql
 
             var connection_string = config.ConnectionString ?? BuildConnectionString(config, ref server, config.Port, username, password, client_flags).ToString();
 
-            bool success;
-            var connection = MySqlConnectionManager.GetInstance(ctx)
-                .CreateConnection(connection_string, new_link, -1, out success);
+            var connection = MySqlConnectionManager
+                .GetInstance(ctx)
+                .CreateConnection(connection_string, new_link, -1, out var success);
 
             if (success)
             {
@@ -170,6 +170,15 @@ namespace Peachpie.Library.MySql
 
             //
             return connection;
+        }
+
+        /// <summary>
+        /// Creates a connection resource using an existing <see cref="MySqlConnection"/> instance.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Provided instance is <c>null</c>.</exception>
+        public static PhpResource mysql_connect(Context ctx, MySqlConnection dbconnection/*, bool leaveOpen*/)
+        {
+            return new MySqlConnectionResource(MySqlConnectionManager.GetInstance(ctx), dbconnection ?? throw new ArgumentNullException(nameof(dbconnection)));
         }
 
         /// <summary>
@@ -306,7 +315,7 @@ namespace Peachpie.Library.MySql
             // non-encodable values convert to byte[] parameter:
             int lastQuote = -1;
             bool escaped = false;
-            bool containsNonAscii = false;  // whether encosing may corrupt value when storing into BLOB column
+            bool containsNonAscii = false;  // whether encoding may corrupt value when storing into BLOB column
             int escapedChars = 0;    // amount of '\' chars (> 0 means we have to unescape the value)
 
             for (int i = 0; i < query.Length; i++)
@@ -602,7 +611,7 @@ namespace Peachpie.Library.MySql
         #region mysql_free_result
 
         /// <summary>
-        /// Releases a resource represening a query result.
+        /// Releases a resource representing a query result.
         /// </summary>
         /// <param name="resultHandle">Query result resource.</param>
         /// <returns><B>true</B> on success, <B>false</B> on failure (invalid resource).</returns>
@@ -1003,8 +1012,7 @@ namespace Peachpie.Library.MySql
         /// <summary>
         /// Gets a version of the client library.
         /// </summary>
-        /// <returns>Equivalent native library varsion.</returns>
-        [return: NotNull]
+        /// <returns>Equivalent native library version.</returns>
         public static string mysql_get_client_info() => EquivalentNativeLibraryVersion.ToString();
 
         /// <summary>

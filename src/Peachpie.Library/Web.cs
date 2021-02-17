@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace Pchp.Library
 {
-    [PhpExtension("standard")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Web
     {
         #region Constants
@@ -43,16 +43,16 @@ namespace Pchp.Library
         #region base64_decode, base64_encode
 
         [return: CastToFalse]
-        public static PhpString base64_decode(string encoded_data, bool strict = false)
+        public static PhpString base64_decode(string str, bool strict = false)
         {
-            if (string.IsNullOrEmpty(encoded_data))
+            if (string.IsNullOrEmpty(str))
             {
                 return default; // FALSE
             }
 
             try
             {
-                return new PhpString(Base64Utils.FromBase64(encoded_data.AsSpan(), strict));
+                return new PhpString(Base64Utils.FromBase64(str.AsSpan(), strict));
             }
             catch (FormatException)
             {
@@ -62,9 +62,9 @@ namespace Pchp.Library
         }
 
         [return: CastToFalse]
-        public static string base64_encode(Context ctx, PhpString data_to_encode)
+        public static string base64_encode(Context ctx, PhpString str)
         {
-            return System.Convert.ToBase64String(data_to_encode.ToBytes(ctx.StringEncoding));
+            return System.Convert.ToBase64String(str.ToBytes(ctx.StringEncoding));
         }
 
         #endregion
@@ -319,7 +319,23 @@ namespace Pchp.Library
         #region setcookie, setrawcookie
 
         /// <summary>
-        /// Sends a cookie with specified name, value and expiration timestamp.
+        /// Sends a cookie with specified name, and value.
+        /// </summary>
+        public static bool setcookie(Context ctx, string name, string value = null)
+        {
+            return SetCookieInternal(ctx, name, value, raw: false);
+        }
+
+        /// <summary>
+        /// Sends a cookie with specified name, value and options.
+        /// </summary>
+        public static bool setcookie(Context ctx, string name, string value, PhpArray options)
+        {
+            return SetCookieInternal(ctx, name, value, options, raw: false);
+        }
+
+        /// <summary>
+        /// Sends a cookie with specified name, value and options.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="name">The name of the cookie to send.</param>
@@ -333,27 +349,70 @@ namespace Pchp.Library
         /// This setting can effectively help to reduce identity theft through XSS attacks
         /// (although it is not supported by all browsers).</param>
         /// <returns>Whether a cookie has been successfully send.</returns>
-        public static bool setcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
+        public static bool setcookie(Context ctx, string name, string value, int expire, string path = null, string domain = null, bool secure = false, bool httponly = false)
         {
-            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, false);
+            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, raw: false);
+        }
+
+        /// <summary>
+        /// The same as <see cref="setcookie(Context, string, string)"/> except for that value is not <see cref="UrlEncode"/>d.
+        /// </summary>
+        public static bool setrawcookie(Context ctx, string name, string value = null)
+        {
+            return SetCookieInternal(ctx, name, value, raw: true);
+        }
+
+        /// <summary>
+        /// The same as <see cref="setcookie(Context, string, string, PhpArray)"/> except for that value is not <see cref="UrlEncode"/>d.
+        /// </summary>
+        public static bool setrawcookie(Context ctx, string name, string value, PhpArray options)
+        {
+            return SetCookieInternal(ctx, name, value, options, raw: true);
         }
 
         /// <summary>
         /// The same as <see cref="setcookie(Context, string, string, int, string, string, bool, bool)"/> except for that value is not <see cref="UrlEncode"/>d.
         /// </summary>
-        public static bool setrawcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
+        public static bool setrawcookie(Context ctx, string name, string value, int expire, string path = null, string domain = null, bool secure = false, bool httponly = false)
         {
-            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, true);
+            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, raw: true);
+        }
+
+        static bool SetCookieInternal(Context ctx, string name, string value, PhpArray options, bool raw)
+        {
+            if (options == null || options.Count == 0)
+            {
+                return SetCookieInternal(ctx, name, value, raw: raw);
+            }
+
+            PhpValue tmp;
+
+            return SetCookieInternal(ctx, name, value,
+                expire: options.TryGetValue("expire", out tmp) ? tmp.ToInt() : 0,
+                path: options.TryGetValue("path", out tmp) ? tmp.ToString(ctx) : null,
+                domain: options.TryGetValue("domain", out tmp) ? tmp.ToString(ctx) : null,
+                secure: options.TryGetValue("secure", out tmp) ? tmp.ToBoolean() : false,
+                httponly: options.TryGetValue("httponly", out tmp) ? tmp.ToBoolean() : false,
+                samesite: options.TryGetValue("samesite", out tmp) ? tmp.ToString() : null,
+                raw: raw);
         }
 
         /// <summary>
-        /// Internal version common for <see cref="setcookie"/> and <see cref="setrawcookie"/>.
+        /// Internal version common for <see cref="setcookie(Context, string, string)"/> and <see cref="setrawcookie(Context, string, string)"/>.
         /// </summary>
-        internal static bool SetCookieInternal(Context ctx, string name, string value, int expire, string path, string domain, bool secure, bool httponly, bool raw)
+        static bool SetCookieInternal(Context ctx, string name, string value, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false, string samesite = null/* None|Lax|Strict */, bool raw = false)
         {
             var httpctx = ctx.HttpPhpContext;
             if (httpctx == null)
             {
+                // TODO: PHP actually modifies internal headers even on CLI
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                // TODO: "Cookie names must not be empty"
+                PhpException.InvalidArgument(nameof(name), Resources.Resources.arg_empty);
                 return false;
             }
 
@@ -367,7 +426,7 @@ namespace Pchp.Library
                 expires = null;
             }
 
-            httpctx.AddCookie(name, raw ? value : WebUtility.UrlEncode(value), expires, path ?? "/", domain, secure, httponly);
+            httpctx.AddCookie(name, raw ? value : WebUtility.UrlEncode(value), expires, path ?? "/", domain, secure, httponly, samesite);
 
             return true;
         }
@@ -442,7 +501,7 @@ namespace Pchp.Library
 		/// <para>
 		/// If <paramref name="http_response_code"/> is positive than the response status code is set to this value.
 		/// Otherwise, if <paramref name="str"/> has format "{spaces}HTTP/{no spaces} {response code}{whatever}" 
-		/// then the response code is set to the {responce code} and the method returns.
+		/// then the response code is set to the {response code} and the method returns.
 		/// </para>
 		/// <para>
 		/// If <paramref name="str"/> has format "{name}:{value}" then the respective header is set (both name and value 
@@ -888,7 +947,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The URL string (e.g. "hello%20from%20foo%40bar").</param>
         /// <returns>Decoded string (e.g. "hello from foo@bar")</returns>
-        [return: NotNull]
         public static string rawurldecode(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -904,7 +962,6 @@ namespace Pchp.Library
         /// </summary>  
         /// <param name="str">The string to be encoded.</param>
         /// <returns>The encoded string.</returns>
-        [return: NotNull]
         public static string rawurlencode(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -918,7 +975,6 @@ namespace Pchp.Library
         /// <summary>
         /// Decodes a URL string.
         /// </summary>
-        [return: NotNull]
         public static string urldecode(Context ctx, string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -932,7 +988,6 @@ namespace Pchp.Library
         /// <summary>
         /// Encodes a URL string. Spaces are encoded as '+'.
         /// </summary>  
-        [return: NotNull]
         public static string urlencode(Context ctx, string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -1063,9 +1118,15 @@ namespace Pchp.Library
         /// <param name="seconds">The time-out setting for request.</param>
         public static bool set_time_limit(Context ctx, int seconds)
         {
-            //ctx.ApplyExecutionTimeout(seconds);
-
-            return false;
+            try
+            {
+                ctx.ApplyExecutionTimeout(seconds);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Name of the SPL extension.
         /// </summary>
-        public const string Name = "SPL";
+        public const string Name = PhpExtensionAttribute.KnownExtensionNames.SPL;
 
         /// <summary>
         /// Gets key()/current() from the iterator.

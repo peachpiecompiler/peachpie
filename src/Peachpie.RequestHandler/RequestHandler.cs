@@ -11,7 +11,7 @@ namespace Peachpie.RequestHandler
 	/// Process a request and stores references to objects associated with it.
 	/// </summary>
 	[Serializable]
-    public sealed class RequestHandler : IHttpHandler, IRequiresSessionState
+    public class RequestHandler : IHttpHandler, IRequiresSessionState
     {
         /// <summary>
         /// Factory method to instantiate <see cref="Context"/> for the given <see cref="HttpContext"/>.
@@ -34,6 +34,35 @@ namespace Peachpie.RequestHandler
         }
 
         /// <summary>
+        /// Factory method to instantiate <see cref="Context"/> for the given <see cref="HttpContext"/>.
+        /// </summary>
+        protected virtual Context InitializeRequestContext(HttpContext context)
+        {
+            // note: When httpRuntime has debug set, timeout is always ignored
+            //if (Debugger.IsAttached)
+            //{
+            //    // disables ASP.NET timeout if possible:
+            //    try
+            //    {
+            //        context.Server.ScriptTimeout = int.MaxValue;
+            //    }
+            //    catch (HttpException)
+            //    {
+            //    }
+            //}
+
+            return CreateRequestContext(context);
+        }
+
+        /// <summary>
+        /// Disposes the context at the end of the request.
+        /// </summary>
+        protected virtual void DisposeRequestContext(HttpContext context, Context phpctx)
+        {
+            phpctx.Dispose();
+        }
+
+        /// <summary>
         /// Invoked by ASP.NET when a request comes from a client.
         /// Single threaded.
         /// </summary>
@@ -42,11 +71,10 @@ namespace Peachpie.RequestHandler
         public void ProcessRequest(HttpContext context)
         {
             Debug.Assert(context != null);
-#if DEBUG
-            // disables ASP.NET timeout if possible:
-            try { context.Server.ScriptTimeout = int.MaxValue; } catch (HttpException) { }
-#endif
-            var phpctx = (RequestContextAspNet)CreateRequestContext(context);
+
+            var phpctx = (RequestContextAspNet)InitializeRequestContext(context);
+
+            Debug.Assert(phpctx != null);
 
             try
             {
@@ -67,8 +95,7 @@ namespace Peachpie.RequestHandler
             }
             finally
             {
-                phpctx.Dispose();
-                phpctx = null;
+                DisposeRequestContext(context, phpctx);
             }
         }
 

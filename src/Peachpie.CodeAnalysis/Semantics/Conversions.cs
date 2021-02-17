@@ -55,12 +55,12 @@ namespace Pchp.CodeAnalysis.Semantics
             _compilation = compilation ?? throw ExceptionUtilities.ArgumentNull();
         }
 
-        static CommonConversion IdentityConversion => new CommonConversion(true, true, false, false, true, null);
-        static CommonConversion ReferenceConversion => new CommonConversion(true, false, false, true, true, null);
-        static CommonConversion ExplicitReferenceConversion => new CommonConversion(true, false, false, true, false, null);
-        static CommonConversion NoConversion => new CommonConversion(false, false, false, false, false, null);
-        static CommonConversion ImplicitNumeric => new CommonConversion(true, false, true, false, true, null);
-        static CommonConversion ExplicitNumeric => new CommonConversion(true, false, true, false, false, null);
+        static CommonConversion IdentityConversion => new CommonConversion(true, true, false, false, true, false, null);
+        static CommonConversion ReferenceConversion => new CommonConversion(true, false, false, true, true, false, null);
+        static CommonConversion ExplicitReferenceConversion => new CommonConversion(true, false, false, true, false, false, null);
+        static CommonConversion NoConversion => new CommonConversion(false, false, false, false, false, false, null);
+        static CommonConversion ImplicitNumeric => new CommonConversion(true, false, true, false, true, false, null);
+        static CommonConversion ExplicitNumeric => new CommonConversion(true, false, true, false, false, false, null);
 
         /// <summary>
         /// Calculates "cost" of conversion.
@@ -445,6 +445,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 return IdentityConversion;
             }
 
+            //
+            if (from.SpecialType == SpecialType.System_Void)
+            {
+                // TODO: explicit casts from void defined in Core.Conversions
+                return NoConversion;
+            }
+
             // object cast possible implicitly:
             if ((kinds & ConversionKind.Reference) == ConversionKind.Reference)
             {
@@ -480,7 +487,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var op = ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { _compilation.CoreTypes.StrictConvert.Symbol }, target: to);
                 if (op != null)
                 {
-                    return new CommonConversion(true, false, false, false, true, op);
+                    return new CommonConversion(true, false, false, false, true, false, op);
                 }
             }
 
@@ -490,7 +497,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var op = TryWellKnownImplicitConversion(from, to) ?? ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to);
                 if (op != null)
                 {
-                    return new CommonConversion(true, false, false, false, true, op);
+                    return new CommonConversion(true, false, false, false, true, false, op);
                 }
             }
 
@@ -500,7 +507,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var op = ResolveOperator(from, false, ExplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to);
                 if (op != null)
                 {
-                    return new CommonConversion(true, false, false, false, false, op);
+                    return new CommonConversion(true, false, false, false, false, false, op);
                 }
                 // explicit reference conversion (reference type -> reference type)
                 else if (

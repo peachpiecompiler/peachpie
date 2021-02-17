@@ -45,6 +45,7 @@ namespace Peachpie.Library
         /// <summary>
         /// Returns string representation of the error.
         /// </summary>
+        [PhpHidden]
         public override string ToString()
         {
             if (this.file != null)

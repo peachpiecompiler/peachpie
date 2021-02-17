@@ -23,8 +23,7 @@ function foo(/*|mixed|*/$x)
   /*|resource|null|*/$resource = stream_context_create();
   /*|stdClass|*/$stdClass = new stdClass();
 
-  // TODO: Update when made more precise
-  /*|object|*/$system_object2 = (object)array('a' => 'b');
+  /*|stdClass|*/$stdClass = (object)array('a' => 'b');
 
   switch (/*|mixed|*/$x) {
     case 0:

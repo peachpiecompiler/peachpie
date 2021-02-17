@@ -185,23 +185,34 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Gets (PHP) type symbols that has to be declared in order to declare given <paramref name="type"/>.
         /// </summary>
         /// <param name="type">The type declaration which dependant symbols will be returned.</param>
-        public static IList<NamedTypeSymbol> GetDependentSourceTypeSymbols(this SourceTypeSymbol type)
+        public static IEnumerable<NamedTypeSymbol> GetDependentSourceTypeSymbols(this SourceTypeSymbol type)
         {
-            // TODO: traits
-
-            var btype = (type.BaseType != null && type.BaseType.IsPhpUserType()) ? type.BaseType : null;
-            var ifaces = type.Interfaces;
-
-            if (ifaces.Length == 0 && btype == null)
+            // base type
+            var btype = type.BaseType;
+            if (btype != null && btype.IsPhpUserType())
             {
-                return Array.Empty<NamedTypeSymbol>();
+                yield return btype;
             }
 
-            var list = new List<NamedTypeSymbol>(1 + ifaces.Length);
-            if (btype != null) list.Add(btype);
-            if (ifaces.Length != 0) list.AddRange(ifaces.Where(x => x.IsPhpUserType()));
+            // interfaces
+            var ifaces = type.GetDeclaredInterfaces(null);
+            foreach (var t in ifaces)
+            {
+                if (t.IsPhpUserType())
+                {
+                    yield return t;
+                }
+            }
 
-            return list;
+            // traits
+            var traituses = type.TraitUses;
+            foreach (var t in traituses)
+            {
+                if (t.Symbol.IsPhpUserType())
+                {
+                    yield return t.Symbol;
+                }
+            }
         }
 
         /// <summary>

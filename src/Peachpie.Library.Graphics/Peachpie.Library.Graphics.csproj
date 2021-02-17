@@ -10,9 +10,9 @@
     <Description>Peachpie PHP language library functions for image processing.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Peachpied.SixLabors.ImageSharp" Version="1.0.0-unofficial001" />
-    <PackageReference Include="Peachpied.SixLabors.ImageSharp.Drawing" Version="1.0.0-unofficial001" />
-    <PackageReference Include="Peachpied.SixLabors.Fonts" Version="1.0.0-unofficial001" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta0010" />
+    <PackageReference Include="SixLabors.Fonts" Version="1.0.0-beta0013" />
   </ItemGroup>
 
   <ItemGroup>

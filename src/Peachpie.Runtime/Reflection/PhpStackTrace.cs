@@ -417,12 +417,8 @@ namespace Pchp.Core.Reflection
                 var method = _clrframe.GetMethod();
                 if (method != null)
                 {
-                    var token = method.DeclaringType.Assembly.GetName().GetPublicKeyToken();
-                    if (token != null)
-                    {
-                        var tokenkey = Utilities.StringUtils.BinToHex(token);
-                        return (tokenkey == ReflectionUtils.PeachpieAssemblyTokenKey);
-                    }
+                    var tokenkey = method.DeclaringType.Assembly.GetPublicKeyTokenString();
+                    return tokenkey == ReflectionUtils.PeachpieAssemblyTokenKey;
                 }
 
                 return false;

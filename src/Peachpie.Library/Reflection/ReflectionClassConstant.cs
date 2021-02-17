@@ -21,6 +21,14 @@ namespace Pchp.Library.Reflection
         [PhpHidden]
         PhpPropertyInfo _pinfo;
 
+        #region Constants
+
+        public const int IS_PUBLIC = 1;
+        public const int IS_PROTECTED = 2;
+        public const int IS_PRIVATE = 4;
+
+        #endregion
+
         #region Construction
 
         internal ReflectionClassConstant(PhpPropertyInfo pinfo)
@@ -60,15 +68,14 @@ namespace Pchp.Library.Reflection
         {
             int flags = 0;
 
-            if (_pinfo.IsPublic) flags |= ReflectionMethod.IS_PUBLIC;
-            if (_pinfo.IsProtected) flags |= ReflectionMethod.IS_PROTECTED;
-            if (_pinfo.IsPrivate) flags |= ReflectionMethod.IS_PRIVATE;
+            if (_pinfo.IsPublic) flags |= IS_PUBLIC;
+            if (_pinfo.IsProtected) flags |= IS_PROTECTED;
+            if (_pinfo.IsPrivate) flags |= IS_PRIVATE;
 
             //
             return flags;
         }
 
-        [return: NotNull]
         public string getName() => _pinfo.PropertyName;
 
         public string __toString()
@@ -77,6 +84,9 @@ namespace Pchp.Library.Reflection
         }
 
         public PhpValue getValue(Context ctx) => _pinfo.GetValue(ctx, null);
+
+        public virtual PhpArray getAttributes(string class_name = null, int flags = 0)
+            => ReflectionUtils.getAttributes(_pinfo.Member, class_name, flags);
 
         public bool isPrivate() => _pinfo.IsPrivate;
 

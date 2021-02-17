@@ -60,4 +60,17 @@ namespace Pchp.CodeAnalysis.Semantics
     {
 
     }
+
+    public interface IPhpArgumentOperation : IPhpOperation // , IArgumentOperation
+    {
+        /// <summary>
+        /// Variable unpacking in PHP, the triple-dot syntax.
+        /// </summary>
+        bool IsUnpacking { get; }
+
+        /// <summary>
+        /// If not <c>null</c>, specifies the named argument.
+        /// </summary>
+        string ParameterName { get; }
+    }
 }

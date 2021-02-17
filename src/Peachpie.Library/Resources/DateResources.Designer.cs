@@ -61,6 +61,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Data missing.
+        /// </summary>
+        internal static string data_missing {
+            get {
+                return ResourceManager.GetString("data_missing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A textual day could not be found.
         /// </summary>
         internal static string day_notfound {

@@ -12,6 +12,7 @@ using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using System.Runtime.InteropServices;
 
 namespace Pchp.CodeAnalysis
 {
@@ -103,28 +104,6 @@ namespace Pchp.CodeAnalysis
         public static bool IsWhitespace(this CompleteToken t) => t.Token == Tokens.T_WHITESPACE || t.Token == Tokens.T_COMMENT; // not T_DOC_COMMENT
 
         /// <summary>
-        /// Gets attributes associated with given syntax node.
-        /// </summary>
-        public static bool TryGetCustomAttributes(this AstNode element, out ImmutableArray<AttributeData> attrs)
-        {
-            return element.TryGetProperty(out attrs);
-        }
-
-        /// <summary>
-        /// Associates an attribute with syntax node.
-        /// </summary>
-        public static void AddCustomAttribute(this AstNode element, AttributeData attribute)
-        {
-            Debug.Assert(attribute != null);
-
-            var newattrs = TryGetCustomAttributes(element, out var attrs)
-                ? attrs.Add(attribute)
-                : ImmutableArray.Create(attribute);
-
-            element.SetProperty(newattrs);
-        }
-
-        /// <summary>
         /// Determines whether method has <c>$this</c> variable.
         /// </summary>
         public static bool HasThisVariable(MethodDecl method)
@@ -134,18 +113,18 @@ namespace Pchp.CodeAnalysis
 
         public static Span BodySpanOrInvalid(this AstNode routine)
         {
-            if (routine is FunctionDecl)
+            if (routine is FunctionDecl f)
             {
-                return ((FunctionDecl)routine).Body.Span;
+                return f.Body.Span;
             }
-            if (routine is MethodDecl)
+            if (routine is MethodDecl m)
             {
-                var node = (MethodDecl)routine;
-                return (node.Body != null) ? node.Body.Span : Span.Invalid;
+                return (m.Body != null) ? m.Body.Span : Span.Invalid;
             }
-            if (routine is LambdaFunctionExpr)
+            if (routine is LambdaFunctionExpr lambda)
             {
-                return ((LambdaFunctionExpr)routine).Body.Span;
+                var body = (ILangElement)lambda.Expression ?? lambda.Body;
+                return body.Span;
             }
             else
             {
@@ -162,6 +141,19 @@ namespace Pchp.CodeAnalysis
 
             // https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#sequence-points-blob - column must be less than 0x10000
             return new LinePosition(line, Math.Min(col, 0x09999));
+        }
+
+        /// <summary>
+        /// Gets value indicating this entry will be skipped.
+        /// </summary>
+        public static bool IsIgnoredEntry(this Devsense.PHP.Phar.Entry entry)
+        {
+            if (entry.Name.EndsWith(".phpstorm.meta.php"))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -307,28 +299,6 @@ namespace Pchp.CodeAnalysis
             return element;
         }
 
-        /// <summary>
-        /// Gets value indicating the type refers to a nullable type (<c>?TYPE</c>).
-        /// </summary>
-        public static bool IsNullable(this TypeRef tref)
-        {
-            return tref is NullableTypeRef; // && tref != null
-        }
-
-        /// <summary>
-        /// Gets value indicating the type refers to <c>callable</c> or <c>?callable</c>.
-        /// </summary>
-        public static bool IsCallable(this TypeRef tref)
-        {
-            if (tref is NullableTypeRef nullable)
-            {
-                tref = nullable.TargetType;
-            }
-
-            return tref is PrimitiveTypeRef primitiveType &&
-                primitiveType.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable;
-        }
-
         public static Microsoft.CodeAnalysis.Text.TextSpan GetDeclareClauseSpan(this DeclareStmt declStmt)
         {
             if (declStmt.Statement is EmptyStmt)
@@ -373,6 +343,54 @@ namespace Pchp.CodeAnalysis
 
             // spans are not available
             return default;
+        }
+
+        sealed class ElementVisitor<TElement> : TreeVisitor
+            where TElement : LangElement
+        {
+            readonly Func<LangElement, bool> _acceptPredicate;
+
+            public List<TElement> Result { get; } = new List<TElement>();
+
+            public ElementVisitor(Func<LangElement, bool> acceptPredicate)
+            {
+                _acceptPredicate = acceptPredicate;
+            }
+
+            public override void VisitElement(LangElement element)
+            {
+                if (element is TElement x)
+                {
+                    Result.Add(x);
+                }
+
+                if (_acceptPredicate(element))
+                {
+                    base.VisitElement(element);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets all elements of given type.
+        /// </summary>
+        public static List<TElement> SelectElements<TElement>(this LangElement root, Func<LangElement, bool> acceptPredicate)
+            where TElement : LangElement
+        {
+            var visitor = new ElementVisitor<TElement>(acceptPredicate);
+            visitor.VisitElement(root);
+            return visitor.Result;
+        }
+
+        /// <summary>
+        /// Gets all occurences of <see cref="DirectVarUse"/> in given scope.
+        /// Ignores autoglobals and $this.
+        /// </summary>
+        public static IEnumerable<DirectVarUse> SelectLocalVariables(this LangElement root)
+        {
+            return root.SelectElements<DirectVarUse>(
+                scope => !(scope is FunctionDecl || scope is ILambdaExpression || scope is TypeDecl || scope is MethodDecl) || scope == root)
+                .Where(dvar => dvar.IsMemberOf == null && !dvar.VarName.IsAutoGlobal && !dvar.VarName.IsThisVariableName);
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -9,295 +11,243 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Utilities;
+using Pchp.Library.Spl;
+using Rationals;
+using static Pchp.Library.StandardPhpOptions;
 
 namespace Pchp.Library
 {
-    [PhpExtension("bcmath")]
+    [PhpExtension(BCMath.ExtensionName, Registrator = typeof(Registrator))]
     public static class BCMath
     {
-        sealed class BCMathOptions
-        {
-            public const int DefaultScale = 0;
+        const string ExtensionName = "bcmath";
 
-            /// <summary>
-            /// <c>bcscale()</c> value.
-            /// </summary>
-            public int Scale { get; set; } = DefaultScale;
+        #region BCMathConfig, BCMathOptions
+
+        sealed class Registrator
+        {
+            public Registrator()
+            {
+                Context.RegisterConfiguration(new BCMathConfig());
+
+                Register<BCMathConfig>(BCMathOptions.Scale, BCMath.ExtensionName,
+                    (local) => local.Scale,
+                    (local, value) => local.Scale = Math.Max(0, (int)value));
+            }
         }
 
-        const int MaxScale = 20;
+        sealed class BCMathConfig : IPhpConfiguration
+        {
+            public string ExtensionName => BCMath.ExtensionName;
+
+            /// <summary>
+            /// <c>bcmath.scale()</c> option value.
+            /// </summary>
+            public int Scale { get; set; } = 0;
+
+            public IPhpConfiguration Copy() => new BCMathConfig { Scale = Scale, };
+        }
+
+        struct BCMathOptions
+        {
+            public static string Scale => "bcmath.scale";
+        }
+
+        #endregion
+
+        #region Helpers
 
         /// <summary>
-        /// Represents a big floating point number.
+        /// Gets the scale to be used by function.
         /// </summary>
-        public struct BigFloat
+        static int GetScale(Context ctx, int? scale) => scale.HasValue ? scale.GetValueOrDefault() : GetCurrentScale(ctx);
+
+        static int GetCurrentScale(Context ctx) => ctx.Configuration.Get<BCMathConfig>().Scale;
+
+        static void SetCurrentScale(Context ctx, int scale) => ctx.Configuration.Get<BCMathConfig>().Scale = Math.Max(scale, 0);
+
+        static string ToString(Rational num, int scale)
         {
-            public BigInteger Sig { get; }
+            var numerator = BigInteger.Abs(num.Numerator);
+            var denominator = BigInteger.Abs(num.Denominator);
+            var hasdecimal = false;
 
-            public int Exp { get; }
+            var result = StringBuilderUtilities.Pool.Get();
 
-            public static BigFloat Zero => new BigFloat(BigInteger.Zero, 0);
-
-            static readonly BigInteger s_ten = new BigInteger(10);
-
-            public bool IsZero => Sig.IsZero;
-
-            /// <summary>
-            /// Initializes the value.
-            /// </summary>
-            public BigFloat(BigInteger significant, int exponent)
+            if (num.Sign < 0)
             {
-                Sig = significant;
-                Exp = exponent;
+                result.Append('-');
             }
 
-            static bool IsSign(char ch) => ch == '-' || ch == '+';
-
-            static bool IsDot(char ch) => ch == '.';
-
-            static int MinExp(BigFloat left, BigFloat right) => Math.Min(left.Exp, right.Exp);
-
-            /// <summary>
-            /// Gets new number where significant is adjusted so the number has desired exponent.
-            /// </summary>
-            BigFloat WithExp(int newExp)
+            for (; ; )
             {
-                var shift = this.Exp - newExp;
-                if (shift != 0)
+                var number = BigInteger.DivRem(numerator, denominator, out var rem);
+                if (number >= 10)
                 {
-                    // TODO: optimize
-
-                    var sig = this.Sig;
-
-                    while (shift > 0)
-                    {
-                        shift--;
-                        sig *= s_ten;
-                    }
-                    while (shift < 0)
-                    {
-                        shift++;
-                        sig /= s_ten;
-                    }
-
-                    return new BigFloat(sig, newExp);
-                }
-
-                return this;
-            }
-
-            public static bool TryParse(ReadOnlySpan<char> value, out BigFloat result)
-            {
-                if (value.Length == 0)
-                {
-                    result = Zero;
-                    return false;
-                }
-
-                // parse number in format:
-                // [+-]ddd[.]ddd
-
-                int index = 0;
-                var hasdigit = false;
-                int dot = -1;
-
-                // [+-]
-                if (IsSign(value[index]))
-                {
-                    index++;
-                }
-
-                // digits
-                while (index < value.Length && char.IsDigit(value[index]))
-                {
-                    hasdigit = true;
-                    index++;
-                }
-
-                // dot
-                if (index < value.Length && IsDot(value[index]))
-                {
-                    dot = index;
-                    index++;
-                }
-
-                // digits
-                while (index < value.Length && char.IsDigit(value[index]))
-                {
-                    hasdigit = true;
-                    index++;
-                }
-
-                // parsed whole string ?
-                if (index != value.Length || !hasdigit)
-                {
-                    result = Zero;
-                    return false;
-                }
-
-                //
-
-                string sig; // [+-]ddd
-                int exp;    // 
-
-                if (dot < 0)
-                {
-                    sig = value.ToString();
-                    exp = 0;
+                    var digits = number.ToString(NumberFormatInfo.InvariantInfo);
+                    result.Append(digits);
                 }
                 else
                 {
-                    sig = value.Slice(0, dot).ToString() + value.Slice(dot + 1).ToString();
-                    exp = dot + 1 - value.Length;
+                    Debug.Assert(number >= 0);
+                    result.Append((char)('0' + (int)number));
                 }
 
-                //
-
-                if (sig.Length == 0)
+                if (scale <= 0)
                 {
-                    result = Zero;
-                    return true;
+                    break;
                 }
 
-                if (BigInteger.TryParse(sig, out var bigint))
+                // .
+                if (!hasdecimal)
                 {
-                    if (bigint.IsZero)
-                    {
-                        result = Zero;
-                    }
-                    else
-                    {
-                        result = new BigFloat(bigint, exp);
-                    }
-
-                    return true;
+                    hasdecimal = true;
+                    result.Append(NumberFormatInfo.InvariantInfo.NumberDecimalSeparator);
                 }
 
-                //
-                result = Zero;
-                return false;
-            }
-
-            public static BigFloat operator +(BigFloat left, BigFloat right)
-            {
-                if (left.IsZero) return right;
-                if (right.IsZero) return left;
-
-                // common exp
-                int exp = MinExp(left, right);
-
-                // add sig
-                return new BigFloat(left.WithExp(exp).Sig + right.WithExp(exp).Sig, exp);
-            }
-
-            public static BigFloat operator -(BigFloat left, BigFloat right)
-            {
-                if (left.IsZero) return right;
-                if (right.IsZero) return left;
-
-                // common exp
-                int exp = MinExp(left, right);
-
-                // add sig
-                return new BigFloat(left.WithExp(exp).Sig - right.WithExp(exp).Sig, exp);
-            }
-
-            public static BigFloat operator *(BigFloat left, BigFloat right)
-            {
-                if (left.IsZero || right.IsZero) return Zero;
-
-                return new BigFloat(left.Sig * right.Sig, left.Exp + right.Exp);
-            }
-
-            public static BigFloat operator /(BigFloat left, BigFloat right)
-            {
-                if (left.IsZero) return Zero;
-                if (right.IsZero) throw new DivideByZeroException();
-
-                throw new NotImplementedException();
-            }
-
-            public string ToInvariantString(int scale)
-            {
-                if (IsZero)
+                // done?
+                if (rem.IsZero)
                 {
-                    return "0";
+                    result.Append('0', scale);
+                    break;
                 }
 
-                string result;
-
-                if (Exp >= 0)
-                {
-                    result = Sig.ToString("D", CultureInfo.InvariantCulture);
-
-                    // *10^E
-                    result = result.PadRight(result.Length + Exp, '0');
-                }
-                else // if (Exp < 0)
-                {
-                    var digits = -Exp;
-
-                    //if (digits < 100)
-                    //{
-                    //    result = Sig.ToString("D" + digits, CultureInfo.InvariantCulture);
-                    //}
-                    //else
-                    {
-                        result = Sig.ToString("D", CultureInfo.InvariantCulture);
-                        result = result.PadLeft(digits, '0');
-                    }
-
-                    var dot = result.Length + Exp;
-                    if (dot == 0)
-                    {
-                        result = "0." + result.PadLeft(-Exp, '0');
-                    }
-                    else
-                    {
-                        result = result.Substring(0, dot) + "." + result.Substring(dot);
-                    }
-
-                    // TODO: scale
-                    // TODO: trim zeros
-                }
-
-                return result;
+                // next decimals
+                numerator = rem * 10;
+                scale--;
             }
 
-            public override string ToString() => ToInvariantString(MaxScale);
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
-        static int GetCurrentScale(Context ctx)
+        static Rational Trunc(this Rational num) => num.Sign >= 0 ? num.WholePart : (-(-num).WholePart);
+
+        static Rational Parse(string num)
         {
-            return ctx.TryGetStatic<BCMathOptions>(out var options)
-                ? options.Scale
-                : BCMathOptions.DefaultScale;
+            if (!Rational.TryParseDecimal(num, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out var value))
+            {
+                // Warning: bcmath function argument is not well-formed
+                PhpException.InvalidArgument("num", Resources.Resources.bcmath_wrong_argument);
+
+                value = Rational.Zero;
+            }
+
+            return value;
         }
 
-        static void SetCurrentScale(Context ctx, int scale)
+        #endregion
+
+        /// <summary>
+        /// Add two arbitrary precision numbers.
+        /// </summary>
+        public static string bcadd(Context ctx, string num1, string num2, int? scale = default) => ToString(Parse(num1) + Parse(num2), GetScale(ctx, scale));
+
+        /// <summary>
+        /// Subtract one arbitrary precision number from another.
+        /// </summary>
+        public static string bcsub(Context ctx, string num1, string num2, int? scale = default) => ToString(Parse(num1) - Parse(num2), GetScale(ctx, scale));
+
+        /// <summary>
+        /// Compare two arbitrary precision numbers.
+        /// </summary>
+        public static int bccomp(Context ctx, string num1, string num2, int? scale = default) => Parse(num1).CompareTo(Parse(num2));
+
+        /// <summary>
+        /// Multiply two arbitrary precision numbers.
+        /// </summary>
+        public static string bcmul(Context ctx, string num1, string num2, int? scale = default) => ToString(Parse(num1) * Parse(num2), GetScale(ctx, scale));
+
+        /// <summary>
+        /// Divide two arbitrary precision numbers.
+        /// </summary>
+        public static string bcdiv(Context ctx, string num1, string num2, int? scale = default) => ToString(Parse(num1) / Parse(num2), GetScale(ctx, scale));
+
+        /// <summary>
+        /// Get modulus of an arbitrary precision number.
+        /// </summary>
+        /// <returns>
+        /// Get the remainder of dividing <paramref name="num1"/> by <paramref name="num2"/>.
+        /// Unless <paramref name="num2"/> is zero, the result has the same sign as <paramref name="num1"/>.
+        /// </returns>
+        public static string bcmod(Context ctx, string num1, string num2, int? scale = default)
         {
-            ctx.GetStatic<BCMathOptions>().Scale = Math.Min(Math.Max(scale, 0), MaxScale);
+            var a = Parse(num1);
+            var b = Parse(num2);
+
+            if (b.IsZero)
+            {
+                throw new DivisionByZeroError("Modulo by zero");
+                // return null; // PHP < 8
+            }
+
+            var result = bcmod(a, b);
+
+            return ToString(result, GetScale(ctx, scale));
         }
 
-        //public static string bcadd(string left, string right, int? scale = default)
-        //{
-        //    if (!BigFloat.TryParse(left.AsSpan(), out var lnum) |
-        //        !BigFloat.TryParse(right.AsSpan(), out var rnum))
-        //    {
-        //        // Warning: bcmath function argument is not well-formed
-        //    }
+        static Rational bcmod(Rational num, Rational mod)
+        {
+            if (mod.IsZero)
+            {
+                throw new DivisionByZeroError("Modulo by zero");
+                // return null; // PHP < 8
+            }
 
-        //    return (lnum + rnum).ToString();
-        //}
+            if (num.IsZero)
+            {
+                return Rational.Zero;
+            }
+            else
+            {
+                return num - Trunc(num / mod) * mod;
+            }
+        }
 
-        //function bcsub
-        //function bcmul
-        //function bcdiv
-        //function bcmod
-        //function bcpow
-        //function bcsqrt
-        //function bcscale
-        //function bccomp
-        //function bcpowmod
+        /// <summary>
+        /// Raise an arbitrary precision number to another.
+        /// </summary>
+        public static string bcpow(Context ctx, string num, string exponent, int? scale = default) => ToString(Rational.Pow(Parse(num), int.Parse(exponent)), GetScale(ctx, scale));
+
+        /// <summary>
+        /// Get the square root of an arbitrary precision number.
+        /// </summary>
+        public static string bcsqrt(Context ctx, string num, int? scale = default) => ToString(Rational.RationalRoot(Parse(num), 2), GetScale(ctx, scale));
+
+        /// <summary>
+        /// Set or get default scale parameter for all bc math functions.
+        /// </summary>
+        public static int bcscale(Context ctx, int? scale = default)
+        {
+            var oldscale = GetCurrentScale(ctx);
+            if (scale.HasValue)
+            {
+                var newscale = scale.GetValueOrDefault();
+                if (newscale < 0)
+                {
+                    PhpException.InvalidArgument(nameof(scale));
+                }
+
+                SetCurrentScale(ctx, newscale);
+            }
+            return oldscale;
+        }
+
+        /// <summary>
+        /// Raise an arbitrary precision number to another, reduced by a specified modulus.
+        /// </summary>
+        public static string bcpowmod(Context ctx, string num, string exponent, string modulus, int? scale = default)
+        {
+            var x = Parse(num);
+            var mod = Parse(modulus);
+
+            // bcmod(bcpow($x, $y), $mod)
+
+            x = Rational.Pow(x, int.Parse(exponent));
+
+            var result = bcmod(x, mod);
+
+            return ToString(result, GetScale(ctx, scale));
+        }
     }
 }

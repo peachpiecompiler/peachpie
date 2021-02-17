@@ -3,9 +3,6 @@
   <PropertyGroup>
     <WarningLevel>4</WarningLevel>
 
-    <!-- disable wilcard include of Compile items, file ordering is a feature -->
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-
     <!-- PeachpieToolFullPath pointing to the task dll -->
     <PeachpieToolFullPath Condition=" '$(PeachpieToolFullPath)'=='' ">$(MSBuildThisFileDirectory)../tools/Peachpie.NET.Sdk.dll</PeachpieToolFullPath>
     
@@ -15,12 +12,6 @@
     <!-- imported by common targets -->
     <LanguageTargets>$(MSBuildThisFileDirectory)Peachpie.NET.Current.Sdk.targets</LanguageTargets>
   </PropertyGroup>
-
-  <!-- default Compile and None items -->
-  <ItemGroup>
-    <None Include="**/*" Exclude="obj/**;bin/**;.*/**;*.msbuildproj;*.msbuildproj.user;*.sln;" />
-    <!--Content Include="" /-->
-  </ItemGroup>
 
   <!-- current Peachpie SDK version -->
   <Import Project="$(MSBuildThisFileDirectory)Peachpie.Version.props" Condition=" '$(PeachpieVersion)'=='' "/>

@@ -10,7 +10,7 @@ function test() {
 	$y = null;
 	@$y->a = 3;
 	@$y->b = 4;
-	echo $x->a, $x->b;
+	echo $y->a, $y->b;
 }
 
 test();

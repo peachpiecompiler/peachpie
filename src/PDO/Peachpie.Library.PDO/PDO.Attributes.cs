@@ -45,14 +45,24 @@ namespace Peachpie.Library.PDO
             switch (attribute)
             {
                 case PDO_ATTR.ATTR_DRIVER_NAME: value = Driver.Name; return true;
-                case PDO_ATTR.ATTR_SERVER_VERSION: value = Connection.ServerVersion; return true;
+                case PDO_ATTR.ATTR_SERVER_VERSION:
+                    if (Connection != null)
+                    {
+                        value = Connection.ServerVersion;
+                        return true;
+                    }
+                    else
+                    {
+                        value = default;
+                        return false;
+                    }
                 case PDO_ATTR.ATTR_CLIENT_VERSION: value = Driver.ClientVersion; return true;
                 case PDO_ATTR.ATTR_ORACLE_NULLS: value = (int)_oracle_nulls; return true;
 
                 case PDO_ATTR.ATTR_AUTOCOMMIT: value = PhpValue.True; return true;
                 case PDO_ATTR.ATTR_PREFETCH: value = 0; return true;
                 case PDO_ATTR.ATTR_TIMEOUT: value = 30; return true;
-                case PDO_ATTR.ATTR_ERRMODE: value = ERRMODE_SILENT; return true;
+                case PDO_ATTR.ATTR_ERRMODE: value = ERRMODE_EXCEPTION; return true;
                 case PDO_ATTR.ATTR_SERVER_INFO: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_CONNECTION_STATUS: value = PhpValue.Null; return true;
                 case PDO_ATTR.ATTR_CASE: value = (int)PDO_CASE.CASE_LOWER; return true;
@@ -206,7 +216,7 @@ namespace Peachpie.Library.PDO
                     {
                         if (attribute >= PDO_ATTR.ATTR_DRIVER_SPECIFIC)
                         {
-                            return Driver.TrySetAttribute(GetOrCreateAttributes(), (int)attribute, value);
+                            return Driver.TrySetAttribute(this, GetOrCreateAttributes(), (int)attribute, value);
                         }
                     }
                     catch (System.Exception ex)

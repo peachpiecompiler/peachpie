@@ -219,11 +219,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // forget finally block
                 cg.ExtraFinallyBlock = nextExtraFinallyBlock;
-                Debug.Assert(cg.ExtraFinallyStateVariable != null);
 
                 //
                 if (_finallyBlock != null)
                 {
+                    Debug.Assert(cg.ExtraFinallyStateVariable != null);
+
                     // emit finally block
                     cg.GenerateScope(_finallyBlock, NextBlock.Ordinal);
                     cg.Builder.AssertStackEmpty();
@@ -360,7 +361,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         void EmitCatchBlock(CodeGenerator cg, CatchBlock catchBlock)
         {
-            Debug.Assert(catchBlock.Variable.Variable != null);
+            Debug.Assert(catchBlock.Variable == null || catchBlock.Variable.Variable != null);
 
             var il = cg.Builder;
             TypeSymbol extype;
@@ -797,12 +798,22 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             if (enumereeType.IsOfType(cg.CoreTypes.PhpArray))
             {
-                cg.Builder.EmitBoolConstant(_aliasedValues);
+                // optimized array enumeration if possible
+                // does not make sense in state machines
+                if (cg.GeneratorStateMachineMethod == null && _aliasedValues)
+                {
+                    // Operators.GetFastEnumerator(PhpArray, bool)
+                    cg.Builder.EmitBoolConstant(_aliasedValues);
+                    enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetFastEnumerator_PhpArray_Boolean);
+                }
+                else
+                {
+                    Debug.Assert(enumereeType.IsReferenceType);
 
-                // TODO: FastEnumerator if possible (addref on PhpArray ion readonly mode, not in generator, .. ) ?
-
-                // PhpArray.GetForeachEnumerator(bool)
-                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator_Boolean);  // TODO: IPhpArray
+                    // PhpArray.GetForeachEnumerator(bool aliasedValues)
+                    cg.Builder.EmitBoolConstant(_aliasedValues);
+                    enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator_Boolean);  // TODO: IPhpArray
+                }
             }
             else if (enumereeType.IsOfType(cg.CoreTypes.IPhpEnumerable))
             {
@@ -820,10 +831,22 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 enumeratorType = cg.CoreTypes.Iterator; // cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_Iterator);
             }
             // TODO: IPhpArray
-            else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && enumereeType.IsReferenceType)
+            else if (getEnumeratorMethod != null &&
+                getEnumeratorMethod.ParameterCount == 0 &&
+                getEnumeratorMethod.DeclaredAccessibility == Accessibility.Public &&
+                !getEnumeratorMethod.IsStatic &&
+                !enumereeType.Is_PhpValue())
             {
                 // enumeree.GetEnumerator()
-                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, getEnumeratorMethod);
+                if (enumereeType.IsReferenceType)
+                {
+                    enumeratorType = cg.EmitCall(ILOpCode.Callvirt, getEnumeratorMethod);
+                }
+                else
+                {
+                    cg.EmitStructAddr(enumereeType);
+                    enumeratorType = cg.EmitCall(ILOpCode.Call, getEnumeratorMethod);
+                }
             }
             else
             {
@@ -850,6 +873,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 _enumeratorLoc.EmitLoad(cg.Builder);
                 cg.EmitPop(cg.EmitCall(ILOpCode.Callvirt, enumeratorType.LookupMember<MethodSymbol>("rewind")));
 
+                // TODO: declaredaccessibility
                 // bind methods
                 _iterator_next = enumeratorType.LookupMember<MethodSymbol>("next"); // next()
                 _current = _currentValue = enumeratorType.LookupMember<MethodSymbol>("current");    // current()
@@ -858,15 +882,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
+                // TODO: declaredaccessibility
                 // bind methods
                 _current = enumeratorType.LookupMember<PropertySymbol>(WellKnownMemberNames.CurrentPropertyName)?.GetMethod;   // TODO: Err if no Current
                 _currentValue = enumeratorType.LookupMember<PropertySymbol>(_aliasedValues ? "CurrentValueAliased" : "CurrentValue")?.GetMethod;
                 _currentKey = enumeratorType.LookupMember<PropertySymbol>("CurrentKey")?.GetMethod;
-                _disposeMethod = enumeratorType.LookupMember<MethodSymbol>("Dispose", m => m.ParameterCount == 0 && !m.IsStatic);
+                _disposeMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.DisposeMethodName, m => !m.IsStatic && m.ParameterCount == 0);
 
-                _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.MoveNextMethodName);    // TODO: Err if there is no MoveNext()
+                _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.MoveNextMethodName, m => !m.IsStatic && m.ParameterCount == 0);
                 Debug.Assert(_moveNextMethod.ReturnType.SpecialType == SpecialType.System_Boolean);
-                Debug.Assert(_moveNextMethod.IsStatic == false);
             }
 
             if (_disposeMethod != null

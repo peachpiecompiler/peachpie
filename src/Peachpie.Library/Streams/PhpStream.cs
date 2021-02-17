@@ -118,18 +118,17 @@ namespace Pchp.Library.Streams
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="path">URI or filename of the resource to be opened</param>
         /// <param name="mode">File access mode</param>
-        /// <returns></returns>
+        /// <returns>The stream or <c>null</c> in case of error.</returns>
         public static PhpStream Open(Context ctx, string path, StreamOpenMode mode)
         {
-            string modeStr;
-            switch (mode)
+            var modeStr = mode switch
             {
-                case StreamOpenMode.ReadBinary: modeStr = "rb"; break;
-                case StreamOpenMode.WriteBinary: modeStr = "wb"; break;
-                case StreamOpenMode.ReadText: modeStr = "rt"; break;
-                case StreamOpenMode.WriteText: modeStr = "wt"; break;
-                default: throw new ArgumentException();
-            }
+                StreamOpenMode.ReadBinary => "rb",
+                StreamOpenMode.WriteBinary => "wb",
+                StreamOpenMode.ReadText => "rt",
+                StreamOpenMode.WriteText => "wt",
+                _ => throw new ArgumentException(nameof(mode)),
+            };
 
             return Open(ctx, path, modeStr, StreamOpenOptions.Empty, StreamContext.Default);
         }
@@ -157,21 +156,21 @@ namespace Pchp.Library.Streams
             {
                 // No scheme, no root directory, it's a relative path.
                 filename = path;
-                return "file";
+                return FileStreamWrapper.scheme;
             }
 
             if (Path.IsPathRooted(path))
             {
                 // It already is an absolute path.
                 filename = path;
-                return "file";
+                return FileStreamWrapper.scheme;
             }
 
             if (path.Length < colon_index + 3 || path[colon_index + 1] != '/' || path[colon_index + 2] != '/')
             {
                 // There is no "//" following the colon.
                 filename = path;
-                return "file";
+                return FileStreamWrapper.scheme;
             }
 
             // Otherwise it is an URL (including file://), set the filename and return the scheme.
@@ -230,25 +229,28 @@ namespace Pchp.Library.Streams
         public static bool ResolvePath(Context ctx, ref string path, out StreamWrapper wrapper, CheckAccessMode mode, CheckAccessOptions options)
         {
             // Path will contain the absolute path without file:// or the complete URL; filename is the relative path.
-            string filename, scheme = GetSchemeInternal(path, out filename);
-            wrapper = StreamWrapper.GetWrapper(ctx, scheme, (StreamOptions)options);
-            if (wrapper == null) return false;
+            var scheme = GetSchemeInternal(path, out var filename);
 
-            if (wrapper.IsUrl)
+            wrapper = StreamWrapper.GetWrapper(ctx, scheme, (StreamOptions)options);
+
+            if (wrapper == null)
+            {
+                return false;
+            }
+            else if (wrapper.IsUrl)
             {
                 // Note: path contains the whole URL, filename the same without the scheme:// portion.
                 // What to check more?
+                wrapper.ResolvePath(ctx, ref path);
             }
             else if (scheme != "php")
             {
+                // TODO: move following to StreamWrapper.ResolvePath()
+
                 try
                 {
                     // Filename contains the original path without the scheme:// portion, check for include path.
-                    bool isInclude = false;
-                    if ((options & CheckAccessOptions.UseIncludePath) > 0)
-                    {
-                        isInclude = CheckIncludePath(ctx, filename, ref path);
-                    }
+                    var isInclude = (options & CheckAccessOptions.UseIncludePath) != 0 && CheckIncludePath(ctx, filename, ref path);
 
                     // Path will now contain an absolute path (either to an include or actual directory).
                     if (!isInclude)
@@ -259,7 +261,9 @@ namespace Pchp.Library.Streams
                 catch (System.Exception)
                 {
                     if ((options & CheckAccessOptions.Quiet) == 0)
+                    {
                         PhpException.Throw(PhpError.Warning, ErrResources.stream_filename_invalid, FileSystemUtils.StripPassword(path));
+                    }
                     return false;
                 }
 
@@ -282,9 +286,9 @@ namespace Pchp.Library.Streams
                     string.Format("'{0}' should not contain '{1}' char.", path, Path.AltDirectorySeparatorChar));
 
                 // The file wrapper expects an absolute path w/o the scheme, others expect the scheme://url.
-                if (scheme != "file")
+                if (scheme != FileStreamWrapper.scheme)
                 {
-                    path = string.Format("{0}://{1}", scheme, path);
+                    path = $"{scheme}://{path}";
                 }
             }
 
@@ -306,19 +310,23 @@ namespace Pchp.Library.Streams
             if (Path.IsPathRooted(relativePath)) return false;
             if (File.Exists(absolutePath)) return false;
 
-            var paths = ctx.IncludePaths;
-            if (paths == null || paths.Length == 0) return false;
+            // TODO: use Core.Context.TryResolveScript()
 
-            foreach (string s in paths)
+            var paths = ctx.IncludePaths;
+            if (paths != null && paths.Length != 0)
             {
-                if (string.IsNullOrEmpty(s)) continue;
-                string abs = Path.GetFullPath(Path.Combine(s, relativePath));
-                if (File.Exists(abs))
+                foreach (var s in paths)
                 {
-                    absolutePath = abs;
-                    return true;
+                    if (string.IsNullOrEmpty(s)) continue;
+                    var abs = Path.GetFullPath(Path.Combine(s, relativePath));
+                    if (File.Exists(abs))
+                    {
+                        absolutePath = abs;
+                        return true;
+                    }
                 }
             }
+
             return false;
         }
 
@@ -1403,7 +1411,7 @@ namespace Pchp.Library.Streams
                 while (maxLength > 0 && !Eof)
                 {
                     var data = ReadBytes(maxLength);
-                    if (data.Length != 0) break; // EOF or error.
+                    if (data.Length == 0) break; // EOF or error.
                     maxLength -= data.Length;
                     result.Write(data, 0, data.Length);
                 }
@@ -2399,9 +2407,14 @@ namespace Pchp.Library.Streams
 
         public virtual StatStruct Stat()
         {
-            return (this.Wrapper != null)
-                ? this.Wrapper.Stat(OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true)
-                : StreamWrapper.StatUnsupported();
+            if (Wrapper != null)
+            {
+                var root = _encoding is Context ctx ? ctx.RootPath : null;
+
+                return Wrapper.Stat(root, OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true);
+            }
+
+            return StreamWrapper.StatUnsupported();
         }
 
         #endregion

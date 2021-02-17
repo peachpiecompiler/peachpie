@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Dynamic;
 
 namespace Pchp.Core.Reflection
 {
-    public static class ReflectionUtils
+    public static partial class ReflectionUtils
     {
         /// <summary>
         /// Well-known name of the PHP constructor.
@@ -30,7 +31,25 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Well known assembly token key of Peachpie assemblies.
         /// </summary>
-        public const string PeachpieAssemblyTokenKey = "5b4bee2bf1f98593";
+        public static string PeachpieAssemblyTokenKey => _lazyPeachpieAssemblyTokenKey ??= GetPublicKeyTokenString(typeof(Context).Assembly);
+        static string _lazyPeachpieAssemblyTokenKey;
+
+        /// <summary>
+        /// Gets assembly public key token as string.
+        /// </summary>
+        public static string GetPublicKeyTokenString(this Assembly assembly)
+        {
+            if (assembly != null)
+            {
+                var token = assembly.GetName().GetPublicKeyToken();
+                if (token != null)
+                {
+                    return Utilities.StringUtils.BinToHex(token);
+                }
+            }
+
+            return null;
+        }
 
         readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!', '?', '$', '-' };
 
@@ -67,6 +86,33 @@ namespace Pchp.Core.Reflection
                 (fld.Attributes & FieldAttributes.Family) != 0 &&
                 (fld.Name == "_ctx" || fld.Name == "<ctx>") &&
                 fld.FieldType == typeof(Context);
+        }
+
+        /// <summary>
+        /// Resolves lazy constant field in form of:<br/>
+        /// public static readonly Func&lt;Context, TResult&gt; FIELD;
+        /// </summary>
+        internal static bool TryBindLazyConstantField(FieldInfo fld, out Func<Context, PhpValue> getter)
+        {
+            if (fld.IsInitOnly && fld.IsStatic)
+            {
+                var rtype = fld.FieldType;
+                if (rtype.IsGenericType && rtype.GetGenericTypeDefinition() == typeof(Func<,>))
+                {
+                    // Func<Context, TResult>
+                    var g = rtype.GenericTypeArguments;
+                    if (g.Length == 2 && g[0] == typeof(Context))
+                    {
+                        var getter1 = (MulticastDelegate)fld.GetValue(null); // initonly
+
+                        getter = BinderHelpers.BindFuncInvoke<PhpValue>(getter1);
+                        return true;
+                    }
+                }
+            }
+
+            getter = null;
+            return false;
         }
 
         /// <summary>
@@ -109,30 +155,29 @@ namespace Pchp.Core.Reflection
         public static bool IsInstantiable(Type t) => t != null && !t.IsInterface && !t.IsAbstract; // => not static
 
         /// <summary>
-        /// Determines whether given parameter allows <c>NULL</c> as the argument value.
+        /// Determines whether the method is declared in user's PHP code (within a user type or within a source script).
         /// </summary>
-        public static bool IsNullable(this ParameterInfo p)
+        public static bool IsUserRoutine(this MethodBase method)
         {
-            Debug.Assert(typeof(PhpArray).IsValueType == false); // see TODO below
+            Debug.Assert(method != null);
 
-            if (p.ParameterType.IsValueType &&
-                p.ParameterType != typeof(PhpValue) &&
-                //p.ParameterType != typeof(PhpArray) // TODO: uncomment when PhpArray will be struct
-                p.ParameterType != typeof(PhpString))
+            var type = method.DeclaringType;
+            if (type != null)
             {
-                if (p.ParameterType.IsNullable_T(out var _))
+                var phptype = type.GetCustomAttribute<PhpTypeAttribute>();
+                if (phptype != null)
                 {
-                    return true;
+                    return phptype.FileName != null;
                 }
 
-                // NULL is not possible on value types
-                return false;
+                var script = type.GetCustomAttribute<ScriptAttribute>();
+                if (script != null)
+                {
+                    return script.Path != null; // always true
+                }
             }
-            else
-            {
-                // NULL is explicitly disallowed?
-                return p.GetCustomAttribute<NotNullAttribute>() == null;
-            }
+
+            return false;
         }
 
         /// <summary>

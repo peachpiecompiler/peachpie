@@ -50,7 +50,7 @@ namespace Peachpie.Library.MsSql
         internal SqlConnection SqlConnection => _connection;
 
         /// <summary>
-        /// Gets underlaying connection.
+        /// Gets underlying connection.
         /// </summary>
         protected override IDbConnection ActiveConnection => _connection;
 

@@ -402,7 +402,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // Template: new wrapper(<STACK:value>)
 
                 var ctor = wrapper.InstanceConstructors.Single(m => m.ParameterCount == 1);
-                Debug.Assert((ITypeSymbol)ctor.Parameters[0].Type == value);
+                Debug.Assert(SymbolEqualityComparer.Default.Equals(ctor.Parameters[0].Type, value));
                 var t = _cg.EmitCall(ILOpCode.Newobj, ctor);
 
                 AddArg(t, byref: false);
@@ -482,10 +482,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         MethodSymbol _callsite_generic_create;
         FieldSymbol _callsite_generic_target;
 
-        public NamedTypeSymbol CallSite => _callsitetype ?? (_callsitetype = _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite));
-        public NamedTypeSymbol CallSite_T => _callsitetype_generic ?? (_callsitetype_generic = _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T));
-        public MethodSymbol CallSite_T_Create => _callsite_generic_create ?? (_callsite_generic_create = (MethodSymbol)_compilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Create));
-        public FieldSymbol CallSite_T_Target => _callsite_generic_target ?? (_callsite_generic_target = (FieldSymbol)_compilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Target));
+        public NamedTypeSymbol CallSite => _callsitetype ??= _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);
+        public NamedTypeSymbol CallSite_T => _callsitetype_generic ??= _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T);
+        public MethodSymbol CallSite_T_Create => _callsite_generic_create ??= (MethodSymbol)_compilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Create);
+        public FieldSymbol CallSite_T_Target => _callsite_generic_target ??= (FieldSymbol)_compilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Target);
 
         public CallSiteData StartCallSite(string fldname) => new CallSiteData(this, fldname);
 

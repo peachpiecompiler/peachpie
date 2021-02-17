@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
@@ -104,6 +105,10 @@ namespace Pchp.CodeAnalysis
             if (IsAString(first) && IsAString(second))
                 return CoreTypes.PhpString; // a string builder; if both are system.string, system.string is returned earlier
 
+            // void + something; is an error, ignore the void
+            if (first.IsVoid()) return second;
+            if (second.IsVoid()) return first;
+
             // TODO: simple array & PhpArray => PhpArray
 
             if (!IsAString(first) && !IsAString(second) &&
@@ -197,14 +202,12 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal TypeSymbol MergeNull(TypeSymbol type)
         {
-            Contract.ThrowIfNull(type);
-
-            if (type.IsVoid())
+            if (type == null || type.IsVoid())
             {
                 return CoreTypes.Object;
             }
 
-            if (type.IsValueType || type.IsOfType(CoreTypes.IPhpArray))
+            if (type.IsValueType || type.IsOfType(CoreTypes.IPhpArray)) // TODO: remove IPhpArray and check for null in emitted code
             {
                 return CoreTypes.PhpValue;    // Nullable bool|long|double -> PhpValue
             }
@@ -357,7 +360,7 @@ namespace Pchp.CodeAnalysis
             if (value is ulong) return GetSpecialType(SpecialType.System_UInt64);
             if (value is float) return GetSpecialType(SpecialType.System_Single);
             if (value is char) return GetSpecialType(SpecialType.System_Char);
-            
+
             //
             throw ExceptionUtilities.UnexpectedValue(value);
         }
@@ -474,17 +477,17 @@ namespace Pchp.CodeAnalysis
             return ((TypeSymbol)type).IsDerivedFrom(GetWellKnownType(WellKnownType.System_Attribute), false, ref useSiteDiagnostics);
         }
 
-        internal override bool IsSystemTypeReference(ITypeSymbol type)
+        internal override bool IsSystemTypeReference(ITypeSymbolInternal type)
         {
             return (TypeSymbol)type == GetWellKnownType(WellKnownType.System_Type);
         }
 
-        protected override INamedTypeSymbol CommonGetSpecialType(SpecialType specialType)
+        private protected override INamedTypeSymbolInternal CommonGetSpecialType(SpecialType specialType)
         {
             return this.CorLibrary.GetSpecialType(specialType);
         }
 
-        internal override ISymbol CommonGetSpecialTypeMember(SpecialMember specialMember)
+        internal override ISymbolInternal CommonGetSpecialTypeMember(SpecialMember specialMember)
         {
             return this.CorLibrary.GetDeclaredSpecialTypeMember(specialMember);
         }
@@ -615,7 +618,7 @@ namespace Pchp.CodeAnalysis
             get
             {
                 foreach (var pair in CommonGetBoundReferenceManager().GetReferencedAssemblies())
-                    yield return pair.Value;
+                    yield return (IAssemblySymbol)pair.Value;
 
                 yield return this.SourceAssembly;
             }
@@ -654,28 +657,43 @@ namespace Pchp.CodeAnalysis
                     Debug.Assert(!typeCtx.IsNull(typeMask));
                 }
 
+                bool returnsvoid = false;
+
                 //
-                TypeSymbol result;
+                TypeSymbol result = null;
 
-                var typesEnum = typeCtx.GetTypes(typeMask).GetEnumerator();
-                if (typesEnum.MoveNext())
+                // determine best fitting CLR type based on defined PHP types hierarchy
+                foreach (var t in typeCtx.GetTypes(typeMask))
                 {
-                    // determine best fitting CLR type based on defined PHP types hierarchy
-                    result = typesEnum.Current.ResolveRuntimeType(this);
+                    var tdesc = t.ResolveRuntimeType(this);
+                    Debug.Assert(!tdesc.IsErrorType());
 
-                    while (typesEnum.MoveNext())
+                    if (tdesc.IsVoid())
                     {
-                        var tdesc = typesEnum.Current.ResolveRuntimeType(this);
-                        Debug.Assert(!tdesc.IsErrorType());
-                        result = Merge(result, tdesc);
+                        returnsvoid = true;
+                    }
+                    else
+                    {
+                        result = result == null ? tdesc : Merge(result, tdesc);
                     }
                 }
-                else
+
+                if (returnsvoid)
                 {
-                    result = CoreTypes.Void;
+                    if (result == null)
+                    {
+                        // only returns void
+                        return CoreTypes.Void;
+                    }
+                    else
+                    {
+                        // returns a value or void,
+                        // represent the void as NULL:
+                        maybenull = true;
+                    }
                 }
 
-                result = maybenull ? MergeNull(result) : result;
+                result = maybenull ? MergeNull(result) : result ?? CoreTypes.Void;
 
                 Debug.Assert(result.IsValidType());
 
@@ -717,7 +735,7 @@ namespace Pchp.CodeAnalysis
             return Conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination, ConversionKind.Implicit | ConversionKind.Explicit);
         }
 
-        internal override IConvertibleConversion ClassifyConvertibleConversion(IOperation source, ITypeSymbol destination, out Optional<object> constantValue)
+        internal override IConvertibleConversion ClassifyConvertibleConversion(IOperation source, ITypeSymbol destination, out ConstantValue constantValue)
         {
             //constantValue = default;
 
@@ -967,6 +985,11 @@ namespace Pchp.CodeAnalysis
             protected override bool IsByRefMethod(MethodSymbol method)
             {
                 return method.RefKind != RefKind.None;
+            }
+
+            protected override bool IsByRefProperty(PropertySymbol property)
+            {
+                return property.RefKind != RefKind.None;
             }
 
             protected override bool IsGenericMethodTypeParam(TypeSymbol type, int paramPosition)

@@ -121,7 +121,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _symbol;
 
-        internal override IModuleSymbol ContainingModule => _symbol.ContainingModule;
+        internal override ModuleSymbol ContainingModule => _symbol.ContainingModule;
 
         public override NamedTypeSymbol ContainingType => _symbol.ContainingType;
 

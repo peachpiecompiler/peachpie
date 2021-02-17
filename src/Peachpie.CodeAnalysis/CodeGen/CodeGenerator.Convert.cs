@@ -337,9 +337,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             // dereference
             if (from == CoreTypes.PhpAlias)
             {
-                // <alias>.Value.AsObject()
-                Emit_PhpAlias_GetValueAddr();
-                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsObject);
+                // value = <alias>.Value
+                from = Emit_PhpAlias_GetValue();
             }
 
             // PhpValue -> object
@@ -375,7 +374,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // (IPhpCallable)
-            if (!from.IsEqualToOrDerivedFrom(CoreTypes.IPhpCallable))
+            if (!from.IsOfType(CoreTypes.IPhpCallable))
             {
                 if (from.SpecialType == SpecialType.System_String)
                 {
@@ -448,10 +447,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             // dereference
             if (from == CoreTypes.PhpAlias)
             {
-                // <alias>.Value.AsObject() : object
-                Emit_PhpAlias_GetValueAddr();
-                from = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsObject)
-                    .Expect(SpecialType.System_Object);
+                // <alias>.Value : PhpValue
+                from = Emit_PhpAlias_GetValue();
             }
 
             if (from.IsReferenceType && from.IsOfType(to))
@@ -533,7 +530,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits expression and converts it to required type.
         /// </summary>
-        public void EmitConvert(BoundExpression expr, TypeSymbol to, ConversionKind conversion = ConversionKind.Implicit)
+        public void EmitConvert(BoundExpression expr, TypeSymbol to, ConversionKind conversion = ConversionKind.Implicit, bool notNull = false)
         {
             Debug.Assert(expr != null);
             Debug.Assert(to != null);
@@ -561,7 +558,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (expr.ConstantValue.HasValue && to != null)
                 {
                     // TODO: ConversionKind.Strict ?
-                    EmitConvert(EmitLoadConstant(expr.ConstantValue.Value, to), 0, to);
+                    EmitConvert(EmitLoadConstant(expr.ConstantValue.Value, to, notNull), 0, to);
                     return;
                 }
 
@@ -667,7 +664,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (to.IsNullableType(out var ttype))
                     {
-                        EmitConvertToNullable_T(from, fromHint, to, ttype);
+                        EmitConvertToNullable_T(from, fromHint, to, ttype, conversion);
                     }
                     else if (to.SpecialType == SpecialType.System_DateTime)
                     {
@@ -681,14 +678,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        TypeSymbol EmitConvertToNullable_T(TypeSymbol from, TypeRefMask fromHint, TypeSymbol nullabletype, TypeSymbol ttype)
+        TypeSymbol EmitConvertToNullable_T(TypeSymbol from, TypeRefMask fromHint, TypeSymbol nullabletype, TypeSymbol ttype, ConversionKind conversion = ConversionKind.Implicit)
         {
             Debug.Assert(nullabletype.IsValueType);
 
             if (!CanBeNull(from) || !CanBeNull(fromHint))
             {
                 // new Nullable<T>((T)from)
-                EmitConvert(from, fromHint, ttype);
+                EmitConvert(from, fromHint, ttype, conversion);
                 return EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)nullabletype).InstanceConstructors[0]);
             }
 
@@ -713,7 +710,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // trueLbl:
             _il.MarkLabel(trueLbl);
             _il.EmitLocalLoad(from_var);
-            EmitConvert(from, fromHint, ttype);
+            EmitConvert(from, fromHint, ttype, conversion);
             EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)nullabletype).InstanceConstructors[0]); // new Nullable<T>( STACK )
 
             // endLbl:

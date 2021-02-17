@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>    
-    <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
@@ -24,6 +24,13 @@
     <ProjectReference Include="..\..\Peachpie.Library.Scripting\Peachpie.Library.Scripting.csproj" />
     <ProjectReference Include="..\..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Make the PHP scripts appear in Visual Studio's Solution Explorer -->
+    <None Include="$(MSBuildThisFileDirectory)..\..\..\tests\**\*.php">
+      <Link>tests\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

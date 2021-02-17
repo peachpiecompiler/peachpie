@@ -679,6 +679,48 @@ namespace Pchp.Library.DateTime
             }
         }
 
+        static readonly Dictionary<string, int> s_month_index = new Dictionary<string, int>(12 * 3, StringComparer.OrdinalIgnoreCase)
+        {
+            { "jan", 1 },
+            { "feb", 2 },
+            { "mar", 3 },
+            { "apr", 4 },
+            { "may", 5 },
+            { "jun", 6 },
+            { "jul", 7 },
+            { "aug", 8 },
+            { "sep", 9 },
+            { "sept", 9 },
+            { "oct", 10 },
+            { "nov", 11 },
+            { "dec", 12 },
+
+            { "i", 1 },
+            { "ii", 2 },
+            { "iii", 3 },
+            { "iv", 4 },
+            { "v", 5 },
+            { "vi", 6 },
+            { "vii", 7 },
+            { "viii", 8 },
+            { "ix", 9 },
+            { "x", 10 },
+            { "xi", 11 },
+            { "xii", 12 },
+
+            { "january", 1 },
+            { "february", 2 },
+            { "march", 3 },
+            { "april", 4 },
+            { "june", 6 },
+            { "july", 7 },
+            { "august", 8 },
+            { "september", 9 },
+            { "october", 10 },
+            { "november", 11 },
+            { "december", 12 },
+        };
+
         /// <summary>
         /// Parses month string and returns the month number 1..12, zero on error.
         /// </summary>
@@ -690,54 +732,48 @@ namespace Pchp.Library.DateTime
             }
 
             int begin = pos;
-            while (pos < str.Length && Char.IsLetter(str, pos))
+            while (pos < str.Length && char.IsLetter(str, pos))
             {
                 pos++;
             }
 
-            switch (str.Substring(begin, pos - begin).ToLowerInvariant())
+            if (s_month_index.TryGetValue(str.Substring(begin, pos - begin), out var month))
             {
-                case "jan": return 1;
-                case "feb": return 2;
-                case "mar": return 3;
-                case "apr": return 4;
-                case "may": return 5;
-                case "jun": return 6;
-                case "jul": return 7;
-                case "aug": return 8;
-                case "sep": return 9;
-                case "sept": return 9;
-                case "oct": return 10;
-                case "nov": return 11;
-                case "dec": return 12;
-
-                case "i": return 1;
-                case "ii": return 2;
-                case "iii": return 3;
-                case "iv": return 4;
-                case "v": return 5;
-                case "vi": return 6;
-                case "vii": return 7;
-                case "viii": return 8;
-                case "ix": return 9;
-                case "x": return 10;
-                case "xi": return 11;
-                case "xii": return 12;
-
-                case "january": return 1;
-                case "february": return 2;
-                case "march": return 3;
-                case "april": return 4;
-                case "june": return 6;
-                case "july": return 7;
-                case "august": return 8;
-                case "september": return 9;
-                case "october": return 10;
-                case "november": return 11;
-                case "december": return 12;
+                return month;
             }
-            return 0;
+            else
+            {
+                return 0;
+            }
         }
+
+        struct LookupValue
+        {
+            public int Value;
+            public int Type;
+
+            public static implicit operator LookupValue(int value) => new LookupValue { Value = value, };
+        }
+
+        static readonly Dictionary<string, LookupValue> s_reltext = new Dictionary<string, LookupValue>(16, StringComparer.OrdinalIgnoreCase)
+        {
+            { "first", 1 },
+            { "next", 1 },
+            { "second", 2 },
+            { "third", 3 },
+            { "fourth", 4 },
+            { "fifth", 5 },
+            { "sixth", 6 },
+            { "seventh", 7 },
+            { "eight", 8 },
+            { "ninth", 9 },
+            { "tenth", 10 },
+            { "eleventh", 11 },
+            { "twelfth", 12 },
+            { "last", -1 },
+            { "previous", -1 },
+            { "this", new LookupValue { Value = 0, Type = /*behavior*/1, } },
+        };
 
         /// <summary>
         /// Parses text defining ordinal number.
@@ -755,28 +791,16 @@ namespace Pchp.Library.DateTime
                 pos++;
             }
 
-            behavior = 0;
-            switch (str.Substring(begin, pos - begin))
+            if (s_reltext.TryGetValue(str.Substring(begin, pos - begin), out var value))
             {
-                case "last": return -1;
-                case "previous": return -1;
-                case "this": behavior = 1; return 0;
-                case "first": return 1;
-                case "next": return 1;
-                case "second": return 2;
-                case "third": return 3;
-                case "fourth": return 4;
-                case "fifth": return 5;
-                case "sixth": return 6;
-                case "seventh": return 7;
-                case "eight": return 8;
-                case "ninth": return 9;
-                case "tenth": return 10;
-                case "eleventh": return 11;
-                case "twelfth": return 12;
+                behavior = value.Type;
+                return value.Value;
             }
-
-            return 0;
+            else
+            {
+                behavior = 0;
+                return 0;
+            }
         }
 
         static void SkipSpaces(string str, ref int pos) // timelib_eat_spaces
@@ -899,7 +923,7 @@ namespace Pchp.Library.DateTime
         }
 
         /// <summary>Map of a week day name into it's ordinal. Sunday is zero.</summary>
-        readonly static Dictionary<string, int> s_weedays = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        readonly static Dictionary<string, int> s_weedays = new Dictionary<string, int>(7 * 2, StringComparer.OrdinalIgnoreCase)
         {
             { "mon", 1 },
             { "monday", 1 },
@@ -1359,23 +1383,22 @@ namespace Pchp.Library.DateTime
 
         /// <summary>
         /// Parses interval string according to ISO8601 Duration.
-        /// C# implementation: <see cref="System.Xml.XmlConvert.ToTimeSpan"/>; but it does not recognize <c>'W'</c> speification.
+        /// C# implementation: <see cref="System.Xml.XmlConvert.ToTimeSpan"/>; but it does not recognize <c>'W'</c> specification.
         /// </summary>
-        internal static bool TryParseIso8601Duration(string s, out DateInfo result, out bool negative)
+        internal static bool TryParseIso8601Duration(string str, out DateInfo result, out bool negative)
         {
-            int length;
-            int value, pos, numDigits;
+            int value;
+            int numDigits;
 
             int years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0;
             uint nanoseconds = 0;
 
             negative = false;
 
-            s = s.Trim();
-            length = s.Length;
+            var s = str.AsSpan().Trim();
+            var length = s.Length;
 
-            pos = 0;
-            numDigits = 0;
+            var pos = 0;
 
             if (pos >= length) goto InvalidFormat;
 
@@ -1554,9 +1577,11 @@ namespace Pchp.Library.DateTime
         /// <returns>Parsed date information.</returns>
         public static DateInfo ParseFromFormat(string format, string str, out DateTimeErrors errors)
         {
-            if (format == null) throw new ArgumentNullException(nameof(format));
-            if (str == null) throw new ArgumentNullException(nameof(str));
+            // `null` is handled in the same way as empty string "" // https://github.com/peachpiecompiler/peachpie/issues/820
+            format ??= string.Empty;
+            str ??= string.Empty;
 
+            //
             errors = null;
 
             var time = new DateInfo();
@@ -1822,6 +1847,11 @@ namespace Pchp.Library.DateTime
             {
                 if (allow_extra) AddWarning(ref errors, DateResources.trailing_data);
                 else AddError(ref errors, DateResources.trailing_data);
+            }
+
+            if (fi < format.Length)
+            {
+                AddError(ref errors, DateResources.data_missing);
             }
 
             //

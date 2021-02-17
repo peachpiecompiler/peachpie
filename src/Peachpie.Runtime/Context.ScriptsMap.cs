@@ -76,6 +76,15 @@ namespace Pchp.Core
             /// </summary>
             readonly MainDelegate MainMethod;
 
+            /// <summary>
+            /// Gets the type containing the <see cref="MainMethod"/>.
+            /// </summary>
+            /// <returns>The type or <c>null</c>.</returns>
+            internal Type GetScriptType()
+            {
+                return MainMethod != null ? MainMethod.Method.DeclaringType : null;
+            }
+
             public static MainDelegate CreateMain(Type script)
             {
                 var mainmethod =
@@ -298,9 +307,11 @@ namespace Pchp.Core
                 return s_scripts[ScriptIndexHolder<TScript>.Index];
             }
 
-            public static ScriptInfo GetDeclaredScript(string path)
+            public static ScriptInfo GetDeclaredScript(string path) => GetDeclaredScript(path.AsSpan());
+
+            public static ScriptInfo GetDeclaredScript(ReadOnlySpan<char> path)
             {
-                if (string.IsNullOrEmpty(path))
+                if (path.IsEmpty)
                 {
                     return default;
                 }
@@ -308,26 +319,21 @@ namespace Pchp.Core
                 // trim leading slash
                 if (path[0].IsDirectorySeparator())
                 {
-                    path = path.Substring(1);
+                    path = path.Slice(1);
                 }
 
                 //
-                int index;
-
                 s_lock.EnterReadLock();
                 try
                 {
-                    if (!s_scriptsMap.TryGetValue(NormalizeSlashes(path), out index))
-                    {
-                        return default;
-                    }
+                    return s_scriptsMap.TryGetValue(NormalizeSlashes(path.ToString()), out var index)
+                        ? s_scripts[index]
+                        : default;
                 }
                 finally
                 {
                     s_lock.ExitReadLock();
                 }
-
-                return s_scripts[index];
             }
 
             internal static int GetScriptIndex(Type script)
@@ -368,9 +374,9 @@ namespace Pchp.Core
                 {
                     // normalize, check it is within root_path
                     path = NormalizeSlashes(Path.GetFullPath(path));
-                    if (path.StartsWith(root_path))
+                    if (path.StartsWith(root_path) && path.Length > root_path.Length)
                     {
-                        script = GetDeclaredScript(path.Substring(root_path.Length + 1));
+                        script = GetDeclaredScript(path.AsSpan(root_path.Length + 1));
                         // TODO: script may be not loaded yet but exists physically, check it exists and compile
                     }
 
@@ -440,16 +446,16 @@ namespace Pchp.Core
             /// <summary>
             /// Gets scripts in given directory. The path is relative to application root (<see cref="Context.RootPath"/>).
             /// </summary>
-            internal static bool TryGetDirectory(string path, out IEnumerable<ScriptInfo> scripts)
+            internal static bool TryGetDirectory(string path, out ScriptInfo[] scripts)
             {
                 if (s_dirsMap.TryGetValue(path, out var ids))
                 {
-                    scripts = ids.Select(id => s_scripts[id]);
+                    scripts = ids.ToArray(id => s_scripts[id]);
                     return true;
                 }
 
                 //
-                scripts = Enumerable.Empty<ScriptInfo>();
+                scripts = Array.Empty<ScriptInfo>();
                 return false;
             }
         }

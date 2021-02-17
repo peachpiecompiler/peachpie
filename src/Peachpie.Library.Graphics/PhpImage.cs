@@ -9,7 +9,7 @@ using Pchp.Core;
 
 namespace Peachpie.Library.Graphics
 {
-    [PhpExtension("image")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class PhpImage
     {
         #region ImageType
@@ -570,8 +570,6 @@ namespace Peachpie.Library.Graphics
             {
                 stream.Seek(5, SeekOrigin.Current); // skip file version, and file size
 
-                byte[] b = new byte[128];
-
                 if (compressed)
                 {
                     stream.Seek(2, SeekOrigin.Current);
@@ -735,7 +733,7 @@ namespace Peachpie.Library.Graphics
                 if (last_marker == JpegMarker.M_COM && comment_correction != 0)
                 {
                     /* some software does not count the length bytes of COM section           */
-                    /* one company doing so is very much envolved in JPEG... so we accept too */
+                    /* one company doing so is very much involved in JPEG... so we accept too */
                     /* by the way: some of those companies changed their code now...          */
                     comment_correction = 2;
                 }
@@ -852,7 +850,7 @@ namespace Peachpie.Library.Graphics
                                 info.height = (uint)ReadMarkerSize(ms);
                                 info.width = (uint)ReadMarkerSize(ms);
                                 info.channels = (uint)ms.ReadByte();
-                                if (length < 8 || !exif) // if we don't want an extanded info -> return
+                                if (length < 8 || !exif) // if we don't want an extended info -> return
                                     return true;
 
                                 ms.Seek(length - 8, SeekOrigin.Current); // after info

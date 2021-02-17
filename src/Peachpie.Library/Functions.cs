@@ -1,5 +1,8 @@
-﻿using Pchp.Core;
+﻿#nullable enable
+
+using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 using Pchp.Library.Resources;
 using System;
 using System.Collections.Generic;
@@ -10,7 +13,125 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
-    [PhpExtension("Core")]
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
+    public static class Functions
+    {
+        #region func_num_args, func_get_arg, func_get_args
+
+        /// <summary>
+		/// Retrieves the number of arguments passed to the current user-function.
+		/// </summary>
+		public static int func_num_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args)
+        {
+            if (args == null)
+            {
+                //PhpException.Throw(PhpError.Warning, ErrResources.no_function_context);
+                throw new InvalidOperationException(ErrResources.no_function_context);
+            }
+
+            return args.Length;
+        }
+
+        /// <summary>
+        /// Retrieves an argument passed to the current user-function.
+        /// </summary>
+        /// <remarks><seealso cref="PhpStack.GetArgument"/></remarks>
+        public static PhpValue func_get_arg([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args, int arg_num)
+        {
+            // checks correctness of the argument:
+            if (arg_num < 0)
+            {
+                PhpException.InvalidArgument(nameof(arg_num), LibResources.arg_negative);
+                return PhpValue.False;
+            }
+
+            if (args == null || arg_num >= args.Length)
+            {
+                // Argument #{0} not passed to the function/method
+                PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.argument_not_passed_to_function, arg_num.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                return PhpValue.False;
+            }
+
+            //
+            return args[arg_num].DeepCopy();
+        }
+
+        /// <summary>
+        /// Returns an array of arguments of the current user-defined function. 
+        /// </summary>
+        /// <remarks><seealso cref="PhpStack.GetArguments"/>
+        /// Also throws warning if called from global scope.</remarks>
+        public static PhpArray func_get_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args)
+        {
+            // NOTE: when called from global code, we should return FALSE,
+            // but we're reporting it in compile time already
+
+            if (args == null)
+            {
+                //PhpException.Throw(PhpError.Warning, ErrResources.no_function_context);
+                throw new InvalidOperationException(ErrResources.no_function_context);
+            }
+
+            var result = new PhpArray(args.Length);
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                result.AddValue(args[i].DeepCopy());
+            }
+
+            //
+            return result;
+        }
+
+        #endregion
+
+        #region function_exists, get_defined_functions
+
+        /// <summary>
+        /// Checks the list of defined functions, both built-in and user-defined.
+        /// </summary>
+        /// <returns>Whether the function is declared.</returns>
+        public static bool function_exists(Context ctx, string function_name)
+        {
+            return ctx.GetDeclaredFunction(function_name) != null;
+        }
+
+        /// <summary>
+		/// Retrieves defined functions.
+		/// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+		/// <returns>
+		/// The <see cref="PhpArray"/> containing two entries with keys "internal" and "user".
+		/// The former's value is a <see cref="PhpArray"/> containing PHP library functions as values.
+		/// The latter's value is a <see cref="PhpArray"/> containing user defined functions as values.
+		/// Keys of both these arrays are integers starting from 0.
+		/// </returns>
+		/// <remarks>User functions which are declared conditionally and was not declared yet is considered as not existent.</remarks>
+		public static PhpArray get_defined_functions(Context ctx)
+        {
+            var library = new PhpArray(500);
+            var user = new PhpArray();
+
+            foreach (var routine in ctx.GetDeclaredFunctions())
+            {
+                (routine.IsUserFunction ? user : library).AddValue(routine.Name);
+            }
+
+            //
+            return new PhpArray(2)
+            {
+                {  "internal", library },
+                { "user", user },
+            };
+        }
+
+        #endregion        
+    }
+}
+
+namespace Pchp.Library.Standard
+{
+    [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Standard)]
     public static class Functions
     {
         #region call_user_func, call_user_func_array
@@ -58,7 +179,7 @@ namespace Pchp.Library
         /// This function must be called within a method context, it can't be used outside a class.
         /// It uses the late static binding.
         /// </summary>
-        public static PhpValue forward_static_call(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)]PhpTypeInfo @static, IPhpCallable function, params PhpValue[] args)
+        public static PhpValue forward_static_call(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)] PhpTypeInfo @static, IPhpCallable function, params PhpValue[] args)
         {
             return (function is PhpCallback phpc)
                 ? phpc.BindToStatic(ctx, @static)(ctx, args)
@@ -71,105 +192,9 @@ namespace Pchp.Library
         /// It uses the late static binding.
         /// All arguments of the forwarded method are passed as values, and as an array, similarly to <see cref="call_user_func_array"/>.
         /// </summary>
-        public static PhpValue forward_static_call_array(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)]PhpTypeInfo @static, IPhpCallable function, PhpArray args)
+        public static PhpValue forward_static_call_array(Context ctx, [ImportValue(ImportValueAttribute.ValueSpec.CallerStaticClass)] PhpTypeInfo @static, IPhpCallable function, PhpArray args)
         {
             return forward_static_call(ctx, @static, function, args.GetValues());
-        }
-
-        #endregion
-
-        #region func_num_args, func_get_arg, func_get_args
-
-        /// <summary>
-		/// Retrieves the number of arguments passed to the current user-function.
-		/// </summary>
-		public static int func_num_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args) => args.Length;
-
-        /// <summary>
-        /// Retrieves an argument passed to the current user-function.
-        /// </summary>
-        /// <remarks><seealso cref="PhpStack.GetArgument"/></remarks>
-        public static PhpValue func_get_arg([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args, int index)
-        {
-            // checks correctness of the argument:
-            if (index < 0)
-            {
-                PhpException.InvalidArgument(nameof(index), LibResources.arg_negative);
-                return PhpValue.False;
-            }
-
-            if (args == null || index >= args.Length)
-            {
-                // Argument #{0} not passed to the function/method
-                PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.argument_not_passed_to_function, index.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                return PhpValue.False;
-            }
-
-            //
-            return args[index].DeepCopy();
-        }
-
-        /// <summary>
-        /// Returns an array of arguments of the current user-defined function. 
-        /// </summary>
-        /// <remarks><seealso cref="PhpStack.GetArguments"/>
-        /// Also throws warning if called from global scope.</remarks>
-        public static PhpArray func_get_args([ImportValue(ImportValueAttribute.ValueSpec.CallerArgs)] PhpValue[] args)
-        {
-            // TODO: when called from global code, return FALSE
-
-            var result = new PhpArray(args.Length);
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                result.AddValue(args[i].DeepCopy());
-            }
-
-            //
-            return result;
-        }
-
-        #endregion
-
-        #region function_exists, get_defined_functions
-
-        /// <summary>
-        /// Checks the list of defined functions, both built-in and user-defined.
-        /// </summary>
-        /// <returns>Whether the function is declared.</returns>
-        public static bool function_exists(Context ctx, string name)
-        {
-            return ctx.GetDeclaredFunction(name) != null;
-        }
-
-        /// <summary>
-		/// Retrieves defined functions.
-		/// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-		/// <returns>
-		/// The <see cref="PhpArray"/> containing two entries with keys "internal" and "user".
-		/// The former's value is a <see cref="PhpArray"/> containing PHP library functions as values.
-		/// The latter's value is a <see cref="PhpArray"/> containing user defined functions as values.
-		/// Keys of both these arrays are integers starting from 0.
-		/// </returns>
-		/// <remarks>User functions which are declared conditionally and was not declared yet is considered as not existent.</remarks>
-		public static PhpArray get_defined_functions(Context ctx)
-        {
-            var result = new PhpArray(2);
-            var library = new PhpArray(500);
-            var user = new PhpArray();
-
-            foreach (var routine in ctx.GetDeclaredFunctions())
-            {
-                (routine.IsUserFunction ? user : library).AddValue((PhpValue)routine.Name);
-            }
-
-            //
-            result["internal"] = (PhpValue)library;
-            result["user"] = (PhpValue)user;
-
-            //
-            return result;
         }
 
         #endregion

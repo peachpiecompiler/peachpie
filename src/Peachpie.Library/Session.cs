@@ -167,59 +167,20 @@ namespace Pchp.Library
 
     #endregion
 
-    #region SessionConfiguration
+    #region IPhpSessionConfiguration
 
-    sealed class SessionConfiguration : IPhpConfiguration
+    /// <summary>
+    /// Session handler runtime configuration.
+    /// </summary>
+    public interface IPhpSessionConfiguration : IPhpConfiguration
     {
-        public const string DefaultSessionName = "PEACHSESSID";
+        string DefaultSessionName { get; }
 
-        public string ExtensionName => "session";
-
-        public IPhpConfiguration Copy() => (IPhpConfiguration)this.MemberwiseClone();
-
-        public string SerializeHandler = "php";
-
-        public string SessionName = DefaultSessionName;
-
-        public int CookieLifetime = 0;
-
-        public string CookiePath = "/";
-
-        public string CookieDomain = "";
-
-        public bool CookieSecure = false;
-
-        public bool CookieHttpOnly = false;
-
-        internal PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
-        {
-            switch (option.ToLowerInvariant())
-            {
-                case "session.serialize_handler":
-                    return (PhpValue)GetSet(ref SerializeHandler, "php", value, action);
-
-                case "session.name":
-                    return (PhpValue)GetSet(ref SessionName, DefaultSessionName, value, action);
-
-                case "session.cookie_lifetime":
-                    return (PhpValue)GetSet(ref CookieLifetime, 0, value, action);
-
-                case "session.cookie_path":
-                    return (PhpValue)GetSet(ref CookiePath, "/", value, action);
-
-                case "session.cookie_domain":
-                    return (PhpValue)GetSet(ref CookieDomain, "", value, action);
-
-                case "session.cookie_secure":
-                    return (PhpValue)GetSet(ref CookieSecure, false, value, action);
-
-                case "session.cookie_httponly":
-                    return (PhpValue)GetSet(ref CookieHttpOnly, false, value, action);
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(option));
-            }
-        }
+        /// <summary>
+        /// Value specifying whether the session handler will start the session on request begin.
+        /// Default is <c>false</c>.
+        /// </summary>
+        bool AutoStart { get; set; }
     }
 
     #endregion
@@ -231,8 +192,109 @@ namespace Pchp.Library
         {
             public Registrator()
             {
-                Context.RegisterConfiguration(new SessionConfiguration());
+                Context.RegisterConfiguration<IPhpSessionConfiguration>(new SessionConfiguration());
+
+                GetSetDelegate gsrsession = SessionConfiguration.Gsr;
+
+                Register("session.auto_start", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.save_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, gsrsession);
+                Register("session.serialize_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, gsrsession);
+                Register("session.name", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_lifetime", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_path", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_domain", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_secure", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+                Register("session.cookie_httponly", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
             }
+        }
+
+        #region Nested class: SessionConfiguration
+
+        sealed class SessionConfiguration : IPhpSessionConfiguration
+        {
+            public const string DefaultSessionName = "PEACHSESSID";
+
+            string IPhpSessionConfiguration.DefaultSessionName { get; } = DefaultSessionName;
+
+            public string ExtensionName => "session";
+
+            public bool AutoStart { get; set; }
+
+            public IPhpConfiguration Copy() => (IPhpConfiguration)this.MemberwiseClone();
+
+            public string SerializeHandler = "php";
+
+            public string SessionName = DefaultSessionName;
+
+            public int CookieLifetime = 0;
+
+            public string CookiePath = "/";
+
+            public string CookieDomain = "";
+
+            public bool CookieSecure = false;
+
+            public bool CookieHttpOnly = false;
+
+            public bool SameSite = false;
+
+            public static PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+            {
+                var sessionconfig = config.GetSessionConfiguration();
+                if (sessionconfig == null)
+                {
+                    return false;
+                }
+
+                switch (option)
+                {
+                    case "session.auto_start":
+                        if (action != IniAction.Get)
+                        {
+                            PhpException.ArgumentValueNotSupported(option, action);
+                        }
+                        return sessionconfig.AutoStart;
+
+                    case "session.save_handler":
+                        if (action != IniAction.Get)
+                        {
+                            PhpException.ArgumentValueNotSupported(option, action);
+                        }
+                        var handler = ctx.HttpPhpContext?.SessionHandler;
+                        return handler != null ? handler.HandlerName : PhpValue.False;
+
+                    case "session.serialize_handler":
+                        return GetSet(ref sessionconfig.SerializeHandler, "php", value, action);
+
+                    case "session.name":
+                        return GetSet(ref sessionconfig.SessionName, DefaultSessionName, value, action);
+
+                    case "session.cookie_lifetime":
+                        return GetSet(ref sessionconfig.CookieLifetime, 0, value, action);
+
+                    case "session.cookie_path":
+                        return GetSet(ref sessionconfig.CookiePath, "/", value, action);
+
+                    case "session.cookie_domain":
+                        return GetSet(ref sessionconfig.CookieDomain, "", value, action);
+
+                    case "session.cookie_secure":
+                        return GetSet(ref sessionconfig.CookieSecure, false, value, action);
+
+                    case "session.cookie_httponly":
+                        return GetSet(ref sessionconfig.CookieHttpOnly, false, value, action);
+
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(option));
+                }
+            }
+        }
+
+        #endregion
+
+        static SessionConfiguration GetSessionConfiguration(this IPhpConfigurationService config)
+        {
+            return (SessionConfiguration)config.Get<IPhpSessionConfiguration>();
         }
 
         #region Nested class: UserHandlerInternal
@@ -381,7 +443,7 @@ namespace Pchp.Library
             {
                 if (_lazyname == null)
                 {
-                    _lazyname = ((Context)webctx).Configuration.Get<SessionConfiguration>().SessionName ?? SessionConfiguration.DefaultSessionName;
+                    _lazyname = ((Context)webctx).Configuration.GetSessionConfiguration().SessionName ?? SessionConfiguration.DefaultSessionName;
                 }
 
                 return _lazyname;
@@ -479,7 +541,7 @@ namespace Pchp.Library
         #region Helpers
 
         /// <summary>
-        /// Gets <see cref="IHttpPhpContext"/> if available. Otherwise <c>null</c> is returned and warning throwed.
+        /// Gets <see cref="IHttpPhpContext"/> if available. Otherwise <c>null</c> is returned and warning thrown.
         /// </summary>
         static IHttpPhpContext GetHttpPhpContext(Context ctx)
         {
@@ -498,7 +560,7 @@ namespace Pchp.Library
         /// <returns><see cref="Serializer"/> to be used to serialize and deserialize session data. Cannot be <c>null</c>.</returns>
         static Serializer GetSerializeHandler(Context ctx)
         {
-            //var handlername = ctx.Configuration.Get<SessionConfiguration>().SerializeHandler;
+            //var handlername = ctx.Configuration.GetSessionConfiguration().SerializeHandler;
             //if (handlername != null)
             //{
             //    if (handlername.EqualsOrdinalIgnoreCase("php") ||
@@ -597,7 +659,7 @@ namespace Pchp.Library
             }
 
             ctx.Session = session_array;
-            
+
             //
             return true;
         }
@@ -748,6 +810,41 @@ namespace Pchp.Library
         /// <summary>
         /// Set the session cookie parameters
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="options">lifetime, path, domain, secure, httponly, samesite</param>
+        public static bool session_set_cookie_params(Context ctx, PhpArray options)
+        {
+            PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
+
+            if (options != null && options.Count != 0)
+            {
+                var config = ctx.Configuration.GetSessionConfiguration();
+
+                if (options.TryGetValue("lifetime", out var lifetime))
+                    config.CookieLifetime = lifetime.ToInt();
+
+                if (options.TryGetValue("path", out var path))
+                    config.CookiePath = path.ToString(ctx);
+
+                if (options.TryGetValue("domain", out var domain))
+                    config.CookieDomain = domain.ToString(ctx);
+
+                if (options.TryGetValue("secure", out var secure))
+                    config.CookieSecure = secure.ToBoolean();
+
+                if (options.TryGetValue("httponly", out var httponly))
+                    config.CookieHttpOnly = httponly.ToBoolean();
+
+                if (options.TryGetValue("samesite", out var samesite))
+                    config.SameSite = samesite.ToBoolean();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Set the session cookie parameters
+        /// </summary>
         public static bool session_set_cookie_params(Context ctx, int lifetime)
         {
             PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
@@ -765,7 +862,7 @@ namespace Pchp.Library
         {
             PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
 
-            var config = ctx.Configuration.Get<SessionConfiguration>();
+            var config = ctx.Configuration.GetSessionConfiguration();
             config.CookieLifetime = lifetime;
             config.CookiePath = path;
 
@@ -779,7 +876,7 @@ namespace Pchp.Library
         {
             PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
 
-            var config = ctx.Configuration.Get<SessionConfiguration>();
+            var config = ctx.Configuration.GetSessionConfiguration();
             config.CookieLifetime = lifetime;
             config.CookiePath = path;
             config.CookieDomain = domain;
@@ -794,7 +891,7 @@ namespace Pchp.Library
         {
             PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
 
-            var config = ctx.Configuration.Get<SessionConfiguration>();
+            var config = ctx.Configuration.GetSessionConfiguration();
             config.CookieLifetime = lifetime;
             config.CookiePath = path;
             config.CookieDomain = domain;
@@ -809,14 +906,15 @@ namespace Pchp.Library
         /// </summary>
         public static PhpArray session_get_cookie_params(Context ctx)
         {
-            var config = ctx.Configuration.Get<SessionConfiguration>();
-            return new PhpArray(5)
+            var config = ctx.Configuration.GetSessionConfiguration();
+            return new PhpArray(6)
             {
                 { "lifetime", config.CookieLifetime },
                 { "path", config.CookiePath},
                 { "domain", config.CookieDomain},
                 { "secure", config.CookieSecure},
                 { "httponly", config.CookieHttpOnly},
+                { "samesite", config.SameSite},
             };
         }
 

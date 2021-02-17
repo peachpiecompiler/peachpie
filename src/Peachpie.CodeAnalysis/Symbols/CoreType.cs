@@ -140,7 +140,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, StrictConvert, Comparison, StrictComparison, PhpException,
-            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute,
+            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, DefaultValueAttribute, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute, PhpCustomAtribute,
+            NullableAttribute, NullableContextAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
@@ -151,7 +152,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IntStringKey, PhpHashtable, ImportValueAttribute, DummyFieldsOnlyCtor,
             Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
-            stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
+            stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, Stringable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -200,9 +201,11 @@ namespace Pchp.CodeAnalysis.Symbols
             ImportValueAttribute = Create("ImportValueAttribute");
             DummyFieldsOnlyCtor = Create("DummyFieldsOnlyCtor");
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
-            NotNullAttribute = Create("NotNullAttribute");
             DefaultValueAttribute = Create("DefaultValueAttribute");
+            PhpCustomAtribute = Create(nameof(PhpCustomAtribute));
             PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
+            NullableAttribute = CreateFromFullName("System.Runtime.CompilerServices.NullableAttribute");
+            NullableContextAttribute = CreateFromFullName("System.Runtime.CompilerServices.NullableContextAttribute");
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             IndirectLocal = Create("IndirectLocal");
@@ -234,6 +237,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             Iterator = CreateFromFullName("Iterator");
             Traversable = CreateFromFullName("Traversable");
+            Stringable = CreateFromFullName("Stringable");
             Generator = CreateFromFullName("Generator");
             GeneratorStateMachineDelegate = CreateFromFullName("GeneratorStateMachineDelegate");
 

@@ -99,6 +99,10 @@ function object_check(/*|mixed|*/$x) {
   } else {
     echo /*|integer|null|string|*/$y;
   }
+
+  if (is_object($x)) {
+      $o = /*|object|*/$x;
+  }
 }
 
 function numeric_check(/*|mixed|*/$x) {

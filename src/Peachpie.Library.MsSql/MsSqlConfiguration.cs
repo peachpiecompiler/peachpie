@@ -52,27 +52,27 @@ namespace Peachpie.Library.MsSql
                 // local:
 
                 case "mssql.connect_timeout":
-                    return (PhpValue)StandardPhpOptions.GetSet(ref local.ConnectTimeout, 5, value, action);
+                    return StandardPhpOptions.GetSet(ref local.ConnectTimeout, 5, value, action);
 
                 case "mssql.timeout":
-                    return (PhpValue)StandardPhpOptions.GetSet(ref local.Timeout, 60, value, action);
+                    return StandardPhpOptions.GetSet(ref local.Timeout, 60, value, action);
 
                 case "mssql.batchsize":
-                    return (PhpValue)StandardPhpOptions.GetSet(ref local.BatchSize, 0, value, action);
+                    return StandardPhpOptions.GetSet(ref local.BatchSize, 0, value, action);
 
                 // global:  
 
                 case "mssql.max_links":
                     Debug.Assert(action == IniAction.Get);
-                    return (PhpValue)StandardPhpOptions.GetSet(ref local.MaxConnections, 0, PhpValue.Null, action);
+                    return StandardPhpOptions.GetSet(ref local.MaxConnections, 0, PhpValue.Null, action);
 
                 case "mssql.secure_connection":
                     Debug.Assert(action == IniAction.Get);
-                    return (PhpValue)StandardPhpOptions.GetSet(ref local.NTAuthentication, false, PhpValue.Null, action);
+                    return StandardPhpOptions.GetSet(ref local.NTAuthentication, false, PhpValue.Null, action);
             }
 
             Debug.Fail("Option '" + option + "' is supported but not implemented.");
-            return PhpValue.Null;
+            return PhpValue.False;
         }
 
         /// <summary>

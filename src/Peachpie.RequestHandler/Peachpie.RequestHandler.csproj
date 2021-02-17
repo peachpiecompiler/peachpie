@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
+    <PackageReference Include="Mono.Posix-4.5" Version="4.5.0" Condition=" '$(TargetFramework)'=='net461' " />
   </ItemGroup>
 
   <ItemGroup>
