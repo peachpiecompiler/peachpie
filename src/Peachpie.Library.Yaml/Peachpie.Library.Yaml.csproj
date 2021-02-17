@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <NoWarn>$(NoWarn);1591;1574</NoWarn>
+    <PackageTags>peachpie;library;yaml</PackageTags>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Peachpie PHP language library yaml functions.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="9.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
+    <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
+  </ItemGroup>
+  
+</Project>
