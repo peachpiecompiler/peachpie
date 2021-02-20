@@ -3108,16 +3108,32 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 }
 
-                if (ntype.Arity != 0)
+                if (ntype.Arity == 0)
+                {
+                    // Template: ctx.ExpectTypeDeclared<d>
+                    EmitLoadContext();
+                    EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(ntype));
+                }
+                else
                 {
                     // workaround for traits - constructed traits do not match the declaration in Context
-                    // TODO: ctx.ExpectTypeDeclared(GetPhpTypeInfo(RuntimeTypeHandle(T<>)))
-                    return;
-                }
+                    if (ntype.IsTraitType())
+                    {
+                        // Template: ctx.ExpectTypeDeclared(GetPhpTypeInfo(RuntimeTypeHandle(T<>)))
+                        EmitLoadContext();
 
-                // Template: ctx.ExpectTypeDeclared<d>
-                EmitLoadContext();
-                EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(ntype));
+                        EmitLoadToken(ntype.AsUnboundGenericType(), null);
+                        EmitCall(ILOpCode.Call, CoreMethods.Dynamic.GetPhpTypeInfo_RuntimeTypeHandle);
+
+                        EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_PhpTypeInfo);
+                    }
+                    else
+                    {
+                        // should not happen,
+                        // user types cannot be generic types
+                        Debug.Fail($"Unexpected: a user type '{ntype.Name}' has type arguments.");
+                    }
+                }
             }
         }
 

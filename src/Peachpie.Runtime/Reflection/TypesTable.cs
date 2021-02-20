@@ -224,7 +224,7 @@ namespace Pchp.Core.Reflection
         public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => s_appTypes.Concat(_contextTypes.WhereNotNull());
 
         /// <summary>
-        /// Checkd the given user type is declared in the current state.
+        /// Checks the given user type is declared in the current state.
         /// </summary>
         internal bool IsDeclared(PhpTypeInfo/*!*/type)
         {

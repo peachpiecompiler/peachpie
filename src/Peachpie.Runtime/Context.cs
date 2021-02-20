@@ -412,28 +412,29 @@ namespace Pchp.Core
         /// If not, autoload is invoked and if the type mismatches or cannot be declared, an exception is thrown.
         /// </summary>
         /// <typeparam name="T">Type which is expected to be declared.</typeparam>
-        public void ExpectTypeDeclared<T>()
-        {
-            void EnsureTypeDeclared()
-            {
-                var tinfo = TypeInfoHolder<T>.TypeInfo;
+        public void ExpectTypeDeclared<T>() => ExpectTypeDeclared(TypeInfoHolder<T>.TypeInfo);
 
-                // perform regular load with autoload
-                if (tinfo != GetDeclaredTypeOrThrow(tinfo.Name, true))
-                {
-                    throw PhpException.ClassNotFoundException(tinfo.Name);
-                }
-            }
+        /// <summary>
+        /// Called by runtime when it expects that given type is declared.
+        /// If not, autoload is invoked and if the type mismatches or cannot be declared, an exception is thrown.
+        /// </summary>
+        public void ExpectTypeDeclared(PhpTypeInfo tinfo)
+        {
+            Debug.Assert(tinfo != null);
 
             //
-            var tinfo = TypeInfoHolder<T>.TypeInfo;
-            if (tinfo.Index < 0)
+            if (tinfo.Index >= 0 /*IsUserType or Undeclared*/ && !IsUserTypeDeclared(tinfo))
             {
-                // app-context type, declared
-            }
-            else if (!IsUserTypeDeclared(tinfo))
-            {
-                EnsureTypeDeclared();
+                // the user class has not been declared yet,
+                // perform the autload and ensure the type is the same as expected:
+
+                if (tinfo != GetDeclaredTypeOrThrow(tinfo.Name, autoload: true))
+                {
+                    // either type was not loaded or
+                    // the declared type does not match the expected type
+
+                    throw PhpException.ClassNotFoundException(tinfo.Name);
+                }
             }
         }
 

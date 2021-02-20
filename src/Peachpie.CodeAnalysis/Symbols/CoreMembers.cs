@@ -922,6 +922,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.RuntimeTypeHandle, ct.Boolean, ct.Boolean);
 
                 ExpectTypeDeclared_T = ct.Context.Method("ExpectTypeDeclared");
+                ExpectTypeDeclared_PhpTypeInfo = ct.Context.Method("ExpectTypeDeclared", ct.PhpTypeInfo);
 
                 GetStatic_T = ct.Context.Method("GetStatic");
                 GetDeclaredType_string_bool = ct.Context.Method("GetDeclaredType", ct.String, ct.Boolean);
@@ -947,7 +948,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_RoutineInfo, DeclareType_T, DeclareType_PhpTypeInfo_String,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool,
-                ExpectTypeDeclared_T,
+                ExpectTypeDeclared_T, ExpectTypeDeclared_PhpTypeInfo,
                 GetStatic_T,
                 GetDeclaredType_string_bool, GetDeclaredTypeOrThrow_string_bool,
                 Assert_bool_PhpValue,
