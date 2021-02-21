@@ -5,7 +5,7 @@ using System.Text;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
 using Pchp.Core;
-using Pchp.Library;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 namespace Peachpie.Library.Scripting

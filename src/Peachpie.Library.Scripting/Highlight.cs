@@ -5,6 +5,7 @@ using System.Text;
 using System.Xml;
 using Devsense.PHP.Syntax;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library;
 using Pchp.Library.Streams;
 using static Pchp.Library.StandardPhpOptions;

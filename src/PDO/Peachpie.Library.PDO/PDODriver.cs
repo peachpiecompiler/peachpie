@@ -1,16 +1,13 @@
 ﻿#nullable enable
 
-using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Specialized;
-using System.Reflection;
-using Peachpie.Library.PDO.Utilities;
 using System.Text;
-using Pchp.Library;
+using Peachpie.Library.PDO.Utilities;
+using Pchp.Core;
+using Pchp.Core.Utilities;
 
 namespace Peachpie.Library.PDO
 {

@@ -763,29 +763,19 @@ namespace Pchp.Library
     /// <summary>
     /// <see cref="StringBuilder"/> extensions and pooling.
     /// </summary>
-    public struct StringBuilderUtilities
+    internal static class StringBuilderUtilities
     {
         /// <summary>
         /// Gets object pool singleton.
         /// Uses <see cref="StringBuilderPooledObjectPolicy"/> policy (automatically clears the string builder upon return).
         /// </summary>
-        public static ObjectPool<StringBuilder> Pool { get; } = new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy());
-
-        //static readonly Lazy<ObjectPool<StringBuilder>> s_lazyObjectPool = new Lazy<ObjectPool<StringBuilder>>(
-        //    () => new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy()),
-        //    System.Threading.LazyThreadSafetyMode.PublicationOnly);
+        public static ObjectPool<StringBuilder> Pool => Core.Utilities.StringBuilderUtilities.Pool;
 
         /// <summary>
         /// Gets the <paramref name="sb"/> value as string and return the instance to the <see cref="Pool"/>.
         /// </summary>
         /// <param name="sb">String builder instance.</param>
         /// <returns><paramref name="sb"/> string.</returns>
-        public static string GetStringAndReturn(StringBuilder sb)
-        {
-            Debug.Assert(sb != null);
-            var value = sb.ToString();
-            Pool.Return(sb);
-            return value;
-        }
+        public static string GetStringAndReturn(StringBuilder sb) => Core.Utilities.StringBuilderUtilities.GetStringAndReturn(sb);
     }
 }
