@@ -10,6 +10,7 @@ using System.Xml;
 using System.Xml.XPath;
 using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Utilities;
 using Pchp.Library;
 using Pchp.Library.Streams;
 
@@ -754,7 +755,7 @@ namespace Peachpie.Library.XmlDom
             if (XmlAttribute != null) return XmlAttribute.Value;
 
             // concatenate text nodes that are immediate children of this element
-            StringBuilder sb = new StringBuilder();
+            var sb = StringBuilderUtilities.Pool.Get();
 
             foreach (XmlNode child in XmlElement.ChildNodes)
             {
@@ -762,7 +763,7 @@ namespace Peachpie.Library.XmlDom
                 if (text != null) sb.Append(text);
             }
 
-            return sb.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(sb);
         }
 
         /// <summary>

@@ -1934,7 +1934,7 @@ namespace Pchp.Library
 
             const string cslashed_chars = "abtnvfr";
 
-            StringBuilder result = new StringBuilder();
+            var result = StringBuilderUtilities.Pool.Get();
             for (int i = 0; i < str.Length; i++)
             {
                 //char c = translatedStr[i];
@@ -1960,7 +1960,7 @@ namespace Pchp.Library
                     result.Append(str[i]);
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
