@@ -260,25 +260,40 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static PhpResource stream_socket_server(Context ctx, string localSocket, out int errno, out string errstr, SocketOptions flags, PhpResource context)
         {
+            // defaults:
+            errno = 0;
+            errstr = string.Empty;
+
             var sc = StreamContext.GetValid(context);
             if (sc == null)
             {
-                errno = -1;
-                errstr = null;
                 return null;
             }
 
+            //
             int port = 0;
 
             if (TryParseSocketAddr(localSocket, out _, out var protocol, ref port, out var address))
             {
-                // TODO: var socket = new Socket()
-            }
+                try
+                {
+                    var socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
 
-            //SplitSocketAddressPort(ref localSocket, out port);
-            //return Connect(ctx, localSocket, port, out errno, out errstr, double.NaN, flags, sc);
-            PhpException.FunctionNotSupported(nameof(stream_socket_server));
-            throw new NotImplementedException(nameof(stream_socket_server));
+                    socket.Bind(new IPEndPoint(address, port));
+
+                    return new SocketStream(ctx, socket, localSocket, sc);
+                }
+                catch (SocketException e)
+                {
+                    errno = e.ErrorCode;
+                    errstr = e.Message;
+                    return null;
+                }
+            }
+            else
+            {
+                return null;
+            }
         }
 
         #endregion
