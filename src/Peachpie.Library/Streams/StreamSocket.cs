@@ -268,7 +268,13 @@ namespace Pchp.Library.Streams
                 return null;
             }
 
-            //int port = 0;
+            int port = 0;
+
+            if (TryParseSocketAddr(localSocket, out _, out var protocol, ref port, out var address))
+            {
+                // TODO: var socket = new Socket()
+            }
+
             //SplitSocketAddressPort(ref localSocket, out port);
             //return Connect(ctx, localSocket, port, out errno, out errstr, double.NaN, flags, sc);
             PhpException.FunctionNotSupported(nameof(stream_socket_server));
@@ -487,30 +493,25 @@ namespace Pchp.Library.Streams
             return sslstream;
         }
 
-        /// <summary>
-        /// Opens a new SocketStream
-        /// </summary>
-        internal static SocketStream Connect(Context ctx, string remoteSocket, int port, out int errno, out string errstr, double timeout, SocketOptions flags, StreamContext/*!*/ context)
+        static bool TryParseSocketAddr(string addressString, out bool isSsl, out ProtocolType protocol, ref int port, out IPAddress address)
         {
-            errno = 0;
-            errstr = null;
+            isSsl = false;
+            protocol = ProtocolType.Tcp;
+            address = IPAddress.Any;
 
-            if (remoteSocket == null)
+            if (addressString == null)
             {
-                PhpException.ArgumentNull(nameof(remoteSocket));
-                return null;
+                PhpException.ArgumentNull(nameof(addressString));
+                return false;
             }
-
-            bool isSsl = false;
 
             // TODO: extract schema (tcp://, udp://) and port from remoteSocket
             // Uri uri = Uri.TryCreate(remoteSocket);
             const string protoSeparator = "://";
-            var protocol = ProtocolType.Tcp;
-            var protoIdx = remoteSocket.IndexOf(protoSeparator, StringComparison.Ordinal);
+            var protoIdx = addressString.IndexOf(protoSeparator, StringComparison.Ordinal);
             if (protoIdx >= 0)
             {
-                var protoStr = remoteSocket.AsSpan(0, protoIdx);
+                var protoStr = addressString.AsSpan(0, protoIdx);
                 if (protoStr.Equals("udp".AsSpan(), StringComparison.Ordinal))
                 {
                     protocol = ProtocolType.Udp;
@@ -520,14 +521,25 @@ namespace Pchp.Library.Streams
                     // use SSL encryption
                     isSsl = true;
                 }
+                else if (protoStr.Equals("tcp".AsSpan(), StringComparison.Ordinal))
+                {
+                    protocol = ProtocolType.Tcp;
+                }
+                else
+                {
+                    // Unable to find the socket transport {protoStr}
+                    //PhpException.Throw(PhpError.Warning, Resources.LibResources.socket_invalid_protocol, protoStr);
+                    PhpException.Throw(PhpError.Warning, "Unable to find the socket transport '{0}'", protoStr.ToString());
+                    return false;
+                }
 
-                remoteSocket = remoteSocket.Substring(protoIdx + protoSeparator.Length);
+                addressString = addressString.Substring(protoIdx + protoSeparator.Length);
             }
 
-            var colonIdx = remoteSocket.IndexOf(':');
+            var colonIdx = addressString.IndexOf(':');
             if (colonIdx >= 0)
             {
-                var portStr = remoteSocket.AsSpan(colonIdx + 1);
+                var portStr = addressString.AsSpan(colonIdx + 1);
                 if (portStr.Length != 0 &&
                     int.TryParse(portStr.ToString(), out var n) &&    // TODO: (perf) ReadOnlySpan<char>
                     n > 0 && n <= 0xffff)
@@ -535,7 +547,38 @@ namespace Pchp.Library.Streams
                     port = n;
                 }
 
-                remoteSocket = remoteSocket.Remove(colonIdx);
+                addressString = addressString.Remove(colonIdx);
+            }
+
+            if (!IPAddress.TryParse(addressString, out address)) // if remoteSocket is not a valid IP address then lookup the DNS
+            {
+                var addresses = Dns.GetHostAddresses(addressString);
+                if (addresses != null && addresses.Length != 0)
+                {
+                    address = addresses[0];
+                }
+                else
+                {
+                    throw new ArgumentException(nameof(addressString));
+                    // return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        /// <summary>
+        /// Opens a new SocketStream
+        /// </summary>
+        internal static SocketStream Connect(Context ctx, string remoteSocket, int port, out int errno, out string errstr, double timeout, SocketOptions flags, StreamContext/*!*/ context)
+        {
+            errno = 0;
+            errstr = string.Empty;
+
+            if (!TryParseSocketAddr(remoteSocket, out var isSsl, out var protocol, ref port, out var address))
+            {
+                return null;
             }
 
             if (double.IsNaN(timeout))
@@ -555,19 +598,6 @@ namespace Pchp.Library.Streams
             {
                 // workitem 299181; for remoteSocket as IPv4 address it results in IPv6 address
                 //IPAddress address = System.Net.Dns.GetHostEntry(remoteSocket).AddressList[0];
-
-                if (!IPAddress.TryParse(remoteSocket, out var address)) // if remoteSocket is not a valid IP address then lookup the DNS
-                {
-                    var addresses = System.Net.Dns.GetHostAddressesAsync(remoteSocket).Result;
-                    if (addresses != null && addresses.Length != 0)
-                    {
-                        address = addresses[0];
-                    }
-                    else
-                    {
-                        throw new ArgumentException(nameof(remoteSocket));
-                    }
-                }
 
                 var socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
 
