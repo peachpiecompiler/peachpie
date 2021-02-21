@@ -236,11 +236,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static PhpResource stream_socket_server(Context ctx, string localSocket)
         {
-            int errno;
-            string errstr;
-            int port = 0;
-            //SplitSocketAddressPort(ref localSocket, out port);
-            return Connect(ctx, localSocket, port, out errno, out errstr, Double.NaN, SocketOptions.None, StreamContext.Default);
+            return stream_socket_server(ctx, localSocket, out _, out _, SocketOptions.None, StreamContext.Default);
         }
 
         /// <summary>
@@ -248,10 +244,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static PhpResource stream_socket_server(Context ctx, string localSocket, out int errno)
         {
-            string errstr;
-            int port = 0;
-            //SplitSocketAddressPort(ref localSocket, out port);
-            return Connect(ctx, localSocket, port, out errno, out errstr, Double.NaN, SocketOptions.None, StreamContext.Default);
+            return stream_socket_server(ctx, localSocket, out errno, out _, SocketOptions.None, StreamContext.Default);
         }
 
         /// <summary>
@@ -259,9 +252,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static PhpResource stream_socket_server(Context ctx, string localSocket, out int errno, out string errstr, SocketOptions flags = SocketOptions.None)
         {
-            int port = 0;
-            //SplitSocketAddressPort(ref localSocket, out port);
-            return Connect(ctx, localSocket, port, out errno, out errstr, Double.NaN, flags, StreamContext.Default);
+            return stream_socket_server(ctx, localSocket, out errno, out errstr, flags, StreamContext.Default);
         }
 
         /// <summary>
@@ -269,7 +260,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static PhpResource stream_socket_server(Context ctx, string localSocket, out int errno, out string errstr, SocketOptions flags, PhpResource context)
         {
-            StreamContext sc = StreamContext.GetValid(context);
+            var sc = StreamContext.GetValid(context);
             if (sc == null)
             {
                 errno = -1;
@@ -277,9 +268,11 @@ namespace Pchp.Library.Streams
                 return null;
             }
 
-            int port = 0;
+            //int port = 0;
             //SplitSocketAddressPort(ref localSocket, out port);
-            return Connect(ctx, localSocket, port, out errno, out errstr, Double.NaN, flags, sc);
+            //return Connect(ctx, localSocket, port, out errno, out errstr, double.NaN, flags, sc);
+            PhpException.FunctionNotSupported(nameof(stream_socket_server));
+            throw new NotImplementedException(nameof(stream_socket_server));
         }
 
         #endregion
@@ -299,8 +292,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static bool stream_socket_accept(PhpResource serverSocket, int timeout)
         {
-            string peerName;
-            return stream_socket_accept(serverSocket, timeout, out peerName);
+            return stream_socket_accept(serverSocket, timeout, out _);
         }
 
         /// <summary>
@@ -310,10 +302,10 @@ namespace Pchp.Library.Streams
         {
             peerName = "";
 
-            SocketStream stream = SocketStream.GetValid(serverSocket);
+            var stream = SocketStream.GetValid(serverSocket);
             if (stream == null) return false;
 
-            PhpException.FunctionNotSupported("stream_socket_accept");
+            PhpException.FunctionNotSupported(nameof(stream_socket_accept));
             return false;
         }
 
@@ -323,19 +315,17 @@ namespace Pchp.Library.Streams
 
         public static string stream_socket_recvfrom(PhpResource socket, int length, SendReceiveOptions flags = SendReceiveOptions.None)
         {
-            string address;
-            return stream_socket_recvfrom(socket, length, flags, out address);
+            return stream_socket_recvfrom(socket, length, flags, out _);
         }
 
-        public static string stream_socket_recvfrom(PhpResource socket, int length, SendReceiveOptions flags,
-          out string address)
+        public static string stream_socket_recvfrom(PhpResource socket, int length, SendReceiveOptions flags, out string address)
         {
             address = null;
 
             SocketStream stream = SocketStream.GetValid(socket);
             if (stream == null) return null;
 
-            PhpException.FunctionNotSupported("stream_socket_recvfrom");
+            PhpException.FunctionNotSupported(nameof(stream_socket_recvfrom));
             return null;
         }
 
@@ -348,7 +338,7 @@ namespace Pchp.Library.Streams
             SocketStream stream = SocketStream.GetValid(socket);
             if (stream == null) return -1;
 
-            PhpException.FunctionNotSupported("stream_socket_sendto");
+            PhpException.FunctionNotSupported(nameof(stream_socket_sendto));
             return -1;
         }
 

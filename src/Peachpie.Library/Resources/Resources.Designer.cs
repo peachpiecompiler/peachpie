@@ -1582,7 +1582,7 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Error connecting &apos;{0}&apos;: {0}.
+        ///   Looks up a localized string similar to Error connecting &apos;{0}&apos;: {1}.
         /// </summary>
         public static string socket_open_error {
             get {

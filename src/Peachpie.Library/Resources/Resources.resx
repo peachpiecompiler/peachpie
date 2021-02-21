@@ -457,7 +457,7 @@
     <value>File type not recognized</value>
   </data>
   <data name="socket_open_error" xml:space="preserve">
-    <value>Error connecting '{0}': {0}</value>
+    <value>Error connecting '{0}': {1}</value>
   </data>
   <data name="socket_open_timeout" xml:space="preserve">
     <value>Connect timeout: {0} did not respond</value>
