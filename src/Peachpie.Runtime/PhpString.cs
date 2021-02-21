@@ -1097,14 +1097,14 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    var builder = new StringBuilder(32);    // TODO: pooled instance
+                    var builder = StringBuilderUtilities.Pool.Get();
 
                     for (int i = 0; i < count; i++)
                     {
                         builder.Append(ChunkToString(encoding, chunks[i]));
                     }
 
-                    return builder.ToString();
+                    return StringBuilderUtilities.GetStringAndReturn(builder);
                 }
             }
 
