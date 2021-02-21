@@ -278,8 +278,9 @@ namespace Pchp.Library.Streams
                 try
                 {
                     var socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
-
                     socket.Bind(new IPEndPoint(address, port));
+                    //socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.MaxConnections) // Not Supported
+                    socket.Listen(512); // NOTE: a default backlog should be used
 
                     return new SocketStream(ctx, socket, localSocket, sc);
                 }
@@ -303,31 +304,41 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Accepts a connection on a server socket.
         /// </summary>
-        public static bool stream_socket_accept(Context ctx, PhpResource serverSocket)
+        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket)
         {
-            return stream_socket_accept(serverSocket, ctx.Configuration.Core.DefaultSocketTimeout, out _);
+            return stream_socket_accept(ctx, serverSocket, ctx.Configuration.Core.DefaultSocketTimeout, out _);
         }
 
         /// <summary>
         /// Accepts a connection on a server socket.
         /// </summary>
-        public static bool stream_socket_accept(PhpResource serverSocket, int timeout)
+        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, int timeout)
         {
-            return stream_socket_accept(serverSocket, timeout, out _);
+            return stream_socket_accept(ctx, serverSocket, timeout, out _);
         }
 
         /// <summary>
         /// Accepts a connection on a server socket.
         /// </summary>
-        public static bool stream_socket_accept(PhpResource serverSocket, int timeout, out string peerName)
+        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, int timeout, out string peerName)
         {
-            peerName = "";
+            peerName = string.Empty;
 
             var stream = SocketStream.GetValid(serverSocket);
-            if (stream == null) return false;
+            if (stream == null) return null;
 
-            PhpException.FunctionNotSupported(nameof(stream_socket_accept));
-            return false;
+            try
+            {
+                var socket = stream.Socket.Accept(); // TODO: support timeout // BeginAccept().Wait( timeout )
+                socket.NoDelay = true; // blocking
+                return new SocketStream(ctx, socket, stream.OpenedPath, stream.Context);
+            }
+            catch (SocketException e)
+            {
+                PhpException.Throw(PhpError.Warning, e.Message);
+            }
+
+            return null;
         }
 
         #endregion
@@ -343,7 +354,7 @@ namespace Pchp.Library.Streams
         {
             address = null;
 
-            SocketStream stream = SocketStream.GetValid(socket);
+            var stream = SocketStream.GetValid(socket);
             if (stream == null) return null;
 
             PhpException.FunctionNotSupported(nameof(stream_socket_recvfrom));
@@ -356,7 +367,7 @@ namespace Pchp.Library.Streams
 
         public static int stream_socket_sendto(PhpResource socket, string data, SendReceiveOptions flags = SendReceiveOptions.None, string address = null)
         {
-            SocketStream stream = SocketStream.GetValid(socket);
+            var stream = SocketStream.GetValid(socket);
             if (stream == null) return -1;
 
             PhpException.FunctionNotSupported(nameof(stream_socket_sendto));
@@ -604,7 +615,7 @@ namespace Pchp.Library.Streams
             // TODO:
             if (flags != SocketOptions.None && flags != SocketOptions.Asynchronous)
             {
-                PhpException.ArgumentValueNotSupported("flags", (int)flags);
+                PhpException.ArgumentValueNotSupported(nameof(flags), (int)flags);
             }
 
             var connect_async = (flags & SocketOptions.Asynchronous) != 0;
@@ -614,7 +625,10 @@ namespace Pchp.Library.Streams
                 // workitem 299181; for remoteSocket as IPv4 address it results in IPv6 address
                 //IPAddress address = System.Net.Dns.GetHostEntry(remoteSocket).AddressList[0];
 
-                var socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
+                var socket = new Socket(address.AddressFamily, SocketType.Stream, protocol)
+                {
+                    NoDelay = true, // blocking
+                };
 
                 // socket.Connect(new IPEndPoint(address, port));
                 if (socket.ConnectAsync(address, port).Wait((int)(timeout * 1000)))
