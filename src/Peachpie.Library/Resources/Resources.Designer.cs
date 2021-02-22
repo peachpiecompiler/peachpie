@@ -1465,7 +1465,7 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The segment length must be greater then zero.
+        ///   Looks up a localized string similar to The length of each segment must be greater than zero.
         /// </summary>
         public static string segment_length_not_positive {
             get {

@@ -1620,33 +1620,36 @@ namespace Pchp.Library
         /// Converts a string to an array.
         /// </summary>
         /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
-        /// <param name="str">The string to split.</param>
-        /// <param name="splitLength">Length of chunks <paramref name="str"/> should be split into.</param>
-        /// <returns>An array with keys being chunk indexes and values being chunks of <paramref name="splitLength"/>
+        /// <param name="string">The string to split.</param>
+        /// <param name="length">Length of chunks <paramref name="string"/> should be split into.</param>
+        /// <returns>An array with keys being chunk indexes and values being chunks of <paramref name="length"/>
         /// length.</returns>
-        /// <exception cref="PhpException">The <paramref name="splitLength"/> parameter is not positive (Warning).</exception>
+        /// <exception cref="PhpException">The <paramref name="length"/> parameter is not positive (Warning).</exception>
         // [return: CastToFalse]
-        public static PhpArray str_split(Context ctx, PhpString str, int splitLength = 1)
+        public static PhpArray str_split(Context ctx, PhpString @string, int length = 1)
         {
-            if (splitLength < 1)
+            if (length < 1)
             {
                 PhpException.Throw(PhpError.Warning, LibResources.segment_length_not_positive);
-                throw new ArgumentOutOfRangeException(); // we throw instead of returning FALSE so we don't need [CastToFalse]
+
+                // we throw instead of returning FALSE so we don't need [CastToFalse]
+                throw new ArgumentOutOfRangeException(nameof(length), LibResources.segment_length_not_positive);
+
                 //return null; // FALSE
             }
-            if (str.IsEmpty)
+            if (@string.IsEmpty)
             {
                 // seems like an inconsistency, but in PHP they really return this for an empty string:
                 return new PhpArray(1) { string.Empty }; // array(1){ [0] => "" }
             }
 
-            if (str.ContainsBinaryData)
+            if (@string.ContainsBinaryData)
             {
-                return Split(str.ToBytes(ctx), splitLength);
+                return Split(@string.ToBytes(ctx), length);
             }
             else
             {
-                return Split(str.ToString(ctx), splitLength);
+                return Split(@string.ToString(ctx), length);
             }
         }
 

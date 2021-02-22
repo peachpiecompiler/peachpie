@@ -295,7 +295,7 @@
     <value>Configuration option '{0}' is not known</value>
   </data>
   <data name="segment_length_not_positive" xml:space="preserve">
-    <value>The segment length must be greater then zero</value>
+    <value>The length of each segment must be greater than zero</value>
   </data>
   <data name="zero_argument_invalid" xml:space="preserve">
     <value>Zero is not a valid argument number</value>
