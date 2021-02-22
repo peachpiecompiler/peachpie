@@ -348,16 +348,16 @@ namespace Pchp.Core
 
         public static int Compare(PhpValue x, PhpValue y) => x.TypeCode switch
         {
-            PhpTypeCode.Null => Comparison.CompareNull(y),
-            PhpTypeCode.Boolean => Comparison.Compare(x.Boolean, y),
-            PhpTypeCode.Long => Comparison.Compare(x.Long, y),
-            PhpTypeCode.Double => Comparison.Compare(x.Double, y),
+            PhpTypeCode.Null => CompareNull(y),
+            PhpTypeCode.Boolean => Compare(x.Boolean, y),
+            PhpTypeCode.Long => Compare(x.Long, y),
+            PhpTypeCode.Double => Compare(x.Double, y),
             PhpTypeCode.PhpArray => x.Array.Compare(y),
-            PhpTypeCode.String => Comparison.Compare(x.String, y),
-            PhpTypeCode.MutableString => Comparison.Compare(x.MutableStringBlob, y),
-            PhpTypeCode.Object => Comparison.Compare(x.Object, y),
+            PhpTypeCode.String => Compare(x.String, y),
+            PhpTypeCode.MutableString => Compare(x.MutableStringBlob, y),
+            PhpTypeCode.Object => Compare(x.Object, y),
             PhpTypeCode.Alias => Compare(x.Alias.Value, y),
-            _ => throw InvalidTypeCodeException("compare", "value", y.TypeCode.ToString()),
+            _ => throw InvalidTypeCodeException("compare", x.TypeCode.ToString(), y.TypeCode.ToString()),
         };
 
         public static int Compare(PhpValue x, long ly) => -Compare(ly, x);

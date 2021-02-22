@@ -69,8 +69,7 @@ namespace Pchp.Library
             if (count == 0) return new PhpString();
 
             // determines the result length (length) and the working buffer size (size):
-            int length, size;
-            GetPackedDataSize(specifiers, repeaters, count, out length, out size);
+            GetPackedDataSize(specifiers, repeaters, count, out var length, out var size);
 
             // packs data using buffer:
             var buffer = new byte[size];
