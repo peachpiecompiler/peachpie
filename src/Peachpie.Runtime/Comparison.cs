@@ -28,6 +28,9 @@ namespace Pchp.Core
     /// </summary>
     public static class Comparison
     {
+        static Exception InvalidTypeCodeException(string op, string left, string right)
+            => new InvalidOperationException($"{op}({left}, {right})");
+
         public static bool Clt(long lx, double dy) => (double)lx < dy;
         public static bool Cgt(long lx, double dy) => (double)lx > dy;
         public static bool Ceq(long lx, double dy) => (double)lx == dy;
@@ -77,7 +80,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Null: return sx.Length == 0;
             }
 
-            throw new NotImplementedException($"compare(String, {y.TypeCode})");
+            throw InvalidTypeCodeException("ceq", "string", y.TypeCode.ToString());
         }
 
         public static bool CeqNull(PhpValue x)
@@ -118,7 +121,7 @@ namespace Pchp.Core
                     return Compare(lx, 1L); // object is treated as '1'
             }
 
-            throw new NotImplementedException($"compare(Long, {y.TypeCode})");
+            throw InvalidTypeCodeException("compare", "long", y.TypeCode.ToString());
         }
 
         public static int Compare(double dx, PhpValue y)
@@ -139,7 +142,7 @@ namespace Pchp.Core
                     return Compare(dx, 1.0); // object is treated as '1'
             }
 
-            throw new NotImplementedException($"compare(Double, {y.TypeCode})");
+            throw InvalidTypeCodeException("compare", "double", y.TypeCode.ToString());
         }
 
         public static int Compare(bool bx, PhpValue y) => Compare(bx, y.ToBoolean());
@@ -161,7 +164,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
             }
 
-            throw new NotImplementedException($"compare(String, {y.TypeCode})");
+            throw InvalidTypeCodeException("compare", "string", y.TypeCode.ToString());
         }
 
         public static int Compare(PhpString.Blob sx, PhpValue y)
@@ -179,7 +182,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
             }
 
-            throw new NotImplementedException($"compare(String, {y.TypeCode})");
+            throw InvalidTypeCodeException("compare", "string", y.TypeCode.ToString());
         }
 
         static int CompareStringToObject(string sx, object y)
@@ -338,12 +341,24 @@ namespace Pchp.Core
                 case PhpTypeCode.Object: return -1;
             }
 
-            throw new NotImplementedException($"compare(null, {y.TypeCode})");
+            throw InvalidTypeCodeException("compare", "null", y.TypeCode.ToString());
         }
 
         public static int Compare(PhpNumber x, PhpValue y) => x.IsLong ? Compare(x.Long, y) : Compare(x.Double, y);
 
-        public static int Compare(PhpValue x, PhpValue y) => x.Compare(y);
+        public static int Compare(PhpValue x, PhpValue y) => x.TypeCode switch
+        {
+            PhpTypeCode.Null => Comparison.CompareNull(y),
+            PhpTypeCode.Boolean => Comparison.Compare(x.Boolean, y),
+            PhpTypeCode.Long => Comparison.Compare(x.Long, y),
+            PhpTypeCode.Double => Comparison.Compare(x.Double, y),
+            PhpTypeCode.PhpArray => x.Array.Compare(y),
+            PhpTypeCode.String => Comparison.Compare(x.String, y),
+            PhpTypeCode.MutableString => Comparison.Compare(x.MutableStringBlob, y),
+            PhpTypeCode.Object => Comparison.Compare(x.Object, y),
+            PhpTypeCode.Alias => Compare(x.Alias.Value, y),
+            _ => throw InvalidTypeCodeException("compare", "value", y.TypeCode.ToString()),
+        };
 
         public static int Compare(PhpValue x, long ly) => -Compare(ly, x);
 

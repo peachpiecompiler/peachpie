@@ -640,19 +640,7 @@ namespace Pchp.Core
         /// Zero for equality,
         /// negative value for <c>this</c> &lt; <paramref name="right"/>,
         /// position value for <c>this</c> &gt; <paramref name="right"/>.</returns>
-        public int Compare(PhpValue right) => TypeCode switch
-        {
-            PhpTypeCode.Null => Comparison.CompareNull(right),
-            PhpTypeCode.Boolean => Comparison.Compare(Boolean, right),
-            PhpTypeCode.Long => Comparison.Compare(Long, right),
-            PhpTypeCode.Double => Comparison.Compare(Double, right),
-            PhpTypeCode.PhpArray => Array.Compare(right),
-            PhpTypeCode.String => Comparison.Compare(String, right),
-            PhpTypeCode.MutableString => Comparison.Compare(MutableStringBlob, right),
-            PhpTypeCode.Object => Comparison.Compare(Object, right),
-            PhpTypeCode.Alias => Alias.Value.Compare(right),
-            _ => throw InvalidTypeCodeException(),
-        };
+        public int Compare(PhpValue right) => Comparison.Compare(this, right);
 
         /// <summary>
         /// Performs strict comparison.
