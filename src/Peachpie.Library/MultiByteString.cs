@@ -583,7 +583,7 @@ namespace Pchp.Library
         /// <summary>
         /// Performs string splitting to an array of chunks of size <c>1</c>.
         /// </summary>
-        public static PhpArray mb_str_split(string @string) => Strings.str_split(@string);
+        public static PhpArray mb_str_split(string @string) => Strings.Split(@string);
 
         /// <summary>
         /// Performs string splitting to an array of defined size chunks.

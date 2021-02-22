@@ -699,7 +699,7 @@ namespace Pchp.Library
             else
             {
                 // File OpenMode is binary.
-                byte[] sub = data.ToBytes(ctx);
+                var sub = data.ToBytes(ctx);
                 if (length > 0 && length < sub.Length)
                 {
                     var bytes = new byte[length];

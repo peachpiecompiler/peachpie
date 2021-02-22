@@ -1598,23 +1598,23 @@ namespace Pchp.Library
             return newstr.ToString();
         }
 
-        /// <summary>
-        /// Converts a string to an array.
-        /// </summary>
-        /// <param name="str">The string to split.</param>
-        /// <returns>An array with keys being character indexes and values being characters.</returns>
-        public static PhpArray str_split(string str)
-        {
-            if (string.IsNullOrEmpty(str))
-            {
-                // seems like an inconsistency, but in PHP they really return this for an empty string:
-                return new PhpArray(1) { string.Empty }; // array(1){ [0] => "" }
-            }
-            else
-            {
-                return Split(str, splitLength: 1);
-            }
-        }
+        ///// <summary>
+        ///// Converts a string to an array.
+        ///// </summary>
+        ///// <param name="str">The string to split.</param>
+        ///// <returns>An array with keys being character indexes and values being characters.</returns>
+        //public static PhpArray str_split(string str)
+        //{
+        //    if (string.IsNullOrEmpty(str))
+        //    {
+        //        // seems like an inconsistency, but in PHP they really return this for an empty string:
+        //        return new PhpArray(1) { string.Empty }; // array(1){ [0] => "" }
+        //    }
+        //    else
+        //    {
+        //        return Split(str, splitLength: 1);
+        //    }
+        //}
 
         /// <summary>
         /// Converts a string to an array.
@@ -1626,12 +1626,12 @@ namespace Pchp.Library
         /// length.</returns>
         /// <exception cref="PhpException">The <paramref name="splitLength"/> parameter is not positive (Warning).</exception>
         // [return: CastToFalse]
-        public static PhpArray str_split(Context ctx, PhpString str, int splitLength)
+        public static PhpArray str_split(Context ctx, PhpString str, int splitLength = 1)
         {
             if (splitLength < 1)
             {
+                PhpException.Throw(PhpError.Warning, LibResources.segment_length_not_positive);
                 throw new ArgumentOutOfRangeException(); // we throw instead of returning FALSE so we don't need [CastToFalse]
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("segment_length_not_positive"));
                 //return null; // FALSE
             }
             if (str.IsEmpty)
@@ -1650,7 +1650,7 @@ namespace Pchp.Library
             }
         }
 
-        internal static PhpArray Split(string str, int splitLength)
+        internal static PhpArray Split(string str, int splitLength = 1)
         {
             int length = str.Length;
             PhpArray result = new PhpArray(length / splitLength + 1);
@@ -1668,7 +1668,7 @@ namespace Pchp.Library
             return result;
         }
 
-        internal static PhpArray Split(byte[] str, int splitLength)
+        internal static PhpArray Split(byte[] str, int splitLength = 1)
         {
             int length = str.Length;
             PhpArray result = new PhpArray(length / splitLength + 1);
