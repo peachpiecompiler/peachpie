@@ -662,6 +662,11 @@ namespace Pchp.Core
             /// The original object was PHP array. This has an effect on most PHP arithmetic operators.
             /// </summary>
             IsPhpArray = 256,
+
+            /// <summary>
+            /// The original value was a string.
+            /// </summary>
+            IsString = 512,
         }
 
         /// <summary>
@@ -723,11 +728,11 @@ namespace Pchp.Core
                 l = d = 0;
                 longValue = 0;
                 doubleValue = 0.0;
-                return NumberInfo.LongInteger;
+                return NumberInfo.LongInteger | NumberInfo.IsString;
             }
 
             // invariant after return: 0 <= i <= l <= d <= p <= old(p) + length - 1.
-            NumberInfo result = 0;
+            var result = NumberInfo.IsString;
 
             Debug.Assert(from >= 0);
             //if (from < 0) from = 0;
