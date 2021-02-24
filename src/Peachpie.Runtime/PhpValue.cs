@@ -323,7 +323,7 @@ namespace Pchp.Core
             switch (TypeCode)
             {
                 case PhpTypeCode.Null:
-                    number = PhpNumber.Create(0L);
+                    number = PhpNumber.Default; // 0L
                     return Convert.NumberInfo.LongInteger;
 
                 case PhpTypeCode.Boolean:
