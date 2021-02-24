@@ -87,6 +87,9 @@ namespace Pchp.Core
         {
             switch (x.TypeCode)
             {
+                case PhpTypeCode.Null:
+                    return true;
+
                 case PhpTypeCode.String:
                     return x.String.Length == 0;
 
@@ -105,21 +108,26 @@ namespace Pchp.Core
         {
             switch (y.TypeCode)
             {
-                case PhpTypeCode.Long: return Compare(lx, y.Long);
+                case PhpTypeCode.Null: return (lx == 0) ? 0 : 1;
                 case PhpTypeCode.Boolean: return Compare(lx != 0, y.Boolean);
+                case PhpTypeCode.Long: return Compare(lx, y.Long);
                 case PhpTypeCode.Double: return Compare((double)lx, y.Double);
+                case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.String: return -Compare(y.String, lx);
                 case PhpTypeCode.MutableString: return -Compare(y.MutableString.ToString(), lx);
-                case PhpTypeCode.PhpArray: return -1;
-                case PhpTypeCode.Alias: return Compare(lx, y.Alias.Value);
-                case PhpTypeCode.Null: return (lx == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     Debug.Assert(y.Object != null);
 
-                    // Notice: Object of class {0} could not be converted to int
+                    // we cannot use ToNumber(object) because it treats some builtin classes as numbers
+                    if (y.Object is decimal d)
+                    {
+                        return Compare((double)lx, (double)d);
+                    }
+
                     // Notice: Object of class {0} could not be converted to int
                     PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetDebugType(y), PhpVariable.TypeNameInt));
                     return Compare(lx, 1L); // object is treated as '1'
+                case PhpTypeCode.Alias: return Compare(lx, y.Alias.Value);
             }
 
             throw InvalidTypeCodeException("compare", PhpVariable.TypeNameInt, PhpVariable.GetDebugType(y));
@@ -129,18 +137,23 @@ namespace Pchp.Core
         {
             switch (y.TypeCode)
             {
-                case PhpTypeCode.Double: return Compare(dx, y.Double);
-                case PhpTypeCode.Long: return Compare(dx, (double)y.Long);
+                case PhpTypeCode.Null: return (dx == 0.0) ? 0 : 1;
                 case PhpTypeCode.Boolean: return Compare(dx != 0.0, y.Boolean);
+                case PhpTypeCode.Long: return Compare(dx, (double)y.Long);
+                case PhpTypeCode.Double: return Compare(dx, y.Double);
+                case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.String: return -Compare(y.String, dx);
                 case PhpTypeCode.MutableString: return -Compare(y.MutableString.ToString(), dx);
-                case PhpTypeCode.PhpArray: return -1;
-                case PhpTypeCode.Alias: return Compare(dx, y.Alias.Value);
-                case PhpTypeCode.Null: return (dx == 0.0) ? 0 : 1;
                 case PhpTypeCode.Object:
+                    // we cannot use ToNumber(object) because it treats some builtin classes as numbers
+                    if (y.Object is decimal yd)
+                    {
+                        return Compare(dx, (double)yd);
+                    }
                     // Notice: Object of class {0} could not be converted to int
                     PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetDebugType(y), PhpVariable.TypeNameDouble));
                     return Compare(dx, 1.0); // object is treated as '1'
+                case PhpTypeCode.Alias: return Compare(dx, y.Alias.Value);
             }
 
             throw InvalidTypeCodeException("compare", PhpVariable.TypeNameDouble, PhpVariable.GetDebugType(y));
@@ -154,6 +167,7 @@ namespace Pchp.Core
         {
             switch (y.TypeCode)
             {
+                case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
                 case PhpTypeCode.Boolean: return Compare(Convert.ToBoolean(sx), y.Boolean);
                 case PhpTypeCode.Long: return Compare(sx, y.Long);
                 case PhpTypeCode.Double: return Compare(sx, y.Double);
@@ -162,7 +176,6 @@ namespace Pchp.Core
                 case PhpTypeCode.MutableString: return Compare(sx, y.MutableString.ToString());
                 case PhpTypeCode.Object: return CompareStringToObject(sx, y.Object);
                 case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
-                case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
             }
 
             throw InvalidTypeCodeException("compare", PhpVariable.TypeNameString, PhpVariable.GetDebugType(y));
@@ -172,6 +185,7 @@ namespace Pchp.Core
         {
             switch (y.TypeCode)
             {
+                case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
                 case PhpTypeCode.Boolean: return Compare(sx.ToBoolean(), y.Boolean);
                 case PhpTypeCode.Long: return Compare(sx.ToString(), y.Long);
                 case PhpTypeCode.Double: return Compare(sx.ToString(), y.Double);
@@ -180,7 +194,6 @@ namespace Pchp.Core
                 case PhpTypeCode.MutableString: return Compare(sx, y.MutableStringBlob);
                 case PhpTypeCode.Object: return CompareStringToObject(sx.ToString(), y.Object);
                 case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
-                case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
             }
 
             throw InvalidTypeCodeException("compare", PhpVariable.TypeNameString, PhpVariable.GetDebugType(y));
@@ -190,16 +203,19 @@ namespace Pchp.Core
         {
             Debug.Assert(y != null);
 
-            var toString = y.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.__tostring];
-            if (toString == null)
-            {
-                // If not convertible to string (it must contain the __toString method), the object is always greater
-                return -1;
-            }
-            else
+            if (y.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.__tostring] != null)
             {
                 // __toString is eventually called from ToString
                 return Compare(sx, y.ToString());
+            }
+            else if (y is decimal yd)
+            {
+                return Compare(sx, (double)yd);
+            }
+            else
+            {
+                // If not convertible to string (it must contain the __toString method), the object is always greater
+                return -1;
             }
         }
 
@@ -210,13 +226,29 @@ namespace Pchp.Core
             if (x.Equals(y.Object)) return 0;
             if (x is IPhpComparable) return ((IPhpComparable)x).Compare(y);
             if (y.Object is IPhpComparable) return -((IPhpComparable)y.Object).Compare(PhpValue.FromClass(x));
+            if (x is decimal xd) return Compare((double)xd, y);
 
             switch (y.TypeCode)
             {
-                case PhpTypeCode.Null: return 1;
-                case PhpTypeCode.Boolean: return y.Boolean ? 0 : 1;
-                case PhpTypeCode.Alias: return Compare(x, y.Alias.Value);
-                case PhpTypeCode.String: return -CompareStringToObject(y.String, x);
+                case PhpTypeCode.Null:
+                    return 1;
+
+                case PhpTypeCode.Boolean:
+                    return y.Boolean ? 0 : 1;
+
+                case PhpTypeCode.Long:
+                    // Notice: Object of class {0} could not be converted to int
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetDebugType(y), PhpVariable.TypeNameInt));
+                    return Compare(1L, y.Long);
+
+                case PhpTypeCode.Double:
+                    // Notice: Object of class {0} could not be converted to float
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetDebugType(y), PhpVariable.TypeNameFloat));
+                    return Compare(1L, y.Long);
+
+                case PhpTypeCode.String:
+                    return -CompareStringToObject(y.String, x);
+
                 case PhpTypeCode.Object:
                     Debug.Assert(y.Object != null);
                     var result = CompareObjects(x, y.Object, PhpComparer.Default, out var incomparable);
@@ -229,7 +261,17 @@ namespace Pchp.Core
                         return 1;
                     }
                     return result;
-                default: return 1;
+
+                case PhpTypeCode.Alias:
+                    return Compare(x, y.Alias.Value);
+
+                default:
+                    PhpException.Throw(PhpError.Notice,
+                        string.Format(Resources.ErrResources.incomparable_objects_compared_exception,
+                        x.GetPhpTypeInfo().Name,
+                        PhpVariable.GetDebugType(y)));
+
+                    return 0;
             }
         }
 
@@ -327,25 +369,23 @@ namespace Pchp.Core
             return count_x - count_y;
         }
 
-        public static int CompareNull(PhpValue y)
+        public static int CompareNull(PhpValue y) => y.TypeCode switch
         {
-            switch (y.TypeCode)
-            {
-                case PhpTypeCode.Boolean: return y.Boolean ? -1 : 0;
-                case PhpTypeCode.Long: return y.Long == 0 ? 0 : -1;
-                case PhpTypeCode.Double: return y.Double == 0 ? 0 : -1;
-                case PhpTypeCode.String: return y.String.Length == 0 ? 0 : -1;
-                case PhpTypeCode.MutableString: return y.MutableString.Length == 0 ? 0 : -1;
-                case PhpTypeCode.PhpArray: return -y.Array.Count;
-                case PhpTypeCode.Alias: return CompareNull(y.Alias.Value);
-                case PhpTypeCode.Null: return 0;
-                case PhpTypeCode.Object: return -1;
-            }
-
-            throw InvalidTypeCodeException("compare", PhpVariable.TypeNameNull, PhpVariable.GetDebugType(y));
-        }
+            PhpTypeCode.Null => 0,
+            PhpTypeCode.Boolean => y.Boolean ? -1 : 0,
+            PhpTypeCode.Long => y.Long == 0 ? 0 : -1,
+            PhpTypeCode.Double => y.Double == 0 ? 0 : -1,
+            PhpTypeCode.PhpArray => -y.Array.Count,
+            PhpTypeCode.String => y.String.Length == 0 ? 0 : -1,
+            PhpTypeCode.MutableString => y.MutableString.Length == 0 ? 0 : -1,
+            PhpTypeCode.Object => -1, // CONSIDER: y.Object is decimal yd ? CompareNull((double)yd)
+            PhpTypeCode.Alias => CompareNull(y.Alias.Value),
+            _ => throw InvalidTypeCodeException("compare", PhpVariable.TypeNameNull, PhpVariable.GetDebugType(y))
+        };
 
         public static int Compare(PhpNumber x, PhpValue y) => x.IsLong ? Compare(x.Long, y) : Compare(x.Double, y);
+
+        public static int Compare(PhpArray x, PhpValue y) => x.Compare(y);
 
         public static int Compare(PhpValue x, PhpValue y) => x.TypeCode switch
         {
@@ -353,7 +393,7 @@ namespace Pchp.Core
             PhpTypeCode.Boolean => Compare(x.Boolean, y),
             PhpTypeCode.Long => Compare(x.Long, y),
             PhpTypeCode.Double => Compare(x.Double, y),
-            PhpTypeCode.PhpArray => x.Array.Compare(y),
+            PhpTypeCode.PhpArray => Compare(x.Array, y),
             PhpTypeCode.String => Compare(x.String, y),
             PhpTypeCode.MutableString => Compare(x.MutableStringBlob, y),
             PhpTypeCode.Object => Compare(x.Object, y),
@@ -383,21 +423,20 @@ namespace Pchp.Core
         public static int Compare(string sx, string sy)
         {
             var info_x = Convert.StringToNumber(sx, out var lx, out var dx);
+            if ((info_x & Convert.NumberInfo.IsNumber) != 0)
+            {
+                var info_y = Convert.StringToNumber(sy, out var ly, out var dy);
+                if ((info_y & Convert.NumberInfo.IsNumber) != 0)
+                {
+                    // numeric comparison
+                    return (((info_x | info_y) & Convert.NumberInfo.Double) != 0)
+                        ? Compare(dx, dy)   // at least one operand has been converted to double:
+                        : Compare(lx, ly);  // compare integers:
+                }
+            }
 
             // an operand is not entirely convertable to numbers => string comparison is performed:
-            if ((info_x & Convert.NumberInfo.IsNumber) == 0)
-                return string.CompareOrdinal(sx, sy);
-
-            var info_y = Convert.StringToNumber(sy, out var ly, out var dy);
-
-            // an operand is not entirely convertable to numbers => string comparison is performed:
-            if ((info_y & Convert.NumberInfo.IsNumber) == 0)
-                return string.CompareOrdinal(sx, sy);
-
-            // numeric comparison
-            return (((info_x | info_y) & Convert.NumberInfo.Double) != 0)
-                ? Compare(dx, dy)   // at least one operand has been converted to double:
-                : Compare(lx, ly);  // compare integers:
+            return string.CompareOrdinal(sx, sy);
         }
 
         /// <summary>
@@ -415,12 +454,9 @@ namespace Pchp.Core
         {
             Debug.Assert(sx != null);
 
-            switch (Convert.StringToNumber(sx, out var lx, out var dx) & Convert.NumberInfo.TypeMask)
-            {
-                case Convert.NumberInfo.Double: return Compare(dx, (double)ly);
-                case Convert.NumberInfo.LongInteger: return Compare(lx, ly);
-                default: Debug.Assert(false); throw null;
-            }
+            return ((Convert.StringToNumber(sx, out var lx, out var dx) & Convert.NumberInfo.Double) != 0)
+                ? Compare(dx, (double)ly)
+                : Compare(lx, ly);
         }
 
         /// <summary>
@@ -430,12 +466,9 @@ namespace Pchp.Core
         {
             Debug.Assert(sx != null);
 
-            switch (Convert.StringToNumber(sx, out var lx, out var dx) & Convert.NumberInfo.TypeMask)
-            {
-                case Convert.NumberInfo.Double: return Compare(dx, dy);
-                case Convert.NumberInfo.LongInteger: return Compare((double)lx, dy);
-                default: Debug.Assert(false); throw null;
-            }
+            Convert.StringToNumber(sx, out _, out var dx);
+
+            return Compare(dx, dy);
         }
 
         /// <summary>
@@ -444,16 +477,13 @@ namespace Pchp.Core
 		/// <param name="x">The first object.</param>
 		/// <param name="ly">The second object.</param>
 		/// <returns>Whether the values of operands are the same.</returns>
-        public static bool Equals(string/*!*/ x, long ly)
+        public static bool Equals(string/*!*/x, long ly)
         {
             Debug.Assert(x != null);
 
-            switch (Convert.StringToNumber(x, out var lx, out var dx) & Convert.NumberInfo.TypeMask)
-            {
-                case Convert.NumberInfo.Double: return dx == ly;
-                case Convert.NumberInfo.LongInteger: return lx == ly;
-                default: Debug.Assert(false); throw null;
-            }
+            return ((Convert.StringToNumber(x, out var lx, out var dx) & Convert.NumberInfo.Double) != 0)
+                ? dx == ly
+                : lx == ly;
         }
 
         /// <summary>
@@ -466,12 +496,9 @@ namespace Pchp.Core
         {
             Debug.Assert(x != null);
 
-            switch (Convert.StringToNumber(x, out var lx, out var dx) & Convert.NumberInfo.TypeMask)
-            {
-                case Convert.NumberInfo.Double: return dx == dy;
-                case Convert.NumberInfo.LongInteger: return lx == dy;
-                default: Debug.Assert(false); throw null;
-            }
+            Convert.StringToNumber(x, out _, out var dx);
+
+            return dx == dy;
         }
     }
 
