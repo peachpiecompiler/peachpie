@@ -68,6 +68,23 @@ namespace Pchp.CodeAnalysis.CodeGen
                 from = from.GetEnumUnderlyingType();
             }
 
+            if (from.SpecialType == SpecialType.System_Decimal)
+            {
+                // explicit numeric conversion, treating decimal as double
+
+                // (double)System.Decimal
+                from = cg.EmitCall(
+                    ILOpCode.Call,
+                    (MethodSymbol)cg.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Convert__ToDoubleDecimal));
+            }
+
+            if (to.SpecialType == SpecialType.System_Decimal)
+            {
+                // convert to double and then to decimal
+                EmitNumericConversion(cg, from, cg.CoreTypes.Double, @checked);
+                throw new NotImplementedException("double -> decimal");
+            }
+
             var fromcode = from.PrimitiveTypeCode;
             var tocode = to.PrimitiveTypeCode;
 

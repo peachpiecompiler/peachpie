@@ -398,6 +398,7 @@ namespace Pchp.Core
         public static implicit operator PhpValue(long value) => Create(value);
         public static implicit operator PhpValue(ulong value) => Create(value);
         public static implicit operator PhpValue(double value) => Create(value);
+        public static explicit operator PhpValue(decimal value) => Create((double)value); // loosing precision
         public static implicit operator PhpValue(PhpNumber value) => Create(value);
         public static implicit operator PhpValue(IntStringKey value) => Create(value);
         public static implicit operator PhpValue(string value) => Create(value);
