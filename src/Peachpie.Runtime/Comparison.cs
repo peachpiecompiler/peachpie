@@ -80,7 +80,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Null: return sx.Length == 0;
             }
 
-            throw InvalidTypeCodeException("ceq", "string", y.TypeCode.ToString());
+            throw InvalidTypeCodeException("ceq", PhpVariable.TypeNameString, PhpVariable.GetDebugType(y));
         }
 
         public static bool CeqNull(PhpValue x)
@@ -117,11 +117,12 @@ namespace Pchp.Core
                     Debug.Assert(y.Object != null);
 
                     // Notice: Object of class {0} could not be converted to int
-                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetTypeName(y), PhpVariable.TypeNameInt));
+                    // Notice: Object of class {0} could not be converted to int
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetDebugType(y), PhpVariable.TypeNameInt));
                     return Compare(lx, 1L); // object is treated as '1'
             }
 
-            throw InvalidTypeCodeException("compare", "long", y.TypeCode.ToString());
+            throw InvalidTypeCodeException("compare", PhpVariable.TypeNameInt, PhpVariable.GetDebugType(y));
         }
 
         public static int Compare(double dx, PhpValue y)
@@ -138,11 +139,11 @@ namespace Pchp.Core
                 case PhpTypeCode.Null: return (dx == 0.0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     // Notice: Object of class {0} could not be converted to int
-                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetTypeName(y), PhpVariable.TypeNameDouble));
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetDebugType(y), PhpVariable.TypeNameDouble));
                     return Compare(dx, 1.0); // object is treated as '1'
             }
 
-            throw InvalidTypeCodeException("compare", "double", y.TypeCode.ToString());
+            throw InvalidTypeCodeException("compare", PhpVariable.TypeNameDouble, PhpVariable.GetDebugType(y));
         }
 
         public static int Compare(bool bx, PhpValue y) => Compare(bx, y.ToBoolean());
@@ -164,7 +165,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
             }
 
-            throw InvalidTypeCodeException("compare", "string", y.TypeCode.ToString());
+            throw InvalidTypeCodeException("compare", PhpVariable.TypeNameString, PhpVariable.GetDebugType(y));
         }
 
         public static int Compare(PhpString.Blob sx, PhpValue y)
@@ -182,7 +183,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Null: return (sx.Length == 0) ? 0 : 1;
             }
 
-            throw InvalidTypeCodeException("compare", "string", y.TypeCode.ToString());
+            throw InvalidTypeCodeException("compare", PhpVariable.TypeNameString, PhpVariable.GetDebugType(y));
         }
 
         static int CompareStringToObject(string sx, object y)
@@ -341,7 +342,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Object: return -1;
             }
 
-            throw InvalidTypeCodeException("compare", "null", y.TypeCode.ToString());
+            throw InvalidTypeCodeException("compare", PhpVariable.TypeNameNull, PhpVariable.GetDebugType(y));
         }
 
         public static int Compare(PhpNumber x, PhpValue y) => x.IsLong ? Compare(x.Long, y) : Compare(x.Double, y);
@@ -357,7 +358,7 @@ namespace Pchp.Core
             PhpTypeCode.MutableString => Compare(x.MutableStringBlob, y),
             PhpTypeCode.Object => Compare(x.Object, y),
             PhpTypeCode.Alias => Compare(x.Alias.Value, y),
-            _ => throw InvalidTypeCodeException("compare", x.TypeCode.ToString(), y.TypeCode.ToString()),
+            _ => throw InvalidTypeCodeException("compare", PhpVariable.GetDebugType(x), PhpVariable.GetDebugType(y)),
         };
 
         public static int Compare(PhpValue x, long ly) => -Compare(ly, x);
