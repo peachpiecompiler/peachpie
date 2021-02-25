@@ -139,7 +139,7 @@ namespace Pchp.CodeAnalysis.Emit
                                         il.LocalSlotManager.FreeSlot(runtimetypehandle_loc);
                                         break;
                                     default:
-                                        throw new ArgumentException(p.Name);
+                                        throw new ArgumentException($"Startup method's argument '${p.Name}' of type '{p.Type.Name}' cannot be fullfilled.");
                                 }
                             }
 
