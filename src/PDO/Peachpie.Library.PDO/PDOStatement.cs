@@ -59,7 +59,7 @@ namespace Peachpie.Library.PDO
                     switch (Type.Value & ~PARAM.PARAM_INPUT_OUTPUT)
                     {
                         case PARAM.PARAM_BOOL:
-                            p.Value = Variable.ToBoolean(); // TODO: boxed value
+                            p.Value = Utilities.DbValueHelper.AsObject(Variable.ToBoolean());
                             p.DbType = DbType.Boolean;
                             break;
 
@@ -991,9 +991,10 @@ namespace Peachpie.Library.PDO
                     var current = enumerator.Current;
 
                     bound_params[current.Key] =
-                        current.Value.IsNull
-                            ? new BoundParam { Type = PARAM.PARAM_NULL }
-                            : new BoundParam { Type = PARAM.PARAM_STR, Variable = current.Value.ToString(Context), };
+                        current.Value.IsNull ? new BoundParam { Type = PARAM.PARAM_NULL }
+                        : current.Value.IsLong(out var lvalue) ? new BoundParam { Type = PARAM.PARAM_INT, Variable = lvalue }
+                        : current.Value.IsBoolean(out var bvalue) ? new BoundParam { Type = PARAM.PARAM_BOOL, Variable = bvalue }
+                        : new BoundParam { Type = PARAM.PARAM_STR, Variable = current.Value.ToString(Context), };
                 }
             }
 
