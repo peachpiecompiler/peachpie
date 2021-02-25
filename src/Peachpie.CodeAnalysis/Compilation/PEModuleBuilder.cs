@@ -41,6 +41,7 @@ namespace Pchp.CodeAnalysis.Emit
                 {
                     var types = this.Compilation.CoreTypes;
                     var methods = this.Compilation.CoreMethods;
+                    var conversions = this.Compilation.Conversions;
                     var args_place = new ParamPlace(realmethod.Parameters[0]);
 
                     // int exitcode = 0;
@@ -52,6 +53,15 @@ namespace Pchp.CodeAnalysis.Emit
                     var ctx_loc = il.LocalSlotManager.AllocateSlot(types.Context.Symbol, LocalSlotConstraints.None);
                     var ex_loc = il.LocalSlotManager.AllocateSlot(types.Exception.Symbol, LocalSlotConstraints.None);
                     var onUnhandledException_method = types.Context.Symbol.LookupMember<MethodSymbol>("OnUnhandledException");
+
+                    var cg = new CodeGenerator(il,
+                        moduleBuilder: this,
+                        diagnostics: diagnostic,
+                        optimizations: PhpOptimizationLevel.Release,
+                        emittingPdb: false,
+                        container: realmethod.ContainingType,
+                        contextPlace: new LocalPlace(ctx_loc),
+                        thisPlace: null);
 
                     if (_compilation.Options.OutputKind == OutputKind.ConsoleApplication)
                     {
@@ -99,7 +109,8 @@ namespace Pchp.CodeAnalysis.Emit
                             // emit .call method;
                             if (method.HasThis)
                             {
-                                throw new NotImplementedException();    // TODO: create instance of ContainingType
+                                // TODO: error code for this
+                                throw new NotImplementedException("Startup method must be static.");    // CONSIDER: create instance of ContainingType
                             }
 
                             // params
@@ -132,8 +143,12 @@ namespace Pchp.CodeAnalysis.Emit
                                 }
                             }
 
-                            if (il.EmitCall(this, diagnostic, ILOpCode.Call, method).SpecialType != SpecialType.System_Void)
-                                il.EmitOpCode(ILOpCode.Pop);
+                            var rettype = il.EmitCall(this, diagnostic, ILOpCode.Call, method);
+                            if (rettype.SpecialType != SpecialType.System_Void)
+                            {
+                                cg.EmitConvert(rettype, 0, types.Int32, Semantics.ConversionKind.Explicit);
+                                il.EmitLocalStore(exitcode_loc);
+                            }
                         }
                         il.CloseLocalScope();   // /Try
 
