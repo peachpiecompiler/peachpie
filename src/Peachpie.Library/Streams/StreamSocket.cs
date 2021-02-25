@@ -304,6 +304,7 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Accepts a connection on a server socket.
         /// </summary>
+        [return: CastToFalse]
         public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket)
         {
             return stream_socket_accept(ctx, serverSocket, ctx.Configuration.Core.DefaultSocketTimeout, out _);
@@ -312,7 +313,8 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Accepts a connection on a server socket.
         /// </summary>
-        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, int timeout)
+        [return: CastToFalse]
+        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, double timeout)
         {
             return stream_socket_accept(ctx, serverSocket, timeout, out _);
         }
@@ -320,7 +322,8 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Accepts a connection on a server socket.
         /// </summary>
-        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, int timeout, out string peerName)
+        [return: CastToFalse]
+        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, double timeout, out string peerName)
         {
             peerName = string.Empty;
 
@@ -329,16 +332,27 @@ namespace Pchp.Library.Streams
 
             try
             {
-                var socket = stream.Socket.Accept(); // TODO: support timeout // BeginAccept().Wait( timeout )
-                socket.NoDelay = true; // blocking
-                return new SocketStream(ctx, socket, stream.OpenedPath, stream.Context);
+                var result = stream.Socket.BeginAccept(null, stream.Socket);
+                Debug.Assert(result != null, "BeginAccept() returned null.");
+
+                if (result.AsyncWaitHandle.WaitOne(timeout < 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(timeout)))
+                {
+                    var socket = stream.Socket.EndAccept(result);
+                    socket.NoDelay = true; // blocking
+                    return new SocketStream(ctx, socket, stream.OpenedPath, stream.Context);
+                }
+                else
+                {
+                    // timeout
+                    PhpException.Throw(PhpError.Warning, Resources.LibResources.socket_accept_timeout);
+                }
             }
             catch (SocketException e)
             {
                 PhpException.Throw(PhpError.Warning, e.Message);
             }
 
-            return null;
+            return null; // ~FALSE
         }
 
         #endregion

@@ -1582,6 +1582,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond..
+        /// </summary>
+        public static string socket_accept_timeout {
+            get {
+                return ResourceManager.GetString("socket_accept_timeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error connecting &apos;{0}&apos;: {1}.
         /// </summary>
         public static string socket_open_error {

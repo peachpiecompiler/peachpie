@@ -732,4 +732,7 @@
   <data name="serialization_json_utf8_error" xml:space="preserve">
     <value>Malformed UTF-8 characters, possibly incorrectly encoded</value>
   </data>
+  <data name="socket_accept_timeout" xml:space="preserve">
+    <value>A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.</value>
+  </data>
 </root>

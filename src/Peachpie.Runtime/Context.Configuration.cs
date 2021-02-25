@@ -159,7 +159,7 @@ namespace Pchp.Core
         /// <summary>
         /// Default timeout for socket based streams.
         /// </summary>
-        public int DefaultSocketTimeout = 60;
+        public double DefaultSocketTimeout = 60.0;
 
         /// <summary>
         /// A default file open mode used when it is not specified in <c>fopen</c> function explicitly. 
