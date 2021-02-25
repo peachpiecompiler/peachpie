@@ -552,4 +552,27 @@ namespace Pchp.Core
         public static PhpCallable BindMagicCall(this PhpInvokable invokable, object target, string name)
             => (ctx, arguments) => invokable(ctx, target, new[] { (PhpValue)name, (PhpValue)PhpArray.New(arguments) });
     }
+
+    /// <summary>
+    /// Helper class providing conversion from <see cref="IPhpCallable"/> to a custom <see cref="System.Delegate"/>.
+    /// </summary>
+    /// <typeparam name="TFunc"></typeparam>
+    public static class PhpCallableToDelegate<TFunc> where TFunc : Delegate
+    {
+        public static TFunc Get(Context ctx, IPhpCallable callable)
+        {
+            if (callable == null)
+            {
+                throw new ArgumentNullException(nameof(callable));
+            }
+
+            //
+            if (typeof(TFunc).GetType() == typeof(Action)) return (TFunc)(object)new Action(() => callable.Invoke(ctx));
+            if (typeof(TFunc).GetType() == typeof(Func<bool>)) return (TFunc)(object)new Func<bool>(() => (bool)callable.Invoke(ctx));
+            if (typeof(TFunc).GetType() == typeof(Func<long, long>)) return (TFunc)(object)new Func<long, long>((p1) => (long)callable.Invoke(ctx, p1));
+
+            //
+            throw new NotImplementedException($"Creating delegate of type '{typeof(TFunc)}'."); // TODO: construct the delegate dynamically
+        }
+    }
 }
