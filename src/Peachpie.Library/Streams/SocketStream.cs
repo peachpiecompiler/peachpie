@@ -179,13 +179,22 @@ namespace Pchp.Library.Streams
 
         public override bool SetParameter(StreamParameterOptions option, PhpValue value)
         {
-            if (option == StreamParameterOptions.ReadTimeout)
+            switch (option)
             {
-                int timeout = (int)(value.ToDouble() * 1000.0);
-                Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout);
-                Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, timeout);
-                return true;
+                case StreamParameterOptions.ReadTimeout:
+                    // value is in seconds
+                    var timeout = (int)(value.ToDouble() * 1000.0); // milliseconds
+                    Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout);
+                    Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, timeout);
+                    return true;
+
+                case StreamParameterOptions.BlockingMode:
+                    // value is boolean indicating whether blocking should be enabled
+                    Socket.Blocking = (bool)value;
+                    return true;
             }
+
+            //
             return base.SetParameter(option, value);
         }
 

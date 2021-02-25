@@ -965,12 +965,17 @@ namespace Pchp.Library.Streams
 
         /// <summary>Set blocking/non-blocking (synchronous/asynchronous I/O operations) mode on a stream.</summary>
         /// <param name="resource">A handle to a stream resource.</param>
-        /// <param name="mode"><c>1</c> for blocking, <c>0</c> for non-blocking.</param>
+        /// <param name="enable">
+        /// If enable is false, the given stream will be switched to non-blocking mode,
+        /// and if true, it will be switched to blocking mode.
+        /// This affects calls like fgets() and fread() that read from the stream.
+        /// In non-blocking mode an fgets() call will always return right away while
+        /// in blocking mode it will wait for data to become available on the stream.</param>
         /// <returns><c>true</c> if the operation is supported and was successful, <c>false</c> otherwise.</returns>
-        public static bool stream_set_blocking(PhpResource resource, int mode)
+        public static bool stream_set_blocking(PhpResource resource, bool enable)
         {
             var stream = PhpStream.GetValid(resource);
-            return stream != null && stream.SetParameter(StreamParameterOptions.BlockingMode, (PhpValue)(mode > 0));
+            return stream != null && stream.SetParameter(StreamParameterOptions.BlockingMode, enable);
         }
 
         /// <summary>Set timeout period on a stream</summary>
