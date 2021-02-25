@@ -139,7 +139,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpMemberVisibilityAttributeName = "PhpMemberVisibilityAttribute";
 
         public readonly CoreType
-            Context, Operators, Convert, StrictConvert, Comparison, StrictComparison, PhpException,
+            Context, Operators, Convert, StrictConvert, Comparison, StrictComparison, PhpException, PhpCallableToDelegate,
             ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, DefaultValueAttribute, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute, PhpCustomAtribute,
             NullableAttribute, NullableContextAttribute,
             ScriptDiedException,
@@ -193,6 +193,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Convert = Create("Convert");
             StrictConvert = Create("StrictConvert");
             PhpException = Create("PhpException");
+            PhpCallableToDelegate = Create("PhpCallableToDelegate`1"); // Arity 1
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create(PhpTraitAttributeName);
             PharAttribute = Create("PharAttribute");

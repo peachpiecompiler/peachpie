@@ -559,7 +559,7 @@ namespace Pchp.Core
     /// <typeparam name="TFunc"></typeparam>
     public static class PhpCallableToDelegate<TFunc> where TFunc : Delegate
     {
-        public static TFunc Get(Context ctx, IPhpCallable callable)
+        public static TFunc Get(IPhpCallable callable, Context ctx)
         {
             if (callable == null)
             {
@@ -567,9 +567,9 @@ namespace Pchp.Core
             }
 
             //
-            if (typeof(TFunc).GetType() == typeof(Action)) return (TFunc)(object)new Action(() => callable.Invoke(ctx));
-            if (typeof(TFunc).GetType() == typeof(Func<bool>)) return (TFunc)(object)new Func<bool>(() => (bool)callable.Invoke(ctx));
-            if (typeof(TFunc).GetType() == typeof(Func<long, long>)) return (TFunc)(object)new Func<long, long>((p1) => (long)callable.Invoke(ctx, p1));
+            if (typeof(TFunc) == typeof(Action)) return (TFunc)(object)new Action(() => callable.Invoke(ctx));
+            if (typeof(TFunc) == typeof(Func<bool>)) return (TFunc)(object)new Func<bool>(() => (bool)callable.Invoke(ctx));
+            if (typeof(TFunc) == typeof(Func<long, long>)) return (TFunc)(object)new Func<long, long>((p1) => (long)callable.Invoke(ctx, p1));
 
             //
             throw new NotImplementedException($"Creating delegate of type '{typeof(TFunc)}'."); // TODO: construct the delegate dynamically
