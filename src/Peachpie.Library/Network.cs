@@ -159,11 +159,9 @@ namespace Pchp.Library
         /// <summary>
         /// Sets blocking mode.
         /// </summary>
-        /// <param name="stream">A stream.</param>
-        /// <param name="mode">A mode.</param>
-        public static bool socket_set_blocking(PhpResource stream, int mode)
+        public static bool socket_set_blocking(PhpResource stream, bool enable)
         {
-            return PhpStreams.stream_set_blocking(stream, mode);
+            return PhpStreams.stream_set_blocking(stream, enable);
         }
 
 
