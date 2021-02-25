@@ -127,7 +127,7 @@ namespace Pchp.Core.Dynamic
             {
                 Debug.Assert(typeof(Nullable<bool>).IsValueType);
 
-                return BindAsReferenceType(arg, target);
+                return BindAsReferenceType(arg, target, ctx);
             }
             else
             {
@@ -603,9 +603,20 @@ namespace Pchp.Core.Dynamic
             return Expression.Constant(null, Cache.Types.Object[0]);
         }
 
-        static Expression BindAsReferenceType(Expression expr, Type target)
+        static Expression BindAsReferenceType(Expression expr, Type target, Expression ctx)
         {
             Debug.Assert(expr.Type != typeof(PhpAlias));
+
+            // to System.Delegate,
+            // before dereferencing below
+            if (target.IsSubclassOf(typeof(Delegate)))
+            {
+                // Template: PhpCallableToDelegate<target>.Get( BindAsCallable(expr), Context )
+                var callable = BindAsCallable(expr);
+                return Expression.Call(
+                    typeof(PhpCallableToDelegate<>).MakeGenericType(target).GetMethod("Get"),
+                    callable, ctx);
+            }
 
             // from PhpValue:
             if (expr.Type == typeof(PhpValue))
