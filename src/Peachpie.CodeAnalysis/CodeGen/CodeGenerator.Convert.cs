@@ -96,8 +96,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (from.IsReferenceType)
                 {
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object)
-                        .Expect(CoreTypes.PhpValue);
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
                 }
                 else if (from.SpecialType == SpecialType.System_Void)
                 {
@@ -106,7 +105,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    throw ExceptionUtilities.NotImplementedException(this, $"{from.Name} -> PhpValue");
+                    // box & wrap to PhpValue.Object
+                    EmitBox(from);
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
                 }
             }
             //
