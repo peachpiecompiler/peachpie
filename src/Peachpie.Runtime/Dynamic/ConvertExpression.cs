@@ -545,6 +545,16 @@ namespace Pchp.Core.Dynamic
                     return BindToValue(Expression.Convert(expr, typeof(object)));
                 }
 
+                // from Nullable<T>
+                if (source.IsNullable_T(out var T))
+                {
+                    // Template: expr.HasValue ? expr.GetValueOrDefault() : NULL
+                    return Expression.Condition(
+                        test: Expression.Property(expr, "HasValue"),
+                        ifTrue: BindToValue(Expression.Call(expr, expr.Type.GetMethod("GetValueOrDefault", Array.Empty<Type>()))),
+                        ifFalse: Expression.Field(null, Cache.Properties.PhpValue_Null));
+                }
+
                 throw new NotImplementedException($"{source.FullName} -> PhpValue");
             }
             else if (
