@@ -804,7 +804,9 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                             return false;
                         }
 
-                        return _symbol.IsReferenceType;
+                        // all the types other than listed here
+                        // are treated as PHP objects (can call methods and properties on them)
+                        return true;
 
                     default:
                         return _symbol.IsReferenceType;
@@ -812,7 +814,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             }
         }
 
-        public override bool IsArray => IsPeachpieCorLibrary && _symbol.Name == "PhpArray";
+        public override bool IsArray => _symbol.Is_PhpArray();
 
         public override bool IsLambda => IsPeachpieCorLibrary && _symbol.Name == "Closure";
 
