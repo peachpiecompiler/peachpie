@@ -1191,12 +1191,12 @@ namespace Pchp.Core
 
         /// <summary>
         /// Creates <see cref="PhpValue"/> from <see cref="Nullable{T}"/>.
-        /// In case <see cref="Nullable{T}.HasValue"/> is <c>false</c>, a <see cref="PhpValue.False"/> is returned.
+        /// In case <see cref="Nullable{T}.HasValue"/> is <c>false</c>, a <see cref="PhpValue.Null"/> is returned.
         /// </summary>
         /// <typeparam name="T">Nullable type argument.</typeparam>
         /// <param name="value">Original value to convert from.</param>
-        /// <returns><see cref="PhpValue"/> containing value of given nullable, or <c>FALSE</c> if nullable has no value.</returns>
-        public static PhpValue Create<T>(T? value) where T : struct => value.HasValue ? FromClr(value.GetValueOrDefault()) : PhpValue.False;
+        /// <returns><see cref="PhpValue"/> containing value of given nullable, or <c>NULL</c> if nullable has no value.</returns>
+        public static PhpValue Create<T>(T? value) where T : struct => value.HasValue ? FromStruct(value.GetValueOrDefault()) : PhpValue.Null;
 
         /// <summary>
         /// Creates value containing new <see cref="PhpAlias"/> pointing to <c>NULL</c> value.
@@ -1230,6 +1230,15 @@ namespace Pchp.Core
         {
             Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias || value is PhpString || value is PhpArray || value is PhpString.Blob));
             return new PhpValue(PhpTypeCode.Object, value);
+        }
+
+        public static PhpValue FromStruct<TValue>(TValue value) where TValue : struct
+        {
+            Debug.Assert(!typeof(TValue).IsNullable_T(out _));
+
+            // TODO: we might need to wrap the value into our own "box"
+            // so non-readonly methods would modify the "box" instance
+            return FromClr((object)value);
         }
 
         /// <summary>

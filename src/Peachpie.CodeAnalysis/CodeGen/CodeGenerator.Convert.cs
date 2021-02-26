@@ -106,6 +106,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else
                 {
                     // box & wrap to PhpValue.Object
+                    // TODO: PhpValue.FromStruct( from )
                     EmitBox(from);
                     EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
                 }
