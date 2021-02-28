@@ -824,6 +824,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToClass = t.Method("ToClass");
 
                 RemoveKey_IntStringKey = t.Method("RemoveKey", ct.IntStringKey);
+                UnsetValue_IntStringKey = t.Method("UnsetValue", ct.IntStringKey);
 
                 GetItemValue_IntStringKey = t.Method("GetItemValue", ct.IntStringKey);
                 GetItemRef_IntStringKey = t.Method("GetItemRef", ct.IntStringKey);
@@ -849,7 +850,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToClass, ToString_Context,
-                RemoveKey_IntStringKey,
+                RemoveKey_IntStringKey, UnsetValue_IntStringKey,
                 GetItemValue_IntStringKey, GetItemRef_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, Add_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,

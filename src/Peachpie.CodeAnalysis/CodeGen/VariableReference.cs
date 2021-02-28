@@ -746,8 +746,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (stack == null) // IsUnset
                 {
-                    // .RemoveKey(key)
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.RemoveKey_IntStringKey);
+                    // .UnsetValue(key)
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.UnsetValue_IntStringKey);
                 }
                 else if (stack == cg.CoreTypes.PhpAlias) // IsWriteRef
                 {
