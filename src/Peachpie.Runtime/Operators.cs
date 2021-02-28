@@ -239,6 +239,31 @@ namespace Pchp.Core
             target.Value = value;
         }
 
+        /// <summary>
+        /// "unset" operator.
+        /// </summary>
+        public static void UnsetValue(ref PhpValue target)
+        {
+            if (target.Object is PhpAlias alias)
+            {
+                alias.ReleaseRef();
+            }
+
+            target = default;
+        }
+
+        /// <summary>
+        /// "unset" operator.
+        /// </summary>
+        public static void UnsetValue(ref PhpAlias target)
+        {
+            if (target != null)
+            {
+                target.ReleaseRef();
+                target = PhpAlias.Create(default);
+            }
+        }
+
         #endregion
 
         #region Ensure

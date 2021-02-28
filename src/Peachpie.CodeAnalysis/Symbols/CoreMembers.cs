@@ -266,6 +266,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 SetValue_PhpValueRef_PhpValue = ct.Operators.Method("SetValue", ct.PhpValue, ct.PhpValue);
                 PassValue_PhpValueRef = ct.Operators.Method("PassValue", ct.PhpValue);
+                UnsetValue_PhpValueRef = ct.Operators.Method("UnsetValue", ct.PhpValue);
+                UnsetValue_PhpAliasRef = ct.Operators.Method("UnsetValue", ct.PhpAlias);
                 EnsureObject_ObjectRef = ct.Operators.Method("EnsureObject", ct.Object);
                 EnsureArray_PhpArrayRef = ct.Operators.Method("EnsureArray", ct.PhpArray);
                 EnsureArray_IPhpArrayRef = ct.Operators.Method("EnsureArray", ct.IPhpArray);
@@ -426,6 +428,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 SetValue_PhpValueRef_PhpValue, PassValue_PhpValueRef,
+                UnsetValue_PhpValueRef, UnsetValue_PhpAliasRef,
                 EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef, EnsureArray_ArrayAccess, EnsureArray_Object, EnsureWritableString_PhpArrayRef,
                 GetItemValue_String_IntStringKey, GetItemValueOrNull_String_IntStringKey, GetItemValue_String_PhpValue_Bool, GetItemValue_String_Int, GetItemValue_PhpValue_PhpValue_Bool,
                 TryGetItemValue_PhpArray_string_PhpValueRef, TryGetItemValue_PhpArray_PhpValue_PhpValueRef, TryGetItemValue_PhpValue_PhpValue_PhpValueRef,

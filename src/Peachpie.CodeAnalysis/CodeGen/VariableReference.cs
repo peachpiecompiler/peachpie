@@ -288,19 +288,22 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // might be ref ? emit address and use SetValue() operator
                 place.EmitLoadAddress(cg.Builder);
-
                 return new LhsStack { Stack = type, StackByRef = true };
             }
             else if (type == cg.CoreTypes.PhpAlias && !access.IsWriteRef && !access.IsUnset)
             {
                 place.EmitLoad(cg.Builder); // : PhpAlias
-
                 return new LhsStack { Stack = type };
+            }
+            else if (access.IsUnset && place.HasAddress && (type.Is_PhpAlias() || type.Is_PhpValue()))
+            {
+                // Template: Operators.UnsetValue(ref ...)
+                place.EmitLoadAddress(cg.Builder);
+                return new LhsStack { Stack = type, StackByRef = true };
             }
             else
             {
                 place.EmitStorePrepare(cg.Builder); // TODO: LhsStack
-
                 return default;
             }
         }
@@ -312,10 +315,28 @@ namespace Pchp.CodeAnalysis.Semantics
             if (access.IsUnset)
             {
                 Debug.Assert(stack == null);
-                Debug.Assert(!lhs.StackByRef);
 
-                stack = cg.EmitLoadDefault(type, 0);
-                place.EmitStore(cg.Builder);
+                if (lhs.StackByRef)
+                {
+                    // Template: Operators.UnsetValue( ref ... )
+                    if (type.Is_PhpValue())
+                    {
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.UnsetValue_PhpValueRef);
+                    }
+                    else if (type.Is_PhpAlias())
+                    {
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.UnsetValue_PhpAliasRef);
+                    }
+                    else
+                    {
+                        throw ExceptionUtilities.Unreachable;
+                    }
+                }
+                else
+                {
+                    cg.EmitLoadDefault(type, 0);
+                    place.EmitStore(cg.Builder);
+                }
                 return;
             }
 
