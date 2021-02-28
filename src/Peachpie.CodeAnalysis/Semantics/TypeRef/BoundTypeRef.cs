@@ -799,7 +799,10 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                     case SpecialType.None:
                         // not PhpArray, PhpResource // TODO: unify this
                         if (_symbol.Is_PhpArray() ||
-                            _symbol.Is_PhpAlias())
+                            _symbol.Is_PhpAlias() ||
+                            _symbol.Is_PhpString() ||
+                            _symbol.Is_PhpResource() ||
+                            _symbol.Is_IntStringKey())
                         {
                             return false;
                         }
