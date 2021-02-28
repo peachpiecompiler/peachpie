@@ -275,6 +275,8 @@ namespace Pchp.Library
             private bool ParseInternal(string xml, PhpArray values, PhpArray indices)
             {
                 var stringReader = new StringReader(xml);
+                // EXCEPTION: 'System.Xml.XmlException' in System.Private.Xml.dll:
+                // 'For security reasons DTD is prohibited in this XML document. To enable DTD processing set the DtdProcessing property on XmlReaderSettings to Parse and pass the settings into XmlReader.Create method.'
                 var reader = XmlReader.Create(stringReader);
                 Stack<ElementRecord> elementStack = new Stack<ElementRecord>();
                 TextRecord textChunk = null;
