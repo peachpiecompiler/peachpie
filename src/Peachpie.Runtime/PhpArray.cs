@@ -343,9 +343,28 @@ namespace Pchp.Core
         public bool IsEmpty() => Count == 0;
 
         /// <summary>
+        /// Unsets the value.
+        /// Releases reference and removes the value from the collection.
+        /// </summary>
+        public void UnsetValue(IntStringKey key)
+        {
+            if (TryGetValue(key, out var value))
+            {
+                if (value.Object is PhpAlias alias)
+                {
+                    alias.ReleaseRef();
+                }
+
+                RemoveKey(key);
+            }
+        }
+
+        /// <summary>
         /// Not used.
         /// </summary>
-        public void Dispose() { }
+        void IDisposable.Dispose()
+        {
+        }
 
         #endregion
 
@@ -815,6 +834,9 @@ namespace Pchp.Core
         public void SetItemAlias(IntStringKey key, PhpAlias alias)
         {
             this.EnsureWritable();
+
+            // TODO: ReleaseRef of previous value if any
+
             table[key] = PhpValue.Create(alias);
         }
 
