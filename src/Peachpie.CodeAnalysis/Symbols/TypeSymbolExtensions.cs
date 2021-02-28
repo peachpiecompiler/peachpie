@@ -111,7 +111,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return t.MetadataName == "PhpArray" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
         }
-        
+
         public static bool Is_PhpResource(this ITypeSymbol t)
         {
             return t.MetadataName == "PhpResource" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
@@ -130,6 +130,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool Is_PhpString(this ITypeSymbol t)
         {
             return t.MetadataName == "PhpString" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
+        }
+
+        public static bool Is_IntStringKey(this ITypeSymbol t)
+        {
+            return t.MetadataName == "IntStringKey" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
         }
 
         /// <summary>
