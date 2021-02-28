@@ -4736,13 +4736,18 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (this.Index == null)
                         throw new InvalidOperationException();
 
-                    // .RemoveKey(key)
                     if (stack.tIndex == cg.CoreTypes.IntStringKey)
                     {
                         if (isphparr)
-                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.RemoveKey_IntStringKey);
+                        {
+                            // .UnsetValue(key)
+                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.UnsetValue_IntStringKey);
+                        }
                         else
+                        {
+                            // .RemoveKey(key)
                             cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.RemoveKey_IntStringKey);
+                        }
                     }
                     else
                     {
