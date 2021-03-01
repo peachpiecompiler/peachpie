@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -72,11 +73,20 @@ namespace Peachpie.Library.Scripting
 
             for (int i = 0; i < todo.Count; i++)
             {
-                var assembly = todo[i];
-                var refs = assembly.GetReferencedAssemblies();
-                foreach (var refname in refs)
+                foreach (var refname in todo[i].GetReferencedAssemblies())
                 {
-                    var refassembly = Assembly.Load(refname);
+                    Assembly refassembly;
+
+                    try
+                    {
+                        refassembly = Assembly.Load(refname);
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.WriteLine($"Couldn't load referenced assembly '{refname}'. The dynamic compilation will ignore it. Details: {e.Message}.");
+                        continue;
+                    }
+
                     if (refassembly != null && set.Add(refassembly))
                     {
                         todo.Add(refassembly);
