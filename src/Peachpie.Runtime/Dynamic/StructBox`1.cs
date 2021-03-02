@@ -20,7 +20,9 @@ namespace Pchp.Core.Dynamic
     /// Boxed value type allowing to call member methods without unboxing and boxing back.
     /// </summary>
     [DebuggerDisplay("StructBox({Value,nq})")]
-    public sealed class StructBox<TValue> : IStructBox, IPhpCloneable where TValue : struct
+    public sealed class StructBox<TValue> :
+        IStructBox, IPhpCloneable, IEquatable<TValue>
+        where TValue : struct
     {
         /// <inheritdoc/>
         object IStructBox.BoxedValue => (object)Value;
@@ -40,5 +42,41 @@ namespace Pchp.Core.Dynamic
 
         /// <inheritdoc/>
         object IPhpCloneable.Clone() => new StructBox<TValue>(Value);
+
+        #region IEquatable, IEquatable<TValue>
+
+        //public static bool operator ==(StructBox<TValue> left, StructBox<TValue> right) => ((IEquatable<TValue>)left).Equals(right.Value);
+
+        //public static bool operator !=(StructBox<TValue> left, StructBox<TValue> right) => !(left == right);
+
+        /// <inheritdoc/>
+        public override int GetHashCode() => Value.GetHashCode();
+
+        public override bool Equals(object obj)
+        {
+            if (obj is TValue othervalue)
+            {
+                return ((IEquatable<TValue>)this).Equals(othervalue);
+            }
+
+            if (obj is StructBox<TValue> other)
+            {
+                return ((IEquatable<TValue>)this).Equals(other.Value);
+            }
+
+            return obj != null && Value.Equals(obj);
+        }
+
+        bool IEquatable<TValue>.Equals(TValue other)
+        {
+            if (Value is IEquatable<TValue> equatable)
+            {
+                return equatable.Equals(other);
+            }
+
+            return Value.Equals(other);
+        }
+
+        #endregion
     }
 }
