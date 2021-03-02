@@ -87,7 +87,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return declaringType.GetMembers(MemberName).OfType<MethodSymbol>().First(MatchesSignature);
         }
 
-        protected bool MatchesSignature(MethodSymbol m)
+        protected virtual bool MatchesSignature(MethodSymbol m)
         {
             var ps = m.Parameters;
             if (ps.Length != _ptypes.Length)
@@ -100,6 +100,23 @@ namespace Pchp.CodeAnalysis.Symbols
             return true;
         }
     }
+
+    class CoreGenericMethod : CoreMethod
+    {
+        readonly int _arity;
+
+        public CoreGenericMethod(CoreType declaringClass, string methodName, int arity)
+            : base(declaringClass, methodName, null)
+        {
+            _arity = arity;
+        }
+
+        protected override bool MatchesSignature(MethodSymbol m)
+        {
+            return m.Arity == _arity;
+        }
+    }
+
 
     sealed class CoreField : CoreMember<FieldSymbol>
     {
@@ -515,7 +532,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetValue = ct.PhpValue.Method("GetValue");
                 ToArray = ct.PhpValue.Method("ToArray");
                 AsObject = ct.PhpValue.Method("AsObject");
-                
+
                 Long = ct.PhpValue.Property("Long");
                 Double = ct.PhpValue.Property("Double");
                 Boolean = ct.PhpValue.Property("Boolean");
@@ -536,6 +553,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 FromClr_Object = ct.PhpValue.Method("FromClr", ct.Object);
                 FromClass_Object = ct.PhpValue.Method("FromClass", ct.Object);
+                FromStruct_T = new CoreGenericMethod(ct.PhpValue, "FromStruct", 1);
 
                 Null = ct.PhpValue.Field("Null");
                 True = ct.PhpValue.Field("True");
@@ -549,7 +567,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String, Eq_String_PhpValue,
                 Ineq_PhpValue_PhpValue, Ineq_PhpValue_String, Ineq_String_PhpValue,
                 Create_Boolean, Create_Long, Create_Int, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
-                FromClr_Object, FromClass_Object;
+                FromClr_Object, FromClass_Object, FromStruct_T;
 
             public readonly CoreField
                 Null, True, False;

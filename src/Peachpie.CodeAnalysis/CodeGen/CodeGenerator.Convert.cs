@@ -106,9 +106,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else
                 {
                     // box & wrap to PhpValue.Object
-                    // TODO: PhpValue.FromStruct( from )
-                    EmitBox(from);
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
+                    // Template: PhpValue.FromStruct<T>( STACK )
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromStruct_T.Symbol.Construct(from)).Expect(CoreTypes.PhpValue);
                 }
             }
             //
