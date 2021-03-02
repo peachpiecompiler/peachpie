@@ -260,8 +260,17 @@ namespace Pchp.Core.Dynamic
                 return false;
             }
 
-            //
+            // StructBox`1
+            if (value is IStructBox box)
+            {
+                var structboxtype = value.GetType();
+                // ((StructBox<TValue>)expr).Value : TValue
+                restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, structboxtype));
+                value = box.BoxedValue;
+                expr = Expression.Field(Expression.Convert(expr, structboxtype), /*nameof(StructBox<>.Value)*/"Value");
+            }
 
+            //
             var lt = target.Expression.Type;
             if (!lt.IsValueType && !lt.IsSealed && !typeof(PhpArray).IsAssignableFrom(lt) && !typeof(PhpResource).IsAssignableFrom(lt))
             {
