@@ -84,7 +84,16 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         protected override MethodSymbol ResolveSymbol(NamedTypeSymbol/*!*/declaringType)
         {
-            return declaringType.GetMembers(MemberName).OfType<MethodSymbol>().First(MatchesSignature);
+            var members = declaringType.GetMembers(MemberName);
+            for (int i = 0; i < members.Length; i++)
+            {
+                if (members[i] is MethodSymbol m && MatchesSignature(m))
+                {
+                    return m;
+                }
+            }
+
+            throw new InvalidOperationException($"Symbol '{MemberName}' cannot be resolved.");
         }
 
         protected virtual bool MatchesSignature(MethodSymbol m)
