@@ -146,20 +146,26 @@ namespace Pchp.Core.Dynamic
                     }
                 }
 
-                // DateTime
-                if (target == typeof(DateTime))
-                {
-                    return BindToDateTime(arg, ctx);
-                }
                 // Nullable<T>
                 if (target.IsNullable_T(out T))
                 {
                     return BindToNullable(arg, target, T, ctx);
                 }
+
+                // DateTime
+                if (target == typeof(DateTime))
+                {
+                    return BindToDateTime(arg, ctx);
+                }
             }
 
+            //// PhpValueConverter.Cast<T>( (PhpValue ) : T
+            //return Expression.Call(
+            //    typeof(PhpValueConverter).GetMethod("Cast", BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(target),
+            //    BindToValue(arg));
+
             //
-            throw new NotImplementedException(target.ToString());
+            throw new NotImplementedException($"{arg.Type} -> {target}");
         }
 
         private static bool IsNullConstant(Expression arg)
@@ -495,14 +501,14 @@ namespace Pchp.Core.Dynamic
         public static Expression BindToValue(Expression expr)
         {
             // known constants:
-            if (IsNullConstant(expr))
-            {
-                // PhpValue.Null
-                return Expression.Field(null, Cache.Properties.PhpValue_Null);
-            }
-
             if (expr is ConstantExpression ce)
             {
+                if (IsNullConstant(expr))
+                {
+                    // PhpValue.Null
+                    return Expression.Field(null, Cache.Properties.PhpValue_Null);
+                }
+
                 if (ce.Value is bool b)
                 {
                     return Expression.Field(null, b ? Cache.Properties.PhpValue_True : Cache.Properties.PhpValue_False);
@@ -533,16 +539,11 @@ namespace Pchp.Core.Dynamic
                 if (source == typeof(uint)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), Expression.Convert(expr, typeof(long)));
                 if (source == typeof(ulong)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.UInt64), expr);
                 if (source == typeof(byte) || source == typeof(sbyte) || source == typeof(short) || source == typeof(ushort)) return BindToValue(Expression.Convert(expr, typeof(int)));
-                
+
                 if (source.IsEnum)
                 {
                     // (PhpValue)(int)enum
                     return BindToValue(Expression.Convert(expr, source.GetEnumUnderlyingType()));
-                }
-
-                if (source == typeof(System.DateTime))
-                {
-                    return BindToValue(Expression.Convert(expr, typeof(object)));
                 }
 
                 // from Nullable<T>
@@ -555,7 +556,10 @@ namespace Pchp.Core.Dynamic
                         ifFalse: Expression.Field(null, Cache.Properties.PhpValue_Null));
                 }
 
-                throw new NotImplementedException($"{source.FullName} -> PhpValue");
+                // Template: PhpValue.FromStruct<T>( expr )
+                return Expression.Call(
+                    typeof(PhpValue).GetMethod("FromStruct", BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(source),
+                    expr);
             }
             else if (
                 source == typeof(IPhpArray) ||
