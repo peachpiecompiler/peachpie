@@ -1234,10 +1234,21 @@ namespace Pchp.Core
 
         public static PhpValue FromStruct<TValue>(TValue value) where TValue : struct
         {
+            Debug.Assert(typeof(TValue) != typeof(decimal));
+            Debug.Assert(typeof(TValue) != typeof(void));
+            Debug.Assert(typeof(TValue) != typeof(bool));
+            Debug.Assert(typeof(TValue) != typeof(int));
+            Debug.Assert(typeof(TValue) != typeof(long));
+            Debug.Assert(typeof(TValue) != typeof(double));
+            Debug.Assert(typeof(TValue) != typeof(PhpString));
+            Debug.Assert(typeof(TValue) != typeof(IntStringKey));
+            Debug.Assert(typeof(TValue) != typeof(PhpValue));
             Debug.Assert(!typeof(TValue).IsNullable_T(out _));
 
-            // TODO: we might need to wrap the value into our own "box"
-            // so non-readonly methods would modify the "box" instance
+            //// TODO: we might need to wrap the value into our own "box"
+            //// so non-readonly methods would modify the "box" instance
+            //return new PhpValue(PhpTypeCode.Object, new StructBox<TValue>(value));
+
             return FromClr((object)value);
         }
 
