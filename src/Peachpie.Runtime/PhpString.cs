@@ -491,7 +491,7 @@ namespace Pchp.Core
                     if (chunks.GetType() == typeof(object[]))
                     {
                         var newarr = new object[_chunksCount];
-                        Array.Copy((byte[])chunks, newarr, _chunksCount);
+                        Array.Copy((object[])chunks, newarr, _chunksCount);
 
                         if ((_flags & Flags.ContainsMutables) != 0)
                         {
