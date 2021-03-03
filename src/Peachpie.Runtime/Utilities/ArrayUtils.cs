@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,8 @@ namespace Pchp.Core.Utilities
         public static T[] Empty<T>() => Array.Empty<T>();
 
         #endregion
+
+        static Exception ArgumentNullException(string pname) => new ArgumentNullException(pname);
 
         /// <summary>
         /// Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
@@ -93,7 +96,7 @@ namespace Pchp.Core.Utilities
         public static void Fill(byte[] array, byte value, int offset, int count)
         {
             if (array == null)
-                throw new ArgumentNullException(nameof(array));
+                throw ArgumentNullException(nameof(array));
             if (offset < 0 || offset + count > array.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0)
@@ -118,7 +121,7 @@ namespace Pchp.Core.Utilities
         {
             if (array == null)
             {
-                throw new ArgumentNullException(nameof(array));
+                throw ArgumentNullException(nameof(array));
             }
 
             int i = 0;
@@ -150,6 +153,24 @@ namespace Pchp.Core.Utilities
             newarr[0] = first;
             Array.Copy(array, 0, newarr, 1, array.Length);
             return newarr;
+        }
+
+        /// <summary>
+        /// Creates a new array containing concatenation of given arguments.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Argument is null.</exception>
+        public static T[] Concat<T>(T[] first, T[] second)
+        {
+            if (first == null) throw ArgumentNullException(nameof(first));
+            if (second == null) throw ArgumentNullException(nameof(second));
+
+            var result = new T[first.Length + second.Length];
+            var target = result.AsSpan();
+
+            first.AsSpan().CopyTo(target);
+            second.AsSpan().CopyTo(target.Slice(first.Length));
+
+            return result;
         }
 
         /// <summary>
@@ -196,7 +217,7 @@ namespace Pchp.Core.Utilities
         /// </summary>
         public static T[] Reverse<T>(this T[] array)
         {
-            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (array == null) throw ArgumentNullException(nameof(array));
 
             if (array.Length == 0) return Array.Empty<T>();
 
@@ -225,7 +246,7 @@ namespace Pchp.Core.Utilities
 
             if (selector == null)
             {
-                throw new ArgumentNullException(nameof(selector));
+                throw ArgumentNullException(nameof(selector));
             }
 
             var arr = new TElement[list.Count];
