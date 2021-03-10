@@ -12,6 +12,7 @@
 	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(PeachpieVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.PDO.SqlSrv" Version="$(PeachpieVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.PDO.Sqlite" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.RequestHandler" Version="$(PeachpieVersion)" PrivateAssets="Build" Condition=" '$(OS)'=='Windows_NT' " />
   </ItemGroup>
 
 </Project>
