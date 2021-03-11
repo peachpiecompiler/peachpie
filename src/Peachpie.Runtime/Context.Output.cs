@@ -175,12 +175,15 @@ namespace Pchp.Core
 
         public void Echo(long value)
         {
-            Output.Write(value);
+            // use the invariant number format
+            // the underlying TextWriter converts numbers using Current Culture
+
+            Output.Write(Convert.ToString(value));
         }
 
         public void Echo(int value)
         {
-            Output.Write(value);
+            Output.Write(Convert.ToString(value));
         }
 
         public void Echo(bool value)

@@ -28,6 +28,11 @@ namespace Peachpie.AspNetCore.Web
         readonly char[] _charBuffer = new char[1];
 #endif
 
+        /// <summary>
+        /// Invariant number format provider.
+        /// </summary>
+        public override IFormatProvider FormatProvider => Pchp.Core.Context.InvariantNumberFormatInfo;
+
         public SynchronizedTextWriter(HttpResponse response, Encoding encoding)
         {
             HttpResponse = response ?? throw new ArgumentNullException(nameof(response));
