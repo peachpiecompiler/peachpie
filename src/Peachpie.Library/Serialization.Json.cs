@@ -215,6 +215,11 @@ namespace Pchp.Library
                 private static readonly Encoding Utf8CheckedEncoding =
                     new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
+                /// <summary>
+                /// An invariant number format to be used.
+                /// </summary>
+                static System.Globalization.NumberFormatInfo NumberFormatInfo => Context.InvariantNumberFormatInfo;
+
                 //Encoding Encoding => _ctx.StringEncoding;
 
                 StackHelper _recursion;
@@ -394,7 +399,7 @@ namespace Pchp.Library
 
                 public override void Accept(long obj)
                 {
-                    WriteRaw(obj.ToString());
+                    WriteRaw(obj.ToString(NumberFormatInfo));
                 }
 
                 public override void Accept(string obj)
@@ -422,7 +427,7 @@ namespace Pchp.Library
 
                     if (HasPreserveZeroFraction && aslong == obj)
                     {
-                        WriteRaw(aslong.ToString());
+                        WriteRaw(aslong.ToString(NumberFormatInfo));
                         WriteRaw(".0"); // as PHP does
                     }
                     else if (double.IsNaN(obj) || double.IsInfinity(obj))
@@ -434,7 +439,7 @@ namespace Pchp.Library
                     {
                         // "G" format specifier,
                         // does not append floating point if .0
-                        WriteRaw(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                        WriteRaw(obj.ToString(NumberFormatInfo));
                     }
                 }
 
@@ -687,8 +692,8 @@ namespace Pchp.Library
                         var result = Core.Convert.StringToNumber(value, out l, out d);
                         if ((result & Core.Convert.NumberInfo.IsNumber) != 0)
                         {
-                            if ((result & Core.Convert.NumberInfo.LongInteger) != 0) WriteRaw(l.ToString());
-                            if ((result & Core.Convert.NumberInfo.Double) != 0) WriteRaw(d.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                            if ((result & Core.Convert.NumberInfo.LongInteger) != 0) WriteRaw(l.ToString(NumberFormatInfo));
+                            if ((result & Core.Convert.NumberInfo.Double) != 0) WriteRaw(d.ToString(NumberFormatInfo));
                             return;
                         }
                     }

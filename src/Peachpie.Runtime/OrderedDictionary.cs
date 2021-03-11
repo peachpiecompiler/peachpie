@@ -139,7 +139,7 @@ namespace Pchp.Core
 
         public bool Equals(string skey) => _skey == skey && IsString;
 
-        public override string ToString() => _skey ?? _ikey.ToString();
+        public override string ToString() => _skey ?? _ikey.ToString(Context.InvariantNumberFormatInfo);
 
         public int CompareTo(IntStringKey other)
         {
