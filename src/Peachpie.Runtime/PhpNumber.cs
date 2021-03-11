@@ -1348,7 +1348,7 @@ namespace Pchp.Core
         /// </summary>
         public override string ToString()
         {
-            return IsLong ? _long.ToString() : Convert.ToString(_double);
+            return IsLong ? Convert.ToString(_long) : Convert.ToString(_double);
         }
 
         public object ToClass() => ToObject();

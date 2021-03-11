@@ -148,12 +148,12 @@ namespace Pchp.Core
                 if (other.IsInteger)
                     return _ikey.CompareTo(other._ikey);
                 else
-                    return string.CompareOrdinal(_ikey.ToString(), other._skey);
+                    return string.CompareOrdinal(Convert.ToString(_ikey), other._skey);
             }
             else
             {
                 if (other.IsInteger)
-                    return string.CompareOrdinal(_skey, other._ikey.ToString());
+                    return string.CompareOrdinal(_skey, Convert.ToString(other._ikey));
                 else
                     return string.CompareOrdinal(_skey, other._skey);
             }

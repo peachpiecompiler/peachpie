@@ -77,12 +77,12 @@ namespace Pchp.Core
         /// <summary>
         /// Gets string representation of an integer value.
         /// </summary>
-        public static string ToString(long value) => value.ToString();
+        public static string ToString(long value) => value.ToString(Context.InvariantNumberFormatInfo);
 
         /// <summary>
         /// Gets string representation of an integer value.
         /// </summary>
-        public static string ToString(int value) => value.ToString();
+        public static string ToString(int value) => value.ToString(Context.InvariantNumberFormatInfo);
 
         /// <summary>
         /// Gets string representation of a floating point number value.
@@ -1441,7 +1441,7 @@ namespace Pchp.Core
         {
             PhpTypeCode.Null => null, // TODO: support nullable conversion, target parameter can be either `string` or `string?`
             PhpTypeCode.Boolean => Convert.ToString(value.Boolean),
-            PhpTypeCode.Long => value.Long.ToString(),
+            PhpTypeCode.Long => Convert.ToString(value.Long),
             PhpTypeCode.Double => Convert.ToString(value.Double),
             PhpTypeCode.String => value.String,
             PhpTypeCode.MutableString => value.MutableStringBlob.ToString(ctx.StringEncoding),

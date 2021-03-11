@@ -929,7 +929,7 @@ namespace Pchp.Library
 
             public override void Accept(bool obj) => _output.Append(obj ? "1" : string.Empty);
 
-            public override void Accept(long obj) => _output.Append(obj.ToString());
+            public override void Accept(long obj) => _output.Append(Core.Convert.ToString(obj));
 
             public override void Accept(double obj) => _output.Append(Core.Convert.ToString(obj));
 
@@ -1065,7 +1065,7 @@ namespace Pchp.Library
 
             public override void Accept(bool obj) => _output.Append(obj ? PhpVariable.True : PhpVariable.False);
 
-            public override void Accept(long obj) => _output.Append(obj.ToString());
+            public override void Accept(long obj) => _output.Append(Core.Convert.ToString(obj));
 
             public override void Accept(double obj) => _output.Append(Core.Convert.ToString(obj));
 
@@ -1282,7 +1282,7 @@ namespace Pchp.Library
             {
                 _output.Append(PhpVariable.TypeNameInt);
                 _output.Append("(");
-                _output.Append(obj.ToString());
+                _output.Append(Core.Convert.ToString(obj));
                 _output.Append(")");
             }
 
@@ -1357,7 +1357,7 @@ namespace Pchp.Library
 
                 OutputIndent();
 
-                _output.Append("[" + (entry.Key.IsString ? $"\"{entry.Key.String}\"" : entry.Key.Integer.ToString()) + "]");
+                _output.Append("[" + (entry.Key.IsString ? $"\"{entry.Key.String}\"" : Core.Convert.ToString(entry.Key.Integer)) + "]");
                 _output.Append("=>");
                 NewLine();
                 OutputIndent();

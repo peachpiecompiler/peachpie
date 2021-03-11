@@ -429,14 +429,15 @@ namespace SimpleJSON
         {
             get
             {
-                long val = 0;
-                if (long.TryParse(Value, out val))
+                if (long.TryParse(Value, out var val))
+                {
                     return val;
+                }
                 return 0L;
             }
             set
             {
-                Value = value.ToString();
+                Value = value.ToString(CultureInfo.InvariantCulture);
             }
         }
 
@@ -500,7 +501,7 @@ namespace SimpleJSON
         public static implicit operator JSONNode(long n)
         {
             if (longAsString)
-                return new JSONString(n.ToString());
+                return new JSONString(n.ToString(CultureInfo.InvariantCulture));
             return new JSONNumber(n);
         }
         public static implicit operator long(JSONNode d)
@@ -1418,7 +1419,7 @@ namespace SimpleJSON
             set
             {
                 if (longAsString)
-                    Set(new JSONString(value.ToString()));
+                    Set(new JSONString(value.ToString(CultureInfo.InvariantCulture)));
                 else
                     Set(new JSONNumber(value));
             }

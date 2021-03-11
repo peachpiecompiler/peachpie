@@ -362,7 +362,7 @@ namespace Pchp.Core
         {
             PhpTypeCode.Null => string.Empty,
             PhpTypeCode.Boolean => Convert.ToString(Boolean),
-            PhpTypeCode.Long => Long.ToString(),
+            PhpTypeCode.Long => Convert.ToString(Long),
             PhpTypeCode.Double => Convert.ToString(Double),
             PhpTypeCode.PhpArray => (string)Array,
             PhpTypeCode.String => String,
@@ -378,7 +378,7 @@ namespace Pchp.Core
         {
             PhpTypeCode.Null => string.Empty,
             PhpTypeCode.Boolean => Convert.ToString(Boolean),
-            PhpTypeCode.Long => Long.ToString(),
+            PhpTypeCode.Long => Convert.ToString(Long),
             PhpTypeCode.Double => Convert.ToString(Double),
             PhpTypeCode.PhpArray => (string)Array,
             PhpTypeCode.String => String,

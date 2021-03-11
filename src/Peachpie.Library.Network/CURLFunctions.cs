@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -444,7 +445,7 @@ namespace Peachpie.Library.Network
 
             if (ch.PostFields.IsPhpArray(out var arr) && arr != null)
             {
-                string boundary = "----------" + DateTime.UtcNow.Ticks.ToString();
+                string boundary = "----------" + DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture);
                 string contentType = "multipart/form-data; boundary=" + boundary;
 
                 bytes = GetMultipartFormData(ctx, arr, boundary);

@@ -23,8 +23,8 @@ namespace Pchp.Core
         {
             PhpTypeCode.Null => "null",    // lowercased `null` as it is shown for other CLR null references,
             PhpTypeCode.Boolean => Boolean ? PhpVariable.True : PhpVariable.False, // CONSIDER: CLR's True/False
-            PhpTypeCode.Long => Long.ToString(),
-            PhpTypeCode.Double => Double.ToString(CultureInfo.InvariantCulture),
+            PhpTypeCode.Long => Convert.ToString(Long),
+            PhpTypeCode.Double => Convert.ToString(Double),
             PhpTypeCode.PhpArray => "array (length = " + Array.Count.ToString() + ")",
             PhpTypeCode.String => "'" + String + "'",
             PhpTypeCode.MutableString => "'" + MutableStringBlob.ToString() + "'",

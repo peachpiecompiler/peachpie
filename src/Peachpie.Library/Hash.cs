@@ -13,6 +13,7 @@ using Isopoh.Cryptography.SecureArray;
 using System.Text.RegularExpressions;
 using System.Threading;
 using static Pchp.Library.PhpHash;
+using System.Globalization;
 
 namespace Pchp.Library
 {
@@ -464,7 +465,7 @@ namespace Pchp.Library
                     {
                         if (opt != null && opt.TryGetValue("cost", out var costValue)) // Check options
                         {
-                            result = !(hashParts[2] == costValue.ToLong().ToString());
+                            result = !(hashParts[2] == costValue.ToLong().ToString(CultureInfo.InvariantCulture));
                         }
                     }
                     else

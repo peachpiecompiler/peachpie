@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Net;
 using System.Threading;
+using System.Globalization;
 
 namespace Pchp.Library
 {
@@ -782,7 +783,7 @@ namespace Pchp.Library
                 // the query parameter name (key name)
                 // the parameter name is URL encoded
                 string keyName = key.IsLong(out var l)
-                    ? UrlEncode(numericPrefix, encType) + l.ToString()
+                    ? UrlEncode(numericPrefix, encType) + l.ToString(CultureInfo.InvariantCulture)
                     : UrlEncode(key.ToStringOrThrow(ctx), encType);
 
                 if (indexerPrefix != null)

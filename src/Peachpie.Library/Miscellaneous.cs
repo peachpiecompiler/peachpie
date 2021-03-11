@@ -157,7 +157,7 @@ namespace Pchp.Library.Standard
             TimeSpan mSec = fromUnixEpoch.Subtract(new TimeSpan(seconds * 10000000)); // convert seconds to 100 ns
             double remaining = ((double)mSec.Ticks) / 10000000; // convert from 100ns to seconds
 
-            return remaining.ToString("G", NumberFormatInfo.InvariantInfo) + " " + seconds.ToString();
+            return Core.Convert.ToString(remaining) + " " + seconds.ToString(CultureInfo.InvariantCulture);
         }
 
         /// <summary>

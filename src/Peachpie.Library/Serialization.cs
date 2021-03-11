@@ -244,7 +244,7 @@ namespace Pchp.Library
                 {
                     Write(Tokens.Integer);
                     Write(Tokens.Colon);
-                    Write(value.ToString());
+                    Write(Core.Convert.ToString(value));
                     Write(Tokens.Semicolon);
                 }
 
@@ -252,13 +252,7 @@ namespace Pchp.Library
                 {
                     Write(Tokens.Double);
                     Write(Tokens.Colon);
-
-                    // handle NaN, +Inf, -Inf
-                    if (double.IsNaN(value)) Write("NAN");
-                    else if (double.IsPositiveInfinity(value)) Write("INF");
-                    else if (double.IsNegativeInfinity(value)) Write("-INF");
-                    else Write(value.ToString("R", NumberFormatInfo.InvariantInfo));
-
+                    Write(Core.Convert.ToString(value));
                     Write(Tokens.Semicolon);
                 }
 
