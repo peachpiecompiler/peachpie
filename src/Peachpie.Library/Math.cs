@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -170,51 +171,39 @@ namespace Pchp.Library
 
         /// <summary>
         /// Generate a unique ID.
-        /// Gets a prefixed unique identifier based on the current time in microseconds. 
-        /// </summary>
-        /// <returns>Returns the unique identifier, as a string.</returns>
-        public static string uniqid()
-        {
-            return uniqid(null, false);
-        }
-
-        /// <summary>
-        /// Generate a unique ID.
-        /// Gets a prefixed unique identifier based on the current time in microseconds. 
-        /// </summary>
-        /// <param name="prefix">Can be useful, for instance, if you generate identifiers simultaneously on several hosts that might happen to generate the identifier at the same microsecond.
-        /// With an empty prefix , the returned string will be 13 characters long.
-        /// </param>
-        /// <returns>Returns the unique identifier, as a string.</returns>
-        public static string uniqid(string prefix)
-        {
-            return uniqid(prefix, false);
-        }
-
-        /// <summary>
-        /// Generate a unique ID.
         /// </summary>
         /// <remarks>
-        /// With an empty prefix, the returned string will be 13 characters long. If more_entropy is TRUE, it will be 23 characters.
+        /// With an empty prefix, the returned string will be 14 characters long. If more_entropy is TRUE, it will be 23 characters.
         /// </remarks>
         /// <param name="prefix">Use the specified prefix.</param>
         /// <param name="more_entropy">Use LCG to generate a random postfix.</param>
         /// <returns>A pseudo-random string composed from the given prefix, current time and a random postfix.</returns>
-        public static string uniqid(string prefix, bool more_entropy)
+        public static string uniqid(string prefix = "", bool more_entropy = false)
         {
             // Note that Ticks specify time in 100nanoseconds but it is raised each 100144 
             // ticks which is around 10 times a second (the same for Milliseconds).
-            string ticks = string.Format("{0:X}", System.DateTime.UtcNow.Ticks + MTGenerator.Next());
 
-            ticks = ticks.Substring(ticks.Length - 13);
-            if (prefix == null) prefix = "";
+            const int tickslength = 14;
+
+            // 14 digits, hexadecimal, lowercased
+            var ticks = ((ulong)(System.DateTime.UtcNow.Ticks + MTGenerator.Next()))
+                .ToString("x" /*x14*/, CultureInfo.InvariantCulture);
+
+            if (ticks.Length > tickslength)
+                ticks = ticks.Remove(tickslength);
+            else if (ticks.Length < tickslength)
+                ticks = ticks.PadLeft(tickslength, '0');
+
             if (more_entropy)
             {
-                string rnd = lcg_value().ToString();
-                rnd = rnd.Substring(2, 8);
-                return string.Format("{0}{1}.{2}", prefix, ticks, rnd);
+                // 8 digits from the lcg:
+                var rnd = ((ulong)(lcg_value() * 100_000_000)).ToString("d8", CultureInfo.InvariantCulture);
+                return prefix + ticks + "." + rnd;
             }
-            else return string.Format("{0}{1}", prefix, ticks);
+            else
+            {
+                return prefix + ticks;
+            }
         }
 
         /// <summary>
