@@ -3926,16 +3926,29 @@ namespace Pchp.Library
 
                                 case 'd': // treat as integer, present as signed decimal number
                                     {
-                                        // use long to prevent overflow in Math.Abs:
                                         long ivalue = obj.ToLong();
-                                        if (ivalue < 0) sign = '-'; else if (ivalue >= 0 && plusSign) sign = '+';
+                                        if (ivalue < 0)
+                                        {
+                                            sign = '-';
 
-                                        app = Math.Abs((long)ivalue).ToString();
+                                            // deal with Int64.MinValue efficiently
+                                            app = ((ulong)unchecked(-ivalue)).ToString(Context.InvariantNumberFormatInfo);
+                                        }
+                                        else
+                                        {
+                                            if (ivalue >= 0 && plusSign)
+                                            {
+                                                sign = '+';
+                                            }
+
+                                            app = Core.Convert.ToString(ivalue);
+                                        }
+
                                         break;
                                     }
 
                                 case 'u': // treat as integer, present as unsigned decimal number, without sign
-                                    app = unchecked((uint)obj.ToLong()).ToString();
+                                    app = Core.Convert.ToString(unchecked((uint)obj.ToLong()));
                                     break;
 
                                 case 'e':
@@ -3944,7 +3957,7 @@ namespace Pchp.Library
                                         if (dvalue < 0) sign = '-'; else if (dvalue >= 0 && plusSign) sign = '+';
 
                                         string f = string.Concat("0.", new string('0', precision == -1 ? printfFloatPrecision : precision), "e+0");
-                                        app = Math.Abs(dvalue).ToString(f, ctx.NumberFormat);
+                                        app = Math.Abs(dvalue).ToString(f, Context.InvariantNumberFormatInfo);
                                         break;
                                     }
 
@@ -4524,7 +4537,7 @@ namespace Pchp.Library
                 if (ch == @break[0] && str.AsSpan(i).StartsWith(@break.AsSpan()))
                 {
                     result.Append(str, linestart, i - linestart + @break.Length);
-                    
+
                     lastspace = linestart = i + @break.Length;
                     i = linestart - 1; // ++
                 }
