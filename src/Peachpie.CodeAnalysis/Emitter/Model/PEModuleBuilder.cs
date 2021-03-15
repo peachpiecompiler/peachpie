@@ -146,7 +146,12 @@ namespace Pchp.CodeAnalysis.Emit
                 {
                     var debuggableAttrCtor = (MethodSymbol)this.Compilation.GetWellKnownTypeMember(WellKnownMember.System_Diagnostics_DebuggableAttribute__ctorDebuggingModes);
                     _debuggableAttribute = new SynthesizedAttributeData(debuggableAttrCtor,
-                        ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.Int32.Symbol, TypedConstantKind.Primitive, DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.DisableOptimizations)),
+                        ImmutableArray.Create(
+                            new TypedConstant(
+                                Compilation.GetWellKnownType(WellKnownType.System_Diagnostics_DebuggableAttribute__DebuggingModes),
+                                TypedConstantKind.Enum,
+                                DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.DisableOptimizations)
+                        ),
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
 
