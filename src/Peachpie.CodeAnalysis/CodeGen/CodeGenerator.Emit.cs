@@ -630,8 +630,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (EmitPdbSequencePoints && span.Length > 0)
             {
-                _il.DefineSequencePoint(ContainingFile.SyntaxTree, span);
                 _il.EmitOpCode(ILOpCode.Nop);
+                _il.DefineSequencePoint(ContainingFile.SyntaxTree, span);
             }
         }
 

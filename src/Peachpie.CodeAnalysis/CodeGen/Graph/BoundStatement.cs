@@ -42,12 +42,6 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 cg.EmitSequencePoint(this.PhpSyntax);
                 cg.EmitPop(Expression.Emit(cg));
-                
-                //
-                if (cg.EmitPdbSequencePoints)
-                {
-                    cg.Builder.EmitOpCode(ILOpCode.Nop);
-                }
             }
         }
     }

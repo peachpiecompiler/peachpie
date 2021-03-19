@@ -4736,7 +4736,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 tIndex = cg.Emit_PhpValue_Null();
             }
 
-            // remember for EmitLoad
+            // remember for EmitStore
             PushEmittedArray(tArray, tIndex);
 
             //
