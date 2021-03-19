@@ -2928,7 +2928,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        static bool TryConvertToIntKey(string key, out long ikey)
+        internal static bool TryConvertToIntKey(string key, out long ikey)
         {
             ikey = default;
 
@@ -2960,40 +2960,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             var constant = expr.ConstantValue;
             if (constant.HasValue)
             {
-                if (constant.Value == null)
+                // the following can be optimized in compile time:
+                switch (constant.Value)
                 {
-                    EmitIntStringKey(string.Empty);
+                    case string s:
+                        EmitIntStringKey(s);
+                        return;
+                    case null:
+                        EmitIntStringKey(string.Empty);
+                        return;
                 }
-                else if (constant.Value is string s)
-                {
-                    EmitIntStringKey(s);
-                }
-                else if (constant.Value is long l)
-                {
-                    EmitIntStringKey(l);
-                }
-                else if (constant.Value is int i)
-                {
-                    EmitIntStringKey(i);
-                }
-                else if (constant.Value is double d)
-                {
-                    EmitIntStringKey((long)d);
-                }
-                else if (constant.Value is bool b)
-                {
-                    EmitIntStringKey(b ? 1 : 0);
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
-
-                return;
             }
 
             //
-            this.EmitImplicitConversion(Emit(expr), this.CoreTypes.IntStringKey); // TODO: ConvertToArrayKey
+            this.EmitConvertToIntStringKey(Emit(expr));
         }
 
         /// <summary>

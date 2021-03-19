@@ -48,12 +48,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             return true;
         }
 
-        public static void EmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false, bool strict = false)
+        public static TypeSymbol EmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false, bool strict = false)
         {
             if (!TryEmitImplicitConversion(cg, from, to, @checked, strict))
             {
                 throw cg.NotImplementedException($"Cannot implicitly convert '{from}' to '{to}'");
             }
+
+            return to;
         }
 
         public static void EmitNumericConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false)

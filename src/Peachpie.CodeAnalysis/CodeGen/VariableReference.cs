@@ -795,27 +795,44 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 LoadVariablesArray(cg);         // PhpArray
-                BoundName.EmitIntStringKey(cg); // IntStringKey
+                var key = BoundName.Emit(cg);   // IntStringKey|Long|String
 
                 if (access.IsReadRef)
                 {
                     // CALL <locals>.EnsureItemAlias(<key>) : PhpAlias
+                    cg.EmitConvertToIntStringKey(key);
                     return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey);
                 }
                 else if (access.EnsureArray)
                 {
                     // CALL <locals>.EnsureItemArray(<key>) : IPhpArray
+                    cg.EmitConvertToIntStringKey(key);
                     return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemArray_IntStringKey);
                 }
                 else if (access.EnsureObject)
                 {
                     // CALL <locals>.EnsureItemObject(<key>) : object
+                    cg.EmitConvertToIntStringKey(key);
                     return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemObject_IntStringKey);
                 }
                 else if (access.IsRead)
                 {
-                    // CALL <locals>.GetItemValue(<key>) : PhpValue
-                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
+                    if (key.SpecialType == SpecialType.System_Int64)
+                    {
+                        // CALL <locals>[<long_key>] : PhpValue
+                        return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.get_Item_Long);
+                    }
+                    else if (key.SpecialType == SpecialType.System_String)
+                    {
+                        // CALL <locals>[<string_key>] : PhpValue
+                        return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.get_Item_String);
+                    }
+                    else
+                    {
+                        // CALL <locals>[<key>] : PhpValue
+                        cg.EmitConvertToIntStringKey(key);
+                        return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.get_Item_IntStringKey);
+                    }
                 }
                 else
                 {

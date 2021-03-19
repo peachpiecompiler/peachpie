@@ -2482,6 +2482,63 @@ namespace Pchp.CodeAnalysis.Semantics
             return cg.CoreTypes.String;
         }
 
+        /// <summary>
+        /// Emits the name expression as either <c>IntStringKey</c>, <c>String</c>, or <c>Int64</c>.
+        /// </summary>
+        internal TypeSymbol Emit(CodeGenerator cg)
+        {
+            if (this.IsDirect)
+            {
+                // string
+                cg.Builder.EmitStringConstant(this.NameValue.Value);
+                return cg.CoreTypes.String;
+            }
+
+            var constant = this.NameExpression.ConstantValue;
+            if (constant.HasValue)
+            {
+                switch (constant.Value)
+                {
+                    case string str:
+                        if (CodeGenerator.TryConvertToIntKey(str, out var ikey))
+                        {
+                            // int64
+                            cg.Builder.EmitLongConstant(ikey);
+                            return cg.CoreTypes.Long;
+                        }
+                        else
+                        {
+                            // string
+                            cg.Builder.EmitStringConstant(str);
+                            return cg.CoreTypes.String;
+                        }
+
+                    case null:
+                        // string
+                        cg.Builder.EmitStringConstant(string.Empty);
+                        return cg.CoreTypes.String;
+                }
+            }
+
+            var t = cg.Emit(this.NameExpression);
+
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Int64:
+                case SpecialType.System_String:
+                    return t;
+
+                case SpecialType.System_Boolean:
+                case SpecialType.System_Int16:
+                case SpecialType.System_Int32:
+                    cg.Builder.EmitOpCode(ILOpCode.Conv_r8);    // int|short|bool -> long
+                    return cg.CoreTypes.Long;
+            }
+
+            // otherwise just convert to IntStringKey value:
+            return cg.EmitConvertToIntStringKey(t);
+        }
+
         internal void EmitIntStringKey(CodeGenerator cg)
         {
             if (this.IsDirect)

@@ -540,6 +540,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Converts the value on stack to <c>IntStringKey</c>.
+        /// </summary>
+        public TypeSymbol EmitConvertToIntStringKey(TypeSymbol from)
+        {
+            return this.EmitImplicitConversion(from, this.CoreTypes.IntStringKey);
+        }
+
+        /// <summary>
         /// Emits expression and converts it to required type.
         /// </summary>
         public void EmitConvert(BoundExpression expr, TypeSymbol to, ConversionKind conversion = ConversionKind.Implicit, bool notNull = false)
