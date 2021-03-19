@@ -853,10 +853,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Context = t.Method("ToString", ct.Context);
                 ToClass = t.Method("ToClass");
 
+                get_Item_IntStringKey = ct.PhpHashtable.Method("get_Item", ct.IntStringKey);
+                get_Item_String = ct.PhpHashtable.Method("get_Item", ct.String);
+                get_Item_Long = ct.PhpHashtable.Method("get_Item", ct.Long);
+
                 RemoveKey_IntStringKey = t.Method("RemoveKey", ct.IntStringKey);
                 UnsetValue_IntStringKey = t.Method("UnsetValue", ct.IntStringKey);
 
-                GetItemValue_IntStringKey = t.Method("GetItemValue", ct.IntStringKey);
+                GetItemValue_IntStringKey = get_Item_IntStringKey; // 
                 GetItemRef_IntStringKey = t.Method("GetItemRef", ct.IntStringKey);
 
                 DeepCopy = t.Method("DeepCopy");
@@ -880,6 +884,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToClass, ToString_Context,
+                get_Item_String, get_Item_Long, get_Item_IntStringKey,
                 RemoveKey_IntStringKey, UnsetValue_IntStringKey,
                 GetItemValue_IntStringKey, GetItemRef_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, Add_PhpValue,
