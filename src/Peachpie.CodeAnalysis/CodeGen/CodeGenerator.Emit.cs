@@ -613,7 +613,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitSequencePoint(LangElement element)
         {
-            if (element != null)
+            if (ExpressionsExtension.AllowSequencePoint(element))
             {
                 EmitSequencePoint(element.Span);
             }

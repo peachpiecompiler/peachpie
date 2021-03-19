@@ -38,11 +38,13 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
-            if (Expression.IsConstant() == false)
+            if (Expression.IsConstant())
             {
-                cg.EmitSequencePoint(this.PhpSyntax);
-                cg.EmitPop(Expression.Emit(cg));
+                return;
             }
+
+            cg.EmitSequencePoint(this.PhpSyntax);
+            cg.EmitPop(Expression.Emit(cg));
         }
     }
 
