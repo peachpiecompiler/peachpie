@@ -776,7 +776,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets or sets a value associated with a key.
         /// </summary>
-        /// <param name="ikey">The <see cref="int"/> key.</param>
+        /// <param name="ikey">The integer key.</param>
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
         public PhpValue this[int ikey]
         {
@@ -785,6 +785,21 @@ namespace Pchp.Core
             {
                 this.EnsureWritable();
                 table[ikey] = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value associated with a key.
+        /// </summary>
+        /// <param name="lkey">The integer key.</param>
+        /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
+        public PhpValue this[long lkey]
+        {
+            get => table[lkey];
+            set
+            {
+                this.EnsureWritable();
+                table[lkey] = value;
             }
         }
 

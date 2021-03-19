@@ -95,6 +95,8 @@ namespace Pchp.Core
 
         public static implicit operator IntStringKey(int value) => new IntStringKey(value);
 
+        public static implicit operator IntStringKey(long value) => new IntStringKey(value);
+
         public static implicit operator IntStringKey(string value) => value != null ? Convert.StringToArrayKey(value) : EmptyStringKey;
 
         public static implicit operator IntStringKey(PhpString value) => new IntStringKey(value.ToString());
@@ -109,11 +111,13 @@ namespace Pchp.Core
 
         internal static IntStringKey FromObject(object key)
         {
-            if (key is string str) return new IntStringKey(str);
-            if (key is long l) return new IntStringKey(l);
-            if (key is int i) return new IntStringKey(i);
-
-            throw new ArgumentException();
+            return key switch
+            {
+                string str => new IntStringKey(str),
+                long l => new IntStringKey(l),
+                int i => new IntStringKey(i),
+                _ => throw new ArgumentException(null, nameof(key)),
+            };
         }
 
         public bool IsString => !IsInteger;
