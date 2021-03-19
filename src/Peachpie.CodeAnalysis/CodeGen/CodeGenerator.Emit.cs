@@ -2900,32 +2900,43 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_long);
         }
 
-        public void EmitIntStringKey(string key)
+        public bool TryEmitCachedIntStringKey(string key)
+        {
+            // lookup common keys:
+            var key_fields = CoreTypes.CommonPhpArrayKeys.Symbol.GetMembers(key);   // 0 or 1, FieldSymbol
+            var key_field = key_fields.IsDefaultOrEmpty ? null : (FieldSymbol)key_fields[0];
+            if (key_field != null)
+            {
+                Debug.Assert(key_field.IsStatic, "!key_field.IsStatic");
+                Debug.Assert(key_field.Type == CoreTypes.IntStringKey, "key_field.Type != IntStringKey");
+
+                // Template: .ldsfld key_field
+                key_field.EmitLoad(this);
+                return true;
+            }
+
+            return false;
+        }
+
+        public TypeSymbol EmitIntStringKey(string key)
         {
             // try convert string to integer as it is in PHP:
             if (TryConvertToIntKey(key, out var ikey))
             {
                 EmitIntStringKey(ikey);
             }
+            else if (TryEmitCachedIntStringKey(key))
+            {
+                // ok
+            }
             else
             {
-                // lookup common keys:
-                var key_fields = CoreTypes.CommonPhpArrayKeys.Symbol.GetMembers(key);   // 0 or 1, FieldSymbol
-                var key_field = key_fields.IsDefaultOrEmpty ? null : (FieldSymbol)key_fields[0];
-                if (key_field != null)
-                {
-                    Debug.Assert(key_field.IsStatic, "!key_field.IsStatic");
-                    Debug.Assert(key_field.Type == CoreTypes.IntStringKey, "key_field.Type != IntStringKey");
-
-                    // Template: .ldsfld key_field
-                    key_field.EmitLoad(this);
-                    return;
-                }
-
                 // Template: new IntStringKey( <key> )
                 _il.EmitStringConstant(key);
                 EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
             }
+
+            return this.CoreTypes.IntStringKey;
         }
 
         internal static bool TryConvertToIntKey(string key, out long ikey)
@@ -2953,7 +2964,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             return long.TryParse(key, out ikey);
         }
 
-        public void EmitIntStringKey(BoundExpression expr)
+        public TypeSymbol EmitIntStringKey(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
 
@@ -2964,16 +2975,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                 switch (constant.Value)
                 {
                     case string s:
-                        EmitIntStringKey(s);
-                        return;
+                        return EmitIntStringKey(s);
                     case null:
-                        EmitIntStringKey(string.Empty);
-                        return;
+                        return EmitIntStringKey(string.Empty);
                 }
             }
 
             //
-            this.EmitConvertToIntStringKey(Emit(expr));
+            return this.EmitConvertToIntStringKey(Emit(expr));
         }
 
         /// <summary>
