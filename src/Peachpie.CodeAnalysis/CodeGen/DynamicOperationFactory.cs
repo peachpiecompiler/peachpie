@@ -482,6 +482,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         MethodSymbol _callsite_generic_create;
         FieldSymbol _callsite_generic_target;
 
+        public NamedTypeSymbol Container => _container;
+
         public NamedTypeSymbol CallSite => _callsitetype ??= _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);
         public NamedTypeSymbol CallSite_T => _callsitetype_generic ??= _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T);
         public MethodSymbol CallSite_T_Create => _callsite_generic_create ??= (MethodSymbol)_compilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Create);

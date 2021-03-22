@@ -2489,6 +2489,12 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (this.IsDirect)
             {
+                if (cg.TryEmitCachedIntStringKey(this.NameValue.Value))
+                {
+                    // IntStringKey
+                    return cg.CoreTypes.IntStringKey;
+                }
+
                 // string
                 cg.Builder.EmitStringConstant(this.NameValue.Value);
                 return cg.CoreTypes.String;
@@ -2505,6 +2511,11 @@ namespace Pchp.CodeAnalysis.Semantics
                             // int64
                             cg.Builder.EmitLongConstant(ikey);
                             return cg.CoreTypes.Long;
+                        }
+                        else if (cg.TryEmitCachedIntStringKey(str))
+                        {
+                            // IntStringKey
+                            return cg.CoreTypes.IntStringKey;
                         }
                         else
                         {
@@ -4156,27 +4167,32 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // TODO: reuse existing cached PhpArray with the same content
 
-            //
-            cg.IsInCachedArrayExpression = true;
+            // <fld> = new PhpArray(...)
+            var cctor = cg.Factory.CctorBuilder;
 
-            // arr ?? (arr = new PhpArray(){...})
-            fldplace.EmitLoad(cg.Builder);
-            cg.EmitNullCoalescing((cg_) =>
+            lock (cctor)
             {
-                fldplace.EmitStorePrepare(cg_.Builder);
-                EmitNewPhpArray(cg_);
-                cg_.Builder.EmitOpCode(ILOpCode.Dup);
-                fldplace.EmitStore(cg_.Builder);
-            });
+                using (var cctor_cg = new CodeGenerator(cctor, cg.Module, cg.Diagnostics, cg.DeclaringCompilation.Options.OptimizationLevel, false, cg.Factory.Container, null, null, cg.Routine)
+                {
+                    CallerType = cg.CallerType,
+                    ContainingFile = cg.ContainingFile,
+                    IsInCachedArrayExpression = true,
+                })
+                {
+                    fldplace.EmitStorePrepare(cctor_cg.Builder);
+                    EmitNewPhpArray(cctor_cg);
+                    fldplace.EmitStore(cctor_cg.Builder);
+                }
+            }
+
+            // LOAD <fld>
+            fld.EmitLoad(cg);
 
             // .DeepCopy()
             // if (this.Access.IsReadCopy) // unsafe ?
             {
                 cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.DeepCopy);
             }
-
-            //
-            cg.IsInCachedArrayExpression = false;
 
             //
             return fld.Type;    // ~ PhpArray
@@ -4289,307 +4305,436 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
-        void EmitLoadPrepare(CodeGenerator cg, ref LhsStack lhs)
+        static TypeSymbol EmitIntStringKeyOrPhpValue(CodeGenerator cg, BoundExpression index)
         {
-            // Template: array[index]
+            Debug.Assert(index != null);
 
-            bool safeToUseIntStringKey = false;
-            bool canBeNull = true;
+            if (index.ConstantValue.HasValue)
+            {
+                cg.EmitIntStringKey(index);
+                return cg.CoreTypes.IntStringKey;
+            }
+            else
+            {
+                var tindex = index.Emit(cg);
+                return (tindex.IsStringType() || tindex.IsIntegralType())
+                    ? cg.EmitConvertToIntStringKey(tindex)
+                    : cg.EmitConvertToPhpValue(tindex, 0);
+            }
+        }
 
+        static TypeSymbol EmitIntStringKeyOrStringOrLong(CodeGenerator cg, BoundExpression index)
+        {
+            Debug.Assert(index != null);
+
+            var constant = index.ConstantValue;
+            if (constant.HasValue)
+            {
+                switch (constant.Value)
+                {
+                    case string str:
+                        if (CodeGenerator.TryConvertToIntKey(str, out var ikey))
+                        {
+                            // int64
+                            cg.Builder.EmitLongConstant(ikey);
+                            return cg.CoreTypes.Long;
+                        }
+                        else if (cg.TryEmitCachedIntStringKey(str))
+                        {
+                            // IntStringKey
+                            return cg.CoreTypes.IntStringKey;
+                        }
+                        else
+                        {
+                            // string
+                            cg.Builder.EmitStringConstant(str);
+                            return cg.CoreTypes.String;
+                        }
+
+                    case null:
+                        // string
+                        cg.Builder.EmitStringConstant(string.Empty);
+                        return cg.CoreTypes.String;
+                }
+            }
+
+            return cg.EmitIntStringKey(index);
+        }
+
+        static TypeSymbol EmitLoadFromPhpArray(CodeGenerator cg, BoundExpression index, BoundAccess access)
+        {
+            // PhpArray on stack
+
+            if (access.IsQuiet)
+            {
+                // ?? PhpArray.Empty
+                cg.EmitNullCoalescing((_cg) =>
+                {
+                    _cg.EmitCastClass(_cg.Emit_PhpArray_Empty(), _cg.CoreTypes.PhpArray);
+                });
+            }
+
+            if (index == null)
+            {
+                Debug.Assert(access.IsEnsure);
+                /*
+                 * Template:
+                 * <array>.AddValue((PhpValue)(tmp = new <T>));
+                 * LOAD tmp;
+                 */
+                LocalDefinition tmp;
+                if (access.EnsureArray)
+                {
+                    // tmp = new PhpArray();
+                    tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray));
+                }
+                else if (access.EnsureObject)
+                {
+                    // tmp = new stdClass();
+                    tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.stdClass.Ctor()));
+                }
+                else if (access.IsReadRef)
+                {
+                    // tmp = PhpAlias.Create(NULL)
+                    cg.Emit_PhpValue_Null();
+                    tmp = cg.GetTemporaryLocal(cg.Emit_PhpValue_MakeAlias());
+                }
+                else
+                {
+                    throw ExceptionUtilities.UnexpectedValue(access);
+                }
+
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(tmp);
+
+                var tmp_type = (TypeSymbol)tmp.Type;
+                cg.EmitConvertToPhpValue(tmp_type, 0);
+
+                cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
+
+                //
+                cg.Builder.EmitLocalLoad(tmp);
+                cg.ReturnTemporaryLocal(tmp);
+                return tmp_type;
+            }
+
+            if (access.IsEnsure) // EnsureObject | EnsureArray | ReadRef
+            {
+                // LOAD: IntStringKey
+                cg.EmitIntStringKey(index);
+
+                if (access.EnsureObject)
+                {
+                    // <array>.EnsureItemObject(<index>)
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemObject_IntStringKey);
+                }
+                else if (access.EnsureArray)
+                {
+                    // <array>.EnsureItemArray(<index>)
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemArray_IntStringKey);
+
+                }
+                else if (access.IsReadRef)
+                {
+                    // <array>.EnsureItemAlias(<index>)
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey);
+                }
+            }
+            else if (access.IsRead) // Read
+            {
+                // LOAD: String | Long | IntStringKey
+                var tindex = EmitIntStringKeyOrStringOrLong(cg, index);
+
+                // <array>.GetItemValue(<index>)
+                if (tindex.IsStringType())
+                {
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.get_Item_String);
+                }
+                else if (tindex.SpecialType == SpecialType.System_Int64)
+                {
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.get_Item_Long);
+                }
+                else if (tindex.Is_IntStringKey())
+                {
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.get_Item_IntStringKey);
+                }
+            }
+
+            // 
+            throw ExceptionUtilities.Unreachable;
+        }
+
+        static TypeSymbol EmitLoadFromIPhpArray(CodeGenerator cg, BoundExpression index, BoundAccess access)
+        {
+            // IPhpArray on stack
+
+            if (access.IsQuiet)
+            {
+                // ?? PhpArray.Empty
+                cg.EmitNullCoalescing((_cg) =>
+                {
+                    _cg.EmitCastClass(_cg.Emit_PhpArray_Empty(), _cg.CoreTypes.IPhpArray);
+                });
+            }
+
+            if (index == null)
+            {
+                Debug.Assert(access.IsEnsure);
+
+                /*
+                 * Template:
+                 * <array>.AddValue((PhpValue)(tmp = new <T>));
+                 * LOAD tmp;
+                 */
+                LocalDefinition tmp;
+                if (access.EnsureArray)
+                {
+                    // tmp = new PhpArray();
+                    tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray));
+                }
+                else if (access.EnsureObject)
+                {
+                    // tmp = new stdClass();
+                    tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.stdClass.Ctor()));
+                }
+                else if (access.IsReadRef)
+                {
+                    // tmp = PhpAlias.Create(NULL)
+                    cg.Emit_PhpValue_Null();
+                    tmp = cg.GetTemporaryLocal(cg.Emit_PhpValue_MakeAlias());
+                }
+                else
+                {
+                    throw ExceptionUtilities.UnexpectedValue(access);
+                }
+
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(tmp);
+
+                var tmp_type = (TypeSymbol)tmp.Type;
+                cg.EmitConvertToPhpValue(tmp_type, 0);
+
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
+
+                //
+                cg.Builder.EmitLocalLoad(tmp);
+                cg.ReturnTemporaryLocal(tmp);
+                return tmp_type;
+            }
+
+            // LOAD either IntStringKey or PhpValue
+            var tindex = EmitIntStringKeyOrPhpValue(cg, index);
+
+            //
+
+            if (access.EnsureObject)
+            {
+                if (tindex.Is_IntStringKey())
+                {
+                    // <array>.EnsureItemObject(<index>)
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemObject_IntStringKey);
+                }
+                else
+                {
+                    Debug.Assert(tindex == cg.CoreTypes.PhpValue);
+                    // EnsureItemObject(<array>, <index>)
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemObject_IPhpArray_PhpValue);
+                }
+            }
+            else if (access.EnsureArray)
+            {
+                if (tindex.Is_IntStringKey())
+                {
+                    // <array>.EnsureItemArray(<index>)
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemArray_IntStringKey);
+                }
+                else
+                {
+                    Debug.Assert(tindex == cg.CoreTypes.PhpValue);
+                    // EnsureItemArray(<array>, <index>)
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemArray_IPhpArray_PhpValue);
+                }
+            }
+            else if (access.IsReadRef)
+            {
+                //Debug.Assert(this.Array.access.EnsureArray);
+
+                if (tindex.Is_IntStringKey())
+                {
+                    // <array>.EnsureItemAlias(<index>)
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemAlias_IntStringKey);
+                }
+                else
+                {
+                    Debug.Assert(tindex == cg.CoreTypes.PhpValue);
+                    // EnsureItemAlias(<array>, <index>, quiet)
+                    cg.Builder.EmitBoolConstant(access.IsQuiet);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_IPhpArray_PhpValue_Bool);
+                }
+            }
+            else
+            {
+                Debug.Assert(access.IsRead);
+
+                if (tindex.Is_IntStringKey())
+                {
+                    // <array>.GetItemValue(<index>)
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey);
+                }
+                else
+                {
+                    Debug.Assert(tindex == cg.CoreTypes.PhpValue);
+                    // GetItemValue(<array>, <index>)
+                    //cg.Builder.EmitBoolConstant(access.IsQuiet);
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_PhpValue);
+                }
+            }
+        }
+
+        static TypeSymbol EmitLoadFromString(CodeGenerator cg, BoundExpression index, BoundAccess access)
+        {
+            // String on stack
+
+            if (access.EnsureObject || access.EnsureArray || access.IsReadRef)
+            {
+                // null
+                throw new InvalidOperationException();
+            }
+
+            // LOAD either IntStringKey or PhpValue
+            var tindex = EmitIntStringKeyOrPhpValue(cg, index);
+
+            Debug.Assert(access.IsRead);
+
+            if (tindex.Is_IntStringKey())
+            {
+                // GetItemValue{OrNull}(string, IntStringKey)
+                return cg.EmitCall(ILOpCode.Call, access.Flags.Isset()
+                    ? cg.CoreMethods.Operators.GetItemValueOrNull_String_IntStringKey   // string or null
+                    : cg.CoreMethods.Operators.GetItemValue_String_IntStringKey         // string or ""
+                );
+            }
+            else
+            {
+                Debug.Assert(tindex == cg.CoreTypes.PhpValue);
+                // GetItemValue(string, PhpValue, bool)
+                cg.Builder.EmitBoolConstant(access.IsQuiet);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_String_PhpValue_Bool);
+            }
+        }
+
+        static TypeSymbol EmitLoadFromArrayAccess(CodeGenerator cg, BoundExpression index, BoundAccess access)
+        {
+            // ArrayAccess on stack
+
+            // LOAD index : PhpValue
+            cg.EmitConvertToPhpValue(index);
+
+            // if (access.IsIsSet) { } // NOTE: handled by BoundOffsetExists
+
+            // Template: ArrayAccess.offsetGet(<index>)
+            var t = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetGet_ArrayAccess_PhpValue);
+
+            if (access.EnsureArray)
+            {
+                Debug.Assert(t == cg.CoreTypes.PhpValue);
+                // Template: (ref PhpValue).EnsureArray()
+                cg.EmitPhpValueAddr();
+                t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpValueRef);
+            }
+
+            return t;
+        }
+
+        static TypeSymbol EmitLoadFromPhpValue(CodeGenerator cg, BoundExpression index, BoundAccess access)
+        {
+            // PhpValue on stack
+
+            // LOAD index : PhpValue
+            cg.EmitConvertToPhpValue(index);
+
+            //
+            if (access.EnsureObject || access.EnsureArray)
+            {
+                // null
+                throw new InvalidOperationException();
+            }
+            else if (access.IsReadRef)
+            {
+                Debug.WriteLine("TODO: we need reference to PhpValue so we can modify its content! This is not compatible with behavior of = &$null[0].");
+
+                // PhpValue.GetItemRef(index, bool)
+                cg.Builder.EmitBoolConstant(access.IsQuiet);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_PhpValue_PhpValue_Bool);
+            }
+            else // IsRead
+            {
+                Debug.Assert(access.IsRead);
+                // PhpValue.GetItemValue(index, bool)
+                cg.Builder.EmitBoolConstant(access.IsQuiet);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_PhpValue_PhpValue_Bool);
+            }
+        }
+
+        TypeSymbol IVariableReference.EmitLoadValue(CodeGenerator cg, ref LhsStack lhs, BoundAccess access)
+        {
             //
             // LOAD Array
             //
 
             var tArray = lhs.EmitReceiver(cg, Array);
 
-            // convert {t} to IPhpArray, string, System.Array
-
-            if (tArray.IsOfType(cg.CoreTypes.IPhpArray))
+            if (tArray.Is_PhpAlias())
             {
-                // ok; PhpArray, PhpString, object implementing IPhpArray
-                safeToUseIntStringKey = true;
-            }
-            else if (tArray == cg.CoreTypes.PhpValue)
-            {
-                // ok
-            }
-            else if (tArray == cg.CoreTypes.PhpAlias)
-            {
+                // PhpAlias -> PhpValue
                 tArray = cg.Emit_PhpAlias_GetValue();
             }
-            else if (tArray == cg.CoreTypes.String)
+
+            if (tArray.Is_PhpString())
             {
-                // ok
-                safeToUseIntStringKey = true;
-            }
-            else if (tArray == cg.CoreTypes.PhpString)
-            {
-                // <PhpString>.AsArray
+                // <PhpString>.AsArray() : IPhpArray
                 tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.AsArray_PhpString);
-                safeToUseIntStringKey = true;
             }
-            else if (tArray == cg.CoreTypes.Void)
+
+            if (tArray.Is_PhpArray())
             {
-                Debug.Fail("Use of uninitialized value.");  // TODO: Err in analysis, use of uninitialized value
+                return EmitLoadFromPhpArray(cg, Index, access);
             }
-            else if (tArray.IsArray())   // TODO: IList, IDictionary
+
+            if (tArray.IsStringType())
             {
-                // ok
+                return EmitLoadFromString(cg, Index, access);
             }
-            else if (tArray.IsOfType(cg.CoreTypes.ArrayAccess))
+
+            if (tArray.IsOfType(cg.CoreTypes.ArrayAccess))
             {
-                // ok
+                return EmitLoadFromArrayAccess(cg, Index, access);
             }
-            else
+
+            if (tArray.IsReferenceType)
             {
-                // object -> IPhpArray
-                tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_Object);
-                canBeNull = false;
+                if (!tArray.IsOfType(cg.CoreTypes.IPhpArray))
+                {
+                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_Object);
+                }
+
+                // IPhpArray
+                return EmitLoadFromIPhpArray(cg, Index, access);
             }
 
-            if (this.Access.IsRead && this.Access.IsQuiet)  // TODO: analyse if Array can be NULL
-            {
-                // ?? PhpArray.Empty
-                if (cg.CoreTypes.PhpArray.Symbol.IsOfType(tArray) && canBeNull)
-                {
-                    cg.EmitNullCoalescing((_cg) =>
-                    {
-                        _cg.EmitCastClass(_cg.Emit_PhpArray_Empty(), tArray);
-                    });
-                }
-            }
-
-            Debug.Assert(
-                tArray.IsOfType(cg.CoreTypes.IPhpArray) ||
-                tArray.SpecialType == SpecialType.System_String ||
-                tArray.IsArray() ||
-                tArray.IsOfType(cg.CoreTypes.ArrayAccess) ||
-                tArray == cg.CoreTypes.PhpValue);
-
-            //
-            // LOAD [Index]
-            //
-
-            Debug.Assert(this.Index != null || this.Access.IsEnsure, "Index is required when reading the array item.");
-
-            var tIndex = EmitLoadIndex(cg, ref lhs, safeToUseIntStringKey);
-
-            // remember for EmitLoad
-            PushEmittedArray(tArray, tIndex);
-        }
-
-        TypeSymbol IVariableReference.EmitLoadValue(CodeGenerator cg, ref LhsStack lhs, BoundAccess access)
-        {
-            EmitLoadPrepare(cg, ref lhs);
-
-            // Template: array[index]
-
-            var stack = PopEmittedArray();
-            if (stack.tArray.IsOfType(cg.CoreTypes.IPhpArray))
-            {
-                // whether the target is instance of PhpArray, otherwise it is an IPhpArray and we have to use .callvirt and different operators
-                var isphparr = (stack.tArray == cg.CoreTypes.PhpArray);
-
-                if (this.Index == null)
-                {
-                    Debug.Assert(stack.tIndex == null);
-                    Debug.Assert(this.Access.IsEnsure);
-                    /*
-                     * Template:
-                     * <array>.AddValue((PhpValue)(tmp = new <T>));
-                     * LOAD tmp;
-                     */
-                    LocalDefinition tmp;
-                    if (Access.EnsureArray)
-                    {
-                        // tmp = new PhpArray();
-                        tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray));
-                    }
-                    else if (Access.EnsureObject)
-                    {
-                        // tmp = new stdClass();
-                        tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.stdClass.Ctor()));
-                    }
-                    else if (Access.IsReadRef)
-                    {
-                        // tmp = PhpAlias.Create(NULL)
-                        cg.Emit_PhpValue_Null();
-                        tmp = cg.GetTemporaryLocal(cg.Emit_PhpValue_MakeAlias());
-                    }
-                    else
-                    {
-                        throw ExceptionUtilities.UnexpectedValue(Access);
-                    }
-
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-                    cg.Builder.EmitLocalStore(tmp);
-
-                    var tmp_type = (TypeSymbol)tmp.Type;
-                    cg.EmitConvertToPhpValue(tmp_type, 0);
-
-                    if (isphparr) cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
-                    else cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
-
-                    //
-                    cg.Builder.EmitLocalLoad(tmp);
-                    cg.ReturnTemporaryLocal(tmp);
-                    return tmp_type;
-                }
-                else if (Access.EnsureObject)
-                {
-                    if (stack.tIndex == cg.CoreTypes.IntStringKey)
-                    {
-                        // <array>.EnsureItemObject(<index>)
-                        return isphparr
-                            ? cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemObject_IntStringKey)
-                            : cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemObject_IntStringKey);
-                    }
-                    else
-                    {
-                        Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
-                        // EnsureItemObject(<array>, <index>)
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemObject_IPhpArray_PhpValue);
-                    }
-                }
-                else if (Access.EnsureArray)
-                {
-                    if (stack.tIndex == cg.CoreTypes.IntStringKey)
-                    {
-                        // <array>.EnsureItemArray(<index>)
-                        return isphparr
-                            ? cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemArray_IntStringKey)
-                            : cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemArray_IntStringKey);
-                    }
-                    else
-                    {
-                        Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
-                        // EnsureItemArray(<array>, <index>)
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemArray_IPhpArray_PhpValue);
-                    }
-                }
-                else if (Access.IsReadRef)
-                {
-                    Debug.Assert(this.Array.Access.EnsureArray);
-
-                    if (stack.tIndex == cg.CoreTypes.IntStringKey)
-                    {
-                        // <array>.EnsureItemAlias(<index>)
-                        return isphparr
-                            ? cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey)
-                            : cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemAlias_IntStringKey);
-                    }
-                    else
-                    {
-                        Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
-                        // EnsureItemAlias(<array>, <index>, quiet)
-                        cg.Builder.EmitBoolConstant(Access.IsQuiet);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_IPhpArray_PhpValue_Bool);
-                    }
-                }
-                else
-                {
-                    Debug.Assert(Access.IsRead);
-
-                    TypeSymbol t;
-
-                    if (stack.tIndex == cg.CoreTypes.IntStringKey)
-                    {
-                        // <array>.GetItemValue(<index>)
-                        t = isphparr
-                            ? cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey)
-                            : cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey);
-                    }
-                    else
-                    {
-                        Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
-                        // GetItemValue(<array>, <index>)
-                        //cg.Builder.EmitBoolConstant(Access.IsQuiet);
-                        t = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_PhpValue);
-                    }
-
-                    return t;
-                }
-            }
-            else if (stack.tArray.SpecialType == SpecialType.System_String)
-            {
-                if (Access.EnsureObject || Access.EnsureArray || Access.IsReadRef)
-                {
-                    // null
-                    throw new InvalidOperationException();
-                }
-                else
-                {
-                    Debug.Assert(Access.IsRead);
-                    if (stack.tIndex == cg.CoreTypes.IntStringKey)
-                    {
-                        // GetItemValue{OrNull}(string, IntStringKey)
-                        return cg.EmitCall(ILOpCode.Call, this.Access.Flags.Isset()
-                            ? cg.CoreMethods.Operators.GetItemValueOrNull_String_IntStringKey   // string or null
-                            : cg.CoreMethods.Operators.GetItemValue_String_IntStringKey         // string or ""
-                            );
-                    }
-                    else
-                    {
-                        Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
-                        // GetItemValue(string, PhpValue, bool)
-                        cg.Builder.EmitBoolConstant(Access.IsQuiet);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_String_PhpValue_Bool);
-                    }
-                }
-            }
-            else if (stack.tArray == cg.CoreTypes.PhpValue)
-            {
-                Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
-
-                if (Access.EnsureObject || Access.EnsureArray)
-                {
-                    // null
-                    throw new InvalidOperationException();
-                }
-                else if (Access.IsReadRef)
-                {
-                    Debug.WriteLine("TODO: we need reference to PhpValue so we can modify its content! This is not compatible with behavior of = &$null[0].");
-
-                    // PhpValue.GetItemRef(index, bool)
-                    cg.Builder.EmitBoolConstant(Access.IsQuiet);
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_PhpValue_PhpValue_Bool);
-                }
-                else // IsRead
-                {
-                    Debug.Assert(Access.IsRead);
-                    // PhpValue.GetItemValue(index, bool)
-                    cg.Builder.EmitBoolConstant(Access.IsQuiet);
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_PhpValue_PhpValue_Bool);
-                }
-            }
-            else if (stack.tArray.IsOfType(cg.CoreTypes.ArrayAccess))
-            {
-                Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
-
-                // Template: ArrayAccess.offsetGet(<index>)
-                var t = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetGet_ArrayAccess_PhpValue);
-
-                if (Access.EnsureArray)
-                {
-                    Debug.Assert(t == cg.CoreTypes.PhpValue);
-                    // Template: (ref PhpValue).EnsureArray()
-                    cg.EmitPhpValueAddr();
-                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpValueRef);
-                }
-
-                return t;
-            }
-            else if (stack.tArray.SpecialType == SpecialType.System_Void)
+            if (tArray.IsVoid())
             {
                 // array item on an uninitialized value
-                // void[key] -> void
-                cg.EmitPop(stack.tIndex);
-                return cg.Emit_PhpValue_Void();
+                // void[key] -> void (NULL)
+
+                // TODO: diagnostics, check access.IsQuiet
+                cg.EmitPop(cg.Emit(Index));
+                return cg.Emit_PhpValue_Null();
             }
-            else
-            {
-                throw cg.NotImplementedException($"LOAD {stack.tArray.Name}[]");
-            }
+
+            // PhpValue[Index]
+            cg.EmitConvertToPhpValue(tArray, 0);
+            return EmitLoadFromPhpValue(cg, Index, access);
         }
 
         TypeSymbol IVariableReference.EmitLoadAddress(CodeGenerator cg, ref LhsStack lhs)
