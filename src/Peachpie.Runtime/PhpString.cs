@@ -106,7 +106,7 @@ namespace Pchp.Core.Text
         /// Copies characters to a new array of <see cref="char"/>s.
         /// Single-byte chars are encoded to Unicode chars.
         /// </summary>
-        public static char[] ToCharArray(BlobChar[] chars, Encoding enc)
+        public static Span<char> ToCharArray(BlobChar[] chars, Encoding enc)
         {
             // TODO: more decent code
 
@@ -142,8 +142,8 @@ namespace Pchp.Core.Text
                     result.Add(chars[i]._ch);
                 }
             }
-            
-            return result.ToArray(); // TODO: .AsSpan()
+
+            return result.AsSpan();
         }
 
         /// <summary>
@@ -1113,7 +1113,7 @@ namespace Pchp.Core
                     byte[] barr => encoding.GetString(barr),
                     Blob b => b.ToString(encoding),
                     char[] carr => new string(carr),
-                    BlobChar[] barr => new string(BlobChar.ToCharArray(barr, encoding)),
+                    BlobChar[] barr => BlobChar.ToCharArray(barr, encoding).ToString(),
                     _ => throw new ArgumentException(chunk.GetType().ToString())
                 };
             }
