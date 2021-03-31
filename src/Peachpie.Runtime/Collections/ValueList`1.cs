@@ -127,6 +127,20 @@ namespace Pchp.Core.Collections
             }
         }
 
+        public void AddRange(T[] array) => AddRange(array, 0, array.Length);
+
+        public void AddRange(T[] array, int start, int count)
+        {
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
+            EnsureCapacity(Count + count);
+            Array.Copy(array, start, _array, _count, count);
+            _count += count;
+        }
+
         public void Clear()
         {
             if (_count != 0)
