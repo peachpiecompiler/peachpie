@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Pchp.Core.Collections;
 using Pchp.Core.Dynamic;
 using Peachpie.Runtime.Dynamic;
 
@@ -194,13 +195,12 @@ namespace Pchp.Core.Reflection
                 {
                     if (ReflectionUtils.IsInstantiable(_type) && !IsTrait)
                     {
-                        List<ConstructorInfo> ctorsList = null;
+                        var ctorsList = new ValueList<ConstructorInfo>();
                         bool hasPrivate = false;
                         foreach (var c in _type.DeclaredConstructors)
                         {
                             if (!c.IsStatic && !c.IsPhpFieldsOnlyCtor() && !c.IsPhpHidden())
                             {
-                                if (ctorsList == null) ctorsList = new List<ConstructorInfo>(1);
                                 ctorsList.Add(c);
                                 hasPrivate |= c.IsPrivate;
                             }
@@ -231,13 +231,12 @@ namespace Pchp.Core.Reflection
                 {
                     if (ReflectionUtils.IsInstantiable(_type) && !IsTrait)
                     {
-                        List<ConstructorInfo> ctorsList = null;
+                        var ctorsList = new ValueList<ConstructorInfo>();
                         bool hasProtected = false;
                         foreach (var c in _type.DeclaredConstructors)
                         {
                             if (!c.IsStatic && !c.IsPrivate && !c.IsPhpFieldsOnlyCtor() && !c.IsPhpHidden())
                             {
-                                if (ctorsList == null) ctorsList = new List<ConstructorInfo>(1);
                                 ctorsList.Add(c);
                                 hasProtected |= c.IsFamily;
                             }

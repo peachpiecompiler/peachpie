@@ -1,4 +1,5 @@
-﻿using Pchp.Core.Text;
+﻿using Pchp.Core.Collections;
+using Pchp.Core.Text;
 using Pchp.Core.Utilities;
 using System;
 using System.Collections;
@@ -109,7 +110,7 @@ namespace Pchp.Core.Text
         {
             // TODO: more decent code
 
-            var result = new List<char>(chars.Length);
+            var result = new ValueList<char>(chars.Length);
 
             Debug.Assert(chars != null);
 
@@ -134,15 +135,15 @@ namespace Pchp.Core.Text
                     }
 
                     var charscount = enc.GetChars(src, 0, src.Length, tmp, 0);
-                    result.AddRange(new ArraySegment<char>(tmp, 0, charscount));
+                    result.AddRange(tmp, 0, charscount);
                 }
                 else
                 {
                     result.Add(chars[i]._ch);
                 }
             }
-
-            return result.ToArray(); // TODO: span of underlaying items
+            
+            return result.ToArray(); // TODO: .AsSpan()
         }
 
         /// <summary>
@@ -153,7 +154,7 @@ namespace Pchp.Core.Text
         {
             // TODO: more decent code
 
-            var result = new List<byte>(chars.Length);
+            var result = new ValueList<byte>(chars.Length);
 
             Debug.Assert(chars != null);
 
@@ -182,11 +183,11 @@ namespace Pchp.Core.Text
                     }
 
                     var bytescount = enc.GetBytes(src, 0, src.Length, tmp, 0);
-                    result.AddRange(new ArraySegment<byte>(tmp, 0, bytescount));
+                    result.AddRange(tmp, 0, bytescount);
                 }
             }
 
-            return result.ToArray(); // TODO: span of underlaying items
+            return result.ToArray(); // TODO: .AsSpan()
         }
 
         internal static BlobChar[] ToBlobCharArray(string str)
@@ -1150,7 +1151,7 @@ namespace Pchp.Core
                 else
                 {
 
-                    var buffer = new List<byte>();
+                    var buffer = new ValueList<byte>();
                     for (int i = 0; i < count; i++)
                     {
                         buffer.AddRange(ChunkToBytes(encoding, chunks[i]));
