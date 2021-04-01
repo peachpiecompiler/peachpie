@@ -134,17 +134,19 @@ namespace Pchp.Library.DateTime
         public virtual int getOffset(Library.DateTime.DateTime datetime)
         {
             if (_timezone == null)
+            {
                 //return false;
                 throw new InvalidOperationException();
+            }
 
             if (datetime == null)
             {
                 //PhpException.ArgumentNull("datetime");
                 //return false;
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(datetime));
             }
 
-            return (int)_timezone.BaseUtcOffset.TotalSeconds + (_timezone.IsDaylightSavingTime(datetime.Time) ? 3600 : 0);
+            return (int)_timezone.BaseUtcOffset.TotalSeconds + (_timezone.IsDaylightSavingTime(datetime.LocalTime) ? 3600 : 0);
         }
 
         //public array getTransitions ([ int $timestamp_begin [, int $timestamp_end ]] )
