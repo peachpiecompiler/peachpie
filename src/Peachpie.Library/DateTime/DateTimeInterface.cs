@@ -11,7 +11,9 @@ namespace Pchp.Library.DateTime
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Date)]
     public interface DateTimeInterface
     {
-        public class _statics   // nested "_statics" class is understood by compiler and runtime, contained readonly/const fields are treated as containing class's constants
+        // nested "_statics" class is understood by compiler and runtime, contained readonly/const fields are treated as containing class's constants
+        // see https://docs.peachpie.io/api/assembly/compiled-class/#additional-class-members
+        public class _statics
         {
             // following can be moved into the containing class once C# compiler allows it (or using IL hack)
 
