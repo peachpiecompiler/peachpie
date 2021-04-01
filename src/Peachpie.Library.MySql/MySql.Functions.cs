@@ -9,6 +9,7 @@ using static Pchp.Library.StandardPhpOptions;
 using Pchp.Library.Resources;
 using System.Linq;
 using Pchp.Core.Utilities;
+using Pchp.Core.Collections;
 
 namespace Peachpie.Library.MySql
 {
@@ -849,7 +850,7 @@ namespace Peachpie.Library.MySql
             var col = result.GetColumnSchema(fieldIndex);
             //ColumnFlags flags = result.GetFieldFlags(fieldIndex);
 
-            var flags = new List<string>(16);
+            var flags = new ValueList<string>();
 
             if (col.AllowDBNull.GetValueOrDefault() == false)
                 flags.Add("not_null");
@@ -888,7 +889,7 @@ namespace Peachpie.Library.MySql
                 flags.Add("timestamp");
 
             //
-            return string.Join(" ", flags);
+            return flags.Join(" ");
         }
 
         /// <summary>
@@ -1116,9 +1117,12 @@ namespace Peachpie.Library.MySql
             if (unescaped_str.ContainsBinaryData)
             {
                 var bytes = unescaped_str.ToBytes(ctx);
-                if (bytes.Length == 0) return unescaped_str;
+                if (bytes.Length == 0)
+                {
+                    return unescaped_str;
+                }
 
-                List<byte>/*!*/result = new List<byte>(bytes.Length + 8);
+                var/*!*/result = new ValueList<byte>(bytes.Length);
                 for (int i = 0; i < bytes.Length; i++)
                 {
                     switch (bytes[i])
