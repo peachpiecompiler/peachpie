@@ -9,6 +9,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.XPath;
 using Pchp.Core;
+using Pchp.Core.Collections;
 using Pchp.Core.Reflection;
 using Pchp.Core.Utilities;
 using Pchp.Library;
@@ -887,7 +888,7 @@ namespace Peachpie.Library.XmlDom
                                 // the first element of this name
                                 properties[child.LocalName] = child_value;
                             }
-                            
+
                         }
                     }
 
@@ -1055,7 +1056,7 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public virtual bool __unset(string name)
         {
-            List<XmlNode> to_remove = new List<XmlNode>();
+            var to_remove = new ValueList<XmlNode>();
 
             // remove all child elements of the given local name & namespace URI
             foreach (XmlNode node in XmlElement.ChildNodes)
@@ -1068,13 +1069,17 @@ namespace Peachpie.Library.XmlDom
                 }
             }
 
-            if (to_remove.Count == 0) return false;
+            if (to_remove.Count == 0)
+            {
+                return false;
+            }
             else
             {
-                foreach (XmlNode node in to_remove)
+                foreach (var node in to_remove)
                 {
                     XmlElement.RemoveChild(node);
                 }
+
                 return true;
             }
         }
@@ -1084,7 +1089,8 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public virtual bool __isset(string name)
         {
-            XmlElement child = iterationNamespace.GetFirstChildIn(XmlElement, name);// XmlElement[name, namespaceUri];
+            var child = iterationNamespace.GetFirstChildIn(XmlElement, name);// XmlElement[name, namespaceUri];
+
             return child != null;
 
             //if (child != null) return Create(className, child);
