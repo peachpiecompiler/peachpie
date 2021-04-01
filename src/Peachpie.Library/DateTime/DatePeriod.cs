@@ -74,7 +74,7 @@ namespace Pchp.Library.DateTime
 
         IEnumerator<DateTimeInterface> IEnumerable<DateTimeInterface>.GetEnumerator()
         {
-            DateTimeImmutable current = start as DateTimeImmutable ?? (start as DateTime)?.AsDateTimeImmutable() ?? throw new InvalidOperationException();
+            var current = DateTimeImmutable.createFromInterface(start);
             
             if (include_start_date)
             {
@@ -95,14 +95,12 @@ namespace Pchp.Library.DateTime
             {
                 current = current.add(interval);
 
-                if (end != null && DateTimeFunctions.GetDateTimeFromInterface(end, out var end_datetime, out _))
+                if (end != null && DateTimeFunctions.CompareTime(current, end) > 0)
                 {
-                    if (current.Time > end_datetime)
-                    {
-                        yield break;
-                    }
+                    yield break;
                 }
-                else if (index >= recurrences)
+                
+                if (index >= recurrences)
                 {
                     yield break;
                 }
