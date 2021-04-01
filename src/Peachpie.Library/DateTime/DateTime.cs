@@ -86,10 +86,9 @@ namespace Pchp.Library.DateTime
         // note: we incorrectly show following in reflection as well.
 
         /// <summary>
-        /// For serialization purposes, gets current time in UTC in format <c>"yyyy-MM-dd HH:mm:ss.ffff"</c>.
-        /// Unlike in PHP it gets time converted to <see cref="TimeZone"/>.
+        /// Allows to get or set local time in format <c>"yyyy-MM-dd HH:mm:ss.ffff"</c>.
         /// </summary>
-        public string time
+        public string date
         {
             get => LocalTime.ToString("yyyy-MM-dd HH:mm:ss.ffff");
             set => LocalTime = System_DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal);
