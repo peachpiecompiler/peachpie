@@ -1471,25 +1471,25 @@ namespace Pchp.Library.DateTime
         /// Parses a string containing an English date format into a UNIX timestamp relative to the current time.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="time">String containing time definition</param>
+        /// <param name="datetime">String containing time definition</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
         [return: CastToFalse]
-        public static long strtotime(Context ctx, string time)
+        public static long strtotime(Context ctx, string datetime)
         {
-            return StringToTime(ctx, time, System_DateTime.UtcNow);
+            return StringToTime(ctx, datetime, System_DateTime.UtcNow);
         }
 
         /// <summary>
         /// Parses a string containing an English date format into a UNIX timestamp relative to a specified time.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="time">String containing time definition.</param>
-        /// <param name="start">Timestamp (seconds from 1970) to which is the new timestamp counted.</param>
+        /// <param name="datetime">String containing time definition.</param>
+        /// <param name="baseTimestamp">Timestamp (seconds from 1970) to which is the new timestamp counted.</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
         [return: CastToFalse]
-        public static long strtotime(Context ctx, string time, long start)
+        public static long strtotime(Context ctx, string datetime, long baseTimestamp)
         {
-            return StringToTime(ctx, time, DateTimeUtils.UnixTimeStampToUtc(start));
+            return StringToTime(ctx, datetime, DateTimeUtils.UnixTimeStampToUtc(baseTimestamp));
         }
 
         /// <summary>
