@@ -325,6 +325,20 @@ namespace Pchp.Core.Collections
             return _array.AsSpan(0, _count);
         }
 
+        internal void GetArraySegment(out T[] array, out int count)
+        {
+            count = _count;
+
+            if (count == 0)
+            {
+                array = Array.Empty<T>();
+            }
+            else
+            {
+                array = _array;
+            }
+        }
+
         public struct ValueEnumerator
         {
             readonly T[] _array;
