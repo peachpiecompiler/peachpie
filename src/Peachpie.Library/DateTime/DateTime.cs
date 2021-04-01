@@ -65,8 +65,6 @@ namespace Pchp.Library.DateTime
     {
         #region Fields
 
-        protected readonly Context _ctx;
-
         /// <summary>
         /// Time string representing current date and time.
         /// </summary>
@@ -130,14 +128,12 @@ namespace Pchp.Library.DateTime
         [PhpFieldsOnlyCtor]
         protected DateTime(Context ctx)
         {
-            _ctx = ctx;
             LocalTimeZone = PhpTimeZone.GetCurrentTimeZone(ctx);
             LocalTime = TimeZoneInfo.ConvertTimeFromUtc(System_DateTime.UtcNow, LocalTimeZone);
         }
 
-        private DateTime(Context ctx, System_DateTime datetime, TimeZoneInfo timezone)
+        private DateTime(System_DateTime datetime, TimeZoneInfo timezone)
         {
-            _ctx = ctx;
             LocalTime = datetime;
             LocalTimeZone = timezone ?? throw new ArgumentNullException(nameof(timezone));
         }
@@ -145,17 +141,13 @@ namespace Pchp.Library.DateTime
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
         public DateTime(Context ctx, string? datetime = s_Now, DateTimeZone? timezone = null)
         {
-            _ctx = ctx;
-
-            ctx.SetProperty(DateTimeErrors.Empty);
-
-            __construct(datetime, timezone);
+            __construct(ctx, datetime, timezone);
         }
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
-        public void __construct(string? datetime = s_Now, DateTimeZone? timezone = null)
+        public void __construct(Context ctx, string? datetime = s_Now, DateTimeZone? timezone = null)
         {
-            Parse(_ctx, datetime ?? string.Empty, timezone?._timezone, out var localdate, out var localtz);
+            Parse(ctx, datetime ?? string.Empty, timezone?._timezone, out var localdate, out var localtz);
 
             //
             LocalTime = localdate;
@@ -173,6 +165,8 @@ namespace Pchp.Library.DateTime
             Debug.Assert(timestr != null);
 
             //
+            ctx!.SetProperty(DateTimeErrors.Empty);
+
             timestr = timestr != null ? timestr.Trim() : string.Empty;
             localtz = timezone ?? PhpTimeZone.GetCurrentTimeZone(ctx);
 
@@ -197,7 +191,7 @@ namespace Pchp.Library.DateTime
             }
         }
 
-        internal DateTimeImmutable AsDateTimeImmutable() => new DateTimeImmutable(_ctx, LocalTime, LocalTimeZone);
+        internal DateTimeImmutable AsDateTimeImmutable() => new DateTimeImmutable(LocalTime, LocalTimeZone);
 
         #endregion
 
@@ -252,7 +246,7 @@ namespace Pchp.Library.DateTime
                     date = TimeZoneInfo.ConvertTimeFromUtc(date, localtz);
                 }
 
-                return new DateTime(ctx, date, localtz);
+                return new DateTime(date, localtz);
             }
         }
 
@@ -338,7 +332,7 @@ namespace Pchp.Library.DateTime
                 : PhpArray.NewEmpty();
         }
 
-        public virtual DateTime modify(string modify)
+        public virtual DateTime modify(Context ctx, string modify)
         {
             if (string.IsNullOrEmpty(modify))
             {
@@ -349,7 +343,7 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentNullException();
             }
 
-            Parse(_ctx, modify, LocalTimeZone, out var localdate, out var localtz);
+            Parse(ctx, modify, LocalTimeZone, out var localdate, out var localtz);
 
             LocalTime = localdate;
             LocalTimeZone = localtz;
@@ -378,13 +372,13 @@ namespace Pchp.Library.DateTime
             var localtz = timezone?._timezone ?? PhpTimeZone.GetCurrentTimeZone(ctx);
             var localdate = dateinfo.GetDateTime(System_DateTime.UtcNow, ref localtz);
 
-            return new DateTime(ctx, localdate, localtz);
+            return new DateTime(localdate, localtz);
         }
 
         /// <summary>
         /// Returns new DateTime object encapsulating the given DateTimeImmutable object.
         /// </summary>
-        public static DateTime? createFromImmutable(Context ctx, DateTimeImmutable datetime)
+        public static DateTime? createFromImmutable(DateTimeImmutable datetime)
         {
             if (datetime == null)
             {
@@ -392,14 +386,14 @@ namespace Pchp.Library.DateTime
                 return null;
             }
 
-            return new DateTime(ctx, datetime.LocalTime, datetime.LocalTimeZone);
+            return new DateTime(datetime.LocalTime, datetime.LocalTimeZone);
         }
 
-        public static DateTime createFromInterface(Context ctx, DateTimeInterface datetime)
+        public static DateTime createFromInterface(DateTimeInterface datetime)
         {
             if (DateTimeFunctions.GetDateTimeFromInterface(datetime, out var dt, out var tz))
             {
-                return new DateTime(ctx, dt, tz);
+                return new DateTime(dt, tz);
             }
             else
             {
@@ -513,7 +507,7 @@ namespace Pchp.Library.DateTime
             if (GetType() == typeof(DateTime))
             {
                 // quick new instance
-                return new DateTime(_ctx, LocalTime, LocalTimeZone);
+                return new DateTime(LocalTime, LocalTimeZone);
             }
             else
             {
@@ -540,8 +534,6 @@ namespace Pchp.Library.DateTime
     [DebuggerDisplay(nameof(DateTimeImmutable), Type = PhpVariable.TypeNameObject)]
     public class DateTimeImmutable : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
-        readonly protected Context _ctx;
-
         /// <summary>
         /// Get the date-time value, stored in UTC
         /// </summary>
@@ -555,14 +547,12 @@ namespace Pchp.Library.DateTime
         [PhpFieldsOnlyCtor]
         protected DateTimeImmutable(Context ctx)
         {
-            _ctx = ctx;
             LocalTimeZone = PhpTimeZone.GetCurrentTimeZone(ctx);
             LocalTime = TimeZoneInfo.ConvertTimeFromUtc(System_DateTime.UtcNow, LocalTimeZone);
         }
 
-        internal DateTimeImmutable(Context ctx, System_DateTime datetime, TimeZoneInfo tz)
+        internal DateTimeImmutable(System_DateTime datetime, TimeZoneInfo tz)
         {
-            _ctx = ctx;
             LocalTime = datetime;
             LocalTimeZone = tz;
         }
@@ -570,16 +560,12 @@ namespace Pchp.Library.DateTime
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
         public DateTimeImmutable(Context ctx, string? datetime = DateTime.s_Now, DateTimeZone? timezone = null)
         {
-            _ctx = ctx;
-
-            ctx.SetProperty(DateTimeErrors.Empty);
-
-            __construct(datetime, timezone);
+            __construct(ctx, datetime, timezone);
         }
 
-        public void __construct(string? datetime = DateTime.s_Now, DateTimeZone? timezone = null)
+        public void __construct(Context ctx, string? datetime = DateTime.s_Now, DateTimeZone? timezone = null)
         {
-            DateTime.Parse(_ctx, datetime ?? string.Empty, timezone?._timezone, out var localdate, out var localtz);
+            DateTime.Parse(ctx, datetime ?? string.Empty, timezone?._timezone, out var localdate, out var localtz);
 
             //
             LocalTime = localdate;
@@ -615,7 +601,7 @@ namespace Pchp.Library.DateTime
         {
             var utc = DateTimeUtils.UnixTimeStampToUtc(unixtimestamp);
 
-            return new DateTimeImmutable(_ctx, TimeZoneInfo.ConvertTimeFromUtc(utc, LocalTimeZone), LocalTimeZone);
+            return new DateTimeImmutable(TimeZoneInfo.ConvertTimeFromUtc(utc, LocalTimeZone), LocalTimeZone);
         }
 
         public DateTimeZone getTimezone()
@@ -623,7 +609,7 @@ namespace Pchp.Library.DateTime
             return new DateTimeZone(LocalTimeZone);
         }
 
-        public virtual DateTimeImmutable modify(string modify)
+        public virtual DateTimeImmutable modify(Context ctx, string modify)
         {
             if (string.IsNullOrEmpty(modify))
             {
@@ -634,18 +620,18 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentNullException();
             }
 
-            DateTime.Parse(_ctx, modify, LocalTimeZone, out var localdate, out var localtz);
+            DateTime.Parse(ctx, modify, LocalTimeZone, out var localdate, out var localtz);
 
-            return new DateTimeImmutable(_ctx, localdate, localtz);
+            return new DateTimeImmutable(localdate, localtz);
         }
 
         public void __wakeup() { }
 
         #endregion
 
-        public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, interval.Apply(LocalTime, negate: false), LocalTimeZone);
+        public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(interval.Apply(LocalTime, negate: false), LocalTimeZone);
 
-        public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(_ctx, interval.Apply(LocalTime, negate: true), LocalTimeZone);
+        public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(interval.Apply(LocalTime, negate: true), LocalTimeZone);
 
         [return: CastToFalse]
         public static DateTimeImmutable? createFromFormat(Context ctx, string format, string? time, DateTimeZone? timezone = null)
@@ -668,7 +654,7 @@ namespace Pchp.Library.DateTime
             var localtz = timezone?._timezone ?? PhpTimeZone.GetCurrentTimeZone(ctx);
             var localdate = dateinfo.GetDateTime(System_DateTime.UtcNow, ref localtz);
 
-            return new DateTimeImmutable(ctx, localdate, localtz);
+            return new DateTimeImmutable(localdate, localtz);
         }
 
         public static DateTimeImmutable? createFromMutable(DateTime datetime)
@@ -712,7 +698,7 @@ namespace Pchp.Library.DateTime
             var newtz = timezone._timezone;
             if (newtz != LocalTimeZone)
             {
-                return new DateTimeImmutable(_ctx, TimeZoneInfo.ConvertTime(LocalTime, LocalTimeZone, newtz), newtz);
+                return new DateTimeImmutable(TimeZoneInfo.ConvertTime(LocalTime, LocalTimeZone, newtz), newtz);
             }
             else
             {
@@ -737,7 +723,7 @@ namespace Pchp.Library.DateTime
             if (GetType() == typeof(DateTimeImmutable))
             {
                 // quick new instance
-                return new DateTimeImmutable(_ctx, LocalTime, LocalTimeZone);
+                return new DateTimeImmutable(LocalTime, LocalTimeZone);
             }
             else
             {

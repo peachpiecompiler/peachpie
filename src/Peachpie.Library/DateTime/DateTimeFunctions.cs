@@ -159,7 +159,7 @@ namespace Pchp.Library.DateTime
         /// Alias of DateTime::modify().
         /// </summary>
         [return: CastToFalse]
-        public static DateTime date_modify(Context/*!*/context, Library.DateTime.DateTime datetime, string modify) => datetime.modify(modify);
+        public static DateTime date_modify(Context/*!*/ctx, Library.DateTime.DateTime datetime, string modify) => datetime.modify(ctx, modify);
 
         /// <summary>
         /// Alias of <see cref="DateTime.add(DateInterval)"/>
