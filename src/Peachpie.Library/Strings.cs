@@ -3783,14 +3783,20 @@ namespace Pchp.Library
         /// <remarks>Assumes that either <paramref name="format"/> nor <paramref name="arguments"/> is null.</remarks>
         internal static string FormatInternal(Context ctx, string format, PhpValue[] arguments)
         {
-            Debug.Assert(format != null && arguments != null);
+            Debug.Assert(arguments != null);
 
-            Encoding encoding = ctx.StringEncoding;
-            var result = StringBuilderUtilities.Pool.Get();
+            if (string.IsNullOrEmpty(format))
+            {
+                return string.Empty;
+            }
+
+            var encoding = ctx.StringEncoding;
             int state = 0, width = 0, precision = -1, seqIndex = 0, swapIndex = -1;
             bool leftAlign = false;
             bool plusSign = false;
             char padChar = ' ';
+
+            var result = StringBuilderUtilities.Pool.Get();
 
             // process the format string using a 6-state finite automaton
             int length = format.Length;
@@ -4062,8 +4068,9 @@ namespace Pchp.Library
             }
             else
             {
-                PhpException.Throw(PhpError.Warning, LibResources.too_few_arguments);
-                return null;    // FALSE
+                //PhpException.Throw(PhpError.Warning, LibResources.too_few_arguments);
+                //return null;    // FALSE
+                throw new Spl.ArgumentCountError();
             }
         }
 

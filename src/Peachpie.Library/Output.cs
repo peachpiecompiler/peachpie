@@ -30,9 +30,18 @@ namespace Pchp.Library
         /// <returns>Returns the length of the outputted string. </returns>
         public static int printf(Context ctx, string format, params PhpValue[] args)
         {
-            var formattedString = Strings.FormatInternal(ctx, format, args);
-            ctx.Output.Write(formattedString);
-            return formattedString.Length;
+            var result = Strings.FormatInternal(ctx, format, args);
+            if (result != null)
+            {
+                ctx.Output.Write(result);
+                return result.Length;
+            }
+            else
+            {
+                //PhpException.Throw(PhpError.Warning, Resources.LibResources.too_few_arguments);
+                //return 0;
+                throw new Spl.ArgumentCountError();
+            }
         }
 
         /// <summary>
