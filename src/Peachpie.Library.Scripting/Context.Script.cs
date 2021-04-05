@@ -281,14 +281,6 @@ namespace Peachpie.Library.Scripting
 
                     if (result.Success)
                     {
-                        //if (pdbStream != null)
-                        //{
-                        //    // DEBUG DUMP
-                        //    var fname = @"C:\Users\jmise\OneDrive\Desktop\" + Path.GetFileNameWithoutExtension(tree.FilePath);
-                        //    File.WriteAllBytes(fname + ".dll", peStream.ToArray());
-                        //    File.WriteAllBytes(fname + ".pdb", pdbStream.ToArray());
-                        //}
-
                         return new Script(name, peStream, pdbStream, builder, previousSubmissions);
                     }
                     else
