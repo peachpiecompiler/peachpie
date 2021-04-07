@@ -987,6 +987,13 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(access.IsRead || access.IsReadRef || access.IsNone);
 
+            if (access.IsReadRef)
+            {
+                // assigning `new` by reference is deprecated,
+                // this is not intended to create an alias
+                access = BoundAccess.Read;
+            }
+
             return new BoundNewEx(BindTypeRef(x.ClassNameRef, objectTypeInfoSemantic: true), BindArguments(x.CallSignature.Parameters))
                 .WithAccess(access);
         }
