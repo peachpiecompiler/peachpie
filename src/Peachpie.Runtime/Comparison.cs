@@ -512,11 +512,7 @@ namespace Pchp.Core
         public static bool Ceq(long lx, PhpNumber y) => y.IsLong && lx == y.Long;
         public static bool Ceq(double dx, PhpValue y) => y.IsDouble(out var dy) && dx == dy;
         public static bool Ceq(double dx, PhpNumber y) => y.IsDouble && dx == y.Double;
-        public static bool Ceq(string sx, PhpValue y)
-        {
-            y.IsString(out var sy);
-            return sx == sy;
-        }
+        public static bool Ceq(string sx, PhpValue y) => y.IsString(out var sy) && sx == sy;
 
         public static bool Ceq(PhpValue x, bool by) => x.IsBoolean(out var bx) && bx == by;
         public static bool Ceq(PhpValue x, string sy)
@@ -526,6 +522,14 @@ namespace Pchp.Core
         }
 
         public static bool Ceq(PhpValue x, PhpValue y) => x.StrictEquals(y);
+
+        internal static bool Ceq(PhpString.Blob sx, PhpValue y) => y.TypeCode switch
+        {
+            PhpTypeCode.String => sx.ToString() == y.String,
+            PhpTypeCode.MutableString => sx.Equals(y.MutableStringBlob),
+            PhpTypeCode.Alias => Ceq(sx, y.Alias.Value),
+            _ => false,
+        };
 
         public static bool CeqNull(PhpValue x) => x.IsNull || (x.Object is PhpAlias alias && CeqNull(alias.Value));
     }

@@ -304,7 +304,7 @@ namespace Pchp.Core
         /// </summary>
         [DebuggerDisplay("{DebugString}")]
         [DebuggerNonUserCode, DebuggerStepThrough]
-        public sealed class Blob : IMutableString
+        public sealed class Blob : IMutableString, IEquatable<Blob>
         {
             #region enum Flags
 
@@ -1483,6 +1483,15 @@ namespace Pchp.Core
             /// Ensures the item at given index is array.
             /// </summary>
             IPhpArray IPhpArray.EnsureItemArray(IntStringKey key) { throw new NotSupportedException(); }
+
+            #endregion
+
+            #region IEquatable
+
+            public bool Equals(Blob other)
+            {
+                return other != null && ToString() == other.ToString();
+            }
 
             #endregion
         }

@@ -658,7 +658,7 @@ namespace Pchp.Core
             PhpTypeCode.Double => right.IsDouble(out var d) && d == Double,
             PhpTypeCode.PhpArray => Array.StrictCompareEq(right.AsArray()),
             PhpTypeCode.String => right.IsString(out var s) && s == String,
-            PhpTypeCode.MutableString => right.IsString(out var s) && s.Length == MutableStringBlob.Length && s == MutableStringBlob.ToString(),
+            PhpTypeCode.MutableString => StrictComparison.Ceq(MutableStringBlob, right),
             PhpTypeCode.Object => right.AsObject() == Object,
             PhpTypeCode.Alias => Alias.Value.StrictEquals(right),
             _ => throw InvalidTypeCodeException(),
