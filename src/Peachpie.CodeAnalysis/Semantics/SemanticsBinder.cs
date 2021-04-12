@@ -1301,7 +1301,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         goto case AST.Operations.BinaryCast;
                     }
 
-                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.StringTypeRef); // TODO // CONSIDER: should be WritableString and analysis should rewrite it to String if possible
+                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.WritableStringRef);
 
                 case AST.Operations.BinaryCast:
                     // (PhpString)(byte[])expression
