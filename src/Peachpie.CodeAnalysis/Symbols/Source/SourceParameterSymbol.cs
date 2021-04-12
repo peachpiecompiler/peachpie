@@ -247,7 +247,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 // remove once it gets updated in parser
                 if (rtref.Type == ReservedTypeRef.ReservedType.self) return _routine.ContainingType; // self
             }
-            var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint, _routine.ContainingType as SourceTypeSymbol, nullable: DefaultsToNull);
+            var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint, _routine.ContainingType as SourceTypeSymbol, nullable: DefaultsToNull, phpLang: true);
 
             // 2. optionally type specified in PHPDoc
             if (result == null && PHPDoc != null && PHPDoc.TypeNamesArray.Length != 0

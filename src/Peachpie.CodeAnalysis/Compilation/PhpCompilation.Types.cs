@@ -284,15 +284,16 @@ namespace Pchp.CodeAnalysis
         /// <param name="selfHint">Optional.
         /// Current type scope for better <paramref name="tref"/> resolution since <paramref name="tref"/> might be ambiguous</param>
         /// <param name="nullable">Whether the resulting type must be able to contain NULL. Default is <c>false</c>.</param>
+        /// <param name="phpLang">PHP semantic - specifies how to treat <c>int</c> and <c>string</c> special types.</param>
         /// <returns>Resolved symbol.</returns>
-        internal TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref, SourceTypeSymbol selfHint = null, bool nullable = false)
+        internal TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref, SourceTypeSymbol selfHint = null, bool nullable = false, bool phpLang = false)
         {
             if (tref == null)
             {
                 return null;
             }
 
-            var t = this.TypeRefFactory.CreateFromTypeRef(tref, null, selfHint);
+            var t = this.TypeRefFactory.CreateFromTypeRef(tref, self: selfHint, phpLang: phpLang);
 
             var symbol = t.ResolveRuntimeType(this);
 

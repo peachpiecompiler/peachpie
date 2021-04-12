@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 //
-                return compilation.GetTypeFromTypeRef(routine.SyntaxReturnType, routine.ContainingType as SourceTypeSymbol);
+                return compilation.GetTypeFromTypeRef(routine.SyntaxReturnType, routine.ContainingType as SourceTypeSymbol, phpLang: true);
             }
 
             // for non virtual methods:
