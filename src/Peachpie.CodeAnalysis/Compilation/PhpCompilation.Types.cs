@@ -209,7 +209,17 @@ namespace Pchp.CodeAnalysis
 
             if (type.IsValueType || type.IsOfType(CoreTypes.IPhpArray)) // TODO: remove IPhpArray and check for null in emitted code
             {
-                return CoreTypes.PhpValue;    // Nullable bool|long|double -> PhpValue
+                // nullable bool|int|long|double|string
+                if (type.SpecialType == SpecialType.System_Boolean ||
+                    type.SpecialType == SpecialType.System_Int32 ||
+                    type.SpecialType == SpecialType.System_Int64 ||
+                    type.SpecialType == SpecialType.System_Double ||
+                    type.Is_PhpString())
+                {
+                    return this.GetSpecialType(SpecialType.System_Nullable_T).Construct(ImmutableArray.Create(type));
+                }
+
+                return CoreTypes.PhpValue;    // anything else -> PhpValue
             }
 
             return type;
