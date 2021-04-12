@@ -197,6 +197,15 @@ namespace Pchp.CodeAnalysis
         public static object AsObject(this bool b) => b ? s_true : s_false;
 
         /// <summary>
+        /// Boxes <see cref="long"/> into object without memory allocation.
+        /// </summary>
+        public static object AsObject(this long l) => l switch
+        {
+            0 => s_long_zero,
+            _ => (object)l,
+        };
+
+        /// <summary>
         /// Gets <see cref="Optional{Object}"/> of <see cref="bool"/>.
         /// This method does not allocate a new boolean on heap.
         /// </summary>

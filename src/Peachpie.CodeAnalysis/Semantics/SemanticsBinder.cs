@@ -1392,7 +1392,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected static BoundExpression BindLiteral(AST.Literal expr)
         {
-            if (expr is AST.LongIntLiteral longIntLit) return new BoundLiteral(longIntLit.Value);
+            if (expr is AST.LongIntLiteral longIntLit) return new BoundLiteral(longIntLit.Value.AsObject());
             if (expr is AST.StringLiteral stringLit) return new BoundLiteral(stringLit.Value);
             if (expr is AST.DoubleLiteral doubleLit) return new BoundLiteral(doubleLit.Value);
             if (expr is AST.BoolLiteral boolLit) return new BoundLiteral(boolLit.Value.AsObject());
