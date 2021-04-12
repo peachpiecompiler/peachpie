@@ -339,7 +339,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (target == _compilation.CoreTypes.PhpNumber.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToNumber" };
 
                     // ToPhpString
-                    if (target == _compilation.CoreTypes.PhpString.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToPhpString" };
+                    if (target == _compilation.CoreTypes.PhpString.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToPhpString", "ToString" };
 
                     // AsResource
                     // AsObject
