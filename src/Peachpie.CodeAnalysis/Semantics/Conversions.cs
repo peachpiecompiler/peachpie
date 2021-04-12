@@ -180,6 +180,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 return ExplicitNumeric;
         }
 
+        public CommonConversion PhpStringToString()
+        {
+            return new CommonConversion(true, false, false, false, true, false, _compilation.CoreMethods.PhpString.implicit_from_string.Symbol);
+        }
+
         // resolve operator method
         public MethodSymbol ResolveOperator(TypeSymbol receiver, bool hasref, string[] opnames, TypeSymbol[] extensions, TypeSymbol operand = null, TypeSymbol target = null)
         {
@@ -220,7 +225,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                     if (conv.Exists == false && method.ReturnType.SpecialType == SpecialType.System_String && target.Is_PhpString())
                                     {
                                         // String -> PhpString implicitly
-                                        conv = ClassifyConversion(method.ReturnType, target, ConversionKind.Implicit);
+                                        conv = PhpStringToString();
                                     }
 
                                     if (conv.Exists)    // TODO: chain the conversion, sum the cost
