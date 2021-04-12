@@ -217,6 +217,12 @@ namespace Pchp.CodeAnalysis.Semantics
                                 if (target != null && method.ReturnType != target)
                                 {
                                     var conv = ClassifyConversion(method.ReturnType, target, ConversionKind.Numeric | ConversionKind.Reference);
+                                    if (conv.Exists == false && method.ReturnType.SpecialType == SpecialType.System_String && target.Is_PhpString())
+                                    {
+                                        // String -> PhpString implicitly
+                                        conv = ClassifyConversion(method.ReturnType, target, ConversionKind.Implicit);
+                                    }
+
                                     if (conv.Exists)    // TODO: chain the conversion, sum the cost
                                     {
                                         cost += ConvCost(conv, method.ReturnType, target);
