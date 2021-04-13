@@ -180,7 +180,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return ExplicitNumeric;
         }
 
-        public CommonConversion PhpStringToString()
+        public CommonConversion StringToPhpString()
         {
             return new CommonConversion(true, false, false, false, true, false, _compilation.CoreMethods.PhpString.implicit_from_string.Symbol);
         }
@@ -225,7 +225,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                     if (conv.Exists == false && method.ReturnType.SpecialType == SpecialType.System_String && target.Is_PhpString())
                                     {
                                         // String -> PhpString implicitly
-                                        conv = PhpStringToString();
+                                        conv = StringToPhpString();
                                     }
 
                                     if (conv.Exists)    // TODO: chain the conversion, sum the cost
@@ -505,6 +505,12 @@ namespace Pchp.CodeAnalysis.Semantics
             // implicit
             if ((kinds & ConversionKind.Implicit) == ConversionKind.Implicit)
             {
+                // string -> PhpString implicitly
+                if (from.SpecialType == SpecialType.System_String && to.Is_PhpString())
+                {
+                    return StringToPhpString();
+                }
+
                 var op = TryWellKnownImplicitConversion(from, to) ?? ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to);
                 if (op != null)
                 {
