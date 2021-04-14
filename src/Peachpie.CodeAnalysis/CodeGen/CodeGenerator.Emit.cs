@@ -560,10 +560,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // Nullable<T>
-            if (t.IsNullableType(out _))
+            if (t.IsNullableType(out var ttype))
             {
-                // Template: {STACK}.HasValue == false
-                // TODO
+                Debug.Assert(t.IsValueType);
+                // Template: {STACK}.HasValue
+                this.EmitStructAddr(t);
+                EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_HasValue(ttype));
+                return;
             }
 
             // cannot be null:
@@ -2908,8 +2911,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_HasValue(t));
             _il.EmitBranch(ILOpCode.Brfalse, lblend);
 
-            // Template: PhpValue.Null
-            // Template: (PhpValue)tmp.GetValueOrDefault()
+            // Template: Echo( tmp.GetValueOrDefault() )
             _il.EmitLocalAddress(tmp);
             EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_GetValueOrDefault(t));
             EmitEcho(t);
