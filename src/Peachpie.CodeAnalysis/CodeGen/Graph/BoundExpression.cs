@@ -5336,11 +5336,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.Builder.EmitNullConstant(); // .ldnull
                 cg.Builder.EmitOpCode(ILOpCode.Cgt_un); // .cgt.un
             }
-            else if (t.IsNullableType())
+            else if (t.IsNullableType(out var ttype))
             {
                 // Teplate: value.HasValue
                 cg.EmitStructAddr(t); // value -> ref value
-                cg.EmitCall(ILOpCode.Call, t.LookupMember<PropertySymbol>("HasValue").GetMethod)
+                cg.EmitCall(ILOpCode.Call, cg.DeclaringCompilation.Construct_System_Nullable_T_HasValue(ttype))
                     .Expect(SpecialType.System_Boolean);
             }
             else
