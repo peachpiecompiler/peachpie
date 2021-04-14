@@ -78,6 +78,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             return tmask.IsAnyType  // mixed
                 || tmask.IsRef      // &
+                || this.TypeRefContext == null // within ghost stubs, there is no type analysis
                 || this.TypeRefContext.IsNullOrVoid(tmask); // type analysis determined there might be NULL
         }
 
