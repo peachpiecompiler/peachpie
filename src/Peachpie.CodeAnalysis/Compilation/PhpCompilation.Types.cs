@@ -200,7 +200,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Merges CLR type to be nullable.
         /// </summary>
-        internal TypeSymbol MergeNull(TypeSymbol type)
+        internal TypeSymbol MergeNull(TypeSymbol type, bool asSystemNullable)
         {
             if (type == null || type.IsVoid())
             {
@@ -209,14 +209,17 @@ namespace Pchp.CodeAnalysis
 
             if (type.IsValueType || type.IsOfType(CoreTypes.IPhpArray)) // TODO: remove IPhpArray and check for null in emitted code
             {
-                // nullable bool|int|long|double|string
-                if (type.SpecialType == SpecialType.System_Boolean ||
-                    type.SpecialType == SpecialType.System_Int32 ||
-                    type.SpecialType == SpecialType.System_Int64 ||
-                    type.SpecialType == SpecialType.System_Double ||
-                    type.Is_PhpString())
+                if (asSystemNullable)
                 {
-                    return this.GetSpecialType(SpecialType.System_Nullable_T).Construct(ImmutableArray.Create(type));
+                    // nullable bool|int|long|double|string
+                    if (type.SpecialType == SpecialType.System_Boolean ||
+                        type.SpecialType == SpecialType.System_Int32 ||
+                        type.SpecialType == SpecialType.System_Int64 ||
+                        type.SpecialType == SpecialType.System_Double ||
+                        type.Is_PhpString())
+                    {
+                        return this.GetSpecialType(SpecialType.System_Nullable_T).Construct(ImmutableArray.Create(type));
+                    }
                 }
 
                 return CoreTypes.PhpValue;    // anything else -> PhpValue
@@ -309,8 +312,7 @@ namespace Pchp.CodeAnalysis
 
             if (t.IsNullable || nullable)
             {
-                // TODO: for value types -> Nullable<T>
-                symbol = MergeNull(symbol);
+                symbol = MergeNull(symbol, asSystemNullable: true);
             }
 
             return symbol;
@@ -718,7 +720,7 @@ namespace Pchp.CodeAnalysis
                     }
                 }
 
-                result = maybenull ? MergeNull(result) : result ?? CoreTypes.Void;
+                result = maybenull ? MergeNull(result, asSystemNullable: false) : result ?? CoreTypes.Void;
 
                 Debug.Assert(result.IsValidType());
 
