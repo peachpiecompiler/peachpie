@@ -348,15 +348,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 IsInstanceOf_Object_PhpTypeInfo = ct.Convert.Method("IsInstanceOf", ct.Object, ct.PhpTypeInfo);
                 ToIntStringKey_PhpValue = ct.Convert.Method("ToIntStringKey", ct.PhpValue);
 
-                Echo_String = ct.Context.Method("Echo", ct.String);
-                Echo_PhpString = ct.Context.Method("Echo", ct.PhpString);
-                Echo_PhpNumber = ct.Context.Method("Echo", ct.PhpNumber);
-                Echo_PhpValue = ct.Context.Method("Echo", ct.PhpValue);
-                Echo_Object = ct.Context.Method("Echo", ct.Object);
-                Echo_Double = ct.Context.Method("Echo", ct.Double);
-                Echo_Long = ct.Context.Method("Echo", ct.Long);
-                Echo_Int32 = ct.Context.Method("Echo", ct.Int32);
-                Echo_Bool = ct.Context.Method("Echo", ct.Boolean);
+                Echo_Object_Context = ct.Operators.Method("Echo", ct.Object, ct.Context);
+                Echo_String_Context = ct.Operators.Method("Echo", ct.String, ct.Context);
+                Echo_PhpString_Context = ct.Operators.Method("Echo", ct.PhpString, ct.Context);
+                Echo_PhpNumber_Context = ct.Operators.Method("Echo", ct.PhpNumber, ct.Context);
+                Echo_PhpValue_Context = ct.Operators.Method("Echo", ct.PhpValue, ct.Context);
+                Echo_PhpAlias_Context = ct.Operators.Method("Echo", ct.PhpAlias, ct.Context);
+                Echo_Double_Context = ct.Operators.Method("Echo", ct.Double, ct.Context);
+                Echo_Long_Context = ct.Operators.Method("Echo", ct.Long, ct.Context);
+                Echo_Int32_Context = ct.Operators.Method("Echo", ct.Int32, ct.Context);
+                Echo_Bool_Context = ct.Operators.Method("Echo", ct.Boolean, ct.Context);
 
                 NormalizePath_string = ct.Operators.Method("NormalizePath", ct.String);
                 ThrowIfArgumentNull_object_int = ct.PhpException.Method("ThrowIfArgumentNull", ct.Object, ct.Int32);
@@ -471,7 +472,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, GetArrayAccess_PhpValueRef, ToPhpString_PhpValue_Context, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue_RuntimeTypeHandle_Object, AsCallable_String_RuntimeTypeHandle_Object,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
-                Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32, Echo_Bool,
+                Echo_Object_Context, Echo_String_Context, Echo_PhpString_Context, Echo_PhpNumber_Context, Echo_PhpValue_Context, Echo_PhpAlias_Context, Echo_Double_Context, Echo_Long_Context, Echo_Int32_Context, Echo_Bool_Context,
 
                 NormalizePath_string,
                 ThrowIfArgumentNull_object_int,

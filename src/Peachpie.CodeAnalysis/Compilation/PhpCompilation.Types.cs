@@ -351,6 +351,20 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        internal MethodSymbol Construct_System_Nullable_T_HasValue(TypeSymbol t)
+        {
+            var member = (MethodSymbol)GetSpecialTypeMember(SpecialMember.System_Nullable_T_get_HasValue);
+            Debug.Assert(member != null);
+            return member.AsMember(member.ContainingType.Construct(ImmutableArray.Create(t)));
+        }
+
+        internal MethodSymbol Construct_System_Nullable_T_GetValueOrDefault(TypeSymbol t)
+        {
+            var member = (MethodSymbol)GetSpecialTypeMember(SpecialMember.System_Nullable_T_GetValueOrDefault);
+            Debug.Assert(member != null);
+            return member.AsMember(member.ContainingType.Construct(ImmutableArray.Create(t)));
+        }
+
         #endregion
 
         /// <summary>

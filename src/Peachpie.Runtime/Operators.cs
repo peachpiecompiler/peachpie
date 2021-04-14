@@ -2353,5 +2353,39 @@ namespace Pchp.Core
         }
 
         #endregion
+
+        #region Echo
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(object value, Context ctx) => ctx.Echo(value);
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(string value, Context ctx) => ctx.Echo(value);
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(PhpString value, Context ctx) => ctx.Echo(value);
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(PhpNumber value, Context ctx) => ctx.Echo(value);
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(PhpValue value, Context ctx) => ctx.Echo(value);
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(PhpAlias value, Context ctx) => ctx.Echo(value.Value);
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(double value, Context ctx) => ctx.Echo(value);
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(long value, Context ctx) => ctx.Echo(value);
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(int value, Context ctx) => ctx.Echo(value);
+
+        /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(bool value, Context ctx) => ctx.Echo(value);
+
+        #endregion
     }
 }

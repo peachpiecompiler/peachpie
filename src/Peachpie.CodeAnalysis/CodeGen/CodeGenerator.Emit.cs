@@ -559,6 +559,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return;
             }
 
+            // Nullable<T>
+            if (t.IsNullableType(out _))
+            {
+                // Template: {STACK}.HasValue == false
+                // TODO
+            }
+
             // cannot be null:
             Debug.Assert(!CanBeNull(t));
             EmitPop(t);
@@ -2205,13 +2212,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type of value on stack.</returns>
         internal TypeSymbol EmitNullableCastToNull(TypeSymbol stack, bool deepcopy)
         {
-            Debug.Assert(stack.IsNullableType());
+            if (stack.IsNullableType(out var t) == false)
+            {
+                throw new ArgumentException("Not Nullable`1", nameof(stack));
+            }
 
             // Template:
             // tmp = stack;
             // tmp.HasValue ? tmp.Value : NULL
-
-            var t = ((NamedTypeSymbol)stack).TypeArguments[0];
 
             var lbltrue = new NamedLabel("has value");
             var lblend = new NamedLabel("end");
@@ -2221,7 +2229,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Template: tmp.HasValue ??
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, stack.LookupMember<PropertySymbol>("HasValue").GetMethod)
+            EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_HasValue(t))
                 .Expect(SpecialType.System_Boolean);
 
             _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
@@ -2231,10 +2239,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _il.EmitBranch(ILOpCode.Br, lblend);
 
-            // Template: (PhpValue)tmp.Value
+            // Template: (PhpValue)tmp.GetValueOrDefault()
             _il.MarkLabel(lbltrue);
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, stack.LookupMember<MethodSymbol>("GetValueOrDefault", m => m.ParameterCount == 0))
+            EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_GetValueOrDefault(t))
                 .Expect(t);
 
             if (deepcopy)
@@ -2811,64 +2819,103 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
-            // Template: <ctx>.Echo(expr);
-
-            this.EmitLoadContext();
-            var type = EmitSpecialize(expr);
-
             //
-            MethodSymbol method = null;
+            EmitEcho(EmitSpecialize(expr));
+        }
+
+        /// <summary>Emits <c>echo</c> statement of the type on stack.</summary>
+        public void EmitEcho(TypeSymbol type)
+        {
+            //
+            MethodSymbol method;
 
             switch (type.SpecialType)
             {
                 case SpecialType.System_Void:
-                    EmitPop(this.CoreTypes.Context);
+                    // nothing
                     return;
                 case SpecialType.System_String:
-                    method = CoreMethods.Operators.Echo_String.Symbol;
+                    method = CoreMethods.Operators.Echo_String_Context;
                     break;
                 case SpecialType.System_Double:
-                    method = CoreMethods.Operators.Echo_Double.Symbol;
+                    method = CoreMethods.Operators.Echo_Double_Context;
                     break;
                 case SpecialType.System_Int32:
-                    method = CoreMethods.Operators.Echo_Int32.Symbol;
+                    method = CoreMethods.Operators.Echo_Int32_Context;
                     break;
                 case SpecialType.System_Int64:
-                    method = CoreMethods.Operators.Echo_Long.Symbol;
+                    method = CoreMethods.Operators.Echo_Long_Context;
                     break;
                 case SpecialType.System_Boolean:
-                    method = CoreMethods.Operators.Echo_Bool.Symbol;
+                    method = CoreMethods.Operators.Echo_Bool_Context;
                     break;
                 default:
                     if (type == CoreTypes.PhpString)
                     {
-                        method = CoreMethods.Operators.Echo_PhpString.Symbol;
+                        method = CoreMethods.Operators.Echo_PhpString_Context;
                     }
                     else if (type == CoreTypes.PhpNumber)
                     {
-                        method = CoreMethods.Operators.Echo_PhpNumber.Symbol;
+                        method = CoreMethods.Operators.Echo_PhpNumber_Context;
                     }
                     else if (type == CoreTypes.PhpValue)
                     {
-                        method = CoreMethods.Operators.Echo_PhpValue.Symbol;
+                        method = CoreMethods.Operators.Echo_PhpValue_Context;
                     }
                     else if (type == CoreTypes.PhpAlias)
                     {
-                        Emit_PhpAlias_GetValue();
-                        method = CoreMethods.Operators.Echo_PhpValue.Symbol;
+                        method = CoreMethods.Operators.Echo_PhpAlias_Context;
+                    }
+                    else if (type.IsNullableType())
+                    {
+                        EmitEchoOfNullable(type);
+                        return;
                     }
                     else
                     {
                         // TODO: check expr.TypeRefMask if it is only NULL
                         EmitBox(type);
-                        method = CoreMethods.Operators.Echo_Object.Symbol;
+                        method = CoreMethods.Operators.Echo_Object_Context;
                     }
                     break;
             }
 
-            //
             Debug.Assert(method != null);
+
+            // Template: Operators.Echo(<stack>, <ctx>);
+            this.EmitLoadContext();
             EmitCall(ILOpCode.Call, method);
+        }
+
+        void EmitEchoOfNullable(TypeSymbol stack)
+        {
+            if (stack.IsNullableType(out var t) == false)
+            {
+                throw new ArgumentException("Not Nullable`1", nameof(stack));
+            }
+
+            // Template:
+            // tmp = <stack>;
+            // if (tmp.HasValue) echo tmp.Value;
+
+            var lblend = new NamedLabel("end");
+
+            var tmp = GetTemporaryLocal(stack, immediateReturn: true);
+            _il.EmitLocalStore(tmp);
+
+            // Template: if (tmp.HasValue)
+            _il.EmitLocalAddress(tmp);
+            EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_HasValue(t));
+            _il.EmitBranch(ILOpCode.Brfalse, lblend);
+
+            // Template: PhpValue.Null
+            // Template: (PhpValue)tmp.GetValueOrDefault()
+            _il.EmitLocalAddress(tmp);
+            EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_GetValueOrDefault(t));
+            EmitEcho(t);
+
+            // lblend:
+            _il.MarkLabel(lblend);
         }
 
         /// <summary>
