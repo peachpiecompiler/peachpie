@@ -6,6 +6,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis;
+using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
 
@@ -479,6 +480,16 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (to.SpecialType == SpecialType.System_Object && (from.IsInterfaceType() || (from.IsReferenceType && from.IsTypeParameter())))
                 {
                     return ReferenceConversion;
+                }
+            }
+
+            // Nullable{T}
+            if (from.IsNullableType(out var ttype))
+            {
+                var conv = ClassifyConversion(ttype, to, kinds);
+                if (conv.Exists)
+                {
+                    return conv.WithIsNullable(true);
                 }
             }
 
