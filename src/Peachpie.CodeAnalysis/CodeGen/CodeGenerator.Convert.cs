@@ -598,7 +598,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (place != null && place.HasAddress && place.Type != null && place.Type.IsValueType)
                 {
                     var conv = DeclaringCompilation.Conversions.ClassifyConversion(place.Type, to, conversion);
-                    if (conv.Exists && conv.IsUserDefined && !conv.MethodSymbol.IsStatic)
+                    if (conv.Exists && conv.IsUserDefined && !conv.MethodSymbol.IsStatic && !conv.IsNullable)
                     {
                         // (ADDR expr).Method()
                         this.EmitImplicitConversion(EmitCall(ILOpCode.Call, (MethodSymbol)conv.MethodSymbol, expr, ImmutableArray<BoundArgument>.Empty), to, @checked: true);
