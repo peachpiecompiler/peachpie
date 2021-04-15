@@ -3191,15 +3191,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Debug.Assert(!v.IsUnreachable);
 
-                var deps = v.GetDependentSourceTypeSymbols(); // TODO: error when the type version reports it depends on a user type which will never be declared because of a library type
-                foreach (var d in deps.OfType<IPhpTypeSymbol>())
+                // TODO: error when the type version reports it depends on a user type which will never be declared because of a library type
+
+                var deps = v.GetDependentSourceTypeSymbols();
+                foreach (var d in deps)
                 {
-                    if (!dependent.TryGetValue(d.FullName, out var set))
+                    var fullname = d.PhpQualifiedName(); // class, interface, or constructed trait
+
+                    if (!dependent.TryGetValue(fullname, out var set))
                     {
-                        dependent[d.FullName] = set = new HashSet<NamedTypeSymbol>();
+                        dependent[fullname] = set = new HashSet<NamedTypeSymbol>();
                     }
 
-                    set.Add((NamedTypeSymbol)d);
+                    set.Add(d);
                 }
             }
 
@@ -3209,15 +3213,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             // resolve dependent types:
             foreach (var d in dependent)
             {
-                var first = d.Value.First();
 
                 if (d.Value.Count == 1)
                 {
-                    EmitExpectTypeDeclared(first);
+                    EmitExpectTypeDeclared(d.Value.Single());
                 }
                 else
                 {
-                    var tname = ((IPhpTypeSymbol)first).FullName;
+                    var tname = d.Key;
 
                     // Template: tmp_d = ctx.GetDeclaredTypeOrThrow(d_name, autoload: true).TypeHandle
                     EmitLoadContext();
