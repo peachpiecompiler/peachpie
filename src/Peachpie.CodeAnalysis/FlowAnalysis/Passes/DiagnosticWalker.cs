@@ -762,9 +762,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // check we only pass object instances to the "clone" operation
                     // anything else causes a runtime warning!
                     var operandTypeMask = x.Operand.TypeRefMask;
-                    if (!operandTypeMask.IsAnyType &&
-                        !operandTypeMask.IsRef &&
-                        !TypeCtx.IsObjectOnly(operandTypeMask))
+                    if (operandTypeMask.IsAnyType || operandTypeMask.IsRef)
+                    {
+                        // we don't know
+                    }
+                    else if (!TypeCtx.IsObjectOnly(TypeCtx.WithoutNull(operandTypeMask)))   // ignore "null" type if it's with combination with object
                     {
                         _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, TypeCtx.ToString(operandTypeMask));
                     }
