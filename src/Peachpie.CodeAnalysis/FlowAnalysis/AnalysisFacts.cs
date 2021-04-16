@@ -192,7 +192,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     break;
 
                 case "strlen":
-                    if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out string value))
+                    if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out string value) && StringUtils.IsAsciiString(value))
                     {
                         call.ConstantValue = new Optional<object>(value.Length);
                     }
