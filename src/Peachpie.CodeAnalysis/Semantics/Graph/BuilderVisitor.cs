@@ -492,7 +492,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             var closingspan = x.ClosingToken switch
             {
-                Tokens.T_ENDIF => new Span(x.Span.End, "endif;".Length), // endif;
+                Tokens.T_ENDIF => new Span(x.Span.End, "endif".Length), // endif
                 Tokens.T_ELSEIF => Span.Invalid, // elseif
                 Tokens.T_ELSE => Span.Invalid, // else
                 _ => new Span(x.Span.End - 1, 1),   // }
