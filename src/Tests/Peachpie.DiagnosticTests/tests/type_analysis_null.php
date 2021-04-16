@@ -9,7 +9,7 @@ function foo2(): ?string { // TODO: Nullable<PhpString>
 }
 
 /*|string|*/$res = foo1();
-// https://github.com/peachpiecompiler/peachpie/issues/942 /*|string|null|*/$res = foo2();
+// https://github.com/peachpiecompiler/peachpie/issues/942 / * |string|null| * /$res = foo2();
 
 function foo3() { // : stdClass
     return new stdClass;
