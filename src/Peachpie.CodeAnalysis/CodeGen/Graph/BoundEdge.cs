@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Contract.ThrowIfNull(Condition);
 
             // !COND?T:F -> COND?F:T
-            bool isnegation = this.Condition.IsLogicNegation(out var negexpr);
+            var isnegation = this.Condition.IsLogicNegation(out var negexpr);
             var condition = isnegation ? negexpr : this.Condition;
 
             if (TrueTarget == FalseTarget)
@@ -92,6 +92,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // }
             }
 
+            cg.EmitHiddenSequencePoint();
             cg.Scope.ContinueWith(FalseTarget);
         }
     }
