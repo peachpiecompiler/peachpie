@@ -312,7 +312,8 @@ namespace Pchp.CodeAnalysis
 
             if (t.IsNullable || nullable)
             {
-                symbol = MergeNull(symbol, asSystemNullable: true);
+                // TODO: asSystemNullable: true // to generate strongly typed function signatures
+                symbol = MergeNull(symbol, asSystemNullable: false);
             }
 
             return symbol;
