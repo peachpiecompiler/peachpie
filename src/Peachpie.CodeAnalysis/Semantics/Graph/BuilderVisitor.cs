@@ -490,7 +490,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             base.VisitBlockStmt(x); // visit nested statements
 
-            Add(_binder.BindEmptyStmt(new Span(x.Span.End - 1, 1))); // } // TODO: endif; etc.
+            var closingspan = x.ClosingToken switch
+            {
+                Tokens.T_ENDIF => new Span(x.Span.End, "endif;".Length), // endif;
+                Tokens.T_ELSEIF => Span.Invalid, // elseif
+                Tokens.T_ELSE => Span.Invalid, // else
+                _ => new Span(x.Span.End - 1, 1),   // }
+            };
+
+            if (closingspan.IsValid)
+            {
+                Add(_binder.BindEmptyStmt(closingspan));
+            }
         }
 
         public override void VisitDeclareStmt(DeclareStmt x)
