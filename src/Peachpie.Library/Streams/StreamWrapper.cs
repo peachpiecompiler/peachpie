@@ -203,7 +203,7 @@ namespace Pchp.Library.Streams
             // Now do the actual mode parsing:
             fileMode = FileMode.Open;
             fileAccess = FileAccess.Write;
-            if (String.IsNullOrEmpty(mode))
+            if (string.IsNullOrEmpty(mode))
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.empty_file_mode);
                 return false;
@@ -256,7 +256,7 @@ namespace Pchp.Library.Streams
                     return false;
             }
 
-            if (mode.IndexOf('+') > -1)
+            if (mode.IndexOf('+') >= 0)
             {
                 // flags |= O_RDWR;
                 fileAccess = FileAccess.ReadWrite;
@@ -270,12 +270,12 @@ namespace Pchp.Library.Streams
                 accessOptions |= StreamAccessOptions.SeekEnd;
             }
 
-            if (mode.IndexOf('b') > -1)
+            if (mode.IndexOf('b') >= 0)
             {
                 // flags |= O_BINARY;
                 forceBinary = true;
             }
-            if (mode.IndexOf('t') > -1)
+            if (mode.IndexOf('t') >= 0)
             {
                 // flags |= _O_TEXT;
                 forceText = true;

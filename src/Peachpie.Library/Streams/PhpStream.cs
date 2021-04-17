@@ -2288,7 +2288,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public bool CanWrite
         {
-            get { return (Options & StreamAccessOptions.Write) > 0; }
+            get { return (Options & StreamAccessOptions.Write) != 0; }
         }
 
         /// <summary>
@@ -2296,7 +2296,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public bool CanRead
         {
-            get { return (Options & StreamAccessOptions.Read) > 0; }
+            get { return (Options & StreamAccessOptions.Read) != 0; }
         }
 
         /// <summary>
@@ -2304,7 +2304,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public bool IsText
         {
-            get { return (Options & StreamAccessOptions.UseText) > 0; }
+            get { return (Options & StreamAccessOptions.UseText) != 0; }
         }
 
         /// <summary>
