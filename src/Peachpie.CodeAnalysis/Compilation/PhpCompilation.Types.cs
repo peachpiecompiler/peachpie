@@ -356,16 +356,34 @@ namespace Pchp.CodeAnalysis
 
         internal MethodSymbol Construct_System_Nullable_T_HasValue(TypeSymbol t)
         {
-            var member = (MethodSymbol)GetSpecialTypeMember(SpecialMember.System_Nullable_T_get_HasValue);
-            Debug.Assert(member != null);
-            return member.AsMember(member.ContainingType.Construct(ImmutableArray.Create(t)));
+            var nullable_t = GetSpecialType(SpecialType.System_Nullable_T);
+            Debug.Assert(nullable_t != null);
+            return System_Nullable_T_HasValue(nullable_t.Construct(ImmutableArray.Create(t)));
         }
 
         internal MethodSymbol Construct_System_Nullable_T_GetValueOrDefault(TypeSymbol t)
         {
+            var nullable_t = GetSpecialType(SpecialType.System_Nullable_T);
+            Debug.Assert(nullable_t != null);
+            return System_Nullable_T_GetValueOrDefault(nullable_t.Construct(ImmutableArray.Create(t)));
+        }
+
+        internal MethodSymbol System_Nullable_T_HasValue(TypeSymbol tNullable)
+        {
+            Debug.Assert(tNullable.IsNullableType());
+            
+            var member = (MethodSymbol)GetSpecialTypeMember(SpecialMember.System_Nullable_T_get_HasValue);
+            Debug.Assert(member != null);
+            return member.AsMember((NamedTypeSymbol)tNullable);
+        }
+
+        internal MethodSymbol System_Nullable_T_GetValueOrDefault(TypeSymbol tNullable)
+        {
+            Debug.Assert(tNullable.IsNullableType());
+
             var member = (MethodSymbol)GetSpecialTypeMember(SpecialMember.System_Nullable_T_GetValueOrDefault);
             Debug.Assert(member != null);
-            return member.AsMember(member.ContainingType.Construct(ImmutableArray.Create(t)));
+            return member.AsMember((NamedTypeSymbol)tNullable);
         }
 
         #endregion

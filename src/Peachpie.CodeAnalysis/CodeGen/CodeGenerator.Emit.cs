@@ -565,7 +565,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 Debug.Assert(t.IsValueType);
                 // Template: {STACK}.HasValue
                 this.EmitStructAddr(t);
-                EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_HasValue(ttype));
+                EmitCall(ILOpCode.Call, DeclaringCompilation.System_Nullable_T_HasValue(t));
                 return;
             }
 
@@ -2114,6 +2114,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return stack;
             }
 
+            // optimization:
             if (targetType != null && targetType.SpecialType == SpecialType.System_Boolean)
             {
                 // will be converting to bool anyways
@@ -2144,6 +2145,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // Convert.ToBoolean({stack})
                     return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_PhpString);
+                }
+                else if (stack.IsNullableType(out var ttype))
+                {
+                    //// {stack}.HasValue
+                    //EmitStructAddr(stack);
+                    //return EmitCall(ILOpCode.Call, this.DeclaringCompilation.System_Nullable_T_HasValue(stack)); // TODO: AND (bool)Value
                 }
                 else if (stack.IsReferenceType)
                 {
@@ -2232,7 +2239,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Template: tmp.HasValue ??
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_HasValue(t))
+            EmitCall(ILOpCode.Call, DeclaringCompilation.System_Nullable_T_HasValue(stack))
                 .Expect(SpecialType.System_Boolean);
 
             _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
@@ -2245,7 +2252,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // Template: (PhpValue)tmp.GetValueOrDefault()
             _il.MarkLabel(lbltrue);
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_GetValueOrDefault(t))
+            EmitCall(ILOpCode.Call, DeclaringCompilation.System_Nullable_T_GetValueOrDefault(stack))
                 .Expect(t);
 
             if (deepcopy)
@@ -2908,12 +2915,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Template: if (tmp.HasValue)
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_HasValue(t));
+            EmitCall(ILOpCode.Call, DeclaringCompilation.System_Nullable_T_HasValue(stack));
             _il.EmitBranch(ILOpCode.Brfalse, lblend);
 
             // Template: Echo( tmp.GetValueOrDefault() )
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, DeclaringCompilation.Construct_System_Nullable_T_GetValueOrDefault(t));
+            EmitCall(ILOpCode.Call, DeclaringCompilation.System_Nullable_T_GetValueOrDefault(stack));
             EmitEcho(t);
 
             // lblend:

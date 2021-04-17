@@ -5340,7 +5340,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // Teplate: value.HasValue
                 cg.EmitStructAddr(t); // value -> ref value
-                cg.EmitCall(ILOpCode.Call, cg.DeclaringCompilation.Construct_System_Nullable_T_HasValue(ttype))
+                cg.EmitCall(ILOpCode.Call, cg.DeclaringCompilation.System_Nullable_T_HasValue(t))
                     .Expect(SpecialType.System_Boolean);
             }
             else

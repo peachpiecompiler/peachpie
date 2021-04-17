@@ -152,7 +152,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     // Template: tmp.HasValue ? convert(tmp.Value) : default
                     cg.Builder.EmitLocalAddress(tmp);
-                    cg.EmitCall(ILOpCode.Call, cg.DeclaringCompilation.Construct_System_Nullable_T_HasValue(ttype));
+                    cg.EmitCall(ILOpCode.Call, cg.DeclaringCompilation.System_Nullable_T_HasValue(from));
                     cg.Builder.EmitBranch(ILOpCode.Brtrue, lbltrue);
 
                     // default:
@@ -164,7 +164,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     cg.Builder.MarkLabel(lbltrue);
                     // Template: convert( tmp.GetValueOrDefault() )
                     cg.Builder.EmitLocalAddress(tmp);
-                    cg.EmitCall(ILOpCode.Call, cg.DeclaringCompilation.Construct_System_Nullable_T_GetValueOrDefault(ttype)).Expect(ttype);
+                    cg.EmitCall(ILOpCode.Call, cg.DeclaringCompilation.System_Nullable_T_GetValueOrDefault(from)).Expect(ttype);
                     EmitConversion(cg, conversion.WithIsNullable(false), ttype, to, op, @checked);
 
                     // lblend:
