@@ -885,38 +885,46 @@ namespace Pchp.Library.Streams
         /// </remarks>
         public static PhpArray stream_get_meta_data(PhpResource resource)
         {
-            PhpStream stream = PhpStream.GetValid(resource);
+            var stream = PhpStream.GetValid(resource);
             if (stream == null)
             {
                 return null;
             }
 
+            // restore the 'mode' parameter
+            var mode = string.Empty;
+            if (stream.CanRead) mode = stream.CanWrite ? "r+" : "r";
+            else if (stream.CanWrite) mode = "w";
+            // To use 't', 'b' flags, specify either 'b' or 't' as the last character of the mode parameter.
+            if (stream.IsBinary) mode += "b";
+
+            //
             var result = new PhpArray(10);
 
             // TODO: timed_out (bool) - TRUE if the stream timed out while waiting for data on the last call to fread() or fgets().
             // TODO: blocked (bool) - TRUE if the stream is in blocking IO mode. See stream_set_blocking().
             result["blocked"] = PhpValue.True;
             // eof (bool) - TRUE if the stream has reached end-of-file. Note that for socket streams this member can be TRUE even when unread_bytes is non-zero. To determine if there is more data to be read, use feof() instead of reading this item.
-            result["eof"] = (PhpValue)stream.Eof;
+            result["eof"] = stream.Eof;
             // TODO: unread_bytes (int) - the number of bytes currently contained in the PHP's own internal buffer.
-            result["unread_bytes"] = (PhpValue)0;
+            result["unread_bytes"] = 0;
             // TODO: stream_type (string) - a label describing the underlying implementation of the stream.
-            result["stream_type"] = (PhpValue)((stream.Wrapper != null) ? stream.Wrapper.Label : string.Empty);
+            result["stream_type"] = (stream.Wrapper != null) ? stream.Wrapper.Label : string.Empty;
             // wrapper_type (string) - a label describing the protocol wrapper implementation layered over the stream. See List of Supported Protocols/Wrappers for more information about wrappers.
-            result["wrapper_type"] = (PhpValue)((stream.Wrapper != null) ? stream.Wrapper.Scheme : string.Empty);
+            result["wrapper_type"] = (stream.Wrapper != null) ? stream.Wrapper.Scheme : string.Empty;
             // wrapper_data (mixed) - wrapper specific data attached to this stream. See List of Supported Protocols/Wrappers for more information about wrappers and their wrapper data.
             if (stream.WrapperSpecificData != null)
             {
                 result["wrapper_data"] = PhpValue.FromClr(stream.WrapperSpecificData);
             }
             // filters (array) - and array containing the names of any filters that have been stacked onto this stream. Documentation on filters can be found in the Filters appendix.
-            result["filters"] = (PhpValue)GetFiltersName(stream);
+            result["filters"] = GetFiltersName(stream);
             // mode (string) - the type of access required for this stream (see Table 1 of the fopen() reference)
-            result["mode"] = (PhpValue)(stream.CanRead ? (stream.CanWrite ? "r+" : "r") : (stream.CanWrite ? "w" : string.Empty));
+            result["mode"] = mode;
             // seekable (bool) - whether the current stream can be seeked.
-            result["seekable"] = (PhpValue)stream.CanSeek;
+            result["seekable"] = stream.CanSeek;
             // uri (string) - the URI/filename associated with this stream.
-            result["uri"] = (PhpValue)stream.OpenedPath;
+            result["uri"] = stream.OpenedPath;
 
             //
             return result;
