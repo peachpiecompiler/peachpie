@@ -1450,6 +1450,22 @@ namespace Pchp.Core
             _ => throw PhpException.TypeErrorException(),
         };
 
+        /// <summary>
+        /// Gets the underlying PHP string if present, a new PHP string representing the value otherwise.
+        /// </summary>
+        public static PhpString ToPhpString(PhpValue value, Context ctx) => value.TypeCode switch
+        {
+            PhpTypeCode.Null => null,
+            PhpTypeCode.Boolean => Convert.ToString(value.Boolean),
+            PhpTypeCode.Long => Convert.ToString(value.Long),
+            PhpTypeCode.Double => Convert.ToString(value.Double),
+            PhpTypeCode.String => value.String,
+            PhpTypeCode.MutableString => value.MutableString,
+            PhpTypeCode.Object => Convert.ToString(value.Object),
+            PhpTypeCode.Alias => ToPhpString(value.Alias.Value, ctx),
+            _ => throw PhpException.TypeErrorException(),
+        };
+
         public static string ToString(object obj)
         {
             if (obj == null)
