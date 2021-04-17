@@ -1154,7 +1154,9 @@ namespace Pchp.Core.Dynamic
             {
                 var x = Expression.Variable(expr.Type);
                 var assign = Expression.Assign(x, expr);    // x = <expr>
+
                 Expression test;
+                Expression value = x;
 
                 if (expr.Type == typeof(int) || expr.Type == typeof(long))
                 {
@@ -1176,16 +1178,25 @@ namespace Pchp.Core.Dynamic
                     // Template: test = x != null
                     test = Expression.ReferenceNotEqual(assign, Expression.Constant(null, assign.Type));
                 }
+                else if (expr.Type.IsNullable_T(out _))
+                {
+                    // Template:
+                    // test = (x = expr).HasValue
+                    // value = x.GetValueOrDefault
+
+                    test = Expression.Property(assign, "HasValue"); // nameof(Nullable<>.HasValue)
+                    value = Expression.Call(x, x.Type.GetMethod("GetValueOrDefault", Array.Empty<Type>()));
+                }
                 else
                 {
-                    Debug.Fail($"[CastToFalse] for an unexpected type {expr.Type.ToString()}.");
+                    Debug.Fail($"[CastToFalse] for an unexpected type '{expr.Type}'.");
                     return expr;
                 }
 
-                // Template: test ? (PhpValue)x : PhpValue.False
+                // Template: test ? (PhpValue)value : PhpValue.False
                 expr = Expression.Condition(
                     test,
-                    ConvertExpression.BindToValue(x),
+                    ConvertExpression.BindToValue(value),
                     Expression.Field(null, Cache.Properties.PhpValue_False));
 
                 //
