@@ -387,7 +387,7 @@ namespace Pchp.Library
         {
             return value.ContainsBinaryData
                 ? value.ToString(GetEncoding(forceencoding) ?? GetInternalEncoding(ctx))
-                : value.ToString(ctx);  // no bytes have to be converted anyway
+                : value.ToString(Encoding.UTF8);  // no bytes have to be decoded anyway
         }
 
         static byte[] ToBytes(Context ctx, PhpString value, string forceencoding = null)
