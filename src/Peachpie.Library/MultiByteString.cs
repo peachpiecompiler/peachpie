@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Text;
 using static Pchp.Library.StandardPhpOptions;
 
 namespace Pchp.Library
@@ -532,23 +533,55 @@ namespace Pchp.Library
 
         #region mb_substr, mb_strcut
 
+        /// <summary>
+        /// Gets a substring, start and length refers to actual encoded characters.
+        /// </summary>
         [return: CastToFalse]
-        public static string mb_substr(Context ctx, PhpString str, int start, int? length = default, string encoding = null)
-            => SubString(ctx, str, start, length.HasValue ? length.Value : int.MaxValue, encoding);
+        public static PhpString mb_substr(Context ctx, PhpString str, int start, int? length = default, string encoding = null)
+        {
+            var lengthValue = length.HasValue ? length.GetValueOrDefault() : int.MaxValue;
+
+            if (((EncodingName)encoding).Is8bit())
+            {
+                return SubString(str.ToBytes(ctx), start, lengthValue);
+            }
+
+            return SubString(ctx, str, start, lengthValue, encoding);
+        }
 
         /// <summary>
-        ///
+        /// Gets a substring, unlike <see cref="mb_substr"/>, start and length refers to bytes in the input string.
+        /// If the poition points inside a multi-byte character, it gets adjusted to the beginning of that character.
         /// </summary>
-        /// <param name="ctx"></param>
-        /// <param name="str"></param>
-        /// <param name="start"></param>
-        /// <param name="length"></param>
-        /// <param name="encoding"></param>
-        /// <returns></returns>
-        /// <remarks>in PHP it behaves differently, but in .NET it is an alias for mb_substr</remarks>
         [return: CastToFalse]
         public static string mb_strcut(Context ctx, PhpString str, int start, int? length = default, string encoding = null)
-            => SubString(ctx, str, start, length.HasValue ? length.Value : -1, encoding);
+        {
+            if (((EncodingName)encoding).Is8bit())
+            {
+                // TODO: return SubString(str.ToBytes(ctx), start, lengthValue);
+            }
+
+            // TODO: handle {start} and {length} properly - as byte-offsets, not char offsets
+
+            return SubString(ctx, str, start, length.HasValue ? length.GetValueOrDefault() : -1, encoding);
+        }
+
+        static PhpString SubString(byte[] str, int start, int length)
+        {
+            if (PhpMath.AbsolutizeRange(ref start, ref length, str.Length))
+            {
+                if (start == 0 && length == str.Length)
+                {
+                    return new PhpString(str);
+                }
+
+                return new PhpString(str.Slice(start, length));
+            }
+            else
+            {
+                return default; // FALSE
+            }
+        }
 
         static string SubString(Context ctx, PhpString str, int start, int length, string encoding)
         {
@@ -615,7 +648,7 @@ namespace Pchp.Library
         /// </summary>
         public static int mb_strlen(Context ctx, PhpString str, string encoding = null)
         {
-            if (encoding != null && ((EncodingName)encoding).Is8bit())
+            if (((EncodingName)encoding).Is8bit())
             {
                 // gets byte count in str
                 return str.GetByteCount(ctx.StringEncoding);
