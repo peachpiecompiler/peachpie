@@ -539,6 +539,11 @@ namespace Pchp.Library
         /// </summary>
         public static T[] Slice<T>(this T[] array, int start, int length)   // TODO: Span<T>
         {
+            if (length == 0)
+            {
+                return Array.Empty<T>();
+            }
+
             var slice = new T[length];
             Buffer.BlockCopy(array, start, slice, 0, length);
             return slice;
