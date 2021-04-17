@@ -38,9 +38,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal void EmitStructAddr(TypeSymbol t) => _il.EmitStructAddr(t);
 
-        public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint)
+        public TypeSymbol EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint)
         {
-            this.EmitImplicitConversion(from, CoreTypes.Boolean);
+            return this.EmitImplicitConversion(from, CoreTypes.Boolean);
         }
 
         public void EmitConvertToBool(BoundExpression expr)

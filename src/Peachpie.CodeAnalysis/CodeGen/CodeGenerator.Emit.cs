@@ -2114,8 +2114,42 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return stack;
             }
 
+            if (stack.IsNullableType(out var ttype))
+            {
+                // optimization:
+                if (targetType?.SpecialType == SpecialType.System_Boolean)
+                {
+                    // Template: stack.HasValue && (bool)stack.Value
+                    return EmitNullableCoalescing(stack,
+                    (t) =>
+                    {
+                        // (PhpValue)<stack>
+                        return EmitConvertToBool(t, 0);
+                    },
+                    () =>
+                    {
+                        // false
+                        Builder.EmitBoolConstant(false);
+                        return CoreTypes.Boolean;
+                    });
+                }
+
+                // stack.HasValue ? stack.Value : FALSE
+                return EmitNullableCoalescing(stack,
+                    (t) =>
+                    {
+                        // (PhpValue)<stack>
+                        return EmitConvertToPhpValue(t, 0);
+                    },
+                    () =>
+                    {
+                        // PhpValue.False
+                        return Emit_PhpValue_False();
+                    });
+            }
+
             // optimization:
-            if (targetType != null && targetType.SpecialType == SpecialType.System_Boolean)
+            if (targetType?.SpecialType == SpecialType.System_Boolean)
             {
                 // will be converting to bool anyways
                 if (stack.SpecialType == SpecialType.System_Int32)
@@ -2145,12 +2179,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // Convert.ToBoolean({stack})
                     return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_PhpString);
-                }
-                else if (stack.IsNullableType(out var ttype))
-                {
-                    //// {stack}.HasValue
-                    //EmitStructAddr(stack);
-                    //return EmitCall(ILOpCode.Call, this.DeclaringCompilation.System_Nullable_T_HasValue(stack)); // TODO: AND (bool)Value
                 }
                 else if (stack.IsReferenceType)
                 {
@@ -2222,6 +2250,34 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type of value on stack.</returns>
         internal TypeSymbol EmitNullableCastToNull(TypeSymbol stack, bool deepcopy)
         {
+            return EmitNullableCoalescing(stack,
+                (t) =>
+                {
+                    if (deepcopy)
+                    {
+                        // DeepCopy(<stack>)
+                        t = EmitDeepCopy(t, false);
+                    }
+                    // (PhpValue)<stack>
+                    return EmitConvertToPhpValue(t, 0);
+                },
+                () =>
+                {
+                    // PhpValue.Null
+                    return Emit_PhpValue_Null();
+                });
+        }
+
+        /// <summary>
+        /// Emits code that converts Nullable. Expects Nullable{T} on stack:
+        /// {stack}.HasValue ? {stack}.GetValueOrDefault() : default
+        /// </summary>
+        /// <param name="stack">Type of Nullable&lt;T&gt; value on stack.</param>
+        /// <param name="valueEmitter">Delegate to emit a conversion from &lt;T&gt;. &lt;T&gt; is on the stack.</param>
+        /// <param name="novalueEmitter">Delegate to emit a value if the Nullable has no value. If no provided, a default of {T} is put on the stack.</param>
+        /// <returns>New type of value on stack.</returns>
+        internal TypeSymbol EmitNullableCoalescing(TypeSymbol stack, Func<TypeSymbol, TypeSymbol> valueEmitter, Func<TypeSymbol> novalueEmitter = null)
+        {
             if (stack.IsNullableType(out var t) == false)
             {
                 throw new ArgumentException("Not Nullable`1", nameof(stack));
@@ -2245,7 +2301,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
 
             // Template: PhpValue.Null
-            Emit_PhpValue_Null();
+            var t1 = novalueEmitter != null ? novalueEmitter() : EmitLoadDefault(t);
 
             _il.EmitBranch(ILOpCode.Br, lblend);
 
@@ -2255,19 +2311,15 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitCall(ILOpCode.Call, DeclaringCompilation.System_Nullable_T_GetValueOrDefault(stack))
                 .Expect(t);
 
-            if (deepcopy)
-            {
-                // DeepCopy(<stack>)
-                t = EmitDeepCopy(t, false);
-            }
             // (PhpValue)<stack>
-            EmitConvertToPhpValue(t, 0);
+            var t2 = valueEmitter(t);
 
             //
             _il.MarkLabel(lblend);
 
             //
-            return CoreTypes.PhpValue;
+            if (t1 != t2) throw new InvalidOperationException($"Value types do not match, '{t1}' and '{t2}'.");
+            return t1;
         }
 
         /// <summary>
