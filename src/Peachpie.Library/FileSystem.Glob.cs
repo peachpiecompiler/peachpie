@@ -60,6 +60,11 @@ namespace Pchp.Library
             /// List directories only.
             /// </summary>
             OnlyDir = 0x40000000,
+
+            /// <summary>
+            /// Gets bit mask of all available flags.
+            /// </summary>
+            SupportedMask = StopOnError | Mark | NoCheck | NoSort | Brace | NoEscape | OnlyDir,
         }
 
         public const int GLOB_MARK = (int)GlobOptions.Mark;
@@ -69,7 +74,7 @@ namespace Pchp.Library
         public const int GLOB_NOESCAPE = (int)GlobOptions.NoEscape;
         public const int GLOB_ONLYDIR = (int)GlobOptions.OnlyDir;
         public const int GLOB_ERR = (int)GlobOptions.StopOnError;
-        public const int GLOB_AVAILABLE_FLAGS = GLOB_MARK | GLOB_NOCHECK | GLOB_NOSORT | GLOB_BRACE | GLOB_NOESCAPE | GLOB_ONLYDIR | GLOB_ERR;
+        public const int GLOB_AVAILABLE_FLAGS = (int)GlobOptions.SupportedMask;
 
         /// <summary>
         /// Flags used in call to <c>fnmatch()</c>.
@@ -525,14 +530,14 @@ namespace Pchp.Library
 
                 public override GlobNode/*!*/ AddChar(char c)
                 {
-                    TextNode node = new TextNode(this);
+                    var node = new TextNode(this);
                     _nodes.Add(node);
                     return node.AddChar(c);
                 }
 
                 public override GlobNode/*!*/ StartLevel()
                 {
-                    ChoiceNode node = new ChoiceNode(this);
+                    var node = new ChoiceNode(this);
                     _nodes.Add(node);
                     return node;
                 }
@@ -620,7 +625,7 @@ namespace Pchp.Library
             {
                 if (_level != 0)
                 {
-                    return ArrayUtils.EmptyStrings;
+                    return Array.Empty<string>();
                 }
 
                 return _rootNode.Flatten();
@@ -657,10 +662,14 @@ namespace Pchp.Library
             bool inEscape = false;
             CharClass charClass = null;
 
-            foreach (char c in pattern)
+            for (int i = 0; i < pattern.Length; i++)
             {
+                var c = pattern[i];
+
                 if (inEscape)
                 {
+                    inEscape = false;
+
                     if (charClass != null)
                     {
                         charClass.Add(c);
@@ -669,26 +678,23 @@ namespace Pchp.Library
                     {
                         AppendExplicitRegexChar(result, c);
                     }
-                    inEscape = false;
-                    continue;
                 }
                 else if (c == '\\' && !noEscape)
                 {
                     inEscape = true;
-                    continue;
                 }
-
-                if (charClass != null)
+                else if (charClass != null)
                 {
                     if (c == ']')
                     {
-                        string set = charClass.MakeString();
+                        var set = charClass.MakeString();
                         if (set == null)
                         {
                             // PHP regex "[]" matches nothing
                             // CLR regex "[]" throws exception
-                            return String.Empty;
+                            return string.Empty;
                         }
+
                         result.Append(set);
                         charClass = null;
                     }
@@ -696,25 +702,27 @@ namespace Pchp.Library
                     {
                         charClass.Add(c);
                     }
-                    continue;
                 }
-                switch (c)
+                else
                 {
-                    case '*':
-                        result.Append(pathName ? "[^/]*" : ".*");
-                        break;
+                    switch (c)
+                    {
+                        case '*':
+                            result.Append(pathName ? "[^/]*" : ".*");
+                            break;
 
-                    case '?':
-                        result.Append('.');
-                        break;
+                        case '?':
+                            result.Append('.');
+                            break;
 
-                    case '[':
-                        charClass = new CharClass();
-                        break;
+                        case '[':
+                            charClass = new CharClass();
+                            break;
 
-                    default:
-                        AppendExplicitRegexChar(result, c);
-                        break;
+                        default:
+                            AppendExplicitRegexChar(result, c);
+                            break;
+                    }
                 }
             }
 
@@ -724,58 +732,62 @@ namespace Pchp.Library
         static IList<string> UngroupGlobs(string/*!*/ pattern, bool noEscape, bool brace)
         {
             var ungrouper = new GlobUngrouper(pattern.Length);
+            var inEscape = false;
 
-            bool inEscape = false;
-            foreach (char c in pattern)
+            for (int i = 0; i < pattern.Length; i++)
             {
+                var c = pattern[i];
+
                 if (inEscape)
                 {
+                    inEscape = false;
                     if (c != ',' && c != '{' && c != '}')
                     {
                         ungrouper.AddChar('\\');
                     }
                     ungrouper.AddChar(c);
-                    inEscape = false;
-                    continue;
                 }
                 else if (c == '\\' && !noEscape)
                 {
                     inEscape = true;
-                    continue;
                 }
-
-                switch (c)
+                else
                 {
-                    case '{':
-                        if (!brace)
-                            return ArrayUtils.EmptyStrings;
+                    switch (c)
+                    {
+                        case '{':
+                            if (!brace)
+                            {
+                                return Array.Empty<string>();
+                            }
 
-                        ungrouper.StartLevel();
-                        break;
+                            ungrouper.StartLevel();
+                            break;
 
-                    case ',':
-                        if (ungrouper.Level < 1)
-                        {
+                        case ',':
+                            if (ungrouper.Level < 1)
+                            {
+                                ungrouper.AddChar(c);
+                            }
+                            else
+                            {
+                                ungrouper.AddGroup();
+                            }
+                            break;
+
+                        case '}':
+                            if (ungrouper.Level < 1)
+                            {
+                                // Unbalanced closing bracket matches nothing
+                                return Array.Empty<string>();
+                            }
+                            ungrouper.FinishLevel();
+                            break;
+
+                        default:
                             ungrouper.AddChar(c);
-                        }
-                        else
-                        {
-                            ungrouper.AddGroup();
-                        }
-                        break;
-
-                    case '}':
-                        if (ungrouper.Level < 1)
-                        {
-                            // Unbalanced closing bracket matches nothing
-                            return ArrayUtils.EmptyStrings;
-                        }
-                        ungrouper.FinishLevel();
-                        break;
-
-                    default:
-                        ungrouper.AddChar(c);
-                        break;
+                            break;
+                    }
                 }
             }
             return ungrouper.Flatten();
@@ -823,9 +835,9 @@ namespace Pchp.Library
                 return path.Length == 0;
             }
 
-            bool pathName = ((flags & FnMatchOptions.PathName) != 0);
-            bool noEscape = ((flags & FnMatchOptions.NoEscape) != 0);
-            string regexPattern = PatternToRegex(pattern, pathName, noEscape);
+            var pathName = (flags & FnMatchOptions.PathName) != 0;
+            var noEscape = (flags & FnMatchOptions.NoEscape) != 0;
+            var regexPattern = PatternToRegex(pattern, pathName, noEscape);
             if (regexPattern.Length == 0)
             {
                 return false;
@@ -855,6 +867,12 @@ namespace Pchp.Library
         //[return: CastToFalse]
         public static PhpArray glob(Context ctx, string pattern, GlobOptions flags = GlobOptions.None)
         {
+            if ((flags & GlobOptions.SupportedMask) != flags)
+            {
+                // TODO: At least one of the passed flags is invalid or not supported on this platform
+                //return false;
+            }
+
             var result = new PhpArray();
 
             if (!string.IsNullOrEmpty(pattern))
