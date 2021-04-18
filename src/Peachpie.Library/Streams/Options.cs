@@ -38,8 +38,18 @@ namespace Pchp.Library.Streams
         /// <summary>When a local file is opened using tmpfile() it should be removed when closed (256).</summary>
         Temporary = 0x100,
         /// <summary>Denotes a persistent version of the stream (2048).</summary>
-        Persistent = StreamOptions.Persistent
+        Persistent = StreamOptions.Persistent, // 0x800
+        /// <summary>The mode starts with 'a' (O_CREAT|O_APPEND).</summary>
+        Append = 0x1000,
+        /// <summary>The mode starts with 'c' (O_CREAT).</summary>
+        Create = 0x2000,
+        /// <summary>The mode starts with 'w' (O_CREAT|O_TRUNC).</summary>
+        Truncate = 0x4000,
+
+        /// <summary>Mask of possible stream create flags.</summary>
+        ModeMask = Exclusive | Append | Create | Truncate,
     }
+
     #endregion
 
     #region Stream opening flags
@@ -84,7 +94,7 @@ namespace Pchp.Library.Streams
         /// <summary>Don't apply open_basedir checks (1024).</summary>
         DisableOpenBasedir = 1024,
         /// <summary>Get (or create) a persistent version of the stream (2048).</summary>
-        Persistent = 2048
+        Persistent = 2048,
     }
 
     /// <summary>
@@ -109,7 +119,7 @@ namespace Pchp.Library.Streams
         /// <summary>Get (or create) a persistent version of the stream (2048).</summary>
         Persistent = StreamOptions.Persistent,
         /// <summary>When a local file is opened using tmpfile() it should be removed when closed (256).</summary>
-        Temporary = StreamAccessOptions.Temporary
+        Temporary = StreamAccessOptions.Temporary,
     }
 
     /// <summary>
@@ -121,7 +131,7 @@ namespace Pchp.Library.Streams
         /// <summary>Empty option (default)</summary>
         Empty = 0,
         /// <summary>Don't apply open_basedir checks (1024).</summary>
-        DisableOpenBasedir = StreamOptions.DisableOpenBasedir
+        DisableOpenBasedir = StreamOptions.DisableOpenBasedir,
     }
 
     /// <summary>
@@ -136,7 +146,7 @@ namespace Pchp.Library.Streams
         EnforceSafeMode = StreamOptions.EnforceSafeMode,
         /// <summary>If this flag is set, the Wrapper is responsible for raising errors using 
         /// trigger_error() during opening of the stream. If this flag is not set, she should not raise any errors (8).</summary>
-        ReportErrors = StreamOptions.ReportErrors
+        ReportErrors = StreamOptions.ReportErrors,
     }
 
     /// <summary>
@@ -145,7 +155,7 @@ namespace Pchp.Library.Streams
     public enum StreamRenameOptions
     {
         /// <summary>Empty option (default)</summary>
-        Empty = 0
+        Empty = 0,
     }
 
     /// <summary>
@@ -179,7 +189,7 @@ namespace Pchp.Library.Streams
     public enum StreamRemoveDirectoryOptions
     {
         /// <summary>Empty option (default)</summary>
-        Empty = 0
+        Empty = 0,
     }
 
     /// <summary>
@@ -188,17 +198,17 @@ namespace Pchp.Library.Streams
     [Flags]
     public enum FileModeFlags : uint
     {
-       // #define S_IFMT  00170000
-       // #define S_IFSOCK 0140000
-       // #define S_IFLNK  0120000
-       // #define S_IFREG  0100000
-       // #define S_IFBLK  0060000
-       // #define S_IFDIR  0040000
-       // #define S_IFCHR  0020000
-       // #define S_IFIFO  0010000
-       // #define S_ISUID  0004000
-       // #define S_ISGID  0002000
-       // #define S_ISVTX  0001000
+        // #define S_IFMT  00170000
+        // #define S_IFSOCK 0140000
+        // #define S_IFLNK  0120000
+        // #define S_IFREG  0100000
+        // #define S_IFBLK  0060000
+        // #define S_IFDIR  0040000
+        // #define S_IFCHR  0020000
+        // #define S_IFIFO  0010000
+        // #define S_ISUID  0004000
+        // #define S_ISGID  0002000
+        // #define S_ISVTX  0001000
 
         /// <summary>Mask for file type.</summary>
         FileTypeMask = Directory | File | Character | Pipe,

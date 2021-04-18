@@ -443,13 +443,13 @@ namespace Pchp.Library.Streams
             this.Options = accessOptions;
 
             // Allocate the text conversion filters for this stream.
-            if ((accessOptions & StreamAccessOptions.UseText) > 0)
+            if ((accessOptions & StreamAccessOptions.UseText) != 0)
             {
-                if ((accessOptions & StreamAccessOptions.Read) > 0)
+                if ((accessOptions & StreamAccessOptions.Read) != 0)
                 {
                     textReadFilter = new TextReadFilter();
                 }
-                if ((accessOptions & StreamAccessOptions.Write) > 0)
+                if ((accessOptions & StreamAccessOptions.Write) != 0)
                 {
                     textWriteFilter = new TextWriteFilter();
                 }

@@ -188,14 +188,14 @@ namespace Pchp.Library.Streams
 
             // Search for the file only if mode=='[ra]*' and use_include_path==true.
             // StreamAccessOptions findFile = 0;
-            if ((options & StreamOpenOptions.UseIncludePath) > 0)
+            if ((options & StreamOpenOptions.UseIncludePath) != 0)
             {
                 // findFile = StreamAccessOptions.FindFile;
                 accessOptions |= StreamAccessOptions.FindFile;
             }
 
             // Copy the AutoRemove option.
-            if ((options & StreamOpenOptions.Temporary) > 0)
+            if ((options & StreamOpenOptions.Temporary) != 0)
             {
                 accessOptions |= StreamAccessOptions.Temporary;
             }
@@ -222,12 +222,13 @@ namespace Pchp.Library.Streams
                     break;
 
                 case 'w':
-                    // flags = O_TRUNC|O_CREAT;
+                    // flags = O_CREAT|O_TRUNC;
                     // fileAccess is set to Write
                     fileMode = FileMode.Create;
+                    accessOptions |= StreamAccessOptions.Truncate;
                     //accessOptions |= findFile;
                     // EX: Note that use_include_path is applicable to all access methods.
-                    // Create truncates the existing file to zero length
+                    // Creates or truncates the existing file to zero length
                     break;
 
                 case 'a':
@@ -235,6 +236,7 @@ namespace Pchp.Library.Streams
                     // fileAccess is set to Write
                     fileMode = FileMode.Append;
                     //accessOptions |= findFile;
+                    accessOptions |= StreamAccessOptions.Append;
                     // Note: .NET does not support the "a+" mode, use "r+" and Seek()
                     break;
 
@@ -249,6 +251,7 @@ namespace Pchp.Library.Streams
                     // flags = O_CREAT;
                     fileMode = FileMode.OpenOrCreate;
                     fileAccess = FileAccess.Write;
+                    accessOptions |= StreamAccessOptions.Create;
                     break;
 
                 default:
@@ -583,10 +586,13 @@ namespace Pchp.Library.Streams
             //Debug.Assert(PhpPath.IsLocalFile(path));
 
             // Get the File.Open modes from the mode string
-            if (!ParseMode(ctx, mode, options, out var fileMode, out var fileAccess, out var ao)) return null;
+            if (!ParseMode(ctx, mode, options, out var fileMode, out var fileAccess, out var ao))
+            {
+                return null;
+            }
 
             // Open the native stream
-            FileStream stream = null;
+            FileStream stream;
             try
             {
                 // stream = File.Open(path, fileMode, fileAccess, FileShare.ReadWrite);
@@ -601,7 +607,7 @@ namespace Pchp.Library.Streams
             }
             catch (IOException e)
             {
-                if ((ao & StreamAccessOptions.Exclusive) > 0)
+                if ((ao & StreamAccessOptions.Exclusive) != 0)
                 {
                     PhpException.Throw(PhpError.Warning, ErrResources.stream_file_exists, FileSystemUtils.StripPassword(path));
                 }
@@ -622,13 +628,13 @@ namespace Pchp.Library.Streams
                 return null;
             }
 
-            if ((ao & StreamAccessOptions.SeekEnd) > 0)
+            if ((ao & StreamAccessOptions.SeekEnd) != 0)
             {
                 // Read/Write Append is not supported. Seek to the end of file manually.
                 stream.Seek(0, SeekOrigin.End);
             }
 
-            if ((ao & StreamAccessOptions.Temporary) > 0)
+            if ((ao & StreamAccessOptions.Temporary) != 0)
             {
                 // Set the file attributes to Temporary too.
                 File.SetAttributes(path, FileAttributes.Temporary);

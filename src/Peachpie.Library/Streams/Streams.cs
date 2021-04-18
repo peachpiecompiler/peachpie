@@ -891,13 +891,6 @@ namespace Pchp.Library.Streams
                 return null;
             }
 
-            // restore the 'mode' parameter
-            var mode = string.Empty;
-            if (stream.CanRead) mode = stream.CanWrite ? "r+" : "r";
-            else if (stream.CanWrite) mode = "w";
-            // To use 't', 'b' flags, specify either 'b' or 't' as the last character of the mode parameter.
-            if (stream.IsBinary) mode += "b";
-
             //
             var result = new PhpArray(10);
 
@@ -920,7 +913,7 @@ namespace Pchp.Library.Streams
             // filters (array) - and array containing the names of any filters that have been stacked onto this stream. Documentation on filters can be found in the Filters appendix.
             result["filters"] = GetFiltersName(stream);
             // mode (string) - the type of access required for this stream (see Table 1 of the fopen() reference)
-            result["mode"] = mode;
+            result["mode"] = GetFileMode(stream.Options);
             // seekable (bool) - whether the current stream can be seeked.
             result["seekable"] = stream.CanSeek;
             // uri (string) - the URI/filename associated with this stream.
@@ -946,6 +939,40 @@ namespace Pchp.Library.Streams
             }
 
             return array;
+        }
+
+        /// <summary>
+        /// Restores the file mode from the stream options.
+        /// See <c>StreamWrapper.ParseMode</c>c> for details.
+        /// </summary>
+        static string GetFileMode(StreamAccessOptions options)
+        {
+            var mode = (options & StreamAccessOptions.ModeMask) switch
+            {
+                StreamAccessOptions.Truncate => "w",
+                StreamAccessOptions.Append => "a",
+                StreamAccessOptions.Exclusive => "x",
+                StreamAccessOptions.Create => "c",
+                _ => "r",
+            };
+
+            if ((options & StreamAccessOptions.Read) != 0 && (options & StreamAccessOptions.Write) != 0)
+            {
+                mode += "+";
+            }
+
+            // last flag: 't' or 'b'
+            if ((options & StreamAccessOptions.UseText) != 0)
+            {
+                mode += "t";
+            }
+            else
+            {
+                mode += "b";
+            }
+
+            //
+            return mode;
         }
 
         #endregion
