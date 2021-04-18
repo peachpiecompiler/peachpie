@@ -79,23 +79,13 @@ namespace Pchp.Library
         /// <summary>
         /// Flags used in call to <c>fnmatch()</c>.
         /// </summary>
-        [PhpHidden]
+        [Flags, PhpHidden]
         public enum FnMatchOptions
         {
             /// <summary>
             /// No flags.
             /// </summary>
             None = 0,
-
-            /// <summary>
-            /// Caseless match. Part of the GNU extension. 
-            /// </summary>
-            CaseFold = 0x0010,
-
-            /// <summary>
-            /// Leading period in string must be exactly matched by period in the given pattern. 
-            /// </summary>
-            Period = 0x0004,
 
             /// <summary>
             /// Disable backslash escaping. 
@@ -105,13 +95,23 @@ namespace Pchp.Library
             /// <summary>
             /// Slash in string only matches slash in the given pattern. 
             /// </summary>
-            PathName = 0x0002
+            PathName = 0x0002,
+
+            /// <summary>
+            /// Leading period in string must be exactly matched by period in the given pattern. 
+            /// </summary>
+            Period = 0x0004,
+
+            /// <summary>
+            /// Caseless match. Part of the GNU extension. 
+            /// </summary>
+            CaseFold = 0x0010,
         }
 
-        public const int FNM_CASEFOLD = (int)FnMatchOptions.CaseFold;
-        public const int FNM_PERIOD = (int)FnMatchOptions.Period;
         public const int FNM_NOESCAPE = (int)FnMatchOptions.NoEscape;
         public const int FNM_PATHNAME = (int)FnMatchOptions.PathName;
+        public const int FNM_PERIOD = (int)FnMatchOptions.Period;
+        public const int FNM_CASEFOLD = (int)FnMatchOptions.CaseFold;
 
         #endregion
 
@@ -158,20 +158,11 @@ namespace Pchp.Library
             bool _relative;
             FnMatchOptions _fnMatchFlags;
 
-            private bool NoEscapes
-            {
-                get { return ((_flags & GlobOptions.NoEscape) != 0); }
-            }
+            private bool NoEscapes => (_flags & GlobOptions.NoEscape) != 0;
 
-            private bool StopOnError
-            {
-                get { return ((_flags & GlobOptions.StopOnError) != 0); }
-            }
+            private bool StopOnError => (_flags & GlobOptions.StopOnError) != 0;
 
-            private bool Mark
-            {
-                get { return ((_flags & GlobOptions.Mark) != 0); }
-            }
+            private bool Mark => (_flags & GlobOptions.Mark) != 0;
 
             public GlobMatcher(Context ctx, string/*!*/pattern, GlobOptions flags)
             {
@@ -189,11 +180,12 @@ namespace Pchp.Library
 
             private static string/*!*/ Unescape(string/*!*/ path, int start)
             {
-                StringBuilder unescaped = new StringBuilder();
-                bool inEscape = false;
+                var unescaped = StringBuilderUtilities.Pool.Get();
+                var inEscape = false;
+
                 for (int i = start; i < path.Length; i++)
                 {
-                    char c = path[i];
+                    var c = path[i];
                     if (inEscape)
                     {
                         inEscape = false;
@@ -211,7 +203,8 @@ namespace Pchp.Library
                     unescaped.Append('\\');
                 }
 
-                return unescaped.ToString();
+                //
+                return StringBuilderUtilities.GetStringAndReturn(unescaped);
             }
 
             private void TestPath(string path, int patternEnd, bool isLastPathSegment)
@@ -231,7 +224,7 @@ namespace Pchp.Library
                     path = path.Substring(2);
                 }
 
-                string resultPath = path;
+                var resultPath = path;
 
                 if (_relative)//we have to remove CWD before adding to results list
                 {
@@ -318,7 +311,7 @@ namespace Pchp.Library
 
                 if (!containsWildcard)
                 {
-                    string path = baseDirectory + "/" + dirSegment;
+                    var path = Path.Combine(baseDirectory, dirSegment);
                     TestPath(path, patternEnd, isLastPathSegment);
                     return;
                 }
@@ -328,7 +321,7 @@ namespace Pchp.Library
 
                     foreach (string file in System.IO.Directory.GetFileSystemEntries(baseDirectory, "*"))
                     {
-                        string objectName = Path.GetFileName(file);
+                        var objectName = Path.GetFileName(file);
                         if (fnmatch(dirSegment, objectName, _fnMatchFlags))
                         {
                             TestPath(CanonizePattern(file), patternEnd, isLastPathSegment);
@@ -830,9 +823,9 @@ namespace Pchp.Library
         /// wildcard <paramref name="pattern"/>.</returns>
         public static bool fnmatch(string/*!*/ pattern, string/*!*/ path, FnMatchOptions flags = FnMatchOptions.None)
         {
-            if (pattern.Length == 0)
+            if (string.IsNullOrEmpty(pattern))
             {
-                return path.Length == 0;
+                return string.IsNullOrEmpty(path);
             }
 
             var pathName = (flags & FnMatchOptions.PathName) != 0;
@@ -843,7 +836,7 @@ namespace Pchp.Library
                 return false;
             }
 
-            if (((flags & FnMatchOptions.Period) == 0) && path.Length > 0 && path[0] == '.')
+            if ((flags & FnMatchOptions.Period) == 0 && path.Length != 0 && path[0] == '.')
             {
                 // Starting dot requires an explicit dot in the pattern
                 if (regexPattern.Length < 4 || regexPattern[2] != '[' || regexPattern[3] != '.')
@@ -852,11 +845,13 @@ namespace Pchp.Library
                 }
             }
 
-            var options = System.Text.RegularExpressions.RegexOptions.None;
+            var options = System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.Singleline;
+
             if ((flags & FnMatchOptions.CaseFold) != 0)
             {
                 options |= System.Text.RegularExpressions.RegexOptions.IgnoreCase;
             }
+
             var match = System.Text.RegularExpressions.Regex.Match(path, regexPattern, options);
             return match != null && match.Success && (match.Length == path.Length);
         }
@@ -873,16 +868,18 @@ namespace Pchp.Library
                 //return false;
             }
 
+            if (string.IsNullOrEmpty(pattern))
+            {
+                return PhpArray.NewEmpty();
+            }
+
             var result = new PhpArray();
 
-            if (!string.IsNullOrEmpty(pattern))
-            {
-                result.AddRange(GetMatches(ctx, pattern, flags));
+            result.AddRange(GetMatches(ctx, pattern, flags));
 
-                if (result.Count == 0 && (flags & GlobOptions.NoCheck) != 0)
-                {
-                    result.Add(pattern);
-                }
+            if (result.Count == 0 && (flags & GlobOptions.NoCheck) != 0)
+            {
+                result.Add(pattern);
             }
 
             return result;
