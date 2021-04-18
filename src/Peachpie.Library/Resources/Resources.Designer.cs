@@ -691,6 +691,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The flag {0} is invalid or not supported on this platform.
+        /// </summary>
+        public static string glob_invalid_flags {
+            get {
+                return ResourceManager.GetString("glob_invalid_flags", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Header &apos;{0}&apos; not supported and has been ignored.
         /// </summary>
         public static string header_not_supported {

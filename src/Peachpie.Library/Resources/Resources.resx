@@ -735,4 +735,7 @@
   <data name="socket_accept_timeout" xml:space="preserve">
     <value>A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.</value>
   </data>
+  <data name="glob_invalid_flags" xml:space="preserve">
+    <value>The flag {0} is invalid or not supported on this platform</value>
+  </data>
 </root>

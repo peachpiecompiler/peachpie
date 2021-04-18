@@ -279,14 +279,10 @@ namespace Pchp.Library
                 try
                 {
                     DoGlob(baseDirectory, pos);
-
-                }
-                catch (ArgumentNullException)
-                {
-                    throw;
                 }
                 catch (Exception)
                 {
+                    //
                 }
 
                 return _result;
@@ -318,8 +314,7 @@ namespace Pchp.Library
 
                 try
                 {
-
-                    foreach (string file in System.IO.Directory.GetFileSystemEntries(baseDirectory, "*"))
+                    foreach (var file in System.IO.Directory.GetFileSystemEntries(baseDirectory, "*"))
                     {
                         var objectName = Path.GetFileName(file);
                         if (fnmatch(dirSegment, objectName, _fnMatchFlags))
@@ -327,16 +322,13 @@ namespace Pchp.Library
                             TestPath(CanonizePattern(file), patternEnd, isLastPathSegment);
                         }
                     }
-
-                }
-                catch (ArgumentNullException)
-                {
-                    throw;
                 }
                 catch (Exception)
                 {
                     if (StopOnError)
+                    {
                         throw;
+                    }
                 }
 
                 if (isLastPathSegment && dirSegment[0] == '.')
@@ -859,13 +851,13 @@ namespace Pchp.Library
         /// <summary>
         /// Find path names matching a pattern.
         /// </summary>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static PhpArray glob(Context ctx, string pattern, GlobOptions flags = GlobOptions.None)
         {
-            if ((flags & GlobOptions.SupportedMask) != flags)
+            if ((flags & ~GlobOptions.SupportedMask) != 0)
             {
-                // TODO: At least one of the passed flags is invalid or not supported on this platform
-                //return false;
+                PhpException.InvalidArgument(nameof(flags), string.Format(Resources.Resources.glob_invalid_flags, (flags & ~GlobOptions.SupportedMask).ToString()));
+                return null; // FALSE
             }
 
             if (string.IsNullOrEmpty(pattern))
