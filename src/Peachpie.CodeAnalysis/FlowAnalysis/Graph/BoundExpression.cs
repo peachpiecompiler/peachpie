@@ -16,35 +16,18 @@ namespace Pchp.CodeAnalysis.Semantics
         internal TypeRefMask ResolveTypeMask(TypeRefContext typeCtx)
         {
             Debug.Assert(this.ConstantValue.HasValue);
-            var value = this.ConstantValue.Value;
-
-            if (value == null)
+            
+            return this.ConstantValue.Value switch
             {
-                return typeCtx.GetNullTypeMask();
-            }
-            else
-            {
-                if (value is long || value is int)
-                {
-                    return typeCtx.GetLongTypeMask();
-                }
-                else if (value is string)
-                {
-                    return typeCtx.GetStringTypeMask();
-                }
-                else if (value is bool)
-                {
-                    return typeCtx.GetBooleanTypeMask();
-                }
-                else if (value is double)
-                {
-                    return typeCtx.GetDoubleTypeMask();
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-            }
+                null => typeCtx.GetNullTypeMask(),
+                int => typeCtx.GetLongTypeMask(),
+                long => typeCtx.GetLongTypeMask(),
+                string => typeCtx.GetStringTypeMask(),
+                bool => typeCtx.GetBooleanTypeMask(),
+                double => typeCtx.GetDoubleTypeMask(),
+                byte[] => typeCtx.GetWritableStringTypeMask(),
+                _ => throw new NotImplementedException(),
+            };
         }
     }
 }
