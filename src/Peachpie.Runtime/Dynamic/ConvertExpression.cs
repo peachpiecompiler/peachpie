@@ -565,6 +565,7 @@ namespace Pchp.Core.Dynamic
                 source == typeof(IPhpArray) ||
                 source == typeof(object) ||
                 typeof(ICollection).IsAssignableFrom(source) || // possibly PhpArray
+                source == typeof(byte[]) ||
                 source == typeof(IPhpConvertible) ||
                 source == typeof(IPhpEnumerable))
             {
