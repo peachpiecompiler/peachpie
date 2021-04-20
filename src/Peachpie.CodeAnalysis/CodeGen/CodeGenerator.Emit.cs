@@ -875,6 +875,26 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => Emit(a.Value));
         public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => Emit(a));
 
+        public TypeSymbol Emit_NewArray(TypeSymbol elementType, int length)
+        {
+            if (length == 0)
+            {
+                return Emit_EmptyArray(elementType);
+            }
+            else if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+            else
+            {
+                _il.EmitIntConstant(length);
+                _il.EmitOpCode(ILOpCode.Newarr);
+                EmitSymbolToken(elementType, null);
+
+                return ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType);
+            }
+        }
+
         public TypeSymbol Emit_NewArray<T>(TypeSymbol elementType, ImmutableArray<T> values, Func<T, TypeSymbol> emitter)
         {
             if (values.IsDefaultOrEmpty == false)
@@ -3546,6 +3566,15 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 Builder.EmitStringConstant(str);
                 return CoreTypes.String;
+            }
+            else if (value is byte[] bytes)
+            {
+                // CONSIDER: use the cached field directly
+                // var field = Module.GetFieldForData(bytes.AsImmutable(), null, Diagnostic);
+
+                var type = Emit_NewArray(DeclaringCompilation.GetSpecialType(SpecialType.System_Byte), bytes.Length);
+                Builder.EmitArrayBlockInitializer(bytes.AsImmutable(), null, this.Diagnostics);
+                return type;
             }
             else if (value is bool b)
             {
