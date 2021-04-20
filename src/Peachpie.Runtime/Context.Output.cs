@@ -47,7 +47,7 @@ namespace Pchp.Core
         /// Buffered output associated with the context.
         /// </summary>
         public BufferedOutput/*!*/BufferedOutput => EnsureBufferedOutput(false);    // Initialize lazily as not buffered output by default.
-        
+
         /// <remarks>Is <c>null</c> reference until it is not used for the first time.</remarks>
         BufferedOutput _bufferedOutput;
 
@@ -157,6 +157,8 @@ namespace Pchp.Core
         }
 
         public void Echo(PhpString value) => value.Output(this);
+
+        public virtual void Echo(byte[] value) => OutputStream.Write(value, 0, value.Length);
 
         public void Echo(PhpValue value) => value.Output(this);
 

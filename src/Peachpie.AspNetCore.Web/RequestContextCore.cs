@@ -369,6 +369,17 @@ namespace Peachpie.AspNetCore.Web
 
         #endregion
 
+        #region Echo
+
+        //// underlying http stream requires async IO
+        //// https://github.com/aspnet/Announcements/issues/342
+        //public override void Echo(byte[] value)
+        //{
+        //    OutputStream.WriteAsync(value).GetAwaiter().GetResult();
+        //}
+
+        #endregion
+
         public override IHttpPhpContext HttpPhpContext => this;
 
         public override Encoding StringEncoding => _encoding;

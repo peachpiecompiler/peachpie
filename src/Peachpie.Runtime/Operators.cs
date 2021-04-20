@@ -2366,6 +2366,9 @@ namespace Pchp.Core
         public static void Echo(PhpString value, Context ctx) => ctx.Echo(value);
 
         /// <summary>Echoes the value into the output.</summary>
+        public static void Echo(byte[] value, Context ctx) => ctx.Echo(value);
+
+        /// <summary>Echoes the value into the output.</summary>
         public static void Echo(PhpNumber value, Context ctx) => ctx.Echo(value);
 
         /// <summary>Echoes the value into the output.</summary>
