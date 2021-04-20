@@ -693,12 +693,16 @@ namespace Pchp.CodeAnalysis.Semantics
         protected BoundExpression BindConcatEx(AST.Expression[] args)
         {
             // Flatten and bind concat arguments using a stack (its bottom is the last argument)
-            var boundArgs = new List<BoundArgument>();
-            var exprStack = new Stack<AST.Expression>();
+            var boundArgs = new List<BoundArgument>(args.Length);
+            var exprStack = new Stack<AST.Expression>(args.Length);
 
-            args.Reverse().ForEach(exprStack.Push);
+            // args.Reverse().ForEach(exprStack.Push);
+            for (int i = args.Length - 1; i >= 0; i++)
+            {
+                exprStack.Push(args[i]);
+            }
 
-            while (exprStack.Count > 0)
+            while (exprStack.Count != 0)
             {
                 var arg = exprStack.Pop();
                 if (arg is AST.ConcatEx concat)
@@ -1393,13 +1397,23 @@ namespace Pchp.CodeAnalysis.Semantics
         protected static BoundExpression BindLiteral(AST.Literal expr)
         {
             if (expr is AST.LongIntLiteral longIntLit) return new BoundLiteral(longIntLit.Value.AsObject());
-            if (expr is AST.StringLiteral stringLit) return new BoundLiteral(stringLit.Value);
+            if (expr is AST.StringLiteral stringLit) return BindLiteral(stringLit);
             if (expr is AST.DoubleLiteral doubleLit) return new BoundLiteral(doubleLit.Value);
             if (expr is AST.BoolLiteral boolLit) return new BoundLiteral(boolLit.Value.AsObject());
-            if (expr is AST.NullLiteral nullLit) return new BoundLiteral(null);
+            if (expr is AST.NullLiteral) return new BoundLiteral(null);
             if (expr is AST.BinaryStringLiteral binStringLit) return new BoundLiteral(binStringLit.Value);
 
             throw new NotImplementedException();
+        }
+
+        static BoundExpression BindLiteral(AST.StringLiteral str)
+        {
+            if (str is AST.IStringLiteralValue chunks && chunks.Contains8bitText)
+            {
+
+            }
+
+            return new BoundLiteral(str.Value);
         }
 
         /// <summary>
