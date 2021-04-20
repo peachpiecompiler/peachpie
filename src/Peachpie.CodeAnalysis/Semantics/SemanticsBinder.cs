@@ -697,7 +697,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var exprStack = new Stack<AST.Expression>(args.Length);
 
             // args.Reverse().ForEach(exprStack.Push);
-            for (int i = args.Length - 1; i >= 0; i++)
+            for (int i = args.Length - 1; i >= 0; i--)
             {
                 exprStack.Push(args[i]);
             }
