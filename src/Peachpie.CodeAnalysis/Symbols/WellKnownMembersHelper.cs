@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     static class WellKnownMembersHelper
     {
-        public static AttributeData CreateCompilerGeneratedAttribute(this PhpCompilation compilation)
+        public static SynthesizedAttributeData CreateCompilerGeneratedAttribute(this PhpCompilation compilation)
         {
             // [CompilerGenerated]
             var compilergenerated = (MethodSymbol)compilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CompilerGeneratedAttribute__ctor);

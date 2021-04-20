@@ -238,6 +238,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal sealed override Cci.ICustomAttribute SynthesizeAttribute(WellKnownMember attributeConstructor)
         {
+            //return Compilation.TrySynthesizeAttribute(attributeConstructor);
             throw new NotImplementedException();
         }
 
@@ -424,7 +425,12 @@ namespace Pchp.CodeAnalysis.Emit
 
         public Cci.IFieldReference GetFieldForData(ImmutableArray<byte> data, SyntaxNode syntaxNode, DiagnosticBag diagnostics)
         {
-            throw new NotImplementedException();
+            Debug.Assert(this.SupportsPrivateImplClass);
+
+            var privateImpl = this.GetPrivateImplClass(syntaxNode, diagnostics);
+
+            // map a field to the block (that makes it addressable via a token)
+            return privateImpl.CreateDataField(data);
         }
 
         public override ImmutableArray<Cci.UsedNamespaceOrType> GetImports()
@@ -434,7 +440,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         public Cci.IMethodReference GetInitArrayHelper()
         {
-            throw new NotImplementedException();
+            return (MethodSymbol)Compilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_RuntimeHelpers__InitializeArrayArrayRuntimeFieldHandle);
         }
 
         public override Cci.ITypeReference GetPlatformType(Cci.PlatformType t, EmitContext context)
@@ -747,17 +753,17 @@ namespace Pchp.CodeAnalysis.Emit
 
             if ((result == null) && this.SupportsPrivateImplClass)
             {
-                //result = new PrivateImplementationDetails(
-                //        this,
-                //        _sourceModule.Name,
-                //        _compilation.GetSubmissionSlotIndex(),
-                //        this.GetSpecialType(SpecialType.System_Object, syntaxNodeOpt, diagnostics),
-                //        this.GetSpecialType(SpecialType.System_ValueType, syntaxNodeOpt, diagnostics),
-                //        this.GetSpecialType(SpecialType.System_Byte, syntaxNodeOpt, diagnostics),
-                //        this.GetSpecialType(SpecialType.System_Int16, syntaxNodeOpt, diagnostics),
-                //        this.GetSpecialType(SpecialType.System_Int32, syntaxNodeOpt, diagnostics),
-                //        this.GetSpecialType(SpecialType.System_Int64, syntaxNodeOpt, diagnostics),
-                //        SynthesizeAttribute(WellKnownMember.System_Runtime_CompilerServices_CompilerGeneratedAttribute__ctor));
+                result = new PrivateImplementationDetails(
+                        this,
+                        this.SourceModule.Name,
+                        Compilation.GetSubmissionSlotIndex(),
+                        this.GetSpecialType(SpecialType.System_Object, syntaxNodeOpt, diagnostics),
+                        this.GetSpecialType(SpecialType.System_ValueType, syntaxNodeOpt, diagnostics),
+                        this.GetSpecialType(SpecialType.System_Byte, syntaxNodeOpt, diagnostics),
+                        this.GetSpecialType(SpecialType.System_Int16, syntaxNodeOpt, diagnostics),
+                        this.GetSpecialType(SpecialType.System_Int32, syntaxNodeOpt, diagnostics),
+                        this.GetSpecialType(SpecialType.System_Int64, syntaxNodeOpt, diagnostics),
+                        Compilation.CreateCompilerGeneratedAttribute()); // SynthesizeAttribute(WellKnownMember.System_Runtime_CompilerServices_CompilerGeneratedAttribute__ctor)
 
                 if (Interlocked.CompareExchange(ref _privateImplementationDetails, result, null) != null)
                 {
@@ -775,7 +781,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal override bool SupportsPrivateImplClass
         {
-            get { return false; }   // TODO: true when GetSpecialType() will be implemented
+            get { return true; }
         }
 
         internal override IModuleSymbolInternal CommonSourceModule => SourceModule;

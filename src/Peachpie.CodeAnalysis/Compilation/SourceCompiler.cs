@@ -413,6 +413,15 @@ namespace Pchp.CodeAnalysis
             WalkTypes(t => t.SynthesizeInit(_moduleBuilder, _diagnostics));
             WalkSourceFiles(f => f.SynthesizeInit(_moduleBuilder, _diagnostics));
 
+            var privateImplClass = _moduleBuilder.PrivateImplClass;
+            if (privateImplClass != null)
+            {
+                // all threads that were adding methods must be finished now, we can freeze the class:
+                privateImplClass.Freeze();
+
+                // TODO: methodCompiler.CompileSynthesizedMethods(privateImplClass, diagnostics); // once our privateImplClass will have methods
+            }
+
             // realize .cctor if any
             _moduleBuilder.RealizeStaticCtors();
         }

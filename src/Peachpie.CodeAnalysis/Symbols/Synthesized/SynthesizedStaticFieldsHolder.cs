@@ -19,7 +19,7 @@ namespace Pchp.CodeAnalysis.Symbols
     internal partial class SynthesizedStaticFieldsHolder : NamedTypeSymbol
     {
         readonly SourceTypeSymbol _class;
-        
+
         public SynthesizedStaticFieldsHolder(SourceTypeSymbol @class)
         {
             Contract.ThrowIfNull(@class);
@@ -116,7 +116,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<AttributeData> GetAttributes()
         {
             // [CompilerGenerated]
-            return ImmutableArray.Create(
+            return ImmutableArray.Create<AttributeData>(
                 DeclaringCompilation.CreateCompilerGeneratedAttribute()
                 );
         }
