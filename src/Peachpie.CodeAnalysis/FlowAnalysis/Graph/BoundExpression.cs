@@ -22,28 +22,29 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 return typeCtx.GetNullTypeMask();
             }
+            else if (value is long || value is int)
+            {
+                return typeCtx.GetLongTypeMask();
+            }
+            else if (value is string)
+            {
+                return typeCtx.GetStringTypeMask();
+            }
+            else if (value is bool)
+            {
+                return typeCtx.GetBooleanTypeMask();
+            }
+            else if (value is double)
+            {
+                return typeCtx.GetDoubleTypeMask();
+            }
+            else if (value is byte[])
+            {
+                return typeCtx.GetWritableStringTypeMask();
+            }
             else
             {
-                if (value is long || value is int)
-                {
-                    return typeCtx.GetLongTypeMask();
-                }
-                else if (value is string)
-                {
-                    return typeCtx.GetStringTypeMask();
-                }
-                else if (value is bool)
-                {
-                    return typeCtx.GetBooleanTypeMask();
-                }
-                else if (value is double)
-                {
-                    return typeCtx.GetDoubleTypeMask();
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
+                throw new NotImplementedException($"Literal of type '{value.GetType()}'.");
             }
         }
     }
