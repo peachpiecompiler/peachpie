@@ -1059,13 +1059,8 @@ namespace Pchp.Library
         /// <remarks>If <paramref name="count"/> is set to 0, the function will return <b>null</b> reference.</remarks>   
         /// <exception cref="PhpException">Thrown if <paramref name="count"/> is negative.</exception>
         //[PureFunction]
-        public static string str_repeat(string str, int count)
+        public static PhpString str_repeat(PhpString str, int count)
         {
-            if (str == null)
-            {
-                return string.Empty;
-            }
-
             if (count <= 0)
             {
                 if (count == 0)
@@ -1073,25 +1068,32 @@ namespace Pchp.Library
                     return string.Empty;
                 }
 
+                throw new Spl.ValueError(LibResources.number_of_repetitions_negative); // as of PHP8
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("number_of_repetitions_negative"));
                 //return null;
-                throw new ArgumentException();
             }
 
-            //PhpBytes binstr = str as PhpBytes;
-            //if (binstr != null)
-            //{
-            //    byte[] result = new byte[binstr.Length * count];
-
-            //    for (int i = 0; i < count; i++) Buffer.BlockCopy(binstr.ReadonlyData, 0, result, binstr.Length * i, binstr.Length);
-
-            //    return new PhpBytes(result);
-            //}
-
-            var unistr = str; // Core.Convert.ObjectToString(str);
-            if (unistr != null)
+            if (str.IsEmpty)
             {
+                return PhpString.Empty;
+            }
+
+            if (str.ContainsBinaryData)
+            {
+                var blob = new PhpString.Blob();
+
+                while (count-- > 0)
+                {
+                    blob.Append(str);
+                }
+
+                return new PhpString(blob);
+            }
+            else
+            {
+                var unistr = str.ToString(Encoding.UTF8/*does not matter*/);
                 var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(count * unistr.Length);
+
                 while (count-- > 0)
                 {
                     result.Append(unistr);
@@ -1099,8 +1101,6 @@ namespace Pchp.Library
 
                 return StringBuilderUtilities.GetStringAndReturn(result);
             }
-
-            return null;
         }
 
         #endregion
