@@ -834,7 +834,9 @@ namespace Pchp.Library
         {
             var resource = ParseX509Certificate(ctx, x509);
             if (resource == null)
-                return null;
+            {
+                return default; // FALSE
+            }
 
             return openssl_digest(resource.Certificate.Export(X509ContentType.Cert), hash_algorithm, raw_output);
         }

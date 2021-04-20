@@ -917,7 +917,9 @@ namespace Peachpie.Library.XmlDom
         {
             var resource = ValidateXmlWriterResource(xmlwriter);
             if (resource == null)
-                return null;
+            {
+                return default; // FALSE
+            }
 
             return resource.Writer.outputMemory(flush);
         }

@@ -1455,7 +1455,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpString ToPhpString(PhpValue value, Context ctx) => value.TypeCode switch
         {
-            PhpTypeCode.Null => null,
+            PhpTypeCode.Null => default,
             PhpTypeCode.Boolean => Convert.ToString(value.Boolean),
             PhpTypeCode.Long => Convert.ToString(value.Long),
             PhpTypeCode.Double => Convert.ToString(value.Double),
