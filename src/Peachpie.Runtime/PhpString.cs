@@ -785,8 +785,8 @@ namespace Pchp.Core
 
                 switch (chunk)
                 {
-                    case string str: ctx.Output.Write(str); break;
-                    case byte[] barr: ctx.OutputStream.WriteAsync(barr).GetAwaiter().GetResult(); break;
+                    case string str: ctx.Echo(str); break;
+                    case byte[] barr: ctx.Echo(barr); break;
                     case Blob b: b.Output(ctx); break;
                     case char[] carr: ctx.Output.Write(carr); break;
                     case BlobChar[] barr: WriteChunkAsync(ctx, barr).GetAwaiter().GetResult(); break;
@@ -1579,7 +1579,7 @@ namespace Pchp.Core
         /// Converts <see cref="byte"/> array to <see cref="PhpString"/>.
         /// </summary>
         /// <param name="value">String value, can be <c>null</c>.</param>
-        public static explicit operator PhpString(byte[] value) => new PhpString(value);
+        public static implicit operator PhpString(byte[] value) => new PhpString(value);
 
         /// <summary>
         /// Converts <see cref="char"/> array to <see cref="PhpString"/>.
