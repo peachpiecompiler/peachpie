@@ -112,6 +112,11 @@ namespace Pchp.Core
         public static string ToString(PhpString value, Context ctx) => value.ToString(ctx);
 
         /// <summary>
+        /// Gets value as a string.
+        /// </summary>
+        public static string ToString(byte[] value, Context ctx) => ctx.StringEncoding.GetString(value);
+
+        /// <summary>
         /// Converts mutable string to byte[].
         /// </summary>
         public static byte[] ToBytes(PhpString value, Context ctx) => value.ToBytes(ctx);
@@ -1449,6 +1454,11 @@ namespace Pchp.Core
             PhpTypeCode.Alias => ToString(value.Alias.Value, ctx),
             _ => throw PhpException.TypeErrorException(),
         };
+
+        /// <summary>
+        /// Gets value as a string.
+        /// </summary>
+        public static string ToString(byte[] value, Context ctx) => ctx.StringEncoding.GetString(value);
 
         /// <summary>
         /// Gets the underlying PHP string if present, a new PHP string representing the value otherwise.
