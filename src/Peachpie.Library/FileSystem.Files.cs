@@ -102,7 +102,7 @@ namespace Pchp.Library
         internal static StatStruct ResolveStat(Context ctx, string path, bool quiet)
         {
             return ResolvePath(ctx, ref path, quiet, out var wrapper)   // TODO: stat cache
-                ? wrapper.Stat(ctx.RootPath, path, quiet ? StreamStatOptions.Quiet : StreamStatOptions.Empty, StreamContext.Default, false)
+                ? wrapper.Stat(ctx.RootPath, path, quiet ? StreamStatOptions.Quiet : StreamStatOptions.Empty, StreamContext.Default)
                 : StatStruct.Invalid;
         }
 
@@ -237,7 +237,7 @@ namespace Pchp.Library
                     return true;
                 }
 
-                var stat = wrapper.Stat(ctx.RootPath, path, StreamStatOptions.Quiet, StreamContext.Default, false);
+                var stat = wrapper.Stat(ctx.RootPath, path, StreamStatOptions.Quiet, StreamContext.Default);
                 return stat.IsValid; // file or directory
             }
 
@@ -600,7 +600,7 @@ namespace Pchp.Library
                     }
 
                     // checks the full stat
-                    return wrapper.Stat(ctx.RootPath, path, default, StreamContext.Default, false).IsFile;
+                    return wrapper.Stat(ctx.RootPath, path, default, StreamContext.Default).IsFile;
                 }
             }
 

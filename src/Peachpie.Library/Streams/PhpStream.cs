@@ -2409,9 +2409,10 @@ namespace Pchp.Library.Streams
         {
             if (Wrapper != null)
             {
-                var root = _encoding is Context ctx ? ctx.RootPath : null;
+                FlushWriteBuffer();
 
-                return Wrapper.Stat(root, OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true);
+                var root = _encoding is Context ctx ? ctx.RootPath : null;
+                return Wrapper.Stat(root, OpenedPath, StreamStatOptions.Empty, Context, this);
             }
 
             return StreamWrapper.StatUnsupported();

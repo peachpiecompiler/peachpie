@@ -109,7 +109,7 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        public virtual StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        public virtual StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, PhpStream stream = null)
         {
             // int (*url_stat)(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC);
             return StatUnsupported();
@@ -707,8 +707,9 @@ namespace Pchp.Library.Streams
         /// <param name="info">A <see cref="FileInfo"/> or <see cref="DirectoryInfo"/>
         /// of the <c>stat()</c>ed filesystem entry.</param>
         /// <param name="path">The path to the file / directory.</param>
+        /// <param name="streamLength">Size hint if called from an opened stream. This workaround "stat" functionality for files opened for writing.</param>
         /// <returns>A <see cref="StatStruct"/> for use in the <c>stat()</c> related functions.</returns>    
-        internal static StatStruct BuildStatStruct(FileSystemInfo info, string path)
+        internal static StatStruct BuildStatStruct(FileSystemInfo info, string path, long streamLength)
         {
             uint device = unchecked((uint)(char.ToLowerInvariant(info.FullName[0]) - 'a')); // index of the disk // TODO: unix
 
@@ -720,7 +721,7 @@ namespace Pchp.Library.Streams
                 st_mode: BuildMode(info, path),
                 st_nlink: 1,
                 st_rdev: device,
-                st_size: info is FileInfo finfo ? finfo.Length : 0,
+                st_size: Math.Max(info is FileInfo finfo ? finfo.Length : 0, streamLength),
                 st_atime: ToStatUnixTimeStamp(info, (_info) => _info.LastAccessTimeUtc),
                 st_mtime: ToStatUnixTimeStamp(info, (_info) => _info.LastWriteTimeUtc),
                 st_ctime: ToStatUnixTimeStamp(info, (_info) => _info.CreationTimeUtc)
@@ -930,7 +931,7 @@ namespace Pchp.Library.Streams
             return rv;
         }
 
-        public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, PhpStream stream)
         {
             Debug.Assert(path != null);
 
@@ -963,7 +964,11 @@ namespace Pchp.Library.Streams
 
             if (info != null)
             {
-                return BuildStatStruct(info, path);
+                // native "stat" gets the actual size of the opened file handle,
+                // although FileInfo gives us zero if the file is currently locked (stream != null)
+                var streamLength = stream is NativeStream native ? native.RawStream.Length : -1;
+
+                return BuildStatStruct(info, path, streamLength);
             }
 
             // compiled script
@@ -1921,11 +1926,11 @@ namespace Pchp.Library.Streams
             return base.Rename(fromPath, toPath, options, context);
         }
 
-        public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, PhpStream stream)
         {
-            PhpArray arr = (streamStat ?
+            PhpArray arr = (stream != null ?
                 InvokeWrapperMethod(PhpUserStream.USERSTREAM_STAT) :
-                InvokeWrapperMethod(PhpUserStream.USERSTREAM_STATURL, (PhpValue)path, (PhpValue)(int)options)).ArrayOrNull();
+                InvokeWrapperMethod(PhpUserStream.USERSTREAM_STATURL, path, (int)options)).ArrayOrNull();
 
             if (arr != null)
             {

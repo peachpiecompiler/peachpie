@@ -120,7 +120,7 @@ namespace Pchp.Library.Phar
                 }
             }
 
-            public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, bool streamStat)
+            public override StatStruct Stat(string root, string path, StreamStatOptions options, StreamContext context, PhpStream stream)
             {
                 // path is already normalized using ResolvePath method
                 // phar://{pharFile}/{entry}

@@ -44,7 +44,7 @@ namespace Pchp.Library.Spl
                 {
                     _lazystat = StreamWrapper
                         .GetFileStreamWrapper()
-                        .Stat(_root, _fullpath, StreamStatOptions.Quiet, StreamContext.Default, false);
+                        .Stat(_root, _fullpath, StreamStatOptions.Quiet, StreamContext.Default);
                 }
 
                 return _lazystat.GetValueOrDefault();
