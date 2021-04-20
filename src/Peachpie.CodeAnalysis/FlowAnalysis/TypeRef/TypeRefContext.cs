@@ -565,7 +565,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
-        /// Gets writable <c>string</c> type (a string builder) for this context.
+        /// Gets PHP <c>string</c> type (a string builder for 8bit and UTF characters) for this context.
         /// </summary>
         public TypeRefMask GetWritableStringTypeMask()
         {
