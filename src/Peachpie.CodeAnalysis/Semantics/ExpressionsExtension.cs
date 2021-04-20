@@ -52,6 +52,9 @@ namespace Pchp.CodeAnalysis.Semantics
             if (value is bool b && b == false)
                 return true;
 
+            if (value is byte[] bytes && bytes.Length == 0)
+                return true;
+
             return false;
         }
 

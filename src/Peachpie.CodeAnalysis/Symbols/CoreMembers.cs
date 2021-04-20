@@ -288,8 +288,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public struct OperatorsHolder
         {
+            CoreTypes CoreTypes { get; }
+
             public OperatorsHolder(CoreTypes ct)
             {
+                CoreTypes = ct;
+
                 SetValue_PhpValueRef_PhpValue = ct.Operators.Method("SetValue", ct.PhpValue, ct.PhpValue);
                 PassValue_PhpValueRef = ct.Operators.Method("PassValue", ct.PhpValue);
                 UnsetValue_PhpValueRef = ct.Operators.Method("UnsetValue", ct.PhpValue);
@@ -521,6 +525,17 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreProperty
                 GetName_PhpTypeInfo, GetTypeHandle_PhpTypeInfo;
+
+            public MethodSymbol Echo_ByteArray_Context
+            {
+                get
+                {
+                    // Operators.Echo( byte[], Context )
+                    return CoreTypes.Operators.Symbol.GetMembers("Echo").OfType<MethodSymbol>().Single(
+                            m => m.ParameterCount == 2 && m.Parameters[0].Type.IsByteArray() && SpecialParameterSymbol.IsContextParameter(m.Parameters[1])
+                        );
+                }
+            }
         }
 
         public struct PhpValueHolder
@@ -794,15 +809,37 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public struct PhpStringBlobHolder
         {
+            CoreTypes CoreTypes { get; }
+
             public PhpStringBlobHolder(CoreTypes ct)
             {
+                CoreTypes = ct;
+
                 Add_String = ct.PhpString_Blob.Method("Add", ct.String);
                 Add_PhpString = ct.PhpString_Blob.Method("Add", ct.PhpString);
                 Add_PhpValue_Context = ct.PhpString_Blob.Method("Add", ct.PhpValue, ct.Context);
+
+                _Add_ByteArray = null; // lazy
             }
 
             public readonly CoreMethod
                 Add_String, Add_PhpString, Add_PhpValue_Context;
+
+            public MethodSymbol Add_ByteArray
+            {
+                get
+                {
+                    if (_Add_ByteArray == null)
+                    {
+                        _Add_ByteArray = CoreTypes.PhpString_Blob.Symbol.GetMembers("Add").OfType<MethodSymbol>().Single(
+                            m => m.ParameterCount == 1 && m.Parameters[0].Type.IsByteArray()
+                        );
+                    }
+                    return _Add_ByteArray;
+                }
+            }
+
+            MethodSymbol _Add_ByteArray;
         }
 
         public struct IPhpArrayHolder

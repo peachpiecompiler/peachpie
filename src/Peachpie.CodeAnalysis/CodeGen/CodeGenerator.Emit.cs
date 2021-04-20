@@ -2851,6 +2851,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 EmitLoadContext();
                 EmitCall(ILOpCode.Callvirt, CoreMethods.PhpStringBlob.Add_PhpValue_Context);
             }
+            else if (ytype.IsByteArray())
+            {
+                // Append(byte[])
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpStringBlob.Add_ByteArray);
+            }
             else
             {
                 // Append(string)
@@ -2864,6 +2869,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(expr);
             Debug.Assert(expr.Access.IsRead);
 
+            var concat = expr as BoundConcatEx;
+
+            if (concat != null &&
+                concat.ArgumentsInSourceOrder.Length == 1 &&
+                concat.ArgumentsInSourceOrder[0].Value is BoundLiteral literal &&
+                literal.ConstantValue.Value is byte[] bytes)
+            {
+                // Template: Operators.Echo(byte[])
+                // avoids allocation
+                // avoids conversion to PhpString
+                EmitEcho(bytes.AsImmutable());
+                return;
+            }
+
             if (_optimizations.IsRelease())
             {
                 // check if the value won't be an empty string:
@@ -2873,7 +2892,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
 
                 // avoid concatenation if possible:
-                if (expr is BoundConcatEx concat)
+                if (concat != null)
                 {
                     // Check if arguments can be echo'ed separately without concatenating them,
                     // this is only possible if the arguments won't have side effects:
@@ -2903,6 +2922,38 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             EmitEcho(EmitSpecialize(expr));
+        }
+
+        public void EmitEcho(ImmutableArray<byte> data)
+        {
+            if (data.IsDefaultOrEmpty)
+            {
+                return;
+            }
+
+            //var span_T = DeclaringCompilation.GetWellKnownType(WellKnownType.System_ReadOnlySpan_T).Construct(ImmutableArray.Create(CoreTypes.Byte.Symbol));
+
+            //var ctor = (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ReadOnlySpan_T__ctor);
+
+            //Builder.EmitArrayBlockFieldRef(data, null, Diagnostics);
+            //Builder.EmitIntConstant(data.Length);
+
+            //// consumes target ref, data ptr and size, pushes nothing
+            //Builder.EmitOpCode(ILOpCode.Call, stackAdjustment: -3);
+            //EmitSymbolToken(ctor.AsMember(span_T), null);
+
+            //// CALL Echo( ReadOnlySpan<byte>, Context )
+            //EmitPop(EmitCall(ILOpCode.Call, CoreMethods.Operators.Echo_SpanByte_Context));
+
+            // byte[] // TODO: NETSTANDARD2.1 // ReadOnlySpan<byte>, avoids creating the array
+            Emit_NewArray(DeclaringCompilation.GetSpecialType(SpecialType.System_Byte), data.Length);
+            Builder.EmitArrayBlockInitializer(data, null, Diagnostics);
+
+            // Context
+            EmitLoadContext();
+
+            // CALL Echo( ReadOnlySpan<byte>, Context )
+            EmitPop(EmitCall(ILOpCode.Call, CoreMethods.Operators.Echo_ByteArray_Context));
         }
 
         /// <summary>Emits <c>echo</c> statement of the type on stack.</summary>

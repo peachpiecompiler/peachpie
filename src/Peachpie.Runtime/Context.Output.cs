@@ -158,7 +158,7 @@ namespace Pchp.Core
 
         public void Echo(PhpString value) => value.Output(this);
 
-        public virtual void Echo(byte[] value) => OutputStream.Write(value, 0, value.Length);
+        public virtual void Echo(byte[] value) => OutputStream.Write(value, 0, value.Length); // TODO: NETSTANDARD2.1 // ReadOnlySpan<byte>
 
         public void Echo(PhpValue value) => value.Output(this);
 
