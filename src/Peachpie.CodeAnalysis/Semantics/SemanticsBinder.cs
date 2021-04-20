@@ -1397,7 +1397,7 @@ namespace Pchp.CodeAnalysis.Semantics
         protected static BoundExpression BindLiteral(AST.Literal expr)
         {
             if (expr is AST.LongIntLiteral longIntLit) return new BoundLiteral(longIntLit.Value.AsObject());
-            if (expr is AST.StringLiteral stringLit) return BindLiteral(stringLit);
+            if (expr is AST.StringLiteral stringLit) return BindStringLiteral(stringLit);
             if (expr is AST.DoubleLiteral doubleLit) return new BoundLiteral(doubleLit.Value);
             if (expr is AST.BoolLiteral boolLit) return new BoundLiteral(boolLit.Value.AsObject());
             if (expr is AST.NullLiteral) return new BoundLiteral(null);
@@ -1406,11 +1406,20 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new NotImplementedException();
         }
 
-        static BoundExpression BindLiteral(AST.StringLiteral str)
+        static BoundExpression BindStringLiteral(AST.StringLiteral str)
         {
             if (str is AST.IStringLiteralValue chunks && chunks.Contains8bitText)
             {
+                var args = new List<BoundArgument>();
 
+                foreach (var value in chunks.EnumerateChunks())
+                {
+                    Debug.Assert(value is string || value is byte[]);
+                    var expr = new BoundLiteral(value).WithAccess(BoundAccess.Read);
+                    args.Add(BoundArgument.Create(expr));
+                }
+
+                return new BoundConcatEx(args.AsImmutable());
             }
 
             return new BoundLiteral(str.Value);
