@@ -3225,9 +3225,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (args.Length == 1)
             {
-                // Template: (PhpString)args[0]
-                cg.EmitConvert(args[0].Value, cg.CoreTypes.PhpString);
-                return cg.CoreTypes.PhpString;
+                var targetType = this.Access.TargetType ?? cg.CoreTypes.PhpString;
+
+                // Template: (T)args[0]
+                cg.EmitConvert(args[0].Value, targetType);
+                return targetType;
             }
 
             // Template: new PhpString( new PhpString.Blob() { a1, a2, ..., aN } )
