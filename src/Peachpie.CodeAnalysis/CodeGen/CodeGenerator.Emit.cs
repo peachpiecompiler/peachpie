@@ -2871,10 +2871,13 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             var concat = expr as BoundConcatEx;
 
-            if (concat != null &&
-                concat.ArgumentsInSourceOrder.Length == 1 &&
-                concat.ArgumentsInSourceOrder[0].Value is BoundLiteral literal &&
-                literal.ConstantValue.Value is byte[] bytes)
+            if (concat != null && concat.ArgumentsInSourceOrder.Length == 1)
+            {
+                EmitEcho(concat.ArgumentsInSourceOrder[0].Value);
+                return;
+            }
+            
+            if (expr is BoundLiteral literal && literal.ConstantValue.Value is byte[] bytes)
             {
                 // Template: Operators.Echo(byte[])
                 // avoids allocation
@@ -2952,7 +2955,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // Context
             EmitLoadContext();
 
-            // CALL Echo( ReadOnlySpan<byte>, Context )
+            // CALL Echo( byte[], Context )
             EmitPop(EmitCall(ILOpCode.Call, CoreMethods.Operators.Echo_ByteArray_Context));
         }
 
@@ -3002,6 +3005,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (type.IsNullableType())
                     {
                         EmitEchoOfNullable(type);
+                        return;
+                    }
+                    else if (type.IsByteArray())
+                    {
+                        EmitLoadContext();
+                        // CALL Echo( byte[], Context )
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.Echo_ByteArray_Context);
                         return;
                     }
                     else
