@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,25 +29,30 @@ namespace Pchp.Core.Utilities
 
             const string hex_digs = "0123456789abcdef";
 
-            // prepares the result:
-            var capacity = bytes.Length * (separator.Length + 2);
-            var result = new StringBuilder(capacity, capacity);
+            // TODO: NETSTANDARD2.1 // string.Create( ... )
 
+            // prepares the result:
+            var length = bytes.Length * 2 + (bytes.Length - 1) * separator.Length;
+            var buffer = new char[length];
+            var bufferpos = 0;
+            
             // appends characters to the result for each byte:
             for (int i = 0; i < bytes.Length; i++)
             {
+                var c = bytes[i];
+
                 if (i != 0)
                 {
-                    result.Append(separator);
+                    separator.CopyTo(0, buffer, bufferpos, separator.Length);
+                    bufferpos += separator.Length;
                 }
 
-                var c = bytes[i];
-                result.Append(hex_digs[(c & 0xf0) >> 4]);
-                result.Append(hex_digs[(c & 0x0f)]);
+                buffer[bufferpos++] = hex_digs[(c & 0xf0) >> 4];
+                buffer[bufferpos++] = hex_digs[(c & 0x0f)];
             }
 
             //
-            return result.ToString();
+            return new string(buffer);
         }
 
         /// <summary>
