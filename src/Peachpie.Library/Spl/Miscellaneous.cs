@@ -267,10 +267,8 @@ namespace Pchp.Library.Spl
 
         public virtual void __unserialize(PhpArray array)
         {
-            PhpValue value;
-
             // 0: flags:
-            if (array.TryGetValue(0, out value) && value.IsLong(out long flags))
+            if (array.TryGetValue(0, out var value) && value.IsLong(out long flags))
             {
                 _flags = (int)flags;
 
@@ -392,6 +390,7 @@ namespace Pchp.Library.Spl
         }
 
         public string getIteratorClass() => _iteratorClass ?? DefaultIteratorClass;
+
         public void setIteratorClass(string iterator_class)
         {
             if (iterator_class == null || string.Equals(iterator_class, DefaultIteratorClass, StringComparison.OrdinalIgnoreCase))
@@ -420,21 +419,23 @@ namespace Pchp.Library.Spl
         {
             if (_underlyingArray != null)
             {
-                _underlyingArray.Add(value);
+                _underlyingArray.Add(value.DeepCopy());
             }
             else
             {
                 PhpException.Throw(PhpError.E_RECOVERABLE_ERROR, "Cannot append properties to objects, use %s::offsetSet() instead");   // TODO: Resources
             }
         }
+
         public PhpValue exchangeArray(PhpValue input)
         {
             var oldvalue = this.storage;
-            this.storage = input;
+            this.storage = input.DeepCopy();
 
             //
             return oldvalue;
         }
+
         public PhpArray getArrayCopy()
         {
             if (_underlyingArray != null)
@@ -450,10 +451,15 @@ namespace Pchp.Library.Spl
         }
 
         public void asort() { throw new NotImplementedException(); }
+
         public void ksort() { throw new NotImplementedException(); }
+
         public void natcasesort() { throw new NotImplementedException(); }
+
         public void natsort() { throw new NotImplementedException(); }
+
         public void uasort(IPhpCallable cmp_function) { throw new NotImplementedException(); }
+
         public void uksort(IPhpCallable cmp_function) { throw new NotImplementedException(); }
     }
 }
