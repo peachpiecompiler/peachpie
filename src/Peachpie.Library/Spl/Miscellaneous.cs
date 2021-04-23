@@ -71,17 +71,23 @@ namespace Pchp.Library.Spl
 
         // private PhpValue storage => ...
 
-        PhpArray _underlayingArray;
-        object _underlayingObject;
+        [PhpHidden]
+        PhpArray _underlyingArray;
+
+        [PhpHidden]
+        object _underlyingObject;
 
         /// <summary>
         /// Name of the class instantiated by <see cref="getIterator"/>. The class must inherit from <see cref="Iterator"/>.
         /// Default value is <see cref="ArrayIterator"/>.
         /// </summary>
+        [PhpHidden]
         internal string _iteratorClass;
 
+        [PhpHidden]
         const string DefaultIteratorClass = "ArrayIterator";
 
+        [PhpHidden]
         int _flags;
 
         /// <summary>
@@ -94,11 +100,11 @@ namespace Pchp.Library.Spl
         [CompilerGenerated]
         internal PhpArray __peach__runtimeFields;
 
-        PhpValue UnderlayingValue
+        PhpValue storage
         {
             get
             {
-                return (_underlayingArray != null) ? PhpValue.Create(_underlayingArray) : PhpValue.FromClass(_underlayingObject);
+                return (_underlyingArray != null) ? PhpValue.Create(_underlyingArray) : PhpValue.FromClass(_underlyingObject);
             }
             set
             {
@@ -108,8 +114,8 @@ namespace Pchp.Library.Spl
                     var arr = value.ArrayOrNull();
                     if (arr != null)
                     {
-                        _underlayingArray = arr;
-                        _underlayingObject = null;
+                        _underlyingArray = arr;
+                        _underlyingObject = null;
                     }
                     else
                     {
@@ -118,13 +124,13 @@ namespace Pchp.Library.Spl
                         {
                             if (obj.GetType() == typeof(stdClass))
                             {
-                                _underlayingArray = obj.GetPhpTypeInfo().EnsureRuntimeFields(obj);
-                                _underlayingObject = null;
+                                _underlyingArray = obj.GetPhpTypeInfo().EnsureRuntimeFields(obj);
+                                _underlyingObject = null;
                             }
                             else
                             {
-                                _underlayingArray = null;
-                                _underlayingObject = obj;
+                                _underlyingArray = null;
+                                _underlyingObject = obj;
                             }
                         }
                         else
@@ -135,8 +141,8 @@ namespace Pchp.Library.Spl
                 }
                 else
                 {
-                    _underlayingArray = new PhpArray();
-                    _underlayingObject = null;
+                    _underlyingArray = new PhpArray();
+                    _underlyingObject = null;
                 }
             }
         }
@@ -166,56 +172,56 @@ namespace Pchp.Library.Spl
 
         public virtual bool offsetExists(PhpValue index)
         {
-            if (_underlayingArray != null)
+            if (_underlyingArray != null)
             {
-                return index.TryToIntStringKey(out var iskey) && _underlayingArray.ContainsKey(iskey);
+                return index.TryToIntStringKey(out var iskey) && _underlyingArray.ContainsKey(iskey);
             }
             else
             {
-                return Operators.PropertyExists(default(RuntimeTypeHandle), _underlayingObject, index);
+                return Operators.PropertyExists(default(RuntimeTypeHandle), _underlyingObject, index);
             }
         }
         public virtual PhpValue offsetGet(PhpValue index)
         {
-            if (_underlayingArray != null)
+            if (_underlyingArray != null)
             {
-                return _underlayingArray.GetItemValue(index);
+                return _underlyingArray.GetItemValue(index);
             }
             else
             {
-                return Operators.PropertyGetValue(default(RuntimeTypeHandle), _underlayingObject, index);
+                return Operators.PropertyGetValue(default(RuntimeTypeHandle), _underlyingObject, index);
             }
         }
         public virtual void offsetSet(PhpValue index, PhpValue newval)
         {
-            if (_underlayingArray != null)
+            if (_underlyingArray != null)
             {
                 if (index.IsNull)
                 {
-                    _underlayingArray.AddValue(newval);
+                    _underlyingArray.AddValue(newval);
                 }
                 else
                 {
                     if (newval.IsAlias)
-                        _underlayingArray.SetItemAlias(index, newval.Alias);
+                        _underlyingArray.SetItemAlias(index, newval.Alias);
                     else
-                        _underlayingArray.SetItemValue(index, newval);
+                        _underlyingArray.SetItemValue(index, newval);
                 }
             }
             else
             {
-                Operators.PropertySetValue(default(RuntimeTypeHandle), _underlayingObject, index, newval);
+                Operators.PropertySetValue(default(RuntimeTypeHandle), _underlyingObject, index, newval);
             }
         }
         public virtual void offsetUnset(PhpValue index)
         {
-            if (_underlayingArray != null)
+            if (_underlyingArray != null)
             {
-                _underlayingArray.RemoveKey(index);
+                _underlyingArray.RemoveKey(index);
             }
             else
             {
-                Operators.PropertyUnset(default(RuntimeTypeHandle), _underlayingObject, index);
+                Operators.PropertyUnset(default(RuntimeTypeHandle), _underlyingObject, index);
             }
         }
 
@@ -225,15 +231,15 @@ namespace Pchp.Library.Spl
 
         public virtual long count()
         {
-            if (_underlayingArray != null)
+            if (_underlyingArray != null)
             {
                 // array size
-                return _underlayingArray.Count;
+                return _underlyingArray.Count;
             }
             else
             {
                 // public (visible) instance properties + runtime fields
-                return TypeMembersUtils.EnumerateVisibleInstanceFields(_underlayingObject).LongCount();
+                return TypeMembersUtils.EnumerateVisibleInstanceFields(_underlyingObject).LongCount();
             }
         }
 
@@ -251,7 +257,7 @@ namespace Pchp.Library.Spl
             var arr = new PhpArray(4)
             {
                 _flags,
-                PhpValue.FromClr(_underlayingArray ?? _underlayingObject),
+                PhpValue.FromClr(_underlyingArray ?? _underlyingObject),
                 __peach__runtimeFields ?? PhpArray.NewEmpty(),
                 _iteratorClass, // = NULL for ArrayIterator
             };
@@ -271,8 +277,8 @@ namespace Pchp.Library.Spl
                 // 1: storage:
                 if (array.TryGetValue(1, out value))
                 {
-                    if (value.IsPhpArray(out _underlayingArray) ||
-                        (_underlayingObject = value.AsObject()) != null)
+                    if (value.IsPhpArray(out _underlyingArray) ||
+                        (_underlyingObject = value.AsObject()) != null)
                     {
                         // 2: runtime fields:
                         if (array.TryGetValue(2, out value) && value.IsPhpArray(out __peach__runtimeFields))
@@ -303,11 +309,11 @@ namespace Pchp.Library.Spl
         {
             if (_iteratorClass == null)
             {
-                return new ArrayIterator(_ctx, UnderlayingValue);
+                return new ArrayIterator(_ctx, storage);
             }
             else
             {
-                return (Iterator)_ctx.Create(_iteratorClass, UnderlayingValue);
+                return (Iterator)_ctx.Create(_iteratorClass, storage);
             }
         }
 
@@ -332,7 +338,7 @@ namespace Pchp.Library.Spl
 
         public void __construct(PhpValue input, int flags = 0, string iterator_class = null/*ArrayIterator*/)
         {
-            this.UnderlayingValue = input;
+            this.storage = input;
             this.setIteratorClass(iterator_class);
             this.setFlags(flags);
         }
@@ -348,13 +354,13 @@ namespace Pchp.Library.Spl
 
                 __peach__runtimeFields.SetItemValue(prop, value);
             }
-            else if (_underlayingArray != null)
+            else if (_underlyingArray != null)
             {
-                _underlayingArray.SetItemValue(prop, value.DeepCopy());
+                _underlyingArray.SetItemValue(prop, value.DeepCopy());
             }
-            else if (_underlayingObject != null)
+            else if (_underlyingObject != null)
             {
-                Operators.PropertySetValue(default(RuntimeTypeHandle), _underlayingObject, prop, value);
+                Operators.PropertySetValue(default(RuntimeTypeHandle), _underlyingObject, prop, value);
             }
         }
 
@@ -372,13 +378,13 @@ namespace Pchp.Library.Spl
                     return PhpValue.Null;
                 }
             }
-            else if (_underlayingArray != null)
+            else if (_underlyingArray != null)
             {
-                return _underlayingArray.GetItemValue(prop);
+                return _underlyingArray.GetItemValue(prop);
             }
-            else if (_underlayingObject != null)
+            else if (_underlyingObject != null)
             {
-                return Operators.PropertyGetValue(default(RuntimeTypeHandle), _underlayingObject, prop);
+                return Operators.PropertyGetValue(default(RuntimeTypeHandle), _underlyingObject, prop);
             }
 
             // TODO: err
@@ -412,9 +418,9 @@ namespace Pchp.Library.Spl
 
         public void append(PhpValue value)
         {
-            if (_underlayingArray != null)
+            if (_underlyingArray != null)
             {
-                _underlayingArray.Add(value);
+                _underlyingArray.Add(value);
             }
             else
             {
@@ -423,23 +429,23 @@ namespace Pchp.Library.Spl
         }
         public PhpValue exchangeArray(PhpValue input)
         {
-            var oldvalue = this.UnderlayingValue;
-            this.UnderlayingValue = input;
+            var oldvalue = this.storage;
+            this.storage = input;
 
             //
             return oldvalue;
         }
         public PhpArray getArrayCopy()
         {
-            if (_underlayingArray != null)
+            if (_underlyingArray != null)
             {
                 // array size
-                return _underlayingArray.DeepCopy();
+                return _underlyingArray.DeepCopy();
             }
             else
             {
                 // public (visible) instance properties + runtime fields
-                return new PhpArray(TypeMembersUtils.EnumerateVisibleInstanceFields(_underlayingObject));
+                return new PhpArray(TypeMembersUtils.EnumerateVisibleInstanceFields(_underlyingObject));
             }
         }
 
