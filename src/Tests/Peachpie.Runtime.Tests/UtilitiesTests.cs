@@ -19,5 +19,15 @@ namespace Peachpie.Runtime.Tests
             Assert.AreEqual("file.txt", Pchp.Core.Utilities.PathUtils.GetFileName("/something.path/file.txt").ToString());
             Assert.AreEqual("file.txt", Pchp.Core.Utilities.PathUtils.GetFileName("file.txt").ToString());
         }
+
+        [TestMethod]
+        public void Bin2HexTest()
+        {
+            Assert.AreEqual("", Pchp.Core.Utilities.StringUtils.BinToHex(new byte[] { }));
+            Assert.AreEqual("08", Pchp.Core.Utilities.StringUtils.BinToHex(new byte[] { 8 }));
+            Assert.AreEqual("ff", Pchp.Core.Utilities.StringUtils.BinToHex(new byte[] { 0xff }, "-"));
+            Assert.AreEqual("ff-ff", Pchp.Core.Utilities.StringUtils.BinToHex(new byte[] { 0xff, 0xff }, "-"));
+            Assert.AreEqual("ff-ff-ff", Pchp.Core.Utilities.StringUtils.BinToHex(new byte[] { 0xff, 0xff, 0xff }, "-"));
+        }
     }
 }
