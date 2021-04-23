@@ -1329,13 +1329,38 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindAssignEx(AST.AssignEx expr, BoundAccess access)
         {
-            var target = (BoundReferenceExpression)BindExpression(expr.LValue, BoundAccess.Write);
+            AST.Expression rvalue;
+
+            if (expr is AST.ValueAssignEx assign)
+            {
+                Debug.Assert(expr.Operation != AST.Operations.AssignRef);
+                rvalue = assign.RValue;
+            }
+            else if (expr is AST.RefAssignEx refassign)
+            {
+                Debug.Assert(expr.Operation == AST.Operations.AssignRef);
+                rvalue = refassign.RValue;
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(expr);
+            }
+
+            BoundReferenceExpression target;
             BoundExpression value;
 
-            // bind value (read as value or as ref)
-            if (expr is AST.ValueAssignEx assignEx)
+            // bind target & value (read as value or as ref)
+            if (expr.Operation == AST.Operations.AssignRef && !(rvalue is AST.NewEx))
             {
-                value = BindExpression(assignEx.RValue, BoundAccess.Read);
+                // ref assignment
+                target = (BoundReferenceExpression)BindExpression(expr.LValue, BoundAccess.Write.WithWriteRef(0));  // note: analysis will write the write type
+                value = BindExpression(rvalue, BoundAccess.ReadRef);
+            }
+            else
+            {
+                // value assignment
+                target = (BoundReferenceExpression)BindExpression(expr.LValue, BoundAccess.Write);
+                value = BindExpression(rvalue, BoundAccess.Read);
 
                 // we don't need copy of RValue if assigning to list() or in a part of compound operation
                 if (expr.Operation == AST.Operations.AssignValue && !(target is BoundListEx))
@@ -1343,49 +1368,36 @@ namespace Pchp.CodeAnalysis.Semantics
                     value = BindCopyValue(value);
                 }
             }
-            else if (expr is AST.RefAssignEx refAssignEx)
-            {
-                Debug.Assert(expr.Operation == AST.Operations.AssignRef);
-                target.Access = target.Access.WithWriteRef(0); // note: analysis will write the write type
-                value = BindExpression(refAssignEx.RValue, BoundAccess.ReadRef);
-            }
-            else
-            {
-                ExceptionUtilities.UnexpectedValue(expr);
-                return null;
-            }
 
             //
-            if (expr.Operation == AST.Operations.AssignValue || expr.Operation == AST.Operations.AssignRef)
+            if (expr.Operation == AST.Operations.AssignValue ||
+                expr.Operation == AST.Operations.AssignRef)
             {
                 return new BoundAssignEx(target, value).WithAccess(access);
             }
+
+            if (target is BoundArrayItemEx itemex && itemex.Index == null)
+            {
+                // Special case:
+                switch (expr.Operation)
+                {
+                    // "ARRAY[] .= VALUE" => "ARRAY[] = (string)VALUE"
+                    case AST.Operations.AssignPrepend:
+                    case AST.Operations.AssignAppend:   // .=
+                        value = BindConcatEx(new List<BoundArgument>() { BoundArgument.Create(new BoundLiteral(null).WithAccess(BoundAccess.Read)), BoundArgument.Create(value) });
+                        break;
+
+                    default:
+                        value = new BoundBinaryEx(new BoundLiteral(null).WithAccess(BoundAccess.Read), value, AstUtils.CompoundOpToBinaryOp(expr.Operation));
+                        break;
+                }
+
+                return new BoundAssignEx(target, value.WithAccess(BoundAccess.Read)).WithAccess(access);
+            }
             else
             {
-                if (target is BoundArrayItemEx itemex && itemex.Index == null)
-                {
-                    // Special case:
-                    switch (expr.Operation)
-                    {
-                        // "ARRAY[] .= VALUE" => "ARRAY[] = (string)VALUE"
-                        case AST.Operations.AssignPrepend:
-                        case AST.Operations.AssignAppend:   // .=
-                            value = BindConcatEx(new List<BoundArgument>() { BoundArgument.Create(new BoundLiteral(null).WithAccess(BoundAccess.Read)), BoundArgument.Create(value) });
-                            break;
-
-                        default:
-                            value = new BoundBinaryEx(new BoundLiteral(null).WithAccess(BoundAccess.Read), value, AstUtils.CompoundOpToBinaryOp(expr.Operation));
-                            break;
-                    }
-
-                    return new BoundAssignEx(target, value.WithAccess(BoundAccess.Read)).WithAccess(access);
-                }
-                else
-                {
-                    target.Access = target.Access.WithRead();   // Read & Write on target
-
-                    return new BoundCompoundAssignEx(target, value, expr.Operation).WithAccess(access);
-                }
+                target.Access = target.Access.WithRead();   // Read & Write on target
+                return new BoundCompoundAssignEx(target, value, expr.Operation).WithAccess(access);
             }
         }
 
