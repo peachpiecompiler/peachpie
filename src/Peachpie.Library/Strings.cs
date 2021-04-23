@@ -837,7 +837,7 @@ namespace Pchp.Library
             bool not_first = false;                       // not the first iteration
 
             var glue_element = Streams.TextElement.FromValue(ctx, glue);    // convert it once
-            var result = new PhpString.Blob();
+            var result = new PhpString.Blob(pieces.Count * 2 - 1);
 
             var x = pieces.GetFastEnumerator();
             while (x.MoveNext())
@@ -1080,7 +1080,7 @@ namespace Pchp.Library
 
             if (str.ContainsBinaryData)
             {
-                var blob = new PhpString.Blob();
+                var blob = new PhpString.Blob(count);
 
                 while (count-- > 0)
                 {
