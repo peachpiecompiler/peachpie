@@ -944,6 +944,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpString_PhpValue_Context = ct.PhpString.Ctor(ct.PhpValue, ct.Context);
                 PhpString_PhpString = ct.PhpString.Ctor(ct.PhpString);
                 Blob = ct.PhpString_Blob.Ctor();
+                Blob_int = ct.PhpString_Blob.Ctor(ct.Int32);
                 PhpArray = ct.PhpArray.Ctor();
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
                 IntStringKey_long = ct.IntStringKey.Ctor(ct.Long);
@@ -969,7 +970,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreConstructor
                 PhpArray, PhpArray_int,
                 PhpString_Blob, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
-                Blob,
+                Blob, Blob_int,
                 IntStringKey_long, IntStringKey_string,
                 ScriptAttribute_string_long, PhpTraitAttribute, PharAttribute_string, PhpTypeAttribute_string_string, PhpTypeAttribute_string_string_byte, PhpFieldsOnlyCtorAttribute, PhpHiddenAttribute,
                 DefaultValueAttribute_string,

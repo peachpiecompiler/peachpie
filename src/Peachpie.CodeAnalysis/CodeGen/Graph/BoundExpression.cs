@@ -3234,8 +3234,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // Template: new PhpString( new PhpString.Blob() { a1, a2, ..., aN } )
 
-            // new PhpString.Blob()
-            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.Blob);
+            // new PhpString.Blob( capacity )
+            cg.Builder.EmitIntConstant(args.Length);
+            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.Blob_int);
 
             // TODO: overload for 2, 3, 4 parameters directly
 

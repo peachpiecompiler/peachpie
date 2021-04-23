@@ -426,6 +426,15 @@ namespace Pchp.Core
                 _string = string.Empty;
             }
 
+            /// <param name="capacity">Number of preallocated chunks. Makes sense for values greater than <c>1</c>.</param>
+            public Blob(int capacity) : this()
+            {
+                if (capacity > 1)
+                {
+                    _chunks = new object[capacity];
+                }
+            }
+
             public Blob(string x, string y)
             {
                 if (string.IsNullOrEmpty(y))
