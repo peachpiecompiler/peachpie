@@ -2703,6 +2703,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
                 // DEPRECATED AND NOT USED ANYMORE:
+                Debug.WriteLine("SHOULD NOT BE USED ANYMORE");
 
                 var cg = this;
 
@@ -2876,7 +2877,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 EmitEcho(concat.ArgumentsInSourceOrder[0].Value);
                 return;
             }
-            
+
             if (expr is BoundLiteral literal && literal.ConstantValue.Value is byte[] bytes)
             {
                 // Template: Operators.Echo(byte[])
