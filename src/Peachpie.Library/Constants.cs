@@ -22,10 +22,18 @@ namespace Pchp.Library
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="constant_name">The name of the constant. Can be arbitrary string.</param>
         /// <param name="value">The value of the constant. Can be <B>null</B> or a scalar or array.</param>
+        /// <returns>Whether the new constant has been defined.</returns>
+        public static bool define(Context ctx, string constant_name, PhpValue value) => define(ctx, constant_name, value, case_insensitive: false);
+
+        /// <summary>
+        /// Defines a constant.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="constant_name">The name of the constant. Can be arbitrary string.</param>
+        /// <param name="value">The value of the constant. Can be <B>null</B> or a scalar or array.</param>
         /// <param name="case_insensitive">Whether the name is case insensitive.</param>
         /// <returns>Whether the new constant has been defined.</returns>
-        public static bool define(Context ctx, string constant_name, PhpValue value, bool case_insensitive = false)
-            => ctx.DefineConstant(constant_name, value, case_insensitive);
+        public static bool define(Context ctx, string constant_name, PhpValue value, bool case_insensitive /*= false*/) => ctx.DefineConstant(constant_name, value, case_insensitive);
 
         /// <summary>
         /// Determines whether a constant is defined.

@@ -42,18 +42,27 @@ namespace Pchp.Library
 		/// Tests whether a given class is defined.
 		/// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="className">The name of the class.</param>
-		/// <param name="autoload">Whether to attempt to call <c>__autoload</c>.</param>
-		/// <returns><B>true</B> if the class given by <paramref name="className"/> has been defined,
+        /// <param name="class_name">The name of the class.</param>
+		/// <returns><B>true</B> if the class given by <paramref name="class_name"/> has been defined,
 		/// <B>false</B> otherwise.</returns>
-		public static bool class_exists(Context ctx, string className, bool autoload = true)
+		public static bool class_exists(Context ctx, string class_name) => class_exists(ctx, class_name, autoload: true);
+
+        /// <summary>
+		/// Tests whether a given class is defined.
+		/// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="class_name">The name of the class.</param>
+		/// <param name="autoload">Whether to attempt to call <c>__autoload</c>.</param>
+		/// <returns><B>true</B> if the class given by <paramref name="class_name"/> has been defined,
+		/// <B>false</B> otherwise.</returns>
+		public static bool class_exists(Context ctx, string class_name, bool autoload /*= true*/)
         {
-            if (className.Length == 0)
+            if (class_name.Length == 0)
             {
                 return false;
             }
 
-            var info = ctx.GetDeclaredType(className, autoload);
+            var info = ctx.GetDeclaredType(class_name, autoload);
             return info != null && !info.IsInterface;
         }
 
@@ -61,13 +70,13 @@ namespace Pchp.Library
 		/// Tests whether a given interface is defined.
 		/// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="classname">The name of the interface.</param>
+        /// <param name="interface_name">The name of the interface.</param>
 		/// <param name="autoload">Whether to attempt to call <c>__autoload</c>.</param>
-		/// <returns><B>true</B> if the interface given by <paramref name="classname"/> has been defined,
+		/// <returns><B>true</B> if the interface given by <paramref name="interface_name"/> has been defined,
 		/// <B>false</B> otherwise.</returns>
-		public static bool interface_exists(Context ctx, string classname, bool autoload = true)
+		public static bool interface_exists(Context ctx, string interface_name, bool autoload = true)
         {
-            var info = ctx.GetDeclaredType(classname, autoload);
+            var info = ctx.GetDeclaredType(interface_name, autoload);
             return info != null && info.IsInterface;
         }
 

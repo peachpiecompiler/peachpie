@@ -648,10 +648,19 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="needle">The value to search for.</param>
         /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
-        /// <param name="strict">Whether strict comparison method (operator ===) is used for comparing values.</param>
         /// <returns>Whether there is the <paramref name="needle"/> value in the <see cref="PhpArray"/>.</returns>
         /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
-        public static bool in_array(PhpValue needle, PhpArray haystack, bool strict = false)
+        public static bool in_array(PhpValue needle, PhpArray haystack) => in_array(needle, haystack, strict: false);
+
+        /// <summary>
+        /// Checks if a value exists in an array.
+        /// </summary>
+        /// <param name="needle">The value to search for.</param>
+        /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
+        /// <param name="strict">Whether strict comparison method (operator ===) is used for comparing values. Default is <c>false</c>.</param>
+        /// <returns>Whether there is the <paramref name="needle"/> value in the <see cref="PhpArray"/>.</returns>
+        /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
+        public static bool in_array(PhpValue needle, PhpArray haystack, bool strict /*= false*/)
         {
             var b = array_search(needle, haystack, strict);
             return !b.IsBoolean || b.Boolean;

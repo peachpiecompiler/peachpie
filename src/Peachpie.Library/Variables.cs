@@ -194,12 +194,22 @@ namespace Pchp.Library
         /// Counts items in a variable.
         /// </summary>
         /// <param name="variable">The variable which items to count.</param>
+        /// <returns>The number of items in all arrays contained recursively in <paramref name="variable"/>.</returns>
+        /// <remarks>If any item of the <paramref name="variable"/> contains infinite recursion 
+        /// skips items that are repeating because of such recursion.
+        /// </remarks>
+        public static long count(PhpValue variable) => count(variable, mode: COUNT_NORMAL);
+
+        /// <summary>
+        /// Counts items in a variable.
+        /// </summary>
+        /// <param name="variable">The variable which items to count.</param>
         /// <param name="mode">Whether to count recursively.</param>
         /// <returns>The number of items in all arrays contained recursively in <paramref name="variable"/>.</returns>
         /// <remarks>If any item of the <paramref name="variable"/> contains infinite recursion 
         /// skips items that are repeating because of such recursion.
         /// </remarks>
-        public static long count(PhpValue variable, int mode = COUNT_NORMAL)
+        public static long count(PhpValue variable, int mode /*= COUNT_NORMAL*/)
         {
             // null or uninitialized variable:
             if (variable.IsNull)
@@ -240,7 +250,7 @@ namespace Pchp.Library
 
         /// <summary>
         /// Helper visitor class that counts items and items in arrays recursively.
-        /// See <see cref="count"/> and <see cref="COUNT_RECURSIVE"/> for more details.
+        /// See <see cref="count(PhpValue, int)"/> and <see cref="COUNT_RECURSIVE"/> for more details.
         /// </summary>
         sealed class RecursiveCounter : PhpVariableVisitor
         {

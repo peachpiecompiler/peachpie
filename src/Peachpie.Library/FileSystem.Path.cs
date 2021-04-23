@@ -82,9 +82,22 @@ namespace Pchp.Library
         /// In other environments, it is the forward slash (/). 
         /// </remarks>
         /// <param name="path">A <see cref="string"/> containing a path to a file.</param>
+        /// <returns>The path conponent of the given <paramref name="path"/>.</returns>
+        public static string basename(string path) => basename(path, null);
+
+        /// <summary>
+        /// Returns path component of path.
+        /// </summary>
+        /// <remarks>
+        /// Given a <see cref="string"/> containing a path to a file, this function will return the base name of the file. 
+        /// If the path ends in this will also be cut off. 
+        /// On Windows, both slash (/) and backslash (\) are used as path separator character. 
+        /// In other environments, it is the forward slash (/). 
+        /// </remarks>
+        /// <param name="path">A <see cref="string"/> containing a path to a file.</param>
         /// <param name="suffix">A <see cref="string"/> containing suffix to be cut off the path if present.</param>
         /// <returns>The path conponent of the given <paramref name="path"/>.</returns>
-        public static string basename(string path, string suffix = null)
+        public static string basename(string path, string suffix /*= null*/)
         {
             if (string.IsNullOrEmpty(path)) return string.Empty;
 
@@ -98,7 +111,7 @@ namespace Pchp.Library
             int name_length = end - start + 1;
             if (!string.IsNullOrEmpty(suffix) &&
                 suffix.Length < name_length &&
-                String.Compare(path, end - suffix.Length + 1, suffix, 0, suffix.Length, StringComparison.CurrentCultureIgnoreCase) == 0)
+                string.Compare(path, end - suffix.Length + 1, suffix, 0, suffix.Length, StringComparison.CurrentCultureIgnoreCase) == 0)
             {
                 name_length -= suffix.Length;
             }
@@ -110,9 +123,16 @@ namespace Pchp.Library
         /// Returns directory name component of path.
         /// </summary>
         /// <param name="path">The full path.</param>
+        /// <returns>The directory portion of the given path.</returns>
+        public static string dirname(string path) => dirname(path, levels: 1);
+
+        /// <summary>
+        /// Returns directory name component of path.
+        /// </summary>
+        /// <param name="path">The full path.</param>
         /// <param name="levels">The number of parent directories to go up. Must be greater than zero.</param>
         /// <returns>The directory portion of the given path.</returns>
-        public static string dirname(string path, int levels = 1)
+        public static string dirname(string path, int levels /*= 1*/)
         {
             if (string.IsNullOrEmpty(path)) return string.Empty;
             if (levels < 1) throw new ArgumentOutOfRangeException(nameof(levels));
