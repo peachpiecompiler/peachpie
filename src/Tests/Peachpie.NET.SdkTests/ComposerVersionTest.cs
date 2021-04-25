@@ -23,6 +23,13 @@ namespace Peachpie.NET.SdkTests
             Assert.AreEqual("1.2.*", ver.ToString());
         }
 
+        [TestMethod]
+        public void PreReleaseVersionParseTest()
+        {
+            Assert.IsTrue(ComposerVersionExpression.TryParse("^4.0", out var ver));
+            Assert.AreEqual("[4.0.0-*,5.0.0)", ver.Evaluate().ToString(true));
+        }
+
         void AssertFloatingVersion(string versionConstrain, string expectedFloatingVersion)
         {
             Assert.IsTrue(ComposerVersionExpression.TryParse(versionConstrain, out var expr));
