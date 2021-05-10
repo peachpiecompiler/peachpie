@@ -1004,7 +1004,19 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindArrayEx(AST.ArrayEx x, BoundAccess access)
         {
-            if (x.Operation == AST.Operations.Array)
+            // determine the array is a part of list() construct:
+            var aslist = false;
+            for (AST.Expression parent = x; parent is AST.ArrayEx; parent = parent.ContainingElement as AST.Expression)
+            {
+                aslist |= parent.Operation == AST.Operations.List;
+            }
+
+            if (aslist)
+            {
+                Debug.Assert(access.IsWrite);
+                return new BoundListEx(BindListItems(x.Items)).WithAccess(BoundAccess.Write);
+            }
+            else if (x.Operation == AST.Operations.Array)
             {
                 Debug.Assert(access.IsRead || access.IsNone);
 
@@ -1014,15 +1026,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // _diagnostics. ...
                 }
 
-                return new BoundArrayEx(BindArrayItems(x.Items))
-                    .WithAccess(access);
-            }
-            else if (x.Operation == AST.Operations.List)
-            {
-                Debug.Assert(access.IsWrite);
-
-                return new BoundListEx(BindArrayItems(x.Items, islist: true))
-                    .WithAccess(BoundAccess.Write);
+                return new BoundArrayEx(BindArrayItems(x.Items)).WithAccess(access);
             }
             else
             {
@@ -1030,7 +1034,49 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        protected ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items, bool islist = false)
+        protected ImmutableArray<KeyValuePair<BoundExpression, BoundReferenceExpression>> BindListItems(AST.Item[] items)
+        {
+            if (items.Length == 0)
+            {
+                return ImmutableArray<KeyValuePair<BoundExpression, BoundReferenceExpression>>.Empty;
+            }
+
+            var builder = ImmutableArray.CreateBuilder<KeyValuePair<BoundExpression, BoundReferenceExpression>>(items.Length);
+
+            foreach (var x in items)
+            {
+                if (x == null)
+                {
+                    // list() may contain empty items
+                    builder.Add(default);
+                    continue;
+                }
+
+                if (x is AST.SpreadItem)
+                {
+                    Diagnostics.Add(
+                        ContainingFile.GetLocation(x.Value.Span.ToTextSpan()),
+                        Errors.ErrorCode.ERR_NotYetImplemented,
+                        "'...' spread array operator");
+                    continue;
+                }
+
+                Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
+
+                var boundIndex = x.Index != null ? BindExpression(x.Index, BoundAccess.Read) : null;
+                var value = (AST.Expression)((AST.IArrayItem)x).Value;
+
+                // write access
+                var boundValue = (BoundReferenceExpression)BindExpression(value, x.IsByRef ? BoundAccess.Write.WithWriteRef(0) : BoundAccess.Write);
+
+                builder.Add(new KeyValuePair<BoundExpression, BoundReferenceExpression>(boundIndex, boundValue));
+            }
+
+            //
+            return builder.MoveToImmutable();
+        }
+
+        protected ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items)
         {
             // trim trailing empty items
             int count = items.Length;
@@ -1051,46 +1097,32 @@ namespace Pchp.CodeAnalysis.Semantics
                 var x = items[i];
                 if (x == null)
                 {
-                    // list() may contain empty items
-                    Debug.Assert(islist);
-                    builder.Add(default);
+                    throw ExceptionUtilities.Unreachable;
                 }
-                else
+
+                if (x is AST.SpreadItem)
                 {
-                    if (x is AST.SpreadItem)
-                    {
-                        Diagnostics.Add(
-                            ContainingFile.GetLocation(x.Value.Span.ToTextSpan()),
-                            Errors.ErrorCode.ERR_NotYetImplemented,
-                            "'...' spread array operator");
-                        continue;
-                    }
-
-                    Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
-
-                    var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
-                    BoundExpression boundValue;
-
-                    var value = (AST.Expression)((AST.IArrayItem)x).Value;
-
-                    if (islist)
-                    {
-                        // write access
-                        boundValue = BindExpression(value, x.IsByRef ? BoundAccess.Write.WithWriteRef(0) : BoundAccess.Write);
-                    }
-                    else
-                    {
-                        // read access
-                        boundValue = BindExpression(value, x.IsByRef ? BoundAccess.ReadRef : BoundAccess.Read);
-
-                        if (!x.IsByRef)
-                        {
-                            boundValue = BindCopyValue(boundValue);
-                        }
-                    }
-
-                    builder.Add(new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue));
+                    Diagnostics.Add(
+                        ContainingFile.GetLocation(x.Value.Span.ToTextSpan()),
+                        Errors.ErrorCode.ERR_NotYetImplemented,
+                        "'...' spread array operator");
+                    continue;
                 }
+
+                Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
+
+                var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
+                var value = (AST.Expression)((AST.IArrayItem)x).Value;
+
+                // read access
+                var boundValue = BindExpression(value, x.IsByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+
+                if (!x.IsByRef)
+                {
+                    boundValue = BindCopyValue(boundValue);
+                }
+
+                builder.Add(new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue));
             }
 
             //

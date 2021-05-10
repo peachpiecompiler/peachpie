@@ -1834,18 +1834,14 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public ImmutableArray<KeyValuePair<BoundExpression, BoundReferenceExpression>> Items { get; internal set; }
 
-        public BoundListEx(IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> items)
+        public BoundListEx(IEnumerable<KeyValuePair<BoundExpression, BoundReferenceExpression>> items)
+            : this(items.ToImmutableArray())
         {
-            Debug.Assert(items != null);
-
-            Items = items
-                .Select(pair => new KeyValuePair<BoundExpression, BoundReferenceExpression>(pair.Key, (BoundReferenceExpression)pair.Value))
-                .ToImmutableArray();
         }
 
         public BoundListEx(ImmutableArray<KeyValuePair<BoundExpression, BoundReferenceExpression>> items)
         {
-            Debug.Assert(items != null);
+            Debug.Assert(!items.IsDefaultOrEmpty);
 
             Items = items;
         }
