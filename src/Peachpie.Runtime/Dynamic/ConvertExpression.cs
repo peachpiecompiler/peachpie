@@ -928,6 +928,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(string)) return Expression.Constant(ConversionCost.ImplicitCast);
             if (target == typeof(bool)) return Expression.Constant(ConversionCost.LoosingPrecision);
             if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.PassCostly);
+            if (target == typeof(PhpArray)) return Expression.Constant(ConversionCost.NoConversion);
 
             return Expression.Constant(ConversionCost.Warning);
         }
