@@ -1059,7 +1059,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     if (x is AST.SpreadItem)
                     {
-                        throw new NotImplementedException("'...' spread array operator");
+                        Diagnostics.Add(
+                            ContainingFile.GetLocation(x.Value.Span.ToTextSpan()),
+                            Errors.ErrorCode.ERR_NotYetImplemented,
+                            "'...' spread array operator");
+                        continue;
                     }
 
                     Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
