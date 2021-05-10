@@ -143,7 +143,7 @@ namespace Pchp.Library
                 //    return 20;
 
                 case "memory_limit":
-                    AssertGet(option, action);
+                    //AssertGet(option, action); // ignore
                     return -1; // no memory limit
 
                 case "post_max_size":
