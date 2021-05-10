@@ -26,7 +26,6 @@ We are now a member of the [.NET Foundation](https://www.dotnetfoundation.org/ab
 
 | Service  | Platform  | Build Status  |
 |---|---|---|
-| Travis CI | Ubuntu 18  | [![Travis Build status](https://api.travis-ci.org/peachpiecompiler/peachpie.svg?branch=master)](https://travis-ci.org/peachpiecompiler/peachpie)  |
 | AppVeyor  | Visual Studio 2019  | [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/1ym8cd838l0od9oa?svg=true)](https://ci.appveyor.com/project/dotnetfoundation/peachpie) |
 | Azure DevOps | Windows | ![VSTS Build Status](https://iolevel.visualstudio.com/_apis/public/build/definitions/bd7dcca1-8515-44f8-81d0-bb2acc03d949/1/badge)|
 | GitHub Actions | Ubuntu 18 | ![.NET Core](https://github.com/peachpiecompiler/peachpie/workflows/.NET%20Core/badge.svg) |
