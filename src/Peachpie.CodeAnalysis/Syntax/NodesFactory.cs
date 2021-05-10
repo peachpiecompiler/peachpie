@@ -202,7 +202,7 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public override LangElement StringEncapsedExpression(Span span, LangElement expression, Tokens openDelimiter) => expression;
 
-        public override LangElement HeredocExpression(Span span, LangElement expression, Tokens quoteStyle, string label) => expression;
+        public override LangElement HeredocExpression(Span span, LangElement expression, Tokens quoteStyle, Lexer.HereDocTokenValue heredoc) => expression;
 
         public override LangElement Call(Span span, Name name, Span nameSpan, CallSignature signature, TypeRef typeRef)
         {
