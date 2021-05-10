@@ -161,16 +161,20 @@ namespace Pchp.Library
                     return string.Empty;
 
                 case "max_execution_time":
+                    var max_execution_time = config.Core.ExecutionTimeout;
                     if (action == IniAction.Set)
                     {
-                        var oldvalue = config.Core.ExecutionTimeout;
                         ctx.ApplyExecutionTimeout(config.Core.ExecutionTimeout = Math.Max(0, value.ToInt()));
-                        return oldvalue;
                     }
-                    else
+                    return max_execution_time;
+
+                case "display_startup_errors":
+                    var display_startup_errors = config.Core.DisplayStartupErrors;
+                    if (action == IniAction.Set)
                     {
-                        return config.Core.ExecutionTimeout;
+                        config.Core.DisplayStartupErrors = value.ToBoolean();
                     }
+                    return display_startup_errors;
 
                 default:
                     throw new ArgumentException();
@@ -253,7 +257,7 @@ namespace Pchp.Library
             Register("disable_classes", IniFlags.Supported | IniFlags.Global, gsrcore);
             Register("disable_functions", IniFlags.Supported | IniFlags.Global, gsrcore);
             Register("display_errors", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
-            Register("display_startup_errors", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("display_startup_errors", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("doc_root", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("enable_dl", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("engine", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);

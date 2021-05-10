@@ -241,6 +241,12 @@ namespace Pchp.Core
         public IPhpCallable UserErrorHandler { get; set; } = null;
         public PhpError UserErrorTypes { get; set; } = 0;
 
+        /// <summary>
+        /// Whether to throw startup errors.
+        /// </summary>
+        /// <remarks>Actually ignored, there are no startup errors. Errors are handled in compile time already, or .NET assembly loader.</remarks>
+        public bool DisplayStartupErrors { get; set; }
+
         #endregion
     }
 
