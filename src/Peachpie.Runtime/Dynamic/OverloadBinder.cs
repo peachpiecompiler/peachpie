@@ -1038,8 +1038,7 @@ namespace Pchp.Core.Dynamic
                 // costX = CostOf(mX)
                 foreach (var m in methods)
                 {
-                    ConversionCost mincost; // minimal cost resolved in compile time
-                    var expr_cost = BindCostOf(m, args, makeCostOf, out mincost);
+                    var expr_cost = BindCostOf(m, args, makeCostOf, out var mincost); // cost expression + minimal cost resolved in compile time
                     if (mincost >= ConversionCost.NoConversion)
                         continue;   // we don't have to try this overload
 
