@@ -137,7 +137,7 @@ namespace Peachpie.Library.PDO
         private protected Dictionary<IntStringKey, BoundParam> bound_columns;
 
         private protected PDO_FETCH _default_fetch_type;
-        private protected int _fetch_column = -1;
+        private protected long _fetch_column = 0; // first column by default
         private protected PhpTypeInfo _default_fetch_class;
         private protected PhpValue[] _default_fetch_class_args;
 
@@ -431,19 +431,6 @@ namespace Peachpie.Library.PDO
             var style = fetch_style != PDO_FETCH.Default ? fetch_style : _default_fetch_type;
             var flags = style & PDO_FETCH.Flags;
 
-            if (style == PDO_FETCH.FETCH_COLUMN)
-            {
-                if (fetch_argument.IsLong(out var l))
-                {
-                    _fetch_column = (int)l;
-                }
-                else
-                {
-                    HandleError("The fetch_argument must be an integer for FETCH_COLUMN.");
-                    return null;
-                }
-            }
-
             if ((style & PDO_FETCH.FETCH_CLASS) != 0 && !fetch_argument.IsEmpty)
             {
                 if (!setFetchMode(fetch_style, fetch_argument, ctor_args))
@@ -473,6 +460,20 @@ namespace Peachpie.Library.PDO
                         // 1st col => [ 2nd col, 3rd col, ... ]
                         result[PhpValue.FromClr(oa[0]).ToIntStringKey()] = AsAssocArray(oa, names, 1);
                     }
+                    break;
+
+                case PDO_FETCH.FETCH_COLUMN:
+
+                    if (!fetch_argument.IsLong(out var colno))
+                    {
+                        colno = 0;
+                    }
+
+                    while (TryFetchColumn((int)colno, out var value))
+                    {
+                        result.Add(value);
+                    }
+
                     break;
 
                 default:
@@ -553,23 +554,29 @@ namespace Peachpie.Library.PDO
         }
 
         /// <summary>
+        /// Reads next row and gets field value at given column.
+        /// </summary>
+        [PhpHidden]
+        bool TryFetchColumn(long colno, out PhpValue value)
+        {
+            if (Result.CheckFieldIndex(checked((int)colno)) && Result.TryReadRow(out object[] oa, out string[] names))
+            {
+                value = PhpValue.FromClr(oa[colno]);
+                return true;
+            }
+
+            value = default; // NULL
+            return false;
+        }
+
+        /// <summary>
         /// Returns a single column from the next row of a result set.
         /// </summary>
         /// <param name="column_number">0-indexed number of the column you wish to retrieve from the row. If no value is supplied, PDOStatement::fetchColumn() fetches the first column</param>
         /// <returns>Single column from the next row of a result set or FALSE if there are no more rows</returns>
-        public virtual PhpValue fetchColumn(int? column_number = default)
+        public virtual PhpValue fetchColumn(long column_number = 0)
         {
-            if (Result.CheckRowIndex(Result.CurrentRowIndex))
-            {
-                int idx = column_number.HasValue ? column_number.Value : Result.FetchNextField();
-                if (Result.CheckFieldIndex(idx))
-                {
-                    return PhpValue.FromClr(Result.GetFieldValue(Result.CurrentRowIndex, idx));
-                }
-            }
-
-            //
-            return PhpValue.False;
+            return TryFetchColumn(column_number, out var value) ? value : PhpValue.False;
         }
 
         /// <summary>
@@ -711,7 +718,7 @@ namespace Peachpie.Library.PDO
                     }
                     else if (args[0].IsLong(out var l))
                     {
-                        _fetch_column = (int)l;
+                        _fetch_column = l;
                         break;
                     }
                     else
