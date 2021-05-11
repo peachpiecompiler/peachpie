@@ -1519,6 +1519,7 @@ namespace Pchp.Core
 
                 // special cases before using reflection
                 if (enumerable is IEnumerable<(PhpValue, PhpValue)> valval) return new ValueTupleEnumerator<PhpValue, PhpValue>(valval);
+                if (enumerable is IEnumerable<PhpValue> val) return new PhpValueEnumerator(val.GetEnumerator());
                 if (enumerable is IDictionary) return new DictionaryEnumerator(((IDictionary)enumerable).GetEnumerator());
                 if (enumerable is IEnumerable<KeyValuePair<object, object>> kv) return new KeyValueEnumerator<object, object>(kv);
                 if (enumerable is IEnumerable<object>) return new EnumerableEnumerator(enumerable.GetEnumerator());
@@ -1655,6 +1656,43 @@ namespace Pchp.Core
             }
 
             /// <summary>
+            /// Enumerator of <see cref="IEnumerable{PhpValue}"/>.
+            /// </summary>
+            sealed class PhpValueEnumerator : ClrEnumerator
+            {
+                readonly IEnumerator<PhpValue> _enumerator;
+
+                protected override IEnumerator Enumerator => _enumerator;
+
+                long _key;
+
+                public override bool MoveFirst()
+                {
+                    _key = -1;
+                    return base.MoveFirst();
+                }
+
+                public override bool MoveNext()
+                {
+                    _key++;
+                    return base.MoveNext();
+                }
+
+                protected override void FetchCurrent(ref PhpValue key, ref PhpValue value)
+                {
+                    key = _key;
+                    value = _enumerator.Current;
+                }
+
+                public PhpValueEnumerator(IEnumerator<PhpValue> enumerator)
+                {
+                    Debug.Assert(enumerator != null);
+                    _enumerator = enumerator;
+                    _key = -1;
+                }
+            }
+
+            /// <summary>
             /// Enumerator of <see cref="IDictionary"/>
             /// </summary>
             sealed class DictionaryEnumerator : ClrEnumerator
@@ -1736,9 +1774,9 @@ namespace Pchp.Core
         {
             Debug.Assert(obj != null);
 
-            if (obj is Iterator)
+            if (obj is Iterator it)
             {
-                return GetForeachEnumerator((Iterator)obj);
+                return GetForeachEnumerator(it);
             }
             else if (obj is IteratorAggregate)
             {
@@ -1775,6 +1813,8 @@ namespace Pchp.Core
             }
             else
             {
+                // TODO: GetEnumerator() method?
+
                 // PHP property enumeration
                 return new PhpFieldsEnumerator(obj, caller);
             }
