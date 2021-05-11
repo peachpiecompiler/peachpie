@@ -12,6 +12,7 @@ using static Peachpie.Library.PDO.PDO;
 using static Pchp.Library.Objects;
 using Pchp.Core.Reflection;
 using Pchp.Library.Database;
+using System.Collections;
 
 namespace Peachpie.Library.PDO
 {
@@ -20,7 +21,7 @@ namespace Peachpie.Library.PDO
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     [PhpExtension(PDOConfiguration.PdoExtensionName)]
-    public class PDOStatement : Traversable
+    public class PDOStatement : Traversable, IEnumerable<PhpValue>
     {
         private protected struct BoundParam
         {
@@ -1054,5 +1055,23 @@ namespace Peachpie.Library.PDO
             //
             return true;
         }
+
+        #region IEnumerable<PhpValue>
+
+        IEnumerator<PhpValue> IEnumerable<PhpValue>.GetEnumerator()
+        {
+            for (; ; )
+            {
+                var value = fetch();
+                if (value.IsFalse)
+                    yield break;
+
+                yield return value;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<PhpValue>)this).GetEnumerator();
+
+        #endregion
     }
 }
