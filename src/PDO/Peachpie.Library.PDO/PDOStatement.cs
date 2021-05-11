@@ -177,6 +177,9 @@ namespace Peachpie.Library.PDO
             PDO.HandleError(error);
         }
 
+        // PDOException: SQLSTATE[HY000]: General error
+        private protected ErrorInfo FetchKeyPairError => ErrorInfo.Create("PDO::FETCH_KEY_PAIR fetch mode requires the result set to contain exactly 2 columns.");
+
         #endregion
 
         #region Construction
@@ -398,14 +401,32 @@ namespace Peachpie.Library.PDO
                     case PDO_FETCH.FETCH_NAMED:
                         return this.ReadNamed();
 
+                    case PDO_FETCH.FETCH_KEY_PAIR:
+
+                        if (Result.TryReadRow(out var oa, out _))
+                        {
+                            if (oa.Length != 2)
+                            {
+                                HandleError(FetchKeyPairError);
+                            }
+                            else
+                            {
+                                return new PhpArray(1)
+                                {
+                                    // 1st col => 2nd col
+                                    { PhpValue.FromClr(oa[0]).ToIntStringKey(), PhpValue.FromClr(oa[1]) },
+                                };
+                            }
+                        }
+
+                        return PhpValue.False;
+
                     //case PDO_FETCH.FETCH_LAZY:
                     //    return new PDORow( ... ) reads columns lazily
 
                     //case PDO_FETCH.FETCH_INTO:
 
                     //case PDO_FETCH.FETCH_FUNC:
-
-                    //case PDO_FETCH.FETCH_KEY_PAIR:
 
                     default:
                         throw new NotImplementedException($"fetch {how}");
@@ -444,6 +465,12 @@ namespace Peachpie.Library.PDO
             switch (style)
             {
                 case PDO_FETCH.FETCH_KEY_PAIR:
+
+                    if (Result.FieldCount != 2)
+                    {
+                        HandleError(FetchKeyPairError);
+                        return null;
+                    }
 
                     while (Result.TryReadRow(out var oa, out _))
                     {
