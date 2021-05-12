@@ -1600,7 +1600,7 @@ namespace Pchp.Library.DateTime
 
             if (dateinfo.have_relative != 0)
             {
-                result["relative"] = new PhpArray(6)
+                result["relative"] = new PhpArray(7)
                 {
                     //[year] => 0
                     { "year", dateinfo.relative.y },
