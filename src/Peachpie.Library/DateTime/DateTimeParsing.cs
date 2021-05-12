@@ -192,7 +192,7 @@ namespace Pchp.Library.DateTime
         static string GetTimeZoneString(int offset_minutes)
         {
             // [+-]00:00
-            return 
+            return
                 (offset_minutes < 0 ? "" : "+") +
                 (offset_minutes / 60).ToString("D2") +
                 ":" +
@@ -307,12 +307,13 @@ namespace Pchp.Library.DateTime
             if (d == -1) d = start.Day;
             else if (d == 0) { d = 1; --relative.d; }
 
-            CheckOverflows(y, m, ref d, ref h, out var days_overflow);
+            // relative years and months:
+            m += relative.y * 12 + relative.m;
+            
+            // normalize month, day
+            CheckOverflows(ref y, ref m, ref d, ref h, out var days_overflow);
 
             var result = new System.DateTime(y, m, d, h, i, s, (int)(f * 1000), DateTimeKind.Unspecified); // CONSIDER: DateTimeKind.Local (?)
-
-            // relative years and months:
-            result = result.AddMonths(relative.y * 12 + relative.m);
 
             // check relative ranges
             if (relative.s >= long.MaxValue / TimeSpan.TicksPerSecond) return System.DateTime.MaxValue;
@@ -440,6 +441,7 @@ namespace Pchp.Library.DateTime
         }
 
         /// <summary>
+        /// Adjusts year and month if months are out of range (1..12).
         /// Checks how many days given year/month/day/hour overflows (as it is possible in PHP format).
         /// </summary>
         /// <param name="y">parsed year</param>
@@ -447,8 +449,10 @@ namespace Pchp.Library.DateTime
         /// <param name="d">parsed day</param>
         /// <param name="h">parsed hour (24 is problem)</param>
         /// <param name="days_overflow">resulting amount of overflowing days (will be added to the resulting DateTime).</param>
-        private static void CheckOverflows(int y, int m, ref int d, ref int h, out int days_overflow)
+        private static void CheckOverflows(ref int y, ref int m, ref int d, ref int h, out int days_overflow)
         {
+            NormalizeMonth(ref y, ref m);
+
             days_overflow = 0;
 
             int daysinmonth_overflow = d - DateInfo.DaysInMonthFixed(y, m);
@@ -468,6 +472,30 @@ namespace Pchp.Library.DateTime
                 h = 0;
                 ++days_overflow;
             }
+        }
+
+        private static void NormalizeMonth(ref int year, ref int month)
+        {
+            // month supposes to be in range [1..12]
+            // other values are relative to 1
+
+            if (month > 12)
+            {
+                year += (month - 1) / 12;
+                month = ((month - 1) % 12) + 1;
+            }
+            else if (month < 1)
+            {
+                // note: month == 0 => previous year, month 12
+
+                var relative_years = (month - 1) / 12 - 1; // always < 0
+
+                year += relative_years;
+                month -= relative_years * 12;
+            }
+
+            Debug.Assert(month >= 1);
+            Debug.Assert(month <= 12);
         }
 
         public static int ParseSignedInt(string str, ref int pos, int maxDigits)
