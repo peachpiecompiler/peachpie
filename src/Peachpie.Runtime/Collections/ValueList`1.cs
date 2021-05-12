@@ -15,6 +15,11 @@ namespace Pchp.Core.Collections
         int _count;
         T[] _array;
 
+        /// <summary>
+        /// Gets new empty list.
+        /// </summary>
+        public static ValueList<T> Empty => new ValueList<T>(0); // no alloc
+
         public ValueList(IEnumerable<T> collection)
         {
             _count = 0;
