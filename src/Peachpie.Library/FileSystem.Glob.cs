@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Collections;
 using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
@@ -411,7 +412,7 @@ namespace Pchp.Library
                 abstract public GlobNode/*!*/ StartLevel();
                 abstract public GlobNode/*!*/ AddGroup();
                 abstract public GlobNode/*!*/ FinishLevel();
-                abstract public List<string>/*!*/ Flatten();
+                abstract public ValueList<string>/*!*/ Flatten();
             }
 
             class TextNode : GlobNode
@@ -448,9 +449,9 @@ namespace Pchp.Library
                     return _parent.FinishLevel();
                 }
 
-                public override List<string>/*!*/ Flatten()
+                public override ValueList<string>/*!*/ Flatten()
                 {
-                    return new List<string>(1) { _builder.ToString() };
+                    return new ValueList<string>(1) { _builder.ToString() };
                 }
             }
 
@@ -490,11 +491,11 @@ namespace Pchp.Library
                     return _parent;
                 }
 
-                public override List<string>/*!*/ Flatten()
+                public override ValueList<string>/*!*/ Flatten()
                 {
-                    var result = new List<string>();
+                    var result = new ValueList<string>();
 
-                    foreach (GlobNode node in _nodes)
+                    foreach (var node in _nodes)
                     {
                         result.AddRange(node.Flatten());
                     }
@@ -537,21 +538,23 @@ namespace Pchp.Library
                     return _parent._parent;
                 }
 
-                public override List<string>/*!*/ Flatten()
+                public override ValueList<string>/*!*/ Flatten()
                 {
-                    List<string> result = null; // root
+                    var result = new ValueList<string>(); // root
+                    var first = true;
 
-                    foreach (GlobNode node in _nodes)
+                    foreach (var node in _nodes)
                     {
                         var node_flattern = node.Flatten();
 
-                        if (result == null)
+                        if (first)
                         {
+                            first = false;
                             result = node_flattern;
                             continue;
                         }
 
-                        var tmp = new List<string>();
+                        var tmp = new ValueList<string>(node_flattern.Count);
 
                         foreach (var next in node_flattern)
                         {
@@ -564,7 +567,7 @@ namespace Pchp.Library
                         result = tmp;
                     }
 
-                    return result ?? new List<string>();
+                    return result;
                 }
             }
 
@@ -606,11 +609,11 @@ namespace Pchp.Library
                 get { return _level; }
             }
 
-            public IList<string>/*!*/ Flatten()
+            public ValueList<string>/*!*/ Flatten()
             {
                 if (_level != 0)
                 {
-                    return Array.Empty<string>();
+                    return ValueList<string>.Empty;
                 }
 
                 return _rootNode.Flatten();
@@ -714,7 +717,7 @@ namespace Pchp.Library
             return (charClass == null) ? result.ToString() : string.Empty;
         }
 
-        static IList<string> UngroupGlobs(string/*!*/ pattern, bool noEscape, bool brace)
+        static ValueList<string> UngroupGlobs(string/*!*/ pattern, bool noEscape, bool brace)
         {
             var ungrouper = new GlobUngrouper(pattern.Length);
             var inEscape = false;
@@ -743,7 +746,7 @@ namespace Pchp.Library
                         case '{':
                             if (!brace)
                             {
-                                return Array.Empty<string>();
+                                return ValueList<string>.Empty;
                             }
 
                             ungrouper.StartLevel();
@@ -764,7 +767,7 @@ namespace Pchp.Library
                             if (ungrouper.Level < 1)
                             {
                                 // Unbalanced closing bracket matches nothing
-                                return Array.Empty<string>();
+                                return ValueList<string>.Empty;
                             }
                             ungrouper.FinishLevel();
                             break;
