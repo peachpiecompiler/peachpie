@@ -175,32 +175,29 @@ namespace Pchp.Library.DateTime
 
         internal static System_DateTime GetDateTimeUtcFromInterface(DateTimeInterface dti)
         {
-            if (GetDateTimeFromInterface(dti, out var datetime, out var tz))
+            if (GetDateTimeFromInterface(dti, out var dt))
             {
-                return TimeZoneInfo.ConvertTimeToUtc(datetime, tz);
+                return dt.GetUtcTime();
             }
 
             throw new ArgumentException();
         }
 
-        internal static bool GetDateTimeFromInterface(DateTimeInterface dti, out System_DateTime datetime, out TimeZoneInfo timezone)
+        internal static bool GetDateTimeFromInterface(DateTimeInterface dti, out DateTimeValue value)
         {
             if (dti is Library.DateTime.DateTime dt)
             {
-                datetime = dt.LocalTime;
-                timezone = dt.LocalTimeZone;
+                value = dt.Value;
                 return true;
             }
 
             if (dti is DateTimeImmutable dtimmutable)
             {
-                datetime = dtimmutable.LocalTime;
-                timezone = dtimmutable.LocalTimeZone;
+                value = dtimmutable.Value;
                 return true;
             }
 
-            datetime = default;
-            timezone = default;
+            value = default;
             return false;
         }
 

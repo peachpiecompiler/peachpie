@@ -117,7 +117,7 @@ namespace Pchp.Library.DateTime
             }
         }
 
-        internal System.DateTime Apply(System.DateTime datetime, bool negate)
+        internal DateTimeValue Apply(DateTimeValue datetime, bool negate)
         {
             var span = _span;
             var months = y * 12 + m;
@@ -130,15 +130,19 @@ namespace Pchp.Library.DateTime
                 months = -months;   // ignoring possible OF
             }
 
+            // TODO: datetime.YearOffset
+
+            var local = datetime.LocalTime;
+
             if (months != 0)
             {
-                datetime = datetime.AddMonths(months);
+                local = local.AddMonths(months);
             }
 
-            datetime = datetime.Add(span);
+            local = local.Add(span);
 
             //
-            return datetime;
+            return new DateTimeValue(local, datetime.YearOffset, datetime.LocalTimeZone);
         }
 
         private protected static void CalculateDifference(System.DateTime date1, System.DateTime date2, out int years, out int months, out TimeSpan span)
