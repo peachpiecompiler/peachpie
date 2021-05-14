@@ -3834,6 +3834,24 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // PhpValue.Null
                 Emit_PhpValue_Null();
             }
+            else if (valuetype == CoreTypes.RuntimeTypeHandle)
+            {
+                // LOAD Helpers.EmptyRuntimeTypeHandle
+                _il.EmitOpCode(ILOpCode.Ldsfld);
+                EmitSymbolToken(CoreMethods.Helpers.EmptyRuntimeTypeHandle, null);
+            }
+            else if (valuetype == CoreTypes.PhpString)
+            {
+                // LOAD PhpString.Default
+                _il.EmitOpCode(ILOpCode.Ldsfld);
+                EmitSymbolToken(CoreMethods.PhpString.Default, null);
+            }
+            else if (valuetype.IsNullableType(out var tType))
+            {
+                // CALL Helpers.EmptyNullable_T< tType >
+                var method = CoreMethods.Helpers.EmptyNullable_T.Symbol.Construct(ImmutableArray.Create(tType));
+                return EmitCall(ILOpCode.Call, method).Expect(valuetype);
+            }
             else
             {
                 // default(T)

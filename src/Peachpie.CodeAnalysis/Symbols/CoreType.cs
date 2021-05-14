@@ -147,7 +147,7 @@ namespace Pchp.CodeAnalysis.Symbols
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_LateStaticTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
             RuntimeChain_ChainEnd, RuntimeChain_Value_T, RuntimeChain_Property_T, RuntimeChain_ArrayItem_T, RuntimeChain_ArrayNewItem_T,
-            PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys,
+            PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys, Helpers,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable, ImportValueAttribute, DummyFieldsOnlyCtor,
             Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception,
@@ -235,6 +235,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");
             CommonPhpArrayKeys = Create("CommonPhpArrayKeys");
+            Helpers = Create("Utilities.Helpers");
 
             Iterator = CreateFromFullName("Iterator");
             Traversable = CreateFromFullName("Traversable");

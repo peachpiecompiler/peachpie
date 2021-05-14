@@ -263,6 +263,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly ContextHolder Context;
         public readonly DynamicHolder Dynamic;
         public readonly ReflectionHolder Reflection;
+        public readonly HelpersHolder Helpers;
 
         /// <summary>Property name of <c>ScriptAttribute.IsAutoloaded</c>.</summary>
         public static string ScriptAttribute_IsAutoloaded => "IsAutoloaded";
@@ -284,6 +285,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Context = new ContextHolder(types);
             Dynamic = new DynamicHolder(types);
             Reflection = new ReflectionHolder(types);
+            Helpers = new HelpersHolder(types);
         }
 
         public struct OperatorsHolder
@@ -599,7 +601,19 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreProperty
                 Object, Long, Double, Boolean, String, Array;
+        }
 
+        public struct HelpersHolder
+        {
+            public HelpersHolder(CoreTypes ct)
+            {
+                EmptyRuntimeTypeHandle = ct.Helpers.Field(nameof(EmptyRuntimeTypeHandle));
+                EmptyNullable_T = ct.Helpers.Method(nameof(EmptyNullable_T));
+            }
+
+            public readonly CoreField EmptyRuntimeTypeHandle;
+
+            public readonly CoreMethod EmptyNullable_T;
         }
 
         public struct PhpAliasHolder
@@ -795,6 +809,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 IsNull_PhpString = ct.PhpString.Method("IsNull", ct.PhpString);
 
+                Default = ct.PhpString.Field(nameof(Default));
+
                 implicit_from_string = ct.String.CastImplicit(ct.PhpString);
             }
 
@@ -802,6 +818,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Context, ToNumber, ToBytes_Context,
                 EnsureWritable, AsWritable_PhpString, AsArray_PhpString,
                 IsNull_PhpString;
+
+            public readonly CoreField
+                Default;
 
             public readonly CoreCast
                 implicit_from_string;
