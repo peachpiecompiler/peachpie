@@ -1522,19 +1522,24 @@ namespace Pchp.Core
         public bool ContainsBinaryData => _data is Blob b && b.ContainsBinaryData;
 
         /// <summary>
-        /// Gets value indicating the string is empty.
+        /// Gets value indicating the string is empty or uninitialized.
         /// </summary>
         public bool IsEmpty => IsDefault || (_data is string s && s.Length == 0) || (_data is Blob b && b.IsEmpty);
 
         /// <summary>
-        /// The value is not initialized.
+        /// The value is not initialized, representing <c>NULL</c>.
         /// </summary>
         public bool IsDefault => ReferenceEquals(_data, null);
 
         /// <summary>
-        /// Empty immutable string.
+        /// Empty immutable string representing the <see cref="string.Empty"/> (<c>""</c>).
         /// </summary>
         public static PhpString Empty => new PhpString(string.Empty);
+
+        /// <summary>
+        /// UNinitialized value of <see cref="PhpString"/>, representing <c>NULL</c>.
+        /// </summary>
+        public static readonly PhpString Default = default(PhpString);
 
         #region Construction, DeepCopy
 
