@@ -283,6 +283,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var lhs = place.EmitStorePreamble(cg, BoundAccess.Unset);
             place.EmitStore(cg, ref lhs, null, BoundAccess.Unset); // null type -> no value
+
+            lhs.Dispose();
         }
     }
 
