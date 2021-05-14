@@ -99,11 +99,11 @@ namespace Pchp.Core
 
         public static implicit operator IntStringKey(string value) => value != null ? Convert.StringToArrayKey(value) : EmptyStringKey;
 
-        public static implicit operator IntStringKey(PhpString value) => new IntStringKey(value.ToString());
+        public static implicit operator IntStringKey(PhpString value) => value.ToString();
 
         public static implicit operator IntStringKey(PhpValue value) => Convert.ToIntStringKey(value);
 
-        public static implicit operator IntStringKey(PhpNumber value) => new IntStringKey((int)value.ToLong());
+        public static implicit operator IntStringKey(PhpNumber value) => new IntStringKey(value.ToLong());
 
         public static bool operator ==(IntStringKey a, long b) => a.Integer == b && a.IsInteger;
 
