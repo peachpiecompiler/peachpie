@@ -37,6 +37,21 @@ namespace Pchp.CodeAnalysis.Symbols
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
         }
 
+        public static AttributeData TryCreateDoesNotReturnAttribute(this PhpCompilation compilation)
+        {
+            var attr = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute");
+            if (attr == null)
+            {
+                return null;
+            }
+
+            // [DoesNotReturnAttribute()]
+            return new SynthesizedAttributeData(
+                (MethodSymbol)attr.InstanceConstructors.Single(),
+                ImmutableArray<TypedConstant>.Empty,
+                ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+        }
+
         public static AttributeData CreateParamsAttribute(this PhpCompilation compilation)
         {
             return new SynthesizedAttributeData(

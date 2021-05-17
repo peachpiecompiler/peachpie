@@ -499,6 +499,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
             }
 
+            // [DoesNotReturnAttribute]
+            if (SyntaxReturnType.IsNever())
+            {
+                var attr = DeclaringCompilation.TryCreateDoesNotReturnAttribute();
+                if (attr != null)
+                {
+                    attrs = attrs.Add(attr);
+                }
+            }
+
             return attrs;
         }
 

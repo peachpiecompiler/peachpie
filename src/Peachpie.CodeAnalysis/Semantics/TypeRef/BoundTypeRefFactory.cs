@@ -116,6 +116,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     case Ast.PrimitiveTypeRef.PrimitiveType.iterable: return IterableTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.@object: return ObjectTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.mixed: return MixedTypeRef;
+                    case Ast.PrimitiveTypeRef.PrimitiveType.never: return VoidTypeRef;
                     default: throw ExceptionUtilities.UnexpectedValue(pt.PrimitiveTypeName);
                 }
             }

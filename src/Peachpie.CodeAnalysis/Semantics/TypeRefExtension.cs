@@ -42,6 +42,14 @@ namespace Peachpie.CodeAnalysis.Semantics
         }
 
         /// <summary>
+        /// Gets value indicating the type refers to a mixed type (<c>mixed</c>).
+        /// </summary>
+        public static bool IsNever(this TypeRef tref)
+        {
+            return tref is PrimitiveTypeRef pt && pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.never;
+        }
+
+        /// <summary>
         /// Gets value indicating the type refers to "void" type (<c>void</c>).
         /// </summary>
         public static bool IsVoid(this TypeRef tref)
