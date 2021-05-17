@@ -430,4 +430,10 @@
   <data name="ERR_BinaryFile" xml:space="preserve">
     <value>'{0}' is a binary file instead of a text file</value>
   </data>
+  <data name="ERR_NeverReturningFunctionCannotReturn" xml:space="preserve">
+    <value>A never-returning function cannot return</value>
+  </data>
+  <data name="ERR_ParameterTypeNotAllowed" xml:space="preserve">
+    <value>Parameter ${0} cannot have type {1}</value>
+  </data>
 </root>

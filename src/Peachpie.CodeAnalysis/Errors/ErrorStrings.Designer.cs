@@ -430,6 +430,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to A never-returning function cannot return.
+        /// </summary>
+        internal static string ERR_NeverReturningFunctionCannotReturn {
+            get {
+                return ResourceManager.GetString("ERR_NeverReturningFunctionCannotReturn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to No overload for method {0} can be called..
         /// </summary>
         internal static string ERR_NoMatchingOverload {
@@ -471,6 +480,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string ERR_OutputWriteFailed {
             get {
                 return ResourceManager.GetString("ERR_OutputWriteFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Parameter ${0} cannot have type {1}.
+        /// </summary>
+        internal static string ERR_ParameterTypeNotAllowed {
+            get {
+                return ResourceManager.GetString("ERR_ParameterTypeNotAllowed", resourceCulture);
             }
         }
         

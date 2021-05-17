@@ -159,6 +159,10 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_ArgumentTypeMismatch,
         /// <summary>Cannot convert {0} to {1}</summary>
         ERR_TypeMismatch,
+        /// <summary>A never-returning function cannot return</summary>
+        ERR_NeverReturningFunctionCannotReturn,
+        /// <summary>Parameter ${0} cannot have type {1}</summary>
+        ERR_ParameterTypeNotAllowed,
 
         //
         // Warnings

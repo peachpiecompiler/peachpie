@@ -399,6 +399,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_VoidFunctionCannotReturnValue);
                 }
 
+                if (_routine.SyntaxReturnType.IsNever())
+                {
+                    _diagnostics.Add(_routine, x.PhpSyntax ?? _routine.SyntaxReturnType, ErrorCode.ERR_NeverReturningFunctionCannotReturn);
+                }
+
                 if (x.Returned == null)
                 {
                     if (!_routine.SyntaxReturnType.IsVoid())

@@ -195,6 +195,16 @@ namespace Pchp.CodeAnalysis.Symbols
                     diagnostic.Add(this, p, Errors.ErrorCode.ERR_VariadicParameterNotLast);
                 }
 
+                // type hint
+                if (p.TypeHint != null)
+                {
+                    if (p.TypeHint.IsVoid() || p.TypeHint.IsNever())
+                    {
+                        // not allowed types
+                        diagnostic.Add(this, p, Errors.ErrorCode.ERR_ParameterTypeNotAllowed, p.Name.Name.Value, p.TypeHint);
+                    }
+                }
+
                 // constructor property
                 if (p.IsConstructorProperty)
                 {
@@ -214,7 +224,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     else if (p.TypeHint is PrimitiveTypeRef pt && (
                         pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable ||
-                        pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.iterable))
+                        pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.iterable ||
+                        pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.never))
                     {
                         diagnostic.Add(this, p, Errors.ErrorCode.ERR_PropertyTypeNotAllowed, this.ContainingType.PhpName(), p.Name, pt.PrimitiveTypeName.ToString());
                     }
