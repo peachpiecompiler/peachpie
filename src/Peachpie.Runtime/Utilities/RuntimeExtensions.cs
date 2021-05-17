@@ -33,5 +33,29 @@ namespace Pchp.Core.Utilities
             array.EnsureWritable();
             return array;
         }
+
+        /// <summary>
+        /// Gets value indicating the array is indexed with sequence of 0..Count.
+        /// </summary>
+        public static bool IsList(this PhpArray array)
+        {
+            if (array.table.IsPacked) // NOTE: there are no holes either
+            {
+                return true;
+            }
+
+            var next = 0;
+            var e = array.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                var k = e.CurrentKey;
+                if (k.IsString || k.Integer != next++)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }
