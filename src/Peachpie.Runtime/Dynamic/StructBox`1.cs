@@ -40,6 +40,8 @@ namespace Pchp.Core.Dynamic
             this.Value = value;
         }
 
+        public override string ToString() => Value.ToString();
+
         /// <inheritdoc/>
         object IPhpCloneable.Clone() => new StructBox<TValue>(Value);
 
@@ -78,5 +80,25 @@ namespace Pchp.Core.Dynamic
         }
 
         #endregion
+
+        //#region IPhpConvertible
+
+        //double IPhpConvertible.ToDouble();
+
+        //long IPhpConvertible.ToLong();
+
+        //bool IPhpConvertible.ToBoolean();
+
+        ////byte[] ToBytes();
+
+        //Convert.NumberInfo IPhpConvertible.ToNumber(out PhpNumber number);
+
+        //string IPhpConvertible.ToString() => ToString();
+
+        //object IPhpConvertible.ToClass();
+
+        //PhpArray IPhpConvertible.ToArray();
+
+        //#endregion
     }
 }

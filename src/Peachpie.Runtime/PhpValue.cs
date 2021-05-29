@@ -917,7 +917,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Double: return Double;
                 case PhpTypeCode.PhpArray:
                 case PhpTypeCode.String:
-                case PhpTypeCode.Object: return Object;
+                case PhpTypeCode.Object: return Object is IStructBox box ? box.BoxedValue : Object;
                 case PhpTypeCode.MutableString: return MutableStringBlob.ToString();
                 case PhpTypeCode.Alias: return Alias.Value.ToClr();
                 default:
@@ -945,14 +945,18 @@ namespace Pchp.Core
             if (type == typeof(string)) return this.ToString();
             if (type == typeof(object)) return this.ToClass();
 
-            if (this.Object != null && type.IsAssignableFrom(this.Object.GetType()))
+            var obj = this.Object;
+            if (obj != null)
             {
-                return this.Object;
-            }
+                if (obj is IStructBox box)
+                {
+                    obj = box.BoxedValue;
+                }
 
-            if (type == typeof(PhpAlias) && IsAlias)
-            {
-                return Alias;
+                if (type.IsAssignableFrom(obj.GetType()))
+                {
+                    return obj;
+                }
             }
 
             //if (type.IsNullable_T(out var nullable_t))
@@ -1277,6 +1281,7 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(IntStringKey)) return Create((IntStringKey)value);
 
                 // object        
+                //if (value is IStructBox box) return FromClass(box);
                 return FromClass(value);
             }
             else
