@@ -157,7 +157,7 @@ namespace Pchp.Core
             /// Scripts marked as to be autoloaded.
             /// </summary>
             static readonly List<ScriptInfo> s_autoloadfiles = new List<ScriptInfo>();
-            
+
             /// <summary>
             /// Scripts descriptors corresponding to id.
             /// </summary>
@@ -216,14 +216,12 @@ namespace Pchp.Core
 
                 // add to directory map {dir : ids[]}
 
-                if (s_dirsMap.TryGetValue(dir, out var ids))
+                if (!s_dirsMap.TryGetValue(dir, out var ids))
                 {
-                    ids.Add(index);
+                    s_dirsMap.Add(dir, ids = new List<int>());
                 }
-                else
-                {
-                    s_dirsMap[dir] = new List<int>() { index };
-                }
+
+                ids.Add(index);
             }
 
             static void DeclareScript(ScriptInfo script)
