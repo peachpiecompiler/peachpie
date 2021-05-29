@@ -1392,6 +1392,40 @@ namespace Pchp.Core.Dynamic
             return lambda.Compile();
         }
 
+        public static TFunc CreateDelegate<TFunc>(IPhpCallable callable, Context ctx) where TFunc: Delegate
+        {
+            // signature of the delegate
+            var delegate_invoke = typeof(TFunc).GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance);
+
+            //
+            var ips = delegate_invoke.GetParameters(); // invocation parameters
+            var ps = new ParameterExpression[ips.Length]; // lambda parameters (will be the same)
+            for (int i = 0; i < ps.Length; i++)
+            {
+                ps[i] = Expression.Parameter(ips[i].ParameterType, ips[i].Name);
+            }
+
+            //
+
+            var invoke = typeof(IPhpCallable).GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance);
+
+            var ctxexpr = Expression.Constant(ctx);
+            var arguments = ps.Select(p => ConvertExpression.Bind(p, typeof(PhpValue), ctxexpr));
+
+            // Template: callable.Invoke(ctx, args)
+            Expression invocation = Expression.Call(
+                instance: Expression.Constant(callable),
+                method: invoke,
+                arguments: new Expression[] { ctxexpr, Expression.NewArrayInit(typeof(PhpValue), arguments) });
+
+            // return type
+            invocation = ConvertExpression.Bind(invocation, delegate_invoke.ReturnType, ctxexpr);
+
+            // compile & create delegate
+            var lambda = Expression.Lambda<TFunc>(invocation, true, ps);
+            return lambda.Compile();
+        }
+
         public static PhpInvokable BindToPhpInvokable(MethodInfo[] methods, PhpTypeInfo lateStaticType = null)
         {
             // (Context ctx, object target, PhpValue[] arguments)

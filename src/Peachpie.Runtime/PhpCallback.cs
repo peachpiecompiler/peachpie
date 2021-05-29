@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
@@ -572,7 +571,7 @@ namespace Pchp.Core
             if (typeof(TFunc) == typeof(Func<long, long>)) return (TFunc)(object)new Func<long, long>((p1) => (long)callable.Invoke(ctx, p1));
 
             //
-            throw new NotImplementedException($"Creating delegate of type '{typeof(TFunc)}'."); // TODO: construct the delegate dynamically
-        }
+            return Dynamic.BinderHelpers.CreateDelegate<TFunc>(callable, ctx);
+        }        
     }
 }
