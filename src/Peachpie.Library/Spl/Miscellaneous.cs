@@ -72,7 +72,7 @@ namespace Pchp.Library.Spl
         // private PhpValue storage => ...
 
         [PhpHidden]
-        PhpArray _underlyingArray;
+        PhpArray _underlyingArray = new PhpArray();
 
         [PhpHidden]
         object _underlyingObject;
@@ -139,8 +139,13 @@ namespace Pchp.Library.Spl
                         }
                     }
                 }
+                else if (_underlyingArray != null && _underlyingArray.IsEmpty())
+                {
+                    // keep empty array
+                }
                 else
                 {
+                    // reset the storage
                     _underlyingArray = new PhpArray();
                     _underlyingObject = null;
                 }
