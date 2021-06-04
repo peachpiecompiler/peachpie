@@ -933,7 +933,7 @@ namespace Pchp.Core
         /// <exception cref="InvalidCastException">The value cannot be converted to specified <paramref name="type"/>.</exception>
         public object ToClr(Type type)
         {
-            if (type == typeof(PhpValue)) return this;
+            if (type == typeof(PhpValue)) return GetValue();
 
             if (type == typeof(long)) return (long)this;
             if (type == typeof(int)) return (int)(long)this;
