@@ -334,7 +334,17 @@ namespace Pchp.Library.Spl
 
         IPhpEnumerator IPhpEnumerable.GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller)
         {
-            throw new NotImplementedException();
+            if (_underlyingArray != null)
+            {
+                return _underlyingArray.GetForeachEnumerator(aliasedValues);
+            }
+
+            if (_underlyingObject != null)
+            {
+                return Operators.GetForeachEnumerator(_underlyingObject, aliasedValues, caller);
+            }
+
+            throw new InvalidOperationException();
         }
 
         #endregion
