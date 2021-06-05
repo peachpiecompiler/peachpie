@@ -3,6 +3,7 @@ using Pchp.Core.Reflection;
 using Pchp.Core.Resources;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -69,10 +70,8 @@ namespace Pchp.Library.Spl
 
         readonly protected Context _ctx;
 
-        // private PhpValue storage => ...
-
         [PhpHidden]
-        PhpArray _underlyingArray = new PhpArray();
+        PhpArray _underlyingArray;
 
         [PhpHidden]
         object _underlyingObject;
@@ -82,7 +81,7 @@ namespace Pchp.Library.Spl
         /// Default value is <see cref="ArrayIterator"/>.
         /// </summary>
         [PhpHidden]
-        internal string _iteratorClass;
+        string _iteratorClass;
 
         [PhpHidden]
         const string DefaultIteratorClass = "ArrayIterator";
@@ -135,13 +134,9 @@ namespace Pchp.Library.Spl
                         }
                         else
                         {
-                            throw new ArgumentException(nameof(value));
+                            throw PhpException.TypeErrorException();
                         }
                     }
-                }
-                else if (_underlyingArray != null && _underlyingArray.IsEmpty())
-                {
-                    // keep empty array
                 }
                 else
                 {
@@ -149,6 +144,9 @@ namespace Pchp.Library.Spl
                     _underlyingArray = new PhpArray();
                     _underlyingObject = null;
                 }
+
+                //
+                Debug.Assert(_underlyingArray != null ^ _underlyingObject != null);
             }
         }
 
@@ -163,11 +161,12 @@ namespace Pchp.Library.Spl
         protected ArrayObject(Context ctx)
         {
             _ctx = ctx;
+            _underlyingArray = new PhpArray();
         }
 
         public ArrayObject(Context ctx, PhpValue input = default(PhpValue), int flags = 0, string iterator_class = null/*ArrayIterator*/)
-            : this(ctx)
         {
+            _ctx = ctx;
             __construct(input, flags, iterator_class);
         }
 
