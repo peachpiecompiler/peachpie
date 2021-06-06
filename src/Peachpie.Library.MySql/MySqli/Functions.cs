@@ -299,6 +299,11 @@ namespace Peachpie.Library.MySql.MySqli
         public static object mysqli_fetch_object(mysqli_result result, string class_name = null, PhpArray class_params = null) => result.fetch_object(class_name, class_params);
 
         /// <summary>
+        /// Fetches single scalar value from the result set.
+        /// </summary>
+        public static PhpValue mysqli_fetch_column(mysqli_result result, int column = 0) => result.fetch_column(column);
+
+        /// <summary>
         /// Returns an array of objects representing the fields in a result set.
         /// </summary>
         public static PhpArray mysqli_fetch_fields(mysqli_result result) => result.fetch_fields();

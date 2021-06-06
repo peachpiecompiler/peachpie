@@ -72,6 +72,22 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public PhpArray fetch_assoc() => _result.FetchAssocArray();
 
+        /// <summary>
+        /// Fetch single scalar value from the result set.
+        /// </summary>
+        public PhpValue fetch_column(int column = 0)
+        {
+            if (_result.CheckFieldIndex(column)) // TODO: throw ValueError
+            {
+                if (_result.TryReadRow(out var oa, out _))
+                {
+                    return PhpValue.FromClr(oa[column]);
+                }
+            }
+
+            return PhpValue.False;
+        }
+
         stdClass fetch_field_internal(int field)
         {
             if (!_result.CheckFieldIndex(field))
