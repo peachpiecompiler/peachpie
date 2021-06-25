@@ -1608,6 +1608,16 @@ namespace Pchp.Core
             return new PhpString(b);
         }
 
+        /// <summary>
+        /// Gets the value as <see cref="PhpValue"/>.
+        /// </summary>
+        public static implicit operator PhpValue(PhpString value) => AsPhpValue(value);
+
+        /// <summary>
+        /// Operator.
+        /// </summary>
+        public static PhpString ToPhpString(byte[] value) => value;
+
         public PhpString DeepCopy() => new PhpString(this);
 
         #endregion
@@ -1805,11 +1815,6 @@ namespace Pchp.Core
                 }
             }
         }
-
-        /// <summary>
-        /// Gets the value as <see cref="PhpValue"/>.
-        /// </summary>
-        public static implicit operator PhpValue(PhpString value) => AsPhpValue(value);
 
         /// <summary>
         /// Gets bytes count when converted to bytes using provided <paramref name="encoding"/>.
