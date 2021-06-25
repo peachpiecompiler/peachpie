@@ -125,15 +125,98 @@ namespace Pchp.Library
 
         static Rational Parse(string num)
         {
-            if (!Rational.TryParseDecimal(num, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out var value))
-            {
-                // Warning: bcmath function argument is not well-formed
-                PhpException.InvalidArgument("num", Resources.Resources.bcmath_wrong_argument);
+            // note: there is no builtin Rational method to parse the simple real number
 
-                value = Rational.Zero;
+            static void ConsumeWhitespaces(string str, ref int i)
+            {
+                while (i < str.Length && char.IsWhiteSpace(str[i])) i++;
             }
 
-            return value;
+            static int ConsumeSign(string str, ref int i)
+            {
+                if (i < str.Length)
+                {
+                    switch (str[i])
+                    {
+                        case '+':
+                            i++;
+                            return +1;
+                        case '-':
+                            i++;
+                            return -1;
+                    }
+                }
+
+                return +1;
+            }
+
+            static ReadOnlySpan<char> ConsumeNum(string str, ref int i)
+            {
+                int from = i;
+                char c;
+                while (i < str.Length && (c = str[i]) >= '0' && c <= '9') i++;
+
+                return from < i ? str.AsSpan(from, i - from) : ReadOnlySpan<char>.Empty;
+            }
+
+            static bool ConsumeChar(string str, ref int i, char expected)
+            {
+                if (i < str.Length && str[i] == expected)
+                {
+                    i++;
+                    return true;
+                }
+                return false;
+            }
+
+            // \s*[+-]?[0-9]*(\.[0-9]*)?\s*
+
+            int i = 0;
+
+            // leading whitespace
+            // \s*
+            ConsumeWhitespaces(num, ref i);
+
+            // [+-]?
+            var sign = ConsumeSign(num, ref i);
+
+            // [0-9]*
+            var whole = ConsumeNum(num, ref i);
+            var result = whole.IsEmpty
+                ? Rational.Zero
+                : new Rational(BigInteger.Parse(whole.ToString(), NumberStyles.None, CultureInfo.InvariantCulture));
+
+            // \.?
+            if (ConsumeChar(num, ref i, '.'))
+            {
+                // [0-9]*
+                var fracstr = ConsumeNum(num, ref i);
+                if (fracstr.Length != 0 && !(fracstr.Length == 1 && fracstr[0] == '0')) // frac is not zero
+                {
+                    var fracnum = BigInteger.Parse(fracstr.ToString(), NumberStyles.None, CultureInfo.InvariantCulture);
+                    var denominator = BigInteger.Pow(10, fracstr.Length);
+
+                    var frac = new Rational(fracnum, denominator);
+                    result = result + frac;
+                }
+            }
+
+            // trailing whitespace
+            // \s*
+            ConsumeWhitespaces(num, ref i);
+
+            if (i < num.Length)
+            {
+                // Warning: bcmath function argument is not well-formed
+                PhpException.InvalidArgument(nameof(num), Resources.Resources.bcmath_wrong_argument);
+            }
+
+            if (sign < 0)
+            {
+                result = Rational.Negate(result);
+            }
+
+            return result;
         }
 
         #endregion
@@ -173,15 +256,9 @@ namespace Pchp.Library
         public static string bcmod(Context ctx, string num1, string num2, int? scale = default)
         {
             var a = Parse(num1);
-            var b = Parse(num2);
+            var mod = Parse(num2);
 
-            if (b.IsZero)
-            {
-                throw new DivisionByZeroError("Modulo by zero");
-                // return null; // PHP < 8
-            }
-
-            var result = bcmod(a, b);
+            var result = bcmod(a, mod);
 
             return ToString(result, GetScale(ctx, scale));
         }
