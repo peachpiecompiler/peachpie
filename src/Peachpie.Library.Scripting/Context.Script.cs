@@ -189,7 +189,7 @@ namespace Peachpie.Library.Scripting
         {
             // use the language version of the requesting context
             var languageVersion = options.LanguageVersion;
-            bool shortOpenTags = false;
+            var shortOpenTags = false;
 
             var language = options.Context.TargetPhpLanguage;
             if (language != null)
@@ -255,10 +255,10 @@ namespace Peachpie.Library.Scripting
                 if (options.EmitDebugInformation)
                 {
                     compilation = compilation.WithPhpOptions(compilation.Options.WithOptimizationLevel(OptimizationLevel.Debug).WithDebugPlusMode(true));
+                    emitOptions = emitOptions.WithDebugInformationFormat(DebugInformationFormat.PortablePdb);
 
                     if (options.IsSubmission)
                     {
-                        emitOptions = emitOptions.WithDebugInformationFormat(DebugInformationFormat.PortablePdb);
                         embeddedTexts = new[] { EmbeddedText.FromSource(tree.FilePath, tree.GetText()) };
                     }
                 }

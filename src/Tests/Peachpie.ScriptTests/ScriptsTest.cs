@@ -60,15 +60,15 @@ namespace ScriptsTest
 
             if (Environment.GetEnvironmentVariable(PEACHPIE_TEST_PHP) != "0")
             {
-                var phpresult = result;
+                string phpresult;
 
                 try
                 {
                     phpresult = Interpret(path);
                 }
-                catch
+                catch (Exception e)
                 {
-                    _output.WriteLine("Running PHP failed.");
+                    _output.WriteLine($"Running PHP failed: {e.Message}");
                     return;
                 }
 
@@ -94,7 +94,7 @@ namespace ScriptsTest
                 ctx.OutputStream = outputStream;
 
                 // Compile and load 
-                var script = _provider.CreateScript(new Context.ScriptOptions()
+                var script = _provider.CreateScript(new Context.ScriptOptions
                 {
                     Context = ctx,
                     IsSubmission = false,
@@ -127,14 +127,16 @@ namespace ScriptsTest
 
         static string RunProcess(string exe, string args, string cwd)
         {
-            var process = new Process();
-            process.StartInfo = new ProcessStartInfo(exe, args)
+            var process = new Process
             {
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                UseShellExecute = false,
-                WorkingDirectory = cwd
+                StartInfo = new ProcessStartInfo(exe, args)
+                {
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    UseShellExecute = false,
+                    WorkingDirectory = cwd,
+                }
             };
 
             //
