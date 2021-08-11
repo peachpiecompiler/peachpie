@@ -981,7 +981,8 @@ namespace Pchp.Library
             {
                 var g = groups[i];
                 var value = (g.Success || !unmatchedAsNull) ? g.Value : null;
-                var item = NewArrayItem(value, g.Index, offsetCapture);
+                int index = g.Success ? g.Index : -1;
+                var item = NewArrayItem(value, index, offsetCapture);
 
                 // All groups should be named.
                 if (g.IsNamedGroup)
