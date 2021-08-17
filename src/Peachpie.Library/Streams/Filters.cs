@@ -47,7 +47,7 @@ namespace Pchp.Library.Streams
         public PhpString ToPhpString() => IsNull ? default(PhpString) : IsText ? new PhpString(GetText()) : new PhpString(GetBytes());
 
         /// <summary>
-        /// Gets length of the string or byytes array.
+        /// Gets length of the string or bytes array.
         /// </summary>
         public int Length => (_data != null) ? (IsText ? GetText().Length : GetBytes().Length) : 0;
 

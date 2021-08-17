@@ -772,7 +772,7 @@ namespace Pchp.Library.Streams
                 {
                     TextElement data;
 
-                    int toskip = offset - haveskipped;
+                    var toskip = offset - haveskipped;
                     if (toskip > from.GetNextDataLength())
                     {
                         data = from.ReadMaximumData();
@@ -784,6 +784,8 @@ namespace Pchp.Library.Streams
                         if (data.IsNull) break; // EOF or error.
                         Debug.Assert(data.Length <= toskip);
                     }
+
+                    haveskipped += data.Length;
 
                     Debug.Assert(haveskipped <= offset);
                 }
