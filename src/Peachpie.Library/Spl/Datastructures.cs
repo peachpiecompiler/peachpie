@@ -425,34 +425,17 @@ namespace Pchp.Library.Spl
 
         public PhpValue offsetGet(PhpValue offset)
         {
-            var node = GetNodeAtIndex(offset);
-
-            Debug.Assert(node != null);
-
-            if (node != null)
-                return node.Value;
-            else
-                return PhpValue.Null;
+            return GetNodeAtIndex(offset).Value.DeepCopy();
         }
 
         public void offsetSet(PhpValue offset, PhpValue value)
         {
-            var node = GetNodeAtIndex(offset);
-
-            Debug.Assert(node != null);
-
-            if (node != null)
-                node.Value = value;
+            GetNodeAtIndex(offset).Value = value.DeepCopy();
         }
 
         public void offsetUnset(PhpValue offset)
         {
-            var node = GetNodeAtIndex(offset);
-
-            Debug.Assert(node != null);
-
-            if (node != null)
-                _baseList.Remove(node);
+            _baseList.Remove(GetNodeAtIndex(offset));
         }
 
         public bool offsetExists(PhpValue offset)
@@ -651,11 +634,13 @@ namespace Pchp.Library.Spl
             }
         }
 
+        /// <exception cref="OutOfRangeException"></exception>
         private LinkedListNode<PhpValue> GetNodeAtIndex(PhpValue index)
         {
             return GetNodeAtIndex(GetValidIndex(index));
         }
 
+        /// <exception cref="OutOfRangeException"></exception>
         private LinkedListNode<PhpValue>/*!*/GetNodeAtIndex(long index)
         {
             var node = _baseList.First;
