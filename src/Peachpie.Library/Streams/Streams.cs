@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 using System;
@@ -547,13 +548,14 @@ namespace Pchp.Library.Streams
             // check if the scheme is already registered:
             if (string.IsNullOrEmpty(protocol) || StreamWrapper.GetWrapperInternal(ctx, protocol) == null)
             {
-                // TODO: Warning?
+                // TODO: warning: Protocol {0}:// is already defined.
                 return false;
             }
 
-            var wrapperClass = ctx.GetDeclaredTypeOrThrow(classname, true);
+            var wrapperClass = ctx.GetDeclaredType(classname, true);
             if (wrapperClass == null)
             {
+                PhpException.Throw(PhpError.Warning, ErrResources.class_not_found, classname);
                 return false;
             }
 
