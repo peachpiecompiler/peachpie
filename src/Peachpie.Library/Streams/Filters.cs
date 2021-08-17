@@ -147,7 +147,7 @@ namespace Pchp.Library.Streams
             {
                 // Both \r\n together make a pair which would consume a pending \r.
                 if (str.Length == 0) str = "\r";
-                else if (str[0] != '\n') str.Insert(0, "\r");
+                else if (str[0] != '\n') str = $"\r{str}";
             }
 
             // Replace the pair.
@@ -158,7 +158,7 @@ namespace Pchp.Library.Streams
                 pending = str[str.Length - 1] == '\r';
 
                 // Postpone the resolution of \r\n vs. \r to the next filtering if this is not the last one.
-                if (!closing && pending) str.Remove(str.Length - 1, 1);
+                if (!closing && pending) str = str.Substring(0, str.Length - 1);
             }
 
             //
