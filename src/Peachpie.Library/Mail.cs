@@ -22,7 +22,7 @@ namespace Pchp.Library
             to = (to != null) ? to.Replace("\r\n", " ").Replace('\n', ' ') : "";
             subject = (subject != null) ? subject.Replace("\r\n", " ").Replace('\n', ' ') : "";
 
-            Debug.WriteLine("mail('{0}','{1}','{2}','{3}')", "MAILER", to, subject, message, additional_headers);
+            Debug.WriteLine("mail('{0}','{1}','{2}','{3}')", to, subject, message, additional_headers);
 
             var config = ctx.Configuration.Core;
 
