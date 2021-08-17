@@ -182,7 +182,7 @@ namespace Pchp.Core.Reflection
                         }
                         break;
                     case "System.Diagnostics.CodeAnalysis.NotNullAttribute":
-                        result |= FlowAnalysisAnnotations.AllowNull;
+                        result |= FlowAnalysisAnnotations.NotNull;
                         break;
                 }
             }
