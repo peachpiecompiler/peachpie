@@ -303,7 +303,7 @@ namespace Pchp.Library
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public static bool ftp_put(Context context, PhpResource ftp_stream, string remote_file, string local_file, int mode = FTP_IMAGE, int startpos = 0)
         {
-            return Put(context, ftp_stream, remote_file, local_file, mode = FTP_IMAGE, false, startpos);
+            return Put(context, ftp_stream, remote_file, local_file, mode, false, startpos);
         }
 
         /// <summary>
