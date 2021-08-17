@@ -929,7 +929,7 @@ namespace Pchp.Library
 
                     foreach (var h in headers)
                     {
-                        result[h.Key] = string.Join(", ", h.Value) ?? string.Empty;
+                        result[h.Key] = h.Value != null ? string.Join(", ", h.Value) : string.Empty;
                     }
 
                     return result;
