@@ -514,7 +514,7 @@ namespace Pchp.Library
         /// </summary>
         public bool addPattern(string pattern, string path = ".", PhpArray options = null)
         {
-            PhpException.FunctionNotSupported(nameof(addGlob));
+            PhpException.FunctionNotSupported(nameof(addPattern));
             return false;
         }
 
