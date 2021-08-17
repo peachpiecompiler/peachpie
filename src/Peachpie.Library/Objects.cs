@@ -185,7 +185,8 @@ namespace Pchp.Library
                 return null;
             }
 
-            var tinfo = Type.GetTypeFromHandle(caller)?.GetPhpTypeInfo();
+            var t = Type.GetTypeFromHandle(caller) ?? throw new ArgumentException("", nameof(caller)); // cannot be null; caller is either default or an invalid handle
+            var tinfo = t.GetPhpTypeInfo();
             return tinfo.BaseType?.Name;
         }
 
