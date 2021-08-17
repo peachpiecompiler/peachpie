@@ -3130,12 +3130,15 @@ namespace Pchp.Library
         /// <returns></returns>
         static HashPhpResource ValidateHashResource(HashContext context)
         {
-            if (context == null)
+            if (context != null)
+            {
+                return context.HashAlgorithm;
+            }
+            else
             {
                 PhpException.ArgumentNull(nameof(context));
+                return null;
             }
-
-            return context.HashAlgorithm;
         }
 
         //[return: CastToFalse]
