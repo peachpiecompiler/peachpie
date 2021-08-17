@@ -17,7 +17,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public static bool IsAutoloadDeprecated(Version langVersion)
         {
             // >= 7.2
-            return langVersion != null && langVersion.Major > 7 || (langVersion.Major == 7 && langVersion.Minor >= 2);
+            return langVersion != null && (langVersion.Major > 7 || (langVersion.Major == 7 && langVersion.Minor >= 2));
         }
 
         public static bool IsStringableSupported(PhpCompilation compilation)
