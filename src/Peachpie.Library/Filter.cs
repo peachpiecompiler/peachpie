@@ -768,11 +768,13 @@ namespace Pchp.Library
                                 throw new NotImplementedException();
                             }
 
-                            if ((flags & (int)FilterFlag.NO_PRIV_RANGE) == (int)FilterFlag.NO_RES_RANGE)
+                            if ((flags & (int)FilterFlag.NO_RES_RANGE) == (int)FilterFlag.NO_RES_RANGE)
                             {
                                 /*
-                                 * Fails validation for IPv4 ranges: 0.0.0.0/8, 169.254.0.0/16, 127.0.0.0/8 and 240.0.0.0/4.
-                                 * Fails validation for IPv6 ranges: ::1/128, ::/128, ::ffff:0:0/96 and fe80::/10.
+                                 * Fails validation for the following reserved IPv4 ranges: 0.0.0.0/8, 169.254.0.0/16, 127.0.0.0/8 and 240.0.0.0/4.
+                                 * Fails validation for the following reserved IPv6 ranges: ::1/128, ::/128, ::ffff:0:0/96 and fe80::/10.
+                                 * 
+                                 * These are the ranges that are marked as Reserved-By-Protocol in RFC 6890.
                                  */
                                 throw new NotImplementedException();
                             }
