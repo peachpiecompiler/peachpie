@@ -1378,8 +1378,8 @@ namespace Pchp.Library.Streams
             {
                 while (maxLength > 0 && !Eof)
                 {
-                    string data = ReadString(maxLength);
-                    if (data == null && data.Length > 0) break; // EOF or error.
+                    var data = ReadString(maxLength);
+                    if (data == null) break; // EOF or error.
                     maxLength -= data.Length;
                     result.Append(data);
                 }
@@ -1388,7 +1388,7 @@ namespace Pchp.Library.Streams
             {
                 while (!Eof)
                 {
-                    string data = ReadMaximumString();
+                    var data = ReadMaximumString();
                     if (data == null) break; // EOF or error.
                     result.Append(data);
                 }
