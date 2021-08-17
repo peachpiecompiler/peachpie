@@ -1229,14 +1229,16 @@ namespace Pchp.Library.DateTime
             {
                 case -1: // detect, whether the date is during DST:
                     if (zone.IsDaylightSavingTime(local))
-                        local.AddHours(-1);
+                    {
+                        local = local.AddHours(-1);
+                    }
                     break;
 
                 case 0: // not dst
                     break;
 
                 case 1: // dst
-                    local.AddHours(-1);
+                    local = local.AddHours(-1);
                     break;
 
                 default:
