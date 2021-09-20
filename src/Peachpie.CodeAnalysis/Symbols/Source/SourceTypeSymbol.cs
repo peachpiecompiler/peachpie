@@ -1108,7 +1108,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         yield return new SourceFieldSymbol(this, p.Name.Name.Value,
                             CreateLocation(p.Span),
-                            p.ConstructorPropertyVisibility.GetAccessibility(),
+                            (p.ConstructorPropertyFlags & PhpMemberAttributes.VisibilityMask).GetAccessibility(),
                             phpdoc: null,
                             kind: PhpPropertyKind.InstanceField,
                             initializer: null); // passed as argument
