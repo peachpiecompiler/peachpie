@@ -1233,11 +1233,30 @@ namespace Pchp.Core
                 return value;
             }
 
+            // NOTE: magic methods must have public visibility, therefore the visibility check is unnecessary
+
+            if (quiet)
+            {
+                // call __isset() first, if defined
+                var __isset = type.RuntimeMethods[TypeMethods.MagicMethods.__isset];
+                if (__isset != null)
+                {
+                    // int subkey1 = access.Write() ? 1 : access.Unset() ? 2 : access.Isset() ? 3 : 4;
+                    int subkey = propertyName.GetHashCode() ^ (1 << 4/*subkey1*/);
+
+                    using (var token = new Context.RecursionCheckToken(ctx, instance, subkey))
+                    {
+                        if (!token.IsInRecursion && __isset.Invoke(ctx, instance, propertyName).ToBoolean() == false)
+                        {
+                            return PhpValue.Null;
+                        }
+                    }
+                }
+            }
+
             var __get = type.RuntimeMethods[TypeMethods.MagicMethods.__get];
             if (__get != null)
             {
-                // NOTE: magic methods must have public visibility, therefore the visibility check is unnecessary
-
                 // int subkey1 = access.Write() ? 1 : access.Unset() ? 2 : access.Isset() ? 3 : 4;
                 int subkey = propertyName.GetHashCode() ^ (1 << 4/*subkey1*/);
 

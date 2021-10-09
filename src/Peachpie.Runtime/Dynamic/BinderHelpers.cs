@@ -952,7 +952,7 @@ namespace Pchp.Core.Dynamic
 
                     var __isset =
                         BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__isset, field, null) ??
-                        BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
+                        Cache.Expressions.Create(false); //BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
 
                     // Template: TryGetField(result) ? isset(result) : (bool)(__isset(key)??NULL)
                     result = Expression.Condition(
@@ -963,6 +963,8 @@ namespace Pchp.Core.Dynamic
                 else
                 {
                     // = target->field
+
+                    // target->__isset(field) ? target->__get(field) : NULL
 
                     // Template: Operators.RuntimePropertyGetValue(ctx, PhpTypeInfo, instance, propertyName, quiet)
                     return Expression.Call(
