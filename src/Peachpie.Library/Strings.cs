@@ -56,7 +56,7 @@ namespace Pchp.Library
         /// <returns>The character with <paramref name="bytevalue "/> ASCII code.</returns>
         public static PhpString chr(int bytevalue)
         {
-            if (bytevalue < 0xf0)
+            if (32 <= bytevalue && bytevalue < 128)
             {
                 return ((char)bytevalue).ToString();
             }
