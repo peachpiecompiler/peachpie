@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Pchp.Core
 {
     [DebuggerDisplay("{GetDebuggerValue,nq}", Type = "{GetDebuggerType,nq}")]
-    [DebuggerNonUserCode, DebuggerStepThrough]
+    [DebuggerNonUserCode]
     [StructLayout(LayoutKind.Explicit)]
     public readonly struct PhpNumber : IComparable<PhpNumber>, IComparable<long>, IComparable<double>, IEquatable<PhpNumber>, IPhpConvertible
     {

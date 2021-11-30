@@ -13,7 +13,7 @@ namespace Pchp.Core
     /// <summary>
 	/// The hashtable storing entries with <see cref="string"/> and <see cref="int"/> keys in a manner of PHP.
 	/// </summary>
-	[DebuggerNonUserCode, DebuggerStepThrough]
+	[DebuggerNonUserCode]
     public class PhpHashtable : IDictionary<IntStringKey, PhpValue>, IList, IList<PhpValue> // , IDictionary // , ICloneable
     {
         #region Fields and Properties

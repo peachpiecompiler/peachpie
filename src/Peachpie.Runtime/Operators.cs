@@ -12,7 +12,7 @@ using Pchp.Core.Resources;
 
 namespace Pchp.Core
 {
-    [DebuggerNonUserCode, DebuggerStepThrough]
+    [DebuggerNonUserCode]
     public static class Operators
     {
         #region Numeric

@@ -182,7 +182,7 @@ namespace Pchp.Core
     /// <remarks>
     /// Not thread safe.
     /// </remarks>
-    [DebuggerNonUserCode, DebuggerStepThrough]
+    [DebuggerNonUserCode]
     [DebuggerDisplay("dictionary (count = {Count})")]
     public sealed class OrderedDictionary/*<TValue>*/ : IEnumerable<KeyValuePair<IntStringKey, TValue>>, IEnumerable<TValue>
     {
