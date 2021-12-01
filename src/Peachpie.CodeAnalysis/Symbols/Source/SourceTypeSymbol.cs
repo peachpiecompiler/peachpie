@@ -1271,16 +1271,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets value indicating the type is declared conditionally.
         /// </summary>
-        internal override bool IsConditional => _syntax.IsConditional || _postponedDeclaration;
-
-        /// <summary>
-        /// Marks the symbol as its declaration should not be performed at the beginning of the file, since it mat depend on statements evaluated before the declaration.
-        /// </summary>
-        internal void PostponedDeclaration()
-        {
-            _postponedDeclaration = true;
-        }
-        bool _postponedDeclaration = false;
+        internal override bool IsConditional => _syntax.IsConditional;
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 

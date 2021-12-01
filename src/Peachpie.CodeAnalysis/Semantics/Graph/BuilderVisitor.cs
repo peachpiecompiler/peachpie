@@ -380,6 +380,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
+                // just simplifies the resulting semantic graph,
+                // simple types are listed at the very beginning
+
                 AddUnconditionalDeclaration(bound);
             }
         }

@@ -69,6 +69,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // <ctx>.OnInclude<TScript>()
                 cg.EmitLoadContext();
                 cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.OnInclude_TScript.Symbol.Construct(cg.Routine.ContainingType));
+
+                // declare types that can be declared
+                cg.EmitDeclareTypesInParsePhase(cg.Routine.ContainingFile.ContainedTypes);
             }
 
             //

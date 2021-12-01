@@ -3183,8 +3183,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(f != null);
             Debug.Assert(!f.IsUnreachable);
 
-            this.EmitSequencePoint(((FunctionDecl)f.Syntax).HeadingSpan);
-
             // <ctx>.DeclareFunction(RoutineInfo)
             EmitLoadContext();
             f.EmitLoadRoutineInfo(this);
@@ -3193,20 +3191,62 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Set of types which declaration was already emitted at the beginning of script.
+        /// </summary>
+        HashSet<SourceTypeSymbol> _staticallyDeclaredTypes;
+
+        /// <summary>
+        /// Emits declaration of types that can be declared at the beginning of script.
+        /// </summary>
+        public void EmitDeclareTypesInParsePhase(IEnumerable<SourceTypeSymbol> types)
+        {
+            Contract.ThrowIfNull(types);
+
+            foreach (var t in types)
+            {
+                // try to declare the type
+                // NOTE: do not declare conditionally declared types (i.e. contained in IF)
+                // NOTE: DO declare even types that are unreachable (e.g. after `return` statement)
+
+                if (!t.IsConditional && EmitDeclareType(t, parsePhase: true))
+                {
+                    _staticallyDeclaredTypes ??= new HashSet<SourceTypeSymbol>();
+                    _staticallyDeclaredTypes.Add(t);
+                }
+            }
+        }
+
+        /// <summary>
         /// Emits type declaration into the context.
         /// </summary>
-        public void EmitDeclareType(SourceTypeSymbol t)
+        /// <param name="t">Type to be declared.</param>
+        /// <param name="parsePhase"><c>true</c> in case we're just trying to declare the type; it won't cause any autoload, it won't cause any runtime exception.</param>
+        /// <returns>Value indicating the type got declared unconditionally.</returns>
+        public bool EmitDeclareType(SourceTypeSymbol t, bool parsePhase)
         {
             Contract.ThrowIfNull(t);
-            Debug.Assert(!t.IsErrorType(), "Cannot declare an error type.");
 
-            // 
-            this.EmitSequencePoint(t.Syntax.HeadingSpan);
+            if (t.IsErrorType())
+            {
+                throw new InvalidOperationException("Attempt to declare an error type at " + ExceptionUtilities.GuessSourceLocation(this));
+            }
+
+            if (_staticallyDeclaredTypes?.Contains(t) == true)
+            {
+                // already declared statically
+                return true;
+            }
 
             // autoload base types or throw an error
             var versions = t.HasVersions ? t.AllReachableVersions() : default;
-            if (!versions.IsDefault && versions.Length > 1)
+            if (versions.IsDefault == false && versions.Length > 1)
             {
+                if (parsePhase)
+                {
+                    // TODO: check what dependant types are declared and based on that, declare "t", or nothing
+                    return false;
+                }
+
                 // emit declaration of type that has ambiguous versions
                 EmitVersionedTypeDeclaration(versions);
             }
@@ -3219,13 +3259,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Debug.Assert(versions.Length == 1);
                     t = versions[0];
                 }
-                Debug.Assert(!t.IsUnreachable);
 
+                // types that are expected to be declared prior to declaring "t"
                 var dependent = t.GetDependentSourceTypeSymbols();
 
-                // ensure all types are loaded into context,
-                // autoloads if necessary
-                dependent.ForEach(EmitExpectTypeDeclared);
+                foreach (var d in dependent)
+                {
+                    if (parsePhase)
+                    {
+                        // TODO: if (ctx.GetDeclaredType(autoload: false) == null) return false;
+                        return false;
+                    }
+
+                    // ensure all types are loaded into context,
+                    // autoloads if necessary
+                    EmitExpectTypeDeclared(d);
+                }
 
                 if (t.Arity == 0)
                 {
@@ -3246,6 +3295,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             Debug.Assert(_il.IsStackEmpty);
+            return true;
         }
 
         /// <summary>
@@ -3354,7 +3404,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             // resolve dependent types:
             foreach (var d in dependent)
             {
-
                 if (d.Value.Count == 1)
                 {
                     EmitExpectTypeDeclared(d.Value.Single());

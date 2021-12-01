@@ -217,8 +217,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
             _type = type;
             this.PhpSyntax = type.Syntax;
-
-            type.PostponedDeclaration();
         }
 
         internal BoundTypeDeclStatement Update(SourceTypeSymbol type)
