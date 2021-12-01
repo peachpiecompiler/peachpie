@@ -609,11 +609,14 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 EmptyRuntimeTypeHandle = ct.Helpers.Field(nameof(EmptyRuntimeTypeHandle));
                 EmptyNullable_T = ct.Helpers.Method(nameof(EmptyNullable_T));
+                IsUserTypeDeclared_Context_PhpTypeInfo = ct.Helpers.Method("IsUserTypeDeclared", ct.Context, ct.PhpTypeInfo);
             }
 
             public readonly CoreField EmptyRuntimeTypeHandle;
 
             public readonly CoreMethod EmptyNullable_T;
+
+            public readonly CoreMethod IsUserTypeDeclared_Context_PhpTypeInfo;
         }
 
         public struct PhpAliasHolder

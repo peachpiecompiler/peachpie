@@ -3237,6 +3237,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return true;
             }
 
+            // optional label after the "DeclareType" operation
+            object lblSkip = null;
+            bool alwaysDeclared = true;
+
             // autoload base types or throw an error
             var versions = t.HasVersions ? t.AllReachableVersions() : default;
             if (versions.IsDefault == false && versions.Length > 1)
@@ -3263,17 +3267,33 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // types that are expected to be declared prior to declaring "t"
                 var dependent = t.GetDependentSourceTypeSymbols();
 
-                foreach (var d in dependent)
+                if (parsePhase)
                 {
-                    if (parsePhase)
+                    foreach (var d in dependent)
                     {
-                        // TODO: if (ctx.GetDeclaredType(autoload: false) == null) return false;
-                        return false;
-                    }
+                        if (IsTypeDeclaredCheckNecessary(d))
+                        {
+                            lblSkip ??= new NamedLabel("skip_DeclareType");
 
-                    // ensure all types are loaded into context,
-                    // autoloads if necessary
-                    EmitExpectTypeDeclared(d);
+                            alwaysDeclared = false; // type might not be declared at the end, we'll have to declare it properly again
+
+                            // Template: if (<ctx>.IsUserTypeDeclared(d) == null) goto lblSkip;
+                            EmitLoadContext();
+                            EmitLoadPhpTypeInfo(d);
+                            EmitCall(ILOpCode.Call, CoreMethods.Helpers.IsUserTypeDeclared_Context_PhpTypeInfo); // bool
+
+                            _il.EmitBranch(ILOpCode.Brfalse, lblSkip); // if (false) goto lblSkip;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var d in dependent)
+                    {
+                        // ensure all types are loaded into context,
+                        // autoloads if necessary
+                        EmitExpectTypeDeclared(d);
+                    }
                 }
 
                 if (t.Arity == 0)
@@ -3294,8 +3314,43 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
+            if (lblSkip != null)
+            {
+                _il.MarkLabel(lblSkip);
+            }
+
+            //
             Debug.Assert(_il.IsStackEmpty);
-            return true;
+            return alwaysDeclared;
+        }
+
+        /// <summary>
+        /// Gets value indicating runtime check for given type existance may be necessary.
+        /// </summary>
+        private bool IsTypeDeclaredCheckNecessary(ITypeSymbol d)
+        {
+            if (d is NamedTypeSymbol ntype)
+            {
+                if (ntype.IsAnonymousType || !ntype.IsPhpUserType())
+                {
+                    // anonymous classes are not declared
+                    // regular CLR types declared in app context
+                    return false;
+                }
+
+                // TODO: type has been checked already in current branch -> skip
+
+                if (this.CallerType != null && this.CallerType.IsOfType(ntype))
+                {
+                    // the type is a sub-type of current class context, so it must be declared for sure
+                    // e.g. self, parent
+                    return false;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -3306,34 +3361,18 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(((TypeSymbol)d).IsValidType());
             Debug.Assert(!((TypeSymbol)d).IsUnreachable);
 
-            if (d is NamedTypeSymbol ntype)
+            if (IsTypeDeclaredCheckNecessary(d) && d is NamedTypeSymbol ntype)
             {
-                if (ntype.IsAnonymousType || !ntype.IsPhpUserType())
-                {
-                    // anonymous classes are not declared
-                    // regular CLR types declared in app context
-                    return;
-                }
-
-                // TODO: type has been checked already in current branch -> skip
-
                 if (ntype.OriginalDefinition is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, this.ContainingFile) && !srct.Syntax.IsConditional)
                 {
                     // declared in same file unconditionally,
-                    // we don't have to check anything
+                    // we don't have to check it here
                     return;
                 }
 
                 if (ntype.OriginalDefinition is IPhpTypeSymbol phpt && phpt.AutoloadFlag == 2)
                 {
                     // type is autoloaded without side effects
-                    return;
-                }
-
-                if (this.CallerType != null && this.CallerType.IsOfType(ntype))
-                {
-                    // the type is a sub-type of current class context, so it must be declared for sure
-                    // e.g. self, parent
                     return;
                 }
 
