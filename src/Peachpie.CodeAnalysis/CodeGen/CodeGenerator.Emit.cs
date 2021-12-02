@@ -3277,9 +3277,19 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                             alwaysDeclared = false; // type might not be declared at the end, we'll have to declare it properly again
 
-                            // Template: if (<ctx>.IsUserTypeDeclared(d) == null) goto lblSkip;
+                            // Template: if (<ctx>.IsUserTypeDeclared(d) == false) goto lblSkip;
                             EmitLoadContext();
-                            EmitLoadPhpTypeInfo(d);
+
+                            if (d.IsTraitType())
+                            {
+                                EmitLoadToken(d.AsUnboundGenericType(), null);
+                                EmitCall(ILOpCode.Call, CoreMethods.Dynamic.GetPhpTypeInfo_RuntimeTypeHandle);
+                            }
+                            else
+                            {
+                                EmitLoadPhpTypeInfo(d);
+                            }
+
                             EmitCall(ILOpCode.Call, CoreMethods.Helpers.IsUserTypeDeclared_Context_PhpTypeInfo); // bool
 
                             _il.EmitBranch(ILOpCode.Brfalse, lblSkip); // if (false) goto lblSkip;
@@ -3329,6 +3339,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         private bool IsTypeDeclaredCheckNecessary(ITypeSymbol d)
         {
+            // the type was statically declared in this file already
+            if (d.OriginalDefinition is SourceTypeSymbol srct && _staticallyDeclaredTypes?.Contains(srct) == true)
+            {
+                return false;
+            }
+
             if (d is NamedTypeSymbol ntype)
             {
                 if (ntype.IsAnonymousType || !ntype.IsPhpUserType())
@@ -3346,6 +3362,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // e.g. self, parent
                     return false;
                 }
+
 
                 return true;
             }
