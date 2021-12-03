@@ -229,6 +229,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
+        /// <summary>
+        /// Gets value indicating the given type mask represents LONG only and nothing else.
+        /// </summary>
+        internal static bool IsLongOnly(this TypeRefContext ctx, TypeRefMask tmask) => !tmask.IsAnyType && ctx.IsLong(tmask);
+
+        /// <summary>
+        /// Gets value indicating the given type mask represents DOUBLE only and nothing else.
+        /// </summary>
+        internal static bool IsDoubleOnly(this TypeRefContext ctx, TypeRefMask tmask) => !tmask.IsAnyType && ctx.IsDouble(tmask);
+
         ///// <summary>
         ///// Gets value indicating whether specified object of type <paramref name="type"/> can be used as <c>foreach</c> enumerable variable.
         ///// </summary>
