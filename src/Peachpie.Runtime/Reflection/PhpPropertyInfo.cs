@@ -217,7 +217,7 @@ namespace Pchp.Core.Reflection
 
         #region ClrProperty
 
-        internal sealed class ClrProperty : PhpPropertyInfo
+        internal class ClrProperty : PhpPropertyInfo
         {
             public PropertyInfo Property { get; }
 
@@ -317,6 +317,29 @@ namespace Pchp.Core.Reflection
                     Property.GetMethod.IsStatic ? null : target,
                     Property);
             }
+        }
+
+        #endregion
+
+        #region ClrExplicitProperty
+
+        internal sealed class ClrExplicitProperty : ClrProperty
+        {
+            public override string PropertyName { get; }
+
+            public ClrExplicitProperty(PhpTypeInfo tinfo, PropertyInfo property, string explicitName)
+                : base(tinfo, property)
+            {
+                this.PropertyName = explicitName ?? throw new ArgumentNullException(nameof(explicitName));
+
+                //if (property.Name.IndexOf('.') < 0)
+                //{
+                //    throw new ArgumentException($"Property '{tinfo.Name}::${property.Name}' is not an explicit property.");
+                //}
+            }
+
+            public override FieldAttributes Attributes => FieldAttributes.Public;
+
         }
 
         #endregion
