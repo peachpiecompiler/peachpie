@@ -1190,6 +1190,12 @@ namespace Pchp.Core.Dynamic
                 }
                 else
                 {
+                    if (p.ParameterType.IsByRef) // ref/out semantic
+                    {
+                        // create temporary local
+                        // copy-back when method returns
+                    }
+
                     boundargs[i] = args.BindArgument(argi, p);
 
                     if (!IsPhpOptionalParameter(p)) // mandatory argument
@@ -1278,6 +1284,8 @@ namespace Pchp.Core.Dynamic
                         methodcall);
                 }
             }
+
+            // TODO: write-back of byref variables
 
             //
             return methodcall;

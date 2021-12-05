@@ -1137,8 +1137,6 @@ namespace Pchp.Core.Dynamic
             //
             body.Add(invoke);
 
-            // TODO: write-back of byref variables
-
             // return Block { ... ; invoke; }
             return Expression.Block(treturn, locals, body);
         }
