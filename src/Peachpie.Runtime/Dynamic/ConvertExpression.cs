@@ -112,8 +112,9 @@ namespace Pchp.Core.Dynamic
 
             if (target.IsByRef)
             {
-                // TODO: what to do
-                target = target.UnderlyingSystemType;
+                // for get value semantic
+                // convert to the non-ref type
+                target = target.GetElementType();
             }
 
             // enum
