@@ -676,6 +676,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // TODO: try unwrap "value.Object as T"
                             EmitConvertToPhpArray(from, fromHint);
                         }
+                        else if (DeclaringCompilation.GetWellKnownType(WellKnownType.System_Collections_Generic_IDictionary_KV).IsAssignableFrom(to))
+                        {
+                            // TODO: Dictionary<K, V>
+                            throw this.NotImplementedException($"Conversion from '{from}' to '{to}'");
+                        }
                         else
                         {
                             // -> Object, PhpResource

@@ -499,6 +499,10 @@ namespace Pchp.Core.Dynamic
             throw new NotImplementedException(source.FullName);
         }
 
+        /// <summary>
+        /// Creates <see cref="PhpValue"/> from given expression.
+        /// </summary>
+        /// <returns>Expression resulting in <see cref="PhpValue"/>.</returns>
         public static Expression BindToValue(Expression expr)
         {
             // known constants:
@@ -633,6 +637,8 @@ namespace Pchp.Core.Dynamic
                     typeof(PhpCallableToDelegate<>).MakeGenericType(target).GetMethod("Get"),
                     callable, ctx);
             }
+
+            // TODO: Dictionary<k, V>
 
             // from PhpValue:
             if (expr.Type == typeof(PhpValue))
