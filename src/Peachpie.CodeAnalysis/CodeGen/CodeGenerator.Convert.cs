@@ -676,10 +676,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // TODO: try unwrap "value.Object as T"
                             EmitConvertToPhpArray(from, fromHint);
                         }
-                        else if (DeclaringCompilation.GetWellKnownType(WellKnownType.System_Collections_Generic_IDictionary_KV).IsAssignableFrom(to))
+                        // else if ( to is IDictionary<,> || to is Dictionary<,> )
+                        else if (CoreTypes.IDictionary.Symbol.IsAssignableFrom(to))
                         {
-                            // TODO: Convert.ToDictionary<K, V>( PhpValue )
-                            throw this.NotImplementedException($"Conversion from '{from}' to '{to}'");
+                            // PhpValueConverter.Cast<T>( PhpValue )
+
+                            EmitConvertToPhpValue(from, fromHint);
+                            EmitCall(ILOpCode.Call, CoreMethods.Operators.Cast_PhpValue_T.Symbol.Construct(to))
+                                .Expect(to);
+
+                            //throw this.NotImplementedException($"Conversion from '{from}' to '{to}'");
                         }
                         else
                         {

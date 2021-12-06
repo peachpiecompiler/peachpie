@@ -147,10 +147,10 @@ namespace Pchp.CodeAnalysis.Symbols
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_LateStaticTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
             RuntimeChain_ChainEnd, RuntimeChain_Value_T, RuntimeChain_Property_T, RuntimeChain_ArrayItem_T, RuntimeChain_ArrayNewItem_T,
-            PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys, Helpers,
+            PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys, Helpers, PhpValueConverter,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable, ImportValueAttribute, DummyFieldsOnlyCtor,
-            Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception,
+            Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception, IDictionary,
             RuntimeTypeHandle, RuntimeMethodHandle,
             stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, Stringable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
 
@@ -236,6 +236,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");
             CommonPhpArrayKeys = Create("CommonPhpArrayKeys");
             Helpers = Create("Utilities.Helpers");
+            PhpValueConverter = Create(nameof(PhpValueConverter));
 
             Iterator = CreateFromFullName("Iterator");
             Traversable = CreateFromFullName("Traversable");
@@ -245,6 +246,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             MainDelegate = Create("Context+MainDelegate");
             IntPtr = CreateFromFullName("System.IntPtr");
+            IDictionary = CreateFromFullName("System.Collections.IDictionary");
         }
 
         #region Table of types

@@ -353,6 +353,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetArrayAccess_PhpValueRef = ct.Operators.Method("GetArrayAccess", ct.PhpValue);
                 IsInstanceOf_Object_PhpTypeInfo = ct.Convert.Method("IsInstanceOf", ct.Object, ct.PhpTypeInfo);
                 ToIntStringKey_PhpValue = ct.Convert.Method("ToIntStringKey", ct.PhpValue);
+                Cast_PhpValue_T = new CoreGenericMethod(ct.PhpValueConverter, "Cast", 1); // TODO: specify parameter type ct.PhpValue
 
                 Echo_Object_Context = ct.Operators.Method("Echo", ct.Object, ct.Context);
                 Echo_String_Context = ct.Operators.Method("Echo", ct.String, ct.Context);
@@ -478,6 +479,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, GetArrayAccess_PhpValueRef, ToPhpString_PhpValue_Context, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue_RuntimeTypeHandle_Object, AsCallable_String_RuntimeTypeHandle_Object,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
+                Cast_PhpValue_T,
                 Echo_Object_Context, Echo_String_Context, Echo_PhpString_Context, Echo_PhpNumber_Context, Echo_PhpValue_Context, Echo_PhpAlias_Context, Echo_Double_Context, Echo_Long_Context, Echo_Int32_Context, Echo_Bool_Context,
 
                 NormalizePath_string,
