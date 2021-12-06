@@ -638,23 +638,26 @@ namespace Pchp.Core.Dynamic
                     callable, ctx);
             }
 
-            // TODO: Dictionary<k, V>
+            //// from PhpValue:
+            //if (expr.Type == typeof(PhpValue))
+            //{
+            //    expr = Expression.Call(expr, Cache.Operators.PhpValue_GetValue);    // dereference
+            //    expr = Expression.Property(expr, Cache.Properties.PhpValue_Object); // PhpValue.Object
+            //}
 
-            // from PhpValue:
-            if (expr.Type == typeof(PhpValue))
-            {
-                expr = Expression.Call(expr, Cache.Operators.PhpValue_GetValue);    // dereference
-                expr = Expression.Property(expr, Cache.Properties.PhpValue_Object); // PhpValue.Object
-            }
+            //// to System.Array:
+            //if (target.IsArray)
+            //{
+            //    // Template: expr.ToArray().GetValues()
+            //}
 
-            // to System.Array:
-            if (target.IsArray)
-            {
-                // Template: expr.ToArray().GetValues()
-            }
+            //// just cast:
+            //return Expression.Convert(expr, target);
 
-            // just cast:
-            return Expression.Convert(expr, target);
+            // Template: PhpValueConverter.Cast<T>( PhpValue )
+            return Expression.Call(
+                    Cache.Operators.Cast_PhpValue_T.MakeGenericMethod(target),
+                    BindToValue(expr));
         }
 
         private static Expression BindAsArray(Expression expr, Type target)

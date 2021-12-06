@@ -100,6 +100,9 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo CheckFunctionDeclared_Context_Int_Int = new Func<Context, int, int, bool>(Context.CheckFunctionDeclared).Method;
 
             public static MethodInfo GetDeclaredFunction_Context_String = typeof(Context).GetMethod("GetDeclaredFunction");
+
+            /// <summary>T Cast{T}(PhpValue)</summary>
+            public static MethodInfo Cast_PhpValue_T = typeof(PhpValueConverter).GetMethod(nameof(PhpValueConverter.Cast), Types.PhpValue);
         }
 
         public static class Exceptions

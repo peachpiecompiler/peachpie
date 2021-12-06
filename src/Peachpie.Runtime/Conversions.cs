@@ -445,6 +445,38 @@ namespace Pchp.Core
 
         #endregion
 
+        #region ToDictionary
+
+        public static Dictionary<K,V>/*!*/ToDictionary<K, V>(this PhpValue value)
+        {
+            // try to unwrap assignable CLR instance
+            if (value.AsObject() is IDictionary<K, V> dictiface)
+            {
+                if (dictiface is Dictionary<K, V> dict)
+                {
+                    return dict;
+                }
+
+                return new Dictionary<K, V>(dictiface);
+            }
+
+            // create new dictionary and fill it from PHP enumerator
+            var newdict = new Dictionary<K, V>();
+
+            var enumerator = value.GetForeachEnumerator(false, default);
+            while (enumerator.MoveNext())
+            {
+                var current = enumerator.Current;
+                newdict.Add(
+                    current.Key.Cast<K>(),
+                    current.Value.Cast<V>());
+            }
+
+            return newdict;
+        }
+
+        #endregion
+
         #region ToNumber
 
         public static NumberInfo ToNumber(string str, out PhpNumber number)

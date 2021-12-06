@@ -678,7 +678,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
                         else if (DeclaringCompilation.GetWellKnownType(WellKnownType.System_Collections_Generic_IDictionary_KV).IsAssignableFrom(to))
                         {
-                            // TODO: Dictionary<K, V>
+                            // TODO: Convert.ToDictionary<K, V>( PhpValue )
                             throw this.NotImplementedException($"Conversion from '{from}' to '{to}'");
                         }
                         else
