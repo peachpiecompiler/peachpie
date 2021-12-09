@@ -777,26 +777,14 @@ namespace Pchp.Core.Dynamic
                 {
                     var argi = MapToArgsIndex(targetarg);
                     var arg = _args[argi];
-                    if (BinderHelpers.IsRuntimeChain(arg.Type))
+                    if (argi + 1 < _args.Length && BinderHelpers.TryAppendRuntimeChain(ref arg, _args[argi + 1], _ctx, _classContext, asalias: true))
                     {
                         // IRuntimeChain
-                    }
-                    else if (arg.Type == Cache.Types.IndirectLocal)
-                    {
-                        // IndirectLocal
-                    }
-                    else if (arg.Type == Cache.Types.PhpAlias[0])
-                    {
-                        // PhpAlias
-                    }
-                    else
-                    {
-                        // PhpValue&
-                        // anything else
-                        return Expression.Assign(arg, ConvertExpression.Bind(expression, arg.Type, _ctx));
+                        // {arg} : PhpAlias
+                        Debug.Assert(arg.Type == Cache.Types.PhpAlias[0]);
                     }
 
-                    throw new NotImplementedException($"write-back {arg.Type}");
+                    return BinderHelpers.BindAssign(arg, expression, _ctx);
                 }
 
                 public override Expression BindParams(int fromarg, Type element_type)

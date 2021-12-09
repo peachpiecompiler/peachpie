@@ -152,9 +152,10 @@ namespace Pchp.Core.Dynamic
 
         public static class IndirectLocal
         {
-            public static readonly MethodInfo GetValue = Types.IndirectLocal.GetMethod("GetValue");
+            public static readonly MethodInfo GetValue = Types.IndirectLocal.GetMethod(nameof(Core.IndirectLocal.GetValue));
+            public static readonly MethodInfo AssignValue_PhpValue = Types.IndirectLocal.GetMethod(nameof(Core.IndirectLocal.AssignValue));
             //public static readonly PropertyInfo ValueRef = Types.IndirectLocal.GetProperty("ValueRef", BindingFlags.NonPublic | BindingFlags.Instance);
-            public static readonly MethodInfo EnsureAlias = Types.IndirectLocal.GetMethod("EnsureAlias");
+            public static readonly MethodInfo EnsureAlias = Types.IndirectLocal.GetMethod(nameof(Core.IndirectLocal.EnsureAlias));
         }
 
         public static class RecursionCheckToken

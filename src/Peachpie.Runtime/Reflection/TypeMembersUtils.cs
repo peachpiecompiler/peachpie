@@ -67,7 +67,7 @@ namespace Pchp.Core.Reflection
                 return array;
             }
 
-            return null;
+            throw new NotSupportedException($"Object of type {tinfo.Name} does not support PHP runtime fields.");
         }
 
         /// <summary>

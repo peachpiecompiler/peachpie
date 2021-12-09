@@ -467,6 +467,38 @@ namespace Pchp.Core.Dynamic
             return target.GetRuntimeFields().FirstOrDefault(ReflectionUtils.IsRuntimeFields);
         }
 
+        public static Expression BindAssign(Expression target, Expression expression, Expression ctx)
+        {
+            if (IsRuntimeChain(target.Type))
+            {
+                // IRuntimeChain
+                // this is not a valid expression to be assigned to
+                throw new ArgumentException($"{nameof(BindAssign)}({target.Type})");
+            }
+            else if (target.Type == Cache.Types.IndirectLocal)
+            {
+                // IndirectLocal
+                // {arg}.AssignValue( (PhpValue)expression )
+                return Expression.Call(
+                    target, Cache.IndirectLocal.AssignValue_PhpValue,
+                    ConvertExpression.BindToValue(expression));
+            }
+            else if (target.Type == Cache.Types.PhpAlias[0])
+            {
+                // PhpAlias
+                // {arg}.Value = (PhpValue){expression}
+                return Expression.Assign(
+                    Expression.Property(target, Cache.PhpAlias.Value),
+                    ConvertExpression.BindToValue(expression));
+            }
+            else
+            {
+                // PhpValue&
+                // anything else
+                return Expression.Assign(target, ConvertExpression.Bind(expression, target.Type, ctx));
+            }
+        }
+
         public static Expression BindAccess(Expression expr, Expression ctx, AccessMask access, Expression rvalue)
         {
             if (access.EnsureObject())
@@ -1217,9 +1249,9 @@ namespace Pchp.Core.Dynamic
                             variable = valueVar,
                             expr = Expression.Assign(valueVar, valueExpr),  // = (valueVar = valueExpr)
                         });
-                        
+
                         boundargs[i] = valueVar;
-                        
+
                         // ... write-back when method returns
                     }
                     else

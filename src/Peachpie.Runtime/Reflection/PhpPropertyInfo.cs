@@ -389,10 +389,6 @@ namespace Pchp.Core.Reflection
             public override PhpAlias EnsureAlias(Context ctx, object instance)
             {
                 var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
-                if (runtime_fields == null)
-                {
-                    throw new NotSupportedException();
-                }
 
                 // (instance)._runtime_fields[_name]
                 return runtime_fields.EnsureItemAlias(_name);
@@ -401,10 +397,6 @@ namespace Pchp.Core.Reflection
             public override object EnsureObject(Context ctx, object instance)
             {
                 var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
-                if (runtime_fields == null)
-                {
-                    throw new NotSupportedException();
-                }
 
                 // (instance)._runtime_fields[_name]
                 return runtime_fields.EnsureItemObject(_name);
@@ -425,10 +417,6 @@ namespace Pchp.Core.Reflection
             public override void SetValue(Context ctx, object instance, PhpValue value)
             {
                 var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
-                if (runtime_fields == null)
-                {
-                    throw new NotSupportedException();
-                }
 
                 if (value.IsAlias)
                 {
