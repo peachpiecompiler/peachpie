@@ -67,9 +67,12 @@ namespace Pchp.Core.Reflection
                 {
                     properties[prop.Name] = new PhpPropertyInfo.ClrProperty(t, prop);
                 }
-                else if (IsExplicitPropertyDef(prop, out var explicitName)) // explicit interface declaration
+                else if (IsAllowedExplicitPropertyDef(prop, out var explicitName)) // explicit interface declaration
                 {
-                    properties[explicitName] = new PhpPropertyInfo.ClrExplicitProperty(t, prop, explicitName);
+                    if (properties.ContainsKey(explicitName) == false) // only if it was not yet implemented
+                    {
+                        properties[explicitName] = new PhpPropertyInfo.ClrExplicitProperty(t, prop, explicitName);
+                    }
                 }
             }
 
@@ -114,7 +117,7 @@ namespace Pchp.Core.Reflection
             return false;
         }
 
-        static bool IsExplicitPropertyDef(PropertyInfo p, out string name)
+        static bool IsAllowedExplicitPropertyDef(PropertyInfo p, out string name)
         {
             const MethodAttributes attrmask =
                 MethodAttributes.Private |
@@ -129,7 +132,9 @@ namespace Pchp.Core.Reflection
                 getter != null &&
                 (getter.Attributes & attrmask) == attrmask &&
                 getter.IsGenericMethod == false &&
-                getter.IsStatic == false;
+                getter.IsStatic == false &&
+                !p.IsPhpHidden() && // not hidden
+                 p.GetIndexParameters().Length == 0; // not index property
 
             if (ex)
             {
@@ -137,7 +142,7 @@ namespace Pchp.Core.Reflection
                 if (dot >= 0)
                 {
                     name = p.Name.Substring(dot + 1);
-                    return true;
+                    return ReflectionUtils.IsAllowedPhpName(name);
                 }
             }
 
