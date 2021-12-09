@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Semantics;
 using System.Runtime.CompilerServices;
+using Pchp.Core.Collections;
 
 namespace Pchp.Core.Dynamic
 {
@@ -1012,7 +1013,7 @@ namespace Pchp.Core.Dynamic
 
             var pctx = Expression.Parameter(typeof(Context));
             var invoke = ConvertExpression.Bind(Expression.Invoke(Expression.Constant(funcdelegate), pctx), typeof(TResult), pctx);
-            
+
             // {expr}: void
             var lambda = Expression.Lambda(invoke, tailCall: true, pctx);
 
@@ -1077,6 +1078,16 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        /// <summary>
+        /// Temporary information for parameters passed by CLR ref/out semantic.
+        /// </summary>
+        struct WriteBackInfo
+        {
+            public int index;
+            public ParameterExpression variable;
+            public Expression expr;
+        }
+
         public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args, bool isStaticCallSyntax, object lateStaticType)
         {
             Debug.Assert(method is MethodInfo || method is ConstructorInfo);
@@ -1084,6 +1095,7 @@ namespace Pchp.Core.Dynamic
             var ps = method.GetParameters();
             var boundargs = new Expression[ps.Length];
             var isUserRoutine = ReflectionUtils.IsUserRoutine(method);
+            var writeBackVars = ValueList<WriteBackInfo>.Empty;
 
             int argi = 0;
             int minargs = 0;
@@ -1190,13 +1202,30 @@ namespace Pchp.Core.Dynamic
                 }
                 else
                 {
+
                     if (p.ParameterType.IsByRef) // ref/out semantic
                     {
                         // create temporary local
-                        // copy-back when method returns
-                    }
+                        var valueType = p.ParameterType.GetElementType();
+                        var valueExpr = p.IsOut ? Expression.Default(valueType)/*null*/ : args.BindArgument(argi, p); // [Out] semantic does not require the value of argument, avoids creating default values and converting unused values
+                        var valueVar = Expression.Parameter(valueType, p.Name);
 
-                    boundargs[i] = args.BindArgument(argi, p);
+                        // TODO: evaluate in correct order (expr gets evaluated before the previous parameters)
+                        writeBackVars.Add(new WriteBackInfo
+                        {
+                            index = argi,
+                            variable = valueVar,
+                            expr = Expression.Assign(valueVar, valueExpr),  // = (valueVar = valueExpr)
+                        });
+                        
+                        boundargs[i] = valueVar;
+                        
+                        // ... write-back when method returns
+                    }
+                    else
+                    {
+                        boundargs[i] = args.BindArgument(argi, p);
+                    }
 
                     if (!IsPhpOptionalParameter(p)) // mandatory argument
                     {
@@ -1285,9 +1314,52 @@ namespace Pchp.Core.Dynamic
                 }
             }
 
-            // TODO: write-back of byref variables
 
-            //
+            // write-back byref arguments
+            if (writeBackVars.Count != 0)
+            {
+                var expressions = new ValueList<Expression>(writeBackVars.Count * 2 + 2);
+                var parameters = new ValueList<ParameterExpression>(writeBackVars.Count + 1);
+                var returnVar = methodcall.Type != typeof(void)
+                    ? Expression.Parameter(methodcall.Type, $"{methodname}_RETVAL")
+                    : null;
+
+                foreach (var wb in writeBackVars)
+                {
+                    parameters.Add(wb.variable);
+                    expressions.Add(wb.expr);
+                }
+
+                //
+                if (returnVar != null)
+                {
+                    parameters.Add(returnVar);
+                    expressions.Add(Expression.Assign(returnVar, methodcall));
+                }
+                else
+                {
+                    expressions.Add(methodcall);
+                }
+
+                // write-back byref arguments
+                foreach (var wb in writeBackVars)
+                {
+                    expressions.Add(args.BindWriteBack(wb.index, wb.variable));
+                }
+
+                // return the method return value
+                if (returnVar != null)
+                {
+                    expressions.Add(returnVar);
+                }
+
+                methodcall = Expression.Block(
+                    returnVar != null ? returnVar.Type : typeof(void),
+                    parameters.AsReadOnly(),
+                    expressions.AsReadOnly()
+                );
+            }
+
             return methodcall;
         }
 
@@ -1402,7 +1474,7 @@ namespace Pchp.Core.Dynamic
             return lambda.Compile();
         }
 
-        public static TFunc CreateDelegate<TFunc>(IPhpCallable callable, Context ctx) where TFunc: Delegate
+        public static TFunc CreateDelegate<TFunc>(IPhpCallable callable, Context ctx) where TFunc : Delegate
         {
             // signature of the delegate
             var delegate_invoke = typeof(TFunc).GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance);

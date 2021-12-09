@@ -52,7 +52,7 @@ namespace Pchp.Core.Dynamic
             // from (object)null
             if (IsNullConstant(arg) && !target.IsValueType)
             {
-                if (target == typeof(PhpAlias))
+                if (target == Cache.Types.PhpAlias[0])
                 {
                     // PhppAlias.Create(PhpValue.Null)
                     return Expression.Call(Cache.PhpAlias.Create_PhpValue, BindToValue(arg));

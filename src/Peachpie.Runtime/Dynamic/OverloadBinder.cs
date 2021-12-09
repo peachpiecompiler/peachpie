@@ -277,6 +277,14 @@ namespace Pchp.Core.Dynamic
             public abstract Expression BindArgument(int srcarg, ParameterInfo targetparam = null);
 
             /// <summary>
+            /// Assigns value to <paramref name="targetarg"/>
+            /// </summary>
+            /// <param name="targetarg">Target argument index.</param>
+            /// <param name="expression">Expression to be assigned to the argument.</param>
+            /// <returns>The bound assign expression.</returns>
+            public abstract Expression BindWriteBack(int targetarg, Expression expression);
+
+            /// <summary>
             /// Bind arguments to array of parameters.
             /// </summary>
             public abstract Expression BindParams(int fromarg, Type element_type);
@@ -539,6 +547,15 @@ namespace Pchp.Core.Dynamic
                     }
                 }
 
+                public override Expression BindWriteBack(int targetarg, Expression expression)
+                {
+                    // args[ targetarg ]
+                    var element = Expression.ArrayIndex(_argsarray, Expression.Constant(targetarg));
+
+                    // args[ targetarg ] = (T)expression
+                    return Expression.Assign(element, ConvertExpression.Bind(expression, element.Type, _ctx));
+                }
+
                 public override Expression BindParams(int fromarg, Type element_type)
                 {
                     /* 
@@ -754,6 +771,32 @@ namespace Pchp.Core.Dynamic
 
                         return Expression.Constant(null, typeof(object));
                     }
+                }
+
+                public override Expression BindWriteBack(int targetarg, Expression expression)
+                {
+                    var argi = MapToArgsIndex(targetarg);
+                    var arg = _args[argi];
+                    if (BinderHelpers.IsRuntimeChain(arg.Type))
+                    {
+                        // IRuntimeChain
+                    }
+                    else if (arg.Type == Cache.Types.IndirectLocal)
+                    {
+                        // IndirectLocal
+                    }
+                    else if (arg.Type == Cache.Types.PhpAlias[0])
+                    {
+                        // PhpAlias
+                    }
+                    else
+                    {
+                        // PhpValue&
+                        // anything else
+                        return Expression.Assign(arg, ConvertExpression.Bind(expression, arg.Type, _ctx));
+                    }
+
+                    throw new NotImplementedException($"write-back {arg.Type}");
                 }
 
                 public override Expression BindParams(int fromarg, Type element_type)
