@@ -181,6 +181,18 @@ namespace Pchp.Library
         /// <returns>Concatenation of hexadecimal values of bytes of <paramref name="bytes"/> separated by <paramref name="separator"/>.</returns>
         public static string BinToHex(byte[] bytes, string separator = null) => Core.Utilities.StringUtils.BinToHex(bytes, separator);
 
+        const string HexUpperChars = "0123456789ABCDEF";
+
+        /// <summary>
+        /// Apends uppercase hexadecimal string to string builder. (<c>X2</c> format string)
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">For input greater than <c>0xff</c>.</exception>
+        public static void AsciiCharToHex(byte ch, StringBuilder output)
+        {
+            output.Append(HexUpperChars[(ch & 0xF0) >> 4]);
+            output.Append(HexUpperChars[ch & 0xF]);
+        }
+
         /// <summary>
         /// Converts 16 based digit to decimal number.
         /// </summary>
