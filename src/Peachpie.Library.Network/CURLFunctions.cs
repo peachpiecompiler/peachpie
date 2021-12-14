@@ -267,14 +267,6 @@ namespace Peachpie.Library.Network
             return new PhpArray(CookiesToNetscapeStyle(cookies));
         }
 
-        static void AddCookies(CookieCollection from, CookieCollection target)
-        {
-            if (from != null && target != null)
-            {
-                target.Add(from);
-            }
-        }
-
         static Uri? TryCreateUri(CURLResource ch)
         {
             var url = ch.Url;
@@ -327,6 +319,7 @@ namespace Peachpie.Library.Network
                             return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, exception);
                         case WebExceptionStatus.TrustFailure:
                             return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, exception);
+                        case WebExceptionStatus.ConnectFailure:
                         default:
                             return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, exception);
                     }
@@ -368,7 +361,7 @@ namespace Peachpie.Library.Network
             }
             if (ch.Cookies != null)
             {
-                req.CookieContainer = new CookieContainer(ch.Cookies.Count);
+                req.CookieContainer ??= new CookieContainer(ch.Cookies.Count + 1/*capacity must be > 0*/);
                 req.CookieContainer.Add(ch.Cookies);
             }
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding

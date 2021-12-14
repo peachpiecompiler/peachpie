@@ -1181,11 +1181,13 @@ namespace Peachpie.Library.Network
         public CurlOption_CookieFile(CookieCollection cookies)
         {
             OptionValue = new List<string>();
-            Cookies = cookies ?? throw new ArgumentNullException(nameof(cookies));
+            Cookies = cookies ?? new CookieCollection();
         }
 
         public override void Apply(Context ctx, HttpWebRequest request)
         {
+            var container = request.CookieContainer ??= new CookieContainer();
+
             // invoked when initializing WebRequest
 
             var list = this.OptionValue;
@@ -1196,7 +1198,7 @@ namespace Peachpie.Library.Network
                 {
                     if (stream != null)
                     {
-                        LoadCookieFile(request, stream);
+                        LoadCookieFile(container, stream);
                     }
                 }
             }
@@ -1276,7 +1278,7 @@ namespace Peachpie.Library.Network
             return true;
         }
 
-        private void LoadCookieFile(HttpWebRequest request, PhpStream stream)
+        private void LoadCookieFile(CookieContainer container, PhpStream stream)
         {
             // load netscape-like or header-style cookies from stream
 
@@ -1294,8 +1296,8 @@ namespace Peachpie.Library.Network
                 if (TryParseNetscapeCookie(line, out var cookie))
                 {
                     // add the parsed cookie
-                    request.CookieContainer?.Add(cookie);
-                    Cookies?.Add(cookie);
+                    container.Add(cookie);
+                    this.Cookies.Add(cookie);
                 }
             }
         }
