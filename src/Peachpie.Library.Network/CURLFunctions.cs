@@ -234,7 +234,7 @@ namespace Peachpie.Library.Network
                 case CURLConstants.CURLINFO_PRIVATE:
                     return Operators.IsSet(r.Private) ? r.Private.DeepCopy() : PhpValue.False;
                 case CURLConstants.CURLINFO_COOKIELIST:
-                    return ((ch.CookieContainer != null && ch.Result != null) ? CreateCookiePhpArray(ch.Result.Cookies) : PhpArray.Empty);
+                    return ch.Cookies != null && ch.Cookies.Count != 0 ? CreateCookiePhpArray(ch.Cookies) : PhpArray.NewEmpty();
                 case CURLConstants.CURLINFO_HEADER_SIZE:
                     return r.HeaderSize;
                 case CURLConstants.CURLINFO_HEADER_OUT:
@@ -267,11 +267,11 @@ namespace Peachpie.Library.Network
             return new PhpArray(CookiesToNetscapeStyle(cookies));
         }
 
-        static void AddCookies(CookieCollection from, CookieContainer container)
+        static void AddCookies(CookieCollection from, CookieCollection target)
         {
-            if (from != null)
+            if (from != null && target != null)
             {
-                container?.Add(from);
+                target.Add(from);
             }
         }
 
@@ -366,14 +366,10 @@ namespace Peachpie.Library.Network
                 // equal or less than 0 will cause exception
                 req.MaximumAutomaticRedirections = ch.MaxRedirects < 0 ? int.MaxValue : ch.MaxRedirects;
             }
-            if (ch.CookieContainer != null)
+            if (ch.Cookies != null)
             {
-                if (ch.Result != null)
-                {
-                    // pass cookies from previous response to the request
-                    AddCookies(ch.Result.Cookies, ch.CookieContainer);
-                }
-                req.CookieContainer = ch.CookieContainer;
+                req.CookieContainer = new CookieContainer(ch.Cookies.Count);
+                req.CookieContainer.Add(ch.Cookies);
             }
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
@@ -571,6 +567,12 @@ namespace Peachpie.Library.Network
 
         static async Task<PhpValue> ProcessResponse(Context ctx, CURLResource ch, HttpWebResponse response)
         {
+            // copy response cookies
+            if (ch.Cookies != null && response.Cookies != null)
+            {
+                ch.Cookies.Add(response.Cookies);
+            }
+
             // in case we are returning the response value
             var returnstream = ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN
                 ? new MemoryStream()

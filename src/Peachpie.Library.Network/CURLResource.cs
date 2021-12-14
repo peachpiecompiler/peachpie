@@ -176,7 +176,7 @@ namespace Peachpie.Library.Network
         /// null suffices), the cookies retrieved from the server are recorded.
         /// Otherwise this reference is <c>null</c>.
         /// </summary>
-        public CookieContainer CookieContainer { get; set; }
+        public CookieCollection Cookies { get; set; }
 
         public string Username { get; set; }
 

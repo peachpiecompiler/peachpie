@@ -627,11 +627,11 @@ namespace Peachpie.Library.Network
                 case CURLOPT_ENCODING: ch.SetOption(new CurlOption_AcceptEncoding { OptionValue = value.ToStringOrNull() }); return true;
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
                 case CURLOPT_COOKIEFILE:
-                    ch.CookieContainer ??= new CookieContainer();   // enable the cookie container
+                    ch.Cookies ??= new CookieCollection();   // enable the web request cookie container
 
                     if (ch.TryGetOption<CurlOption_CookieFile>(out var cookiefileoption) == false)
                     {
-                        ch.SetOption(cookiefileoption = new CurlOption_CookieFile());
+                        ch.SetOption(cookiefileoption = new CurlOption_CookieFile(ch.Cookies));
                     }
 
                     // add the file name to the list of file names:
@@ -639,7 +639,7 @@ namespace Peachpie.Library.Network
 
                     break; // always return true
                 case CURLOPT_COOKIEJAR:
-                    ch.CookieContainer ??= new CookieContainer();   // enable the cookie container
+                    ch.Cookies ??= new CookieCollection();   // enable the web request cookie container
                     return SetOption<CurlOption_CookieJar, string>(ch, value.ToStringOrNull().EmptyToNull());
 
                 case CURLOPT_FILE: return TryProcessMethodFromStream(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
@@ -1104,6 +1104,7 @@ namespace Peachpie.Library.Network
     sealed class CurlOption_CookieJar : CurlOption<HttpWebRequest, string>
     {
         public override int OptionId => CURLConstants.CURLOPT_COOKIEJAR;
+
         public override void Apply(Context ctx, HttpWebRequest request)
         {
             // invoked when initializing WebRequest
@@ -1114,19 +1115,20 @@ namespace Peachpie.Library.Network
         {
             // output the cookies:
 
-            var cookies = resource.Result?.Cookies;
+            var cookies = resource.Cookies;
             if (cookies == null)
             {
                 return;
             }
 
             PhpStream output;
-            var dispose = false;    // whether to close the stream
+            bool dispose;    // whether to close the stream
 
             if (string.Equals(OptionValue, "-", StringComparison.Ordinal))
             {
                 // curl writes to STDOUT, and so do we:
                 output = InputOutputStreamWrapper.Out;
+                dispose = false;
             }
             else
             {
@@ -1174,18 +1176,23 @@ namespace Peachpie.Library.Network
     {
         public override int OptionId => CURLConstants.CURLOPT_COOKIEFILE;
 
-        public CurlOption_CookieFile()
+        public CookieCollection Cookies { get; } // loaded cookies will be added to the collection
+
+        public CurlOption_CookieFile(CookieCollection cookies)
         {
             OptionValue = new List<string>();
+            Cookies = cookies ?? throw new ArgumentNullException(nameof(cookies));
         }
 
         public override void Apply(Context ctx, HttpWebRequest request)
         {
             // invoked when initializing WebRequest
 
-            foreach (var fname in this.OptionValue)
+            var list = this.OptionValue;
+
+            for (int i = 0; i < list.Count; i++)
             {
-                using (var stream = PhpStream.Open(ctx, fname, StreamOpenMode.ReadText))
+                using (var stream = PhpStream.Open(ctx, list[i], StreamOpenMode.ReadText))
                 {
                     if (stream != null)
                     {
@@ -1193,6 +1200,10 @@ namespace Peachpie.Library.Network
                     }
                 }
             }
+
+            // once loaded, clear the list
+            // do not load cookies in the next exec again
+            list.Clear();
         }
 
         private static bool TryParseNetscapeCookie(string line, out Cookie cookie)
@@ -1265,7 +1276,7 @@ namespace Peachpie.Library.Network
             return true;
         }
 
-        private static void LoadCookieFile(HttpWebRequest request, PhpStream stream)
+        private void LoadCookieFile(HttpWebRequest request, PhpStream stream)
         {
             // load netscape-like or header-style cookies from stream
 
@@ -1283,7 +1294,8 @@ namespace Peachpie.Library.Network
                 if (TryParseNetscapeCookie(line, out var cookie))
                 {
                     // add the parsed cookie
-                    request.CookieContainer.Add(cookie);
+                    request.CookieContainer?.Add(cookie);
+                    Cookies?.Add(cookie);
                 }
             }
         }
