@@ -776,6 +776,13 @@ namespace Pchp.Core.Dynamic
                 public override Expression BindWriteBack(int targetarg, Expression expression)
                 {
                     var argi = MapToArgsIndex(targetarg);
+                    if (argi < 0 || argi >= _args.Length)
+                    {
+                        // argument not provided,
+                        // nothing to write back
+                        return Expression.Empty();
+                    }
+
                     var arg = _args[argi];
                     if (argi + 1 < _args.Length && BinderHelpers.TryAppendRuntimeChain(ref arg, _args[argi + 1], _ctx, _classContext, asalias: true))
                     {
