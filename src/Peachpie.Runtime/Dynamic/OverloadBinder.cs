@@ -1058,7 +1058,7 @@ namespace Pchp.Core.Dynamic
             //
             if (methods.Length == 0)
             {
-                throw new ArgumentException();    // no method to call
+                throw new ArgumentException("No method matches the provided parameters.");    // no method to call
                 // invoke = ERR
             }
             if (methods.Length == 1)
