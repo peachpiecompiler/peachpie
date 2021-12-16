@@ -4127,28 +4127,47 @@ namespace Pchp.CodeAnalysis.Semantics
 
             foreach (var x in _items)
             {
+                Debug.Assert(x.Value != null);
+
                 // <PhpArray>
                 cg.Builder.EmitOpCode(ILOpCode.Dup);
 
-                // key
-                if (x.Key != null)
+                if (x.Key == null)
                 {
-                    cg.EmitIntStringKey(x.Key);
+                    // <stack>.Add(value) : int
+                    cg.EmitConvertToPhpValue(x.Value);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
                 }
-
-                // value
-                Debug.Assert(x.Value != null);
-                cg.EmitConvert(x.Value, cg.CoreTypes.PhpValue);
-
-                if (x.Key != null)
+                else if (x.Key.ConstantValue.HasValue && x.Key.ConstantValue.Value is string strkey)
                 {
-                    // <stack>.Add(key, value)
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
+                    if (CodeGenerator.TryConvertToIntKey(strkey, out var ikey))
+                    {
+                        // <stack>.Add( long, PhpValue )
+                        cg.Builder.EmitLongConstant(ikey);
+                        cg.EmitConvertToPhpValue(x.Value);
+                        cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_Long_PhpValue));
+                    }
+                    else
+                    {
+                        // <stack>.Add( string, PhpValue )
+                        cg.Builder.EmitStringConstant(strkey);
+                        cg.EmitConvertToPhpValue(x.Value);
+                        cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_String_PhpValue));
+                    }
+                }
+                else if (x.Key.ConstantValue.HasValue && x.Key.ConstantValue.Value is long ikey)
+                {
+                    // <stack>.Add( long, PhpValue )
+                    cg.Builder.EmitLongConstant(ikey);
+                    cg.EmitConvertToPhpValue(x.Value);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_Long_PhpValue));
                 }
                 else
                 {
-                    // <stack>.Add(value) : int
-                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
+                    // <stack>.Add(IntStringKey, PhpValue)
+                    cg.EmitIntStringKey(x.Key);
+                    cg.EmitConvertToPhpValue(x.Value);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue));
                 }
             }
 

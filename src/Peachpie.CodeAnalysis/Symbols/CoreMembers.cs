@@ -937,6 +937,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Add_PhpValue = ct.PhpHashtable.Method("Add", ct.PhpValue);
                 Add_IntStringKey_PhpValue = ct.PhpHashtable.Method("Add", ct.IntStringKey, ct.PhpValue);
+                Add_Long_PhpValue = ct.PhpHashtable.Method("Add", ct.Long, ct.PhpValue);
+                Add_String_PhpValue = ct.PhpHashtable.Method("Add", ct.String, ct.PhpValue);
 
                 New_PhpValue = t.Method("New", ct.PhpValue);
                 Union_PhpArray_PhpArray = t.Method("Union", ct.PhpArray, ct.PhpArray);
@@ -952,7 +954,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, Add_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy, GetForeachEnumerator_Boolean,
-                Add_IntStringKey_PhpValue,
+                Add_IntStringKey_PhpValue, Add_Long_PhpValue, Add_String_PhpValue,
                 New_PhpValue, Union_PhpArray_PhpArray;
 
             public readonly CoreField

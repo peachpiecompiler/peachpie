@@ -376,6 +376,7 @@ namespace Pchp.Core
         public void Add(int key, double value) => Add(new IntStringKey(key), value);
         public void Add(int key, string value) => Add(new IntStringKey(key), value);
         public void Add(int key, PhpArray value) => Add(new IntStringKey(key), value);
+        public void Add(long key, PhpValue value) => Add(new IntStringKey(key), value);
 
         /// <summary>
         /// Gets or sets a value associated with a key.
