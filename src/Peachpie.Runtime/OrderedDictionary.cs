@@ -900,6 +900,29 @@ namespace Pchp.Core
             }
         }
 
+        public bool TryRemoveFirst(out KeyValuePair<IntStringKey, TValue> value)
+        {
+            var enumerator = GetEnumerator();
+            if (enumerator.MoveNext())
+            {
+                value = enumerator.Current;
+                enumerator.DeleteCurrent();
+
+                // array_shift updates the next free index if necessary
+                if (value.Key.Integer == _maxIntKey && value.Key.IsInteger)
+                {
+                    _maxIntKey = _get_max_int_key();
+                }
+
+                return true;
+            }
+
+            //
+
+            value = default;
+            return false;
+        }
+
         /// <summary>
         /// Remove the last item in the array and return it, if it exists. If the next free index was its index,
         /// decrement it (semantics of <c>array_pop</c>).
@@ -1926,22 +1949,6 @@ namespace Pchp.Core
     /// </summary>
     public static class OrderedDictionaryExtensions
     {
-        public static bool TryRemoveFirst(this OrderedDictionary/*<TValue>*/ array, out KeyValuePair<IntStringKey, TValue> value)
-        {
-            var enumerator = array.GetEnumerator();
-            if (enumerator.MoveNext())
-            {
-                value = enumerator.Current;
-                enumerator.DeleteCurrent();
-                return true;
-            }
-
-            //
-
-            value = default;
-            return false;
-        }
-
         /// <summary>
         /// Copies values to a new array.
         /// </summary>
