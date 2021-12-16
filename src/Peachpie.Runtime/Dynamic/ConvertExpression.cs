@@ -781,6 +781,11 @@ namespace Pchp.Core.Dynamic
                 return BindCost(arg, nullable_t);
             }
 
+            if (target.IsEnum)
+            {
+                target = target.GetEnumUnderlyingType(); // long|int|byte|...
+            }
+
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
             if (t == typeof(double) || t == typeof(float)) return Expression.Constant(BindCostFromDouble(arg, target));
             if (t == typeof(long) || t == typeof(int) || t == typeof(uint)) return Expression.Constant(BindCostFromLong(arg, target));
@@ -886,7 +891,7 @@ namespace Pchp.Core.Dynamic
 
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
 
-            if (target == typeof(double) || target == typeof(float) ||
+            if (target == typeof(double) || target == typeof(float) || target == typeof(decimal) ||
                 target == typeof(long) || target == typeof(int) || target == typeof(uint) ||
                 target == typeof(string) || target == typeof(PhpString) ||
                 target == typeof(PhpNumber)) return (ConversionCost.ImplicitCast);
@@ -897,7 +902,7 @@ namespace Pchp.Core.Dynamic
 
         static ConversionCost BindCostFromDouble(Expression arg, Type target)
         {
-            if (target == typeof(double) || target == typeof(float)) return (ConversionCost.Pass);
+            if (target == typeof(double) || target == typeof(float) || target == typeof(decimal)) return (ConversionCost.Pass);
             if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
             if (target == typeof(long) || target == typeof(int) || target == typeof(uint)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
@@ -914,7 +919,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(int) || target == typeof(long) || target == typeof(uint)) return (ConversionCost.Pass);
             if (target == typeof(ulong)) return ConversionCost.ImplicitCast;
             if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
-            if (target == typeof(double) || target == typeof(float)) return (ConversionCost.ImplicitCast);
+            if (target == typeof(double) || target == typeof(float) || target == typeof(decimal)) return (ConversionCost.ImplicitCast);
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
@@ -937,6 +942,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpNumber)) return Expression.Constant(ConversionCost.Pass);
             if (target == typeof(string)) return Expression.Constant(ConversionCost.ImplicitCast);
             if (target == typeof(bool)) return Expression.Constant(ConversionCost.LoosingPrecision);
+            if (target == typeof(decimal)) return Expression.Constant(ConversionCost.ImplicitCast);
             if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.PassCostly);
             if (target == typeof(PhpArray)) return Expression.Constant(ConversionCost.NoConversion);
 
@@ -947,7 +953,7 @@ namespace Pchp.Core.Dynamic
         {
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(long) || target == typeof(uint) || target == typeof(int)) return (ConversionCost.LoosingPrecision);
-            if (target == typeof(double) || target == typeof(float)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(double) || target == typeof(float) || target == typeof(decimal)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(PhpNumber)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(string)) return (ConversionCost.Pass);
             if (target == typeof(PhpString)) return (ConversionCost.PassCostly);
@@ -966,7 +972,7 @@ namespace Pchp.Core.Dynamic
         {
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(long) || target == typeof(uint) || target == typeof(int)) return (ConversionCost.LoosingPrecision);
-            if (target == typeof(double) || target == typeof(float)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(double) || target == typeof(float) || target == typeof(decimal)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(PhpNumber)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(string)) return (ConversionCost.PassCostly);
             if (target == typeof(PhpString)) return (ConversionCost.Pass);
