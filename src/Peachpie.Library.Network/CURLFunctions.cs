@@ -563,6 +563,11 @@ namespace Peachpie.Library.Network
             // copy response cookies
             if (ch.Cookies != null && response.Cookies != null)
             {
+                // TODO: for compatibility with cURL,
+                // parse the SetCookie header and include all the cookies into the collection as they are,
+                // incl. the expired onces
+                //var setCookieHeader = response.Headers[HttpResponseHeader.SetCookie];
+                
                 ch.Cookies.Add(response.Cookies);
             }
 
