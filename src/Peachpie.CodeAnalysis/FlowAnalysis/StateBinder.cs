@@ -29,12 +29,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 // create FlowContext 
                 flowCtx = new FlowContext(typeCtx, routine);
+
+                // pre-allocate locals map // https://github.com/peachpiecompiler/peachpie/issues/1002
+                foreach (var variable in routine.LocalsTable.Variables)
+                {
+                    if (variable is Semantics.LocalVariableReference local && local.VariableKind == VariableKind.LocalVariable)
+                    {
+                        flowCtx.GetVarIndex(variable.BoundName.NameValue);
+                    }
+                }
             }
 
             // create FlowState
             var state = new FlowState(flowCtx);
 
-            // handle input parameters type
+            // populate input parameters type
             foreach (var p in routine.SourceParameters)
             {
                 var local = state.GetLocalHandle(new VariableName(p.Name));
