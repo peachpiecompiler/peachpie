@@ -863,7 +863,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (!hasDefault)
             {
                 // create implicit default:
-                cases.Add(NewBlock(new DefaultItem(x.Span, EmptyArray<Statement>.Instance)));
+                cases.Add(NewBlock(new DefaultItem(x.Span, Array.Empty<Statement>())));
             }
 
             // if switch value isn't a constant & there're case values with preBoundStatements 

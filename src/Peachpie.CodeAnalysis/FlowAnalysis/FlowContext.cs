@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Merged local variables type.
         /// </summary>
         internal TypeRefMask[] VarsType => _varsType;
-        TypeRefMask[]/*!*/_varsType = EmptyArray<TypeRefMask>.Instance;
+        TypeRefMask[]/*!*/_varsType = Array.Empty<TypeRefMask>();
 
         /// <summary>
         /// Merged return expressions type.
@@ -219,7 +219,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // Reset internal structures to prevent possible bugs in re-analysis
             _usedMask = 0;
             _varsIndex.Clear();
-            _varsType = EmptyArray<TypeRefMask>.Instance;
+            _varsType = Array.Empty<TypeRefMask>();
 
             // Revert the information regarding the return type to the default state
             ReturnType = default;
