@@ -220,6 +220,39 @@ namespace Peachpie.AspNetCore.Web
         /// <summary>flag we have already registered ILogger into PhpException.OnError</summary>
         static bool s_loggerregistered;
 
+        static bool TryLoadDependencyContext(out DependencyContext context)
+        {
+            context = null;
+
+            try
+            {
+                // throws `NotSupportedException` when project published as single-file bundle
+                // https://github.com/peachpiecompiler/peachpie/issues/1003
+
+                context = DependencyContext.Default;
+            }
+            catch (NotSupportedException)
+            {
+            }
+
+            return context != null;
+        }
+
+        static bool TryGetEntryAssembly(out Assembly assembly)
+        {
+            assembly = null;
+
+            try
+            {
+                assembly = Assembly.GetEntryAssembly();
+            }
+            catch
+            {
+            }
+
+            return assembly != null;
+        }
+
         /// <summary>
         /// Loads and reflects assemblies containing compiled PHP scripts.
         /// </summary>
@@ -232,7 +265,7 @@ namespace Peachpie.AspNetCore.Web
                     Context.AddScriptReference(assembly);
                 }
             }
-            else
+            else if (TryLoadDependencyContext(out var dcontext))
             {
                 // import libraries that has "Peachpie.App" as a dependency
                 var runtimelibs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -242,7 +275,7 @@ namespace Peachpie.AspNetCore.Web
                 };
 
                 // reads dependencies from DependencyContext
-                foreach (var lib in DependencyContext.Default.RuntimeLibraries)
+                foreach (var lib in dcontext.RuntimeLibraries)
                 {
                     if (lib.Type != "package" && lib.Type != "project")
                     {
@@ -274,6 +307,10 @@ namespace Peachpie.AspNetCore.Web
                         }
                     }
                 }
+            }
+            else if (TryGetEntryAssembly(out var entryass))
+            {
+                Context.AddScriptReference(entryass);
             }
         }
 
