@@ -114,7 +114,7 @@ namespace Pchp.Library.Streams
         private static PhpArray GetContextData(PhpResource stream_or_context)
         {
             // Always create a new context if there is the Default one.
-            StreamContext context = FromResource(stream_or_context, true);
+            var context = FromResource(stream_or_context, true);
 
             // Now create the data if this is a "lazy context".
             if (context != null)
@@ -210,10 +210,9 @@ namespace Pchp.Library.Streams
         {
             Debug.Assert(context_data != null);
 
-            PhpValue value;
-            if (!context_data.TryGetValue(wrapper, out value))
+            if (!context_data.TryGetValue(wrapper, out var value))
             {
-                context_data[wrapper] = value = (PhpValue)new PhpArray();
+                context_data[wrapper] = value = PhpArray.NewEmpty();
             }
 
             return value.ArrayOrNull();

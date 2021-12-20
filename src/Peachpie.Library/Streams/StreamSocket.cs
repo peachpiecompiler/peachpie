@@ -278,10 +278,60 @@ namespace Pchp.Library.Streams
                 try
                 {
                     var socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
+                    var backlog = 512;
+
+                    var socket_opts = sc.GetOptions("socket");
+                    if (socket_opts != null)
+                    {
+                        var pairenum = socket_opts.GetFastEnumerator();
+                        while (pairenum.MoveNext())
+                        {
+                            var pair = pairenum.Current;
+                            var optname = pair.Key.String;
+                            if (optname == null) // numerical option?
+                                continue;
+
+                            //if (optname.Equals("bindto", StringComparison.OrdinalIgnoreCase))
+                            //{
+
+                            //}
+                            //else
+                            if (optname.Equals("backlog", StringComparison.OrdinalIgnoreCase))
+                            {
+                                backlog = pair.Value.ToInt();
+                            }
+                            //else if (optname.Equals("ipv6_v6only", StringComparison.OrdinalIgnoreCase))
+                            //{
+
+                            //}
+                            else if (optname.Equals("so_reuseaddr", StringComparison.OrdinalIgnoreCase))
+                            {
+                                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, pair.Value.ToInt());
+                            }
+                            //else if (optname.Equals("so_reuseport", StringComparison.OrdinalIgnoreCase))
+                            //{
+                            //    socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReusePort)
+                            //}
+                            else if (optname.Equals("so_broadcast", StringComparison.OrdinalIgnoreCase))
+                            {
+                                socket.EnableBroadcast = pair.Value.ToBoolean();
+                            }
+                            else if (optname.Equals("tcp_nodelay", StringComparison.OrdinalIgnoreCase))
+                            {
+                                socket.NoDelay = pair.Value.ToBoolean();
+                            }
+                            else
+                            {
+                                // unknown option
+                                PhpException.InvalidArgument(optname, nameof(stream_socket_server));
+                            }
+                        }
+                    }
+
                     socket.Bind(new IPEndPoint(address, port));
                     //socket.NoDelay = false;
                     //socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.MaxConnections) // Not Supported
-                    socket.Listen(512); // NOTE: a default backlog should be used
+                    socket.Listen(backlog); // NOTE: a default backlog should be used
 
                     return new SocketStream(ctx, socket, localSocket, sc);
                 }
@@ -369,7 +419,7 @@ namespace Pchp.Library.Streams
                         {
                             Thread.Sleep(delay);
 
-                            if (delay.TotalMilliseconds < timeoutVal * 100) // max 1/10 of timeout
+                            if (delay.TotalMilliseconds < Math.Min(timeoutVal * 100, 100)) // max 1/10 of timeout
                                 delay += TimeSpan.FromMilliseconds(5);
                         }
                         else
