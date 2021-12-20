@@ -1205,10 +1205,17 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         return new BoundTemporalVariableRef(varname.NameValue).WithAccess(access);
                     }
-
-                    // bind the local,
-                    // needed to initialize FlowContext properly
-                    _locals?.BindLocalVariable(varname.NameValue, expr.Span.ToTextSpan());
+                    else if (varname.NameValue.IsAutoGlobal)
+                    {
+                        //
+                    }
+                    else
+                    {
+                        // regular local variable
+                        // bind the local,
+                        // needed to initialize FlowContext properly
+                        _locals?.BindLocalVariable(varname.NameValue, expr.Span.ToTextSpan());
+                    }
                 }
                 else
                 {
