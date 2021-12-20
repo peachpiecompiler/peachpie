@@ -299,22 +299,13 @@ namespace Pchp.Library.Streams
 
         #endregion
 
-        #region TODO: stream_socket_accept
+        #region stream_socket_accept
 
         /// <summary>
         /// Accepts a connection on a server socket.
         /// </summary>
         [return: CastToFalse]
-        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket)
-        {
-            return stream_socket_accept(ctx, serverSocket, ctx.Configuration.Core.DefaultSocketTimeout, out _);
-        }
-
-        /// <summary>
-        /// Accepts a connection on a server socket.
-        /// </summary>
-        [return: CastToFalse]
-        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, double timeout)
+        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, double? timeout = default)
         {
             return stream_socket_accept(ctx, serverSocket, timeout, out _);
         }
@@ -323,19 +314,25 @@ namespace Pchp.Library.Streams
         /// Accepts a connection on a server socket.
         /// </summary>
         [return: CastToFalse]
-        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, double timeout, out string peerName)
+        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, double? timeout, out string peer_name)
         {
-            peerName = string.Empty;
+            peer_name = string.Empty;
 
             var stream = SocketStream.GetValid(serverSocket);
-            if (stream == null) return null;
+            if (stream == null)
+            {
+                return null;
+            }
 
             try
             {
                 var result = stream.Socket.BeginAccept(null, stream.Socket);
                 Debug.Assert(result != null, "BeginAccept() returned null.");
 
-                if (result.AsyncWaitHandle.WaitOne(timeout < 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(timeout)))
+                var timeoutVal = timeout.HasValue ? timeout.GetValueOrDefault() : ctx.Configuration.Core.DefaultSocketTimeout;
+                var to = timeoutVal < 0 ? Timeout.InfiniteTimeSpan : (TimeSpan.FromSeconds(timeoutVal) + TimeSpan.FromTicks(1));
+
+                if (result.AsyncWaitHandle.WaitOne(to))
                 {
                     var socket = stream.Socket.EndAccept(result);
                     socket.NoDelay = true; // blocking
