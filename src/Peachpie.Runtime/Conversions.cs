@@ -499,8 +499,8 @@ namespace Pchp.Core
             }
             else
             {
-                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
-                number = PhpNumber.Create(1L);
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetClassName(obj), PhpVariable.TypeNameInt));
+                number = PhpNumber.Create(ReferenceEquals(obj, null) ? 0L : 1L);
                 return Convert.NumberInfo.LongInteger;
             }
         }
@@ -545,10 +545,15 @@ namespace Pchp.Core
             {
                 return convertible.ToLong();
             }
+            else if (obj is decimal d)
+            {
+                // boxed System.Decimal
+                return (long)d;
+            }
             else
             {
-                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
-                return 1L;
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetClassName(obj), PhpVariable.TypeNameInt));
+                return ReferenceEquals(obj, null) ? 0 : 1;
             }
         }
 
@@ -562,8 +567,8 @@ namespace Pchp.Core
             }
             else
             {
-                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameDouble));
-                return 1.0;
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetClassName(obj), PhpVariable.TypeNameDouble));
+                return ReferenceEquals(obj, null) ? 0 : 1;
             }
         }
 

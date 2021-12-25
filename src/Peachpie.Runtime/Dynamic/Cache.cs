@@ -40,6 +40,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo ToString_Double = new Func<double, string>(Core.Convert.ToString).Method;
             public static MethodInfo ToLongOrThrow_String = new Func<string, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo ToDouble_String = new Func<string, double>(Core.Convert.StringToDouble).Method;
+            public static MethodInfo ToDouble_Object = new Func<object, double>(Core.Convert.ToDouble).Method;
             public static MethodInfo ToPhpString_PhpValue_Context = new Func<PhpValue, Context, Core.PhpString>(Core.Convert.ToPhpString).Method;
             public static MethodInfo ToPhpNumber_String = new Func<string, PhpNumber>(Core.Convert.ToNumber).Method;
             public static MethodInfo ToBoolean_Object = new Func<object, bool>(Core.Convert.ToBoolean).Method;

@@ -322,10 +322,29 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(double)) return expr;
             if (source == typeof(float)) return Expression.Convert(expr, typeof(double));
 
-            // TODO: following conversions may fail, we should report it failed and throw an error
-            if (source == typeof(PhpValue)) return Expression.Call(Cache.Operators.ToDouble_PhpValue, expr);
+            if (typeof(Core.IPhpConvertible).IsAssignableFrom(source))
+            {
+                // IPhpConvertible.ToDouble()
+                return Expression.Call(expr, nameof(IPhpConvertible.ToDouble), Array.Empty<Type>());
+            }
 
-            throw new NotImplementedException($"{source.FullName} -> double");
+            if (source.IsValueType)
+            {
+                // TODO: following conversions may fail, we should report it failed and throw an error
+                if (source == typeof(PhpValue)) return Expression.Call(Cache.Operators.ToDouble_PhpValue, expr);
+
+                throw new NotImplementedException($"{source.FullName} -> double");
+            }
+            else
+            {
+                if (IsNullConstant(expr))
+                {
+                    // null -> 0.0
+                    return Expression.Constant(0.0);
+                }
+
+                return Expression.Call(Cache.Operators.ToDouble_Object, expr);
+            }
         }
 
         public static Expression BindToBool(Expression expr)
