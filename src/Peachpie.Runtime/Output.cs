@@ -219,7 +219,7 @@ namespace Pchp.Core
                 // allocates a new buffer element for data:
                 var element = new BufferElement
                 {
-                    data = buffer = binary ? new byte[size] : new char[size],
+                    data = buffer = binary ? (Array)new byte[size] : new char[size],
                     size = sizeNeeded,   //sizeNeeded <= (buffer size)
                 };
 
