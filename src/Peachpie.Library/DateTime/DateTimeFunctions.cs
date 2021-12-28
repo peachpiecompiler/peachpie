@@ -1478,31 +1478,33 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Parses a string containing an English date format into a UNIX timestamp relative to the current time.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="datetime">String containing time definition</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
         [return: CastToFalse]
-        public static long strtotime(string datetime)
+        public static long strtotime(Context ctx, string datetime)
         {
-            return StringToTime(datetime, System_DateTime.UtcNow);
+            return StringToTime(ctx, datetime, System_DateTime.UtcNow);
         }
 
         /// <summary>
         /// Parses a string containing an English date format into a UNIX timestamp relative to a specified time.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="datetime">String containing time definition.</param>
         /// <param name="baseTimestamp">Timestamp (seconds from 1970) to which is the new timestamp counted.</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
         [return: CastToFalse]
-        public static long strtotime(string datetime, long baseTimestamp)
+        public static long strtotime(Context ctx, string datetime, long baseTimestamp)
         {
-            return StringToTime(datetime, DateTimeUtils.UnixTimeStampToUtc(baseTimestamp));
+            return StringToTime(ctx, datetime, DateTimeUtils.UnixTimeStampToUtc(baseTimestamp));
         }
 
         /// <summary>
         /// Implementation of <see cref="StringToTime(string,int)"/> function.
         /// Returns unix timestamp or <c>-1</c> (FALSE) if time cannot be parsed.
         /// </summary>
-        static long StringToTime(string time, System_DateTime refdate)
+        static long StringToTime(Context ctx, string time, System_DateTime refdate)
         {
             if (string.IsNullOrWhiteSpace(time))
             {
@@ -1510,12 +1512,13 @@ namespace Pchp.Library.DateTime
                 return -1;  // FALSE
             }
 
-            var utctz = TimeZoneInfo.Utc;
-            var result = DateInfo.Parse(time.Trim(), refdate, ref utctz, out var error);
+            var localtz = PhpTimeZone.GetCurrentTimeZone(ctx);
+            var result = DateInfo.Parse(time.Trim(), refdate, ref localtz, out var error);
 
             if (error == null)
             {
-                return DateTimeUtils.UtcToUnixTimeStamp(result);
+                var utctime = TimeZoneInfo.ConvertTimeToUtc(result, localtz);
+                return DateTimeUtils.UtcToUnixTimeStamp(utctime);
             }
             else
             {
