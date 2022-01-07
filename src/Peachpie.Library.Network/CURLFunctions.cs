@@ -247,19 +247,22 @@ namespace Peachpie.Library.Network
 
         internal static IEnumerable<string> CookiesToNetscapeStyle(CookieCollection cookies)
         {
-            if (cookies == null || cookies.Count == 0)
+            if (cookies != null && cookies.Count != 0)
             {
-                yield break;
+                foreach (Cookie c in cookies)
+                {
+                    yield return CookieToNetscapeStyle(c);
+                }
             }
+        }
 
-            foreach (Cookie c in cookies)
-            {
-                string prefix = c.HttpOnly ? "#HttpOnly_" : "";
-                string subdomainAccess = "TRUE";                    // Simplified
-                string secure = c.Secure.ToString().ToUpperInvariant();
-                long expires = (c.Expires.Ticks == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
-                yield return $"{prefix}{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}";
-            }
+        internal static string CookieToNetscapeStyle(Cookie c)
+        {
+            string prefix = c.HttpOnly ? "#HttpOnly_" : "";
+            string subdomainAccess = "TRUE";                    // Simplified
+            string secure = c.Secure.ToString().ToUpperInvariant();
+            long expires = (c.Expires.Ticks == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
+            return $"{prefix}{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}";
         }
 
         static PhpArray CreateCookiePhpArray(CookieCollection cookies)

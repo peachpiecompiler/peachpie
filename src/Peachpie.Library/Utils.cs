@@ -795,4 +795,32 @@ namespace Pchp.Library
         /// <returns><paramref name="sb"/> string.</returns>
         public static string GetStringAndReturn(StringBuilder sb) => Core.Utilities.StringBuilderUtilities.GetStringAndReturn(sb);
     }
+
+    public static class PhpStreamUtils
+    {
+        /// <summary>
+        /// Apppends the text data using <see cref="Streams.PhpStream.WriteString"/>, and <see cref="System.Environment.NewLine"/> at the end.
+        /// </summary>
+        /// <returns>Number of characters successfully written or <c>-1</c> on an error.</returns>
+        public static int WriteLine(this Streams.PhpStream stream, string line = null)
+        {
+            var count = string.IsNullOrEmpty(line)
+                ? 0
+                : stream.WriteString(line);
+
+            if (count >= 0)
+            {
+                var nlcount = stream.WriteString(System.Environment.NewLine);
+                if (nlcount < 0)
+                {
+                    return -1;
+                }
+
+                count += nlcount;
+            }
+
+            //
+            return count;
+        }
+    }
 }
