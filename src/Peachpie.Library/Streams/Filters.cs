@@ -189,7 +189,50 @@ namespace Pchp.Library.Streams
         /// </summary>
         public TextElement Filter(IEncodingProvider enc, TextElement input, bool closing)
         {
-            return new TextElement(input.AsText(enc.StringEncoding).Replace("\n", "\r\n"));
+            var text = input.AsText(enc.StringEncoding);
+
+            // return new TextElement(text.Replace("\n", "\r\n"));
+
+            StringBuilder sb = null;    // lazily constructed string builder
+            int idx = 0;
+            int pos;
+
+            while (idx < text.Length && (pos = IndexOfStandaloneLF(text, idx)) >= 0)
+            {
+                sb ??= StringBuilderUtilities.Pool.Get();
+
+                sb.Append(text, idx, pos - idx);
+                sb.Append("\r\n");
+
+                //
+                idx = pos + 1;
+            }
+
+            if (sb != null)
+            {
+                sb.Append(text, idx, text.Length - idx);
+                text = StringBuilderUtilities.GetStringAndReturn(sb);
+            }
+
+            return new TextElement(text);
+        }
+
+        static int IndexOfStandaloneLF(string value, int startIndex)
+        {
+            if (startIndex < value.Length)
+            {
+                // index of '\n' not following '\r'
+
+                var idx = value.IndexOf('\n', startIndex);
+                if (idx >= 0)
+                {
+                    return idx > 0 && value[idx - 1] == '\r'
+                        ? IndexOfStandaloneLF(value, idx + 1)
+                        : idx;
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>
