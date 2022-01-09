@@ -364,7 +364,7 @@ namespace Peachpie.Library.Network
             }
             if (ch.Cookies != null)
             {
-                req.CookieContainer ??= new CookieContainer(ch.Cookies.Count + 1/*capacity must be > 0*/);
+                req.CookieContainer ??= new CookieContainer(); // NOTE: default max capacity := 300
                 req.CookieContainer.Add(ch.Cookies);
             }
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
