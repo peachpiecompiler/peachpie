@@ -461,7 +461,7 @@ namespace Pchp.Core
         {
             Debug.Assert(name != null);
 
-            if (name.Length != 0 && name[0] == '\\')
+            if (name.Length != 0 && name[0] == PhpClassName.NamespaceSeparator)
             {
                 name = name.Substring(1);
             }

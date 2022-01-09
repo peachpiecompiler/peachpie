@@ -157,7 +157,7 @@ namespace Pchp.Core.Reflection
         {
             if (!string.IsNullOrEmpty(name))
             {
-                if (name[0] == '\\')
+                if (name[0] == PhpClassName.NamespaceSeparator)
                 {
                     name = name.Substring(1);
                 }
