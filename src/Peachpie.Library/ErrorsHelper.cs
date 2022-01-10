@@ -13,15 +13,16 @@ namespace Pchp.Library
         /// </summary>
         public static string GetStackTraceString(this PhpStackTrace trace, int skip = 0)
         {
+            var result = StringBuilderUtilities.Pool.Get();
             var lines = trace.GetLines();
-            var result = new StringBuilder();
 
             for (int i = 1 + skip, order = 0; i < lines.Length; i++, order++)
             {
-                result.AppendLine(lines[i].ToStackTraceLine(order));
+                lines[i].GetStackTraceLine(order, result);
+                result.AppendLine();
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -46,7 +47,7 @@ namespace Pchp.Library
         /// </summary>
         public static string FormatExceptionString(this PhpStackTrace trace, string exceptionname, string message)
         {
-            var result = new StringBuilder();
+            var result = StringBuilderUtilities.Pool.Get();
 
             // TODO: texts to resources
 
@@ -68,7 +69,7 @@ namespace Pchp.Library
                 if (lines[0].HasLocation)
                 {
                     result.Append(" in ");
-                    result.Append(lines[0].ToStackTraceLine(-1));
+                    lines[0].GetStackTraceLine(-1, result);
                 }
 
                 if (lines.Length > 1)
@@ -77,12 +78,14 @@ namespace Pchp.Library
                     result.AppendLine("Stack trace:");
                     for (int i = 1; i < lines.Length; i++)
                     {
-                        result.AppendLine(lines[i].ToStackTraceLine(i - 1));
+                        lines[i].GetStackTraceLine(i - 1, result);
+                        result.AppendLine();
                     }
                 }
             }
 
-            return result.ToString();
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
     }
 }

@@ -878,32 +878,37 @@ namespace Pchp.Library
         /// </remarks>
         public static string strtr(string str, string from, string to)
         {
-            if (String.IsNullOrEmpty(str) || from == null || to == null) return String.Empty;
+            if (string.IsNullOrEmpty(str) || from == null || to == null)
+            {
+                return string.Empty;
+            }
 
             int min_length = Math.Min(from.Length, to.Length);
-            Dictionary<char, char> ht = new Dictionary<char, char>(min_length);
+            var ht = new Dictionary<char, char>(min_length);
 
             // adds chars to the hashtable:
             for (int i = 0; i < min_length; i++)
+            {
                 ht[from[i]] = to[i];
+            }
 
             // creates result builder:
-            StringBuilder result = new StringBuilder(str.Length, str.Length);
-            result.Length = str.Length;
+            var result = StringBuilderUtilities.Pool.Get();
 
             // translates:
             for (int i = 0; i < str.Length; i++)
             {
                 char c = str[i];
-                char h;
-                result[i] = ht.TryGetValue(c, out h) ? h : c;
+
+                result.Append(ht.TryGetValue(c, out var h) ? h : c);
 
                 // obsolete:
                 // object h = ht[c];
                 // result[i] = (h==null) ? c : h;
             }
 
-            return result.ToString();
+            //
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -1983,17 +1988,19 @@ namespace Pchp.Library
                 return string.Empty;
             }
 
-            int length = str.Length;
-            StringBuilder result = new StringBuilder(length);
+            var result = StringBuilderUtilities.Pool.Get();
 
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < str.Length; i++)
             {
-                char c = str[i];
-                if (metaCharactersMap.Contains(c)) result.Append('\\');
+                var c = str[i];
+                
+                if (metaCharactersMap.Contains(c))
+                    result.Append('\\');
+
                 result.Append(c);
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         #endregion
