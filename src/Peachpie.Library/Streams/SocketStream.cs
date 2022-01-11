@@ -25,7 +25,7 @@ namespace Pchp.Library.Streams
                 // when using SslStream, it has already read data from underlaying Socket
                 // so Poll always returns FALSE and Socket.Available is almost always 0
 
-                return Socket.Poll(0, SelectMode.SelectRead) || (SslStream != null);
+                return Socket != null && (Socket.Poll(0, SelectMode.SelectRead) || SslStream != null);
             }
         }
 
@@ -33,7 +33,7 @@ namespace Pchp.Library.Streams
         {
             get
             {
-                return Socket.Poll(0, SelectMode.SelectWrite);
+                return Socket != null && Socket.Poll(0, SelectMode.SelectWrite);
             }
         }
 
