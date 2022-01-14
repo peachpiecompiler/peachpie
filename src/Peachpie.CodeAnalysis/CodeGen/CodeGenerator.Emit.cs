@@ -2789,8 +2789,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(!type.IsUnreachable);
 
             // (T)
-            _il.EmitOpCode(ILOpCode.Castclass);
-            EmitSymbolToken(type, null);
+            if (type.IsReferenceType)
+            {
+                _il.EmitOpCode(ILOpCode.Castclass);
+                EmitSymbolToken(type, null);
+            }
+            else
+            {
+                _il.EmitOpCode(ILOpCode.Unbox_any);
+                EmitSymbolToken(type, null);
+            }
         }
 
         /// <summary>
