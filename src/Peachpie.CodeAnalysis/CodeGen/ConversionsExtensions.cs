@@ -57,6 +57,43 @@ namespace Pchp.CodeAnalysis.CodeGen
             return to;
         }
 
+        public static void EmitNumericConversionToDecimal(this CodeGenerator cg, TypeSymbol from, bool @checked = false)
+        {
+            switch (from.SpecialType)
+            {
+                case SpecialType.System_Int32:
+
+                    // (decimal)int32
+                    cg.EmitCall(
+                        ILOpCode.Call,
+                        (MethodSymbol)cg.DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Decimal__op_Implicit_FromInt32));
+                    return;
+
+                case SpecialType.System_Int64:
+
+                    // (decimal)int64
+                    cg.EmitCall(
+                        ILOpCode.Call,
+                        (MethodSymbol)cg.DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Decimal__op_Implicit_FromInt64));
+                    return;
+
+                case SpecialType.System_Decimal:
+                    // decimal
+                    return;
+
+                default:
+
+                    // convert to double
+                    EmitNumericConversion(cg, from, cg.CoreTypes.Double, @checked);
+
+                    // (decimal)double
+                    cg.EmitCall(
+                        ILOpCode.Call,
+                        (MethodSymbol)cg.DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Decimal__op_Explicit_FromDouble));
+                    return;
+            }
+        }
+
         public static void EmitNumericConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false)
         {
             if (to.IsEnumType())
@@ -74,20 +111,28 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // explicit numeric conversion, treating decimal as double
 
                 // (double)System.Decimal
-                from = cg.EmitCall(
+                cg.EmitCall(
                     ILOpCode.Call,
-                    (MethodSymbol)cg.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Convert__ToDoubleDecimal));
+                    (MethodSymbol)cg.DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Decimal__op_Explicit_ToDouble));
+                cg.Builder.EmitOpCode(ILOpCode.Conv_r8);
+
+                //
+                from = cg.CoreTypes.Double;
             }
 
             if (to.SpecialType == SpecialType.System_Decimal)
             {
-                // convert to double and then to decimal
-                EmitNumericConversion(cg, from, cg.CoreTypes.Double, @checked);
-                throw cg.NotImplementedException("double -> decimal");
+                EmitNumericConversionToDecimal(cg, from, @checked);
+                return;
             }
 
             var fromcode = from.PrimitiveTypeCode;
             var tocode = to.PrimitiveTypeCode;
+
+            if (fromcode == tocode)
+            {
+                return;
+            }
 
             if (tocode == Microsoft.Cci.PrimitiveTypeCode.Boolean)
             {
