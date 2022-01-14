@@ -368,8 +368,7 @@ namespace Pchp.Library
                     {
                         ++_seq;
 
-                        int seq;
-                        if (serializedRefs.TryGetValue(value, out seq))
+                        if (serializedRefs.TryGetValue(value, out var seq))
                         {
                             // this object instance has already been serialized -> write out its seq. number
                             Write(Tokens.ObjectRef);

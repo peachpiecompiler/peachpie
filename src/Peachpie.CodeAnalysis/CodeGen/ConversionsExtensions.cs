@@ -83,7 +83,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // convert to double and then to decimal
                 EmitNumericConversion(cg, from, cg.CoreTypes.Double, @checked);
-                throw new NotImplementedException("double -> decimal");
+                throw cg.NotImplementedException("double -> decimal");
             }
 
             var fromcode = from.PrimitiveTypeCode;

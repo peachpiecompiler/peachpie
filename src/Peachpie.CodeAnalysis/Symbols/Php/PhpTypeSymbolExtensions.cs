@@ -100,7 +100,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Resolves field or property on an instance.
         /// </summary>
-        public static Symbol ResolveInstanceProperty(this INamedTypeSymbol type, string name)
+        public static Symbol ResolveInstanceProperty(this ITypeSymbol type, string name)
         {
             Symbol candidate;
 
