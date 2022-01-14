@@ -4174,7 +4174,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public static void EmitStructAddr(this ILBuilder il, TypeSymbol t)
         {
-            Debug.Assert(t.IsStructType());
+            Debug.Assert(t.IsValueType);
 
             var tmp = GetTemporaryLocalAndReturn(il, t);
             il.EmitLocalStore(tmp);
