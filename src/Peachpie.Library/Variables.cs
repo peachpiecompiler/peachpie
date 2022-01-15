@@ -226,15 +226,13 @@ namespace Pchp.Library
             else if (variable.IsObject)
             {
                 // PHP Countable
-                var countable = variable.Object as Spl.Countable;
-                if (countable != null)
+                if (variable.Object is Spl.Countable countable)
                 {
                     return countable.count();
                 }
 
                 // CLR ICollection
-                var collection = variable.Object as System.Collections.ICollection;
-                if (collection != null)
+                if (variable.Object is System.Collections.ICollection collection)
                 {
                     return collection.Count;
                 }
