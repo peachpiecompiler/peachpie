@@ -2594,6 +2594,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 return ConversionKind.Strict;
             }
+            else if (targetp.Type.IsObjectType())
+            {
+                // CLR "object"
+                return ConversionKind.Strict;
+            }
             else
             {
                 // a library function

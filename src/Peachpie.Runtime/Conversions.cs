@@ -1476,6 +1476,14 @@ namespace Pchp.Core
             _ => throw PhpException.TypeErrorException(),
         };
 
+        public static object AsObject(PhpValue value) => value.TypeCode switch
+        {
+            PhpTypeCode.Object => value.Object is PhpResource ? throw PhpException.TypeErrorException() : value.Object,
+            PhpTypeCode.Alias => AsObject(value.Alias.Value),
+            PhpTypeCode.Null => null,
+            _ => throw PhpException.TypeErrorException(string.Format(Resources.ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(value))),
+        };
+
         /// <summary>
         /// Gets value as a string or throws <c>TypeError</c> exception.
         /// </summary>

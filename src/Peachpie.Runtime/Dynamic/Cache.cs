@@ -60,7 +60,7 @@ namespace Pchp.Core.Dynamic
             /// <summary>Get the underlying PhpArray, or <c>null</c>. Throws in case of a scalar or object.</summary>
             public static MethodInfo PhpValue_ToArrayOrThrow = new Func<PhpValue, PhpArray>(StrictConvert.ToArray).Method;
             public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle_Object = Types.PhpValue.GetMethod("AsCallable", typeof(RuntimeTypeHandle), typeof(object));
-            public static MethodInfo PhpValue_AsObject = Types.PhpValue.GetMethod("AsObject", Types.Empty);
+            public static MethodInfo PhpValue_AsObjectOrThrow = new Func<PhpValue, object>(Core.StrictConvert.AsObject).Method;
             public static MethodInfo PhpValue_AsString_Context = Types.PhpValue.GetMethod("AsString", typeof(Context));
             public static MethodInfo PhpValue_ToIntStringKey = Types.PhpValue.GetMethod("ToIntStringKey");
             public static MethodInfo PhpValue_GetValue = Types.PhpValue.GetMethod("GetValue");
@@ -108,6 +108,7 @@ namespace Pchp.Core.Dynamic
 
         public static class Exceptions
         {
+            public static readonly MethodInfo TypeErrorException_String = new Func<string, Exception>(PhpException.TypeErrorException).Method;
             public static readonly MethodInfo UndefinedFunctionCalled_String = new Action<string>(PhpException.UndefinedFunctionCalled).Method;
             public static readonly MethodInfo UndefinedMethodCalled_String_String = new Action<string, string>(PhpException.UndefinedMethodCalled).Method;
             public static readonly MethodInfo MethodOnNonObject_String = new Action<string>(PhpException.MethodOnNonObject).Method;

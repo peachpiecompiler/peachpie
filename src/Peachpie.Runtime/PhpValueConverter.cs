@@ -92,13 +92,11 @@ namespace Pchp.Core
                     }
 
                     // Object
-                    return new Func<PhpValue, T>(x => (T)x.AsObject());
+                    return new Func<PhpValue, T>(x => (T)StrictConvert.AsObject(x));
                 }
 
-                throw new NotImplementedException();
+                throw new NotImplementedException($"Convert '{nameof(PhpValue)}' to '{typeof(T)}'.");
             }
-
-
         }
 
         static class DictionaryConverter<T>

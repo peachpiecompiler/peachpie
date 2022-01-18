@@ -171,7 +171,20 @@ namespace Pchp.Core.Dynamic
 
         private static bool IsNullConstant(Expression arg)
         {
-            return arg is ConstantExpression c && ReferenceEquals(c.Value, null);
+            if (arg is ConstantExpression c)
+            {
+                if (ReferenceEquals(c.Value, null))
+                {
+                    return true;
+                }
+
+                if (c.Value is PhpValue phpvalue)
+                {
+                    return phpvalue.IsNull;
+                }
+            }
+
+            return false;
         }
 
         public static MethodInfo FindImplicitOperator(Type t, Type toType)
@@ -409,7 +422,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(object))
             {
                 // NULL
-                if (expr is ConstantExpression && ((ConstantExpression)expr).Value == null)
+                if (IsNullConstant(expr))
                 {
                     // (string)null
                     return Expression.Constant(null, typeof(string));
@@ -616,35 +629,69 @@ namespace Pchp.Core.Dynamic
             throw new NotImplementedException(source.FullName);
         }
 
-        static Expression BindAsObject(Expression expr)
+        /// <summary>
+        /// Gets value indicating the type is PHP scalar for sure.
+        /// Returns false if it's an object type or <see cref="PhpValue"/>.
+        /// </summary>
+        static bool IsScalarType(Type type, out string typeName)
         {
-            var source = expr.Type;
+            typeName = null;
 
-            // PhpValue.AsObject
-            if (source == typeof(PhpValue))
+            if (type.IsValueType == false)
             {
-                return Expression.Call(expr, Cache.Operators.PhpValue_AsObject);
+                if (type.IsSubclassOf(typeof(PhpResource))) typeName = PhpResource.PhpTypeName;
+                else if (type.IsSubclassOf(typeof(IPhpArray))) typeName = PhpArray.PhpTypeName;
+            }
+            else
+            {
+                if (type.IsSubclassOf(typeof(PhpString))) typeName = PhpVariable.TypeNameString;
+                else if (type == typeof(int) || type == typeof(long) || type == typeof(PhpNumber)) typeName = PhpVariable.TypeNameInt;
+                else if (type == typeof(float) || type == typeof(double) || type == typeof(decimal)) typeName = PhpVariable.TypeNameDouble;
+                else if (type == typeof(bool)) typeName = PhpVariable.TypeNameBool;
             }
 
-            var tinfo = source.GetTypeInfo();
+            return typeName != null;
+        }
 
-            // <expr>
-            if (!tinfo.IsValueType &&
-                !tinfo.IsSubclassOf(typeof(PhpResource)) &&
-                !tinfo.IsSubclassOf(typeof(IPhpArray)) &&
-                !tinfo.IsSubclassOf(typeof(PhpString))
-                )
+        static Expression BindAsObject(Expression expr)
+        {
+            if (IsNullConstant(expr))
             {
+                return Expression.Constant(null, typeof(object));
+            }
+
+            var source = expr.Type;
+
+            if (IsScalarType(source, out var scalarTypeName))
+            {
+                // quickly check classes that are not considered as `object` in PHP
+                return VoidAsConstant(
+                    ThrowTypeError(string.Format(Resources.ErrResources.scalar_used_as_object, scalarTypeName)),
+                    null,
+                    typeof(object));
+            }
+
+            if (source.IsValueType == false)
+            {
+                // reference type which is not scalar
                 return expr;
             }
 
-            // NULL
-            return Expression.Constant(null, Cache.Types.Object[0]);
+            // anything else,
+            // incl. PhpValue:
+
+            // StrictConvert.ToObject( PhpValue )
+            return Expression.Call(Cache.Operators.PhpValue_AsObjectOrThrow, BindToValue(expr));
         }
 
         static Expression BindAsReferenceType(Expression expr, Type target, Expression ctx)
         {
             Debug.Assert(expr.Type != typeof(PhpAlias));
+
+            if (IsNullConstant(expr))
+            {
+                return Expression.Constant(null, typeof(object));
+            }
 
             // to System.Delegate,
             // before dereferencing below
@@ -685,7 +732,7 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(PhpArray) || source.IsSubclassOf(target)) return expr;
             if (source == typeof(PhpValue)) return Expression.Call(Cache.Operators.PhpValue_ToArrayOrThrow, expr);
-            if (expr is ConstantExpression c && c.Value == null) return Expression.Constant(null, typeof(PhpArray));
+            if (IsNullConstant(expr)) return Expression.Constant(null, typeof(PhpArray));
 
             throw new NotImplementedException(source.FullName);
         }
@@ -722,6 +769,16 @@ namespace Pchp.Core.Dynamic
             var constant = Expression.Constant(value, type);
 
             return Expression.Block(expr, constant);
+        }
+
+        /// <summary>
+        /// Expression: throw new TypeError(message);
+        /// </summary>
+        internal static Expression ThrowTypeError(string message)
+        {
+            // throw PhpException.TypeError(message)
+            return Expression.Throw(
+                Expression.Call(Cache.Exceptions.TypeErrorException_String, Expression.Constant(message)));
         }
 
         #endregion
@@ -1250,6 +1307,13 @@ namespace Pchp.Core.Dynamic
 
                 case PhpTypeCode.PhpArray:
                     return ConversionCost.Pass;
+
+                case PhpTypeCode.Object:
+                    if (value.Object is IPhpConvertible)
+                    {
+                        return ConversionCost.LoosingPrecision;
+                    }
+                    goto default;
 
                 default:
                     return ConversionCost.NoConversion;
