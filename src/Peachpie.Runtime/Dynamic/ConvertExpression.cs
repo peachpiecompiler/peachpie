@@ -771,6 +771,34 @@ namespace Pchp.Core.Dynamic
             return Expression.Block(expr, constant);
         }
 
+        public static Expression Bind_ToClr(Expression expr, Expression ctx)
+        {
+            // see PhpValue.ToClr() semantic
+
+            if (expr.Type == Cache.Types.PhpAlias[0])
+            {
+                return Bind_ToClr(Expression.Property(expr, Cache.PhpAlias.Value), ctx);
+            }
+
+            if (expr.Type == Cache.Types.IndirectLocal)
+            {
+                // from IndirectLocal
+                return Bind_ToClr(Expression.Call(expr, Cache.IndirectLocal.GetValue), ctx);
+            }
+
+            if (expr.Type == Cache.Types.PhpString[0])
+            {
+                return Expression.Call(expr, Cache.PhpString.ToString_Context, ctx);
+            }
+
+            if (expr.Type == Cache.Types.PhpValue)
+            {
+                return Expression.Call(expr, Cache.Operators.PhpValue_ToClr);
+            }
+
+            return Expression.Convert(expr, Cache.Types.Object[0]);
+        }
+
         /// <summary>
         /// Expression: throw new TypeError(message);
         /// </summary>

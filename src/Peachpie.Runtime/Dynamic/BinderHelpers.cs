@@ -178,6 +178,21 @@ namespace Pchp.Core.Dynamic
         }
 
         /// <summary>
+        /// Determine whether the argument load complies with CLR semantic rather than PHP semantic.
+        /// </summary>
+        public static bool DetermineClrSemantic(this ParameterInfo p)
+        {
+            if (p != null && p.Member is MethodBase method)
+            {
+                return
+                    !method.IsUserRoutine() &&
+                    !(ReflectionUtils.IsInExtensionLibrary(method.DeclaringType));
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Gets <see cref="Context.GetStatic{T}()"/> method bound to a type.
         /// </summary>
         public static MethodInfo GetStatic_T_Method(Type t)

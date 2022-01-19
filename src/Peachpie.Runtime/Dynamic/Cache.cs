@@ -56,6 +56,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo EnsureAlias_PhpValueRef = Types.PhpValue.GetMethod("EnsureAlias", Types.PhpValue.MakeByRefType());
             public static MethodInfo PhpValue_ToLongOrThrow = new Func<PhpValue, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo PhpValue_ToClass = Types.PhpValue.GetMethod("ToClass", Types.Empty);
+            public static MethodInfo PhpValue_ToClr = Types.PhpValue.GetMethod("ToClr", Types.Empty);
             public static MethodInfo PhpValue_ToArray = Types.PhpValue.GetMethod("ToArray", Types.Empty);
             /// <summary>Get the underlying PhpArray, or <c>null</c>. Throws in case of a scalar or object.</summary>
             public static MethodInfo PhpValue_ToArrayOrThrow = new Func<PhpValue, PhpArray>(StrictConvert.ToArray).Method;

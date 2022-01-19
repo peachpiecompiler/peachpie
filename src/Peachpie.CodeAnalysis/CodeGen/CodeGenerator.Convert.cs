@@ -366,6 +366,41 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Values are unwrapped into a corresponding CLR type.
+        /// </summary>
+        /// <remarks>
+        /// This is used when passing a value to a .NET method accepting parameters of type `object`.
+        /// </remarks>
+        internal TypeSymbol Emit_ToClr(TypeSymbol from)
+        {
+            EmitPhpAliasDereference(ref from);
+
+            if (from.IsValueType)
+            {
+                // PhpString
+                if (from.Is_PhpString())
+                {
+                    // STACK.ToString( ctx )
+                    EmitPhpStringAddr();    // ref PhpString
+                    EmitLoadContext();      // Context
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToString_Context);
+                }
+
+                // PhpValue
+                if (from.Is_PhpValue())
+                {
+                    // STACK.ToClr()
+                    EmitPhpValueAddr(); // ref PhpValue
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToClr)
+                        .Expect(SpecialType.System_Object);
+                }
+            }
+
+            //
+            return from;
+        }
+
         private void EmitConvertToIPhpCallable(TypeSymbol from, TypeRefMask fromHint)
         {
             // dereference

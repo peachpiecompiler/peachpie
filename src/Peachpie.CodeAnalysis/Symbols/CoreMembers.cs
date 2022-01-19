@@ -548,6 +548,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
                 ToClass = ct.PhpValue.Method("ToClass");
+                ToClr = ct.PhpValue.Method("ToClr");
 
                 Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
                 Eq_PhpValue_String = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.String);
@@ -590,7 +591,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToString_Context, ToClass, ToArray,
+                ToString_Context, ToClass, ToArray, ToClr,
                 AsObject,
                 DeepCopy, GetValue,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String, Eq_String_PhpValue,

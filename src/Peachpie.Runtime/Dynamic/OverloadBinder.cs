@@ -517,7 +517,11 @@ namespace Pchp.Core.Dynamic
                             {
                                 value2 = new TmpVarValue();
 
-                                value2.TrueInitializer = ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);   // reuse the value already obtained from argv
+                                var expression = (targetparam.ParameterType == typeof(object) && BinderHelpers.DetermineClrSemantic(targetparam))
+                                    ? ConvertExpression.Bind_ToClr(value.Expression, _ctx) // (object)expression
+                                    : ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);
+
+                                value2.TrueInitializer = expression;   // reuse the value already obtained from argv
                                 value2.FalseInitializer = ConvertExpression.Bind(defaultValueExpr, value2.TrueInitializer.Type, _ctx); // ~ default(targetparam)
                                 value2.Expression = Expression.Variable(value2.TrueInitializer.Type, "default_" + srcarg + "_" + defaultValueStr);
 
@@ -543,7 +547,9 @@ namespace Pchp.Core.Dynamic
                             ptype = ptype.GetElementType(); // LINQ will create a local variable for it implicitly
                         }
 
-                        return ConvertExpression.Bind(value.Expression, ptype, _ctx);
+                        return (ptype == typeof(object) && BinderHelpers.DetermineClrSemantic(targetparam))
+                            ? ConvertExpression.Bind_ToClr(value.Expression, _ctx) // (object)expression // CLR semantic
+                            : ConvertExpression.Bind(value.Expression, ptype, _ctx); // regular PHP conversion
                     }
                 }
 
@@ -597,6 +603,8 @@ namespace Pchp.Core.Dynamic
                     }
                     else
                     {
+                        var expr = Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length));
+
                         /* newarr = new T[length];
                          * while (--length >= 0) newarr[length] = convert(argv[fromarg + length]);
                          * lblend: return newarr;
@@ -609,7 +617,7 @@ namespace Pchp.Core.Dynamic
                                     Expression.GreaterThanOrEqual(Expression.PreDecrementAssign(var_length), Cache.Expressions.Create(0)),
                                     Expression.Assign(
                                         Expression.ArrayAccess(var_array, var_length),
-                                        ConvertExpression.Bind(Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length)), element_type, _ctx)),
+                                        ConvertExpression.Bind(expr, element_type, _ctx)),
                                     Expression.Break(lblend)
                                     )),
                             Expression.Label(lblend),
@@ -705,7 +713,7 @@ namespace Pchp.Core.Dynamic
                     return srcarg;
                 }
 
-                bool TryBindArgument(int srcarg, Type targetType, out Expression expr)
+                bool TryBindArgument(int srcarg, Type targetType, out Expression expr, bool isClrSemantic)
                 {
                     var args = _args;
                     if (srcarg >= 0 && srcarg < args.Length)
@@ -727,7 +735,9 @@ namespace Pchp.Core.Dynamic
                             //
                             if (targetType != null)
                             {
-                                expr = ConvertExpression.Bind(expr, targetType, _ctx);
+                                expr = (targetType == typeof(object) && isClrSemantic)
+                                    ? ConvertExpression.Bind_ToClr(expr, _ctx) // (object)expression
+                                    : ConvertExpression.Bind(expr, targetType, _ctx);
                             }
 
                             //
@@ -744,7 +754,7 @@ namespace Pchp.Core.Dynamic
                 {
                     Debug.Assert(srcarg >= 0);
 
-                    if (TryBindArgument(srcarg, targetparam?.ParameterType, out var expr))
+                    if (TryBindArgument(srcarg, targetparam?.ParameterType, out var expr, isClrSemantic: BinderHelpers.DetermineClrSemantic(targetparam)))
                     {
                         return expr;
                     }
@@ -809,7 +819,7 @@ namespace Pchp.Core.Dynamic
 
                     var values = new List<Expression>(count);
                     int srcarg = fromarg;
-                    while (TryBindArgument(srcarg++, element_type, out var expr))
+                    while (TryBindArgument(srcarg++, element_type, out var expr, isClrSemantic: false))
                     {
                         values.Add(expr);
                     }

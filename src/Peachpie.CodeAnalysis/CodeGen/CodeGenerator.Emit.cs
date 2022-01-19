@@ -2584,24 +2584,60 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        static ConversionKind DetermineConversionKind(ParameterSymbol targetp)
+        /// <summary>
+        /// Determine whether the argument load complies with CLR semantic rather than PHP semantic.
+        /// </summary>
+        static bool DetermineClrSemantic(ParameterSymbol targetp)
         {
+            var t = targetp.ContainingType;
+            if (t.IsPhpSourceFile() || t.IsPhpUserType()) // || t.GetPhpExtensionAttribute() != null)
+            {
+                // PHP semantic
+                return false;
+            }
+
+            if (t.ContainingAssembly is PEAssemblySymbol ass)
+            {
+                if (ass.IsPeachpieCorLibrary || ass.IsExtensionLibrary)
+                {
+                    // PHP semantic
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Determine the argument load complies with PHP strict semantic.
+        /// </summary>
+        static bool DetermineStrictSemantic(ParameterSymbol targetp)
+        {
+            // TODO: strict mode on file/class level // cg.ContainingFile // [PhpStrictMode( On/Off/Clr/... )]
+
             var t = targetp.ContainingType;
             if (t.IsPhpSourceFile() || t.IsPhpUserType())
             {
-                // TODO: strict mode on file level?
-                // var f = cg.ContainingFile;                    
-
-                return ConversionKind.Strict;
+                return true;
             }
             else if (targetp.Type.IsObjectType())
             {
                 // CLR "object"
+                return true;
+            }
+
+            // a library function
+            return false;
+        }
+
+        static ConversionKind DetermineConversionKind(ParameterSymbol targetp)
+        {
+            if (DetermineStrictSemantic(targetp))
+            {
                 return ConversionKind.Strict;
             }
             else
             {
-                // a library function
                 return ConversionKind.Implicit;
             }
         }
@@ -2614,9 +2650,18 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (targetp.RefKind == RefKind.None)
             {
                 // load argument
-                EmitConvert(expr, targetp.Type,
-                    conversion: DetermineConversionKind(targetp),
-                    notNull: targetp.HasNotNull);
+
+                if (targetp.Type.IsObjectType() && DetermineClrSemantic(targetp))
+                {
+                    // (object)expr.ToClr() // .box
+                    EmitBox(Emit_ToClr(Emit(expr)));
+                }
+                else
+                {
+                    EmitConvert(expr, targetp.Type,
+                        conversion: DetermineConversionKind(targetp),
+                        notNull: targetp.HasNotNull);
+                }
             }
             else
             {

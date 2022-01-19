@@ -180,6 +180,15 @@ namespace Pchp.Core.Reflection
             return false;
         }
 
+        public static bool IsInExtensionLibrary(Type type)
+        {
+            return
+                type.GetCustomAttribute<PhpExtensionAttribute>(false) != null ||
+                type.Assembly.IsPhpExtensionAssembly();
+        }
+
+        public static bool IsPhpExtensionAssembly(this Assembly assembly) => assembly.IsDefined(typeof(PhpExtensionAttribute));
+
         /// <summary>
         /// Types that we do not expose in reflection.
         /// </summary>
