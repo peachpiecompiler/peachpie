@@ -174,10 +174,10 @@ namespace Peachpie.Library.MySql
         }
 
         /// <summary>
-        /// Creates a connection resource using an existing <see cref="MySqlConnection"/> instance.
+        /// Creates a connection resource using an existing <see cref="IDbConnection"/> instance.
         /// </summary>
         /// <exception cref="ArgumentNullException">Provided instance is <c>null</c>.</exception>
-        public static PhpResource mysql_connect(Context ctx, MySqlConnection dbconnection/*, bool leaveOpen*/)
+        public static PhpResource mysql_connect(Context ctx, IDbConnection dbconnection/*, bool leaveOpen*/)
         {
             // create connection resource and
             // register it in the list of active connections

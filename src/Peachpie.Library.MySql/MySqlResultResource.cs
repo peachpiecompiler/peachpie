@@ -24,10 +24,6 @@ namespace Peachpie.Library.MySql
         //    public MySqlDbColumn DbColumn { get; set; }
         //}
 
-        public new MySqlCommand Command => (MySqlCommand)base.Command;
-
-        public new MySqlDataReader Reader => (MySqlDataReader)base.Reader;
-
         public new MySqlConnectionResource Connection => (MySqlConnectionResource)base.Connection;
 
         /// <summary>
@@ -136,7 +132,7 @@ namespace Peachpie.Library.MySql
         {
             // see ColumnSchema
 
-            return Reader.FieldCount != 0 ? (IReadOnlyList<DbColumn>)Reader.GetColumnSchema() : Array.Empty<DbColumn>();
+            return Reader.FieldCount != 0 ? (IReadOnlyList<DbColumn>)MySqlExtensions.GetColumnSchema(Reader) : Array.Empty<DbColumn>();
 
             //var reader = this.Reader;
             //var columns = reader.GetColumnSchema();

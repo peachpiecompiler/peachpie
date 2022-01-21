@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Text;
 using MySqlConnector;
 using Pchp.Core;
@@ -45,7 +46,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Prepared command.
         /// </summary>
-        private protected MySqlCommand Command { get; private set; }
+        private protected IDbCommand Command { get; private set; }
 
         /// <summary>
         /// Result of the command execute command.
@@ -98,7 +99,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Get the ID generated from the previous INSERT operation.
         /// </summary>
-        public long insert_id => Command != null ? Command.LastInsertedId : throw new InvalidOperationException();
+        public long insert_id => Command != null ? MySqlExtensions.LastInsertedId(Command) : throw new InvalidOperationException();
 
         //int $num_rows;
 
