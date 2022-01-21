@@ -71,7 +71,7 @@ namespace Pchp.Core
         readonly string _skey;
 
         /// <summary>
-        /// Gets array key, string or int as object.
+        /// Gets array key, <see cref="string"/> or <see cref="long"/> as object.
         /// </summary>
         public object Object => _skey ?? (object)_ikey;
 
