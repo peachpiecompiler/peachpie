@@ -179,7 +179,11 @@ namespace Peachpie.Library.MySql
         /// <exception cref="ArgumentNullException">Provided instance is <c>null</c>.</exception>
         public static PhpResource mysql_connect(Context ctx, MySqlConnection dbconnection/*, bool leaveOpen*/)
         {
-            return new MySqlConnectionResource(MySqlConnectionManager.GetInstance(ctx), dbconnection ?? throw new ArgumentNullException(nameof(dbconnection)));
+            // create connection resource and
+            // register it in the list of active connections
+            return MySqlConnectionManager
+                .GetInstance(ctx)
+                .CreateConnection(dbconnection);
         }
 
         /// <summary>

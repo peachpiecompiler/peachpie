@@ -1,4 +1,5 @@
-﻿using Pchp.Core;
+﻿using MySqlConnector;
+using Pchp.Core;
 using Pchp.Library.Database;
 using System;
 using System.Collections.Generic;
@@ -15,5 +16,17 @@ namespace Peachpie.Library.MySql
         public static MySqlConnectionManager GetInstance(Context ctx) => ctx.GetStatic<MySqlConnectionManager>();
 
         protected override MySqlConnectionResource CreateConnection(string connectionString) => new MySqlConnectionResource(this, connectionString);
+
+        /// <summary>
+        /// Creates a connection resource using an existing <see cref="MySqlConnection"/> instance.
+        /// </summary>
+        internal MySqlConnectionResource CreateConnection(MySqlConnection dbconnection)
+        {
+            var connection = new MySqlConnectionResource(this, dbconnection ?? throw new ArgumentNullException(nameof(dbconnection)));
+
+            AddConnection(connection);
+
+            return connection;
+        }
     }
 }
