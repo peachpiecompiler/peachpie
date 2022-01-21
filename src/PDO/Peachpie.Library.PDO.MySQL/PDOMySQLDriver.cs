@@ -53,8 +53,8 @@ namespace Peachpie.Library.PDO.MySQL
         /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)
         {
-            var command = (MySqlCommand)pdo.GetCurrentCommand();
-            var lastid = (command != null) ? command.LastInsertedId : -1;
+            var command = pdo.GetCurrentCommand();
+            var lastid = (command != null) ? MySqlExtensions.LastInsertedId(command) : -1;
 
             return lastid.ToString();
         }

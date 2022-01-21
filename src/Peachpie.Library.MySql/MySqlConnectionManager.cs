@@ -3,6 +3,7 @@ using Pchp.Core;
 using Pchp.Library.Database;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -18,9 +19,9 @@ namespace Peachpie.Library.MySql
         protected override MySqlConnectionResource CreateConnection(string connectionString) => new MySqlConnectionResource(this, connectionString);
 
         /// <summary>
-        /// Creates a connection resource using an existing <see cref="MySqlConnection"/> instance.
+        /// Creates a connection resource using an existing <see cref="IDbConnection"/> instance.
         /// </summary>
-        internal MySqlConnectionResource CreateConnection(MySqlConnection dbconnection)
+        internal MySqlConnectionResource CreateConnection(IDbConnection dbconnection)
         {
             var connection = new MySqlConnectionResource(this, dbconnection ?? throw new ArgumentNullException(nameof(dbconnection)));
 
