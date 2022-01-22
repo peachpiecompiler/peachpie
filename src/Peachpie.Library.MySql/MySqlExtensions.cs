@@ -99,14 +99,14 @@ namespace Peachpie.Library.MySql
         /// <typeparam name="TIn">Abstract type.</typeparam>
         /// <typeparam name="TResult">Expected actual type of <paramref name="object"/>.</typeparam>
         /// <param name="object">Reference to object.</param>
-        /// <param name="lazyCache">Lazily created dictionary remembering method used ot obtain the underlying value.</param>
+        /// <param name="method">Lazily created method used ot obtain the underlying value.</param>
         /// <param name="getterMethodName">Method name used to obtain the underlying value.</param>
         /// <returns>Value of type <typeparamref name="TResult"/>.</returns>
         /// <remarks>Used to get an underlying value of wrapping classes like the ones provided by MiniProfiler.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="object"/> is null.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="getterMethodName"/> is not defined on <paramref name="object"/>.</exception>
         /// <exception cref="NullReferenceException"><paramref name="object"/>' getter method returned null or an unexpected value.</exception>
-        static TResult/*!*/GetUnderlyingValue<TIn, TResult>(TIn @object, ref ConcurrentDictionary<Type, MethodInfo> lazyCache, string getterMethodName) where TResult : class
+        static TResult/*!*/GetUnderlyingValue<TIn, TResult>(TIn @object, ref MethodInfo method, string getterMethodName) where TResult : class
         {
             // we have TResult in most cases:
             if (@object is TResult result)
@@ -119,17 +119,12 @@ namespace Peachpie.Library.MySql
                 throw new ArgumentNullException(nameof(@object));
             }
 
-            // enure cache
-            if (lazyCache == null)
-            {
-                Interlocked.CompareExchange(ref lazyCache, new ConcurrentDictionary<Type, MethodInfo>(), null);
-            }
-
             // resolve {getterMethodName} method
-            var method = lazyCache.GetOrAdd(
-                @object.GetType(),
-                type => type.GetMethod(getterMethodName, BindingFlags.Instance | BindingFlags.Public))
-                ?? throw new InvalidOperationException($"'{getterMethodName}' method could not be resolved for {@object.GetType().Name}.");
+            if (method == null)
+            {
+                method = @object.GetType().GetMethod(getterMethodName, BindingFlags.Instance | BindingFlags.Public)
+                         ?? throw new InvalidOperationException($"'{getterMethodName}' method could not be resolved for {@object.GetType().Name}.");
+            }
 
             // checks
             var value = method.Invoke(@object, null)
@@ -157,7 +152,7 @@ namespace Peachpie.Library.MySql
         /// <returns><see cref="IDbConnection"/> might be wrapped into another class (usually DB profiler class like MiniProfiler).</returns>
         public static MySqlConnection AsMySqlConnection(this IDbConnection connection) => GetUnderlyingValue<IDbConnection, MySqlConnection>(connection, ref s_wrappedConnectionMethod, "get_WrappedConnection");
 
-        static ConcurrentDictionary<Type, MethodInfo>
+        static MethodInfo
             s_iternalCommandMethod,
             s_wrappedReaderMethod,
             s_wrappedConnectionMethod;
