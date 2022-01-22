@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using MySqlConnector;
 using Pchp.Core;
+using Peachpie.Library.MySql;
 using Peachpie.Library.PDO.Utilities;
 
 namespace Peachpie.Library.PDO.MySQL
@@ -54,7 +55,7 @@ namespace Peachpie.Library.PDO.MySQL
         public override string GetLastInsertId(PDO pdo, string name)
         {
             var command = pdo.GetCurrentCommand();
-            var lastid = (command != null) ? MySqlExtensions.LastInsertedId(command) : -1;
+            var lastid = command != null ? MySqlExtensions.LastInsertedId(command) : -1;
 
             return lastid.ToString();
         }

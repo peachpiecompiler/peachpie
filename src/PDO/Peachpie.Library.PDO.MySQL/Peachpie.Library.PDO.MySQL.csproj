@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Peachpie.Library.MySql\Peachpie.Library.MySql.csproj" />
     <ProjectReference Include="..\Peachpie.Library.PDO\Peachpie.Library.PDO.csproj" />
   </ItemGroup>
 

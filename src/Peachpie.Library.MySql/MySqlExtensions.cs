@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Data.Common;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using MySqlConnector;
 using Pchp.Core;
 using Pchp.Library.Database;
@@ -91,42 +93,86 @@ namespace Peachpie.Library.MySql
         }
 
         /// <summary>
-        /// Returns the last insert ID from an IDbCommand by unwrapping it to the internal MySqlCommand
+        /// Casts the <paramref name="object"/> to <typeparamref name="TResult"/>.
+        /// Otherwise it reflects the <paramref name="object"/>, looking for a <paramref name="getterMethodName"/> and trying to invoke that to get the underlying reference.
         /// </summary>
-        /// <param name="command">Generic IDbCommand to work with</param>
-        /// <returns>Last insert ID</returns>
-        public static long LastInsertedId(
-            IDbCommand command)
+        /// <typeparam name="TIn">Abstract type.</typeparam>
+        /// <typeparam name="TResult">Expected actual type of <paramref name="object"/>.</typeparam>
+        /// <param name="object">Reference to object.</param>
+        /// <param name="lazyCache">Lazily created dictionary remembering method used ot obtain the underlying value.</param>
+        /// <param name="getterMethodName">Method name used to obtain the underlying value.</param>
+        /// <returns>Value of type <typeparamref name="TResult"/>.</returns>
+        /// <remarks>Used to get an underlying value of wrapping classes like the ones provided by MiniProfiler.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="object"/> is null.</exception>
+        /// <exception cref="InvalidOperationException"><paramref name="getterMethodName"/> is not defined on <paramref name="object"/>.</exception>
+        /// <exception cref="NullReferenceException"><paramref name="object"/>' getter method returned null or an unexpected value.</exception>
+        static TResult/*!*/GetUnderlyingValue<TIn, TResult>(TIn @object, ref ConcurrentDictionary<Type, MethodInfo> lazyCache, string getterMethodName) where TResult : class
         {
-            // If we have a MySqlCommand, just use it
-            if (command is MySqlCommand mySqlCommand) return mySqlCommand.LastInsertedId;
+            // we have TResult in most cases:
+            if (@object is TResult result)
+            {
+                return result;
+            }
 
-            // If we did not get one back, try to unwrap it as likely it's wrapped by a profiler like MiniProfiler
-            if (_innerCommandMethod == null)
-                _innerCommandMethod = command.GetType().GetMethod("get_InternalCommand", BindingFlags.Instance | BindingFlags.Public);
-            mySqlCommand = _innerCommandMethod?.Invoke(command, null) as MySqlCommand;
-            if (mySqlCommand == null) throw new NullReferenceException("Could not get internal command for wrapped command!");
-            return mySqlCommand.LastInsertedId;
+            if (@object == null)
+            {
+                throw new ArgumentNullException(nameof(@object));
+            }
+
+            // enure cache
+            if (lazyCache == null)
+            {
+                Interlocked.CompareExchange(ref lazyCache, new ConcurrentDictionary<Type, MethodInfo>(), null);
+            }
+
+            // resolve {getterMethodName} method
+            var method = lazyCache.GetOrAdd(
+                @object.GetType(),
+                type => type.GetMethod(getterMethodName, BindingFlags.Instance | BindingFlags.Public))
+                ?? throw new InvalidOperationException($"'{getterMethodName}' method could not be resolved for {@object.GetType().Name}.");
+
+            // checks
+            var value = method.Invoke(@object, null)
+                ?? throw new NullReferenceException($"{getterMethodName}() returned null.");
+
+            return value as TResult
+                ?? throw new NullReferenceException($"{@object.GetType().Name}.{getterMethodName}() returned an unexpected value of type {value.GetType().Name}. Expecting '{typeof(TResult).Name}'.");
         }
-        private static MethodInfo _innerCommandMethod;
+
+        /// <summary>
+        /// Casts or unwraps given <see cref="IDbCommand"/> to <see cref="MySqlCommand"/>.
+        /// </summary>
+        /// <returns><see cref="IDbCommand"/> might be wrapped into another class (usually DB profiler class like MiniProfiler).</returns>
+        public static MySqlCommand AsMySqlCommand(this IDbCommand command) => GetUnderlyingValue<IDbCommand, MySqlCommand>(command, ref s_iternalCommandMethod, "get_InternalCommand");
+
+        /// <summary>
+        /// Casts or unwraps given <see cref="IDbCommand"/> to <see cref="MySqlCommand"/>.
+        /// </summary>
+        /// <returns><see cref="IDbCommand"/> might be wrapped into another class (usually DB profiler class like MiniProfiler).</returns>
+        public static MySqlDataReader AsMySqlDataReader(this IDataReader reader) => GetUnderlyingValue<IDataReader, MySqlDataReader>(reader, ref s_wrappedReaderMethod, "get_WrappedReader");
+
+        /// <summary>
+        /// Casts or unwraps given <see cref="IDbConnection"/> to <see cref="MySqlConnection"/>.
+        /// </summary>
+        /// <returns><see cref="IDbConnection"/> might be wrapped into another class (usually DB profiler class like MiniProfiler).</returns>
+        public static MySqlConnection AsMySqlConnection(this IDbConnection connection) => GetUnderlyingValue<IDbConnection, MySqlConnection>(connection, ref s_wrappedConnectionMethod, "get_WrappedConnection");
+
+        static ConcurrentDictionary<Type, MethodInfo>
+            s_iternalCommandMethod,
+            s_wrappedReaderMethod,
+            s_wrappedConnectionMethod;
+
+        /// <summary>
+        /// Returns the last insert ID from the MySqlCommand, eventually using the underlying MySqlCommand of another IDbCommand.
+        /// </summary>
+        /// <param name="command">Generic <see cref="IDbCommand"/> to work with</param>
+        /// <returns>Last insert ID</returns>
+        public static long LastInsertedId(IDbCommand command) => command.AsMySqlCommand().LastInsertedId;
 
         /// <summary>
         /// Returns metadata about the columns in the result set.
         /// </summary>
-        /// <returns>A <see cref="System.Collections.ObjectModel.ReadOnlyCollection{DbColumn}"/> containing metadata about the result set.</returns>
-        public static ReadOnlyCollection<DbColumn> GetColumnSchema(
-            IDataReader reader)
-        {
-            // If we have a MySqlCommand, just use it
-            if (reader is MySqlDataReader mySqlDataReader) return mySqlDataReader.GetColumnSchema();
-
-            // If we did not get one back, try to unwrap it as likely it's wrapped by a profiler like MiniProfiler
-            if (_innerDataReaderMethod == null)
-                _innerDataReaderMethod = reader.GetType().GetMethod("get_WrappedReader", BindingFlags.Instance | BindingFlags.Public);
-            mySqlDataReader = _innerDataReaderMethod?.Invoke(reader, null) as MySqlDataReader;
-            if (mySqlDataReader == null) throw new NullReferenceException("Could not get MySqlDataReader for wrapped reader!");
-            return mySqlDataReader.GetColumnSchema();
-        }
-        private static MethodInfo _innerDataReaderMethod;
+        /// <returns>A <see cref="ReadOnlyCollection{DbColumn}"/> containing metadata about the result set.</returns>
+        public static ReadOnlyCollection<DbColumn> GetColumnSchema(IDataReader reader) => reader.AsMySqlDataReader().GetColumnSchema();
     }
 }
