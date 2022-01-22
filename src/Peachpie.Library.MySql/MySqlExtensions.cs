@@ -101,12 +101,13 @@ namespace Peachpie.Library.MySql
         /// <param name="object">Reference to object.</param>
         /// <param name="method">Lazily created method used ot obtain the underlying value.</param>
         /// <param name="getterMethodName">Method name used to obtain the underlying value.</param>
+        /// <param name="alternateMethodName">Alternate method name used to obtain the underlying value.</param>
         /// <returns>Value of type <typeparamref name="TResult"/>.</returns>
         /// <remarks>Used to get an underlying value of wrapping classes like the ones provided by MiniProfiler.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="object"/> is null.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="getterMethodName"/> is not defined on <paramref name="object"/>.</exception>
         /// <exception cref="NullReferenceException"><paramref name="object"/>' getter method returned null or an unexpected value.</exception>
-        static TResult/*!*/GetUnderlyingValue<TIn, TResult>(TIn @object, ref MethodInfo method, string getterMethodName) where TResult : class
+        static TResult/*!*/GetUnderlyingValue<TIn, TResult>(TIn @object, ref MethodInfo method, string getterMethodName, string alternateMethodName = null) where TResult : class
         {
             // we have TResult in most cases:
             if (@object is TResult result)
@@ -123,7 +124,8 @@ namespace Peachpie.Library.MySql
             if (method == null)
             {
                 method = @object.GetType().GetMethod(getterMethodName, BindingFlags.Instance | BindingFlags.Public)
-                         ?? throw new InvalidOperationException($"'{getterMethodName}' method could not be resolved for {@object.GetType().Name}.");
+                    ?? (alternateMethodName != null ? @object.GetType().GetMethod(alternateMethodName, BindingFlags.Instance | BindingFlags.Public) : null)
+                    ?? throw new InvalidOperationException($"'{getterMethodName}' method could not be resolved for {@object.GetType().Name}.");
             }
 
             // checks
@@ -138,7 +140,7 @@ namespace Peachpie.Library.MySql
         /// Casts or unwraps given <see cref="IDbCommand"/> to <see cref="MySqlCommand"/>.
         /// </summary>
         /// <returns><see cref="IDbCommand"/> might be wrapped into another class (usually DB profiler class like MiniProfiler).</returns>
-        public static MySqlCommand AsMySqlCommand(this IDbCommand command) => GetUnderlyingValue<IDbCommand, MySqlCommand>(command, ref s_iternalCommandMethod, "get_InternalCommand");
+        public static MySqlCommand AsMySqlCommand(this IDbCommand command) => GetUnderlyingValue<IDbCommand, MySqlCommand>(command, ref s_iternalCommandMethod, "get_WrappedCommand", "get_InternalCommand");
 
         /// <summary>
         /// Casts or unwraps given <see cref="IDbCommand"/> to <see cref="MySqlCommand"/>.
