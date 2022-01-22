@@ -15,7 +15,7 @@ namespace Pchp.Library.Streams
 	/// An implementation of <see cref="PhpStream"/> as an encapsulation 
 	/// of System.Net.Socket transports.
 	/// </summary>
-	public class SocketStream : PhpStream
+	public class SocketStream : PhpStream, IPhpConvertible
     {
         public override bool CanReadWithoutLock
         {
@@ -86,6 +86,19 @@ namespace Pchp.Library.Streams
                 SslStream.Dispose();
                 SslStream = null;
             }
+        }
+
+        #endregion
+        #region IPhpConvertible
+
+        //(int)thesocket should be the native pointer of thesocket,justify this behavior to php
+        long IPhpConvertible.ToLong() => IsValid ? Socket.Handle.ToInt64() : 0;
+
+        Pchp.Core.Convert.NumberInfo IPhpConvertible.ToNumber(out PhpNumber number)
+        {
+            var temp = IsValid ? Socket.Handle.ToInt64() : 0;
+            number = PhpNumber.Create(temp);
+            return Pchp.Core.Convert.NumberInfo.LongInteger;
         }
 
         #endregion
