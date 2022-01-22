@@ -20,7 +20,14 @@ namespace Peachpie.Library.MySql
         const string ResourceName = "mysql connection";
 
         readonly MySqlConnectionManager _manager;
+
         readonly IDbConnection _connection;
+
+        /// <summary>
+        /// <see cref="_connection"/> lazily cast to <see cref="MySqlConnector.MySqlConnection"/>.
+        /// <see cref="MySqlExtensions.GetUnderlyingValue"/> for details.
+        /// </summary>
+        MySqlConnection _mySqlConnection;
 
         /// <summary>
         /// Whether to keep the underlying connection open after disposing this resource.
@@ -83,22 +90,7 @@ namespace Peachpie.Library.MySql
         /// the connection is a wrapped connection such as we get from MiniProfiler, and we look for WrappedConnection to
         /// find the native MySqlConnection when we need it.
         /// </summary>
-        internal MySqlConnection MySqlConnection
-        {
-            get
-            {
-                if (_mySqlConnection != null) return _mySqlConnection;
-                _mySqlConnection = _connection as MySqlConnection;
-                if (_mySqlConnection != null) return _mySqlConnection;
-                if (_innerConnectionMethod == null)
-                    _innerConnectionMethod = _connection.GetType().GetMethod("get_WrappedConnection", BindingFlags.Instance | BindingFlags.Public);
-                _mySqlConnection = _innerConnectionMethod?.Invoke(_connection, null) as MySqlConnection;
-                if (_mySqlConnection == null) throw new NullReferenceException("Could not get MySqlConnection for wrapped connection!");
-                return _mySqlConnection;
-            }
-        }
-        private MySqlConnection _mySqlConnection;
-        private static MethodInfo _innerConnectionMethod;
+        internal MySqlConnection MySqlConnection => _mySqlConnection ?? (_mySqlConnection = _connection.AsMySqlConnection());
 
         protected override IDbConnection ActiveConnection => _connection;
 
@@ -135,10 +127,7 @@ namespace Peachpie.Library.MySql
         /// <summary>
         /// Pings the server.
         /// </summary>
-        internal bool Ping()
-        {
-            return MySqlConnection.Ping();
-        }
+        internal bool Ping() => MySqlConnection.Ping();
 
         /// <summary>
 		/// Queries server for a value of a global variable.
@@ -168,9 +157,7 @@ namespace Peachpie.Library.MySql
             get
             {
                 var command = LastResult?.Command;
-                return command != null
-                    ? MySqlExtensions.LastInsertedId(command)
-                    : -1L;
+                return command != null ? MySqlExtensions.LastInsertedId(command) : -1;
             }
         }
     }
