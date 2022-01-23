@@ -585,26 +585,34 @@ namespace Pchp.Core
 
         public static IPhpArray EnsureArray(object obj)
         {
-            // IPhpArray
-            if (obj is IPhpArray) return (IPhpArray)obj;
-
-            // ArrayAccess
-            if (obj is ArrayAccess) return EnsureArray((ArrayAccess)obj);
-
-            // IList
-            if (obj is IList) return new ListAsPhpArray((IList)obj);
-
-
-            // get_Item
-            if (obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item] != null)
+            if (obj != null)
             {
-                // IDictionary,
-                // and item getters in general:
-                return new GetSetItemAsPhpArray(obj);
+                // IPhpArray
+                if (obj is IPhpArray) return (IPhpArray)obj;
+
+                // ArrayAccess
+                if (obj is ArrayAccess) return EnsureArray((ArrayAccess)obj);
+
+                // IList
+                if (obj is IList) return new ListAsPhpArray((IList)obj);
+
+                // get_Item
+                if (obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item] != null)
+                {
+                    // IDictionary,
+                    // and item getters in general:
+                    return new GetSetItemAsPhpArray(obj);
+                }
+
+                // Fatal error: Uncaught Error: Cannot use object of type {0} as array
+                PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, obj.GetPhpTypeInfo().Name);
+            }
+            else
+            {
+                // Fatal error: Uncaught Error: Cannot use object of type {0} as array
+                PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, PhpVariable.TypeNameNull);
             }
 
-            // Fatal error: Uncaught Error: Cannot use object of type {0} as array
-            PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, obj.GetPhpTypeInfo().Name);
             throw new ArgumentException(nameof(obj));
         }
 

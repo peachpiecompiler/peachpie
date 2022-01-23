@@ -4920,6 +4920,13 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw cg.NotImplementedException($"(quiet) STORE {tArray.Name}[]");    // TODO: emit convert as PhpArray
                 }
             }
+            else if (tArray.IsReferenceType)
+            {
+                // Template: Operators.EnsureArray( object <STACK> ) : IPhpArray
+                // throws if the object does not implement an array access
+                tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_Object)
+                        .Expect(cg.CoreTypes.IPhpArray);
+            }
             else
             {
                 throw cg.NotImplementedException($"STORE {tArray.Name}[]");    // TODO: emit convert as PhpArray
