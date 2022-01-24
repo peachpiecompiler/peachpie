@@ -371,9 +371,8 @@ namespace Pchp.Library.Streams
         [return: CastToFalse]
         public static PhpResource stream_socket_accept(Context ctx, PhpResource socket, double? timeout, out string peer_name)
         {
-
             peer_name = string.Empty;
-            
+
             var streamResource = SocketStream.GetValid(socket);
             if (streamResource == null)
             {
@@ -397,7 +396,7 @@ namespace Pchp.Library.Streams
                     serverSocket.Blocking = true;
                     acceptedSocket = serverSocket.Accept();
                 }
-                else if(timeoutVal.Equals(0))
+                else if (timeoutVal.Equals(0))
                 {
                     serverSocket.Blocking = false;
                     try

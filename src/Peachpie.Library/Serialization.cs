@@ -406,7 +406,7 @@ namespace Pchp.Library
                     var __serialize = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__serialize];
                     if (__serialize != null)
                     {
-                        // TODO: check accessibility // CONSIDER do not reflect non-public methods in tinfo.RuntimeMethods at all!
+                        // TODO: check accessibility
                         var rvalue = __serialize.Invoke(_ctx, obj);
                         if (rvalue.IsPhpArray(out serializedArray) == false)
                         {
