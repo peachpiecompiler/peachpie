@@ -14,7 +14,7 @@ namespace Pchp.Core
 	/// The hashtable storing entries with <see cref="string"/> and <see cref="int"/> keys in a manner of PHP.
 	/// </summary>
 	[DebuggerNonUserCode]
-    public class PhpHashtable : IDictionary<IntStringKey, PhpValue>, IList, IList<PhpValue> // , IDictionary // , ICloneable
+    public class PhpHashtable : IDictionary<IntStringKey, PhpValue>, IList, IList<PhpValue>, IDictionary // , ICloneable
     {
         #region Fields and Properties
 
@@ -241,91 +241,132 @@ namespace Pchp.Core
         #region IDictionaryAdapter
 
         //[Serializable]
-        public class IDictionaryAdapter : IDictionaryEnumerator
+        sealed class DictionaryAdapter : IDictionaryEnumerator
         {
             #region Fields
 
             /// <summary>
             /// Currently pointed element.
             /// </summary>
-            private OrderedDictionary.FastEnumerator enumerator;
+            OrderedDictionary.FastEnumerator _enumerator;
 
             #endregion
 
             #region Construction
 
-            public IDictionaryAdapter(PhpHashtable/*!*/table)
+            public DictionaryAdapter(PhpHashtable/*!*/table)
             {
                 Debug.Assert(table != null);
-                this.enumerator = table.GetFastEnumerator();
+                _enumerator = table.GetFastEnumerator();
             }
 
             #endregion
 
             #region IDictionaryEnumerator Members
 
-            public DictionaryEntry Entry
-            {
-                get { return new DictionaryEntry(Key, Value); }
-            }
+            public DictionaryEntry Entry => new DictionaryEntry(Key, Value);
 
-            public object Key
-            {
-                get
-                {
-                    return this.enumerator.CurrentKey.Object;
-                }
-            }
+            public object Key => _enumerator.CurrentKey.Object;
 
-            public object Value
-            {
-                get
-                {
-                    return this.enumerator.CurrentValue.ToClr();
-                }
-            }
+            public object Value => _enumerator.CurrentValue.ToClr();
 
             #endregion
 
             #region IEnumerator Members
 
-            public object Current
-            {
-                get { return this.Entry; }
-            }
+            public object Current => this.Entry;
 
-            public bool MoveNext()
-            {
-                return this.enumerator.MoveNext();
-            }
+            public bool MoveNext() => _enumerator.MoveNext();
 
-            public void Reset()
-            {
-                this.enumerator.Reset();
-            }
+            public void Reset() => _enumerator.Reset();
 
             #endregion
         }
 
         #endregion
 
+        #region DictionaryKeysValuesCollection
+
+        /// <remarks>Thread safe.</remarks>
+        sealed class DictionaryKeysOrValuesCollection : ICollection
+        {
+            /// <summary>
+            /// Array to be enumerated.
+            /// </summary>
+            readonly PhpHashtable _array;
+
+            /// <summary>
+            /// Whether the collection represents keys or values.
+            /// </summary>
+            readonly bool _keys;
+
+            /// <summary>
+            /// If the collection represents keys.
+            /// </summary>
+            public bool IsKeyCollection => _keys == true;
+
+            /// <summary>
+            /// If the collection represents values.
+            /// </summary>
+            public bool IsValueCollection => !IsKeyCollection;
+
+            /// <summary>
+            /// Creates the collection of keys or values over the given array.
+            /// </summary>
+            /// <exception cref="ArgumentNullException"></exception>
+            public DictionaryKeysOrValuesCollection(PhpHashtable array, bool keys)
+            {
+                _array = array ?? throw new ArgumentNullException(nameof(array));
+                _keys = keys;
+            }
+
+            public int Count => _array.Count;
+
+            public bool IsSynchronized => true;
+
+            public object SyncRoot => _array;
+
+            public void CopyTo(Array array, int index)
+            {
+                var enumerator = _array.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    array.SetValue(
+                        IsKeyCollection ? enumerator.CurrentKey.Object : enumerator.CurrentValue.ToClr(),
+                        index++);
+                }
+            }
+
+            public IEnumerator GetEnumerator()
+            {
+                var enumerator = _array.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    yield return IsKeyCollection ? enumerator.CurrentKey.Object : enumerator.CurrentValue.ToClr();
+                }
+            }
+        }
+
+        #endregion
+
         /// <summary>This property is always false.</summary>
-		public bool IsFixedSize { get { return false; } }
+        public bool IsFixedSize { get { return false; } }
 
         /// <summary>This property is always false.</summary>
 		public bool IsReadOnly { get { return false; } }
 
-        ///// <summary>
-        ///// Returns an enumerator which iterates through values in this instance in order as they were added in it.
-        ///// </summary>
-        ///// <returns>The enumerator.</returns>
-        //IDictionaryEnumerator/*!*/ IDictionary.GetEnumerator()
-        //{
-        //    if (this.Count == 0)
-        //        return OrderedDictionary.EmptyEnumerator.SingletonInstance;
+        /// <summary>
+        /// Returns an enumerator which iterates through values in this instance in order as they were added in it.
+        /// </summary>
+        /// <returns>The enumerator.</returns>
+        IDictionaryEnumerator/*!*/ IDictionary.GetEnumerator()
+        {
+            return new DictionaryAdapter(this); // new GenericDictionaryAdapter<object, object>(GetDictionaryEnumerator(), false);
+        }
 
-        //    return new IDictionaryAdapter(this); // new GenericDictionaryAdapter<object, object>(GetDictionaryEnumerator(), false);
-        //}
+        ICollection IDictionary.Keys => new DictionaryKeysOrValuesCollection(this, keys: true);
+
+        ICollection IDictionary.Values => new DictionaryKeysOrValuesCollection(this, keys: false);
 
         //private IEnumerator<KeyValuePair<object, object>>/*!*/ GetDictionaryEnumerator()
         //{
