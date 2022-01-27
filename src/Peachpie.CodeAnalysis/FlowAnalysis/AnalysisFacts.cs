@@ -491,7 +491,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 return;
             }
 
-            var currentType = flowState.GetLocalType(handle);
+            var currentType = varRef.TypeRefMask; // flowState.GetLocalType(handle);
             var targetType = targetTypeCallback(currentType);
 
             // Model negative type checks (such as $x != null) by inverting branches for the core checking function

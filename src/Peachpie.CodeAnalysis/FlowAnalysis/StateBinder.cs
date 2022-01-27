@@ -25,18 +25,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // get or create typeCtx
             var typeCtx = routine.TypeRefContext;
 
-            if (flowCtx == null)
-            {
-                // create FlowContext 
-                flowCtx = new FlowContext(typeCtx, routine);
+            // create or reuse FlowContext 
+            flowCtx ??= new FlowContext(typeCtx, routine);
 
-                // pre-allocate locals map // https://github.com/peachpiecompiler/peachpie/issues/1002
-                foreach (var variable in routine.LocalsTable.Variables)
+            // pre-allocate locals map // https://github.com/peachpiecompiler/peachpie/issues/1002
+            foreach (var variable in routine.LocalsTable.Variables)
+            {
+                if (variable is Semantics.LocalVariableReference local && local.VariableKind == VariableKind.LocalVariable)
                 {
-                    if (variable is Semantics.LocalVariableReference local && local.VariableKind == VariableKind.LocalVariable)
-                    {
-                        flowCtx.GetVarIndex(variable.BoundName.NameValue);
-                    }
+                    flowCtx.GetVarIndex(variable.BoundName.NameValue);
                 }
             }
 
