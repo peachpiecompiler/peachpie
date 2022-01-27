@@ -447,7 +447,7 @@ namespace Pchp.Core
 
         #region ToDictionary
 
-        public static Dictionary<K,V>/*!*/ToDictionary<K, V>(this PhpValue value)
+        public static Dictionary<K, V>/*!*/ToDictionary<K, V>(this PhpValue value)
         {
             // try to unwrap assignable CLR instance
             if (value.AsObject() is IDictionary<K, V> dictiface)
@@ -1473,13 +1473,22 @@ namespace Pchp.Core
             PhpTypeCode.PhpArray => value.Array,
             PhpTypeCode.Alias => ToArray(value.Alias.Value),
             PhpTypeCode.Null => null,
-            _ => throw PhpException.TypeErrorException(),
+            _ => throw PhpException.TypeErrorException(UsedAsArrayTypeErrorMessage(value)),
+        };
+
+        static string UsedAsArrayTypeErrorMessage(PhpValue value) => value.TypeCode switch
+        {
+            PhpTypeCode.Object => string.Format(Resources.ErrResources.object_used_as_array, PhpVariable.GetClassName(value.Object)),
+            PhpTypeCode.String => string.Format(Resources.ErrResources.string_used_as_array),
+            PhpTypeCode.MutableString => string.Format(Resources.ErrResources.string_used_as_array),
+            _ => string.Format(Resources.ErrResources.scalar_used_as_array, PhpVariable.GetTypeName(value)),
         };
 
         public static object AsObject(PhpValue value) => value.TypeCode switch
         {
             PhpTypeCode.Object => value.Object is PhpResource ? throw PhpException.TypeErrorException() : value.Object,
             PhpTypeCode.Alias => AsObject(value.Alias.Value),
+            PhpTypeCode.PhpArray => throw PhpException.TypeErrorException(Resources.ErrResources.array_used_as_object),
             PhpTypeCode.Null => null,
             _ => throw PhpException.TypeErrorException(string.Format(Resources.ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(value))),
         };
