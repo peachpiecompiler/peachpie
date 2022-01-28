@@ -1346,12 +1346,19 @@ namespace Pchp.Core
             switch (value.TypeCode)
             {
                 case PhpTypeCode.Object:
+                    if (value.Object is DateTime)
+                    {
+                        return (DateTime)value.Object;
+                    }
+
+                    // try op_Implicit() : DateTime
                     var m = Dynamic.ConvertExpression.FindImplicitOperator(value.Object.GetType(), typeof(DateTime));
                     if (m != null)
                     {
                         return (DateTime)m.Invoke(null, new[] { value.Object });
                     }
 
+                    // cannot convert object to DateTime
                     goto default;
 
                 case PhpTypeCode.MutableString:
