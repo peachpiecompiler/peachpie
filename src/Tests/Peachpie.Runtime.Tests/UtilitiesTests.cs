@@ -45,5 +45,14 @@ namespace Peachpie.Runtime.Tests
             list.Insert(0, -1);
             list.Insert(1, 1);
         }
+
+        [TestMethod]
+        public void ValueListToBytesTest()
+        {
+            var list = new ValueList<byte>();
+            list.AddBytes("hello", Encoding.UTF8);
+
+            Assert.AreEqual(Encoding.UTF8.GetString(list.ToArray()), "hello");
+        }
     }
 }
