@@ -98,9 +98,11 @@ namespace Pchp.Core.Text
                 // TODO: other types
 
                 default:
-                    throw new NotSupportedException(value.TypeCode.ToString());
+                    throw InvalidValueException(value);
             }
         }
+
+        static Exception InvalidValueException(PhpValue value) => new NotSupportedException(value.TypeCode.ToString());
 
         /// <summary>
         /// Copies characters to a new array of <see cref="char"/>s.
@@ -799,7 +801,7 @@ namespace Pchp.Core
                     case Blob b: b.Output(ctx); break;
                     case char[] carr: ctx.Output.Write(carr); break;
                     case BlobChar[] barr: WriteChunkAsync(ctx, barr).GetAwaiter().GetResult(); break;
-                    default: throw new ArgumentException(chunk.GetType().ToString());
+                    default: throw InvalidChunkException(chunk);
                 }
             }
 
@@ -946,7 +948,7 @@ namespace Pchp.Core
                         break;
 
                     default:
-                        throw new ArgumentException(chunk.GetType().ToString());
+                        throw InvalidChunkException(chunk);
                 }
             }
 
@@ -1017,7 +1019,7 @@ namespace Pchp.Core
                         return ArrayUtils.Reverse(barr);
 
                     default:
-                        throw new ArgumentException(chunk.GetType().ToString());
+                        throw InvalidChunkException(chunk);
                 }
             }
 
@@ -1063,7 +1065,7 @@ namespace Pchp.Core
                     case Blob b: return b.GetByteCount(encoding);
                     case char[] carr: return carr.Length;
                     case BlobChar[] barr: return barr.Length;
-                    default: throw new ArgumentException(chunk.GetType().ToString());
+                    default: throw InvalidChunkException(chunk);
                 }
             }
 
@@ -1123,7 +1125,7 @@ namespace Pchp.Core
                     Blob b => b.ToString(encoding),
                     char[] carr => new string(carr),
                     BlobChar[] barr => BlobChar.ToCharArray(barr, encoding).ToString(),
-                    _ => throw new ArgumentException(chunk.GetType().ToString())
+                    _ => throw InvalidChunkException(chunk),
                 };
             }
 
@@ -1145,45 +1147,70 @@ namespace Pchp.Core
                 else
                 {
                     var chunks = _chunks;
-                    return (chunks.GetType() == typeof(object[]))
-                        ? ChunkToBytes(encoding, (object[])chunks, _chunksCount)
-                        : ChunkToBytes(encoding, chunks);
+                    if (chunks is object[] array_of_chunks)
+                    {
+                        return ChunkToBytes(encoding, array_of_chunks, _chunksCount);
+                    }
+                    else
+                    {
+                        return ChunkToBytes(encoding, chunks);
+                    }
                 }
             }
 
             static byte[] ChunkToBytes(Encoding encoding, object[] chunks, int count)
             {
-                if (count == 1)
-                {
-                    return ChunkToBytes(encoding, chunks[0]);
-                }
-                else
-                {
+                var buffer = new ValueList<byte>();
 
-                    var buffer = new ValueList<byte>();
-                    for (int i = 0; i < count; i++)
-                    {
-                        buffer.AddRange(ChunkToBytes(encoding, chunks[i]));
-                    }
-
-                    return buffer.ToArray();
+                for (int i = 0; i < count; i++)
+                {
+                    ChunkToBytes(ref buffer, encoding, chunks[i]);
                 }
+
+                return buffer.ToArray();
             }
 
             static byte[] ChunkToBytes(Encoding encoding, object chunk)
+            {
+                var buffer = new ValueList<byte>();
+
+                ChunkToBytes(ref buffer, encoding, chunk);
+
+                return buffer.ToArray();
+            }
+
+            static void ChunkToBytes(ref ValueList<byte> output, Encoding encoding, object chunk)
             {
                 AssertChunkObject(chunk);
 
                 switch (chunk)
                 {
-                    case string str: return encoding.GetBytes(str);
-                    case byte[] barr: return barr;
-                    case Blob b: return b.ToBytes(encoding);
-                    case char[] carr: return encoding.GetBytes(carr);
-                    case BlobChar[] barr: return BlobChar.ToByteArray(barr, encoding);
-                    default: throw new ArgumentException(chunk.GetType().ToString());
+                    case string str:
+                        output.AddBytes(str, encoding);
+                        break;
+
+                    case byte[] barr:
+                        output.AddRange(barr);
+                        break;
+
+                    case Blob b:
+                        output.AddRange(b.ToBytes(encoding));
+                        break;
+
+                    case char[] carr:
+                        output.AddRange(encoding.GetBytes(carr));
+                        break;
+
+                    case BlobChar[] barr:
+                        output.AddRange(BlobChar.ToByteArray(barr, encoding));
+                        break;
+
+                    default:
+                        throw InvalidChunkException(chunk);
                 }
             }
+
+            static Exception InvalidChunkException(object chunk) => new ArgumentException(chunk != null ? chunk.GetType().ToString() : "null");
 
             #endregion
 
@@ -1301,7 +1328,7 @@ namespace Pchp.Core
                 if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk)[index];
                 if (chunk.GetType() == typeof(BlobChar[])) return ((BlobChar[])chunk)[index];
 
-                throw new ArgumentException(chunk.GetType().ToString());
+                throw InvalidChunkException(chunk);
             }
 
             static void SetCharInChunk(ref object chunk, int index, BlobChar ch)
@@ -1359,7 +1386,7 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    throw new ArgumentException(chunk.GetType().ToString());
+                    throw InvalidChunkException(chunk);
                 }
             }
 
@@ -1389,12 +1416,15 @@ namespace Pchp.Core
             {
                 AssertChunkObject(chunk);
 
-                if (chunk.GetType() == typeof(string)) return Convert.ToBoolean((string)chunk);
-                if (chunk.GetType() == typeof(byte[])) return Convert.ToBoolean((byte[])chunk);
-                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk).ToBoolean();
-                if (chunk.GetType() == typeof(char[])) return Convert.ToBoolean((char[])chunk);
-                if (chunk.GetType() == typeof(BlobChar[])) return Convert.ToBoolean((BlobChar[])chunk);
-                throw new ArgumentException();
+                return chunk switch
+                {
+                    string str => Convert.ToBoolean(str),
+                    byte[] bytes => Convert.ToBoolean(bytes),
+                    Blob blob => blob.ToBoolean(),
+                    char[] chars => Convert.ToBoolean(chars),
+                    BlobChar[] bchars => Convert.ToBoolean(bchars),
+                    _ => throw InvalidChunkException(chunk)
+                };
             }
 
             #endregion
