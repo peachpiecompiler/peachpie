@@ -98,19 +98,7 @@ namespace Pchp.Core.Collections
 
         public void Add(T item)
         {
-            if (Capacity == _count)
-            {
-                if (_count == 0)
-                {
-                    // optimized for list with 1 element
-                    // and calling ToArray() afterwards
-                    Capacity = 1;
-                }
-                else
-                {
-                    Capacity = (_count + 1) * 2;
-                }
-            }
+            EnsureCapacity(_count + 1);
 
             _array[_count++] = item;
         }
@@ -169,7 +157,22 @@ namespace Pchp.Core.Collections
 
         public void Insert(int index, T item)
         {
+            if (index > Count || index < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
             EnsureCapacity(_count + 1);
+
+            // make space for the new item at _array[index]
+            var toBeMoved = Count - index;
+            if (toBeMoved > 0)
+            {
+                Array.Copy(_array, index, _array, index + 1, toBeMoved);
+            }
+
+            //
+            _array[index] = item;
         }
 
         public bool Remove(T item)
