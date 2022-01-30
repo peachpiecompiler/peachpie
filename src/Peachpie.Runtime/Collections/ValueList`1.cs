@@ -92,7 +92,7 @@ namespace Pchp.Core.Collections
         {
             if (Capacity < capacity)
             {
-                Capacity = capacity;
+                Capacity = Math.Max(capacity, Capacity * 2);
             }
         }
 
