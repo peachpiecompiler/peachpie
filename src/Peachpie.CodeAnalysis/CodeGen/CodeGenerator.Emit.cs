@@ -2206,6 +2206,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
+            if (targetType?.SpecialType == SpecialType.System_String)
+            {
+                if (stack.SpecialType == SpecialType.System_String)
+                {
+                    // STRING ?? FALSE).ToString() =>
+                    // STRING ?? ""
+
+                    // ?? ""
+                    EmitNullCoalescing((_cg) =>
+                    {
+                        _cg.Builder.EmitStringConstant(string.Empty);
+                    });
+                    return stack; // String
+                }
+            }
+
             // Template: <stack> ?? FALSE
 
             var lblfalse = new NamedLabel("CastToFalse:FALSE");
