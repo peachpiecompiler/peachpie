@@ -13,6 +13,7 @@ namespace Pchp.Core.Collections
     public struct ValueList<T> : IList<T>
     {
         int _count;
+
         T[] _array;
 
         /// <summary>
@@ -56,7 +57,15 @@ namespace Pchp.Core.Collections
             }
         }
 
-        public int Count => _count;
+        public int Count
+        {
+            get => _count;
+            internal set
+            {
+                if (value < 0 || value > Capacity) throw new ArgumentOutOfRangeException(nameof(value));
+                _count = value;
+            }
+        }
 
         public bool IsReadOnly => false;
 
@@ -336,15 +345,13 @@ namespace Pchp.Core.Collections
         internal void GetArraySegment(out T[] array, out int count)
         {
             count = _count;
+            array = _array ?? Array.Empty<T>();
+        }
 
-            if (count == 0)
-            {
-                array = Array.Empty<T>();
-            }
-            else
-            {
-                array = _array;
-            }
+        internal void GetArraySegment(int capacity, out T[] array, out int count)
+        {
+            EnsureCapacity(capacity);
+            GetArraySegment(out array, out count);
         }
 
         public struct ValueEnumerator
