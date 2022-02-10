@@ -355,5 +355,13 @@ namespace Peachpie.Library.MySql.MySqli
         /// Returns whether thread safety is given or not.
         /// </summary>
         public static bool mysqli_thread_safe() => true;
+
+        /// <summary>
+        /// Sets mysqli error reporting mode.
+        /// </summary>
+        public static bool mysqli_report(int flags)
+        {
+            return false;
+        }
     }
 }
