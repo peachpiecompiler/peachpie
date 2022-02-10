@@ -90,6 +90,10 @@ namespace Pchp.Core
                             return DictionaryConverter<T>.s_fromPhpValue;
                         }
                     }
+                    else if (typeof(PhpResource).IsAssignableFrom(typeof(T)))
+                    {
+                        return new Func<PhpValue, T>(x => (T)StrictConvert.AsResource(x));
+                    }
 
                     // Object
                     return new Func<PhpValue, T>(x => (T)StrictConvert.AsObject(x));

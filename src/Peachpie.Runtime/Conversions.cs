@@ -1499,6 +1499,14 @@ namespace Pchp.Core
             PhpTypeCode.Null => null,
             _ => throw PhpException.TypeErrorException(string.Format(Resources.ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(value))),
         };
+        
+        public static object AsResource(PhpValue value) => value.TypeCode switch
+        {
+            PhpTypeCode.Object => value.Object as PhpResource ?? throw PhpException.TypeErrorException(),
+            PhpTypeCode.Alias => AsResource(value.Alias.Value),
+            PhpTypeCode.Null => null,
+            _ => throw PhpException.TypeErrorException(),
+        };
 
         /// <summary>
         /// Gets value as a string or throws <c>TypeError</c> exception.
