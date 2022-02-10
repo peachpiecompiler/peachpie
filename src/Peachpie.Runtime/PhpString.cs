@@ -1198,7 +1198,7 @@ namespace Pchp.Core
                         break;
 
                     case char[] carr:
-                        output.AddRange(encoding.GetBytes(carr));
+                        output.AddBytes(carr, 0, carr.Length, encoding);
                         break;
 
                     case BlobChar[] barr:
