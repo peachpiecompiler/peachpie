@@ -28,7 +28,7 @@ namespace Peachpie.DiagnosticTests
         private static readonly PhpCompilation EmptyCompilation = CreateEmptyCompilation();
 
         private static readonly Regex DiagnosticAnnotationRegex = new Regex(@"/\*!([A-Z]*[0-9]*)!\*/");
-        private static readonly Regex TypeAnnotationRegex = new Regex(@"/\*\|([^/]*)\|\*/");
+        private static readonly Regex TypeAnnotationRegex = new Regex(@"/\*\|([^/]*)\|\*/&?");
         private static readonly Regex RoutinePropertiesRegex = new Regex(@"/\*{version:([0-9]+)}\*/");
         private static readonly Regex ParameterPropertiesRegex = new Regex(@"/\*{skipPass:([01])}\*/");
         private static readonly Regex OperationPropertiesRegex = new Regex(@"/\*{skipCopy:([01])}\*/");
