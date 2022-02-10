@@ -361,6 +361,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public static bool mysqli_report(int flags)
         {
+            PhpException.FunctionNotSupported(nameof(mysqli_report));
             return false;
         }
     }
