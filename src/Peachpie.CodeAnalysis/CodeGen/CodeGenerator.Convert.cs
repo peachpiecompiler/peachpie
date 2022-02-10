@@ -174,7 +174,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             return stack;
         }
 
-
         /// <summary>
         /// In case expression is of type <c>Int32</c> or <c>bool</c> or <c>PhpNumber</c>,
         /// converts it to <c>double</c> and leaves the result on evaluation stack. Otherwise
