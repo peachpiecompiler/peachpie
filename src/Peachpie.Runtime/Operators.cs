@@ -837,6 +837,11 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
+        public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet)
+        {
+            return GetItemValue(value, index, quiet, propertiesAsItems: false);
+        }
+
         public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet = false, bool propertiesAsItems = false)
         {
             switch (value.TypeCode)
