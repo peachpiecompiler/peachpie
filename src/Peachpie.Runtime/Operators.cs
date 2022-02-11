@@ -837,7 +837,7 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
-        public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet = false)
+        public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet = false, bool propertiesAsItems = false)
         {
             switch (value.TypeCode)
             {
@@ -856,7 +856,7 @@ namespace Pchp.Core
                     return value.MutableStringBlob.GetItemValue(index); // quiet);
 
                 case PhpTypeCode.Object:
-                    return Operators.GetItemValue(value.Object, index, quiet);
+                    return Operators.GetItemValue(value.Object, index, quiet, propertiesAsItems);
 
                 case PhpTypeCode.Alias:
                     return value.Alias.Value.GetArrayItem(index, quiet);
@@ -870,7 +870,15 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
-        public static PhpValue GetItemValue(object obj, PhpValue index, bool quiet = false)
+        /// <param name="obj">Object reference.</param>
+        /// <param name="index">Item key.</param>
+        /// <param name="quiet">Whether to not report error if the index is not found.</param>
+        /// <param name="propertiesAsItems">
+        /// In case the object does not provide the array access, lookup its properties instead.
+        /// Object will be treated as array.
+        /// </param>
+        /// <returns>Item value or <c>NULL</c> if the item does not exist.</returns>
+        public static PhpValue GetItemValue(object obj, PhpValue index, bool quiet = false, bool propertiesAsItems = false)
         {
             // IPhpArray.GetItemValue
             if (obj is IPhpArray arr)
@@ -907,16 +915,21 @@ namespace Pchp.Core
             }
 
 
-            // get_Item
             if (obj != null)
             {
-                // IDictionary
-                // and item getter in general:
+                var tinfo = obj.GetPhpTypeInfo();
 
-                var getter = obj.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.get_item];
+                // get_Item(): IDictionary and item getter in general:
+                var getter = tinfo.RuntimeMethods[TypeMethods.MagicMethods.get_item];
                 if (getter != null)
                 {
                     return getter.Invoke(null, obj, index);
+                }
+
+                // lookup properties
+                if (propertiesAsItems)
+                {
+                    return PropertyGetValue(default, obj, index);
                 }
             }
 
@@ -1158,13 +1171,37 @@ namespace Pchp.Core
         {
             var tinfo = instance.GetPhpTypeInfo();
 
-            // 1. instance property
+            if (propertyName.TryToIntStringKey(out var key))
+            {
+                PhpPropertyInfo prop = null;
 
-            // 2. runtime property
+                if (key.IsString)
+                {
+                    // 1. instance property
+                    prop = tinfo.GetDeclaredProperty(key.String);
+                }
+
+                if (prop == null)
+                {
+                    // 2. runtime property
+                    prop = tinfo.GetRuntimeProperty(key, instance);
+                }
+
+                if (prop != null && prop.IsVisible(caller))
+                {
+                    return prop.GetValue(null, instance);
+                }
+            }
 
             // 3. __get
+            var getter = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__get];
+            if (getter != null)
+            {
+                // return getter.Invoke(ctx, instance, propertyName);
+            }
 
             // error
+            PhpException.UndefinedOffset(propertyName);
 
             throw new NotImplementedException();
         }
