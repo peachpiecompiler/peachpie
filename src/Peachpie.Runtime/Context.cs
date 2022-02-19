@@ -579,7 +579,9 @@ namespace Pchp.Core
         {
             // TODO: HandleIncludeWithScheme("file", cd, path); // let the StreamWrapper handle it
 
-            if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation yet)
+            // include non-compiled file (we do not allow dynamic compilation yet)
+            // do not do this for .php files
+            if (path.EndsWith(".php", StringComparison.OrdinalIgnoreCase) == false && TryIncludeFileContent(path))
             {
                 return PhpValue.Null;
             }
