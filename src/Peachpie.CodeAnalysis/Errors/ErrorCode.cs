@@ -228,6 +228,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_GeneratorFailedDuringInitialization,
         /// <summary>Generator '{0}' failed to generate source. It will not contribute to the output and compilation errors may occur as a result. Exception was of type '{1}' with message '{2}'</summary>
         WRN_GeneratorFailedDuringGeneration,
+        /// <summary>Couldn't bind attribute '{0}'. Either its arguments don't match any constructor or the type don't extend 'Attribute' class.</summary>
+        WRN_AttributeBindError,
 
         //
         // Visible information

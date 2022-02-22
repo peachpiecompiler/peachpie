@@ -19,7 +19,7 @@ namespace Peachpie.CodeAnalysis.Errors {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class ErrorStrings {
@@ -759,6 +759,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string WRN_AssigningSameVariable {
             get {
                 return ResourceManager.GetString("WRN_AssigningSameVariable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Couldn&apos;t bind attribute &apos;{0}&apos;. Either its arguments don&apos;t match any constructor or the type don&apos;t extend &apos;Attribute&apos; class..
+        /// </summary>
+        internal static string WRN_AttributeBindError {
+            get {
+                return ResourceManager.GetString("WRN_AttributeBindError", resourceCulture);
             }
         }
         

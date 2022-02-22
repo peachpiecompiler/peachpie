@@ -323,6 +323,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     var attribute = new SourceCustomAttribute(
                         DeclaringCompilation,
                         Self,
+                        GetLocation(a),
                         BoundTypeRefFactory.CreateFromTypeRef(a.ClassRef, this, Self),
                         BindArguments(a.CallSignature.Parameters));
 
