@@ -315,7 +315,7 @@ namespace Pchp.Library.Standard
             if (machine == "x86") machine = "i586";    // TODO
 
             release = "0"; // String.Concat(Environment.OSVersion.Version.Major, ".", Environment.OSVersion.Version.Minor);
-            version = "0"; // String.Concat("build ", Environment.OSVersion.Version.Build);
+            version = RuntimeInformation.OSDescription; // String.Concat("build ", Environment.OSVersion.Version.Build);
 
             //
             if (!string.IsNullOrEmpty(mode))
