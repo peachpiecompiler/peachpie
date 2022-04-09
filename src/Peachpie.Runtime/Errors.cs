@@ -206,7 +206,7 @@ namespace Pchp.Core
 
         public static void Throw(PhpError error, string message)
         {
-            OnError?.Invoke(error, message);
+            NotifiyOnError(error, message);
 
             // throw PhpFatalErrorException
             // and terminate the script on fatal error
@@ -214,6 +214,14 @@ namespace Pchp.Core
             {
                 throw new PhpFatalErrorException(message, innerException: null);
             }
+        }
+
+        /// <summary>
+        /// Invokes configured error event handlers on <see cref="OnError"/>.
+        /// </summary>
+        public static void NotifiyOnError(PhpError error, string message)
+        {
+            OnError?.Invoke(error, message);
         }
 
         public static void Throw(PhpError error, string formatString, string arg0) => Throw(error, string.Format(formatString, arg0));

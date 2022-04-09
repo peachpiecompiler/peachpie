@@ -370,6 +370,8 @@ namespace Peachpie.AspNetCore.Web
         {
             Debug.Assert(script.IsValid);
 
+            Exception exception = null;
+
             using var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding);
 
             OnContextCreated(phpctx);
@@ -382,6 +384,13 @@ namespace Peachpie.AspNetCore.Web
                 {
                     phpctx.ProcessScript(script, path_info);
                 }
+                catch (Exception e)
+                {
+                    // unhandled exception
+                    // note: task.Exception won't be populated yet, so we can't use it
+                    // ref https://github.com/iolevel/wpdotnet-sdk/issues/122
+                    exception = e;
+                }
                 finally
                 {
                     phpctx.RequestCompletionSource.TrySetResult(RequestCompletionReason.Finished);
@@ -392,10 +401,10 @@ namespace Peachpie.AspNetCore.Web
             // do not block current thread
             var reason = await phpctx.RequestCompletionSource.Task;
 
-            if (task.Exception != null)
+            if (exception != null)
             {
                 // rethrow script exception
-                throw task.Exception;
+                throw exception;
             }
             else if (reason == RequestCompletionReason.Timeout)
             {
