@@ -104,6 +104,14 @@ namespace Peachpie.Library.MySql
             var command = _connection.CreateCommand();
             command.CommandText = commandText;
             command.CommandType = commandType;
+
+            // 
+            var config = Context.Configuration.Get<MySqlConfiguration>();
+            if (config.DefaultCommandTimeout >= 0)
+            {
+                command.CommandTimeout = config.DefaultCommandTimeout;
+            }
+
             return command;
         }
 
