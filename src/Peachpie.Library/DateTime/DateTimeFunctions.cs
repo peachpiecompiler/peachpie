@@ -1517,7 +1517,14 @@ namespace Pchp.Library.DateTime
 
             if (error == null)
             {
-                var utctime = TimeZoneInfo.ConvertTimeToUtc(result, localtz);
+                //var utctime = TimeZoneInfo.ConvertTimeToUtc(result, localtz); // throws on invalid date, i.e. in DST
+
+                var offset = result.Kind != DateTimeKind.Utc && localtz != TimeZoneInfo.Utc
+                    ? localtz.GetUtcOffset(result)
+                    : TimeSpan.Zero;
+
+                var utctime = new System_DateTime(result.Ticks - offset.Ticks);
+
                 return DateTimeUtils.UtcToUnixTimeStamp(utctime);
             }
             else
