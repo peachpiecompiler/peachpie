@@ -52,7 +52,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// Result of the command execute command.
         /// </summary>
         [PhpHidden]
-        MySqlResultResource Result { get; set; }
+        MySqlResultResource ResultResource { get; set; }
 
         /// <summary>
         /// Lazily bound params.
@@ -185,10 +185,10 @@ namespace Peachpie.Library.MySql.MySqli
                 Command = null;
             }
 
-            if (Result != null)
+            if (ResultResource != null)
             {
-                Result.Dispose();
-                Result = null;
+                ResultResource.Dispose();
+                ResultResource = null;
             }
 
             _bound_params = null;
@@ -203,12 +203,12 @@ namespace Peachpie.Library.MySql.MySqli
         /// <param name="offset">Must be between zero and the total number of rows minus one.</param>
         public void data_seek(int offset)
         {
-            if (Result == null)
+            if (ResultResource == null)
             {
                 throw new InvalidOperationException();
             }
 
-            Result.SeekRow(offset);
+            ResultResource.SeekRow(offset);
         }
 
         /// <summary>
@@ -279,9 +279,9 @@ namespace Peachpie.Library.MySql.MySqli
             }
 
             // execute and store the result:
-            this.Result = (MySqlResultResource)Connection.ExecuteCommandInternal(Command, true, parameters, false);
+            this.ResultResource = (MySqlResultResource)Connection.ExecuteCommandInternal(Command, true, parameters, false);
 
-            if (this.Result == null)
+            if (this.ResultResource == null)
             {
                 return false;
             }
@@ -302,8 +302,8 @@ namespace Peachpie.Library.MySql.MySqli
         [return: CastToFalse]
         public mysqli_result get_result()
         {
-            return Result != null
-                ? new mysqli_result(Result)
+            return ResultResource != null
+                ? new mysqli_result(ResultResource)
                 : null; // FALSE
         }
 
