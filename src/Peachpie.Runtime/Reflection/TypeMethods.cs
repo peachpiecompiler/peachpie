@@ -90,17 +90,17 @@ namespace Pchp.Core.Reflection
 
                 var magic = MagicMethods.undefined;
 
-                if (IsSpecialName(overrides))
+                if (IsSpecialName(overrides)) // property getter/setter, or another generated method
                 {
                     // 'specialname' methods,
-                    // get_Item, set_Item
-                    if (!Enum.TryParse<MagicMethods>(m.Key.ToLowerInvariant(), out magic))
+                    // but remember get_Item, set_Item
+                    if (!Enum.TryParse<MagicMethods>(m.Key, true, out magic))
                     {
                         continue;
                     }
                 }
 
-                // TODO: negative {index} in case of non-user method
+                // CONSIDER: negative {index} in case of non-user method
 
                 var info = PhpMethodInfo.Create(++index, m.Key, overrides, type);
 
@@ -127,7 +127,7 @@ namespace Pchp.Core.Reflection
 
             if (name.StartsWith("__", StringComparison.Ordinal))
             {
-                Enum.TryParse<MagicMethods>(name.ToLowerInvariant(), out result);
+                Enum.TryParse<MagicMethods>(name, true, out result);
             }
 
             return result;
