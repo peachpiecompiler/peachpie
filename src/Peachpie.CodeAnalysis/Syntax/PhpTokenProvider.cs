@@ -80,7 +80,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             }
         }
 
-        public PHPDocBlock DocBlock
+        public PHPDocBlock DocComment
         {
             get => _docblock;
             set => _docblock = value;
@@ -104,7 +104,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             var token = _buffer[_bufferidx].Token;
             if (token == Tokens.T_DOC_COMMENT)
             {
-                DocBlock = _provider.DocBlock;
+                DocComment = _provider.DocComment;
             }
 
             //
