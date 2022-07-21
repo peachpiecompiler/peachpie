@@ -234,7 +234,7 @@ namespace Pchp.Core.Dynamic
             Debug.Assert(target.IsNullable_T(out var tmp_t) && nullable_t == tmp_t);
 
             // special cases: constants NULL -> default(Nullable<T>)
-            if (arg is ConstantExpression ce && (ce.Value == null))
+            if (IsNullConstant(arg))
             {
                 return Expression.Default(target);
             }

@@ -114,6 +114,31 @@ namespace Pchp.Core.Dynamic
             return false;
         }
 
+        public static Expression IsNullExpression(Expression value)
+        {
+            if (value != null)
+            {
+                if (value.Type == Cache.Types.PhpValue)
+                {
+                    // value.IsNull
+                    return Expression.Property(value, Cache.Properties.PhpValue_IsNull);
+                }
+                else if (value.Type == Cache.Types.PhpAlias[0])
+                {
+                    // value.Value.IsNull
+                    return IsNullExpression(Expression.Property(value, Cache.PhpAlias.Value));
+                }
+                else if (value.Type.IsValueType == false)
+                {
+                    // value == null
+                    return Expression.ReferenceEqual(value, Expression.Constant(null, value.Type));
+                }
+            }
+
+            // false
+            return Cache.Expressions.False;
+        }
+
         /// <summary>
         /// Checks the given type refers to <see cref="IRuntimeChain"/> value.
         /// </summary>
