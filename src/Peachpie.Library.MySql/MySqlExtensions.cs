@@ -93,6 +93,13 @@ namespace Peachpie.Library.MySql
         }
 
         /// <summary>
+        /// Returns underlying connection of given <paramref name="link"/>.
+        /// </summary>
+        /// <param name="link">Reference to <see cref="MySqli.mysqli"/> object.</param>
+        /// <returns>MySql connection resource or <c>null</c> if there is no connection.</returns>
+        public static ConnectionResource ValidConnection(MySqli.mysqli link) => link?.Connection;
+
+        /// <summary>
         /// Casts the <paramref name="object"/> to <typeparamref name="TResult"/>.
         /// Otherwise it reflects the <paramref name="object"/>, looking for a <paramref name="getterMethodName"/> and trying to invoke that to get the underlying reference.
         /// </summary>
