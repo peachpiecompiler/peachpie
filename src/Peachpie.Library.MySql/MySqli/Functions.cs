@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 using Pchp.Core;
 
@@ -60,6 +61,15 @@ namespace Peachpie.Library.MySql.MySqli
         {
             var link = new mysqli(ctx, host, username, passwd, dbname, port, socket);
             return (string.IsNullOrEmpty(link.connect_error)) ? link : null;
+        }
+
+        /// <summary>
+        /// Creates a connection resource using an existing <see cref="IDbConnection"/> instance.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Provided instance is <c>null</c>.</exception>
+        public static mysqli mysqli_connect(Context ctx, IDbConnection dbconnection/*, bool leaveOpen*/)
+        {
+            return new mysqli(ctx, dbconnection);
         }
 
         /// <summary>

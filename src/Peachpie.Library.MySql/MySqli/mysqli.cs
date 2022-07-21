@@ -45,6 +45,18 @@ namespace Peachpie.Library.MySql.MySqli
             __construct(ctx, host, username, passwd, dbname, port, socket);
         }
 
+        /// <summary>
+        /// Initializes <see cref="mysqli"/> object with existing <see cref="IDbConnection"/>.
+        /// </summary>
+        internal mysqli(Context ctx, IDbConnection dbconnection)
+        {
+            // create connection resource and
+            // register it in the list of active connections
+            this.Connection = MySqlConnectionManager
+                .GetInstance(ctx)
+                .CreateConnection(dbconnection);
+        }
+
         /* Properties */
 
         /// <summary>
