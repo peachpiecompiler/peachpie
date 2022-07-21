@@ -702,7 +702,7 @@ namespace Peachpie.Library.PDO
         /// Returns the number of rows affected by the last SQL statement
         /// </summary>
         /// <returns></returns>
-        public virtual int rowCount() => Result != null ? Result.RowCount : 0;
+        public virtual int rowCount() => Connection.LastAffectedRows;
 
         /// <summary>
         /// Set the default fetch mode for this statement
