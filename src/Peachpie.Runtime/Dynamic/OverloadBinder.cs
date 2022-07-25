@@ -783,8 +783,13 @@ namespace Pchp.Core.Dynamic
                         // handle default value
                         if (defaultExpr != null)
                         {
-                            // Template: (expr != null) ? expr : <default>
-                            expr = Expression.Condition(BinderHelpers.IsNullExpression(arg), defaultExpr, expr);
+                            // not when passing parameter by reference!
+                            var isByRef = expr.Type == Cache.Types.PhpAlias[0] || (targetparam != null && targetparam.ParameterType.IsByRef);
+                            if (isByRef == false)
+                            {
+                                // Template: (expr != null) ? expr : <default>
+                                expr = Expression.Condition(BinderHelpers.IsNullExpression(arg), defaultExpr, expr);
+                            }
                         }
 
                         return expr;
