@@ -323,6 +323,8 @@ namespace Pchp.CodeAnalysis.CommandLine
         {
             // {ToolName} version {ProductVersion}
             consoleOutput.WriteLine(PhpResources.IDS_Logo, GetToolName(), GetAssemblyFileVersion());
+
+            consoleOutput.WriteLine(PhpResources.IDS_Donate);
         }
 
         public override void PrintLangVersions(TextWriter consoleOutput)
