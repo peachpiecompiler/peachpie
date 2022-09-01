@@ -420,6 +420,8 @@ namespace Pchp.Core
 
         public static explicit operator double(PhpValue value) => value.ToDouble();
 
+        public static explicit operator decimal(PhpValue value) => value.ToDecimal();
+
         public static explicit operator PhpNumber(PhpValue value)
         {
             if ((value.ToNumber(out var result) & Convert.NumberInfo.Unconvertible) != 0)
