@@ -323,6 +323,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     var attribute = new SourceCustomAttribute(
                         DeclaringCompilation,
                         Self,
+                        GetLocation(a),
                         BoundTypeRefFactory.CreateFromTypeRef(a.ClassRef, this, Self),
                         BindArguments(a.CallSignature.Parameters));
 
@@ -1204,6 +1205,17 @@ namespace Pchp.CodeAnalysis.Semantics
                     else if (varname.NameValue.Value.StartsWith("<match>'"))
                     {
                         return new BoundTemporalVariableRef(varname.NameValue).WithAccess(access);
+                    }
+                    else if (varname.NameValue.IsAutoGlobal)
+                    {
+                        //
+                    }
+                    else
+                    {
+                        // regular local variable
+                        // bind the local,
+                        // needed to initialize FlowContext properly
+                        _locals?.BindLocalVariable(varname.NameValue, expr.Span.ToTextSpan());
                     }
                 }
                 else

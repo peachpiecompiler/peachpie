@@ -15,9 +15,9 @@ namespace Pchp.Library
     [PhpExtension(PhpExtensionAttribute.KnownExtensionNames.Core)]
     public static class Environment
     {
-        public const int PHP_MAJOR_VERSION = 7;
-        public const int PHP_MINOR_VERSION = 4;
-        public const int PHP_RELEASE_VERSION = 69;
+        public const int PHP_MAJOR_VERSION = 8;
+        public const int PHP_MINOR_VERSION = 0;
+        public const int PHP_RELEASE_VERSION = 0;
         public const int PHP_VERSION_ID = PHP_MAJOR_VERSION * 10000 + PHP_MINOR_VERSION * 100 + PHP_RELEASE_VERSION;
         public static readonly string PHP_VERSION = PHP_MAJOR_VERSION + "." + PHP_MINOR_VERSION + "." + PHP_RELEASE_VERSION + PHP_EXTRA_VERSION;
 

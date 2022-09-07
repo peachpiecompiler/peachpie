@@ -57,6 +57,7 @@ namespace Pchp.Core.Dynamic
 namespace Pchp.Core.Dynamic.RuntimeChain
 {
     [DebuggerDisplay("$${Next}")]
+    [DebuggerNonUserCode]
     public struct Value<TNext> : IRuntimeChain where TNext : IRuntimeChain
     {
         public TNext Next; // can be "ChainEnd"
@@ -133,6 +134,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
     }
 
     [DebuggerDisplay("->{Name,nq}{Next}")]
+    [DebuggerNonUserCode]
     public struct Property<TNext> : IRuntimeChain where TNext : IRuntimeChain
     {
         public TNext Next; // can be "ChainEnd"
@@ -329,6 +331,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
     }
 
     [DebuggerDisplay("[{Key,nq}]{Next}")]
+    [DebuggerNonUserCode]
     public struct ArrayItem<TNext> : IRuntimeChain where TNext : IRuntimeChain
     {
         public TNext Next; // can be "ChainEnd"
@@ -411,6 +414,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
     }
 
     [DebuggerDisplay("[]{Next}")]
+    [DebuggerNonUserCode]
     public struct ArrayNewItem<TNext> : IRuntimeChain where TNext : IRuntimeChain
     {
         public TNext Next; // can be "ChainEnd"
@@ -444,6 +448,7 @@ namespace Pchp.Core.Dynamic.RuntimeChain
     }
 
     [DebuggerDisplay(";")]
+    [DebuggerNonUserCode]
     public readonly struct ChainEnd : IRuntimeChain // void struct
     {
         RuntimeChainOperation IRuntimeChain.Operation => RuntimeChainOperation.End; // -1

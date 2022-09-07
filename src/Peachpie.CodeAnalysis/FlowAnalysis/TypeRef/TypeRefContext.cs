@@ -108,7 +108,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var count = this.Count;
                 if (count == 0)
                 {
-                    return EmptyArray<TResult>.Instance;
+                    return Array.Empty<TResult>();
                 }
                 else
                 {

@@ -20,6 +20,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly PhpCompilation _compilation;
 
+        readonly Location _location;
+
         /// <summary>
         /// Attribute arguments.
         /// </summary>
@@ -30,9 +32,10 @@ namespace Pchp.CodeAnalysis.Symbols
         ImmutableArray<TypedConstant> _ctorArgs;
         ImmutableArray<KeyValuePair<string, TypedConstant>> _namedArgs;
 
-        public SourceCustomAttribute(PhpCompilation compilation, SourceTypeSymbol containingType, IBoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
+        public SourceCustomAttribute(PhpCompilation compilation, SourceTypeSymbol containingType, Location location, IBoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
         {
             _compilation = compilation;
+            _location = location;
             _tref = tref;
             _arguments = arguments;
 
@@ -52,16 +55,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 // TODO: check the attribute can be bound to symbol
 
                 var type = _tref.ResolveRuntimeType(compilation);
-                if (type.IsValidType() && compilation.GetWellKnownType(WellKnownType.System_Attribute).IsAssignableFrom(type))
+                if (type is NamedTypeSymbol namedtype &&
+                    namedtype.IsValidType() &&
+                    compilation.GetWellKnownType(WellKnownType.System_Attribute).IsAssignableFrom(namedtype) &&
+                    TryResolveCtor(namedtype, compilation, out _ctor, out _ctorArgs))
                 {
                     // valid CLR attribute
                     // bind strictly
-
-                    // bind arguments
-                    if (!TryResolveCtor((NamedTypeSymbol)type, compilation, out _ctor, out _ctorArgs))
-                    {
-                        throw new InvalidOperationException("no matching .ctor");
-                    }
 
                     // bind named parameters to CLR attribute properties
                     foreach (var arg in _arguments)
@@ -70,8 +70,8 @@ namespace Pchp.CodeAnalysis.Symbols
                             continue;
 
                         var member =
-                           (Symbol)type.LookupMember<PropertySymbol>(arg.ParameterName) ??
-                           (Symbol)type.LookupMember<FieldSymbol>(arg.ParameterName);
+                           (Symbol)namedtype.LookupMember<PropertySymbol>(arg.ParameterName) ??
+                           (Symbol)namedtype.LookupMember<FieldSymbol>(arg.ParameterName);
 
                         if (member != null && TryBindTypedConstant(member.GetTypeOrReturnType(), arg.Value.ConstantValue, out var constant))
                         {
@@ -84,10 +84,17 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
 
                     //
-                    _type = (NamedTypeSymbol)type;
+                    _type = namedtype;
                 }
                 else
                 {
+                    if (type.IsValidType())
+                    {
+                        // report diagnostic,
+                        // although type was resolved, it couldn't be used as CLR attribute
+                        compilation.DeclarationDiagnostics.Add(_location, Errors.ErrorCode.WRN_AttributeBindError, type);
+                    }
+
                     // store just the metadata
                     _type = compilation.CoreTypes.PhpCustomAtribute ?? throw new InvalidOperationException("PhpCustomAtribute not defined.");
                     _ctor = _type.Constructors.Single(m =>

@@ -11,7 +11,7 @@ namespace Pchp.Core
 {
     [DebuggerDisplay("{DisplayString,nq}", Type = "{DebugTypeName,nq}")]
     [DebuggerTypeProxy(typeof(PhpValueDebugView))]
-    [DebuggerNonUserCode, DebuggerStepThrough]
+    [DebuggerNonUserCode]
     partial struct PhpValue
     {
         static string UndefinedTypeName => "undefined";

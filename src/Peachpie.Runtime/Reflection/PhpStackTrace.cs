@@ -77,9 +77,12 @@ namespace Pchp.Core.Reflection
                 return item;
             }
 
-            public string ToStackTraceLine(int order)
+            public void GetStackTraceLine(int order, StringBuilder result)
             {
-                var result = new StringBuilder();
+                if (result == null)
+                {
+                    throw new ArgumentNullException(nameof(result));
+                }
 
                 if (order >= 0)
                 {
@@ -99,11 +102,14 @@ namespace Pchp.Core.Reflection
                     result.Append(_calledFrame.RoutineFullName);
                     result.Append(_calledFrame.RoutineParameters);
                 }
-
-                return result.ToString();
             }
 
-            public override string ToString() => ToStackTraceLine(-1);
+            public override string ToString()
+            {
+                var result = Utilities.StringBuilderUtilities.Pool.Get();
+                GetStackTraceLine(-1, result);
+                return Utilities.StringBuilderUtilities.GetStringAndReturn(result);
+            }
         }
 
         readonly PhpStackFrame[] _frames;
@@ -245,15 +251,16 @@ namespace Pchp.Core.Reflection
         {
             get
             {
+                var result = Utilities.StringBuilderUtilities.Pool.Get();
+
                 var lines = this.GetLines();
-                var result = new StringBuilder();
 
                 for (int i = 0; i < lines.Length; i++)
                 {
-                    result.AppendLine(lines[i].ToStackTraceLine(i - 1));
-                }
+                    lines[i].GetStackTraceLine(i - 1, result);
+                    result.AppendLine();                }
 
-                return result.ToString();
+                return Utilities.StringBuilderUtilities.GetStringAndReturn(result);
             }
         }
 

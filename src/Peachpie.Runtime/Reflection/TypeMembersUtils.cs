@@ -67,7 +67,7 @@ namespace Pchp.Core.Reflection
                 return array;
             }
 
-            return null;
+            throw new NotSupportedException($"Object of type {tinfo.Name} does not support PHP runtime fields.");
         }
 
         /// <summary>
@@ -492,22 +492,36 @@ namespace Pchp.Core.Reflection
         /// Gets descriptor representing a runtime field.
         /// Can be <c>null</c> if type does not support runtime fields.
         /// </summary>
-        public static PhpPropertyInfo GetRuntimeProperty(this PhpTypeInfo tinfo, string propertyName, object instance)
+        public static PhpPropertyInfo GetRuntimeProperty(this PhpTypeInfo tinfo, IntStringKey propertyName, object instance)
         {
             if (tinfo.RuntimeFieldsHolder != null)
             {
-                var key = new IntStringKey(propertyName);
-
                 if (instance != null)
                 {
                     var runtimefields = tinfo.GetRuntimeFields(instance);
-                    if (runtimefields == null || runtimefields.Count == 0 || !runtimefields.ContainsKey(key))
+                    if (runtimefields == null || runtimefields.Count == 0 || !runtimefields.ContainsKey(propertyName))
                     {
                         return null;
                     }
                 }
 
-                return new PhpPropertyInfo.RuntimeProperty(tinfo, key);
+                return new PhpPropertyInfo.RuntimeProperty(tinfo, propertyName);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets descriptor representing a runtime field.
+        /// Can be <c>null</c> if type does not support runtime fields.
+        /// </summary>
+        public static PhpPropertyInfo GetRuntimeProperty(this PhpTypeInfo tinfo, string propertyName, object instance)
+        {
+            if (tinfo.RuntimeFieldsHolder != null)
+            {
+                return GetRuntimeProperty(tinfo, IntStringKey.FromString(propertyName), instance);
             }
             else
             {

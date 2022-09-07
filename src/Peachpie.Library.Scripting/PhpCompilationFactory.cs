@@ -174,7 +174,7 @@ namespace Peachpie.Library.Scripting
 
         static int _counter = 0;
 
-        const string s_submissionAssemblyNamePrefix = "<eval>`";
+        const string s_submissionAssemblyNamePrefix = "~eval`";
 
         public AssemblyName GetNewSubmissionName()
         {

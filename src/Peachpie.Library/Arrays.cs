@@ -1900,30 +1900,32 @@ namespace Pchp.Library.Standard
         /// <returns>Returns an array of values representing a single column from the input array.</returns>
         public static PhpArray array_column(PhpArray input, PhpValue column_key, PhpValue index_key = default)
         {
-            if (input == null) throw new ArgumentException();
+            if (input == null)
+            {
+                PhpException.ArgumentNull(nameof(input));
+                throw new ArgumentException(nameof(input));
+            }
 
             var result = new PhpArray(input.Count);
 
-            var key = Operators.IsSet(column_key)
-                ? column_key.ToIntStringKey()
-                : default(IntStringKey?);
+            var has_column_key = Operators.IsSet(column_key);
+            var has_index_key = Operators.IsSet(index_key);
 
-            var ikey = Operators.IsSet(index_key)
-                ? index_key.ToIntStringKey()
-                : default(IntStringKey?);
 
             var enumerator = input.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
-                var columnn = (key.HasValue
-                        ? enumerator.CurrentValue[key.Value] // TODO: Object's property
-                        : enumerator.CurrentValue)
+                var value = enumerator.CurrentValue;
+
+                var columnn = (has_column_key
+                        ? Operators.GetItemValue(value, column_key, quiet: false, propertiesAsItems: true)
+                        : value)
                     .DeepCopy();
 
-                if (ikey.HasValue)
+                if (has_index_key)
                 {
-                    var targetkey = enumerator.CurrentValue[ikey.Value].ToIntStringKey();
-                    result[targetkey] = columnn;
+                    var targetkey = Operators.GetItemValue(value, index_key, quiet: false, propertiesAsItems: true);
+                    result[targetkey.ToIntStringKey()] = columnn;
                 }
                 else
                 {

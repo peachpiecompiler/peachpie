@@ -330,6 +330,10 @@ namespace Peachpie.AspNetCore.Web
             }
             catch (Exception exception)
             {
+                // log
+                PhpException.NotifiyOnError(PhpError.Error, exception.ToString());
+
+                //
                 if (!OnUnhandledException(exception))
                 {
                     throw;

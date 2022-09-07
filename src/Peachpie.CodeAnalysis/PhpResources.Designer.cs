@@ -19,7 +19,7 @@ namespace Peachpie.CodeAnalysis {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class PhpResources {
@@ -60,6 +60,28 @@ namespace Peachpie.CodeAnalysis {
             }
         }
         
+        /// <summary>
+        ///   Looks up a localized string similar to Donate to support the development of PeachPie! https://bit.ly/3pfXw2q.
+        /// </summary>
+        internal static string IDS_Donate {
+            get {
+                return ResourceManager.GetString("IDS_Donate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 
+        ///                            PeachPie PHP Compiler Options
+        ///                            
+        ///                    - OUTPUT FILES -
+        ////out:&lt;file&gt;                 Specify output file name (default: base name of
+        ///                            file with main class or first file)
+        ////target:exe                 Build a console executable (default) (Short
+        ///                            form: /t:exe)
+        ////target:winexe              Build a Windows executable (Short form:
+        ///                            /t:winexe)
+        ////target:library  [rest of string was truncated]&quot;;.
+        /// </summary>
         internal static string IDS_Help {
             get {
                 return ResourceManager.GetString("IDS_Help", resourceCulture);

@@ -2322,13 +2322,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Debug.Assert(x.Instance.Access.IsRead);
 
                 // resolve field if possible
-                var resolvedtype = x.Instance.ResultType as NamedTypeSymbol;
+                var resolvedtype = x.Instance.ResultType;
                 if (resolvedtype == null)
                 {
                     var typerefs = TypeCtx.GetObjectTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));   // ignore NULL, would cause runtime exception in read access, will be ensured to non-null in write access
                     if (typerefs.IsSingle)
                     {
-                        resolvedtype = (NamedTypeSymbol)typerefs.FirstOrDefault().ResolveTypeSymbol(DeclaringCompilation);
+                        resolvedtype = (TypeSymbol)typerefs.FirstOrDefault().ResolveTypeSymbol(DeclaringCompilation);
                     }
                 }
 
@@ -2368,9 +2368,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 }
                             }
 
-                            if (member is PropertySymbol)
+                            if (member is PropertySymbol prop)
                             {
-                                var prop = (PropertySymbol)member;
                                 x.BoundReference = new PropertyReference(x.Instance, prop);
                                 x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
                                 x.ResultType = prop.Type;

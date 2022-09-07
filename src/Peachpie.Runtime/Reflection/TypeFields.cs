@@ -28,14 +28,17 @@ namespace Pchp.Core.Reflection
 
         #region Initialization
 
-        internal TypeFields(TypeInfo tinfo)
+        internal TypeFields(PhpTypeInfo t)
         {
-            var t = tinfo.GetPhpTypeInfo();
+            var tinfo = t.Type;
             var properties = new Dictionary<string, PhpPropertyInfo>();
 
-            foreach (var field in tinfo.DeclaredFields.Where(s_isAllowedField))
+            foreach (var field in tinfo.DeclaredFields)
             {
-                properties[field.Name] = new PhpPropertyInfo.ClrFieldProperty(t, field);
+                if (IsAllowedField(field))
+                {
+                    properties[field.Name] = new PhpPropertyInfo.ClrFieldProperty(t, field);
+                }
             }
 
             var staticscontainer = tinfo.GetDeclaredNestedType("_statics");
@@ -49,15 +52,28 @@ namespace Pchp.Core.Reflection
                     staticscontainer = staticscontainer.MakeGenericType(tinfo.GenericTypeArguments).GetTypeInfo();
                 }
 
-                foreach (var field in staticscontainer.DeclaredFields.Where(s_isAllowedField))
+                foreach (var field in staticscontainer.DeclaredFields)
                 {
-                    properties[field.Name] = new PhpPropertyInfo.ContainedClrField(t, field);
+                    if (IsAllowedField(field))
+                    {
+                        properties[field.Name] = new PhpPropertyInfo.ContainedClrField(t, field);
+                    }
                 }
             }
 
-            foreach (var prop in tinfo.DeclaredProperties.Where(s_isAllowedProperty))
+            foreach (var prop in tinfo.DeclaredProperties)
             {
-                properties[prop.Name] = new PhpPropertyInfo.ClrProperty(t, prop);
+                if (IsAllowedProperty(prop))
+                {
+                    properties[prop.Name] = new PhpPropertyInfo.ClrProperty(t, prop);
+                }
+                else if (IsAllowedExplicitPropertyDef(prop, out var explicitName)) // explicit interface declaration
+                {
+                    if (properties.ContainsKey(explicitName) == false) // only if it was not yet implemented
+                    {
+                        properties[explicitName] = new PhpPropertyInfo.ClrExplicitProperty(t, prop, explicitName);
+                    }
+                }
             }
 
             //
@@ -66,7 +82,7 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<PhpPropertyInfo, bool> s_isInstanceProperty = p => !p.IsStatic;
 
-        static readonly Func<FieldInfo, bool> s_isAllowedField = f =>
+        static bool IsAllowedField(FieldInfo f)
         {
             var access = f.Attributes & FieldAttributes.FieldAccessMask;
             return
@@ -77,9 +93,9 @@ namespace Pchp.Core.Reflection
                 !ReflectionUtils.IsContextField(f) &&
                 !f.IsPhpHidden() &&
                 !f.FieldType.IsPointer;
-        };
+        }
 
-        static readonly Func<PropertyInfo, bool> s_isAllowedProperty = p =>
+        static bool IsAllowedProperty(PropertyInfo p)
         {
             var getter = p.GetMethod;
             if (getter != null)
@@ -99,7 +115,41 @@ namespace Pchp.Core.Reflection
             }
 
             return false;
-        };
+        }
+
+        static bool IsAllowedExplicitPropertyDef(PropertyInfo p, out string name)
+        {
+            const MethodAttributes attrmask =
+                MethodAttributes.Private |
+                MethodAttributes.SpecialName |
+                MethodAttributes.HideBySig |
+                MethodAttributes.Virtual |
+                MethodAttributes.Final;
+
+            var getter = p.GetMethod;
+
+            var ex =
+                getter != null &&
+                (getter.Attributes & attrmask) == attrmask &&
+                getter.IsGenericMethod == false &&
+                getter.IsStatic == false &&
+                !p.IsPhpHidden() && // not hidden
+                 p.GetIndexParameters().Length == 0; // not index property
+
+            if (ex)
+            {
+                var dot = p.Name.LastIndexOf('.');
+                if (dot >= 0)
+                {
+                    name = p.Name.Substring(dot + 1);
+                    return ReflectionUtils.IsAllowedPhpName(name);
+                }
+            }
+
+            //
+            name = default;
+            return false;
+        }
 
         #endregion
 

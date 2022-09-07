@@ -41,6 +41,11 @@ namespace Pchp.Core
         /// </summary>
         public PhpValue GetValue() => _locals.GetValueOrNull(_name);
 
+        /// <summary>
+        /// Sets the underlaying value using assignment semantic.
+        /// </summary>
+        public void AssignValue(PhpValue value) => _locals.AssignValue(_name, value);
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         string DisplayString => GetValue().DisplayString;
 

@@ -390,9 +390,9 @@ namespace Pchp.Library
 
                 if (CountRange(_ctx, firstCharacter, secondCharacter, out characters, out result))
                 {
-                    StringBuilder sb = new StringBuilder(characters.Length);
+                    var sb = StringBuilderUtilities.Pool.Get();
                     EscapeBracketExpressionSpecialChars(sb, characters);
-                    return sb.ToString();
+                    return StringBuilderUtilities.GetStringAndReturn(sb);
                 }
 
                 // there was an error

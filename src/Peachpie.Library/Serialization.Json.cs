@@ -755,6 +755,38 @@ namespace Pchp.Library
                     WriteRaw(Tokens.ArrayClose);
                 }
 
+                void WriteArray(System.Collections.IList list)
+                {
+                    // [
+                    WriteRaw(Tokens.ArrayOpen);
+
+                    //
+                    if (list.Count != 0)
+                    {
+                        _pretty.Indent();
+
+                        bool bFirst = true;
+
+                        foreach (var value in list)
+                        {
+                            // ,
+                            if (bFirst) bFirst = false;
+                            else WriteRaw(Tokens.ItemsSeparator);
+
+                            _pretty.NewLine();
+
+                            // value
+                            Accept(PhpValue.FromClr(value));
+                        }
+
+                        _pretty.Unindent();
+                        _pretty.NewLine();
+                    }
+
+                    // ]
+                    WriteRaw(Tokens.ArrayClose);
+                }
+
                 void WriteArrayAsObject(PhpArray array)
                 {
                     // [
@@ -851,9 +883,27 @@ namespace Pchp.Library
                     {
                         return serializable_internal.Properties;
                     }
+                    else if (obj is System.Collections.IDictionary)
+                    {
+                        return JsonObjectProperties((System.Collections.IDictionary)obj);
+                    }
                     else
                     {
                         return TypeMembersUtils.EnumerateInstanceFields(obj, TypeMembersUtils.s_propertyName, TypeMembersUtils.s_keyToString);
+                    }
+                }
+
+                static IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(System.Collections.IDictionary/*!*/dict)
+                {
+                    var enumerator = dict.GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        var key = enumerator.Key;
+                        var value = enumerator.Value;
+
+                        yield return new KeyValuePair<string, PhpValue>(
+                            key?.ToString() ?? string.Empty,
+                            PhpValue.FromClr(value));
                     }
                 }
             }

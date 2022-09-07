@@ -89,7 +89,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 return null;
 
             if (count == 0)
-                return EmptyArray<TypeRefMask>.Instance;
+                return Array.Empty<TypeRefMask>();
 
             //
             var arr = new TypeRefMask[count];

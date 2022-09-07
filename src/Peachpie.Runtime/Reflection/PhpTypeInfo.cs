@@ -343,7 +343,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets collection of PHP fields, static fields and constants declared in this type.
         /// </summary>
-        public TypeFields DeclaredFields => _declaredfields ?? (_declaredfields = new TypeFields(_type));
+        public TypeFields DeclaredFields => _declaredfields ?? (_declaredfields = new TypeFields(this));
         TypeFields _declaredfields;
 
         /// <summary>

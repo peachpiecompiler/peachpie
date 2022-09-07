@@ -1,6 +1,12 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Data;
+using System.Data.Common;
+using System.Reflection;
 using System.Text;
+using System.Threading;
 using MySqlConnector;
 using Pchp.Core;
 using Pchp.Library.Database;
@@ -85,5 +91,92 @@ namespace Peachpie.Library.MySql
             var resource = link ?? MySqlConnectionManager.GetInstance(ctx).GetLastConnection();
             return resource as MySqlConnectionResource;
         }
+
+        /// <summary>
+        /// Returns underlying connection of given <paramref name="link"/>.
+        /// </summary>
+        /// <param name="link">Reference to <see cref="MySqli.mysqli"/> object.</param>
+        /// <returns>MySql connection resource or <c>null</c> if there is no connection.</returns>
+        public static ConnectionResource ValidConnection(MySqli.mysqli link) => link?.Connection;
+
+        /// <summary>
+        /// Casts the <paramref name="object"/> to <typeparamref name="TResult"/>.
+        /// Otherwise it reflects the <paramref name="object"/>, looking for a <paramref name="getterMethodName"/> and trying to invoke that to get the underlying reference.
+        /// </summary>
+        /// <typeparam name="TIn">Abstract type.</typeparam>
+        /// <typeparam name="TResult">Expected actual type of <paramref name="object"/>.</typeparam>
+        /// <param name="object">Reference to object.</param>
+        /// <param name="method">Lazily created method used ot obtain the underlying value.</param>
+        /// <param name="getterMethodName">Method name used to obtain the underlying value.</param>
+        /// <param name="alternateMethodName">Alternate method name used to obtain the underlying value.</param>
+        /// <returns>Value of type <typeparamref name="TResult"/>.</returns>
+        /// <remarks>Used to get an underlying value of wrapping classes like the ones provided by MiniProfiler.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="object"/> is null.</exception>
+        /// <exception cref="InvalidOperationException"><paramref name="getterMethodName"/> is not defined on <paramref name="object"/>.</exception>
+        /// <exception cref="NullReferenceException"><paramref name="object"/>' getter method returned null or an unexpected value.</exception>
+        static TResult/*!*/GetUnderlyingValue<TIn, TResult>(TIn @object, ref MethodInfo method, string getterMethodName, string alternateMethodName = null) where TResult : class
+        {
+            // we have TResult in most cases:
+            if (@object is TResult result)
+            {
+                return result;
+            }
+
+            if (@object == null)
+            {
+                throw new ArgumentNullException(nameof(@object));
+            }
+
+            // resolve {getterMethodName} method
+            if (method == null)
+            {
+                method = @object.GetType().GetMethod(getterMethodName, BindingFlags.Instance | BindingFlags.Public)
+                    ?? (alternateMethodName != null ? @object.GetType().GetMethod(alternateMethodName, BindingFlags.Instance | BindingFlags.Public) : null)
+                    ?? throw new InvalidOperationException($"'{getterMethodName}' method could not be resolved for {@object.GetType().Name}.");
+            }
+
+            // checks
+            var value = method.Invoke(@object, null)
+                ?? throw new NullReferenceException($"{getterMethodName}() returned null.");
+
+            return value as TResult
+                ?? throw new NullReferenceException($"{@object.GetType().Name}.{getterMethodName}() returned an unexpected value of type {value.GetType().Name}. Expecting '{typeof(TResult).Name}'.");
+        }
+
+        /// <summary>
+        /// Casts or unwraps given <see cref="IDbCommand"/> to <see cref="MySqlCommand"/>.
+        /// </summary>
+        /// <returns><see cref="IDbCommand"/> might be wrapped into another class (usually DB profiler class like MiniProfiler).</returns>
+        public static MySqlCommand AsMySqlCommand(this IDbCommand command) => GetUnderlyingValue<IDbCommand, MySqlCommand>(command, ref s_iternalCommandMethod, "get_WrappedCommand", "get_InternalCommand");
+
+        /// <summary>
+        /// Casts or unwraps given <see cref="IDbCommand"/> to <see cref="MySqlCommand"/>.
+        /// </summary>
+        /// <returns><see cref="IDbCommand"/> might be wrapped into another class (usually DB profiler class like MiniProfiler).</returns>
+        public static MySqlDataReader AsMySqlDataReader(this IDataReader reader) => GetUnderlyingValue<IDataReader, MySqlDataReader>(reader, ref s_wrappedReaderMethod, "get_WrappedReader");
+
+        /// <summary>
+        /// Casts or unwraps given <see cref="IDbConnection"/> to <see cref="MySqlConnection"/>.
+        /// </summary>
+        /// <returns><see cref="IDbConnection"/> might be wrapped into another class (usually DB profiler class like MiniProfiler).</returns>
+        public static MySqlConnection AsMySqlConnection(this IDbConnection connection) => GetUnderlyingValue<IDbConnection, MySqlConnection>(connection, ref s_wrappedConnectionMethod, "get_WrappedConnection");
+
+        static MethodInfo
+            s_iternalCommandMethod,
+            s_wrappedReaderMethod,
+            s_wrappedConnectionMethod;
+
+        /// <summary>
+        /// Returns the last insert ID from the MySqlCommand, eventually using the underlying MySqlCommand of another IDbCommand.
+        /// </summary>
+        /// <param name="command">Generic <see cref="IDbCommand"/> to work with</param>
+        /// <returns>Last insert ID</returns>
+        public static long LastInsertedId(IDbCommand command) => command.AsMySqlCommand().LastInsertedId;
+
+        /// <summary>
+        /// Returns metadata about the columns in the result set.
+        /// </summary>
+        /// <returns>A <see cref="ReadOnlyCollection{DbColumn}"/> containing metadata about the result set.</returns>
+        public static ReadOnlyCollection<DbColumn> GetColumnSchema(IDataReader reader) => reader.AsMySqlDataReader().GetColumnSchema();
     }
 }

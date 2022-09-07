@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -53,7 +54,7 @@ namespace Pchp.Core.Dynamic
 
             public int GetHashCode(BinderKey obj)
             {
-                return obj._type ^ (obj._name != null ? obj._name.GetHashCode() : -1) ^ obj._h1.GetHashCode();
+                return obj._type ^ StringComparer.InvariantCulture.GetHashCode(obj._name ?? string.Empty) ^ obj._h1.GetHashCode();
             }
         }
 
@@ -61,74 +62,50 @@ namespace Pchp.Core.Dynamic
         /// Cache of instantiated binders.
         /// They hold rules cache which should be shared in order to not bind everythiung over and over.
         /// </summary>
-        readonly static Dictionary<BinderKey, CallSiteBinder> _bindersCache = new Dictionary<BinderKey, CallSiteBinder>(new BinderKeyComparer());
+        readonly static ConcurrentDictionary<BinderKey, CallSiteBinder> _bindersCache = new ConcurrentDictionary<BinderKey, CallSiteBinder>(new BinderKeyComparer());
 
         #endregion
 
         public static CallSiteBinder Function(string name, string nameOpt, RuntimeTypeHandle returnType)
         {
-            var key = new BinderKey(1, name, nameOpt, returnType);
-            if (_bindersCache.TryGetValue(key, out CallSiteBinder binder) == false)
-            {
-                _bindersCache[key] = binder = new CallFunctionBinder(name, nameOpt, returnType);
-            }
-
-            return binder;
+            return _bindersCache.GetOrAdd(
+                new BinderKey(1, name, nameOpt, returnType),
+                b => new CallFunctionBinder(b._name, b._name2, b._h1));
         }
 
         public static CallSiteBinder InstanceFunction(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType)
         {
-            var key = new BinderKey(2, name, null, classContext, returnType);
-            if (_bindersCache.TryGetValue(key, out CallSiteBinder binder) == false)
-            {
-                _bindersCache[key] = binder = new CallInstanceMethodBinder(name, classContext, returnType);
-            }
-
-            return binder;
+            return _bindersCache.GetOrAdd(
+                new BinderKey(2, name, null, classContext, returnType),
+                b => new CallInstanceMethodBinder(b._name, b._h1, b._h2));
         }
 
         public static CallSiteBinder StaticFunction(RuntimeTypeHandle type, string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType)
         {
-            var key = new BinderKey(3, name, null, type, classContext, returnType);
-            if (_bindersCache.TryGetValue(key, out CallSiteBinder binder) == false)
-            {
-                _bindersCache[key] = binder = new CallStaticMethodBinder(type, name, classContext, returnType);
-            }
-
-            return binder;
+            return _bindersCache.GetOrAdd(
+                new BinderKey(3, name, null, type, classContext, returnType),
+                b => new CallStaticMethodBinder(b._h1, b._name, b._h2, b._h3));
         }
 
         public static CallSiteBinder GetField(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessMask access)
         {
-            var key = new BinderKey(((int)access << 3) + 4, name, null, classContext, returnType);
-            if (_bindersCache.TryGetValue(key, out CallSiteBinder binder) == false)
-            {
-                _bindersCache[key] = binder = new GetFieldBinder(name, classContext, returnType, access);
-            }
-
-            return binder;
+            return _bindersCache.GetOrAdd(
+                new BinderKey(((int)access << 3) + 4, name, null, classContext, returnType),
+                b => new GetFieldBinder(b._name, b._h1, b._h2, (AccessMask)(b._type >> 3)));
         }
 
         public static CallSiteBinder SetField(string name, RuntimeTypeHandle classContext, AccessMask access)
         {
-            var key = new BinderKey(((int)access << 3) + 5, name, null, classContext);
-            if (_bindersCache.TryGetValue(key, out CallSiteBinder binder) == false)
-            {
-                _bindersCache[key] = binder = new SetFieldBinder(name, classContext, access);
-            }
-
-            return binder;
+            return _bindersCache.GetOrAdd(
+                new BinderKey(((int)access << 3) + 5, name, null, classContext),
+                b => new SetFieldBinder(b._name, b._h1, (AccessMask)(b._type >> 3)));
         }
 
         public static CallSiteBinder GetClassConst(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessMask access)
         {
-            var key = new BinderKey(((int)access << 3) + 6, name, null, classContext, returnType);
-            if (_bindersCache.TryGetValue(key, out CallSiteBinder binder) == false)
-            {
-                _bindersCache[key] = binder = new GetClassConstBinder(name, classContext, returnType, access);
-            }
-
-            return binder;
+            return _bindersCache.GetOrAdd(
+                new BinderKey(((int)access << 3) + 6, name, null, classContext, returnType),
+                b => new GetClassConstBinder(b._name, b._h1, b._h2, (AccessMask)(b._type >> 3)));
         }
     }
 

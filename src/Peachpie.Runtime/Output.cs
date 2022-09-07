@@ -111,7 +111,7 @@ namespace Pchp.Core
         /// Encoding used to convert between single-byte string and Unicode string.
         /// </summary>
         public override Encoding Encoding { get { return _ctx.StringEncoding; } }
-        
+
         /// <summary>
         /// The buffered binary stream used as for loading binary data to buffers.
         /// </summary>
@@ -186,57 +186,66 @@ namespace Pchp.Core
         /// </remarks>
         private int AllocateBuffer(int sizeNeeded, bool binary, out Array buffer, out int position)
         {
-            Debug.Assert(_level != null);
+            var level = _level;
+            Debug.Assert(level != null);
 
-            BufferElement element;
             int chunk;
             int kind = binary ? 1 : 0;
 
             // close binary buffer:
-            _level.freeSpace[1 - kind] = 0;
+            level.freeSpace[1 - kind] = 0;
 
-            if (binary) _level.containsByteData = true; else _level.containsCharData = true;
+            if (binary)
+                level.containsByteData = true;
+            else
+                level.containsCharData = true;
 
             // no free space for characters found (no buffer exists, the top buffer isn't a character buffer
             // or the top buffer is full character buffer):
-            if (_level.freeSpace[kind] == 0)
+            if (level.freeSpace[kind] == 0)
             {
                 // computes the size of buffer to be allocated as min{sizeNeeded,dafaultBufferSize}:
                 int size = sizeNeeded;
                 if (size < _minBufferSize[kind])
                 {
                     size = _minBufferSize[kind];
-                    _level.freeSpace[kind] = size - sizeNeeded;
+                    level.freeSpace[kind] = size - sizeNeeded;
                 }
                 else
-                    _level.freeSpace[kind] = 0; // all space in allocated buffer will be occupied
+                {
+                    level.freeSpace[kind] = 0; // all space in allocated buffer will be occupied
+                }
 
                 // allocates a new buffer element for data:
-                element = new BufferElement();
-                if (binary) buffer = new byte[size]; else buffer = new char[size];
-                element.data = buffer;
-                element.size = sizeNeeded;   //sizeNeeded <= (buffer size)
-                _level.buffers.Add(element);
+                var element = new BufferElement
+                {
+                    data = buffer = binary ? (Array)new byte[size] : new char[size],
+                    size = sizeNeeded,   //sizeNeeded <= (buffer size)
+                };
+
+                level.buffers.Add(element);
 
                 position = 0;
                 chunk = sizeNeeded;
-
             }
             else
-            // some free space found:
             {
-                Debug.Assert(_level.buffers.Count > 0);
+                // some free space found:
+                Debug.Assert(level.buffers.Count > 0);
 
                 // available space:
-                chunk = (_level.freeSpace[kind] < sizeNeeded) ? _level.freeSpace[kind] : sizeNeeded;
+                chunk = (level.freeSpace[kind] < sizeNeeded) ? level.freeSpace[kind] : sizeNeeded;
 
-                element = _level.buffers[_level.buffers.Count - 1];
+                var element = level.buffers[level.buffers.Count - 1];
+
                 buffer = element.data;
-                position = element.data.Length - _level.freeSpace[kind];
+                position = element.data.Length - level.freeSpace[kind];
                 element.size += chunk;
-                _level.freeSpace[kind] -= chunk;
+                level.freeSpace[kind] -= chunk;
             }
-            _level.size += chunk;
+
+            level.size += chunk;
+
             return chunk;
         }
 
@@ -575,14 +584,15 @@ namespace Pchp.Core
             if (!_level.containsByteData)
             {
                 // contains characters only:
-                var result = new StringBuilder(_level.size, _level.size);
+                var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(_level.size);
 
                 for (int i = 0; i < _level.buffers.Count; i++)
                 {
                     var element = _level.buffers[i];
                     result.Append((char[])element.data, 0, element.size);
                 }
-                return result.ToString();
+
+                return StringBuilderUtilities.GetStringAndReturn(result);
             }
             else if (!_level.containsCharData)
             {
@@ -782,7 +792,7 @@ namespace Pchp.Core
         {
             if (levelIndex < 1 || levelIndex > Level)
                 throw new ArgumentOutOfRangeException("levelIndex");
-            
+
             var element = _levels[levelIndex - 1];
             filter = element.filter;
             size = element.size;

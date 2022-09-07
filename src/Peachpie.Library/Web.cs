@@ -732,16 +732,68 @@ namespace Pchp.Library
             switch (type)
             {
                 case PhpQueryRfc.RFC3986:
-                    // NOTE: this is not correct,
-                    // behavior depends on IRI configuration
-                    // see https://docs.microsoft.com/en-us/dotnet/api/system.uri.escapeuristring#remarks
-                    return Uri.EscapeUriString(value);
+                    //// NOTE: this is not correct,
+                    //// behavior depends on IRI configuration
+                    //// see https://docs.microsoft.com/en-us/dotnet/api/system.uri.escapeuristring#remarks
+                    //return Uri.EscapeUriString(value);
+                    return Encode_RFC3986(value);
 
                 case PhpQueryRfc.RFC1738:
                 default:
                     // ' ' encoded as '+'
                     return WebUtility.UrlEncode(value);
             }
+        }
+
+        static string Encode_RFC3986(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            var sb = StringBuilderUtilities.Pool.Get();
+            byte[] bytes = null; // bytes buffer lazily allocated
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                // all non-alphanumeric characters except -_.~
+                // replaced with a percent (%) sign followed by two hex digits
+
+                var c = value[i];
+                if ((c >= '0' && c <= '9') ||
+                    (c >= 'A' && c <= 'Z') ||
+                    (c >= 'a' && c <= 'z') ||
+                    (c == '-') ||
+                    (c == '.') ||
+                    (c == '_') ||
+                    (c == '.') ||
+                    (c == '~'))
+                {
+                    sb.Append(c);
+                }
+                else if (c < 0xf0)
+                {
+                    // %{X2}
+                    sb.Append('%');
+                    StringUtils.AsciiCharToHex((byte)c, sb); // "X2"
+                }
+                else
+                {
+                    // UTF-8
+                    // TODO: NETSTANDARD2_1
+                    bytes ??= new byte[Encoding.UTF8.GetMaxByteCount(1)];
+                    var nbytes = Encoding.UTF8.GetBytes(value, i, 1, bytes, 0);
+                    for (int b = 0; b < nbytes; b++)
+                    {
+                        // %{X2}
+                        sb.Append('%');
+                        StringUtils.AsciiCharToHex(bytes[b], sb); // "X2"
+                    }
+                }
+            }
+
+            return StringBuilderUtilities.GetStringAndReturn(sb);
         }
 
         /// <summary>
@@ -771,7 +823,7 @@ namespace Pchp.Library
 
         static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator, PhpQueryRfc encType, string indexerPrefix)
         {
-            var result = new StringBuilder(64);
+            var result = StringBuilderUtilities.Pool.Get();
             var first = true;
 
             var enumerator = formData.GetForeachEnumerator(false, default);
@@ -826,7 +878,7 @@ namespace Pchp.Library
                 first = false;
             }
 
-            return result.ToString();
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -970,7 +1022,8 @@ namespace Pchp.Library
                 return string.Empty;
             }
 
-            return UpperCaseEncodedChars(UrlEncode(str, PhpQueryRfc.RFC3986)); // ' ' => '%20'
+            // return UpperCaseEncodedChars(UrlEncode(str, PhpQueryRfc.RFC3986)); // ' ' => '%20'
+            return Encode_RFC3986(str);
         }
 
         /// <summary>

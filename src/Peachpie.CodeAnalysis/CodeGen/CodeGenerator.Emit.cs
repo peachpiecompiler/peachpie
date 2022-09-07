@@ -2206,6 +2206,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
+            if (targetType?.SpecialType == SpecialType.System_String)
+            {
+                if (stack.SpecialType == SpecialType.System_String)
+                {
+                    // STRING ?? FALSE).ToString() =>
+                    // STRING ?? ""
+
+                    // ?? ""
+                    EmitNullCoalescing((_cg) =>
+                    {
+                        _cg.Builder.EmitStringConstant(string.Empty);
+                    });
+                    return stack; // String
+                }
+            }
+
             // Template: <stack> ?? FALSE
 
             var lblfalse = new NamedLabel("CastToFalse:FALSE");
@@ -2584,19 +2600,60 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        static ConversionKind DetermineConversionKind(ParameterSymbol targetp)
+        /// <summary>
+        /// Determine whether the argument load complies with CLR semantic rather than PHP semantic.
+        /// </summary>
+        static bool DetermineClrSemantic(ParameterSymbol targetp)
         {
+            var t = targetp.ContainingType;
+            if (t.IsPhpSourceFile() || t.IsPhpUserType()) // || t.GetPhpExtensionAttribute() != null)
+            {
+                // PHP semantic
+                return false;
+            }
+
+            if (t.ContainingAssembly is PEAssemblySymbol ass)
+            {
+                if (ass.IsPeachpieCorLibrary || ass.IsExtensionLibrary)
+                {
+                    // PHP semantic
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Determine the argument load complies with PHP strict semantic.
+        /// </summary>
+        static bool DetermineStrictSemantic(ParameterSymbol targetp)
+        {
+            // TODO: strict mode on file/class level // cg.ContainingFile // [PhpStrictMode( On/Off/Clr/... )]
+
             var t = targetp.ContainingType;
             if (t.IsPhpSourceFile() || t.IsPhpUserType())
             {
-                // TODO: strict mode on file level?
-                // var f = cg.ContainingFile;                    
+                return true;
+            }
+            else if (targetp.Type.IsObjectType())
+            {
+                // CLR "object"
+                return true;
+            }
 
+            // a library function
+            return false;
+        }
+
+        static ConversionKind DetermineConversionKind(ParameterSymbol targetp)
+        {
+            if (DetermineStrictSemantic(targetp))
+            {
                 return ConversionKind.Strict;
             }
             else
             {
-                // a library function
                 return ConversionKind.Implicit;
             }
         }
@@ -2609,9 +2666,18 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (targetp.RefKind == RefKind.None)
             {
                 // load argument
-                EmitConvert(expr, targetp.Type,
-                    conversion: DetermineConversionKind(targetp),
-                    notNull: targetp.HasNotNull);
+
+                if (targetp.Type.IsObjectType() && DetermineClrSemantic(targetp))
+                {
+                    // (object)expr.ToClr() // .box
+                    EmitBox(Emit_ToClr(Emit(expr)));
+                }
+                else
+                {
+                    EmitConvert(expr, targetp.Type,
+                        conversion: DetermineConversionKind(targetp),
+                        notNull: targetp.HasNotNull);
+                }
             }
             else
             {
@@ -2789,8 +2855,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(!type.IsUnreachable);
 
             // (T)
-            _il.EmitOpCode(ILOpCode.Castclass);
-            EmitSymbolToken(type, null);
+            if (type.IsReferenceType)
+            {
+                _il.EmitOpCode(ILOpCode.Castclass);
+                EmitSymbolToken(type, null);
+            }
+            else
+            {
+                _il.EmitOpCode(ILOpCode.Unbox_any);
+                EmitSymbolToken(type, null);
+            }
         }
 
         /// <summary>
@@ -3183,8 +3257,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(f != null);
             Debug.Assert(!f.IsUnreachable);
 
-            this.EmitSequencePoint(((FunctionDecl)f.Syntax).HeadingSpan);
-
             // <ctx>.DeclareFunction(RoutineInfo)
             EmitLoadContext();
             f.EmitLoadRoutineInfo(this);
@@ -3193,20 +3265,66 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Set of types which declaration was already emitted at the beginning of script.
+        /// </summary>
+        HashSet<SourceTypeSymbol> _staticallyDeclaredTypes;
+
+        /// <summary>
+        /// Emits declaration of types that can be declared at the beginning of script.
+        /// </summary>
+        public void EmitDeclareTypesInParsePhase(IEnumerable<SourceTypeSymbol> types)
+        {
+            Contract.ThrowIfNull(types);
+
+            foreach (var t in types)
+            {
+                // try to declare the type
+                // NOTE: do not declare conditionally declared types (i.e. contained in IF)
+                // NOTE: DO declare even types that are unreachable (e.g. after `return` statement)
+
+                if (!t.IsConditional && EmitDeclareType(t, parsePhase: true))
+                {
+                    _staticallyDeclaredTypes ??= new HashSet<SourceTypeSymbol>();
+                    _staticallyDeclaredTypes.Add(t);
+                }
+            }
+        }
+
+        /// <summary>
         /// Emits type declaration into the context.
         /// </summary>
-        public void EmitDeclareType(SourceTypeSymbol t)
+        /// <param name="t">Type to be declared.</param>
+        /// <param name="parsePhase"><c>true</c> in case we're just trying to declare the type; it won't cause any autoload, it won't cause any runtime exception.</param>
+        /// <returns>Value indicating the type got declared unconditionally.</returns>
+        public bool EmitDeclareType(SourceTypeSymbol t, bool parsePhase)
         {
             Contract.ThrowIfNull(t);
-            Debug.Assert(!t.IsErrorType(), "Cannot declare an error type.");
 
-            // 
-            this.EmitSequencePoint(t.Syntax.HeadingSpan);
+            if (t.IsErrorType())
+            {
+                throw new InvalidOperationException("Attempt to declare an error type at " + ExceptionUtilities.GuessSourceLocation(this));
+            }
+
+            if (_staticallyDeclaredTypes?.Contains(t) == true)
+            {
+                // already declared statically
+                return true;
+            }
+
+            // optional label after the "DeclareType" operation
+            object lblSkip = null;
+            bool alwaysDeclared = true;
 
             // autoload base types or throw an error
             var versions = t.HasVersions ? t.AllReachableVersions() : default;
-            if (!versions.IsDefault && versions.Length > 1)
+            if (versions.IsDefault == false && versions.Length > 1)
             {
+                if (parsePhase)
+                {
+                    // TODO: check what dependant types are declared and based on that, declare "t", or nothing
+                    return false;
+                }
+
                 // emit declaration of type that has ambiguous versions
                 EmitVersionedTypeDeclaration(versions);
             }
@@ -3219,13 +3337,48 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Debug.Assert(versions.Length == 1);
                     t = versions[0];
                 }
-                Debug.Assert(!t.IsUnreachable);
 
+                // types that are expected to be declared prior to declaring "t"
                 var dependent = t.GetDependentSourceTypeSymbols();
 
-                // ensure all types are loaded into context,
-                // autoloads if necessary
-                dependent.ForEach(EmitExpectTypeDeclared);
+                if (parsePhase)
+                {
+                    foreach (var d in dependent)
+                    {
+                        if (IsTypeDeclaredCheckNecessary(d))
+                        {
+                            lblSkip ??= new NamedLabel("skip_DeclareType");
+
+                            alwaysDeclared = false; // type might not be declared at the end, we'll have to declare it properly again
+
+                            // Template: if (<ctx>.IsUserTypeDeclared(d) == false) goto lblSkip;
+                            EmitLoadContext();
+
+                            if (d.IsTraitType())
+                            {
+                                EmitLoadToken(d.AsUnboundGenericType(), null);
+                                EmitCall(ILOpCode.Call, CoreMethods.Dynamic.GetPhpTypeInfo_RuntimeTypeHandle);
+                            }
+                            else
+                            {
+                                EmitLoadPhpTypeInfo(d);
+                            }
+
+                            EmitCall(ILOpCode.Call, CoreMethods.Helpers.IsUserTypeDeclared_Context_PhpTypeInfo); // bool
+
+                            _il.EmitBranch(ILOpCode.Brfalse, lblSkip); // if (false) goto lblSkip;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var d in dependent)
+                    {
+                        // ensure all types are loaded into context,
+                        // autoloads if necessary
+                        EmitExpectTypeDeclared(d);
+                    }
+                }
 
                 if (t.Arity == 0)
                 {
@@ -3245,7 +3398,50 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
+            if (lblSkip != null)
+            {
+                _il.MarkLabel(lblSkip);
+            }
+
+            //
             Debug.Assert(_il.IsStackEmpty);
+            return alwaysDeclared;
+        }
+
+        /// <summary>
+        /// Gets value indicating runtime check for given type existance may be necessary.
+        /// </summary>
+        private bool IsTypeDeclaredCheckNecessary(ITypeSymbol d)
+        {
+            // the type was statically declared in this file already
+            if (d.OriginalDefinition is SourceTypeSymbol srct && _staticallyDeclaredTypes?.Contains(srct) == true)
+            {
+                return false;
+            }
+
+            if (d is NamedTypeSymbol ntype)
+            {
+                if (ntype.IsAnonymousType || !ntype.IsPhpUserType())
+                {
+                    // anonymous classes are not declared
+                    // regular CLR types declared in app context
+                    return false;
+                }
+
+                // TODO: type has been checked already in current branch -> skip
+
+                if (this.CallerType != null && this.CallerType.IsOfType(ntype))
+                {
+                    // the type is a sub-type of current class context, so it must be declared for sure
+                    // e.g. self, parent
+                    return false;
+                }
+
+
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -3256,34 +3452,18 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(((TypeSymbol)d).IsValidType());
             Debug.Assert(!((TypeSymbol)d).IsUnreachable);
 
-            if (d is NamedTypeSymbol ntype)
+            if (IsTypeDeclaredCheckNecessary(d) && d is NamedTypeSymbol ntype)
             {
-                if (ntype.IsAnonymousType || !ntype.IsPhpUserType())
-                {
-                    // anonymous classes are not declared
-                    // regular CLR types declared in app context
-                    return;
-                }
-
-                // TODO: type has been checked already in current branch -> skip
-
                 if (ntype.OriginalDefinition is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, this.ContainingFile) && !srct.Syntax.IsConditional)
                 {
                     // declared in same file unconditionally,
-                    // we don't have to check anything
+                    // we don't have to check it here
                     return;
                 }
 
                 if (ntype.OriginalDefinition is IPhpTypeSymbol phpt && phpt.AutoloadFlag == 2)
                 {
                     // type is autoloaded without side effects
-                    return;
-                }
-
-                if (this.CallerType != null && this.CallerType.IsOfType(ntype))
-                {
-                    // the type is a sub-type of current class context, so it must be declared for sure
-                    // e.g. self, parent
                     return;
                 }
 
@@ -3354,7 +3534,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             // resolve dependent types:
             foreach (var d in dependent)
             {
-
                 if (d.Value.Count == 1)
                 {
                     EmitExpectTypeDeclared(d.Value.Single());
@@ -4069,7 +4248,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public static void EmitStructAddr(this ILBuilder il, TypeSymbol t)
         {
-            Debug.Assert(t.IsStructType());
+            Debug.Assert(t.IsValueType);
 
             var tmp = GetTemporaryLocalAndReturn(il, t);
             il.EmitLocalStore(tmp);

@@ -13,6 +13,7 @@ namespace Pchp.Core.Collections
     public struct ValueList<T> : IList<T>
     {
         int _count;
+
         T[] _array;
 
         /// <summary>
@@ -56,7 +57,15 @@ namespace Pchp.Core.Collections
             }
         }
 
-        public int Count => _count;
+        public int Count
+        {
+            get => _count;
+            internal set
+            {
+                if (value < 0 || value > Capacity) throw new ArgumentOutOfRangeException(nameof(value));
+                _count = value;
+            }
+        }
 
         public bool IsReadOnly => false;
 
@@ -92,25 +101,13 @@ namespace Pchp.Core.Collections
         {
             if (Capacity < capacity)
             {
-                Capacity = capacity;
+                Capacity = Math.Max(capacity, Capacity * 2);
             }
         }
 
         public void Add(T item)
         {
-            if (Capacity == _count)
-            {
-                if (_count == 0)
-                {
-                    // optimized for list with 1 element
-                    // and calling ToArray() afterwards
-                    Capacity = 1;
-                }
-                else
-                {
-                    Capacity = (_count + 1) * 2;
-                }
-            }
+            EnsureCapacity(_count + 1);
 
             _array[_count++] = item;
         }
@@ -169,7 +166,22 @@ namespace Pchp.Core.Collections
 
         public void Insert(int index, T item)
         {
+            if (index > Count || index < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
             EnsureCapacity(_count + 1);
+
+            // make space for the new item at _array[index]
+            var toBeMoved = Count - index;
+            if (toBeMoved > 0)
+            {
+                Array.Copy(_array, index, _array, index + 1, toBeMoved);
+            }
+
+            //
+            _array[index] = item;
         }
 
         public bool Remove(T item)
@@ -333,15 +345,13 @@ namespace Pchp.Core.Collections
         internal void GetArraySegment(out T[] array, out int count)
         {
             count = _count;
+            array = _array ?? Array.Empty<T>();
+        }
 
-            if (count == 0)
-            {
-                array = Array.Empty<T>();
-            }
-            else
-            {
-                array = _array;
-            }
+        internal void GetArraySegment(int capacity, out T[] array, out int count)
+        {
+            EnsureCapacity(capacity);
+            GetArraySegment(out array, out count);
         }
 
         public struct ValueEnumerator

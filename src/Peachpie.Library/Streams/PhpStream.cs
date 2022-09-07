@@ -1062,8 +1062,7 @@ namespace Pchp.Library.Streams
                         int eoln = FindEoln(packet, 0);
                         if (eoln > 0)
                         {
-                            TextElement rv, enq;
-                            SplitData(packet, eoln, out rv, out enq);
+                            SplitData(packet, eoln, out var rv, out var enq);
                             if (enq.Length != 0) EnqueueReadBuffer(enq);
                             return rv;
                         }

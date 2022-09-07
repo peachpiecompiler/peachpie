@@ -811,8 +811,11 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpString fgets(PhpResource handle)
         {
-            PhpStream stream = PhpStream.GetValid(handle);
-            if (stream == null) return default(PhpString);
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return default(PhpString);
+            }
 
             // Use the default accessor to the stream breaking at \n, no superfluous conversion.
             //return Core.Convert.Quote(stream.ReadData(-1, true), ScriptContext.CurrentContext);
@@ -852,8 +855,11 @@ namespace Pchp.Library
                 throw new ArgumentOutOfRangeException(nameof(length));
             }
 
-            PhpStream stream = PhpStream.GetValid(handle);
-            if (stream == null) return default(PhpString);
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return default(PhpString);
+            }
 
             // Use the default accessor to the stream breaking at \n, no superfluous conversion.
             //return Core.Convert.Quote(stream.ReadData(length, true), ScriptContext.CurrentContext);

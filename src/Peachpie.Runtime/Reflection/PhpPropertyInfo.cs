@@ -217,7 +217,7 @@ namespace Pchp.Core.Reflection
 
         #region ClrProperty
 
-        internal sealed class ClrProperty : PhpPropertyInfo
+        internal class ClrProperty : PhpPropertyInfo
         {
             public PropertyInfo Property { get; }
 
@@ -321,6 +321,29 @@ namespace Pchp.Core.Reflection
 
         #endregion
 
+        #region ClrExplicitProperty
+
+        internal sealed class ClrExplicitProperty : ClrProperty
+        {
+            public override string PropertyName { get; }
+
+            public ClrExplicitProperty(PhpTypeInfo tinfo, PropertyInfo property, string explicitName)
+                : base(tinfo, property)
+            {
+                this.PropertyName = explicitName ?? throw new ArgumentNullException(nameof(explicitName));
+
+                //if (property.Name.IndexOf('.') < 0)
+                //{
+                //    throw new ArgumentException($"Property '{tinfo.Name}::${property.Name}' is not an explicit property.");
+                //}
+            }
+
+            public override FieldAttributes Attributes => FieldAttributes.Public;
+
+        }
+
+        #endregion
+
         #region RuntimeProperty
 
         internal sealed class RuntimeProperty : PhpPropertyInfo
@@ -366,10 +389,6 @@ namespace Pchp.Core.Reflection
             public override PhpAlias EnsureAlias(Context ctx, object instance)
             {
                 var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
-                if (runtime_fields == null)
-                {
-                    throw new NotSupportedException();
-                }
 
                 // (instance)._runtime_fields[_name]
                 return runtime_fields.EnsureItemAlias(_name);
@@ -378,10 +397,6 @@ namespace Pchp.Core.Reflection
             public override object EnsureObject(Context ctx, object instance)
             {
                 var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
-                if (runtime_fields == null)
-                {
-                    throw new NotSupportedException();
-                }
 
                 // (instance)._runtime_fields[_name]
                 return runtime_fields.EnsureItemObject(_name);
@@ -402,10 +417,6 @@ namespace Pchp.Core.Reflection
             public override void SetValue(Context ctx, object instance, PhpValue value)
             {
                 var runtime_fields = ContainingType.EnsureRuntimeFields(instance);
-                if (runtime_fields == null)
-                {
-                    throw new NotSupportedException();
-                }
 
                 if (value.IsAlias)
                 {

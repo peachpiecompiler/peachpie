@@ -315,7 +315,7 @@ namespace Pchp.Library.Standard
             if (machine == "x86") machine = "i586";    // TODO
 
             release = "0"; // String.Concat(Environment.OSVersion.Version.Major, ".", Environment.OSVersion.Version.Minor);
-            version = "0"; // String.Concat("build ", Environment.OSVersion.Version.Build);
+            version = RuntimeInformation.OSDescription; // String.Concat("build ", Environment.OSVersion.Version.Build);
 
             //
             if (!string.IsNullOrEmpty(mode))
@@ -581,12 +581,13 @@ namespace Pchp.Library.Standard
 
         #endregion
 
-        // [return: CastToFalse] // once $extension will be supported
-        public static string phpversion(string? extension = null)
+        [return: CastToFalse]
+        public static string? phpversion(string? extension = null)
         {
             if (extension != null)
             {
-                throw new NotImplementedException(nameof(extension));
+                PhpException.FunctionNotSupported(nameof(phpversion));
+                return null; // false;
             }
 
             return Library.Environment.PHP_MAJOR_VERSION + "." + Library.Environment.PHP_MINOR_VERSION + "." + Library.Environment.PHP_RELEASE_VERSION;

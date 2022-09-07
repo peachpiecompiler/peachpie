@@ -353,6 +353,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetArrayAccess_PhpValueRef = ct.Operators.Method("GetArrayAccess", ct.PhpValue);
                 IsInstanceOf_Object_PhpTypeInfo = ct.Convert.Method("IsInstanceOf", ct.Object, ct.PhpTypeInfo);
                 ToIntStringKey_PhpValue = ct.Convert.Method("ToIntStringKey", ct.PhpValue);
+                Cast_PhpValue_T = new CoreGenericMethod(ct.PhpValueConverter, "Cast", 1); // TODO: specify parameter type ct.PhpValue
 
                 Echo_Object_Context = ct.Operators.Method("Echo", ct.Object, ct.Context);
                 Echo_String_Context = ct.Operators.Method("Echo", ct.String, ct.Context);
@@ -478,6 +479,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, GetArrayAccess_PhpValueRef, ToPhpString_PhpValue_Context, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue_RuntimeTypeHandle_Object, AsCallable_String_RuntimeTypeHandle_Object,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
+                Cast_PhpValue_T,
                 Echo_Object_Context, Echo_String_Context, Echo_PhpString_Context, Echo_PhpNumber_Context, Echo_PhpValue_Context, Echo_PhpAlias_Context, Echo_Double_Context, Echo_Long_Context, Echo_Int32_Context, Echo_Bool_Context,
 
                 NormalizePath_string,
@@ -546,6 +548,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
                 ToClass = ct.PhpValue.Method("ToClass");
+                ToClr = ct.PhpValue.Method("ToClr");
 
                 Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
                 Eq_PhpValue_String = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.String);
@@ -588,7 +591,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToString_Context, ToClass, ToArray,
+                ToString_Context, ToClass, ToArray, ToClr,
                 AsObject,
                 DeepCopy, GetValue,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String, Eq_String_PhpValue,
@@ -609,11 +612,14 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 EmptyRuntimeTypeHandle = ct.Helpers.Field(nameof(EmptyRuntimeTypeHandle));
                 EmptyNullable_T = ct.Helpers.Method(nameof(EmptyNullable_T));
+                IsUserTypeDeclared_Context_PhpTypeInfo = ct.Helpers.Method("IsUserTypeDeclared", ct.Context, ct.PhpTypeInfo);
             }
 
             public readonly CoreField EmptyRuntimeTypeHandle;
 
             public readonly CoreMethod EmptyNullable_T;
+
+            public readonly CoreMethod IsUserTypeDeclared_Context_PhpTypeInfo;
         }
 
         public struct PhpAliasHolder
@@ -932,6 +938,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Add_PhpValue = ct.PhpHashtable.Method("Add", ct.PhpValue);
                 Add_IntStringKey_PhpValue = ct.PhpHashtable.Method("Add", ct.IntStringKey, ct.PhpValue);
+                Add_Long_PhpValue = ct.PhpHashtable.Method("Add", ct.Long, ct.PhpValue);
+                Add_String_PhpValue = ct.PhpHashtable.Method("Add", ct.String, ct.PhpValue);
 
                 New_PhpValue = t.Method("New", ct.PhpValue);
                 Union_PhpArray_PhpArray = t.Method("Union", ct.PhpArray, ct.PhpArray);
@@ -947,7 +955,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, Add_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy, GetForeachEnumerator_Boolean,
-                Add_IntStringKey_PhpValue,
+                Add_IntStringKey_PhpValue, Add_Long_PhpValue, Add_String_PhpValue,
                 New_PhpValue, Union_PhpArray_PhpArray;
 
             public readonly CoreField

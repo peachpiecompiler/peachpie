@@ -66,5 +66,18 @@ namespace Peachpie.Library.PDO.SqlSrv
         {
             return false;
         }
+
+        /// <inheritDoc />
+        public override string Quote(string str, PDO.PARAM param)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return "''";
+            }
+            else
+            {
+                return $"'{str.Replace("'", "''")}'";
+            }
+        }
     }
 }

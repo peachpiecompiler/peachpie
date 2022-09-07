@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -65,7 +66,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Map of variables name and their index.
         /// </summary>
-        readonly Dictionary<VariableName, int>/*!*/_varsIndex;
+        readonly ConcurrentDictionary<VariableName, int>/*!*/_varsIndex;
 
         /// <summary>
         /// Bit mask of variables where bit with value <c>1</c> signalizes that variables with index corresponding to the bit number has been used.
@@ -76,7 +77,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Merged local variables type.
         /// </summary>
         internal TypeRefMask[] VarsType => _varsType;
-        TypeRefMask[]/*!*/_varsType = EmptyArray<TypeRefMask>.Instance;
+        TypeRefMask[]/*!*/_varsType = Array.Empty<TypeRefMask>();
 
         /// <summary>
         /// Merged return expressions type.
@@ -101,7 +102,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             _routine = routine;
 
             //
-            _varsIndex = new Dictionary<VariableName, int>();
+            _varsIndex = new ConcurrentDictionary<VariableName, int>();
         }
 
         #endregion
@@ -114,13 +115,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public VariableHandle GetVarIndex(VariableName name)
         {
             Debug.Assert(name.IsValid());
-
-            // TODO: RW lock
-
-            int index;
-            if (!_varsIndex.TryGetValue(name, out index))
+            
+            if (_varsIndex.TryGetValue(name, out var index) == false)
             {
-                lock (_varsIndex)
+                lock (_varsIndex) // exclusive lock needed, ConcurrentDictionary does not lock the value factory
                 {
                     index = _varsType.Length;
                     Array.Resize(ref _varsType, index + 1);
@@ -219,7 +217,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // Reset internal structures to prevent possible bugs in re-analysis
             _usedMask = 0;
             _varsIndex.Clear();
-            _varsType = EmptyArray<TypeRefMask>.Instance;
+            _varsType = Array.Empty<TypeRefMask>();
 
             // Revert the information regarding the return type to the default state
             ReturnType = default;

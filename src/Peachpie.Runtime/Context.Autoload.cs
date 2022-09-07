@@ -54,7 +54,7 @@ namespace Pchp.Core
             }
 
             // remove leading \ from the type name
-            if (fullName.Length != 0 && fullName[0] == '\\')
+            if (fullName.Length != 0 && fullName[0] == Utilities.PhpClassName.NamespaceSeparator)
             {
                 fullName = fullName.Substring(1);
             }
@@ -81,9 +81,15 @@ namespace Pchp.Core
         /// </summary>
         public PhpTypeInfo? AutoloadByTypeNameFromClassMap(string fullName, bool onlyAllowed)
         {
-            if (fullName == null) throw new ArgumentNullException(nameof(fullName));
+            if (fullName == null)
+            {
+                throw new ArgumentNullException(nameof(fullName));
+            }
 
-            Debug.Assert(fullName.Length != 0 && fullName[0] != '\\');
+            if (fullName.Length != 0 && fullName[0] == Utilities.PhpClassName.NamespaceSeparator)
+            {
+                fullName = fullName.Substring(1);
+            }
 
             if (s_typeMap.TryGetType(fullName, out var tinfo, out var autoload) && tinfo != null)
             {

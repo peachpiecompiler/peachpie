@@ -445,6 +445,38 @@ namespace Pchp.Core
 
         #endregion
 
+        #region ToDictionary
+
+        public static Dictionary<K, V>/*!*/ToDictionary<K, V>(this PhpValue value)
+        {
+            // try to unwrap assignable CLR instance
+            if (value.AsObject() is IDictionary<K, V> dictiface)
+            {
+                if (dictiface is Dictionary<K, V> dict)
+                {
+                    return dict;
+                }
+
+                return new Dictionary<K, V>(dictiface);
+            }
+
+            // create new dictionary and fill it from PHP enumerator
+            var newdict = new Dictionary<K, V>();
+
+            var enumerator = value.GetForeachEnumerator(false, default);
+            while (enumerator.MoveNext())
+            {
+                var current = enumerator.Current;
+                newdict.Add(
+                    current.Key.Cast<K>(),
+                    current.Value.Cast<V>());
+            }
+
+            return newdict;
+        }
+
+        #endregion
+
         #region ToNumber
 
         public static NumberInfo ToNumber(string str, out PhpNumber number)
@@ -467,8 +499,8 @@ namespace Pchp.Core
             }
             else
             {
-                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
-                number = PhpNumber.Create(1L);
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetClassName(obj), PhpVariable.TypeNameInt));
+                number = PhpNumber.Create(ReferenceEquals(obj, null) ? 0L : 1L);
                 return Convert.NumberInfo.LongInteger;
             }
         }
@@ -513,10 +545,15 @@ namespace Pchp.Core
             {
                 return convertible.ToLong();
             }
+            else if (obj is decimal d)
+            {
+                // boxed System.Decimal
+                return (long)d;
+            }
             else
             {
-                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameInt));
-                return 1L;
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetClassName(obj), PhpVariable.TypeNameInt));
+                return ReferenceEquals(obj, null) ? 0 : 1;
             }
         }
 
@@ -530,8 +567,8 @@ namespace Pchp.Core
             }
             else
             {
-                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, obj.GetPhpTypeInfo().Name, PhpVariable.TypeNameDouble));
-                return 1.0;
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, PhpVariable.GetClassName(obj), PhpVariable.TypeNameDouble));
+                return ReferenceEquals(obj, null) ? 0 : 1;
             }
         }
 
@@ -1309,12 +1346,19 @@ namespace Pchp.Core
             switch (value.TypeCode)
             {
                 case PhpTypeCode.Object:
+                    if (value.Object is DateTime)
+                    {
+                        return (DateTime)value.Object;
+                    }
+
+                    // try op_Implicit() : DateTime
                     var m = Dynamic.ConvertExpression.FindImplicitOperator(value.Object.GetType(), typeof(DateTime));
                     if (m != null)
                     {
                         return (DateTime)m.Invoke(null, new[] { value.Object });
                     }
 
+                    // cannot convert object to DateTime
                     goto default;
 
                 case PhpTypeCode.MutableString:
@@ -1435,6 +1479,31 @@ namespace Pchp.Core
         {
             PhpTypeCode.PhpArray => value.Array,
             PhpTypeCode.Alias => ToArray(value.Alias.Value),
+            PhpTypeCode.Null => null,
+            _ => throw PhpException.TypeErrorException(UsedAsArrayTypeErrorMessage(value)),
+        };
+
+        static string UsedAsArrayTypeErrorMessage(PhpValue value) => value.TypeCode switch
+        {
+            PhpTypeCode.Object => string.Format(Resources.ErrResources.object_used_as_array, PhpVariable.GetClassName(value.Object)),
+            PhpTypeCode.String => string.Format(Resources.ErrResources.string_used_as_array),
+            PhpTypeCode.MutableString => string.Format(Resources.ErrResources.string_used_as_array),
+            _ => string.Format(Resources.ErrResources.scalar_used_as_array, PhpVariable.GetTypeName(value)),
+        };
+
+        public static object AsObject(PhpValue value) => value.TypeCode switch
+        {
+            PhpTypeCode.Object => value.Object is PhpResource ? throw PhpException.TypeErrorException() : value.Object,
+            PhpTypeCode.Alias => AsObject(value.Alias.Value),
+            PhpTypeCode.PhpArray => throw PhpException.TypeErrorException(Resources.ErrResources.array_used_as_object),
+            PhpTypeCode.Null => null,
+            _ => throw PhpException.TypeErrorException(string.Format(Resources.ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(value))),
+        };
+        
+        public static object AsResource(PhpValue value) => value.TypeCode switch
+        {
+            PhpTypeCode.Object => value.Object as PhpResource ?? throw PhpException.TypeErrorException(),
+            PhpTypeCode.Alias => AsResource(value.Alias.Value),
             PhpTypeCode.Null => null,
             _ => throw PhpException.TypeErrorException(),
         };

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Npgsql;
 using Pchp.Core;
+using Peachpie.Library.PDO.Utilities;
 
 namespace Peachpie.Library.PDO.PgSQL
 {
@@ -23,10 +24,31 @@ namespace Peachpie.Library.PDO.PgSQL
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
-            //TODO pgsql pdo parameters to dotnet connectionstring
-            var csb = new NpgsqlConnectionStringBuilder(dsn.ToString());
-            csb.Username = user;
-            csb.Password = password;
+            var csb = new NpgsqlConnectionStringBuilder
+            {
+
+            };
+
+            // parse and validate the datasource string:
+            DataSourceString.ParseNameValue(dsn, csb, (_csb, name, value) =>
+            {
+                // unknown option aliases:
+                if (name.Equals("dbname", StringComparison.OrdinalIgnoreCase)) name = "Database";
+
+                //
+                _csb[name] = value;
+            });
+
+            //
+            if (!string.IsNullOrEmpty(user)) csb.Username = user;
+            if (!string.IsNullOrEmpty(password)) csb.Password = password;
+
+            if (options != null && options.Count != 0)
+            {
+                csb.Pooling = options[PDO.ATTR_PERSISTENT].ToBoolean();
+            }
+
+            //
             return csb.ConnectionString;
         }
 

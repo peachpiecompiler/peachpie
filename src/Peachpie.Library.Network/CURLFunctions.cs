@@ -234,7 +234,7 @@ namespace Peachpie.Library.Network
                 case CURLConstants.CURLINFO_PRIVATE:
                     return Operators.IsSet(r.Private) ? r.Private.DeepCopy() : PhpValue.False;
                 case CURLConstants.CURLINFO_COOKIELIST:
-                    return ((ch.CookieContainer != null && ch.Result != null) ? CreateCookiePhpArray(ch.Result.Cookies) : PhpArray.Empty);
+                    return ch.Cookies != null && ch.Cookies.Count != 0 ? CreateCookiePhpArray(ch.Cookies) : PhpArray.NewEmpty();
                 case CURLConstants.CURLINFO_HEADER_SIZE:
                     return r.HeaderSize;
                 case CURLConstants.CURLINFO_HEADER_OUT:
@@ -247,32 +247,27 @@ namespace Peachpie.Library.Network
 
         internal static IEnumerable<string> CookiesToNetscapeStyle(CookieCollection cookies)
         {
-            if (cookies == null || cookies.Count == 0)
+            if (cookies != null && cookies.Count != 0)
             {
-                yield break;
+                foreach (Cookie c in cookies)
+                {
+                    yield return CookieToNetscapeStyle(c);
+                }
             }
+        }
 
-            foreach (Cookie c in cookies)
-            {
-                string prefix = c.HttpOnly ? "#HttpOnly_" : "";
-                string subdomainAccess = "TRUE";                    // Simplified
-                string secure = c.Secure.ToString().ToUpperInvariant();
-                long expires = (c.Expires.Ticks == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
-                yield return $"{prefix}{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}";
-            }
+        internal static string CookieToNetscapeStyle(Cookie c)
+        {
+            string prefix = c.HttpOnly ? "#HttpOnly_" : "";
+            string subdomainAccess = "TRUE";                    // Simplified
+            string secure = c.Secure.ToString().ToUpperInvariant();
+            long expires = (c.Expires.Ticks == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
+            return $"{prefix}{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}";
         }
 
         static PhpArray CreateCookiePhpArray(CookieCollection cookies)
         {
             return new PhpArray(CookiesToNetscapeStyle(cookies));
-        }
-
-        static void AddCookies(CookieCollection from, CookieContainer container)
-        {
-            if (from != null)
-            {
-                container?.Add(from);
-            }
         }
 
         static Uri? TryCreateUri(CURLResource ch)
@@ -327,6 +322,7 @@ namespace Peachpie.Library.Network
                             return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, exception);
                         case WebExceptionStatus.TrustFailure:
                             return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, exception);
+                        case WebExceptionStatus.ConnectFailure:
                         default:
                             return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, exception);
                     }
@@ -366,14 +362,10 @@ namespace Peachpie.Library.Network
                 // equal or less than 0 will cause exception
                 req.MaximumAutomaticRedirections = ch.MaxRedirects < 0 ? int.MaxValue : ch.MaxRedirects;
             }
-            if (ch.CookieContainer != null)
+            if (ch.Cookies != null)
             {
-                if (ch.Result != null)
-                {
-                    // pass cookies from previous response to the request
-                    AddCookies(ch.Result.Cookies, ch.CookieContainer);
-                }
-                req.CookieContainer = ch.CookieContainer;
+                req.CookieContainer ??= new CookieContainer(); // NOTE: default max capacity := 300
+                req.CookieContainer.Add(ch.Cookies);
             }
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
@@ -571,6 +563,17 @@ namespace Peachpie.Library.Network
 
         static async Task<PhpValue> ProcessResponse(Context ctx, CURLResource ch, HttpWebResponse response)
         {
+            // copy response cookies
+            if (ch.Cookies != null && response.Cookies != null)
+            {
+                // TODO: for compatibility with cURL,
+                // parse the SetCookie header and include all the cookies into the collection as they are,
+                // incl. the expired onces
+                //var setCookieHeader = response.Headers[HttpResponseHeader.SetCookie];
+                
+                ch.Cookies.Add(response.Cookies);
+            }
+
             // in case we are returning the response value
             var returnstream = ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN
                 ? new MemoryStream()

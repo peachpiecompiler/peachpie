@@ -174,7 +174,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             return stack;
         }
 
-
         /// <summary>
         /// In case expression is of type <c>Int32</c> or <c>bool</c> or <c>PhpNumber</c>,
         /// converts it to <c>double</c> and leaves the result on evaluation stack. Otherwise
@@ -364,6 +363,41 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 return from;
             }
+        }
+
+        /// <summary>
+        /// Values are unwrapped into a corresponding CLR type.
+        /// </summary>
+        /// <remarks>
+        /// This is used when passing a value to a .NET method accepting parameters of type `object`.
+        /// </remarks>
+        internal TypeSymbol Emit_ToClr(TypeSymbol from)
+        {
+            EmitPhpAliasDereference(ref from);
+
+            if (from.IsValueType)
+            {
+                // PhpString
+                if (from.Is_PhpString())
+                {
+                    // STACK.ToString( ctx )
+                    EmitPhpStringAddr();    // ref PhpString
+                    EmitLoadContext();      // Context
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToString_Context);
+                }
+
+                // PhpValue
+                if (from.Is_PhpValue())
+                {
+                    // STACK.ToClr()
+                    EmitPhpValueAddr(); // ref PhpValue
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToClr)
+                        .Expect(SpecialType.System_Object);
+                }
+            }
+
+            //
+            return from;
         }
 
         private void EmitConvertToIPhpCallable(TypeSymbol from, TypeRefMask fromHint)
@@ -675,6 +709,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // -> PhpArray
                             // TODO: try unwrap "value.Object as T"
                             EmitConvertToPhpArray(from, fromHint);
+                        }
+                        // else if ( to is IDictionary<,> || to is Dictionary<,> )
+                        else if (CoreTypes.IDictionary.Symbol.IsAssignableFrom(to))
+                        {
+                            // PhpValueConverter.Cast<T>( PhpValue )
+
+                            EmitConvertToPhpValue(from, fromHint);
+                            EmitCall(ILOpCode.Call, CoreMethods.Operators.Cast_PhpValue_T.Symbol.Construct(to))
+                                .Expect(to);
+
+                            //throw this.NotImplementedException($"Conversion from '{from}' to '{to}'");
                         }
                         else
                         {

@@ -89,7 +89,7 @@ namespace Pchp.CodeAnalysis
 
         public static Version LatestLanguageVersion => SupportedLanguageVersions.Max();
 
-        public static Version DefaultLanguageVersion => new Version(7, 4);
+        public static Version DefaultLanguageVersion => new Version(8, 0);
 
         public static IReadOnlyCollection<Version> SupportedLanguageVersions => s_langversions.Keys;
 

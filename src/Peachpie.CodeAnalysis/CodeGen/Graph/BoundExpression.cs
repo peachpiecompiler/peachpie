@@ -4127,28 +4127,47 @@ namespace Pchp.CodeAnalysis.Semantics
 
             foreach (var x in _items)
             {
+                Debug.Assert(x.Value != null);
+
                 // <PhpArray>
                 cg.Builder.EmitOpCode(ILOpCode.Dup);
 
-                // key
-                if (x.Key != null)
+                if (x.Key == null)
                 {
-                    cg.EmitIntStringKey(x.Key);
+                    // <stack>.Add(value) : int
+                    cg.EmitConvertToPhpValue(x.Value);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
                 }
-
-                // value
-                Debug.Assert(x.Value != null);
-                cg.EmitConvert(x.Value, cg.CoreTypes.PhpValue);
-
-                if (x.Key != null)
+                else if (x.Key.ConstantValue.HasValue && x.Key.ConstantValue.Value is string strkey)
                 {
-                    // <stack>.Add(key, value)
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
+                    if (CodeGenerator.TryConvertToIntKey(strkey, out var ikey))
+                    {
+                        // <stack>.Add( long, PhpValue )
+                        cg.Builder.EmitLongConstant(ikey);
+                        cg.EmitConvertToPhpValue(x.Value);
+                        cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_Long_PhpValue));
+                    }
+                    else
+                    {
+                        // <stack>.Add( string, PhpValue )
+                        cg.Builder.EmitStringConstant(strkey);
+                        cg.EmitConvertToPhpValue(x.Value);
+                        cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_String_PhpValue));
+                    }
+                }
+                else if (x.Key.ConstantValue.HasValue && x.Key.ConstantValue.Value is long ikey)
+                {
+                    // <stack>.Add( long, PhpValue )
+                    cg.Builder.EmitLongConstant(ikey);
+                    cg.EmitConvertToPhpValue(x.Value);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_Long_PhpValue));
                 }
                 else
                 {
-                    // <stack>.Add(value) : int
-                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
+                    // <stack>.Add(IntStringKey, PhpValue)
+                    cg.EmitIntStringKey(x.Key);
+                    cg.EmitConvertToPhpValue(x.Value);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue));
                 }
             }
 
@@ -4354,6 +4373,14 @@ namespace Pchp.CodeAnalysis.Semantics
                             return cg.CoreTypes.String;
                         }
 
+                    case int inum:
+                        cg.Builder.EmitLongConstant(inum);
+                        return cg.CoreTypes.Long;
+
+                    case long lnum:
+                        cg.Builder.EmitLongConstant(lnum);
+                        return cg.CoreTypes.Long;
+
                     case null:
                         // string
                         cg.Builder.EmitStringConstant(string.Empty);
@@ -4366,16 +4393,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         static TypeSymbol EmitLoadFromPhpArray(CodeGenerator cg, BoundExpression index, BoundAccess access)
         {
-            // PhpArray on stack
-
-            if (access.IsQuiet)
-            {
-                // ?? PhpArray.Empty
-                cg.EmitNullCoalescing((_cg) =>
-                {
-                    _cg.EmitCastClass(_cg.Emit_PhpArray_Empty(), _cg.CoreTypes.PhpArray);
-                });
-            }
+            // PhpArray? on stack
 
             if (index == null)
             {
@@ -4445,22 +4463,60 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (access.IsRead) // Read
             {
-                // LOAD: String | Long | IntStringKey
-                var tindex = EmitIntStringKeyOrStringOrLong(cg, index);
+                //if (access.IsQuiet)
+                //{
+                //    // ?? PhpArray.Empty
+                //    cg.EmitNullCoalescing((_cg) =>
+                //    {
+                //        _cg.EmitCastClass(_cg.Emit_PhpArray_Empty(), _cg.CoreTypes.PhpArray);
+                //    });
+                //}
 
-                // <array>.GetItemValue(<index>)
-                if (tindex.IsStringType())
-                {
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.get_Item_String);
-                }
-                else if (tindex.SpecialType == SpecialType.System_Int64)
-                {
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.get_Item_Long);
-                }
-                else if (tindex.Is_IntStringKey())
-                {
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.get_Item_IntStringKey);
-                }
+                cg.EmitNullCoalescing(
+                    () =>   // not null
+                    {
+                        TypeSymbol rtype;
+
+                        // LOAD: String | Long | IntStringKey
+                        var tindex = EmitIntStringKeyOrStringOrLong(cg, index);
+
+                        // <array>.GetItemValue(<index>)
+                        if (tindex.IsStringType())
+                        {
+                            rtype = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.get_Item_String);
+                        }
+                        else if (tindex.SpecialType == SpecialType.System_Int64)
+                        {
+                            rtype = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.get_Item_Long);
+                        }
+                        else if (tindex.Is_IntStringKey())
+                        {
+                            rtype = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.get_Item_IntStringKey);
+                        }
+                        else
+                        {
+                            throw ExceptionUtilities.UnexpectedValue(tindex);
+                        }
+
+                        // check PhpValue is on stack
+                        rtype.Expect(cg.CoreTypes.PhpValue);
+                    },
+                    () =>   // null
+                    {
+                        // LOAD index
+                        // POP
+                        if (index != null && !index.IsConstant())
+                        {
+                            cg.EmitPop(index.Emit(cg));
+                        }
+
+                        // CONSIDER: output warning?
+
+                        cg.Emit_PhpValue_Null();
+                    });
+
+                //
+                return cg.CoreTypes.PhpValue;
             }
 
             // 
@@ -4863,6 +4919,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     throw cg.NotImplementedException($"(quiet) STORE {tArray.Name}[]");    // TODO: emit convert as PhpArray
                 }
+            }
+            else if (tArray.IsReferenceType)
+            {
+                // Template: Operators.EnsureArray( object <STACK> ) : IPhpArray
+                // throws if the object does not implement an array access
+                tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_Object)
+                        .Expect(cg.CoreTypes.IPhpArray);
             }
             else
             {

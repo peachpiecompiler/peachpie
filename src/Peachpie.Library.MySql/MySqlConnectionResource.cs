@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Data;
 using System.Diagnostics;
+using System.Reflection;
 using Pchp.Library.Resources;
 
 namespace Peachpie.Library.MySql
@@ -19,7 +20,14 @@ namespace Peachpie.Library.MySql
         const string ResourceName = "mysql connection";
 
         readonly MySqlConnectionManager _manager;
-        readonly MySqlConnection _connection;
+
+        readonly IDbConnection _connection;
+
+        /// <summary>
+        /// <see cref="_connection"/> lazily cast to <see cref="MySqlConnector.MySqlConnection"/>.
+        /// <see cref="MySqlExtensions.GetUnderlyingValue"/> for details.
+        /// </summary>
+        MySqlConnection _mySqlConnection;
 
         /// <summary>
         /// Whether to keep the underlying connection open after disposing this resource.
@@ -44,7 +52,7 @@ namespace Peachpie.Library.MySql
             _connection = new MySqlConnection(this.ConnectionString);
         }
 
-        public MySqlConnectionResource(MySqlConnectionManager manager, MySqlConnection connection)
+        public MySqlConnectionResource(MySqlConnectionManager manager, IDbConnection connection)
             : base(connection.ConnectionString, ResourceName)
         {
             _manager = manager;
@@ -77,6 +85,13 @@ namespace Peachpie.Library.MySql
             }
         }
 
+        /// <summary>
+        /// Gets the underlying MySql connection from the connection. We specifically support the case where
+        /// the connection is a wrapped connection such as we get from MiniProfiler, and we look for WrappedConnection to
+        /// find the native MySqlConnection when we need it.
+        /// </summary>
+        internal MySqlConnection MySqlConnection => _mySqlConnection ?? (_mySqlConnection = _connection.AsMySqlConnection());
+
         protected override IDbConnection ActiveConnection => _connection;
 
         protected override ResultResource GetResult(IDataReader reader, bool convertTypes)
@@ -84,17 +99,23 @@ namespace Peachpie.Library.MySql
             return new MySqlResultResource(this, reader, convertTypes);
         }
 
-        protected override IDbCommand CreateCommand(string commandText, CommandType commandType) => CreateCommandInternal(commandText, commandType);
-
-        internal MySqlCommand CreateCommandInternal(string commandText, CommandType commandType = CommandType.Text)
+        protected override IDbCommand CreateCommand(string commandText, CommandType commandType)
         {
-            return new MySqlCommand()
+            var command = _connection.CreateCommand();
+            command.CommandText = commandText;
+            command.CommandType = commandType;
+
+            // 
+            var config = Context.Configuration.Get<MySqlConfiguration>();
+            if (config.DefaultCommandTimeout >= 0)
             {
-                Connection = _connection,
-                CommandText = commandText,
-                CommandType = commandType
-            };
+                command.CommandTimeout = config.DefaultCommandTimeout;
+            }
+
+            return command;
         }
+
+        internal IDbCommand CreateCommandInternal(string commandText, CommandType commandType = CommandType.Text) => CreateCommand(commandText, commandType);
 
         internal ResultResource ExecuteCommandInternal(IDbCommand command, bool convertTypes, IList<IDataParameter> parameters, bool skipResults)
         {
@@ -104,20 +125,17 @@ namespace Peachpie.Library.MySql
         /// <summary>
         /// Gets the server version.
         /// </summary>
-        internal string ServerVersion => _connection.ServerVersion;
+        internal string ServerVersion => MySqlConnection.ServerVersion;
 
         /// <summary>
         /// Returns the id of the server thread this connection is executing on.
         /// </summary>
-        internal int ServerThread => _connection.ServerThread;
+        internal int ServerThread => MySqlConnection.ServerThread;
 
         /// <summary>
         /// Pings the server.
         /// </summary>
-        internal bool Ping()
-        {
-            return _connection.Ping();
-        }
+        internal bool Ping() => MySqlConnection.Ping();
 
         /// <summary>
 		/// Queries server for a value of a global variable.
@@ -146,10 +164,8 @@ namespace Peachpie.Library.MySql
         {
             get
             {
-                var command = (MySqlCommand)LastResult?.Command;
-                return command != null
-                    ? command.LastInsertedId
-                    : -1L;
+                var command = LastResult?.Command;
+                return command != null ? MySqlExtensions.LastInsertedId(command) : -1;
             }
         }
     }

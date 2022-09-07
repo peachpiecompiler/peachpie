@@ -278,9 +278,64 @@ namespace Pchp.Library.Streams
                 try
                 {
                     var socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
+                    var backlog = 512;
+
+                    var socket_opts = sc.GetOptions("socket");
+                    if (socket_opts != null)
+                    {
+                        var pairenum = socket_opts.GetFastEnumerator();
+                        while (pairenum.MoveNext())
+                        {
+                            var pair = pairenum.Current;
+                            var optname = pair.Key.String;
+                            if (optname == null) // numerical option?
+                                continue;
+
+                            //if (optname.Equals("bindto", StringComparison.OrdinalIgnoreCase))
+                            //{
+
+                            //}
+                            //else
+                            if (optname.Equals("backlog", StringComparison.OrdinalIgnoreCase))
+                            {
+                                backlog = pair.Value.ToInt();
+                            }
+                            //else if (optname.Equals("ipv6_v6only", StringComparison.OrdinalIgnoreCase))
+                            //{
+
+                            //}
+                            else if (optname.Equals("so_reuseaddr", StringComparison.OrdinalIgnoreCase))
+                            {
+                                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, pair.Value.ToInt());
+                            }
+                            //else if (optname.Equals("so_reuseport", StringComparison.OrdinalIgnoreCase))
+                            //{
+                            //    socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReusePort)
+                            //}
+                            else if (optname.Equals("so_broadcast", StringComparison.OrdinalIgnoreCase))
+                            {
+                                socket.EnableBroadcast = pair.Value.ToBoolean();
+                            }
+                            else if (optname.Equals("tcp_nodelay", StringComparison.OrdinalIgnoreCase))
+                            {
+                                socket.NoDelay = pair.Value.ToBoolean();
+                            }
+                            else if (optname.Equals("tcp_keepalive", StringComparison.OrdinalIgnoreCase))
+                            {
+                                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, pair.Value.ToBoolean());
+                            }
+                            else
+                            {
+                                // unknown option
+                                PhpException.InvalidArgument(optname, nameof(stream_socket_server));
+                            }
+                        }
+                    }
+
                     socket.Bind(new IPEndPoint(address, port));
+                    //socket.NoDelay = false;
                     //socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.MaxConnections) // Not Supported
-                    socket.Listen(512); // NOTE: a default backlog should be used
+                    socket.Listen(backlog); // NOTE: a default backlog should be used
 
                     return new SocketStream(ctx, socket, localSocket, sc);
                 }
@@ -299,22 +354,13 @@ namespace Pchp.Library.Streams
 
         #endregion
 
-        #region TODO: stream_socket_accept
+        #region stream_socket_accept
 
         /// <summary>
         /// Accepts a connection on a server socket.
         /// </summary>
         [return: CastToFalse]
-        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket)
-        {
-            return stream_socket_accept(ctx, serverSocket, ctx.Configuration.Core.DefaultSocketTimeout, out _);
-        }
-
-        /// <summary>
-        /// Accepts a connection on a server socket.
-        /// </summary>
-        [return: CastToFalse]
-        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, double timeout)
+        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, double? timeout = default)
         {
             return stream_socket_accept(ctx, serverSocket, timeout, out _);
         }
@@ -323,36 +369,123 @@ namespace Pchp.Library.Streams
         /// Accepts a connection on a server socket.
         /// </summary>
         [return: CastToFalse]
-        public static PhpResource stream_socket_accept(Context ctx, PhpResource serverSocket, double timeout, out string peerName)
+        public static PhpResource stream_socket_accept(Context ctx, PhpResource socket, double? timeout, out string peer_name)
         {
-            peerName = string.Empty;
+            peer_name = string.Empty;
 
-            var stream = SocketStream.GetValid(serverSocket);
-            if (stream == null) return null;
+            var streamResource = SocketStream.GetValid(socket);
+            if (streamResource == null)
+            {
+                return null;
+            }
+
+            Socket acceptedSocket = null;
+
+            var serverSocket = streamResource.Socket;
+            var wasBlocking = serverSocket.Blocking;
+
+            var timeoutVal = timeout.HasValue
+                ? timeout.GetValueOrDefault()
+                : ctx.Configuration.Core.DefaultSocketTimeout;
 
             try
             {
-                var result = stream.Socket.BeginAccept(null, stream.Socket);
-                Debug.Assert(result != null, "BeginAccept() returned null.");
 
-                if (result.AsyncWaitHandle.WaitOne(timeout < 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(timeout)))
+                if (timeoutVal < 0)
                 {
-                    var socket = stream.Socket.EndAccept(result);
-                    socket.NoDelay = true; // blocking
-                    return new SocketStream(ctx, socket, stream.OpenedPath, stream.Context);
+                    serverSocket.Blocking = true;
+                    acceptedSocket = serverSocket.Accept();
+                }
+                else if (timeoutVal.Equals(0))
+                {
+                    serverSocket.Blocking = false;
+                    try
+                    {
+                        // pick first connection without waiting
+                        // throws if there is no Socket avail.
+                        acceptedSocket = serverSocket.Accept();
+                    }
+                    catch (SocketException socEx) when (socEx.SocketErrorCode == SocketError.WouldBlock)
+                    {
+                        // ignore and try again
+                    }
                 }
                 else
                 {
-                    // timeout
-                    PhpException.Throw(PhpError.Warning, Resources.LibResources.socket_accept_timeout);
+                    // NOTE: we need to activelly poll for the accept() operation
+                    // since there is no "accept timeout" option
+                    serverSocket.Blocking = false;
+
+                    var start = System.DateTime.UtcNow;
+                    var delay = TimeSpan.FromTicks(1);
+
+                    for (; ; )
+                    {
+                        try
+                        {
+                            // pick first connection without waiting
+                            // throws if there is no Socket avail.
+                            acceptedSocket = serverSocket.Accept();
+                            break;
+                        }
+                        catch (SocketException socEx) when (socEx.SocketErrorCode == SocketError.WouldBlock)
+                        {
+                            // ignore and try again
+                        }
+
+                        if (start.AddSeconds(timeoutVal) >= System.DateTime.UtcNow)
+                        {
+                            Thread.Sleep(delay);
+
+                            if (delay.TotalMilliseconds < Math.Min(timeoutVal * 100, 100)) // max 1/10 of timeout
+                                delay += TimeSpan.FromMilliseconds(5);
+                        }
+                        else
+                        {
+                            // report timeout warning
+                            PhpException.Throw(PhpError.Warning, Resources.LibResources.socket_accept_timeout);
+                            break;
+                        }
+                    }
                 }
+
+                // does not work when timeout is needed
+                //var result = stream.Socket.BeginAccept(null, stream.Socket);
+                //if (result.AsyncWaitHandle.WaitOne(to))
+                //{
+                //    acceptedSocket = stream.Socket.EndAccept(result);
+                //}
+                //else
+                //{
+                //    // timeout
+
+                //    //// socket must be closed!
+                //    //stream.Socket.Close();
+
+                //    // report timeout warning
+                //    PhpException.Throw(PhpError.Warning, Resources.LibResources.socket_accept_timeout);
+                //}
             }
             catch (SocketException e)
             {
                 PhpException.Throw(PhpError.Warning, e.Message);
             }
+            finally
+            {
+                // restore blocking state
+                serverSocket.Blocking = wasBlocking;
+            }
 
-            return null; // ~FALSE
+            //
+            if (acceptedSocket != null)
+            {
+                acceptedSocket.NoDelay = true; // blocking
+                return new SocketStream(ctx, acceptedSocket, streamResource.OpenedPath, streamResource.Context);
+            }
+            else
+            {
+                return null; // ~FALSE
+            }
         }
 
         #endregion

@@ -277,6 +277,14 @@ namespace Pchp.Core.Dynamic
             public abstract Expression BindArgument(int srcarg, ParameterInfo targetparam = null);
 
             /// <summary>
+            /// Assigns value to <paramref name="targetarg"/>
+            /// </summary>
+            /// <param name="targetarg">Target argument index.</param>
+            /// <param name="expression">Expression to be assigned to the argument.</param>
+            /// <returns>The bound assign expression.</returns>
+            public abstract Expression BindWriteBack(int targetarg, Expression expression);
+
+            /// <summary>
             /// Bind arguments to array of parameters.
             /// </summary>
             public abstract Expression BindParams(int fromarg, Type element_type);
@@ -509,7 +517,11 @@ namespace Pchp.Core.Dynamic
                             {
                                 value2 = new TmpVarValue();
 
-                                value2.TrueInitializer = ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);   // reuse the value already obtained from argv
+                                var expression = (targetparam.ParameterType == typeof(object) && BinderHelpers.DetermineClrSemantic(targetparam))
+                                    ? ConvertExpression.Bind_ToClr(value.Expression, _ctx) // (object)expression
+                                    : ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);
+
+                                value2.TrueInitializer = expression;   // reuse the value already obtained from argv
                                 value2.FalseInitializer = ConvertExpression.Bind(defaultValueExpr, value2.TrueInitializer.Type, _ctx); // ~ default(targetparam)
                                 value2.Expression = Expression.Variable(value2.TrueInitializer.Type, "default_" + srcarg + "_" + defaultValueStr);
 
@@ -535,8 +547,19 @@ namespace Pchp.Core.Dynamic
                             ptype = ptype.GetElementType(); // LINQ will create a local variable for it implicitly
                         }
 
-                        return ConvertExpression.Bind(value.Expression, ptype, _ctx);
+                        return (ptype == typeof(object) && BinderHelpers.DetermineClrSemantic(targetparam))
+                            ? ConvertExpression.Bind_ToClr(value.Expression, _ctx) // (object)expression // CLR semantic
+                            : ConvertExpression.Bind(value.Expression, ptype, _ctx); // regular PHP conversion
                     }
+                }
+
+                public override Expression BindWriteBack(int targetarg, Expression expression)
+                {
+                    // args[ targetarg ]
+                    var element = Expression.ArrayIndex(_argsarray, Expression.Constant(targetarg));
+
+                    // args[ targetarg ] = (T)expression
+                    return Expression.Assign(element, ConvertExpression.Bind(expression, element.Type, _ctx));
                 }
 
                 public override Expression BindParams(int fromarg, Type element_type)
@@ -580,6 +603,8 @@ namespace Pchp.Core.Dynamic
                     }
                     else
                     {
+                        var expr = Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length));
+
                         /* newarr = new T[length];
                          * while (--length >= 0) newarr[length] = convert(argv[fromarg + length]);
                          * lblend: return newarr;
@@ -592,7 +617,7 @@ namespace Pchp.Core.Dynamic
                                     Expression.GreaterThanOrEqual(Expression.PreDecrementAssign(var_length), Cache.Expressions.Create(0)),
                                     Expression.Assign(
                                         Expression.ArrayAccess(var_array, var_length),
-                                        ConvertExpression.Bind(Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length)), element_type, _ctx)),
+                                        ConvertExpression.Bind(expr, element_type, _ctx)),
                                     Expression.Break(lblend)
                                     )),
                             Expression.Label(lblend),
@@ -688,7 +713,7 @@ namespace Pchp.Core.Dynamic
                     return srcarg;
                 }
 
-                bool TryBindArgument(int srcarg, Type targetType, out Expression expr)
+                bool TryBindArgument(int srcarg, Type targetType, out Expression arg, out Expression expr, bool isClrSemantic)
                 {
                     var args = _args;
                     if (srcarg >= 0 && srcarg < args.Length)
@@ -699,18 +724,24 @@ namespace Pchp.Core.Dynamic
                         //
                         if (srcarg < args.Length)
                         {
-                            expr = args[srcarg];
+                            arg = args[srcarg];
 
                             // apply the runtime chain:
                             if (srcarg + 1 < args.Length)
                             {
-                                BinderHelpers.TryAppendRuntimeChain(ref expr, args[srcarg + 1], _ctx, _classContext, targetType == typeof(PhpAlias));
+                                BinderHelpers.TryAppendRuntimeChain(ref arg, args[srcarg + 1], _ctx, _classContext, targetType == typeof(PhpAlias));
                             }
 
                             //
                             if (targetType != null)
                             {
-                                expr = ConvertExpression.Bind(expr, targetType, _ctx);
+                                expr = (targetType == typeof(object) && isClrSemantic)
+                                    ? ConvertExpression.Bind_ToClr(arg, _ctx) // (object)expression
+                                    : ConvertExpression.Bind(arg, targetType, _ctx);
+                            }
+                            else
+                            {
+                                expr = arg;
                             }
 
                             //
@@ -720,6 +751,7 @@ namespace Pchp.Core.Dynamic
 
                     // not provided
                     expr = null;
+                    arg = null;
                     return false;
                 }
 
@@ -727,25 +759,48 @@ namespace Pchp.Core.Dynamic
                 {
                     Debug.Assert(srcarg >= 0);
 
-                    if (TryBindArgument(srcarg, targetparam?.ParameterType, out var expr))
+                    // default value
+                    Expression defaultExpr = null;
+                    if (targetparam != null)
                     {
+                        if (targetparam.HasDefaultValue)
+                        {
+                            defaultExpr = ConvertExpression.Bind(Expression.Constant(targetparam.DefaultValue), targetparam.ParameterType, _ctx);
+                        }
+                        else
+                        {
+                            var defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>();
+                            if (defaultValueAttr != null)
+                            {
+                                defaultExpr = ConvertExpression.Bind(BindDefaultValue(targetparam.Member.DeclaringType, defaultValueAttr), targetparam.ParameterType, _ctx);
+                            }
+                        }
+                    }
+
+                    //
+                    if (TryBindArgument(srcarg, targetparam?.ParameterType, out var arg, out var expr, isClrSemantic: BinderHelpers.DetermineClrSemantic(targetparam)))
+                    {
+                        // handle default value
+                        if (defaultExpr != null)
+                        {
+                            // not when passing parameter by reference!
+                            var isByRef = expr.Type == Cache.Types.PhpAlias[0] || (targetparam != null && targetparam.ParameterType.IsByRef);
+                            if (isByRef == false)
+                            {
+                                // Template: (expr != null) ? expr : <default>
+                                expr = Expression.Condition(BinderHelpers.IsNullExpression(arg), defaultExpr, expr);
+                            }
+                        }
+
                         return expr;
                     }
                     else
                     {
                         if (targetparam != null)
                         {
-                            if (targetparam.HasDefaultValue)
+                            if (defaultExpr != null)
                             {
-                                return ConvertExpression.Bind(Expression.Constant(targetparam.DefaultValue), targetparam.ParameterType, _ctx);
-                            }
-                            else
-                            {
-                                var defaultValueAttr = targetparam.GetCustomAttribute<DefaultValueAttribute>();
-                                if (defaultValueAttr != null)
-                                {
-                                    return ConvertExpression.Bind(BindDefaultValue(targetparam.Member.DeclaringType, defaultValueAttr), targetparam.ParameterType, _ctx);
-                                }
+                                return defaultExpr;
                             }
 
                             //
@@ -754,6 +809,27 @@ namespace Pchp.Core.Dynamic
 
                         return Expression.Constant(null, typeof(object));
                     }
+                }
+
+                public override Expression BindWriteBack(int targetarg, Expression expression)
+                {
+                    var argi = MapToArgsIndex(targetarg);
+                    if (argi < 0 || argi >= _args.Length)
+                    {
+                        // argument not provided,
+                        // nothing to write back
+                        return Expression.Empty();
+                    }
+
+                    var arg = _args[argi];
+                    if (argi + 1 < _args.Length && BinderHelpers.TryAppendRuntimeChain(ref arg, _args[argi + 1], _ctx, _classContext, asalias: true))
+                    {
+                        // IRuntimeChain
+                        // {arg} : PhpAlias
+                        Debug.Assert(arg.Type == Cache.Types.PhpAlias[0]);
+                    }
+
+                    return BinderHelpers.BindAssign(arg, expression, _ctx);
                 }
 
                 public override Expression BindParams(int fromarg, Type element_type)
@@ -771,7 +847,7 @@ namespace Pchp.Core.Dynamic
 
                     var values = new List<Expression>(count);
                     int srcarg = fromarg;
-                    while (TryBindArgument(srcarg++, element_type, out var expr))
+                    while (TryBindArgument(srcarg++, element_type, out var arg, out var expr, isClrSemantic: false))
                     {
                         values.Add(expr);
                     }
@@ -1020,7 +1096,7 @@ namespace Pchp.Core.Dynamic
             //
             if (methods.Length == 0)
             {
-                throw new ArgumentException();    // no method to call
+                throw new ArgumentException("No method matches the provided parameters.");    // no method to call
                 // invoke = ERR
             }
             if (methods.Length == 1)
@@ -1136,8 +1212,6 @@ namespace Pchp.Core.Dynamic
 
             //
             body.Add(invoke);
-
-            // TODO: write-back of byref variables
 
             // return Block { ... ; invoke; }
             return Expression.Block(treturn, locals, body);

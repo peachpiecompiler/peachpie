@@ -279,3 +279,6 @@ $RECYCLE.BIN/
 *.lnk
 **/launchSettings.json
 **/Peachpie.Version.props
+
+# Ignore Rider files
+.idea/

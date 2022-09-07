@@ -49,7 +49,7 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public string TokenText => _provider.TokenText;
 
-        public PHPDocBlock DocBlock { get => _provider.DocBlock; set => _provider.DocBlock = value; }
+        public PHPDocBlock DocComment { get => _provider.DocComment; set => _provider.DocComment = value; }
 
         public int GetNextToken()
         {

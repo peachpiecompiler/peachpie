@@ -25,12 +25,7 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// The contained context array (2D associative array: first wrapper, then options).
         /// </summary>
-        public PhpArray Data
-        {
-            get { return _data; }
-            set { _data = value; }
-        }
-        protected PhpArray _data;
+        public PhpArray Data { get; internal set; }
 
         /// <summary>
         /// The additional parameters (currently only a notification callback).
@@ -72,7 +67,7 @@ namespace Pchp.Library.Streams
         private StreamContext(PhpArray data, bool registerInCtx)
             : base(StreamContextTypeName/*, registerInCtx*/)
         {
-            _data = data;
+            this.Data = data;
         }
 
         #endregion
@@ -104,7 +99,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public PhpArray GetOptions(string scheme)
         {
-            return (_data != null && _data.TryGetValue(scheme, out var options)) ? options.ArrayOrNull() : null;
+            return (Data != null && Data.TryGetValue(scheme, out var options)) ? options.ArrayOrNull() : null;
         }
 
         /// <summary>

@@ -48,20 +48,21 @@ namespace Pchp.Core
                 if (typeof(T) == typeof(int)) return new Func<PhpValue, int>(x => (int)x.ToLong());
                 if (typeof(T) == typeof(bool)) return new Func<PhpValue, bool>(x => x.ToBoolean());
                 if (typeof(T) == typeof(PhpArray)) return new Func<PhpValue, PhpArray>(x => x.ToArray());
-                if (typeof(T) == typeof(byte)) return new Func<PhpValue, byte>(x => (byte)x.ToLong()); 
+                if (typeof(T) == typeof(byte)) return new Func<PhpValue, byte>(x => (byte)x.ToLong());
                 if (typeof(T) == typeof(char)) return new Func<PhpValue, char>(x => Convert.ToChar(x));
                 if (typeof(T) == typeof(uint)) return new Func<PhpValue, uint>(x => (uint)x.ToLong());
                 if (typeof(T) == typeof(ulong)) return new Func<PhpValue, ulong>(x => (ulong)x.ToLong());
-                if (typeof(T) == typeof(DateTime)) return new Func<PhpValue, DateTime>(Convert.ToDateTime); 
+                if (typeof(T) == typeof(DateTime)) return new Func<PhpValue, DateTime>(Convert.ToDateTime);
                 if (typeof(T) == typeof(byte[])) return new Func<PhpValue, byte[]>(x => x.ToBytesOrNull() ?? throw new InvalidCastException());
 
                 if (typeof(T).IsValueType)
                 {
                     if (typeof(T).IsGenericType)
                     {
-                        // Nullable<U>
-                        if (typeof(T).GetGenericTypeDefinition() == typeof(Nullable<>))
+                        var def = typeof(T).GetGenericTypeDefinition();
+                        if (def == typeof(Nullable<>))
                         {
+                            // Nullable<U>
                             var typeU = typeof(T).GenericTypeArguments[0];
                             if (typeU == typeof(bool)) return new Func<PhpValue, Nullable<bool>>(x => Operators.IsSet(x) ? (bool?)x.ToBoolean() : null);
                             if (typeU == typeof(int)) return new Func<PhpValue, Nullable<int>>(x => Operators.IsSet(x) ? (int?)(int)x.ToLong() : null);
@@ -78,13 +79,59 @@ namespace Pchp.Core
                         // Error: needs Context
                         throw new ArgumentException();
                     }
+                    else if (typeof(T) == typeof(IDictionary<IntStringKey, PhpValue>)) return new Func<PhpValue, IDictionary<IntStringKey, PhpValue>>(x => x.ToArray());
+                    else if (typeof(T) == typeof(IList<PhpValue>)) return new Func<PhpValue, IList<PhpValue>>(x => x.ToArray());
+                    else if (typeof(T).IsGenericType)
+                    {
+                        var def = typeof(T).GetGenericTypeDefinition();
+                        if (def == typeof(Dictionary<,>) || def == typeof(IDictionary<,>))
+                        {
+                            // Convert.ToDictionary<K, V>( PhpValue )
+                            return DictionaryConverter<T>.s_fromPhpValue;
+                        }
+                    }
+                    else if (typeof(PhpResource).IsAssignableFrom(typeof(T)))
+                    {
+                        return new Func<PhpValue, T>(x => (T)StrictConvert.AsResource(x));
+                    }
 
                     // Object
-                    return new Func<PhpValue, T>(x => (T)x.AsObject());
+                    return new Func<PhpValue, T>(x => (T)StrictConvert.AsObject(x));
                 }
 
-                throw new NotImplementedException();
+                throw new NotImplementedException($"Convert '{nameof(PhpValue)}' to '{typeof(T)}'.");
             }
+        }
+
+        static class DictionaryConverter<T>
+        {
+            public static readonly Func<PhpValue, T> s_fromPhpValue = Create_PhpValue_to_Dictionary();
+
+            static Func<PhpValue, T> Create_PhpValue_to_Dictionary()
+            {
+                if (typeof(T).IsGenericType)
+                {
+                    var def = typeof(T).GetGenericTypeDefinition();
+                    if (def == typeof(Dictionary<,>) || def == typeof(IDictionary<,>))
+                    {
+                        var K_V = typeof(T).GenericTypeArguments;
+
+                        return (Func<PhpValue, T>)s_Create_PhpValue_to_Dictionary_K_V
+                            .MakeGenericMethod(K_V)
+                            .Invoke(null, Array.Empty<object>());
+                    }
+                }
+
+                // unexpected {T}
+                throw new InvalidOperationException($"{typeof(T).Name} is expected to be Dictionary<K,V>.");
+            }
+
+            /// <summary>
+            /// <see cref="MethodInfo"/> of <see cref="Create_PhpValue_to_Dictionary_K_V{K,V}"/>.
+            /// </summary>
+            static MethodInfo s_Create_PhpValue_to_Dictionary_K_V => typeof(DictionaryConverter<T>).GetMethod(nameof(Create_PhpValue_to_Dictionary_K_V), Array.Empty<Type>());
+
+            public static Func<PhpValue, Dictionary<K, V>> Create_PhpValue_to_Dictionary_K_V<K, V>() => new Func<PhpValue, Dictionary<K, V>>(x => x.ToDictionary<K, V>());
         }
 
         //static class GenericDelegate<TDelegate> where TDelegate : MulticastDelegate

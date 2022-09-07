@@ -1,5 +1,6 @@
 ﻿using Pchp.Core;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -29,21 +30,25 @@ namespace Peachpie.Library.PDO
             "Peachpie.Library.PDO.SqlSrv",
         };
 
+        static ConcurrentDictionary<string, PDODriver> s_drivers = new ConcurrentDictionary<string, PDODriver>(StringComparer.OrdinalIgnoreCase);
+
+        static int s_driversCollected;
+
         /// <summary>
         /// Gets set of loaded PDO drivers.
         /// </summary>
-        static Dictionary<string, PDODriver> GetDrivers()
+        static ConcurrentDictionary<string, PDODriver> GetDrivers()
         {
-            if (s_lazydrivers == null)
+            if (s_driversCollected == 0)
             {
-                Interlocked.CompareExchange(ref s_lazydrivers, CollectPdoDrivers(), null);
+                CollectPdoDrivers();
+                Interlocked.Increment(ref s_driversCollected);
             }
 
-            return s_lazydrivers;
+            return s_drivers;
         }
-        static Dictionary<string, PDODriver> s_lazydrivers;
 
-        static Dictionary<string, PDODriver> CollectPdoDrivers()
+        static void CollectPdoDrivers()
         {
             var drivertypes = new List<Type>();
 
@@ -64,13 +69,13 @@ namespace Peachpie.Library.PDO
             }
 
             // instantiate drivers:
-
-            return drivertypes
-                .Select(t => (PDODriver)Activator.CreateInstance(t))
-                .ToDictionary(driver => driver.Name, StringComparer.OrdinalIgnoreCase);
+            foreach (var t in drivertypes)
+            {
+                RegisterDriver((PDODriver)Activator.CreateInstance(t));
+            }
         }
 
-        internal static IReadOnlyCollection<string> GetDriverNames() => GetDrivers().Keys;
+        internal static IEnumerable<string> GetDriverNames() => GetDrivers().Keys;
 
         internal static PDODriver TryGetDriver(string driverName)
         {
@@ -103,6 +108,22 @@ namespace Peachpie.Library.PDO
 
             driver = null;
             return false;
+        }
+
+        /// <summary>
+        /// Register a custom <see cref="PDODriver"/>.
+        /// </summary>
+        /// <param name="driver">Driver instance to be added. Cannot be <c>null</c>.</param>
+        /// <returns>If driver was successfuly registered. Otherwise there was a driver with the same name already.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="driver"/> was <c>null</c> reference.</exception>
+        public static bool RegisterDriver(PDODriver driver)
+        {
+            if (driver == null)
+            {
+                throw new ArgumentNullException(nameof(driver));
+            }
+
+            return s_drivers.TryAdd(driver.Name, driver);
         }
     }
 }

@@ -227,6 +227,8 @@ namespace Peachpie.Library.PDO
                 return false;
             }
 
+            ClosePendingReader();
+
             CurrentTransaction.Commit();
             CurrentTransaction = null;
             return true;
@@ -243,6 +245,8 @@ namespace Peachpie.Library.PDO
                 HandleError("No active transaction");
                 return false;
             }
+
+            ClosePendingReader();
 
             CurrentTransaction.Rollback();
             CurrentTransaction = null;

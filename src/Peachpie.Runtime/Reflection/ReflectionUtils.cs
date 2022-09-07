@@ -56,7 +56,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Determines whether given name is valid PHP field, function or class name.
         /// </summary>
-        public static bool IsAllowedPhpName(string name) => name != null && name.IndexOfAny(_disallowedNameChars) < 0;
+        public static bool IsAllowedPhpName(string name) => !string.IsNullOrEmpty(name) && name.IndexOfAny(_disallowedNameChars) < 0;
 
         /// <summary>
         /// Gets value indicating the member has been marked as hidden in PHP context.
@@ -179,6 +179,15 @@ namespace Pchp.Core.Reflection
 
             return false;
         }
+
+        public static bool IsInExtensionLibrary(Type type)
+        {
+            return
+                type.GetCustomAttribute<PhpExtensionAttribute>(false) != null ||
+                type.Assembly.IsPhpExtensionAssembly();
+        }
+
+        public static bool IsPhpExtensionAssembly(this Assembly assembly) => assembly.IsDefined(typeof(PhpExtensionAttribute));
 
         /// <summary>
         /// Types that we do not expose in reflection.

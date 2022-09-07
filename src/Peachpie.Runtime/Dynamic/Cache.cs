@@ -40,6 +40,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo ToString_Double = new Func<double, string>(Core.Convert.ToString).Method;
             public static MethodInfo ToLongOrThrow_String = new Func<string, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo ToDouble_String = new Func<string, double>(Core.Convert.StringToDouble).Method;
+            public static MethodInfo ToDouble_Object = new Func<object, double>(Core.Convert.ToDouble).Method;
             public static MethodInfo ToPhpString_PhpValue_Context = new Func<PhpValue, Context, Core.PhpString>(Core.Convert.ToPhpString).Method;
             public static MethodInfo ToPhpNumber_String = new Func<string, PhpNumber>(Core.Convert.ToNumber).Method;
             public static MethodInfo ToBoolean_Object = new Func<object, bool>(Core.Convert.ToBoolean).Method;
@@ -55,11 +56,12 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo EnsureAlias_PhpValueRef = Types.PhpValue.GetMethod("EnsureAlias", Types.PhpValue.MakeByRefType());
             public static MethodInfo PhpValue_ToLongOrThrow = new Func<PhpValue, long>(Core.StrictConvert.ToLong).Method;
             public static MethodInfo PhpValue_ToClass = Types.PhpValue.GetMethod("ToClass", Types.Empty);
+            public static MethodInfo PhpValue_ToClr = Types.PhpValue.GetMethod("ToClr", Types.Empty);
             public static MethodInfo PhpValue_ToArray = Types.PhpValue.GetMethod("ToArray", Types.Empty);
             /// <summary>Get the underlying PhpArray, or <c>null</c>. Throws in case of a scalar or object.</summary>
             public static MethodInfo PhpValue_ToArrayOrThrow = new Func<PhpValue, PhpArray>(StrictConvert.ToArray).Method;
             public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle_Object = Types.PhpValue.GetMethod("AsCallable", typeof(RuntimeTypeHandle), typeof(object));
-            public static MethodInfo PhpValue_AsObject = Types.PhpValue.GetMethod("AsObject", Types.Empty);
+            public static MethodInfo PhpValue_AsObjectOrThrow = new Func<PhpValue, object>(Core.StrictConvert.AsObject).Method;
             public static MethodInfo PhpValue_AsString_Context = Types.PhpValue.GetMethod("AsString", typeof(Context));
             public static MethodInfo PhpValue_ToIntStringKey = Types.PhpValue.GetMethod("ToIntStringKey");
             public static MethodInfo PhpValue_GetValue = Types.PhpValue.GetMethod("GetValue");
@@ -100,10 +102,14 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo CheckFunctionDeclared_Context_Int_Int = new Func<Context, int, int, bool>(Context.CheckFunctionDeclared).Method;
 
             public static MethodInfo GetDeclaredFunction_Context_String = typeof(Context).GetMethod("GetDeclaredFunction");
+
+            /// <summary>T Cast{T}(PhpValue)</summary>
+            public static MethodInfo Cast_PhpValue_T = typeof(PhpValueConverter).GetMethod(nameof(PhpValueConverter.Cast), Types.PhpValue);
         }
 
         public static class Exceptions
         {
+            public static readonly MethodInfo TypeErrorException_String = new Func<string, Exception>(PhpException.TypeErrorException).Method;
             public static readonly MethodInfo UndefinedFunctionCalled_String = new Action<string>(PhpException.UndefinedFunctionCalled).Method;
             public static readonly MethodInfo UndefinedMethodCalled_String_String = new Action<string, string>(PhpException.UndefinedMethodCalled).Method;
             public static readonly MethodInfo MethodOnNonObject_String = new Action<string>(PhpException.MethodOnNonObject).Method;
@@ -149,9 +155,10 @@ namespace Pchp.Core.Dynamic
 
         public static class IndirectLocal
         {
-            public static readonly MethodInfo GetValue = Types.IndirectLocal.GetMethod("GetValue");
+            public static readonly MethodInfo GetValue = Types.IndirectLocal.GetMethod(nameof(Core.IndirectLocal.GetValue));
+            public static readonly MethodInfo AssignValue_PhpValue = Types.IndirectLocal.GetMethod(nameof(Core.IndirectLocal.AssignValue));
             //public static readonly PropertyInfo ValueRef = Types.IndirectLocal.GetProperty("ValueRef", BindingFlags.NonPublic | BindingFlags.Instance);
-            public static readonly MethodInfo EnsureAlias = Types.IndirectLocal.GetMethod("EnsureAlias");
+            public static readonly MethodInfo EnsureAlias = Types.IndirectLocal.GetMethod(nameof(Core.IndirectLocal.EnsureAlias));
         }
 
         public static class RecursionCheckToken

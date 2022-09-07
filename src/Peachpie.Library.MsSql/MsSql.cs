@@ -226,7 +226,9 @@ namespace Peachpie.Library.MsSql
             var opts = new StringBuilder();
 
             if (config.ConnectTimeout > 0)
+            {
                 opts.AppendFormat("Connect Timeout={0}", config.ConnectTimeout);
+            }
 
             if (config.NTAuthentication)
             {
@@ -235,11 +237,9 @@ namespace Peachpie.Library.MsSql
                 opts.Append("Integrated Security=true");
             }
 
-            string connection_string = PhpSqlDbConnection.BuildConnectionString(server, user, password, opts.ToString());
+            var connection_string = PhpSqlDbConnection.BuildConnectionString(server, user, password, opts.ToString());
 
-            bool success;
-            PhpSqlDbConnection connection = GetManager(ctx).CreateConnection(connection_string,
-              newLink, config.MaxConnections, out success);
+            var connection = GetManager(ctx).CreateConnection(connection_string, newLink, config.MaxConnections, out var success);
 
             if (!success)
             {

@@ -1387,6 +1387,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey)
                     .Expect(cg.CoreTypes.PhpAlias);
             }
+            // TODO: EnsureArray
             else
             {
                 return base.EmitLoadValue(cg, ref lhsStack, access);

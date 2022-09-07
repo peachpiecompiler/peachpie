@@ -534,22 +534,39 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     {
                         var p = ps[i];
 
-                        if (!p.IsPhpOptionalParameter() && (i < ps.Length - 1 /*check for IsParams only for last parameter*/ || !p.IsParams))
+                        if (i == ps.Length - 1 && p.IsParams) // vararg
                         {
-                            expectsmin = i - skippedps + 1;
-                        }
-
-                        var arg = x.ArgumentMatchingParameter(p);
-                        if (arg != null)
-                        {
-                            // TODO: check arg.Value.BoundConversion.Exists in general, instead of the following
-
-                            if (arg.Value.ConstantValue.IsNull() && p.HasNotNull)
+                            // handle [Params]
+                            // - resolve the SZArray element type
+                            // - check the all the arguments
+                            Debug.Assert(p.Type.IsSZArray(), "[Params] parameter expected to be of type Array.");
+                            var elementType = (p.Type as ArrayTypeSymbol)?.ElementType;
+                            if (elementType != null)
                             {
-                                // Argument {0} passed to {1}() must be of the type {2}, {3} given
-                                _diagnostics.Add(_routine, arg.Value.PhpSyntax,
-                                    ErrorCode.ERR_ArgumentTypeMismatch,
-                                    (i - skippedps + 1).ToString(), x.TargetMethod.RoutineName, GetNameForDiagnostic(p.Type), "NULL");
+                                int varargIndex = 0;
+                                foreach (var arg in x.ArgumentsInSourceOrder)
+                                {
+                                    if (SymbolEqualityComparer.Default.Equals(arg.Parameter, p)) // all arguments bound to this Params parameter
+                                    {
+                                        CheckArgumentConversion(arg, elementType,
+                                            pHasNotNull: false, // CONSIDER: can we have [NotNull] on [Params] elements?
+                                            pIndex: i - skippedps + (varargIndex++),
+                                            callsite: x.TargetMethod);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (!p.IsPhpOptionalParameter())
+                            {
+                                expectsmin = i - skippedps + 1;
+                            }
+
+                            var arg = x.ArgumentMatchingParameter(p);
+                            if (arg != null)
+                            {
+                                CheckArgumentConversion(arg, p.Type, p.HasNotNull, i - skippedps, x.TargetMethod);
                             }
                         }
                     }
@@ -1009,6 +1026,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     Add(typeRef.PhpSyntax.Span, Devsense.PHP.Errors.FatalErrors.ParentAccessedInParentlessClass);
                 }
             }
+        }
+
+        private void CheckArgumentConversion(BoundArgument arg, TypeSymbol pType, bool pHasNotNull, int pIndex, MethodSymbol callsite)
+        {
+            // TODO: check arg.Value.BoundConversion.Exists in general, instead of the following
+
+            // null-check
+            if (pHasNotNull && arg.Value.ConstantValue.IsNull())
+            {
+                // ERROR
+                // Argument {0} passed to {1}() must be of the type {2}, {3} given
+                _diagnostics.Add(_routine, arg.Value.PhpSyntax,
+                    ErrorCode.ERR_ArgumentTypeMismatch,
+                    (pIndex + 1).ToString(),
+                    callsite.RoutineName,
+                    GetNameForDiagnostic(pType), /*TypeCtx.ToString(arg.Value.TypeRefMask)*/"NULL");
+            }
+            //else if (pHasNotNull && arg.Value.TypeRefMask.IsSingleType && TypeCtx.IsNullOrVoid(arg.Value.TypeRefMask))
+            //{
+                
+            //}
         }
 
         public override T VisitCFGTryCatchEdge(TryCatchEdge x)

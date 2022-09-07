@@ -346,7 +346,9 @@ namespace Pchp.Library.Spl
         /// </summary>
         public virtual string getPrefix()
         {
-            var result = new StringBuilder(_prefix[PREFIX_LEFT]);
+            var result = StringBuilderUtilities.Pool.Get();
+            
+            result.Append(_prefix[PREFIX_LEFT]);
 
             int depth = getDepth();
             bool hasNext;
@@ -360,7 +362,8 @@ namespace Pchp.Library.Spl
             result.Append(_prefix[hasNext ? PREFIX_END_HAS_NEXT : PREFIX_END_LAST]);
 
             result.Append(_prefix[PREFIX_RIGHT]);
-            return result.ToString();
+
+            return StringBuilderUtilities.GetStringAndReturn(result);
         }
 
         /// <summary>

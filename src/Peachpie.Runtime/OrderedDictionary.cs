@@ -71,7 +71,7 @@ namespace Pchp.Core
         readonly string _skey;
 
         /// <summary>
-        /// Gets array key, string or int as object.
+        /// Gets array key, <see cref="string"/> or <see cref="long"/> as object.
         /// </summary>
         public object Object => _skey ?? (object)_ikey;
 
@@ -182,7 +182,7 @@ namespace Pchp.Core
     /// <remarks>
     /// Not thread safe.
     /// </remarks>
-    [DebuggerNonUserCode, DebuggerStepThrough]
+    [DebuggerNonUserCode]
     [DebuggerDisplay("dictionary (count = {Count})")]
     public sealed class OrderedDictionary/*<TValue>*/ : IEnumerable<KeyValuePair<IntStringKey, TValue>>, IEnumerable<TValue>
     {
@@ -898,6 +898,29 @@ namespace Pchp.Core
 
                 return false;
             }
+        }
+
+        public bool TryRemoveFirst(out KeyValuePair<IntStringKey, TValue> value)
+        {
+            var enumerator = GetEnumerator();
+            if (enumerator.MoveNext())
+            {
+                value = enumerator.Current;
+                enumerator.DeleteCurrent();
+
+                // array_shift updates the next free index if necessary
+                if (value.Key.Integer == _maxIntKey && value.Key.IsInteger)
+                {
+                    _maxIntKey = _get_max_int_key();
+                }
+
+                return true;
+            }
+
+            //
+
+            value = default;
+            return false;
         }
 
         /// <summary>
@@ -1926,22 +1949,6 @@ namespace Pchp.Core
     /// </summary>
     public static class OrderedDictionaryExtensions
     {
-        public static bool TryRemoveFirst(this OrderedDictionary/*<TValue>*/ array, out KeyValuePair<IntStringKey, TValue> value)
-        {
-            var enumerator = array.GetEnumerator();
-            if (enumerator.MoveNext())
-            {
-                value = enumerator.Current;
-                enumerator.DeleteCurrent();
-                return true;
-            }
-
-            //
-
-            value = default;
-            return false;
-        }
-
         /// <summary>
         /// Copies values to a new array.
         /// </summary>

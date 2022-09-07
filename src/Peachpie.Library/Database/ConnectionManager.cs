@@ -68,7 +68,7 @@ namespace Pchp.Library.Database
             Debug.Assert(connection != null);
             if ((success = connection.Connect()) == true)
             {
-                _connections.Add(connection);
+                AddConnection(connection);
                 _ctx.RegisterDisposable(connection);
             }
 
@@ -88,6 +88,17 @@ namespace Pchp.Library.Database
 
             //
             return null;
+        }
+
+        /// <summary>
+        /// Registers specified connection into the list of active connections.
+        /// </summary>
+        protected void AddConnection(TConnection connection)
+        {
+            if (connection != null)
+            {
+                _connections.Add(connection);
+            }
         }
 
         /// <summary>

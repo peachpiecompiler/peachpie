@@ -461,7 +461,7 @@ namespace Pchp.Core
         {
             Debug.Assert(name != null);
 
-            if (name.Length != 0 && name[0] == '\\')
+            if (name.Length != 0 && name[0] == PhpClassName.NamespaceSeparator)
             {
                 name = name.Substring(1);
             }
@@ -579,7 +579,9 @@ namespace Pchp.Core
         {
             // TODO: HandleIncludeWithScheme("file", cd, path); // let the StreamWrapper handle it
 
-            if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation yet)
+            // include non-compiled file (we do not allow dynamic compilation yet)
+            // do not do this for .php files
+            if (path.EndsWith(".php", StringComparison.OrdinalIgnoreCase) == false && TryIncludeFileContent(path))
             {
                 return PhpValue.Null;
             }

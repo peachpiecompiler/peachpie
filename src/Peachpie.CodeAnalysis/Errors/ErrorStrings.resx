@@ -436,4 +436,7 @@
   <data name="ERR_ParameterTypeNotAllowed" xml:space="preserve">
     <value>Parameter ${0} cannot have type {1}</value>
   </data>
+  <data name="WRN_AttributeBindError" xml:space="preserve">
+    <value>Couldn't bind attribute '{0}'. Either its arguments don't match any constructor or the type don't extend 'Attribute' class.</value>
+  </data>
 </root>
