@@ -3639,8 +3639,16 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 // Template: *recursion*
                 // h == thandle: filter versions depending on thandle
-                var filtered_versions = versions.Where(v => v.GetDependentSourceTypeSymbols().Contains(h));
-                EmitDeclareTypeByDependencies(filtered_versions.AsImmutable(), dependency_handle, index + 1, dependencies, lblDone, lblFail);
+                var filtered_versions = versions.Where(v => v.GetDependentSourceTypeSymbols().Any(d => d.OriginalDefinition == h.OriginalDefinition)).AsImmutable();
+                if (filtered_versions.IsEmpty)
+                {
+                    // no version depends on {h}
+                    // https://github.com/peachpiecompiler/peachpie/issues/1063
+                    Debug.Fail($"unexpected, no version depends on '{h}'");
+                    continue;
+                }
+
+                EmitDeclareTypeByDependencies(filtered_versions, dependency_handle, index + 1, dependencies, lblDone, lblFail);
             }
             _il.MarkLabel(lblElse);
             _il.EmitBranch(ILOpCode.Br, lblFail);
