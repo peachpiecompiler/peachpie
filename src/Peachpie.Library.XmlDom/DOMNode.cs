@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Xml;
 using Pchp.Core;
@@ -631,11 +633,19 @@ namespace Peachpie.Library.XmlDom
             PhpArray xpath = null,
             PhpArray ns_prefixes = null)
         {
-            var transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
-            transform.LoadInput(XmlNode.GetXmlDocument());
-            var stream = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
+            XmlNodeReader reader = new XmlNodeReader(XmlNode);
+            Stream inputStream = new MemoryStream();
+            XmlWriter writer = new XmlTextWriter(inputStream, Encoding.UTF8);
 
-            return new PhpString(stream.ToArray());
+            writer.WriteNode(reader, false);
+            writer.Flush();
+
+            inputStream.Position = 0;
+            XmlDsigC14NTransform transform = new XmlDsigC14NTransform();
+            transform.LoadInput(inputStream);
+
+            System.IO.MemoryStream outputStream = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
+            return new PhpString(outputStream.ToArray());
         }
 
         /// <summary>
