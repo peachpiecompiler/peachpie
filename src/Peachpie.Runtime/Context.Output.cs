@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -152,13 +153,17 @@ namespace Pchp.Core
         {
             if (value != null)
             {
-                Output.Write(value);
+                Echo(value.AsSpan());
             }
         }
 
         public void Echo(PhpString value) => value.Output(this);
 
-        public virtual void Echo(byte[] value) => OutputStream.Write(value, 0, value.Length); // TODO: NETSTANDARD2.1 // ReadOnlySpan<byte>
+        public void Echo(byte[] value) => Echo(value.AsSpan());
+
+        public void Echo(ReadOnlySpan<byte> value) => OutputStream.Write(value);
+
+        public void Echo(ReadOnlySpan<char> value) => Output.Write(value);
 
         public void Echo(PhpValue value) => value.Output(this);
 

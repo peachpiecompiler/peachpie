@@ -753,7 +753,7 @@ namespace Pchp.Library
             }
 
             var sb = StringBuilderUtilities.Pool.Get();
-            byte[] bytes = null; // bytes buffer lazily allocated
+            Span<byte> bytes = stackalloc byte[Encoding.UTF8.GetMaxByteCount(1)];
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -781,9 +781,7 @@ namespace Pchp.Library
                 else
                 {
                     // UTF-8
-                    // TODO: NETSTANDARD2_1
-                    bytes ??= new byte[Encoding.UTF8.GetMaxByteCount(1)];
-                    var nbytes = Encoding.UTF8.GetBytes(value, i, 1, bytes, 0);
+                    var nbytes = Encoding.UTF8.GetBytes(value.AsSpan(i, 1), bytes);
                     for (int b = 0; b < nbytes; b++)
                     {
                         // %{X2}

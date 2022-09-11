@@ -27,32 +27,27 @@ namespace Pchp.Core.Utilities
             if (bytes.Length == 0) return string.Empty;
             if (separator == null) separator = string.Empty;
 
-            const string hex_digs = "0123456789abcdef";
-
-            // TODO: NETSTANDARD2.1 // string.Create( ... )
-
-            // prepares the result:
             var length = bytes.Length * 2 + (bytes.Length - 1) * separator.Length;
-            var buffer = new char[length];
-            var bufferpos = 0;
-            
-            // appends characters to the result for each byte:
-            for (int i = 0; i < bytes.Length; i++)
+            return string.Create(length, (bytes, separator), (buffer, state) =>
             {
-                var c = bytes[i];
+                const string hex_digs = "0123456789abcdef";
+                var bufferpos = 0;
 
-                if (i != 0)
+                // appends characters to the result for each byte:
+                for (int i = 0; i < bytes.Length; i++)
                 {
-                    separator.CopyTo(0, buffer, bufferpos, separator.Length);
-                    bufferpos += separator.Length;
+                    var c = bytes[i];
+
+                    if (i != 0)
+                    {
+                        separator.AsSpan().CopyTo(buffer.Slice(bufferpos, separator.Length));
+                        bufferpos += separator.Length;
+                    }
+
+                    buffer[bufferpos++] = hex_digs[(c & 0xf0) >> 4];
+                    buffer[bufferpos++] = hex_digs[(c & 0x0f)];
                 }
-
-                buffer[bufferpos++] = hex_digs[(c & 0xf0) >> 4];
-                buffer[bufferpos++] = hex_digs[(c & 0x0f)];
-            }
-
-            //
-            return new string(buffer);
+            });
         }
 
         /// <summary>
