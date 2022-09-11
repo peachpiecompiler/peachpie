@@ -1241,7 +1241,7 @@ namespace Pchp.Library
                         return;
                     }
 
-                    newData.CopyTo(buffer.AsSpan(bufferUsage, bytesToFitBuffer));
+                    newData.Slice(0, bytesToFitBuffer).CopyTo(buffer.AsSpan(bufferUsage, bytesToFitBuffer));
                     callback(buffer, 0); // use the data from buffer
 
                     bufferUsage = 0;            // buffer is empty now
@@ -1263,7 +1263,7 @@ namespace Pchp.Library
                     Debug.Assert(remainingBytes < blockSize);
                     Debug.Assert(buffer.Length == blockSize);
 
-                    newData.Slice(index).CopyTo(buffer.AsSpan(0, remainingBytes));
+                    newData.Slice(index, remainingBytes).CopyTo(buffer.AsSpan(0, remainingBytes));
                     bufferUsage = remainingBytes;
                 }
             }
@@ -2457,7 +2457,7 @@ namespace Pchp.Library
 
                         if ((dstOffsetBytes > 0) && ((dstOffsetBytes + byteCount) >= 0x40))
                         {
-                            partIn.Slice(srcOffsetBytes).CopyTo(_buffer.AsSpan(dstOffsetBytes, 0x40 - dstOffsetBytes));
+                            partIn.Slice(srcOffsetBytes, 0x40 - dstOffsetBytes).CopyTo(_buffer.AsSpan(dstOffsetBytes));
                             srcOffsetBytes += 0x40 - dstOffsetBytes;
                             byteCount -= 0x40 - dstOffsetBytes;
                             SHATransform(_tmp, _state, _buffer);
@@ -2465,14 +2465,14 @@ namespace Pchp.Library
                         }
                         while (byteCount >= 0x40)
                         {
-                            partIn.Slice(srcOffsetBytes).CopyTo(_buffer.AsSpan(0, 0x40));
+                            partIn.Slice(srcOffsetBytes, 0x40).CopyTo(_buffer.AsSpan(0));
                             srcOffsetBytes += 0x40;
                             byteCount -= 0x40;
                             SHATransform(_tmp, _state, _buffer);
                         }
                         if (byteCount > 0)
                         {
-                            partIn.Slice(srcOffsetBytes).CopyTo(_buffer.AsSpan(dstOffsetBytes, byteCount));
+                            partIn.Slice(srcOffsetBytes, byteCount).CopyTo(_buffer.AsSpan(dstOffsetBytes));
                         }
                     }
 
@@ -2638,7 +2638,7 @@ namespace Pchp.Library
 
                         if ((dstOffsetBytes > 0) && ((dstOffsetBytes + byteCount) >= 0x40))
                         {
-                            partIn.Slice(srcOffsetBytes).CopyTo(_buffer.AsSpan(dstOffsetBytes, 0x40 - dstOffsetBytes));
+                            partIn.Slice(srcOffsetBytes, 0x40 - dstOffsetBytes).CopyTo(_buffer.AsSpan(dstOffsetBytes));
                             srcOffsetBytes += 0x40 - dstOffsetBytes;
                             byteCount -= 0x40 - dstOffsetBytes;
                             SHATransform(_tmp, _state, _buffer);
@@ -2646,14 +2646,14 @@ namespace Pchp.Library
                         }
                         while (byteCount >= 0x40)
                         {
-                            partIn.Slice(srcOffsetBytes).CopyTo(_buffer.AsSpan(0, 0x40));
+                            partIn.Slice(srcOffsetBytes, 0x40).CopyTo(_buffer.AsSpan(0));
                             srcOffsetBytes += 0x40;
                             byteCount -= 0x40;
                             SHATransform(_tmp, _state, _buffer);
                         }
                         if (byteCount > 0)
                         {
-                            partIn.Slice(srcOffsetBytes).CopyTo(_buffer.AsSpan(dstOffsetBytes, byteCount));
+                            partIn.Slice(srcOffsetBytes, byteCount).CopyTo(_buffer.AsSpan(dstOffsetBytes));
                         }
                     }
 
@@ -2814,7 +2814,7 @@ namespace Pchp.Library
 
                         if ((dstOffsetBytes > 0) && ((dstOffsetBytes + byteCount) >= 0x80))
                         {
-                            partIn.Slice(srcOffsetBytes).CopyTo(_buffer.AsSpan(dstOffsetBytes, 0x80 - dstOffsetBytes));
+                            partIn.Slice(srcOffsetBytes, 0x80 - dstOffsetBytes).CopyTo(_buffer.AsSpan(dstOffsetBytes));
                             srcOffsetBytes += 0x80 - dstOffsetBytes;
                             byteCount -= 0x80 - dstOffsetBytes;
                             SHATransform(_tmp, _state, _buffer);
@@ -2822,14 +2822,14 @@ namespace Pchp.Library
                         }
                         while (byteCount >= 0x80)
                         {
-                            partIn.Slice(srcOffsetBytes).CopyTo(_buffer.AsSpan(0, 0x80));
+                            partIn.Slice(srcOffsetBytes, 0x80).CopyTo(_buffer.AsSpan(0));
                             srcOffsetBytes += 0x80;
                             byteCount -= 0x80;
                             SHATransform(_tmp, _state, _buffer);
                         }
                         if (byteCount > 0)
                         {
-                            partIn.Slice(srcOffsetBytes).CopyTo(_buffer.AsSpan(dstOffsetBytes, byteCount));
+                            partIn.Slice(srcOffsetBytes, byteCount).CopyTo(_buffer.AsSpan(dstOffsetBytes));
                         }
                     }
 
