@@ -64,7 +64,7 @@ namespace Pchp.Library.DateTime
             /// <summary>
             /// Abbreviation. If more than one, separated with comma.
             /// </summary>
-            public readonly string Abbreviation;
+            public readonly string? Abbreviation;
 
             /// <summary>
             /// Not listed item used only as an alias for another time zone.
@@ -100,7 +100,7 @@ namespace Pchp.Library.DateTime
                 return false;
             }
 
-            internal TimeZoneInfoItem(string/*!*/phpName, TimeZoneInfo/*!*/info, string abbreviation, bool isAlias)
+            internal TimeZoneInfoItem(string/*!*/phpName, TimeZoneInfo/*!*/info, string? abbreviation, bool isAlias)
             {
                 // TODO: alter the ID with php-like name
                 //if (!phpName.Equals(info.Id, StringComparison.OrdinalIgnoreCase))
@@ -168,9 +168,11 @@ namespace Pchp.Library.DateTime
         {
             var abbrs = new Dictionary<string, string>(512); // timezone_id => abbrs
 
-            using (var abbrsstream = new System.IO.StreamReader(typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Pchp.Library.Resources.abbreviations.txt")))
+            using (var abbrsstream = new System.IO.StreamReader(
+                typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Pchp.Library.Resources.abbreviations.txt") ?? throw new InvalidOperationException("unexpected: abbreviations.txt not embedded")
+            ))
             {
-                string line;
+                string? line;
                 while ((line = abbrsstream.ReadLine()) != null)
                 {
                     if (string.IsNullOrEmpty(line) || line[0] == '#') continue;
@@ -209,7 +211,7 @@ namespace Pchp.Library.DateTime
                             {
                                 // <mapZone other="Dateline Standard Time" type="Etc/GMT+12"/>
 
-                                var winId = xml.GetAttribute("other");
+                                var winId = xml.GetAttribute("other") ?? string.Empty;
                                 var phpIds = xml.GetAttribute("type");
 
                                 if (string.IsNullOrEmpty(phpIds))
