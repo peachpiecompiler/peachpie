@@ -16,13 +16,9 @@ namespace Peachpie.AspNetCore.Web
     /// </summary>
     sealed class SynchronizedTextWriter : TextWriter
     {
-
         HttpResponse HttpResponse { get; }
 
         public override Encoding Encoding { get; }
-
-        /// <summary>Temporary buffer for encoded single-character.</summary>
-        byte[] _encodedCharBuffer;
 
         /// <summary>
         /// Invariant number format provider.
@@ -57,7 +53,7 @@ namespace Peachpie.AspNetCore.Web
 
         public override void Write(string value)
         {
-            // TODO
+            // TODO: NET50
 
             HttpResponse.WriteAsync(value, Encoding).GetAwaiter().GetResult();
         }
@@ -69,9 +65,9 @@ namespace Peachpie.AspNetCore.Web
             Debug.Assert(count >= 0 && count <= chars.Length - index);
 
             //
-            // TODO: PERF - use HttpResponse.BodyWriter directly once we move to CORE 3.0
+            // TODO: NET50 PERF - use HttpResponse.BodyWriter
             //
-            
+
             //
             var encodedLength = Encoding.GetByteCount(chars, index, count);
             var bytes = ArrayPool<byte>.Shared.Rent(encodedLength);
@@ -85,13 +81,9 @@ namespace Peachpie.AspNetCore.Web
 
         public override void Write(char value)
         {
-            _encodedCharBuffer ??= new byte[GetEncodingMaxByteSize(Encoding)];
-
-            // encode the char on stack
             Span<char> chars = stackalloc char[1] { value };
-            var nbytes = Encoding.GetBytes(chars, _encodedCharBuffer);
-
-            Write(_encodedCharBuffer.AsMemory(nbytes)); // NOTE: _tmp is copied by the underlying pipe
+            var buffer = HttpResponse.BodyWriter.GetSpan(GetEncodingMaxByteSize(Encoding));
+            HttpResponse.BodyWriter.Advance(Encoding.GetBytes(chars, buffer));
         }
 
         public override void Flush() => FlushAsync().GetAwaiter().GetResult();
