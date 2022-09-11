@@ -51,7 +51,7 @@ namespace Peachpie.Library.Scripting
         /// <summary>
         /// Returns the name of the token or <c>NULL</c>.
         /// </summary>
-        public virtual string getTokenName() => Enum.GetName(typeof(Tokens), id);
+        public virtual string? getTokenName() => Enum.GetName(typeof(Tokens), id);
 
         /// <summary>
         /// Tells whether the token is of given kind.

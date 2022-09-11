@@ -56,7 +56,7 @@ namespace Peachpie.Library.XmlDom
             }
         }
 
-        public override XmlElement GetElementById(string elementId)
+        public override XmlElement? GetElementById(string elementId)
         {
             if (_elementIdMap != null && _elementIdMap.TryGetValue(elementId, out var list))
             {

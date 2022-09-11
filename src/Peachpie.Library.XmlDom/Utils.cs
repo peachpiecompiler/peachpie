@@ -10,6 +10,7 @@ using System.Xml.Resolvers;
 using HtmlAgilityPack;
 using Pchp.Core;
 using Pchp.Core.Utilities;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Peachpie.Library.XmlDom
 {
@@ -508,7 +509,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Parses the DOCTYPE comment if possible.
         /// </summary>
-        public static bool TryParseDocumentType(string text, out string? name, out string? publicId, out string? systemId, out string? subset)
+        public static bool TryParseDocumentType(string text, [MaybeNullWhen(false)]out string name, out string? publicId, out string? systemId, out string? subset)
         {
             name = publicId = systemId = subset = null;
 
