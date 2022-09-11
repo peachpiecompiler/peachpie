@@ -1218,8 +1218,9 @@ namespace Pchp.Library
             /// </summary>
             /// <param name="newData">New pack of data to be appended to the buffered ones.</param>
             /// <param name="blockSize">Block size, when buffered data fits this, they are returned.</param>
+            /// <param name="callback">Called for each block.</param>
             /// <returns>Packs of block, as a pair of byte array and index of first element.</returns>
-            internal IEnumerable<(byte[] Block, int ElementIndex)> ProcessBlocked(ReadOnlySpan<byte>/*!*/newData, int blockSize)
+            internal void ProcessBlocked(ReadOnlySpan<byte>/*!*/newData, int blockSize, Action<byte[], int> callback)
             {
                 Debug.Assert(blockSize > 0);
 
@@ -1237,11 +1238,11 @@ namespace Pchp.Library
                     {
                         newData.CopyTo(buffer.AsSpan(bufferUsage, newData.Length));
                         bufferUsage += newData.Length;
-                        yield break;
+                        return;
                     }
 
                     newData.CopyTo(buffer.AsSpan(bufferUsage, bytesToFitBuffer));
-                    yield return (buffer, 0); // use the data from buffer
+                    callback(buffer, 0); // use the data from buffer
 
                     bufferUsage = 0;            // buffer is empty now
                     index += bytesToFitBuffer;  // part of newData was used
@@ -1250,7 +1251,7 @@ namespace Pchp.Library
                 // returns blocks from the newData
                 while (index + blockSize <= newData.Length)
                 {
-                    yield return (newData.ToArray(), index);
+                    callback(newData.ToArray(), index);
                     index += blockSize;
                 }
 
@@ -1762,8 +1763,10 @@ namespace Pchp.Library
 
                 public override bool Update(ReadOnlySpan<byte> data)
                 {
-                    foreach (var block in ProcessBlocked(data, 16))
-                        TransformBlock(block.Block, block.ElementIndex);
+                    ProcessBlocked(data, 16, (block, index) =>
+                    {
+                        TransformBlock(block, index);
+                    });
 
                     return true;
                 }
@@ -1945,8 +1948,10 @@ namespace Pchp.Library
                         ++count[1];
                     count[1] += ((uint)data.Length >> 29);
 
-                    foreach (var block in ProcessBlocked(data, 64))
-                        MD4Transform(block.Block, block.ElementIndex);
+                    ProcessBlocked(data, 64, (block, index) =>
+                    {
+                        MD4Transform(block, index);
+                    });
 
                     return true;
                 }
@@ -2229,8 +2234,10 @@ namespace Pchp.Library
                     count[1] += ((uint)data.Length >> 29);
 
                     // Transform blocks of 64 bytes
-                    foreach (var block in ProcessBlocked(data, 64))
-                        MD5Transform(block.Block, block.ElementIndex);
+                    ProcessBlocked(data, 64, (block, index) =>
+                    {
+                        MD5Transform(block, index);
+                    });
 
                     return true;
                 }
