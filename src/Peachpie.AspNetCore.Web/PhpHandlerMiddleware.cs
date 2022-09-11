@@ -68,7 +68,7 @@ namespace Peachpie.AspNetCore.Web
         readonly PhpOptions _options;
         readonly PathString _prefix;
 
-        public PhpHandlerMiddleware(RequestDelegate next, IHostingEnvironment hostingEnv, IServiceProvider services, PhpHandlerConfiguration configuration)
+        public PhpHandlerMiddleware(RequestDelegate next, IWebHostEnvironment hostingEnv, IServiceProvider services, PhpHandlerConfiguration configuration)
         {
             if (hostingEnv == null)
             {

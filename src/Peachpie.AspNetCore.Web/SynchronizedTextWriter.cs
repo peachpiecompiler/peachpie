@@ -24,10 +24,6 @@ namespace Peachpie.AspNetCore.Web
         /// <summary>Temporary buffer for encoded single-character.</summary>
         byte[] _encodedCharBuffer;
 
-#if NETSTANDARD2_0 || NET5_0_OR_GREATER
-        readonly char[] _charBuffer = new char[1];
-#endif
-
         /// <summary>
         /// Invariant number format provider.
         /// </summary>
@@ -54,16 +50,9 @@ namespace Peachpie.AspNetCore.Web
         /// <summary>
         /// Writes a sequence of bytes into the underlying stream.
         /// </summary>
-        public void Write(byte[] buffer, int count)
+        public void Write(ReadOnlyMemory<byte> buffer)
         {
-            Debug.Assert(buffer != null);
-            Debug.Assert(count <= buffer.Length);
-
-#if NETSTANDARD2_0 || NET5_0_OR_GREATER
-            HttpResponse.Body.WriteAsync(buffer, 0, count).GetAwaiter().GetResult();
-#else
-            HttpResponse.Body.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, count)).GetAwaiter().GetResult();
-#endif
+            HttpResponse.Body.WriteAsync(buffer).GetAwaiter().GetResult();
         }
 
         public override void Write(string value)
@@ -82,13 +71,13 @@ namespace Peachpie.AspNetCore.Web
             //
             // TODO: PERF - use HttpResponse.BodyWriter directly once we move to CORE 3.0
             //
-
+            
             //
             var encodedLength = Encoding.GetByteCount(chars, index, count);
             var bytes = ArrayPool<byte>.Shared.Rent(encodedLength);
             var nbytes = Encoding.GetBytes(chars, index, count, bytes, 0); // == encodedLength
 
-            Write(bytes, nbytes);
+            Write(bytes.AsMemory(0, nbytes));
 
             ArrayPool<byte>.Shared.Return(bytes);
         }
@@ -98,17 +87,11 @@ namespace Peachpie.AspNetCore.Web
         {
             _encodedCharBuffer ??= new byte[GetEncodingMaxByteSize(Encoding)];
 
-#if NETSTANDARD2_0 || NET5_0_OR_GREATER
-            // encode the char
-            _charBuffer[0] = value;
-            var nbytes = Encoding.GetBytes(_charBuffer, 0, 1, _encodedCharBuffer, 0);
-#else
             // encode the char on stack
             Span<char> chars = stackalloc char[1] { value };
             var nbytes = Encoding.GetBytes(chars, _encodedCharBuffer);
-#endif
 
-            Write(_encodedCharBuffer, nbytes); // NOTE: _tmp is copied by the underlying pipe
+            Write(_encodedCharBuffer.AsMemory(nbytes)); // NOTE: _tmp is copied by the underlying pipe
         }
 
         public override void Flush() => FlushAsync().GetAwaiter().GetResult();
