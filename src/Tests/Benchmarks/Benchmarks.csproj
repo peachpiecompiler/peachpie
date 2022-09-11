@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net50</TargetFrameworks>
+    <TargetFrameworks>net50</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;</NoWarn>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>

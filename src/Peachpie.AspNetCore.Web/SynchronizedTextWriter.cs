@@ -24,7 +24,7 @@ namespace Peachpie.AspNetCore.Web
         /// <summary>Temporary buffer for encoded single-character.</summary>
         byte[] _encodedCharBuffer;
 
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NET5_0_OR_GREATER
         readonly char[] _charBuffer = new char[1];
 #endif
 
@@ -59,7 +59,7 @@ namespace Peachpie.AspNetCore.Web
             Debug.Assert(buffer != null);
             Debug.Assert(count <= buffer.Length);
 
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NET5_0_OR_GREATER
             HttpResponse.Body.WriteAsync(buffer, 0, count).GetAwaiter().GetResult();
 #else
             HttpResponse.Body.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, count)).GetAwaiter().GetResult();
@@ -98,7 +98,7 @@ namespace Peachpie.AspNetCore.Web
         {
             _encodedCharBuffer ??= new byte[GetEncodingMaxByteSize(Encoding)];
 
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NET5_0_OR_GREATER
             // encode the char
             _charBuffer[0] = value;
             var nbytes = Encoding.GetBytes(_charBuffer, 0, 1, _encodedCharBuffer, 0);

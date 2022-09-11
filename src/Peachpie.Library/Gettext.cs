@@ -37,7 +37,7 @@ namespace Pchp.Library
 
             public bool Equals(CacheKey other) => LocaleDir == other.LocaleDir && Culture.Equals(other.Culture) && Domain == other.Domain;
 
-            public override bool Equals(object obj) => obj is CacheKey other && Equals(other);
+            public override bool Equals(object? obj) => obj is CacheKey other && Equals(other);
 
             public override int GetHashCode()
             {

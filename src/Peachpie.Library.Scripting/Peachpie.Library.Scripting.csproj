@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;1574</NoWarn>
     <AssemblyName>Peachpie.Library.Scripting</AssemblyName>
     <PackageId>Peachpie.Library.Scripting</PackageId>
@@ -11,13 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="3.7.1" />
+    <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="$(PeachpieMicrosoftCodeAnalysisVersion)" />
     <!--
       System.Runtime.Loader.AssemblyLoadContext cannot be loaded from System.Runtime.Loader 4.0.0 which is hard referenced on full .NET Framework,
       you may remove this workaround once it will work using netstandard2.0 well.
     -->
-    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" Condition=" '$(TargetFramework)'=='netstandard2.0' " />
-    <PackageReference Include="Mono.Posix-4.5" Version="4.5.0" Condition=" '$(TargetFramework)'=='net461' " />
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

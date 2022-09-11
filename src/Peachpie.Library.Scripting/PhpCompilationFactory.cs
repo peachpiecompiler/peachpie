@@ -10,7 +10,7 @@ using Pchp.CodeAnalysis;
 
 namespace Peachpie.Library.Scripting
 {
-#if NETSTANDARD
+#if NETSTANDARD || NET5_0_OR_GREATER
 
     sealed class PhpCompilationFactory : PhpCompilationFactoryBase
     {

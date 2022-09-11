@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net50</TargetFramework>
     <AssemblyName>peach</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>peach</PackageId>
-    <RuntimeIdentifiers>win;win7;win7-anycpu;ubuntu.14.04;ubuntu.14.04-anycpu;osx.10.10;osx.10.10-anycpu</RuntimeIdentifiers>
+    <!--RuntimeIdentifiers>win;win7;win7-anycpu;ubuntu.14.04;ubuntu.14.04-anycpu;osx.10.10;osx.10.10-anycpu</RuntimeIdentifiers-->
   </PropertyGroup>
 
   <ItemGroup>

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Peachpie platform dependencies.</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>net50</TargetFrameworks>
     <AssemblyName>Peachpie.App</AssemblyName>
     <PackageId>Peachpie.App</PackageId>
     <IncludeBuildOutput>false</IncludeBuildOutput>
