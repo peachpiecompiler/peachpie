@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -95,24 +96,26 @@ namespace Pchp.Core.Utilities
                 return string.Empty;
             }
 
-            // TODO: netstandard2.1
-            //return string.Create(str.Length, str, (chars, state) =>
-            //{
-            //    var position = 0;
-            //    var indexes = StringInfo.ParseCombiningCharacters(state); // skips string creation
-            //    var stateSpan = state.AsSpan();
-            //    for (int len = indexes.Length, i = len - 1; i >= 0; i--)
-            //    {
-            //        var index = indexes[i];
-            //        var spanLength = i == len - 1 ? state.Length - index : indexes[i + 1] - index;
-            //        stateSpan.Slice(index, spanLength).CopyTo(chars.Slice(position));
-            //        position += spanLength;
-            //    }
-            //});
+            return string.Create(str.Length, str, (chars, state) =>
+            {
+                Debug.Assert(chars.Length == state.Length);
 
-            var chars = str.ToCharArray();
-            Array.Reverse(chars);
-            return new string(chars);
+                //var position = 0;
+                //var indexes = StringInfo.ParseCombiningCharacters(state); // skips string creation
+                //var stateSpan = state.AsSpan();
+                //for (int len = indexes.Length, i = len - 1; i >= 0; i--)
+                //{
+                //    var index = indexes[i];
+                //    var spanLength = i == len - 1 ? state.Length - index : indexes[i + 1] - index;
+                //    stateSpan.Slice(index, spanLength).CopyTo(chars.Slice(position));
+                //    position += spanLength;
+                //}
+
+                for (int i = 0; i < state.Length; i++)
+                {
+                    chars[state.Length - i - 1] = state[i];
+                }
+            });
         }
     }
 }
