@@ -232,8 +232,8 @@ namespace Pchp.Library
                 return (currentReplacement != null && index >= 0 && index < currentReplacement.Length);
             }
 
-            private static Dictionary<char, string>/*!!*/transliterations;
-            internal static int transliterationsMaxCharCount;
+            private static readonly Dictionary<char, string>/*!!*/transliterations;
+            internal static readonly int transliterationsMaxCharCount;
 
             static TranslitEncoderFallbackBuffer()
             {
@@ -242,7 +242,7 @@ namespace Pchp.Library
                 // initialize the transliterations table:
 
                 // load "translit.def" file content:
-                using (var translit = new System.IO.StreamReader(typeof(PhpIconv).Assembly.GetManifestResourceStream("Pchp.Library.Resources.translit.def")))
+                using (var translit = new System.IO.StreamReader(Resources.LibResources.GetManifestResourceStreamOrThrow("translit.def")))
                 {
                     string line;
                     while ((line = translit.ReadLine()) != null)
