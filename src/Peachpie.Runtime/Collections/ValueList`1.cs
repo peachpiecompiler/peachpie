@@ -181,6 +181,7 @@ namespace Pchp.Core.Collections
             }
 
             //
+            _count++;
             _array[index] = item;
         }
 
