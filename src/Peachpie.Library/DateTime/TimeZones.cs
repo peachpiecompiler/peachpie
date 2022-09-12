@@ -18,14 +18,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-
 using System.Diagnostics;
 using Pchp.Core;
 using System.Xml;
 using Pchp.Core.Utilities;
-using System.Text.RegularExpressions;
 
 namespace Pchp.Library.DateTime
 {
@@ -164,13 +160,19 @@ namespace Pchp.Library.DateTime
             return !isphpname;
         }
 
+        static System.IO.Stream GetManifestResourceStreamOrThrow(string name)
+        {
+            var resxtype = typeof(Pchp.Library.Resources.Resources);
+            var stream = resxtype.Assembly.GetManifestResourceStream(resxtype, name) ?? throw new System.IO.FileNotFoundException(name);
+
+            return stream;
+        }
+
         static Dictionary<string, string> LoadAbbreviations()
         {
             var abbrs = new Dictionary<string, string>(512); // timezone_id => abbrs
 
-            using (var abbrsstream = new System.IO.StreamReader(
-                typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Pchp.Library.Resources.abbreviations.txt") ?? throw new InvalidOperationException("unexpected: abbreviations.txt not embedded")
-            ))
+            using (var abbrsstream = new System.IO.StreamReader(GetManifestResourceStreamOrThrow("abbreviations.txt")))
             {
                 string? line;
                 while ((line = abbrsstream.ReadLine()) != null)
@@ -200,7 +202,7 @@ namespace Pchp.Library.DateTime
         static IEnumerable<string[]> LoadKnownTimeZones()
         {
             // collect php time zone names and match them with Windows TZ IDs:
-            using (var xml = XmlReader.Create(new System.IO.StreamReader(typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Pchp.Library.Resources.WindowsTZ.xml"))))
+            using (var xml = XmlReader.Create(new System.IO.StreamReader(GetManifestResourceStreamOrThrow("WindowsTZ.xml"))))
             {
                 while (xml.Read())
                 {
