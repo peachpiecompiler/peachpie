@@ -160,19 +160,11 @@ namespace Pchp.Library.DateTime
             return !isphpname;
         }
 
-        static System.IO.Stream GetManifestResourceStreamOrThrow(string name)
-        {
-            var resxtype = typeof(Pchp.Library.Resources.Resources);
-            var stream = resxtype.Assembly.GetManifestResourceStream(resxtype, name) ?? throw new System.IO.FileNotFoundException(name);
-
-            return stream;
-        }
-
         static Dictionary<string, string> LoadAbbreviations()
         {
             var abbrs = new Dictionary<string, string>(512); // timezone_id => abbrs
 
-            using (var abbrsstream = new System.IO.StreamReader(GetManifestResourceStreamOrThrow("abbreviations.txt")))
+            using (var abbrsstream = new System.IO.StreamReader(Resources.LibResources.GetManifestResourceStreamOrThrow("abbreviations.txt")))
             {
                 string? line;
                 while ((line = abbrsstream.ReadLine()) != null)
@@ -202,7 +194,7 @@ namespace Pchp.Library.DateTime
         static IEnumerable<string[]> LoadKnownTimeZones()
         {
             // collect php time zone names and match them with Windows TZ IDs:
-            using (var xml = XmlReader.Create(new System.IO.StreamReader(GetManifestResourceStreamOrThrow("WindowsTZ.xml"))))
+            using (var xml = XmlReader.Create(new System.IO.StreamReader(Resources.LibResources.GetManifestResourceStreamOrThrow("WindowsTZ.xml"))))
             {
                 while (xml.Read())
                 {
