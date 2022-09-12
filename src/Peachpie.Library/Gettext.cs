@@ -1,6 +1,7 @@
 ﻿#nullable enable
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -82,48 +83,19 @@ namespace Pchp.Library
         /// </summary>
         private sealed class TranslationContext
         {
-            public string Domain = DefaultDomain;
+            public string Domain { get; set; } = DefaultDomain;
 
-            private Dictionary<string, string> DomainDirectoryMap = new Dictionary<string, string>();
+            readonly Dictionary<string, string> domainDirectoryMap = new Dictionary<string, string>();
 
-            public void BindTextDomain(string domain, string directory) => DomainDirectoryMap[domain] = directory;
+            public void BindTextDomain(string domain, string directory) => domainDirectoryMap[domain] = directory;
 
-            public string? GetLocaleDir(string domain) => DomainDirectoryMap.TryGetValue(domain, out string dir) ? dir : null;
+            public string? GetLocaleDir(string domain) => domainDirectoryMap.TryGetValue(domain, out var dir) ? dir : null;
         }
 
-        private static ReaderWriterLockSlim s_cacheLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
-        private static Dictionary<CacheKey, FlaggedCatalog> s_catalogCache = new Dictionary<CacheKey, FlaggedCatalog>();
+        private static readonly ConcurrentDictionary<CacheKey, FlaggedCatalog> s_catalogCache = new ConcurrentDictionary<CacheKey, FlaggedCatalog>();
 
         private static FlaggedCatalog GetOrLoadCatalog(CacheKey key)
-        {
-            s_cacheLock.EnterUpgradeableReadLock();
-            try
-            {
-                if (s_catalogCache.TryGetValue(key, out var existingCatalog))
-                {
-                    return existingCatalog;
-                }
-                else
-                {
-                    s_cacheLock.EnterWriteLock();
-                    try
-                    {
-                        var newCatalog = new FlaggedCatalog(key.Domain, key.LocaleDir, key.Culture);
-                        s_catalogCache.Add(key, newCatalog);
-
-                        return newCatalog;
-                    }
-                    finally
-                    {
-                        s_cacheLock.ExitWriteLock();
-                    }
-                }
-            }
-            finally
-            {
-                s_cacheLock.ExitUpgradeableReadLock();
-            }
-        }
+            => s_catalogCache.GetOrAdd(key, _key => new FlaggedCatalog(_key.Domain, _key.LocaleDir, _key.Culture));
 
         private static FlaggedCatalog? TryGetCatalog(Context ctx, string? domainOverride = null)
         {

@@ -389,7 +389,7 @@ namespace Pchp.Library
         public static string ftp_mkdir(PhpResource ftp_stream, string directory)
         {
             var resource = ValidateFtpResource(ftp_stream);
-            
+
             if (resource != null && FtpCommand(directory, path => resource.Client.CreateDirectory(path)))
             {
                 return directory;
@@ -1019,20 +1019,23 @@ namespace Pchp.Library
         private static PhpArray GetArrayOfInputMLSD(FtpListItem[] list)
         {
             var result = new PhpArray(list.Length);
-            // For optimalization we will asume that every file has some number of properties (depends on system).
-            int numberOfItems = 7;
 
             foreach (var item in list)
             {
+                // For optimalization we will asume that
+                // every file has some number of properties (depends on system).
+                const int numberOfItems = 7;
                 var itemArr = new PhpArray(numberOfItems);
 
                 // name
-                if (!String.IsNullOrEmpty(item.Name))
+                if (!string.IsNullOrEmpty(item.Name))
+                {
                     itemArr.Add("name", item.Name);
+                }
                 // type of file
                 itemArr.Add("type", item.Type.ToString());
                 // modify
-                if (item.Modified != null)
+                if (item.Modified != default(System.DateTime))
                 {
                     itemArr.Add("modify", DateTimeUtils.UtcToUnixTimeStamp(item.Modified.ToUniversalTime()));
                 }
@@ -1042,17 +1045,17 @@ namespace Pchp.Library
                     itemArr.Add("UNIX.mode", ConvertUnixModeFromInput(item.Chmod));
                 }
                 // owner perm
-                if (!String.IsNullOrEmpty(item.RawOwner))
+                if (!string.IsNullOrEmpty(item.RawOwner))
                 {
                     itemArr.Add("UNIX.owner", item.RawOwner);
                 }
                 // group perm
-                if (!String.IsNullOrEmpty(item.RawGroup))
+                if (!string.IsNullOrEmpty(item.RawGroup))
                 {
                     itemArr.Add("UNIX.group", item.RawGroup);
                 }
                 // size
-                if (item.Size != -1)
+                if (item.Size >= 0)
                 {
                     itemArr.Add("size", item.Size);
                 }
