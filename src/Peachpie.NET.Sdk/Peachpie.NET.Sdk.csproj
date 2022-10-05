@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net50</TargetFramework>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
 
     <PackageOnlyBuild>true</PackageOnlyBuild>
@@ -18,7 +17,7 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackToolsDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\net50\publish</PackToolsDir>
+    <PackToolsDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(_TargetFramework)\publish</PackToolsDir>
     <NuspecFile>$(MSBuildThisFileDirectory)$(MSbuildProjectName).nuspec</NuspecFile>
   </PropertyGroup>
 
@@ -88,7 +87,7 @@
   </ItemGroup>
 
   <Target Name="PublishAll">
-    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="publish" Properties="GeneratePackageOnBuild=false;Version=$(Version);TargetFramework=net50;" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="publish" Properties="GeneratePackageOnBuild=false;Version=$(Version);TargetFramework=$(_TargetFramework);" />
   </Target>
 
   <Target Name="SetPackageDependencies" BeforeTargets="GenerateNuspec" DependsOnTargets="PublishAll">
