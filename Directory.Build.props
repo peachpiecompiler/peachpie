@@ -51,7 +51,7 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/peachpiecompiler/peachpie</RepositoryUrl>
     <PackageProjectUrl>https://github.com/peachpiecompiler/peachpie</PackageProjectUrl>
-    <PackageOutputPath>$(MSBuildThisFileDirectory).nugs</PackageOutputPath>
+    <PackageOutputPath Condition=" '$(PackageOutputPath)'=='' ">$(MSBuildThisFileDirectory).nugs</PackageOutputPath>
     <PackageIconUrl>https://github.com/peachpiecompiler/peachpie/raw/master/docs/logos/round-orange-196x196.png</PackageIconUrl>
     <Authors>iolevel,peachpiecompiler</Authors>
     <NoWarn>$(NoWarn),NU5048</NoWarn>

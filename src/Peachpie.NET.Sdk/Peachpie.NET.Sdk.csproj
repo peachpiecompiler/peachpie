@@ -9,7 +9,8 @@
     
     <PackageId>Peachpie.NET.Sdk</PackageId>    
     <PackageTags>php;sdk;peachpie;msbuild</PackageTags>
-    <GeneratePackageOnBuild Condition=" $(GeneratePackageOnBuild)=='' ">True</GeneratePackageOnBuild>    
+    <GeneratePackageOnBuild Condition=" $(GeneratePackageOnBuild)=='' ">True</GeneratePackageOnBuild>
+    <PackageOutputPath Condition=" '$(PackageOutputPath)'=='' ">$(MSBuildThisFileDirectory)../../.nugs</PackageOutputPath>
     <Description>The MSBuild SDK containing build targets and runtime.</Description>
   </PropertyGroup>
 
