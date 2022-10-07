@@ -367,12 +367,32 @@ namespace Peachpie.Library.MySql.MySqli
         public static bool mysqli_thread_safe() => true;
 
         /// <summary>
+        /// MYSQLI_REPORT_*** constants.
+        /// </summary>
+        [PhpHidden]
+        public enum ReportMode
+        {
+            /// <summary><see cref="Constants.MYSQLI_REPORT_OFF"/></summary>
+            Off = Constants.MYSQLI_REPORT_OFF,
+            /// <summary><see cref="Constants.MYSQLI_REPORT_ERROR"/></summary>
+            Error = Constants.MYSQLI_REPORT_ERROR,
+            /// <summary><see cref="Constants.MYSQLI_REPORT_STRICT"/></summary>
+            Strict = Constants.MYSQLI_REPORT_STRICT,
+            /// <summary><see cref="Constants.MYSQLI_REPORT_INDEX"/></summary>
+            Index = Constants.MYSQLI_REPORT_INDEX,
+            /// <summary><see cref="Constants.MYSQLI_REPORT_ALL"/></summary>
+            All = Constants.MYSQLI_REPORT_ALL,
+        }
+
+        /// <summary>
         /// Sets mysqli error reporting mode.
         /// </summary>
-        public static bool mysqli_report(int flags)
+        public static bool mysqli_report(ReportMode flags)
         {
             PhpException.FunctionNotSupported(nameof(mysqli_report));
-            return false;
+
+
+            return true;
         }
     }
 }
