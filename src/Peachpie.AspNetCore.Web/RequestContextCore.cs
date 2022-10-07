@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Peachpie.AspNetCore.Web.Session;
 using System.Xml.Schema;
+using Peachpie.AspNetCore.Web.ResponseOutput;
 
 namespace Peachpie.AspNetCore.Web
 {
@@ -440,7 +441,7 @@ namespace Peachpie.AspNetCore.Web
             //
             this.RootPath = rootPath;
 
-            this.InitOutput(httpcontext.Response.Body, new SynchronizedTextWriter(httpcontext.Response, encoding));
+            this.InitOutput(httpcontext.Response.Body, new DefaultTextWriter(httpcontext.Response, encoding));
             this.InitSuperglobals();
 
             this.SetupHeaders();

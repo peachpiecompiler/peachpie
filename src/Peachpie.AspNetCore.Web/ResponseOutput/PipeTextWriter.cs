@@ -1,19 +1,14 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-
-namespace Peachpie.AspNetCore.Web
+namespace Peachpie.AspNetCore.Web.ResponseOutput
 {
-    /// <summary>
-    /// <see cref="TextWriter"/> implementation passing text to underlying response stream in given encoding.
-    /// </summary>
-    sealed class SynchronizedTextWriter : TextWriter
+    internal class PipeTextWriter : TextWriter
     {
         HttpResponse HttpResponse { get; }
 
@@ -24,7 +19,7 @@ namespace Peachpie.AspNetCore.Web
         /// </summary>
         public override IFormatProvider FormatProvider => Pchp.Core.Context.InvariantNumberFormatInfo;
 
-        public SynchronizedTextWriter(HttpResponse response, Encoding encoding)
+        public PipeTextWriter(HttpResponse response, Encoding encoding)
         {
             HttpResponse = response ?? throw new ArgumentNullException(nameof(response));
             Encoding = encoding ?? throw new ArgumentNullException(nameof(encoding));
@@ -46,7 +41,7 @@ namespace Peachpie.AspNetCore.Web
 
         public override void Write(string value)
         {
-            if (!string.IsNullOrEmpty(value))
+            if (value != null)
             {
                 Write(value.AsSpan());
             }
@@ -59,6 +54,14 @@ namespace Peachpie.AspNetCore.Web
             Debug.Assert(count >= 0 && count <= chars.Length - index);
 
             Write(chars.AsSpan(index, count));
+        }
+
+        public override void Write(char[] buffer)
+        {
+            if (buffer != null)
+            {
+                Write(buffer.AsSpan());
+            }
         }
 
         public void Write(ReadOnlySpan<byte> bytes)
