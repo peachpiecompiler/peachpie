@@ -363,9 +363,7 @@ namespace Peachpie.Library.MySql.MySqli
         {
             var manager = MySqliConnectionManager.GetInstance(ctx);
 
-
-            PhpException.FunctionNotSupported(nameof(mysqli_report));
-
+            manager.ReportMode = flags;
 
             return true;
         }

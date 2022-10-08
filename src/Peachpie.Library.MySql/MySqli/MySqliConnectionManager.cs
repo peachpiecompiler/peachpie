@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MySqlConnector;
 using Pchp.Core;
 
 namespace Peachpie.Library.MySql.MySqli
@@ -20,6 +21,29 @@ namespace Peachpie.Library.MySql.MySqli
         /// The error handling mode.
         /// </summary>
         public ReportMode ReportMode { get; set; } = ReportMode.Default;
+
+        public override void ReportException(Exception exception, string exceptionMessage)
+        {
+            if (exception == null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
+            if ((ReportMode & ReportMode.Error) != 0)
+            {
+                if ((ReportMode & ReportMode.Strict) != 0)
+                {
+                    var errcode = exception is MySqlException me ? me.ErrorCode : MySqlErrorCode.UnknownError;
+
+                    throw new mysqli_sql_exception(exceptionMessage, (int)errcode);
+                }
+                else
+                {
+                    // outputs the error to php error handler
+                    PhpException.Throw(PhpError.Warning, exceptionMessage);
+                }
+            }
+        }
     }
 
     /// <summary>

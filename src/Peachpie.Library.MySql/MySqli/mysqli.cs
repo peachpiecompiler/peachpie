@@ -352,6 +352,7 @@ namespace Peachpie.Library.MySql.MySqli
             if (success)
             {
                 Connection.Server = host;
+                manager.LastConnectionError = null;
 
                 if (!string.IsNullOrEmpty(dbname))
                 {
@@ -360,9 +361,7 @@ namespace Peachpie.Library.MySql.MySqli
             }
             else
             {
-                manager.LastConnectionError
-                    = connect_error
-                    = Connection.GetLastErrorMessage();
+                manager.LastConnectionError = connect_error = Connection.GetLastErrorMessage();
             }
 
             //

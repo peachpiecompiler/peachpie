@@ -184,5 +184,10 @@ namespace Peachpie.Library.MySql
                 return (int)MySqlErrorCode.UnknownError; // unk erro number
             }
         }
+
+        protected override void ReportException(Exception exception, string exceptionMessage)
+        {
+            _manager.ReportException(exception, exceptionMessage);
+        }
     }
 }

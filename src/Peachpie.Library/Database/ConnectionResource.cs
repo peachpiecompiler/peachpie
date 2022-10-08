@@ -35,21 +35,17 @@ namespace Pchp.Library.Database
         /// Handle exception thrown by the last DB operation.
         /// </summary>
         /// <param name="exception">Thrown exception</param>
-        /// <param name="warningFormatString">Optional warning message format string.</param>
-        protected virtual void OnException(Exception exception, string warningFormatString)
+        /// <param name="exceptionMessage">Optional formatted message to be reported.</param>
+        private void OnException(Exception exception, string exceptionMessage)
         {
             LastException = exception;
 
-            //
-            if (string.IsNullOrEmpty(warningFormatString))
-            {
-                PhpException.Throw(PhpError.Warning, GetExceptionMessage(exception));
-            }
-            else
-            {
-                Debug.Assert(warningFormatString.IndexOf("{0}") >= 0);
-                PhpException.Throw(PhpError.Warning, warningFormatString, GetExceptionMessage(exception));
-            }
+            ReportException(exception, exceptionMessage ?? exception.Message);
+        }
+
+        protected virtual void ReportException(Exception exception, string exceptionMessage)
+        {
+            PhpException.Throw(PhpError.Warning, exceptionMessage);
         }
 
         /// <summary>
@@ -117,7 +113,7 @@ namespace Pchp.Library.Database
             }
             catch (Exception e)
             {
-                OnException(e, LibResources.cannot_open_connection);
+                OnException(e, string.Format(LibResources.cannot_open_connection, GetExceptionMessage(e)));
                 return false;
             }
 
@@ -143,7 +139,7 @@ namespace Pchp.Library.Database
             }
             catch (Exception e)
             {
-                OnException(e, LibResources.error_closing_connection);
+                OnException(e, string.Format(LibResources.error_closing_connection, GetExceptionMessage(e)));
             }
         }
 
@@ -300,7 +296,7 @@ namespace Pchp.Library.Database
             }
             catch (Exception e)
             {
-                OnException(e, LibResources.command_execution_failed);
+                OnException(e, string.Format(LibResources.command_execution_failed, GetExceptionMessage(e)));
             }
 
             //
@@ -325,7 +321,7 @@ namespace Pchp.Library.Database
             }
             catch (Exception e)
             {
-                OnException(e, LibResources.command_execution_failed);
+                OnException(e, string.Format(LibResources.command_execution_failed, GetExceptionMessage(e)));
             }
         }
 
@@ -350,7 +346,7 @@ namespace Pchp.Library.Database
             }
             catch (Exception e)
             {
-                OnException(e, LibResources.database_selection_failed);
+                OnException(e, string.Format(LibResources.database_selection_failed, GetExceptionMessage(e)));
             }
 
             return false;
@@ -365,7 +361,9 @@ namespace Pchp.Library.Database
         /// <exception cref="ArgumentNullException"><paramref name="e"/> is a <B>null</B> reference.</exception>
         public virtual string GetExceptionMessage(Exception/*!*/ e)
         {
-            if (e == null) throw new ArgumentNullException(nameof(e));
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
+
             return PhpException.ToErrorMessage(e.Message);
         }
 
