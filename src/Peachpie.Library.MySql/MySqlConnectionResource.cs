@@ -168,5 +168,21 @@ namespace Peachpie.Library.MySql
                 return command != null ? MySqlExtensions.LastInsertedId(command) : -1;
             }
         }
+
+        public override int GetLastErrorNumber()
+        {
+            if (LastException == null)
+            {
+                return (int)MySqlErrorCode.None; // success
+            }
+            else if (LastException is MySqlException me)
+            {
+                return (int)me.ErrorCode;
+            }
+            else
+            {
+                return (int)MySqlErrorCode.UnknownError; // unk erro number
+            }
+        }
     }
 }
