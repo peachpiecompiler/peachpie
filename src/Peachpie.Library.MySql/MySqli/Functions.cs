@@ -13,16 +13,6 @@ namespace Peachpie.Library.MySql.MySqli
     public static class Functions
     {
         /// <summary>
-        /// Internal object used to store per-request (context) data.
-        /// </summary>
-        internal class MySqliContextData
-        {
-            public static MySqliContextData/*!*/GetContextData(Context ctx) => ctx.GetStatic<MySqliContextData>();
-
-            public string LastConnectionError { get; set; }
-        }
-
-        /// <summary>
         /// Initializes MySQLi and returns a resource for use with mysqli_real_connect().
         /// </summary>
         public static mysqli/*!*/mysqli_init() => new mysqli();
@@ -96,7 +86,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// The connection error message. Otherwise <c>null</c>.
         /// </summary>
         public static string mysqli_connect_error(Context ctx, mysqli link = null)
-            => (link != null) ? link.connect_error : MySqliContextData.GetContextData(ctx).LastConnectionError;
+            => (link != null) ? link.connect_error : MySqliConnectionManager.GetInstance(ctx).LastConnectionError;
 
         /// <summary>
         /// Returns the error code from last connect call.
@@ -104,7 +94,7 @@ namespace Peachpie.Library.MySql.MySqli
         public static int mysqli_connect_errno(Context ctx, mysqli link = null)
             => (link != null)
                 ? link.connect_errno
-                : string.IsNullOrEmpty(MySqliContextData.GetContextData(ctx).LastConnectionError) ? 0 : -1;
+                : string.IsNullOrEmpty(MySqliConnectionManager.GetInstance(ctx).LastConnectionError) ? 0 : -1;
 
         /// <summary>
         /// Returns the error code for the most recent function call.
@@ -369,10 +359,13 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Sets mysqli error reporting mode.
         /// </summary>
-        public static bool mysqli_report(int flags)
+        public static bool mysqli_report(Context ctx, ReportMode flags)
         {
-            PhpException.FunctionNotSupported(nameof(mysqli_report));
-            return false;
+            var manager = MySqliConnectionManager.GetInstance(ctx);
+
+            manager.ReportMode = flags;
+
+            return true;
         }
     }
 }

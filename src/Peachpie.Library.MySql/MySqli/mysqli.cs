@@ -52,7 +52,7 @@ namespace Peachpie.Library.MySql.MySqli
         {
             // create connection resource and
             // register it in the list of active connections
-            this.Connection = MySqlConnectionManager
+            this.Connection = MySqliConnectionManager
                 .GetInstance(ctx)
                 .CreateConnection(dbconnection);
         }
@@ -306,6 +306,7 @@ namespace Peachpie.Library.MySql.MySqli
         public bool real_connect(Context ctx, string host = null, string username = null, string passwd = null, string dbname = "", int port = -1, string socket = null, int flags = 0)
         {
             var config = ctx.Configuration.Get<MySqlConfiguration>();
+            var manager = MySqliConnectionManager.GetInstance(ctx);
 
             // string $host = ini_get("mysqli.default_host")
             // string $username = ini_get("mysqli.default_user")
@@ -346,12 +347,12 @@ namespace Peachpie.Library.MySql.MySqli
                 }
             }
 
-            Connection = MySqlConnectionManager.GetInstance(ctx)
-                .CreateConnection(connection_string.ToString(), true, -1, out bool success);
+            Connection = manager.CreateConnection(connection_string.ToString(), true, -1, out bool success);
 
             if (success)
             {
                 Connection.Server = host;
+                manager.LastConnectionError = null;
 
                 if (!string.IsNullOrEmpty(dbname))
                 {
@@ -360,9 +361,7 @@ namespace Peachpie.Library.MySql.MySqli
             }
             else
             {
-                MySqliContextData.GetContextData(ctx).LastConnectionError
-                    = connect_error
-                    = Connection.GetLastErrorMessage();
+                manager.LastConnectionError = connect_error = Connection.GetLastErrorMessage();
             }
 
             //

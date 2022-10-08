@@ -16,8 +16,7 @@ namespace Pchp.Library.Database
         /// <summary>
         /// Associated runtime context.
         /// </summary>
-        public Context Context => _ctx;
-        Context _ctx;
+        public Context Context { get; private set; }
 
         /// <summary>
         /// List of connections established by the manager.
@@ -69,7 +68,7 @@ namespace Pchp.Library.Database
             if ((success = connection.Connect()) == true)
             {
                 AddConnection(connection);
-                _ctx.RegisterDisposable(connection);
+                this.Context.RegisterDisposable(connection);
             }
 
             return connection;
@@ -108,7 +107,7 @@ namespace Pchp.Library.Database
         public bool RemoveConnection(TConnection connection)
         {
             //
-            _ctx.UnregisterDisposable(connection);
+            this.Context.UnregisterDisposable(connection);
 
             //
             if (_connections.Count != 0)
@@ -132,7 +131,7 @@ namespace Pchp.Library.Database
 
         void IStaticInit.Init(Context ctx)
         {
-            _ctx = ctx;
+            this.Context = ctx;
         }
     }
 }

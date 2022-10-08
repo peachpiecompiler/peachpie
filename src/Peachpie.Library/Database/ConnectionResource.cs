@@ -29,15 +29,38 @@ namespace Pchp.Library.Database
         /// <summary>
 		/// Last result resource.
 		/// </summary>
-		public ResultResource LastResult => _lastResult;
-        private ResultResource _lastResult;
+		public ResultResource LastResult { get; private set; }
+
+        /// <summary>
+        /// Handle exception thrown by the last DB operation.
+        /// </summary>
+        /// <param name="exception">Thrown exception</param>
+        /// <param name="exceptionMessage">Optional formatted message to be reported.</param>
+        private void OnException(Exception exception, string exceptionMessage)
+        {
+            LastException = exception;
+
+            ReportException(exception, exceptionMessage ?? exception.Message);
+        }
+
+        protected virtual void ReportException(Exception exception, string exceptionMessage)
+        {
+            PhpException.Throw(PhpError.Warning, exceptionMessage);
+        }
+
+        /// <summary>
+        /// Handle success by the last DB operation.
+        /// </summary>
+        protected virtual void OnSuccess()
+        {
+            LastException = null;
+        }
 
         /// <summary>
         /// Gets an exception thrown by last performed operation or a <B>null</B> reference 
         /// if that operation succeeded.
         /// </summary>
-        public Exception LastException => _lastException;
-        protected Exception _lastException;
+        public Exception LastException { get; protected set; }
 
         /// <summary>
         /// Gets the number of rows affected by the last query executed on this connection.
@@ -46,10 +69,10 @@ namespace Pchp.Library.Database
         {
             get
             {
-                if (_lastResult == null) return -1;
+                if (LastResult == null) return -1;
 
                 // SELECT gives -1, UPDATE/INSERT gives the number:
-                return (_lastResult.RecordsAffected >= 0) ? _lastResult.RecordsAffected : _lastResult.RowCount;
+                return (LastResult.RecordsAffected >= 0) ? LastResult.RecordsAffected : LastResult.RowCount;
             }
         }
 
@@ -85,12 +108,12 @@ namespace Pchp.Library.Database
             try
             {
                 ActiveConnection.Open();  // TODO: Async
-                _lastException = null;
+
+                OnSuccess();
             }
             catch (Exception e)
             {
-                _lastException = e;
-                PhpException.Throw(PhpError.Warning, LibResources.cannot_open_connection, GetExceptionMessage(e));
+                OnException(e, string.Format(LibResources.cannot_open_connection, GetExceptionMessage(e)));
                 return false;
             }
 
@@ -112,12 +135,11 @@ namespace Pchp.Library.Database
                     connection.Close();
                 }
 
-                _lastException = null;
+                OnSuccess();
             }
             catch (Exception e)
             {
-                _lastException = e;
-                PhpException.Throw(PhpError.Warning, LibResources.error_closing_connection, GetExceptionMessage(e));
+                OnException(e, string.Format(LibResources.error_closing_connection, GetExceptionMessage(e)));
             }
         }
 
@@ -241,7 +263,7 @@ namespace Pchp.Library.Database
             {
                 command.Parameters.Clear();
 
-                for (int iparam = 0; iparam < parameters.Count; iparam ++)
+                for (int iparam = 0; iparam < parameters.Count; iparam++)
                 {
                     command.Parameters.Add(parameters[iparam]);
                 }
@@ -261,21 +283,20 @@ namespace Pchp.Library.Database
                 }
                 else
                 {
-                    _lastResult = null;
+                    LastResult = null;
 
                     // read all data into PhpDbResult:
                     result = GetResult(reader, convertTypes);
                     result.command = command;
 
-                    _lastResult = result;
+                    LastResult = result;
                 }
 
-                _lastException = null;
+                OnSuccess();
             }
             catch (Exception e)
             {
-                _lastException = e;
-                PhpException.Throw(PhpError.Warning, LibResources.command_execution_failed, GetExceptionMessage(e));
+                OnException(e, string.Format(LibResources.command_execution_failed, GetExceptionMessage(e)));
             }
 
             //
@@ -295,11 +316,12 @@ namespace Pchp.Library.Database
             try
             {
                 result.Reader = _pendingReader = result.Command.ExecuteReader(CommandBehavior.KeyInfo | CommandBehavior.SchemaOnly);
+
+                OnSuccess();
             }
             catch (Exception e)
             {
-                _lastException = e;
-                PhpException.Throw(PhpError.Warning, LibResources.command_execution_failed, GetExceptionMessage(e));
+                OnException(e, string.Format(LibResources.command_execution_failed, GetExceptionMessage(e)));
             }
         }
 
@@ -318,14 +340,13 @@ namespace Pchp.Library.Database
                 if (connection.State == ConnectionState.Open)
                 {
                     connection.ChangeDatabase(databaseName);
-                    _lastException = null;
+                    OnSuccess();
                     return true;
                 }
             }
             catch (Exception e)
             {
-                _lastException = e;
-                PhpException.Throw(PhpError.Warning, LibResources.database_selection_failed, GetExceptionMessage(e));
+                OnException(e, string.Format(LibResources.database_selection_failed, GetExceptionMessage(e)));
             }
 
             return false;
@@ -338,9 +359,11 @@ namespace Pchp.Library.Database
         /// <param name="e">Exception.</param>
         /// <returns>The message.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="e"/> is a <B>null</B> reference.</exception>
-        public virtual string GetExceptionMessage(System.Exception/*!*/ e)
+        public virtual string GetExceptionMessage(Exception/*!*/ e)
         {
-            if (e == null) throw new ArgumentNullException(nameof(e));
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
+
             return PhpException.ToErrorMessage(e.Message);
         }
 

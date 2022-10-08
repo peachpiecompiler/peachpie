@@ -494,8 +494,10 @@ namespace Pchp.Core
         /// <exception cref="ArgumentNullException"><paramref name="exceptionMessage"/> is a <B>null</B> reference.</exception>
         public static string ToErrorMessage(string exceptionMessage)
         {
-            if (exceptionMessage == null) throw new ArgumentNullException("exceptionMessage");
-            return exceptionMessage.TrimEnd(new char[] { '.' });
+            if (exceptionMessage == null)
+                throw new ArgumentNullException(nameof(exceptionMessage));
+
+            return exceptionMessage.AsSpan().TrimEnd('.').ToString();
         }
 
         internal static void ThrowSelfOutOfClass()
