@@ -321,11 +321,9 @@ namespace Peachpie.Library.PDO
         /// <returns>Returns TRUE on success or FALSE on failure</returns>
         public virtual bool execute(PhpArray input_parameters = null)
         {
-            if (Result != null)
-            {
-                // reusing command
-                Connection.ClosePendingReader();
-            }
+            // close previous pending reader
+            // https://github.com/peachpiecompiler/peachpie/issues/1069
+            Connection.ClosePendingReader();
 
             // parameters
             BindParameters(_cmd.Parameters, input_parameters);
