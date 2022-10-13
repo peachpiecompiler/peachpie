@@ -54,7 +54,7 @@ namespace Peachpie.AspNetCore.Mvc
         /// <remarks>
         /// Can be used within a PHP code.
         /// Note current <see cref="HttpContext.RequestServices"/> must provide <see cref="ICompositeViewEngine"/>
-        /// and <see cref="ITempDataDictionaryFactory"/>. These services are susually added by <c>Mvc</c> services.
+        /// and <see cref="ITempDataDictionaryFactory"/>. These services are usually added by <c>Mvc</c> services.
         /// </remarks>
         public static void RenderPartial(this Context phpContext, string viewName, object model = null)
         {
