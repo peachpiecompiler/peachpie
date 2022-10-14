@@ -6,6 +6,7 @@
     <AssemblyName>Peachpie.App</AssemblyName>
     <PackageId>Peachpie.App</PackageId>
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeSymbols>false</IncludeSymbols>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <NoWarn>$(NoWarn),NU5128</NoWarn>
