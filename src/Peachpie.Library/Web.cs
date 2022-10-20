@@ -514,9 +514,23 @@ namespace Pchp.Library
 		/// </remarks>
 		public static void header(Context ctx, string str, bool replace = true, int http_response_code = 0)
         {
-            var webctx = ctx.HttpPhpContext;
-            if (webctx == null || string.IsNullOrEmpty(str) || webctx.HeadersSent)
+            if (string.IsNullOrEmpty(str))
             {
+                // empty arg, ignore
+                //PhpException.InvalidArgument(nameof(str));
+                return;
+            }
+
+            var webctx = ctx.HttpPhpContext;
+            if (webctx == null)
+            {
+                // ignore on console app
+                return;
+            }
+
+            if (webctx.HeadersSent)
+            {
+                // header sent
                 PhpException.Throw(PhpError.Notice, Resources.Resources.headers_has_been_sent);
                 return;
             }
