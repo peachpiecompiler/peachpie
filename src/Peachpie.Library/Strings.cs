@@ -2041,7 +2041,8 @@ namespace Pchp.Library
             int length = str.Length;
             var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(length);
             bool state1 = false;
-            byte[] bA1 = new byte[1]; // NETSTANDARD2.1 // stackalloc
+            Span<byte> bA1 = stackalloc byte[1];
+            Span<char> cA1 = stackalloc char[encoding.GetMaxCharCount(1)];
 
             for (int i = 0; i < length; i++)
             {
@@ -2080,7 +2081,8 @@ namespace Pchp.Library
                                     }
 
                                     bA1[0] = (byte)code;
-                                    result.Append(encoding.GetChars(bA1)[0]);
+                                    encoding.GetChars(bA1, cA1);
+                                    result.Append(cA1[0]);
                                     break;
                                 }
                                 goto default;
@@ -2099,7 +2101,8 @@ namespace Pchp.Library
                                 {
                                     i--;
                                     bA1[0] = (byte)code;
-                                    result.Append(encoding.GetChars(bA1)[0]);
+                                    encoding.GetChars(bA1, cA1);
+                                    result.Append(cA1[0]);
                                 }
                                 else result.Append(c);
                                 break;

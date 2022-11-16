@@ -223,7 +223,7 @@ namespace Pchp.Library
         #region file_exists, touch
 
         /// <summary>
-		/// Checks whether a file exists
+		/// Checks whether a file or a directory exists.
 		/// </summary>
         /// <param name="ctx">Runtime context.</param>
 		/// <param name="path">The file to be checked.</param>
@@ -232,13 +232,26 @@ namespace Pchp.Library
         {
             if (!string.IsNullOrEmpty(path) && ResolvePath(ctx, ref path, true, out var wrapper))
             {
-                if (wrapper.Scheme == FileStreamWrapper.scheme && File.Exists(path)) // faster than calling full stat
+                if (wrapper.Scheme == FileStreamWrapper.scheme)
                 {
-                    return true;
-                }
+                    // faster than calling full stat
+                    if (CurrentPlatform.GetFileAttributes(path, out var _, out _))
+                    {
+                        return true;
+                    }
 
-                var stat = wrapper.Stat(ctx.RootPath, path, StreamStatOptions.Quiet, StreamContext.Default);
-                return stat.IsValid; // file or directory
+                    // check a compiled script
+                    if (Context.TryResolveScript(ctx.RootPath, path).IsValid ||
+                        Context.TryGetScriptsInDirectory(ctx.RootPath, path, out _))
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    var stat = wrapper.Stat(ctx.RootPath, path, StreamStatOptions.Quiet, StreamContext.Default);
+                    return stat.IsValid; // file or directory
+                }
             }
 
             return false;

@@ -16,7 +16,16 @@ namespace Peachpie.AspNetCore.Web
         /// <summary>
         /// Gets default root path.
         /// </summary>
+        [Obsolete]
         internal static string GetDefaultRootPath(this IHostingEnvironment hostingEnv)
+        {
+            return hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory();
+        }
+
+        /// <summary>
+        /// Gets default root path.
+        /// </summary>
+        internal static string GetDefaultRootPath(this IWebHostEnvironment hostingEnv)
         {
             return hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory();
         }
@@ -71,8 +80,9 @@ namespace Peachpie.AspNetCore.Web
 
         static RequestContextCore CreateNewContext(this HttpContext httpctx)
         {
-            var hostingEnv = (IHostingEnvironment)httpctx.RequestServices.GetService(typeof(IHostingEnvironment));
-            var rootpath = GetDefaultRootPath(hostingEnv);
+            var rootpath = httpctx.RequestServices.GetService(typeof(IWebHostEnvironment)) is IWebHostEnvironment webhost
+                ? GetDefaultRootPath(webhost)
+                : GetDefaultRootPath((IHostingEnvironment)httpctx.RequestServices.GetService(typeof(IHostingEnvironment)));
 
             return new RequestContextCore(httpctx,
                 rootPath: rootpath,

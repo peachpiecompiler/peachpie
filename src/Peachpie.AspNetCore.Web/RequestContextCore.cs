@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Peachpie.AspNetCore.Web.Session;
 using System.Xml.Schema;
+using Peachpie.AspNetCore.Web.ResponseOutput;
 
 namespace Peachpie.AspNetCore.Web
 {
@@ -203,7 +204,7 @@ namespace Peachpie.AspNetCore.Web
         public static ScriptInfo ResolveScript(HttpRequest req, out string path_info)
         {
             // The default document.
-            const string DefaultDocument = "/index.php";
+            ReadOnlySpan<char> DefaultDocument = "/index.php";
             const char UrlSeparator = '/';
 
             var req_path = req.Path.Value.AsSpan();
@@ -219,7 +220,7 @@ namespace Peachpie.AspNetCore.Web
                 }
 
                 // default document
-                if (level == 0 && (script = ScriptsMap.GetDeclaredScript(path.ToString() + DefaultDocument)).IsValid) // TODO: NETSTANDARD2.1: string.concat
+                if (level == 0 && (script = ScriptsMap.GetDeclaredScript(string.Concat(path, DefaultDocument))).IsValid)
                 {
                     break;
                 }
@@ -440,7 +441,7 @@ namespace Peachpie.AspNetCore.Web
             //
             this.RootPath = rootPath;
 
-            this.InitOutput(httpcontext.Response.Body, new SynchronizedTextWriter(httpcontext.Response, encoding));
+            this.InitOutput(httpcontext.Response.Body, new DefaultTextWriter(httpcontext.Response, encoding));
             this.InitSuperglobals();
 
             this.SetupHeaders();

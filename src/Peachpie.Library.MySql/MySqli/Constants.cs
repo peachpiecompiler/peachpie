@@ -248,20 +248,30 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary></summary>
         public const int MYSQLI_SET_CHARSET_NAME = 7;
 
-        //MYSQLI_REPORT_INDEX
-        //Report if no index or bad index was used in a query.
+        /// <summary>
+        /// Turns reporting off.
+        /// </summary>
+        public const int MYSQLI_REPORT_OFF = 0;
 
-        //MYSQLI_REPORT_ERROR
-        //Report errors from mysqli function calls.
+        /// <summary>
+        /// Report errors from mysqli function calls.
+        /// </summary>
+        public const int MYSQLI_REPORT_ERROR = 1;
 
-        //MYSQLI_REPORT_STRICT
-        //Throw a mysqli_sql_exception for errors instead of warnings.
+        /// <summary>
+        /// Throw a <see cref="mysqli_sql_exception"/> for errors instead of warnings.
+        /// </summary>
+        public const int MYSQLI_REPORT_STRICT = 2;
 
-        //MYSQLI_REPORT_ALL
-        //Set all options on (report all).
+        /// <summary>
+        /// Report if no index or bad index was used in a query.
+        /// </summary>
+        public const int MYSQLI_REPORT_INDEX = 4;
 
-        //MYSQLI_REPORT_OFF
-        //Turns reporting off.
+        /// <summary>
+        /// Set all options on (report all).
+        /// </summary>
+        public const int MYSQLI_REPORT_ALL = 0xff;
 
         //MYSQLI_DEBUG_TRACE_ENABLED
         //Is set to 1 if mysqli_debug() functionality is enabled.

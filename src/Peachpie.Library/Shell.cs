@@ -545,7 +545,7 @@ namespace Pchp.Library
 
                     case OutputHandling.ArrayOfLines:
                         {
-                            string line;
+                            string? line;
                             while ((line = p.StandardOutput.ReadLine()) != null)
                             {
                                 arrayOutput?.Add(line);
@@ -556,7 +556,7 @@ namespace Pchp.Library
 
                     case OutputHandling.FlushLinesToScriptOutput:
                         {
-                            string line;
+                            string? line;
                             while ((line = p.StandardOutput.ReadLine()) != null)
                             {
                                 stringOutput = line;

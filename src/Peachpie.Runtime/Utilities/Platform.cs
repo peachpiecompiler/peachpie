@@ -2,7 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 
 namespace Pchp.Core.Utilities
@@ -71,6 +73,20 @@ namespace Pchp.Core.Utilities
         /// Replaces <see cref="AltDirectorySeparator"/> to <see cref="DirectorySeparator"/>.
         /// </summary>
         public static string NormalizeSlashes(string path) => path.Replace(AltDirectorySeparator, DirectorySeparator);
+
+        public static bool GetFileAttributes(string name, out bool isfile, out bool isdir)
+        {
+            if (IsWindows)
+            {
+                return WindowsPlatform.GetFileAttributes(name, out isfile, out isdir);
+            }
+            else
+            {
+                isfile = File.Exists(name);
+                isdir = !isfile && Directory.Exists(name);
+                return isfile || isdir;
+            }
+        }
     }
 
     #endregion
@@ -181,6 +197,57 @@ namespace Pchp.Core.Utilities
                 sp_minor = osVersionInfo.wServicePackMinor;
                 producttype = osVersionInfo.wProductType;
                 suitemask = osVersionInfo.wSuiteMask;
+            }
+        }
+
+        [DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Auto, SetLastError = true)]
+        static extern bool GetFileAttributesEx(string name, int fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation);
+
+        [Serializable]
+        struct WIN32_FILE_ATTRIBUTE_DATA
+        {
+            internal int fileAttributes;
+
+            internal FILE_TIME ftCreationTime;
+
+            internal FILE_TIME ftLastAccessTime;
+
+            internal FILE_TIME ftLastWriteTime;
+
+            internal int fileSizeHigh;
+
+            internal int fileSizeLow;
+        }
+
+        struct FILE_TIME
+        {
+            uint ftTimeLow;
+
+            uint ftTimeHigh;
+
+            public FILE_TIME(long fileTime)
+            {
+                ftTimeLow = (uint)fileTime;
+                ftTimeHigh = (uint)(fileTime >> 32);
+            }
+
+            public long ToTicks() => (long)(((ulong)ftTimeHigh << 32) + ftTimeLow);
+        }
+
+        public static bool GetFileAttributes(string name, out bool isfile, out bool isdir)
+        {
+            var data = default(WIN32_FILE_ATTRIBUTE_DATA);
+
+            if (GetFileAttributesEx(name, 0, ref data))
+            {
+                isfile = (data.fileAttributes & (int)FileAttributes.Directory) == 0;
+                isdir = (data.fileAttributes & (int)FileAttributes.Directory) != 0;
+                return true;
+            }
+            else
+            {
+                isfile = isdir = false;
+                return false;
             }
         }
     }

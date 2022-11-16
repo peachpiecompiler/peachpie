@@ -800,22 +800,19 @@ namespace Pchp.Core
                     case byte[] barr: ctx.Echo(barr); break;
                     case Blob b: b.Output(ctx); break;
                     case char[] carr: ctx.Output.Write(carr); break;
-                    case BlobChar[] barr: WriteChunkAsync(ctx, barr).GetAwaiter().GetResult(); break;
+                    case BlobChar[] barr: WriteChunk(ctx, barr); break;
                     default: throw InvalidChunkException(chunk);
                 }
             }
 
-            static async Task WriteChunkAsync(Context ctx, BlobChar[] chars) // TODO: ValueTask
+            static void WriteChunk(Context ctx, BlobChar[] chars)
             {
                 Debug.Assert(chars != null);
 
                 var enc = ctx.StringEncoding;
 
-                //Span<char> ch = stackalloc char[1];
-                //Span<byte> bytes = stackalloc byte[enc.GetMaxByteCount(1)];
-
-                var ch = new char[1];
-                var bytes = new byte[ReferenceEquals(enc, Encoding.UTF8) ? 8 : enc.GetMaxByteCount(1)];
+                Span<char> ch = stackalloc char[1];
+                var bytes =  new byte[ReferenceEquals(enc, Encoding.UTF8) ? 8 : enc.GetMaxByteCount(1)];
 
                 //int size = 0;
 
@@ -837,13 +834,13 @@ namespace Pchp.Core
                     if (chars[i].IsByte)
                     {
                         bytes[0] = chars[i].AsByte();
-                        await ctx.OutputStream.WriteAsync(bytes, 0, 1);
+                        ctx.OutputStream.WriteAsync(bytes, 0, 1).GetAwaiter().GetResult();
                     }
                     else
                     {
                         ch[0] = chars[i].AsChar();
-                        var bytescount = enc.GetBytes(ch, 0, 1, bytes, 0);
-                        await ctx.OutputStream.WriteAsync(bytes, 0, bytescount);
+                        var bytescount = enc.GetBytes(ch, bytes);
+                        ctx.OutputStream.WriteAsync(bytes.AsMemory(0, bytescount)).GetAwaiter().GetResult();
                     }
                 }
             }

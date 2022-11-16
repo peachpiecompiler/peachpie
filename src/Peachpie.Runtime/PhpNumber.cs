@@ -1313,7 +1313,7 @@ namespace Pchp.Core
 
         public override int GetHashCode() => unchecked((int)_long);
 
-        public override bool Equals(object obj) => obj is PhpNumber num && Equals(num);
+        public override bool Equals(object? obj) => obj is PhpNumber num && Equals(num);
 
         #endregion
 

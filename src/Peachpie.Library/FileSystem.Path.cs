@@ -364,9 +364,12 @@ namespace Pchp.Library
             //
             var realpath = FileSystemUtils.AbsolutePath(ctx, path);
 
-            if (File.Exists(realpath) ||
-                System.IO.Directory.Exists(realpath) ||
-                Context.TryResolveScript(ctx.RootPath, realpath).IsValid)   // check a compiled script
+            if (CurrentPlatform.GetFileAttributes(realpath, out _, out _))
+            {
+                return realpath;
+            }
+
+            if (Context.TryResolveScript(ctx.RootPath, realpath).IsValid)   // check a compiled script
             {
                 return realpath;
             }

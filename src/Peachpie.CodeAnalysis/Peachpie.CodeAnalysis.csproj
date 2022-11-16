@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Devsense.Php.Parser" Version="$(ParserVersion)" />
     <PackageReference Include="Devsense.Php.Phar" Version="1.0.15" />
-    <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="3.7.1" />
+    <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="$(PeachpieMicrosoftCodeAnalysisVersion)" />
     <PackageReference Include="Peachpie.Library.RegularExpressions" Version="$(PeachpieLibraryRegularExpressionsVersion)" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
     <PackageReference Include="System.Memory" Version="4.5.4" />

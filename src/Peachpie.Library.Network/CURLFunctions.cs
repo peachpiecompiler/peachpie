@@ -287,7 +287,7 @@ namespace Peachpie.Library.Network
             // TODO: implicit port
 
             //
-            Uri.TryCreate(url, UriKind.Absolute, out Uri result);
+            Uri.TryCreate(url, UriKind.Absolute, out Uri? result);
             return result;
         }
 
@@ -303,7 +303,11 @@ namespace Peachpie.Library.Network
             catch (AggregateException agEx)
             {
                 var ex = agEx.InnerException;
-
+                if (ex == null)
+                {
+                    throw;
+                }
+                
                 ch.VerboseOutput(ex.ToString());
 
                 if (ex is WebException webEx)
@@ -316,7 +320,10 @@ namespace Peachpie.Library.Network
                     {
                         case WebExceptionStatus.ProtocolError:
                             // actually ok, 301, 500, etc .. process the response:
-                            return new CURLResponse(await ProcessResponse(ctx, ch, (HttpWebResponse)webEx.Response), (HttpWebResponse)webEx.Response, ch);
+                            return new CURLResponse(
+                                await ProcessResponse(ctx, ch, (HttpWebResponse)(webEx.Response ?? throw new InvalidOperationException("No HttpWebResponse"))),
+                                (HttpWebResponse)webEx.Response,
+                                ch);
 
                         case WebExceptionStatus.Timeout:
                             return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, exception);
@@ -652,7 +659,7 @@ namespace Peachpie.Library.Network
             switch (ch.ProcessingResponse.Method)
             {
                 case ProcessMethodEnum.STDOUT: await stream.CopyToAsync(ctx.OutputStream); break;
-                case ProcessMethodEnum.RETURN: stream.CopyTo(returnstream); break;
+                case ProcessMethodEnum.RETURN: stream.CopyTo(returnstream!); break;
                 case ProcessMethodEnum.FILE: await stream.CopyToAsync(ch.ProcessingResponse.Stream.RawStream); break;
                 case ProcessMethodEnum.USER:
                     if (response.ContentLength != 0)

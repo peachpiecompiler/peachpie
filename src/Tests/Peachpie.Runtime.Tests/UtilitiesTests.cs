@@ -35,6 +35,9 @@ namespace Peachpie.Runtime.Tests
         public void ValueListTest()
         {
             var list = new ValueList<int>();
+            
+            Assert.AreEqual(0, list.Count);
+
             for (int i = 0; i < 10; i++)
             {
                 list.AddRange(new[] { 0, 1, 2, 3 });
@@ -42,8 +45,14 @@ namespace Peachpie.Runtime.Tests
                 list.Insert(list.Count, 5);
             }
 
+            var count2 = list.Count;
+            Assert.AreEqual(10 * (6), count2);
+
             list.Insert(0, -1);
             list.Insert(1, 1);
+
+            var count3 = list.Count;
+            Assert.AreEqual(count2 + 2, count3);
         }
 
         [TestMethod]

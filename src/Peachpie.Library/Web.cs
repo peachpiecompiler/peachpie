@@ -514,9 +514,23 @@ namespace Pchp.Library
 		/// </remarks>
 		public static void header(Context ctx, string str, bool replace = true, int http_response_code = 0)
         {
-            var webctx = ctx.HttpPhpContext;
-            if (webctx == null || string.IsNullOrEmpty(str) || webctx.HeadersSent)
+            if (string.IsNullOrEmpty(str))
             {
+                // empty arg, ignore
+                //PhpException.InvalidArgument(nameof(str));
+                return;
+            }
+
+            var webctx = ctx.HttpPhpContext;
+            if (webctx == null)
+            {
+                // ignore on console app
+                return;
+            }
+
+            if (webctx.HeadersSent)
+            {
+                // header sent
                 PhpException.Throw(PhpError.Notice, Resources.Resources.headers_has_been_sent);
                 return;
             }
@@ -753,7 +767,7 @@ namespace Pchp.Library
             }
 
             var sb = StringBuilderUtilities.Pool.Get();
-            byte[] bytes = null; // bytes buffer lazily allocated
+            Span<byte> bytes = stackalloc byte[Encoding.UTF8.GetMaxByteCount(1)];
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -781,9 +795,7 @@ namespace Pchp.Library
                 else
                 {
                     // UTF-8
-                    // TODO: NETSTANDARD2_1
-                    bytes ??= new byte[Encoding.UTF8.GetMaxByteCount(1)];
-                    var nbytes = Encoding.UTF8.GetBytes(value, i, 1, bytes, 0);
+                    var nbytes = Encoding.UTF8.GetBytes(value.AsSpan(i, 1), bytes);
                     for (int b = 0; b < nbytes; b++)
                     {
                         // %{X2}

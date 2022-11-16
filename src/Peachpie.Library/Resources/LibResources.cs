@@ -28,5 +28,13 @@ namespace Pchp.Library.Resources
         {
             return string.Format(Resources.ResourceManager.GetString(id), args);
         }
+
+        public static System.IO.Stream GetManifestResourceStreamOrThrow(string name)
+        {
+            var resxtype = typeof(Pchp.Library.Resources.Resources);
+            var stream = resxtype.Assembly.GetManifestResourceStream(resxtype, name) ?? throw new System.IO.FileNotFoundException(name);
+
+            return stream;
+        }
     }
 }

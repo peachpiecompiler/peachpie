@@ -311,7 +311,7 @@ namespace Pchp.Library.Standard
 
             host = System.Net.Dns.GetHostName();
 
-            machine = System.Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+            machine = System.Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") ?? string.Empty;
             if (machine == "x86") machine = "i586";    // TODO
 
             release = "0"; // String.Concat(Environment.OSVersion.Version.Major, ".", Environment.OSVersion.Version.Minor);

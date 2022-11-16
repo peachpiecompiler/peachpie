@@ -1,0 +1,11 @@
+<Project>
+
+  <PropertyGroup>
+
+    <_TargetFramework>netstandard2.0</_TargetFramework>
+    <TargetFrameworks>$(_TargetFramework)</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+
+  </PropertyGroup>
+
+</Project>

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net461</TargetFrameworks>
+    <TargetFrameworks>net48</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <AssemblyName>Peachpie.RequestHandler</AssemblyName>
     <PackageId>Peachpie.RequestHandler</PackageId>
@@ -13,7 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
-    <PackageReference Include="Mono.Posix-4.5" Version="4.5.0" Condition=" '$(TargetFramework)'=='net461' " />
+    <PackageReference Include="Mono.Posix-4.5" Version="4.5.0" Condition=" '$(TargetFramework)'=='net48' " />
   </ItemGroup>
 
   <ItemGroup>

@@ -214,7 +214,8 @@ namespace Pchp.CodeAnalysis.Symbols
                             }
                             break;
                         default:
-                            throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(element);
+                            //throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(element);
+                            throw new NotImplementedException($"Value of type '{element.GetType().Name}' cannot be serialized as an attribute. The expression could not be evaluated in compile-time.\nAt {_location}.");
                     }
                 }
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,32 +28,27 @@ namespace Pchp.Core.Utilities
             if (bytes.Length == 0) return string.Empty;
             if (separator == null) separator = string.Empty;
 
-            const string hex_digs = "0123456789abcdef";
-
-            // TODO: NETSTANDARD2.1 // string.Create( ... )
-
-            // prepares the result:
             var length = bytes.Length * 2 + (bytes.Length - 1) * separator.Length;
-            var buffer = new char[length];
-            var bufferpos = 0;
-            
-            // appends characters to the result for each byte:
-            for (int i = 0; i < bytes.Length; i++)
+            return string.Create(length, (bytes, separator), (buffer, state) =>
             {
-                var c = bytes[i];
+                const string hex_digs = "0123456789abcdef";
+                var bufferpos = 0;
 
-                if (i != 0)
+                // appends characters to the result for each byte:
+                for (int i = 0; i < bytes.Length; i++)
                 {
-                    separator.CopyTo(0, buffer, bufferpos, separator.Length);
-                    bufferpos += separator.Length;
+                    var c = bytes[i];
+
+                    if (i != 0)
+                    {
+                        separator.AsSpan().CopyTo(buffer.Slice(bufferpos, separator.Length));
+                        bufferpos += separator.Length;
+                    }
+
+                    buffer[bufferpos++] = hex_digs[(c & 0xf0) >> 4];
+                    buffer[bufferpos++] = hex_digs[(c & 0x0f)];
                 }
-
-                buffer[bufferpos++] = hex_digs[(c & 0xf0) >> 4];
-                buffer[bufferpos++] = hex_digs[(c & 0x0f)];
-            }
-
-            //
-            return new string(buffer);
+            });
         }
 
         /// <summary>
@@ -100,24 +96,26 @@ namespace Pchp.Core.Utilities
                 return string.Empty;
             }
 
-            // TODO: netstandard2.1
-            //return string.Create(str.Length, str, (chars, state) =>
-            //{
-            //    var position = 0;
-            //    var indexes = StringInfo.ParseCombiningCharacters(state); // skips string creation
-            //    var stateSpan = state.AsSpan();
-            //    for (int len = indexes.Length, i = len - 1; i >= 0; i--)
-            //    {
-            //        var index = indexes[i];
-            //        var spanLength = i == len - 1 ? state.Length - index : indexes[i + 1] - index;
-            //        stateSpan.Slice(index, spanLength).CopyTo(chars.Slice(position));
-            //        position += spanLength;
-            //    }
-            //});
+            return string.Create(str.Length, str, (chars, state) =>
+            {
+                Debug.Assert(chars.Length == state.Length);
 
-            var chars = str.ToCharArray();
-            Array.Reverse(chars);
-            return new string(chars);
+                //var position = 0;
+                //var indexes = StringInfo.ParseCombiningCharacters(state); // skips string creation
+                //var stateSpan = state.AsSpan();
+                //for (int len = indexes.Length, i = len - 1; i >= 0; i--)
+                //{
+                //    var index = indexes[i];
+                //    var spanLength = i == len - 1 ? state.Length - index : indexes[i + 1] - index;
+                //    stateSpan.Slice(index, spanLength).CopyTo(chars.Slice(position));
+                //    position += spanLength;
+                //}
+
+                for (int i = 0; i < state.Length; i++)
+                {
+                    chars[state.Length - i - 1] = state[i];
+                }
+            });
         }
     }
 }

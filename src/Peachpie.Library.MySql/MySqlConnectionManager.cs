@@ -29,5 +29,11 @@ namespace Peachpie.Library.MySql
 
             return connection;
         }
+
+        public virtual void ReportException(Exception exception, string exceptionMessage)
+        {
+            // MySql outputs the error to php error handler
+            PhpException.Throw(PhpError.Warning, exceptionMessage);
+        }
     }
 }

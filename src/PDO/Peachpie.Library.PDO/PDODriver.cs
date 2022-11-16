@@ -32,7 +32,15 @@ namespace Peachpie.Library.PDO
         {
             get
             {
-                return this.DbFactory.GetType().Assembly.GetName().Version.ToString();
+                var version = this.DbFactory.GetType().Assembly.GetName().Version;
+                if (version != null)
+                {
+                    return version.ToString();
+                }
+                else
+                {
+                    return string.Empty;
+                }
             }
         }
 
