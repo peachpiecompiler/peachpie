@@ -341,7 +341,8 @@ namespace Pchp.Core.Reflection
 
                     if (tinfo.IsPublic && tinfo.IsAbstract) // => public static
                     {
-                        if (tinfo.Assembly.IsDefined(typeof(PhpExtensionAttribute)))
+                        var extensionAttrs = Attribute.GetCustomAttributes(tinfo.Assembly, typeof(PhpExtensionAttribute));
+                        if (extensionAttrs != null && extensionAttrs.Length != 0)
                         {
                             // library function
                             return null;
