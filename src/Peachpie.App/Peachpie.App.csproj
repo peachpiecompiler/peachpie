@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Peachpie platform dependencies.</Description>
-    <TargetFrameworks>net50</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <AssemblyName>Peachpie.App</AssemblyName>
     <PackageId>Peachpie.App</PackageId>
     <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -10,6 +10,7 @@
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <NoWarn>$(NoWarn),NU5128</NoWarn>
+    <Version>6.0-mj</Version>
   </PropertyGroup>
 
   <ItemGroup>

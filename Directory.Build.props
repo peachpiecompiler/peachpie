@@ -6,7 +6,7 @@
     <Version Condition=" '$(APPVEYOR_BUILD_VERSION)'!='' ">$(APPVEYOR_BUILD_VERSION)</Version>
     <Version Condition=" '$(Version)'=='' ">1.0.0-dev</Version>
     <PackageVersion>$(Version)</PackageVersion>
-    <TargetFrameworks>net50</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
 
     <!-- metadata generation -->
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>

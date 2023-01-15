@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Peachpie.NET.Sdk/1.0.0-dev">
 
   <PropertyGroup>
-    <TargetFramework>net50</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
   
   <ItemGroup Condition=" '$(DisableImplicitPeachpieReferences)' != 'true' ">

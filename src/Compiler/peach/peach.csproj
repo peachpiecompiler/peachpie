@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net50</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>peach</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>peach</PackageId>
@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
+    <!--<ProjectReference Include="..\..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />-->
     <ProjectReference Include="..\..\Peachpie.App\Peachpie.App.csproj" />
   </ItemGroup>
 

@@ -33,7 +33,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         internal TypeMap(SmallDictionary<TypeParameterSymbol, TypeWithModifiers> mapping)
-            : base(new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(mapping, ReferenceEqualityComparer.Instance))
+            : base(new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(mapping, System.Collections.Generic.ReferenceEqualityComparer.Instance))
         {
             // mapping contents are read-only hereafter
             Debug.Assert(!mapping.Keys.Any(tp => tp is SubstitutedTypeParameterSymbol));
@@ -43,8 +43,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var substituted = containingType as SubstitutedNamedTypeSymbol;
             return (object)substituted != null ?
-                new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(substituted.TypeSubstitution.Mapping, ReferenceEqualityComparer.Instance) :
-                new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(ReferenceEqualityComparer.Instance);
+                new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(substituted.TypeSubstitution.Mapping, System.Collections.Generic.ReferenceEqualityComparer.Instance) :
+                new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(System.Collections.Generic.ReferenceEqualityComparer.Instance);
         }
         internal TypeMap(NamedTypeSymbol containingType, ImmutableArray<TypeParameterSymbol> typeParameters, ImmutableArray<TypeWithModifiers> typeArguments)
             : base(ForType(containingType))
@@ -61,7 +61,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         private static readonly SmallDictionary<TypeParameterSymbol, TypeWithModifiers> s_emptyDictionary =
-            new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(ReferenceEqualityComparer.Instance);
+            new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(System.Collections.Generic.ReferenceEqualityComparer.Instance);
 
         private TypeMap()
             : base(s_emptyDictionary)
@@ -127,7 +127,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         private static SmallDictionary<TypeParameterSymbol, TypeWithModifiers> ConstructMapping(ImmutableArray<TypeParameterSymbol> from, ImmutableArray<TypeWithModifiers> to)
         {
-            var mapping = new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(ReferenceEqualityComparer.Instance);
+            var mapping = new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>(System.Collections.Generic.ReferenceEqualityComparer.Instance);
 
             Debug.Assert(from.Length == to.Length);
 

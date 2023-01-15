@@ -12,7 +12,7 @@
     <summary></summary>
     <tags>php,compile-php,peachpie,sdk</tags>
     <dependencies>
-      <group targetFramework=".NETStandard2.0">
+      <group targetFramework="net6.0">
         <dependency id="Peachpie.App" version="$version$" exclude="Build,Analyzers" />
       </group>
     </dependencies>

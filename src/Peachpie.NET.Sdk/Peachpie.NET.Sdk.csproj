@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
 
     <Version Condition=" '$(Version)'=='' ">1.0.0-dev</Version>
