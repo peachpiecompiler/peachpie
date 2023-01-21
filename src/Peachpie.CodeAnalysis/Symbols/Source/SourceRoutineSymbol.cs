@@ -17,6 +17,7 @@ using Devsense.PHP.Text;
 using System.Globalization;
 using System.Threading;
 using Peachpie.CodeAnalysis.Semantics;
+using Devsense.PHP.Ast.DocBlock;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -116,7 +117,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optionaly gets routines PHP doc block.
         /// </summary>
-        internal abstract PHPDocBlock PHPDocBlock { get; }
+        internal abstract IDocBlock PHPDocBlock { get; }
 
         /// <summary>
         /// Reference to a containing file symbol.
@@ -245,7 +246,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Constructs routine source parameters.
         /// </summary>
-        protected IEnumerable<SourceParameterSymbol> BuildSrcParams(IEnumerable<FormalParam> formalparams, PHPDocBlock phpdocOpt = null)
+        protected IEnumerable<SourceParameterSymbol> BuildSrcParams(IEnumerable<FormalParam> formalparams)
         {
             var pindex = 0; // zero-based relative index
 
@@ -256,15 +257,13 @@ namespace Pchp.CodeAnalysis.Symbols
                     continue;
                 }
 
-                var ptag = (phpdocOpt != null) ? PHPDoc.GetParamTag(phpdocOpt, pindex, p.Name.Name.Value) : null;
-
-                yield return new SourceParameterSymbol(this, p, relindex: pindex++, ptagOpt: ptag);
+                yield return new SourceParameterSymbol(this, p, relindex: pindex++);
             }
         }
 
-        protected virtual IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature, PHPDocBlock phpdocOpt = null)
+        protected virtual IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature)
         {
-            return BuildSrcParams(signature.FormalParams, phpdocOpt);
+            return BuildSrcParams(signature.FormalParams);
         }
 
         internal virtual ImmutableArray<ParameterSymbol> ImplicitParameters
@@ -296,7 +295,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_srcParams == null)
                 {
-                    var srcParams = BuildSrcParams(this.SyntaxSignature, this.PHPDocBlock).ToArray();
+                    var srcParams = BuildSrcParams(this.SyntaxSignature).ToArray();
                     Interlocked.CompareExchange(ref _srcParams, srcParams, null);
                 }
 
@@ -503,7 +502,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // attributes from PHPDoc
-            var deprecated = PHPDocBlock?.GetElement<PHPDocBlock.DeprecatedTag>();
+            var deprecated = PHPDocBlock.GetDocEntry(AstUtils.DeprecatedTagName);
             if (deprecated != null)
             {
                 // [ObsoleteAttribute(message, false)]
@@ -554,10 +553,16 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var deprecated = this.PHPDocBlock?.GetElement<PHPDocBlock.DeprecatedTag>();
+                var deprecated = this.PHPDocBlock.GetDocEntry(AstUtils.DeprecatedTagName);
                 if (deprecated != null)
                 {
-                    return new ObsoleteAttributeData(ObsoleteAttributeKind.Deprecated, deprecated.Version/*==Text*/, isError: false, diagnosticId: null, urlFormat: null);
+                    return new ObsoleteAttributeData(
+                        ObsoleteAttributeKind.Deprecated,
+                        deprecated.GetEntryText(out var text) ? text : string.Empty,
+                        isError: false,
+                        diagnosticId: null,
+                        urlFormat: null
+                    );
                 }
 
                 return null;

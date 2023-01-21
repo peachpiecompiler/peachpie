@@ -162,11 +162,6 @@
                             or specific versions like `5.6.` or `7.0`
 /shortopentag[+|-]          Whether to enable PHP short open tag syntax (&lt;?).
                             Disabled by default.
-/phpdoctypes:&lt;string&gt;       Specifies what PHPDoc is used for strict type
-                            information. Possible values are:
-                            None, FieldTypes, ParameterTypes, ReturnTypes, All
-                            or their combination using vertical bar |.
-/phpdoctypes[+|-]           Shortcut for /phpdoctypes:All or /phpdoctypes:None.
 
                     - SECURITY -
 /delaysign[+|-]             Delay-sign the assembly using only the public

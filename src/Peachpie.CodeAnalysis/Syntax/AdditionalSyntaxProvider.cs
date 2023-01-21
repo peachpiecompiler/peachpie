@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using Devsense.PHP.Ast.DocBlock;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
@@ -49,7 +50,7 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public string TokenText => _provider.TokenText;
 
-        public PHPDocBlock DocComment { get => _provider.DocComment; set => _provider.DocComment = value; }
+        public IDocBlock DocComment { get => _provider.DocComment; set => _provider.DocComment = value; }
 
         public int GetNextToken()
         {

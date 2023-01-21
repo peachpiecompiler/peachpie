@@ -10,6 +10,7 @@ using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.Semantics;
 using System.Threading;
+using Devsense.PHP.Ast.DocBlock;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -26,8 +27,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         readonly int _relindex;
         
-        internal PHPDocBlock.ParamTag PHPDoc { get; }
-
         ImmutableArray<AttributeData> _attributes;
 
         TypeSymbol _lazyType;
@@ -117,7 +116,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         FieldSymbol _lazyDefaultValueField;
 
-        public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int relindex, PHPDocBlock.ParamTag ptagOpt)
+        public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int relindex)
         {
             Contract.ThrowIfNull(routine);
             Contract.ThrowIfNull(syntax);
@@ -139,8 +138,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 ? new SemanticsBinder(DeclaringCompilation, routine.ContainingFile.SyntaxTree, locals: null, routine: routine, self: routine.ContainingType as SourceTypeSymbol)
                     .BindAttributes(phpattrs)
                 : ImmutableArray<AttributeData>.Empty;
-
-            PHPDoc = ptagOpt;
         }
 
         /// <summary>
@@ -249,19 +246,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint, _routine.ContainingType as SourceTypeSymbol, nullable: DefaultsToNull, phpLang: true);
 
-            // 2. optionally type specified in PHPDoc
-            if (result == null && PHPDoc != null && PHPDoc.TypeNamesArray.Length != 0
-                && (DeclaringCompilation.Options.PhpDocTypes & PhpDocTypes.ParameterTypes) != 0)
-            {
-                var typectx = _routine.TypeRefContext;
-                var tmask = FlowAnalysis.PHPDoc.GetTypeMask(typectx, PHPDoc.TypeNamesArray, _routine.GetNamingContext());
-                if (!tmask.IsVoid && !tmask.IsAnyType)
-                {
-                    result = DeclaringCompilation.GetTypeFromTypeRef(typectx, tmask);
-                }
-            }
-
-            // 3 default:
+            // 2. default:
             if (result == null)
             {
                 // TODO: use type from overriden method

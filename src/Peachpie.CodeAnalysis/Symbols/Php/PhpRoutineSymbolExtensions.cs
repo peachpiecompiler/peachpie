@@ -1,4 +1,5 @@
-﻿using Devsense.PHP.Syntax;
+﻿using Devsense.PHP.Ast.DocBlock;
+using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
@@ -78,22 +79,8 @@ namespace Pchp.CodeAnalysis.Symbols
             if (IsNotOverriding(routine))
             {
                 // /** @return */
-                var typeCtx = routine.TypeRefContext;
-                if (routine.PHPDocBlock != null && (compilation.Options.PhpDocTypes & PhpDocTypes.ReturnTypes) != 0)
-                {
-                    var returnTag = routine.PHPDocBlock.Returns;
-                    if (returnTag != null && returnTag.TypeNames.Length != 0)
-                    {
-                        var tmask = PHPDoc.GetTypeMask(typeCtx, returnTag.TypeNamesArray, routine.GetNamingContext());
-                        if (!tmask.IsVoid && !tmask.IsAnyType)
-                        {
-                            return compilation.GetTypeFromTypeRef(typeCtx, tmask);
-                        }
-                    }
-                }
-
                 // determine from code flow
-                return compilation.GetTypeFromTypeRef(typeCtx, routine.ResultTypeMask);
+                return compilation.GetTypeFromTypeRef(routine.TypeRefContext, routine.ResultTypeMask);
             }
             else
             {
@@ -379,7 +366,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets PHPDoc assoviated with given source symbol.
         /// </summary>
-        internal static bool TryGetPHPDocBlock(this Symbol symbol, out PHPDocBlock phpdoc)
+        internal static bool TryGetPHPDocBlock(this Symbol symbol, out IDocBlock phpdoc)
         {
             phpdoc = symbol?.OriginalDefinition switch
             {

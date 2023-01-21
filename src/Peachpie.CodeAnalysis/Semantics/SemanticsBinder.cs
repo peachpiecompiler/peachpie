@@ -1544,7 +1544,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         readonly List<BoundYieldStatement> _yields = new List<BoundYieldStatement>();
 
-        readonly HashSet<AST.LangElement> _yieldsToStatementRootPath = new HashSet<AST.LangElement>();
+        readonly HashSet<AST.ILangElement> _yieldsToStatementRootPath = new HashSet<AST.ILangElement>();
         int _underYieldLikeExLevel = -1;
 
         #endregion

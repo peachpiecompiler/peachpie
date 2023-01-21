@@ -10,6 +10,7 @@ using System.Collections.Immutable;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis.Operations;
 using Peachpie.Library.RegularExpressions;
+using Devsense.PHP.Ast.DocBlock;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -65,10 +66,10 @@ namespace Pchp.CodeAnalysis.Symbols
             };
         }
 
-        protected override IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature, PHPDocBlock phpdocOpt = null)
+        protected override IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature)
         {
             // [use params], [formal params]
-            return base.BuildSrcParams(UseParams.Concat(signature.FormalParams), phpdocOpt);
+            return base.BuildSrcParams(UseParams.Concat(signature.FormalParams));
         }
 
         internal override IList<Statement> Statements => _syntax.Body.Statements;
@@ -81,7 +82,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override AstNode Syntax => _syntax;
 
-        internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;
+        internal override IDocBlock PHPDocBlock => _syntax.PHPDoc;
 
         internal override SourceFileSymbol ContainingFile => Container.GetContainingFileSymbol();
 

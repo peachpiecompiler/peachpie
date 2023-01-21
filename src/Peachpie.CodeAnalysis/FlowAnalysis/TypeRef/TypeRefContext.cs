@@ -883,7 +883,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (types.Count != 0)
                 {
                     types.Sort();
-                    return string.Join(PHPDocBlock.TypeVarDescTag.TypeNamesSeparator.ToString(), types.Distinct());
+                    return string.Join("|", types.Distinct());
                 }
             }
 

@@ -13,6 +13,7 @@ using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.CodeGen;
 using System.Diagnostics;
 using Peachpie.CodeAnalysis;
+using Devsense.PHP.Ast.DocBlock;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -90,7 +91,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override AstNode Syntax => _syntax;
 
-        internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;
+        internal override IDocBlock PHPDocBlock => _syntax.PHPDoc;
 
         internal override IList<Statement> Statements => _syntax.Body.Statements;
 

@@ -9,6 +9,8 @@ using Pchp.CodeAnalysis.Symbols;
 using System.Text;
 using Devsense.PHP.Syntax;
 using System.Diagnostics;
+using Pchp.CodeAnalysis.FlowAnalysis;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.DocumentationComments
 {
@@ -151,7 +153,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             output.WriteLine("</param>");
         }
 
-        static void WriteException(TextWriter output, string[] types, string pdesc)
+        static void WriteException(TextWriter output, string types, string pdesc)
         {
             if (string.IsNullOrWhiteSpace(pdesc) || types == null)
             {
@@ -159,10 +161,8 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             }
 
             //
-            for (int i = 0; i < types.Length; i++)
+            foreach (var t in types.Split('|'))
             {
-                var t = types[i];
-
                 output.Write("<exception cref=\"");
                 output.Write(XmlEncode(QualifiedName.Parse(t, true).ClrName()));   // TODO: CommentIdResolver.GetId(..)    // TODO: translate correctly using current naming context
                 output.Write('\"');
@@ -188,27 +188,23 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             // PHPDoc
             WriteSummary(output, phpdoc.Summary);
 
-            var elements = phpdoc.Elements;
-            for (int i = 0; i < elements.Length; i++)
+            for (var entry = phpdoc.Entries; entry != null; entry = entry.Next)
             {
                 // user parameters
-                if (elements[i] is PHPDocBlock.ParamTag p)
+                if (entry.IsDocTag("@param") && entry.GetEntryText(out _, out var typename, out var varname, out var desc))
                 {
-                    if (p.VariableName != null)
+                    if (varname != null)
                     {
-                        WriteParam(output, p.VariableName.TrimStart('$'), p.Description, p.TypeNames);
+                        WriteParam(output, varname.TrimStart('$'), desc, typename);
                     }
                 }
-                else if (elements[i] is PHPDocBlock.ReturnTag rtag)
+                else if (entry.IsDocTag("@return") && entry.GetEntryText(out _, out var tname, out _, out desc))
                 {
-                    if (!string.IsNullOrWhiteSpace(rtag.Description))
-                    {
-                        output.WriteLine("<returns>{0}</returns>", XmlEncode(rtag.Description));
-                    }
+                    output.WriteLine("<returns>{0}</returns>", XmlEncode(desc));
                 }
-                else if (elements[i] is PHPDocBlock.ExceptionTag ex)
+                else if (entry.IsDocTag("@exception") && entry.GetEntryText(out _, out typename, out _, out desc))
                 {
-                    WriteException(output, ex.TypeNamesArray, ex.Description);
+                    WriteException(output, typename, desc);
                 }
             }
 
@@ -284,13 +280,16 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                     {
                         // try @var or @staticvar:
                         var vartag = field.FindPhpDocVarTag();
-                        if (vartag != null)
+                        if (vartag != null && vartag.GetEntryText(out _, out var typename, out var varname, out var summary2))
                         {
-                            summary = vartag.Description;
-
-                            if (!string.IsNullOrEmpty(vartag.TypeNames))
+                            if (!string.IsNullOrEmpty(summary2))
                             {
-                                value = string.Format("<value>{0}</value>", XmlEncode(vartag.TypeNames));
+                                summary = summary2;
+                            }
+
+                            if (!string.IsNullOrEmpty(typename))
+                            {
+                                value = string.Format("<value>{0}</value>", XmlEncode(typename));
                             }
                         }
                     }
