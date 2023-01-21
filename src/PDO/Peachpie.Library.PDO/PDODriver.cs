@@ -68,6 +68,11 @@ namespace Peachpie.Library.PDO
         public virtual DbConnection OpenConnection(ReadOnlySpan<char> dsn, string? user, string? password, PhpArray options)
         {
             var connection = this.DbFactory.CreateConnection();
+            if (connection == null)
+            {
+                throw new InvalidOperationException(nameof(connection));
+            }
+
             connection.ConnectionString = this.BuildConnectionString(dsn, user, password, options);
             connection.Open();
             return connection;

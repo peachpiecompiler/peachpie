@@ -93,8 +93,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var str = entry.ToString().AsSpan().Trim();
 
                 // @tagname [text]
-                int i;
-
+                
                 // @tagname
                 if (str.Length > 0 && str[0] == '@')
                 {
