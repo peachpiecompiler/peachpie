@@ -180,7 +180,6 @@ namespace Pchp.CodeAnalysis.CommandLine
             PhpOptimizationLevel optimization = PhpOptimizationLevel.Debug;
             bool concurrentBuild = true;
             var diagnosticOptions = new Dictionary<string, ReportDiagnostic>();
-            PhpDocTypes phpdocTypes = PhpDocTypes.None;
             OutputKind outputKind = OutputKind.ConsoleApplication;
             bool optionsEnded = false;
             bool displayHelp = false, displayLogo = true;
@@ -584,23 +583,6 @@ namespace Pchp.CodeAnalysis.CommandLine
                         documentationPath = value ?? string.Empty;
                         break;
 
-                    case "phpdoctypes+":
-                        phpdocTypes = PhpDocTypes.All;
-                        break;
-                    case "phpdoctypes-":
-                        phpdocTypes = PhpDocTypes.None;
-                        break;
-                    case "phpdoctypes":
-                        if (value == null)
-                        {
-                            phpdocTypes = PhpDocTypes.All;
-                        }
-                        else
-                        {
-                            phpdocTypes = (PhpDocTypes)Enum.Parse(typeof(PhpDocTypes), value);
-                        }
-                        break;
-
                     case "modulename":
                         var unquotedModuleName = RemoveQuotesAndSlashes(value);
                         if (string.IsNullOrEmpty(unquotedModuleName))
@@ -835,7 +817,6 @@ namespace Pchp.CodeAnalysis.CommandLine
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
                 versionString: versionString,
-                phpdocTypes: phpdocTypes,
                 parseOptions: parseOptions,
                 defines: defines.ToImmutableDictionary(),
                 diagnostics: diagnostics.AsImmutable(),

@@ -3958,8 +3958,9 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // store value of target
                 // <temp> = TARGET
-                tempvar = cg.GetTemporaryLocal(target_load_type);
                 cg.EmitOpCode(ILOpCode.Dup);
+                var tempvar_type = cg.EmitDereference(target_load_type);
+                tempvar = cg.GetTemporaryLocal(tempvar_type);
                 cg.Builder.EmitLocalStore(tempvar);
             }
 
@@ -3977,8 +3978,8 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // store value of result
                 // <temp> = TARGET
-                tempvar = cg.GetTemporaryLocal(op_type);
                 cg.EmitOpCode(ILOpCode.Dup);
+                tempvar = cg.GetTemporaryLocal(op_type);
                 cg.Builder.EmitLocalStore(tempvar);
             }
 

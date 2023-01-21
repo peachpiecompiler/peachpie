@@ -4,9 +4,9 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using Devsense.PHP.Ast.DocBlock;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
-using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
         }
 
-        public static AttributeData CreateObsoleteAttribute(this PhpCompilation compilation, PHPDocBlock.DeprecatedTag deprecated)
+        public static AttributeData CreateObsoleteAttribute(this PhpCompilation compilation, IDocEntry deprecated)
         {
             if (deprecated == null)
                 throw new ArgumentNullException(nameof(deprecated));
@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return new SynthesizedAttributeData(
                 (MethodSymbol)compilation.GetWellKnownTypeMember(WellKnownMember.System_ObsoleteAttribute__ctor),
                     ImmutableArray.Create(
-                        compilation.CreateTypedConstant(deprecated.Version/*NOTE:Version contains the message*/),
+                        compilation.CreateTypedConstant(deprecated.ToString()/*whole @deprecated tag entry*/),
                         compilation.CreateTypedConstant(false/*isError*/)),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
         }

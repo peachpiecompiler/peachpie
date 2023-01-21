@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Devsense.PHP.Ast.DocBlock;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
 using Devsense.PHP.Utilities;
@@ -21,7 +22,7 @@ namespace Peachpie.CodeAnalysis.Syntax
         readonly PhpSourceUnit _sourceunit;
 
         StringTable _strings;
-        PHPDocBlock _docblock;
+        IDocBlock _docblock;
 
         /// <summary>
         /// Buffered tokens.
@@ -80,7 +81,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             }
         }
 
-        public PHPDocBlock DocComment
+        public IDocBlock DocComment
         {
             get => _docblock;
             set => _docblock = value;

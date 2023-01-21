@@ -233,7 +233,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // annotate routines that contain yield
             if (!tree.YieldNodes.IsDefaultOrEmpty)
             {
-                var yieldsInRoutines = new Dictionary<LangElement, List<IYieldLikeEx>>();
+                var yieldsInRoutines = new Dictionary<ILangElement, List<IYieldLikeEx>>();
                 foreach (var y in tree.YieldNodes)
                 {
                     Debug.Assert(y is IYieldLikeEx);

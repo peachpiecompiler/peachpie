@@ -43,7 +43,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             {
                 using (var provider = new AdditionalSyntaxProvider(
                     new PhpTokenProvider(
-                        new Lexer(source, Encoding.UTF8, errors, features, 0, state),
+                        new Lexer(source, Encoding.UTF8, errors, features, initialState: state),
                         this),
                     factory,
                     parser.CreateTypeRef))

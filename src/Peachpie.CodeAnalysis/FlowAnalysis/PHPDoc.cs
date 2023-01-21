@@ -1,4 +1,6 @@
-﻿using Devsense.PHP.Syntax;
+﻿using Devsense.PHP.Ast.DocBlock;
+using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using System;
@@ -6,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -14,187 +17,55 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// </summary>
     internal static class PHPDoc
     {
-        private delegate TypeRefMask TypeMaskGetter(TypeRefContext ctx);
-
-        /// <summary>
-        /// Well-known PHP type names used in PHPDoc.
-        /// </summary>
-        private static readonly Dictionary<string, TypeMaskGetter>/*!*/_knownTypes = new Dictionary<string, TypeMaskGetter>(StringComparer.OrdinalIgnoreCase)
+        public static IDocEntry GetDocEntry(this IDocBlock phpdoc, string tag)
         {
-            { "int", ctx => ctx.GetLongTypeMask()},
-            { "integer", ctx => ctx.GetLongTypeMask()},
-            { "long", ctx => ctx.GetLongTypeMask()},
-            { "number", ctx => ctx.GetNumberTypeMask()},
-            { "numeric", ctx => ctx.GetNumberTypeMask()},
-            { "string", ctx => ctx.GetStringTypeMask()},
-            { "bool", ctx => ctx.GetBooleanTypeMask()},
-            { "boolean", ctx => ctx.GetBooleanTypeMask()},
-            { "false", ctx => ctx.GetBooleanTypeMask()},
-            { "true", ctx => ctx.GetBooleanTypeMask()},
-            { "float", ctx => ctx.GetDoubleTypeMask()},
-            { "double", ctx => ctx.GetDoubleTypeMask()},
-            { "array", ctx => ctx.GetArrayTypeMask()},
-            { "resource", ctx => ctx.GetResourceTypeMask()},
-            { "null", ctx => ctx.GetNullTypeMask()},
-            { "object", ctx => ctx.GetSystemObjectTypeMask()},
-            { "void", ctx => default(TypeRefMask).WithSubclasses},  // avoid being 0 (which means uninitialized)
-            //{ "nothing", ctx => 0},
-            { "callable", ctx => ctx.GetCallableTypeMask()},
-            { "mixed", ctx => TypeRefMask.AnyType},
-        };
-
-        /// <summary>
-        /// Gets value indicating whether given parameter represents known PHPDoc type name.
-        /// </summary>
-        public static bool IsKnownType(string tname)
-        {
-            return !string.IsNullOrEmpty(tname) && _knownTypes.ContainsKey(tname);
-        }
-
-        /// <summary>
-        /// Gets type mask of known PHPDoc type name or <c>0</c> if such type is now known.
-        /// </summary>
-        public static TypeRefMask GetKnownTypeMask(TypeRefContext/*!*/typeCtx, string tname)
-        {
-            Contract.ThrowIfNull(typeCtx);
-            if (!string.IsNullOrEmpty(tname))
+            if (phpdoc != null)
             {
-                TypeMaskGetter getter;
-                if (_knownTypes.TryGetValue(tname, out getter))
+                for (var entry = phpdoc.Entries; entry != null; entry = entry.Next)
                 {
-                    return getter(typeCtx);
+                    if (IsDocTag(entry, tag))
+                    {
+                        return entry;
+                    }
                 }
             }
 
-            return 0;   // void
+            return null;
         }
 
-        /// <summary>
-        /// Gets type mask representing given type name.
-        /// </summary>
-        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/typeCtx, string tname, NamingContext naming, bool fullyQualified = false)
+        public static bool IsDocTag(this IDocEntry entry, string tag)
         {
-            if (!string.IsNullOrEmpty(tname))
+            if (entry != null)
             {
-                // handle various array conventions
-                if (tname.LastCharacter() == ']')
+                var str = entry.ToString();
+                if (str.StartsWith(tag, StringComparison.Ordinal))
                 {
-                    // "TName[]"
-                    if (tname.EndsWith("[]", StringComparison.Ordinal))
+                    var idx = tag.Length;
+                    if (str.Length == idx || char.IsWhiteSpace(str[idx]))
                     {
-                        var elementType = GetTypeMask(typeCtx, tname.Remove(tname.Length - 2), naming, fullyQualified);
-                        return typeCtx.GetArrayTypeMask(elementType);
+                        return true;
                     }
-
-                    // "array[TName]"
-                    var arrayTypeName = QualifiedName.Array.Name.Value;
-                    if (tname.Length > arrayTypeName.Length && tname[arrayTypeName.Length] == '[' &&
-                        tname.StartsWith(arrayTypeName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var elementTypeName = tname.Substring(arrayTypeName.Length + 1, tname.Length - arrayTypeName.Length - 2);
-                        var elementType = GetTypeMask(typeCtx, elementTypeName, naming, fullyQualified);
-                        return typeCtx.GetArrayTypeMask(elementType);
-                    }
-
-                    // unknown something // ...                    
-                }
-                else if (tname[0] == '&')
-                {
-                    return GetTypeMask(typeCtx, tname.Substring(1), naming, fullyQualified).WithRefFlag;
-                }
-                else
-                {
-                    var result = GetKnownTypeMask(typeCtx, tname);
-                    if (result.IsUninitialized)
-                    {
-                        var qname = NameUtils.MakeQualifiedName(tname, false);
-                        if (!fullyQualified && naming != null && !qname.IsReservedClassName)
-                            qname = QualifiedName.TranslateAlias(qname, AliasKind.Type, naming.Aliases, naming.CurrentNamespace);
-
-                        if (qname.IsPrimitiveTypeName)
-                        {
-                            result = GetKnownTypeMask(typeCtx, qname.Name.Value);
-                            if (!result.IsUninitialized)
-                                return result;
-                        }
-
-                        if (qname.IsSelfClassName)
-                        {
-                            return typeCtx.GetSelfTypeMask();
-                        }
-
-                        result = BoundTypeRefFactory.Create(qname, typeCtx.SelfType as SourceTypeSymbol).GetTypeRefMask(typeCtx);
-                    }
-
-                    //Contract.Assert(!result.IsUninitialized);
-                    return result;
                 }
             }
 
-            return 0;
-        }
-
-        /// <summary>
-        /// Gets type mask representing given type name.
-        /// </summary>
-        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/typeCtx, string[] tnames, NamingContext naming, bool fullyQualified = false)
-        {
-            TypeRefMask result = 0;
-
-            foreach (var tname in tnames)
-                result |= GetTypeMask(typeCtx, tname, naming, fullyQualified);
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets type mask at target ctype context representing given type names from given routine.
-        /// </summary>
-        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/targetCtx, Symbols.SourceRoutineSymbol/*!*/routine, string[] tnames, bool fullyQualified = false)
-        {
-            Contract.ThrowIfNull(targetCtx);
-            Contract.ThrowIfNull(routine);
-
-            return GetTypeMask(targetCtx, routine.TypeRefContext, tnames, routine.GetNamingContext(), fullyQualified);
-        }
-
-        /// <summary>
-        /// Gets type mask at target type context representing given type names from given routine.
-        /// </summary>
-        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/targetCtx, TypeRefContext/*!*/ctx, string[] tnames, NamingContext naming, bool fullyQualified = false)
-        {
-            Contract.ThrowIfNull(targetCtx);
-            Contract.ThrowIfNull(ctx);
-
-            var mask = GetTypeMask(ctx, tnames, naming, fullyQualified);
-            return targetCtx.AddToContext(ctx, mask);
+            return false;
         }
 
         /// <summary>
         /// Gets parameter type from given PHPDoc block.
         /// </summary>
-        public static PHPDocBlock.ParamTag GetParamTag(PHPDocBlock phpdoc, int paramIndex, string paramName)
+        public static IDocEntry GetParamTag(PHPDocBlock phpdoc, int paramIndex, string paramName)
         {
-            PHPDocBlock.ParamTag result = null;
-
             if (phpdoc != null)
             {
                 int pi = 0;
-                var elements = phpdoc.Elements;
-                foreach (var element in elements)
+                for (var entry = phpdoc.Entries; entry != null; entry = entry.Next)
                 {
-                    var ptag = element as PHPDocBlock.ParamTag;
-                    if (ptag != null)
+                    if (IsDocTag(entry, "@param"))
                     {
-                        if (string.IsNullOrEmpty(ptag.VariableName))
+                        if (entry.ToString().IndexOf(paramName) >= 0)
                         {
-                            if (pi == paramIndex)
-                                result = ptag;  // found @param by index
-                        }
-                        else if (string.Equals(ptag.VariableName.Substring(1), paramName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            result = ptag;
-                            break;
+                            return entry;
                         }
 
                         //
@@ -203,7 +74,84 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
 
-            return result;
+            return null;
+        }
+
+        static ReadOnlySpan<char> SliceWord(ReadOnlySpan<char> text)
+        {
+            var i = 0;
+            while (i < text.Length && char.IsWhiteSpace(text[i])) i++;
+            while (i < text.Length && !char.IsWhiteSpace(text[i])) i++;
+
+            return text.Slice(0, i);
+        }
+
+        public static bool GetEntryText(this IDocEntry entry, out string text)
+        {
+            if (entry != null)
+            {
+                var str = entry.ToString().AsSpan().Trim();
+
+                // @tagname [text]
+                int i;
+
+                // @tagname
+                if (str.Length > 0 && str[0] == '@')
+                {
+                    var tagname = SliceWord(str);
+                    str = str.Slice(tagname.Length).TrimStart();
+                }
+
+                // 
+                text = str.ToString();
+                return true;
+            }
+
+            text = null;
+            return false;
+        }
+
+        public static bool GetEntryText(this IDocEntry entry,
+            out string tagname,
+            out string typename,
+            out string varname,
+            out string description)
+        {
+            tagname = typename = varname = description = null;
+
+            if (entry != null)
+            {
+                var str = entry.ToString().AsSpan().Trim();
+
+                // @tagname [typename] [$varname] [description]
+                
+                // @tagname
+                if (str.Length > 0 && str[0] == '@')
+                {
+                    tagname = SliceWord(str).ToString();
+                    str = str.Slice(tagname.Length).TrimStart();
+                }
+                
+                // typename
+                if (str.Length > 0 && str[0] != '$')
+                {
+                    typename = SliceWord(str).ToString();
+                    str = str.Slice(typename.Length).TrimStart();
+                }
+
+                // $varname
+                if (str.Length > 0 && str[0] == '$')
+                {
+                    varname = SliceWord(str).ToString();
+                    str = str.Slice(varname.Length).TrimStart();
+                }
+
+                // 
+                description = str.ToString();
+                return true;
+            }
+
+            return false;
         }
     }
 }

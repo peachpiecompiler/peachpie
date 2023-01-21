@@ -13,6 +13,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using System.Runtime.InteropServices;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis
 {
@@ -208,8 +209,14 @@ namespace Pchp.CodeAnalysis
 
         /// <summary>
         /// Attribute name determining the field below is app-static instead of context-static.
+        /// @appstatic
         /// </summary>
         public const string AppStaticTagName = "@appstatic";
+
+        /// <summary>
+        /// @deprecated
+        /// </summary>
+        public const string DeprecatedTagName = "@deprecated";
 
         /// <summary>
         /// Lookups notation determining given field as app-static instead of context-static.
@@ -223,9 +230,14 @@ namespace Pchp.CodeAnalysis
                 var phpdoc = field.PHPDoc;
                 if (phpdoc != null)
                 {
-                    return phpdoc.Elements
-                        .OfType<PHPDocBlock.UnknownTextTag>()
-                        .Any(t => t.TagName.Equals(AppStaticTagName, StringComparison.OrdinalIgnoreCase));
+                    foreach (var entry in phpdoc)
+                    {
+                        // @appstatic
+                        if (entry.IsDocTag(AppStaticTagName))
+                        {
+                            return true;
+                        }
+                    }
                 }
             }
 
@@ -275,7 +287,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Traverses AST and finds closest parent element of desired type.
         /// </summary>
-        public static T FindParentLangElement<T>(LangElement node) where T : LangElement
+        public static T FindParentLangElement<T>(ILangElement node) where T : ILangElement
         {
             while (node != null && !(node is T))
             {
@@ -288,7 +300,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Gets containing routine element (function, method or lambda).
         /// </summary>
-        public static LangElement GetContainingRoutine(this LangElement element)
+        public static ILangElement GetContainingRoutine(this ILangElement element)
         {
             while (!(element is MethodDecl || element is FunctionDecl || element is LambdaFunctionExpr || element is GlobalCode || element == null))
             {
@@ -348,16 +360,16 @@ namespace Pchp.CodeAnalysis
         sealed class ElementVisitor<TElement> : TreeVisitor
             where TElement : LangElement
         {
-            readonly Func<LangElement, bool> _acceptPredicate;
+            readonly Func<ILangElement, bool> _acceptPredicate;
 
             public List<TElement> Result { get; } = new List<TElement>();
 
-            public ElementVisitor(Func<LangElement, bool> acceptPredicate)
+            public ElementVisitor(Func<ILangElement, bool> acceptPredicate)
             {
                 _acceptPredicate = acceptPredicate;
             }
 
-            public override void VisitElement(LangElement element)
+            public override void VisitElement(ILangElement element)
             {
                 if (element is TElement x)
                 {
@@ -374,7 +386,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Gets all elements of given type.
         /// </summary>
-        public static List<TElement> SelectElements<TElement>(this LangElement root, Func<LangElement, bool> acceptPredicate)
+        public static List<TElement> SelectElements<TElement>(this LangElement root, Func<ILangElement, bool> acceptPredicate)
             where TElement : LangElement
         {
             var visitor = new ElementVisitor<TElement>(acceptPredicate);
