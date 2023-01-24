@@ -1107,11 +1107,10 @@ namespace Pchp.Library.Standard
                         return (order == SortingOrder.Descending) ? KeyComparer.ReverseNumeric : KeyComparer.Numeric;
 
                     case ComparisonMethod.String:
-                        return (order == SortingOrder.Descending) ? KeyComparer.ReverseString(ctx) : KeyComparer.String(ctx);
+                        return (order == SortingOrder.Descending) ? KeyComparer.ReverseString(ctx, false) : KeyComparer.String(ctx, false);
 
                     case ComparisonMethod.String | ComparisonMethod.FlagCase:
-                        //return (order == SortingOrder.Descending) ? KeyComparer.ReverseStringIgnoreCase(ctx) : KeyComparer.StringIgnoreCase(ctx);
-                        throw new NotImplementedException();
+                        return (order == SortingOrder.Descending) ? KeyComparer.ReverseString(ctx, true) : KeyComparer.String(ctx, true);
 
                     case ComparisonMethod.LocaleString:
                         return new KeyComparer(Locale.GetStringComparer(ctx, false), order == SortingOrder.Descending);
@@ -1730,7 +1729,7 @@ namespace Pchp.Library.Standard
         //[return: PhpDeepCopy]
         public static PhpArray array_diff_key(Context ctx, PhpArray array, params PhpArray[] arrays)
         {
-            return SetOperation(SetOperations.Difference, array, arrays, KeyComparer.String(ctx));
+            return SetOperation(SetOperations.Difference, array, arrays, KeyComparer.String(ctx, false));
         }
 
         /// <summary>
@@ -1739,7 +1738,7 @@ namespace Pchp.Library.Standard
         //[return: PhpDeepCopy]
         public static PhpArray array_intersect_key(Context ctx, PhpArray array, params PhpArray[] arrays)
         {
-            return SetOperation(SetOperations.Intersection, array, arrays, KeyComparer.String(ctx));
+            return SetOperation(SetOperations.Intersection, array, arrays, KeyComparer.String(ctx, false));
         }
 
         /// <summary>
@@ -2425,8 +2424,8 @@ namespace Pchp.Library.Standard
             {
                 ComparisonMethod.Regular => PhpComparer.Default,
                 ComparisonMethod.Numeric => PhpNumericComparer.Default,
-                ComparisonMethod.String => new PhpStringComparer(ctx),
-                ComparisonMethod.String | ComparisonMethod.FlagCase => throw new NotImplementedException(sortFlags.ToString()),
+                ComparisonMethod.String => new PhpStringComparer(ctx, false),
+                ComparisonMethod.String | ComparisonMethod.FlagCase => new PhpStringComparer(ctx, caseInsensitive: true),
                 ComparisonMethod.Natural => new PhpNaturalComparer(ctx, false),
                 ComparisonMethod.Natural | ComparisonMethod.FlagCase => new PhpNaturalComparer(ctx, caseInsensitive: true),
                 ComparisonMethod.LocaleString => throw new NotImplementedException(sortFlags.ToString()),
