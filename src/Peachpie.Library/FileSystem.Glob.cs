@@ -181,7 +181,7 @@ namespace Pchp.Library
 
             private static string/*!*/ Unescape(string/*!*/ path, int start)
             {
-                var unescaped = StringBuilderUtilities.Pool.Get();
+                var unescaped = ObjectPools.GetStringBuilder();
                 var inEscape = false;
 
                 for (int i = start; i < path.Length; i++)
@@ -205,7 +205,7 @@ namespace Pchp.Library
                 }
 
                 //
-                return StringBuilderUtilities.GetStringAndReturn(unescaped);
+                return ObjectPools.GetStringAndReturn(unescaped);
             }
 
             private void TestPath(string path, int patternEnd, bool isLastPathSegment)

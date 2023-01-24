@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library.Spl
 {
@@ -346,7 +347,7 @@ namespace Pchp.Library.Spl
         /// </summary>
         public virtual string getPrefix()
         {
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
             
             result.Append(_prefix[PREFIX_LEFT]);
 
@@ -363,7 +364,7 @@ namespace Pchp.Library.Spl
 
             result.Append(_prefix[PREFIX_RIGHT]);
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>

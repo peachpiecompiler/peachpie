@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.ObjectPool;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -36,7 +37,7 @@ namespace Pchp.Library
         {
             if (str == null) throw new ArgumentNullException(nameof(str));
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             string double_quotes = doubleQuotes ? "\\\"" : "\"";
             string single_quotes = singleQuotes ? @"\'" : "'";
@@ -55,7 +56,7 @@ namespace Pchp.Library
                 }
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -78,7 +79,7 @@ namespace Pchp.Library
                 return string.Empty;
             }
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
             int from = 0;   // plain chunk start
 
             for (int i = 0; i < str.Length; i++)
@@ -108,7 +109,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -121,7 +122,7 @@ namespace Pchp.Library
         {
             if (str == null) throw new ArgumentNullException(nameof(str));
 
-            StringBuilder result = StringBuilderUtilities.Pool.Get();
+            StringBuilder result = ObjectPools.GetStringBuilder();
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -134,7 +135,7 @@ namespace Pchp.Library
                 }
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -146,7 +147,7 @@ namespace Pchp.Library
         {
             if (str == null) throw new ArgumentNullException(nameof(str));
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             int i = 0;
             while (i < str.Length - 1)
@@ -170,7 +171,7 @@ namespace Pchp.Library
             if (i < str.Length)
                 result.Append(str[i]);
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -348,7 +349,7 @@ namespace Pchp.Library
                 }
 
                 // lazily create string builder and append text without found characters:
-                tmp ??= StringBuilderUtilities.Pool.Get();
+                tmp ??= ObjectPools.GetStringBuilder();
                 tmp.Append(text, startIndex, idx - startIndex);
 
                 startIndex = idx + 1;
@@ -358,7 +359,7 @@ namespace Pchp.Library
             {
                 tmp.Append(text, startIndex, text.Length - startIndex);
 
-                return StringBuilderUtilities.GetStringAndReturn(tmp);
+                return ObjectPools.GetStringAndReturn(tmp);
             }
 
             //
@@ -786,14 +787,14 @@ namespace Pchp.Library
         /// Gets object pool singleton.
         /// Uses <see cref="StringBuilderPooledObjectPolicy"/> policy (automatically clears the string builder upon return).
         /// </summary>
-        public static ObjectPool<StringBuilder> Pool => Core.Utilities.StringBuilderUtilities.Pool;
+        public static ObjectPool<StringBuilder> Pool => ObjectPools.StringBuilderPool;
 
         /// <summary>
         /// Gets the <paramref name="sb"/> value as string and return the instance to the <see cref="Pool"/>.
         /// </summary>
         /// <param name="sb">String builder instance.</param>
         /// <returns><paramref name="sb"/> string.</returns>
-        public static string GetStringAndReturn(StringBuilder sb) => Core.Utilities.StringBuilderUtilities.GetStringAndReturn(sb);
+        public static string GetStringAndReturn(StringBuilder sb) => ObjectPools.GetStringAndReturn(sb);
     }
 
     public static class PhpStreamUtils

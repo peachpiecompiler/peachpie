@@ -1,5 +1,6 @@
 ﻿using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Utilities;
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -13,7 +14,7 @@ namespace Pchp.Library
         /// </summary>
         public static string GetStackTraceString(this PhpStackTrace trace, int skip = 0)
         {
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
             var lines = trace.GetLines();
 
             for (int i = 1 + skip, order = 0; i < lines.Length; i++, order++)
@@ -22,7 +23,7 @@ namespace Pchp.Library
                 result.AppendLine();
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -47,7 +48,7 @@ namespace Pchp.Library
         /// </summary>
         public static string FormatExceptionString(this PhpStackTrace trace, string exceptionname, string message)
         {
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             // TODO: texts to resources
 
@@ -85,7 +86,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
     }
 }

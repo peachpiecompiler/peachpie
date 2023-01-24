@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Resources;
 
 namespace Pchp.Library
@@ -390,9 +391,9 @@ namespace Pchp.Library
 
                 if (CountRange(_ctx, firstCharacter, secondCharacter, out characters, out result))
                 {
-                    var sb = StringBuilderUtilities.Pool.Get();
+                    var sb = ObjectPools.GetStringBuilder();
                     EscapeBracketExpressionSpecialChars(sb, characters);
-                    return StringBuilderUtilities.GetStringAndReturn(sb);
+                    return ObjectPools.GetStringAndReturn(sb);
                 }
 
                 // there was an error

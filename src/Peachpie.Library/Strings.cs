@@ -893,7 +893,7 @@ namespace Pchp.Library
             }
 
             // creates result builder:
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             // translates:
             for (int i = 0; i < str.Length; i++)
@@ -908,7 +908,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -1097,14 +1097,14 @@ namespace Pchp.Library
             else
             {
                 var unistr = str.ToString(Encoding.UTF8/*does not matter*/);
-                var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(count * unistr.Length);
+                var result = ObjectPools.GetStringBuilder(); // new StringBuilder(count * unistr.Length);
 
                 while (count-- > 0)
                 {
                     result.Append(unistr);
                 }
 
-                return StringBuilderUtilities.GetStringAndReturn(result);
+                return ObjectPools.GetStringAndReturn(result);
             }
         }
 
@@ -1492,7 +1492,7 @@ namespace Pchp.Library
             {
                 if (result == null)
                 {
-                    result = StringBuilderUtilities.Pool.Get();
+                    result = ObjectPools.GetStringBuilder();
                 }
 
                 result.Append(subject, from, index - from);
@@ -1508,7 +1508,7 @@ namespace Pchp.Library
             else
             {
                 result.Append(subject, from, subject.Length - from);
-                return StringBuilderUtilities.GetStringAndReturn(result);
+                return ObjectPools.GetStringAndReturn(result);
             }
         }
 
@@ -1726,7 +1726,7 @@ namespace Pchp.Library
 
             Encoding encoding = ctx.StringEncoding;
             MemoryStream stream = new MemoryStream();
-            var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(str.Length / 2);
+            var result = ObjectPools.GetStringBuilder(); // new StringBuilder(str.Length / 2);
 
             int i = 0;
             while (i < str.Length)
@@ -1796,7 +1796,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -1942,7 +1942,7 @@ namespace Pchp.Library
 
             const string cslashed_chars = "abtnvfr";
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
             for (int i = 0; i < str.Length; i++)
             {
                 //char c = translatedStr[i];
@@ -1968,7 +1968,7 @@ namespace Pchp.Library
                     result.Append(str[i]);
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -1988,7 +1988,7 @@ namespace Pchp.Library
                 return string.Empty;
             }
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -2000,7 +2000,7 @@ namespace Pchp.Library
                 result.Append(c);
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         #endregion
@@ -2034,7 +2034,7 @@ namespace Pchp.Library
             Encoding encoding = ctx.StringEncoding;
             const char escape = '\\';
             int length = str.Length;
-            var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(length);
+            var result = ObjectPools.GetStringBuilder(); // new StringBuilder(length);
             bool state1 = false;
             Span<byte> bA1 = stackalloc byte[1];
             Span<char> cA1 = stackalloc char[encoding.GetMaxCharCount(1)];
@@ -2110,7 +2110,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         #endregion
@@ -2253,7 +2253,7 @@ namespace Pchp.Library
             int maxi = index + length;
             Debug.Assert(maxi <= str.Length);
 
-            var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(length);
+            var result = ObjectPools.GetStringBuilder(); // new StringBuilder(length);
 
             // quote style is anded to emulate PHP behavior (any value is allowed):
             string single_quote = (quoteStyle & QuoteStyle.SingleQuotes) != 0 ? "&#039;" : "'";
@@ -2288,7 +2288,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         static string IsAtKnownEntity(string str, int index)
@@ -2342,7 +2342,7 @@ namespace Pchp.Library
         {
             if (str == null) return null;
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             bool dq = (quoteStyle & QuoteStyle.DoubleQuotes) != 0;
             bool sq = (quoteStyle & QuoteStyle.SingleQuotes) != 0;
@@ -2381,7 +2381,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -2433,7 +2433,7 @@ namespace Pchp.Library
             string single_quote = (quoteStyle & QuoteStyle.SingleQuotes) != 0 ? "&#039;" : "'";
             string double_quote = (quoteStyle & QuoteStyle.DoubleQuotes) != 0 ? "&quot;" : "\"";
 
-            var str_builder = StringBuilderUtilities.Pool.Get();
+            var str_builder = ObjectPools.GetStringBuilder();
             StringWriter result = new StringWriter(str_builder);
 
             // convert ' and " manually, rely on HttpUtility.HtmlEncode for everything else
@@ -2451,7 +2451,7 @@ namespace Pchp.Library
             if (old_index < str.Length) result.Write(System.Net.WebUtility.HtmlEncode(str.Substring(old_index)));
 
             result.Flush();
-            return StringBuilderUtilities.GetStringAndReturn(str_builder);
+            return ObjectPools.GetStringAndReturn(str_builder);
         }
 
         /// <summary>
@@ -2525,7 +2525,7 @@ namespace Pchp.Library
                 return System.Net.WebUtility.HtmlDecode(str);
             }
 
-            StringBuilder str_builder = StringBuilderUtilities.Pool.Get();
+            StringBuilder str_builder = ObjectPools.GetStringBuilder();
             StringWriter result = new StringWriter(str_builder);
 
             // convert &#039;, &#39; and &quot; manually, rely on HttpUtility.HtmlDecode for everything else
@@ -2573,7 +2573,7 @@ namespace Pchp.Library
             if (old_index < str.Length) result.Write(System.Net.WebUtility.HtmlDecode(str.Substring(old_index)));
 
             result.Flush();
-            return StringBuilderUtilities.GetStringAndReturn(str_builder);
+            return ObjectPools.GetStringAndReturn(str_builder);
         }
 
         #endregion
@@ -3806,7 +3806,7 @@ namespace Pchp.Library
             bool plusSign = false;
             char padChar = ' ';
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             // process the format string using a 6-state finite automaton
             int length = format.Length;
@@ -4048,7 +4048,7 @@ namespace Pchp.Library
                 }
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -4534,7 +4534,7 @@ namespace Pchp.Library
                 return null; // return FALSE;
             }
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             // mimic the strange PHP behaviour when width < 0 and cut is true
             if (width < 0 && cut)
@@ -4594,7 +4594,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         #endregion 
@@ -5059,7 +5059,7 @@ namespace Pchp.Library
                 }
 
                 // else build the resulting string manually
-                StringBuilder result = StringBuilderUtilities.Pool.Get();
+                StringBuilder result = ObjectPools.GetStringBuilder();
 
                 // pad left
                 while (padLeft > padStrLength)
@@ -5079,7 +5079,7 @@ namespace Pchp.Library
                 }
                 if (padRight > 0) result.Append(uniPaddingString.Substring(0, padRight));
 
-                return StringBuilderUtilities.GetStringAndReturn(result);
+                return ObjectPools.GetStringAndReturn(result);
             }
 
             return null;

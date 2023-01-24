@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -1031,7 +1032,7 @@ namespace Pchp.Library
                 {
                     if (newstr == null)
                     {
-                        newstr = StringBuilderUtilities.Pool.Get();
+                        newstr = ObjectPools.GetStringBuilder();
                     }
 
                     newstr.Append(str, from, i - from);
@@ -1052,7 +1053,7 @@ namespace Pchp.Library
                     newstr.Append(str, from, str.Length - from);
                 }
 
-                return StringBuilderUtilities.GetStringAndReturn(newstr);
+                return ObjectPools.GetStringAndReturn(newstr);
             }
         }
 

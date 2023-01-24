@@ -584,7 +584,7 @@ namespace Pchp.Core
             if (!_level.containsByteData)
             {
                 // contains characters only:
-                var result = StringBuilderUtilities.Pool.Get(); // new StringBuilder(_level.size);
+                var result = ObjectPools.GetStringBuilder(); // new StringBuilder(_level.size);
 
                 for (int i = 0; i < _level.buffers.Count; i++)
                 {
@@ -592,7 +592,7 @@ namespace Pchp.Core
                     result.Append((char[])element.data, 0, element.size);
                 }
 
-                return StringBuilderUtilities.GetStringAndReturn(result);
+                return ObjectPools.GetStringAndReturn(result);
             }
             else if (!_level.containsCharData)
             {

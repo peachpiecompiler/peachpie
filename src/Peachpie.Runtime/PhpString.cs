@@ -1102,14 +1102,14 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    var builder = StringBuilderUtilities.Pool.Get();
+                    var builder = ObjectPools.GetStringBuilder();
 
                     for (int i = 0; i < count; i++)
                     {
                         builder.Append(ChunkToString(encoding, chunks[i]));
                     }
 
-                    return StringBuilderUtilities.GetStringAndReturn(builder);
+                    return ObjectPools.GetStringAndReturn(builder);
                 }
             }
 

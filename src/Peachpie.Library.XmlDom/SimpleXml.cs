@@ -756,7 +756,7 @@ namespace Peachpie.Library.XmlDom
             if (XmlAttribute != null) return XmlAttribute.Value;
 
             // concatenate text nodes that are immediate children of this element
-            var sb = StringBuilderUtilities.Pool.Get();
+            var sb = ObjectPools.GetStringBuilder();
 
             foreach (XmlNode child in XmlElement.ChildNodes)
             {
@@ -764,7 +764,7 @@ namespace Peachpie.Library.XmlDom
                 if (text != null) sb.Append(text);
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(sb);
+            return ObjectPools.GetStringAndReturn(sb);
         }
 
         /// <summary>

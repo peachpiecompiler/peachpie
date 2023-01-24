@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using Pchp.Core.Reflection;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library.Streams
 {
@@ -199,7 +200,7 @@ namespace Pchp.Library.Streams
 
             while (idx < text.Length && (pos = IndexOfStandaloneLF(text, idx)) >= 0)
             {
-                sb ??= StringBuilderUtilities.Pool.Get();
+                sb ??= ObjectPools.GetStringBuilder();
 
                 sb.Append(text, idx, pos - idx);
                 sb.Append("\r\n");
@@ -211,7 +212,7 @@ namespace Pchp.Library.Streams
             if (sb != null)
             {
                 sb.Append(text, idx, text.Length - idx);
-                text = StringBuilderUtilities.GetStringAndReturn(sb);
+                text = ObjectPools.GetStringAndReturn(sb);
             }
 
             return new TextElement(text);

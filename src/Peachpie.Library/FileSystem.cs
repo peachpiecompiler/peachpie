@@ -412,7 +412,7 @@ namespace Pchp.Library
                 {
                     // enclosed string follows:
                     int start = ++i;
-                    var field_builder = StringBuilderUtilities.Pool.Get();
+                    var field_builder = ObjectPools.GetStringBuilder();
 
                     for (; ; )
                     {
@@ -474,7 +474,7 @@ namespace Pchp.Library
 
                     //result.Add(Core.Convert.Quote(field_builder.ToString(), context));
                     //result.Add(StringUtils.EscapeStringCustom(field_builder.ToString(), charsToEscape, escape));
-                    result.Add(StringBuilderUtilities.GetStringAndReturn(field_builder));
+                    result.Add(ObjectPools.GetStringAndReturn(field_builder));
                 }
                 else
                 {

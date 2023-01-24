@@ -72,7 +72,7 @@ namespace Pchp.Library
             var denominator = BigInteger.Abs(num.Denominator);
             var hasdecimal = false;
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             if (num.Sign < 0)
             {
@@ -118,7 +118,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         static Rational Trunc(this Rational num) => num.Sign >= 0 ? num.WholePart : (-(-num).WholePart);

@@ -1321,7 +1321,7 @@ namespace Peachpie.Library.XmlDom
             {
                 if (builder == null)
                 {
-                    builder = StringBuilderUtilities.Pool.Get();
+                    builder = ObjectPools.GetStringBuilder();
                     builder.Append(source.Substring(0, index));
                 }
 
@@ -1357,7 +1357,7 @@ namespace Peachpie.Library.XmlDom
                 }
             }
 
-            return (builder != null) ? StringBuilderUtilities.GetStringAndReturn(builder) : source;
+            return (builder != null) ? ObjectPools.GetStringAndReturn(builder) : source;
         }
     }
 }

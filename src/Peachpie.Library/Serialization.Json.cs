@@ -333,7 +333,7 @@ namespace Pchp.Library
 
                 public static string Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller, long depth)
                 {
-                    var str = StringBuilderUtilities.Pool.Get();
+                    var str = ObjectPools.GetStringBuilder();
 
                     try
                     {

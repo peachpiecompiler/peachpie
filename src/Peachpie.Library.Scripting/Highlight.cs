@@ -80,7 +80,7 @@ namespace Peachpie.Library.Scripting
         /// </summary>
         public static PhpValue highlight_string(Context ctx, string source, bool @return = false)
         {
-            var output = StringBuilderUtilities.Pool.Get();
+            var output = ObjectPools.GetStringBuilder();
             var config = GetConfig(ctx);
 
             using (var xmlwriter = XmlWriter.Create(output, new XmlWriterSettings
@@ -134,7 +134,7 @@ namespace Peachpie.Library.Scripting
                 xmlwriter.WriteEndElement();
             }
             //
-            var result = StringBuilderUtilities.GetStringAndReturn(output);
+            var result = ObjectPools.GetStringAndReturn(output);
 
             if (@return)
             {

@@ -106,9 +106,9 @@ namespace Pchp.Core.Reflection
 
             public override string ToString()
             {
-                var result = Utilities.StringBuilderUtilities.Pool.Get();
+                var result = Utilities.ObjectPools.GetStringBuilder();
                 GetStackTraceLine(-1, result);
-                return Utilities.StringBuilderUtilities.GetStringAndReturn(result);
+                return Utilities.ObjectPools.GetStringAndReturn(result);
             }
         }
 
@@ -251,7 +251,7 @@ namespace Pchp.Core.Reflection
         {
             get
             {
-                var result = Utilities.StringBuilderUtilities.Pool.Get();
+                var result = Utilities.ObjectPools.GetStringBuilder();
 
                 var lines = this.GetLines();
 
@@ -260,7 +260,7 @@ namespace Pchp.Core.Reflection
                     lines[i].GetStackTraceLine(i - 1, result);
                     result.AppendLine();                }
 
-                return Utilities.StringBuilderUtilities.GetStringAndReturn(result);
+                return Utilities.ObjectPools.GetStringAndReturn(result);
             }
         }
 

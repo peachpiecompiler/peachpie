@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -221,7 +222,7 @@ namespace Pchp.Library
                 if (isFinal)
                 {
                     input ??= string.Empty;
-                    var sb = StringBuilderUtilities.Pool.Get();
+                    var sb = ObjectPools.GetStringBuilder();
 
                     if (_inputQueue != null)
                     {
@@ -235,7 +236,7 @@ namespace Pchp.Library
 
                     sb.Append(input);
 
-                    return ParseInternal(StringBuilderUtilities.GetStringAndReturn(sb), null, null);
+                    return ParseInternal(ObjectPools.GetStringAndReturn(sb), null, null);
                 }
                 else
                 {

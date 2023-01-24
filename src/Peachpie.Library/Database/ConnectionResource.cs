@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Library.Resources;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library.Database
 {
@@ -162,7 +163,7 @@ namespace Pchp.Library.Database
 		/// </summary>
 		public static string BuildConnectionString(string server, string user, string password, string additionalSettings)
         {
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             result.Append("server=");
             result.Append(server);
@@ -177,7 +178,7 @@ namespace Pchp.Library.Database
                 result.AppendFormat(additionalSettings);
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>

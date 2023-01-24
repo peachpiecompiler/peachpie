@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Resources;
 
 namespace Pchp.Library.DateTime
@@ -313,7 +314,7 @@ namespace Pchp.Library.DateTime
 
             // here we are creating output string
             bool percent = false;
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             foreach (char ch in format)
             {
@@ -436,7 +437,7 @@ namespace Pchp.Library.DateTime
                 result.Append('%');
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
     }
 }

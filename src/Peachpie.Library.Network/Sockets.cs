@@ -7,7 +7,6 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using Microsoft.Extensions.ObjectPool;
 using Pchp.Core;
 using Pchp.Core.Resources;
 using Pchp.Library.Streams;

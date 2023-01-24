@@ -154,7 +154,7 @@ namespace Peachpie.Library.PDO
 
         private class StatementStringRewriter : StatementStringParser, IDisposable
         {
-            readonly StringBuilder _stringBuilder = StringBuilderUtilities.Pool.Get();
+            readonly StringBuilder _stringBuilder = ObjectPools.GetStringBuilder();
             int _unnamedParamIndex = 0;
 
             public string RewrittenQueryString => _stringBuilder.ToString();
@@ -213,7 +213,7 @@ namespace Peachpie.Library.PDO
 
             void IDisposable.Dispose()
             {
-                StringBuilderUtilities.Pool.Return(_stringBuilder);
+                ObjectPools.Return(_stringBuilder);
             }
         }
 

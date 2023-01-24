@@ -26,7 +26,7 @@ namespace Peachpie.Library.Scripting
             }
 
             Tokens t;
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             void Append(StringBuilder sb, CharSpan span)
             {
@@ -56,7 +56,7 @@ namespace Peachpie.Library.Scripting
 
             stream.Dispose();
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
     }
 }

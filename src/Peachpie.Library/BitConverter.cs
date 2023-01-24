@@ -603,7 +603,7 @@ namespace Pchp.Library
                                 int p = pos;
                                 int nibble_shift = (specifier == 'h') ? 0 : 4;
 
-                                var sb = StringBuilderUtilities.Pool.Get();
+                                var sb = ObjectPools.GetStringBuilder();
                                 for (int k = 0; k < size; k++)
                                 {
                                     const string hex_digits = "0123456789ABCDEF";
@@ -618,7 +618,7 @@ namespace Pchp.Library
                                     p++;
                                 }
 
-                                item = StringBuilderUtilities.GetStringAndReturn(sb);
+                                item = ObjectPools.GetStringAndReturn(sb);
                                 break;
                             }
 

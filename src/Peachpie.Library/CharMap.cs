@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -452,7 +453,7 @@ namespace Pchp.Library
             uint invert_inequality = (complement) ? 0xffffffffU : 0U;
             uint flg;
             char c = first;
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             if (f == l)
             {
@@ -495,7 +496,7 @@ namespace Pchp.Library
             }
 
             //
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
     }
 }

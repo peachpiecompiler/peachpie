@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System_DateTime = System.DateTime;
 using System.IO;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library.DateTime
 {
@@ -437,7 +438,7 @@ namespace Pchp.Library.DateTime
 
             // here we are creating output string
             var escape = false;
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             for (int i = 0; i < format.Length; i++)
             {
@@ -676,7 +677,7 @@ namespace Pchp.Library.DateTime
             if (escape)
                 result.Append('\\');
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>
@@ -826,7 +827,7 @@ namespace Pchp.Library.DateTime
             var local = TimeZoneInfo.ConvertTime(utc, zone);// zone.ToLocalTime(utc);
             var info = Locale.GetCulture(ctx, Locale.Category.Time).DateTimeFormat;
 
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
 
             bool specialChar = false;
 
@@ -1038,7 +1039,7 @@ namespace Pchp.Library.DateTime
             if (specialChar)
                 result.Append('%');
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         #endregion

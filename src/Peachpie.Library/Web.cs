@@ -766,7 +766,7 @@ namespace Pchp.Library
                 return string.Empty;
             }
 
-            var sb = StringBuilderUtilities.Pool.Get();
+            var sb = ObjectPools.GetStringBuilder();
             Span<byte> bytes = stackalloc byte[Encoding.UTF8.GetMaxByteCount(1)];
 
             for (int i = 0; i < value.Length; i++)
@@ -805,7 +805,7 @@ namespace Pchp.Library
                 }
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(sb);
+            return ObjectPools.GetStringAndReturn(sb);
         }
 
         /// <summary>
@@ -835,7 +835,7 @@ namespace Pchp.Library
 
         static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator, PhpQueryRfc encType, string indexerPrefix)
         {
-            var result = StringBuilderUtilities.Pool.Get();
+            var result = ObjectPools.GetStringBuilder();
             var first = true;
 
             var enumerator = formData.GetForeachEnumerator(false, default);
@@ -890,7 +890,7 @@ namespace Pchp.Library
                 first = false;
             }
 
-            return StringBuilderUtilities.GetStringAndReturn(result);
+            return ObjectPools.GetStringAndReturn(result);
         }
 
         /// <summary>

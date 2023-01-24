@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -563,7 +564,7 @@ namespace Pchp.Library
                 return "0";
             }
 
-            var sb = StringBuilderUtilities.Pool.Get();
+            var sb = ObjectPools.GetStringBuilder();
 
             while (Math.Abs(fvalue) >= 1)
             {
@@ -575,7 +576,7 @@ namespace Pchp.Library
                 fvalue /= toBase;
             }
 
-            return Core.Utilities.StringUtils.Reverse(StringBuilderUtilities.GetStringAndReturn(sb));
+            return Core.Utilities.StringUtils.Reverse(ObjectPools.GetStringAndReturn(sb));
         }
 
         /// <summary>
