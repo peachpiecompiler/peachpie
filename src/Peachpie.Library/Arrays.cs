@@ -2416,6 +2416,11 @@ namespace Pchp.Library.Standard
                 return null;
             }
 
+            if (array.Count <= 1)
+            {
+                return array.DeepCopy();
+            }
+
             IEqualityComparer<PhpValue> comparer = sortFlags switch
             {
                 ComparisonMethod.Regular => PhpComparer.Default,
