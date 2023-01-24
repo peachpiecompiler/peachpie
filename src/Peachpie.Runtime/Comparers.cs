@@ -325,17 +325,34 @@ namespace Pchp.Core
             _ctx = ctx;
         }
 
+        string ToStringQuiet(PhpValue obj)
+        {
+            switch (obj.TypeCode)
+            {
+                case PhpTypeCode.PhpArray: return PhpArray.PrintablePhpTypeName; // quietly treat as "Array" string
+                case PhpTypeCode.String: return obj.String;
+                case PhpTypeCode.Alias: return ToStringQuiet(obj.Alias);
+                default: return obj.ToString(_ctx); // default behavior
+            }
+        }
+
         /// <summary>
         /// Compares two objects in a manner of PHP string comparison.
         /// </summary>
         public int Compare(PhpValue x, PhpValue y)
         {
-            return string.CompareOrdinal(x.ToString(_ctx), y.ToString(_ctx));
+            return string.CompareOrdinal(ToStringQuiet(x), ToStringQuiet(y));
         }
 
-        public bool Equals(PhpValue x, PhpValue y) => string.Equals(x.ToString(_ctx), y.ToString(_ctx), StringComparison.Ordinal);
+        public bool Equals(PhpValue x, PhpValue y)
+        {
+            return string.Equals(ToStringQuiet(x), ToStringQuiet(y), StringComparison.Ordinal);
+        }
 
-        public int GetHashCode(PhpValue obj) => StringComparer.Ordinal.GetHashCode(obj.ToString(_ctx));
+        public int GetHashCode(PhpValue obj)
+        {
+            return StringComparer.Ordinal.GetHashCode(ToStringQuiet(obj));
+        }
     }
 
     #endregion
