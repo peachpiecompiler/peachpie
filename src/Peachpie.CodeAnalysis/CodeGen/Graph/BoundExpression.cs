@@ -5411,7 +5411,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (t.IsNullableType(out var ttype))
             {
-                // Teplate: value.HasValue
+                // Template: value.HasValue
                 cg.EmitStructAddr(t); // value -> ref value
                 cg.EmitCall(ILOpCode.Call, cg.DeclaringCompilation.System_Nullable_T_HasValue(t))
                     .Expect(SpecialType.System_Boolean);
