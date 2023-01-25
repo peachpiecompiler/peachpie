@@ -31,7 +31,7 @@ namespace Pchp.Library.Reflection
             _tinfo = instance.GetPhpTypeInfo();
         }
 
-        public override PhpArray getProperties(int filter)
+        public override PhpArray getProperties(int filter = 0)
         {
             var result = new PhpArray(8);
             foreach (var p in _tinfo.GetDeclaredProperties().Concat(_tinfo.GetRuntimeProperties(_instance)))
