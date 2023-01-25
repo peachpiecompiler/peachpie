@@ -5397,6 +5397,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 // IsSet(value)
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsSet_PhpValue);
             }
+            else if (t == cg.CoreTypes.PhpString)
+            {
+                // !PhpString.IsNull(<value>)
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.IsNull_PhpString);
+                cg.EmitLogicNegation();
+            }
             else if (t.IsReferenceType)
             {
                 // object != null
