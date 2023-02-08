@@ -333,7 +333,7 @@ namespace Pchp.Core
             {
                 case PhpTypeCode.PhpArray: return PhpArray.PrintablePhpTypeName; // quietly treat as "Array" string
                 case PhpTypeCode.String: return obj.String;
-                case PhpTypeCode.Alias: return ToStringQuiet(obj.Alias);
+                case PhpTypeCode.Alias: return ToStringQuiet(obj.Alias.Value);
                 default: return obj.ToString(_ctx); // default behavior
             }
         }
