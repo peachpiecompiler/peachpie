@@ -1281,6 +1281,8 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(byte[])) return Create(new PhpString((byte[])value));
                 if (value.GetType() == typeof(decimal)) return Create((double)(decimal)value); // downcast to double
                 if (value.GetType() == typeof(IntStringKey)) return Create((IntStringKey)value);
+                if (value.GetType() == typeof(sbyte)) return Create((int)System.Convert.ToInt32(value));
+                if (value.GetType() == typeof(short)) return Create((int)System.Convert.ToInt32(value));
 
                 // object        
                 //if (value is IStructBox box) return FromClass(box);
