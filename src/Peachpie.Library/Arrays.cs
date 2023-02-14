@@ -1133,11 +1133,10 @@ namespace Pchp.Library.Standard
                         return (order == SortingOrder.Descending) ? ValueComparer.ReverseNumeric : ValueComparer.Numeric;
 
                     case ComparisonMethod.String:
-                        return (order == SortingOrder.Descending) ? ValueComparer.ReverseString(ctx) : ValueComparer.String(ctx);
+                        return (order == SortingOrder.Descending) ? ValueComparer.ReverseString(ctx, false) : ValueComparer.String(ctx, false);
 
                     case ComparisonMethod.String | ComparisonMethod.FlagCase:
-                        //return (order == SortingOrder.Descending) ? ValueComparer.ReverseStringIgnoreCase(ctx) : ValueComparer.StringIgnoreCase(ctx);
-                        throw new NotImplementedException();
+                        return (order == SortingOrder.Descending) ? ValueComparer.ReverseString(ctx, true) : ValueComparer.String(ctx, true);
 
                     case ComparisonMethod.LocaleString:
                         return new ValueComparer(Locale.GetStringComparer(ctx, false), order == SortingOrder.Descending);

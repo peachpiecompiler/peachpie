@@ -88,13 +88,13 @@ namespace Pchp.Core
         /// <summary>Numeric comparer.</summary>
         public static readonly ValueComparer Numeric = new ValueComparer(PhpNumericComparer.Default, false);
         /// <summary>String comparer.</summary>
-        public static ValueComparer String(Context ctx) => new ValueComparer(new PhpStringComparer(ctx), false);
+        public static ValueComparer String(Context ctx, bool caseInsensitive = false) => new ValueComparer(new PhpStringComparer(ctx, caseInsensitive), false);
         /// <summary>Regular comparer with reverse order.</summary>
         public static readonly ValueComparer Reverse = new ValueComparer(PhpComparer.Default, true);
         /// <summary>Numeric comparer with reverse order.</summary>
         public static readonly ValueComparer ReverseNumeric = new ValueComparer(PhpNumericComparer.Default, true);
         /// <summary>String comparer with reverse order.</summary>
-        public static ValueComparer ReverseString(Context ctx) => new ValueComparer(new PhpStringComparer(ctx), true);
+        public static ValueComparer ReverseString(Context ctx, bool caseInsensitive = false) => new ValueComparer(new PhpStringComparer(ctx, caseInsensitive), true);
 
         /// <summary>The comparer which will be used to compare values.</summary>
         private IComparer<PhpValue>/*!*/ comparer;
