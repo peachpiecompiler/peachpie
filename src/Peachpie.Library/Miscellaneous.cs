@@ -542,11 +542,6 @@ namespace Pchp.Library.Standard
                 {
                     if (last != '.')
                     {
-                        if (sb.Length == 0)
-                        {
-                            sb.Append('0'); // prepend leading '.' with '0' // TODO: test case and rewrite 'version_compare()'
-                        }
-
                         sb.Append(last = '.');
                     }
                 }
@@ -606,6 +601,9 @@ namespace Pchp.Library.Standard
             {
                 string item1 = (i < v1.Length) ? v1[i] : " ";
                 string item2 = (i < v2.Length) ? v2[i] : " ";
+
+                if (item1.Length == 0) item1 = "0";
+                if (item2.Length == 0) item2 = "0";
 
                 if (char.IsDigit(item1[0]) && char.IsDigit(item2[0]))
                 {
