@@ -378,7 +378,7 @@ namespace Peachpie.Library.Network
         public const int CURLINFO_CONDITION_UNMET = 2097187;
         public const int CURLOPT_NOPROXY = 10177;
         public const int CURLOPT_PROTOCOLS = 181;
-        public const int CURLOPT_REDIR_PROTOCOLS = 182;
+        //public const int CURLOPT_REDIR_PROTOCOLS = 182;
         public const int CURLOPT_SOCKS5_GSSAPI_NEC = 180;
         public const int CURLOPT_SOCKS5_GSSAPI_SERVICE = 10179;
         public const int CURLOPT_TFTP_BLKSIZE = 178;
@@ -721,9 +721,9 @@ namespace Peachpie.Library.Network
                     ch.ProxyPassword = auth[1];
                     break;
                 case CURLOPT_PROTOCOLS: ch.Protocols = (int)value.ToLong(); break;
-                case CURLOPT_REDIR_PROTOCOLS:
-                    PhpException.ArgumentValueNotSupported(nameof(option), nameof(CURLOPT_REDIR_PROTOCOLS));
-                    break;
+                //case CURLOPT_REDIR_PROTOCOLS:
+                //    PhpException.ArgumentValueNotSupported(nameof(option), nameof(CURLOPT_REDIR_PROTOCOLS));
+                //    break;
 
                 case CURLOPT_SSL_VERIFYHOST:
                 case CURLOPT_SSL_VERIFYPEER:
