@@ -3224,7 +3224,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (key[0] == '-' && key[1] == '0') return false;
             }
 
+            // "+.."
+            if (key.Length != 0 && key[0] == '+')   // https://github.com/peachpiecompiler/peachpie/issues/1084
+            {
+                return false;
+            }
 
+            //
             return long.TryParse(key, out ikey);
         }
 
