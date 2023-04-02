@@ -1270,8 +1270,8 @@ namespace Pchp.CodeAnalysis.Semantics
         protected BoundExpression BindGlobalConstUse(AST.GlobalConstUse expr)
         {
             // translate built-in constants directly
-            if (expr.Name == QualifiedName.True) return new BoundLiteral(true);
-            if (expr.Name == QualifiedName.False) return new BoundLiteral(false);
+            if (expr.Name == QualifiedName.True) return new BoundLiteral(true.AsObject());
+            if (expr.Name == QualifiedName.False) return new BoundLiteral(false.AsObject());
             if (expr.Name == QualifiedName.Null) return new BoundLiteral(null);
 
             // bind constant
