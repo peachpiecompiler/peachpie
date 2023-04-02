@@ -3160,8 +3160,19 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitIntStringKey(long key)
         {
-            _il.EmitLongConstant(key);
-            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_long);
+            if (key == unchecked((int)key))
+            {
+                // int32 is ok
+                _il.EmitIntConstant((int)key);
+                EmitCall(ILOpCode.Call, CoreMethods.Helpers.implicit_int_to_intstringkey);  // (IntStringKey) <stack>
+            }
+            else
+            {
+                // int64
+                _il.EmitLongConstant(key);
+                //EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_long); // new IntStringKey( <stack> )
+                EmitCall(ILOpCode.Call, CoreMethods.Helpers.implicit_long_to_intstringkey); // (IntStringKey) <stack>
+            }
         }
 
         public bool TryEmitCachedIntStringKey(string key)
@@ -3195,9 +3206,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                // Template: new IntStringKey( <key> )
+                // Template: (IntStringKey){key}
                 _il.EmitStringConstant(key);
-                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
+                //EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string); // new IntStringKey( <key> )
+                EmitCall(ILOpCode.Call, CoreMethods.Helpers.implicit_string_to_intstringkey);
             }
 
             return this.CoreTypes.IntStringKey;

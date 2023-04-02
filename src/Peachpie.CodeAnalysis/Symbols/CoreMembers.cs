@@ -613,6 +613,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 EmptyRuntimeTypeHandle = ct.Helpers.Field(nameof(EmptyRuntimeTypeHandle));
                 EmptyNullable_T = ct.Helpers.Method(nameof(EmptyNullable_T));
                 IsUserTypeDeclared_Context_PhpTypeInfo = ct.Helpers.Method("IsUserTypeDeclared", ct.Context, ct.PhpTypeInfo);
+
+                implicit_int_to_intstringkey = ct.Int32.CastImplicit(ct.IntStringKey);
+                implicit_long_to_intstringkey = ct.Long.CastImplicit(ct.IntStringKey);
+                implicit_string_to_intstringkey = ct.String.CastImplicit(ct.IntStringKey);
             }
 
             public readonly CoreField EmptyRuntimeTypeHandle;
@@ -620,6 +624,12 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod EmptyNullable_T;
 
             public readonly CoreMethod IsUserTypeDeclared_Context_PhpTypeInfo;
+
+            public readonly CoreCast
+                implicit_int_to_intstringkey,
+                implicit_long_to_intstringkey,
+                implicit_string_to_intstringkey
+                ;
         }
 
         public struct PhpAliasHolder
