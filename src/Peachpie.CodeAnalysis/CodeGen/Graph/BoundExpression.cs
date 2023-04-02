@@ -4148,6 +4148,14 @@ namespace Pchp.CodeAnalysis.Semantics
                         cg.EmitConvertToPhpValue(x.Value);
                         cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_Long_PhpValue));
                     }
+                    else if (cg.TryEmitCachedIntStringKey(strkey))
+                    {
+                        // STACK PhpArray
+                        // STACK IntStringKey
+                        // <stack>.Add( <stack>IntStringKey, PhpValue )
+                        cg.EmitConvertToPhpValue(x.Value);
+                        cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue));
+                    }
                     else
                     {
                         // <stack>.Add( string, PhpValue )

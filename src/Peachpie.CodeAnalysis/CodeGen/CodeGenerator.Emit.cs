@@ -3756,7 +3756,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return targetOpt;
                 }
 
-                Builder.EmitIntConstant((int)value);
+                Builder.EmitIntConstant(i);
                 return CoreTypes.Int32;
             }
             else if (value is long l)
