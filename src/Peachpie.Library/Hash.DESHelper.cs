@@ -536,8 +536,11 @@ namespace Pchp.Library
                 for (int i = 0; i < 8; i++)
                 {
                     keyBuffer[i] |= (byte)(password[keyIndex] << 1);
-                    if (password[keyIndex] != 0)
+
+                    if (password[keyIndex] != '\0' && keyIndex + 1 < password.Length)
+                    {
                         keyIndex++;
+                    }
                 }
 
                 if (SetKey(keyBuffer, ref data) != 0)
