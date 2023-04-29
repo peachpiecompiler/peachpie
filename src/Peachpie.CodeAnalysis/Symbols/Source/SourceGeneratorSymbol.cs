@@ -41,11 +41,11 @@ namespace Pchp.CodeAnalysis.Symbols
             var index = 0;
             return new[]
             {
-                ContextParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++),
+                ContextParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++, notNull: true),
                 ThisParameter = new SpecialParameterSymbol(this, thisType, SpecialParameterSymbol.ThisName, index++),
-                LocalsParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.LocalsName, index++),
+                LocalsParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.LocalsName, index++, notNull: true),
                 TmpLocalsParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.TemporaryLocalsName, index++),
-                GeneratorParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Generator, "generator", index++),
+                GeneratorParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Generator, "generator", index++, notNull: true),
             };
         }
 

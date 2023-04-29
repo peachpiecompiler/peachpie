@@ -93,7 +93,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ForwardedCall = __invoke,
             };
             invoke.SetParameters(
-                new SpecialParameterSymbol(invoke, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
+                new SpecialParameterSymbol(invoke, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0, notNull: true),
                 new SynthesizedParameterSymbol(invoke, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), 1, RefKind.None, name: "arguments", isParams: true));
 
             module.SetMethodBody(invoke, MethodGenerator.GenerateMethodBody(module, invoke, il =>
