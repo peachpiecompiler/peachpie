@@ -3985,8 +3985,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 }
                                 else if (typectx.IsLong(typemask))
                                 {
-                                    _il.EmitLongConstant(0);
-                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
+                                    _il.EmitIntConstant(0);
+                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Int);
                                     break;
                                 }
                                 else if (typectx.IsDouble(typemask))
