@@ -529,6 +529,11 @@ namespace Pchp.Core
                 else chunk = ((Array)chunk).Clone();   // byte[], char[], BlobChar[]
             }
 
+            /// <summary>
+            /// Creates instance of <see cref="Blob"/> with pre-allocated buckets.
+            /// </summary>
+            public static Blob Create(int capacity) => new Blob(capacity);
+
             #endregion
 
             #region Length
@@ -1649,6 +1654,11 @@ namespace Pchp.Core
         public static PhpString ToPhpString(byte[] value) => value;
 
         public PhpString DeepCopy() => new PhpString(this);
+
+        /// <summary>
+        /// Creates <see cref="PhpString"/> referencing an existing <see cref="Blob"/>.
+        /// </summary>
+        public static PhpString/*!*/From(Blob blob) => new PhpString(blob);
 
         #endregion
 

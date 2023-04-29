@@ -152,7 +152,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (IsStatic)  // instance methods have <ctx> in <this>.<ctx> field, see SourceNamedTypeSymbol._lazyContextField
             {
                 // Context <ctx>
-                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
+                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++, notNull: true);
             }
         }
 

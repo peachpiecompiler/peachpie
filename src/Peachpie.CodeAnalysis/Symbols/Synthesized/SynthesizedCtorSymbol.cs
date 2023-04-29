@@ -341,10 +341,10 @@ namespace Pchp.CodeAnalysis.Symbols
             // note: the signature is very similar to global code routine <Main>
 
             // Context <ctx>
-            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++, notNull: true);
 
             // !TSelf this
-            yield return new SpecialParameterSymbol(this, ContainingType.TSelfParameter, SpecialParameterSymbol.ThisName, index++);
+            yield return new SpecialParameterSymbol(this, ContainingType.TSelfParameter, SpecialParameterSymbol.ThisName, index++, notNull: true);
         }
     }
 

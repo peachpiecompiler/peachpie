@@ -3236,7 +3236,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // new PhpString.Blob( capacity )
             cg.Builder.EmitIntConstant(args.Length);
-            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.Blob_int);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpStringBlob.Create_Int32);
 
             // TODO: overload for 2, 3, 4 parameters directly
 
@@ -3255,7 +3255,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             // new PhpString( <Blob> )
-            return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_Blob)
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.From_Blob)
                 .Expect(cg.CoreTypes.PhpString);
         }
 
@@ -3777,7 +3777,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // STACK: PhpString.Blob
 
                 // Template: new PhpString(blob)
-                var result_type = cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_Blob)
+                var result_type = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.From_Blob)
                     .Expect(cg.CoreTypes.PhpString);
 
                 // STACK: PhpString
