@@ -815,6 +815,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public PhpStringHolder(CoreTypes ct)
             {
+                From_Blob = ct.PhpString.Method("From", ct.PhpString_Blob);
+
                 ToString_Context = ct.PhpString.Method("ToString", ct.Context);
                 ToNumber = ct.PhpString.Method("ToNumber");
                 ToBytes_Context = ct.PhpString.Method("ToBytes", ct.Context);
@@ -831,6 +833,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
+                From_Blob,
                 ToString_Context, ToNumber, ToBytes_Context,
                 EnsureWritable, AsWritable_PhpString, AsArray_PhpString,
                 IsNull_PhpString;
@@ -850,6 +853,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 CoreTypes = ct;
 
+                Create_Int32 = ct.PhpString_Blob.Method("Create", ct.Int32);
+
                 Add_String = ct.PhpString_Blob.Method("Add", ct.String);
                 Add_PhpString = ct.PhpString_Blob.Method("Add", ct.PhpString);
                 Add_PhpValue_Context = ct.PhpString_Blob.Method("Add", ct.PhpValue, ct.Context);
@@ -858,6 +863,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
+                Create_Int32,
                 Add_String, Add_PhpString, Add_PhpValue_Context;
 
             public MethodSymbol Add_ByteArray
@@ -976,12 +982,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public ConstructorsHolder(CoreTypes ct)
             {
-                PhpString_Blob = ct.PhpString.Ctor(ct.PhpString_Blob);
                 PhpString_string_string = ct.PhpString.Ctor(ct.String, ct.String);
                 PhpString_PhpValue_Context = ct.PhpString.Ctor(ct.PhpValue, ct.Context);
                 PhpString_PhpString = ct.PhpString.Ctor(ct.PhpString);
                 Blob = ct.PhpString_Blob.Ctor();
-                Blob_int = ct.PhpString_Blob.Ctor(ct.Int32);
                 PhpArray = ct.PhpArray.Ctor();
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
                 IntStringKey_long = ct.IntStringKey.Ctor(ct.Long);
@@ -1006,8 +1010,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreConstructor
                 PhpArray, PhpArray_int,
-                PhpString_Blob, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
-                Blob, Blob_int,
+                PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
+                Blob,
                 IntStringKey_long, IntStringKey_string,
                 ScriptAttribute_string_long, PhpTraitAttribute, PharAttribute_string, PhpTypeAttribute_string_string, PhpTypeAttribute_string_string_byte, PhpFieldsOnlyCtorAttribute, PhpHiddenAttribute,
                 DefaultValueAttribute_string,
