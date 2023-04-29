@@ -59,8 +59,9 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly int _index;
         readonly string _name;
         object _type;
+        readonly ImmutableArray<AttributeData> _attributes = ImmutableArray<AttributeData>.Empty;
 
-        public SpecialParameterSymbol(MethodSymbol symbol, object type, string name, int index)
+        public SpecialParameterSymbol(MethodSymbol symbol, object type, string name, int index, bool notNull = false)
         {
             Debug.Assert(type is TypeSymbol || type is CoreType);
             Contract.ThrowIfNull(symbol);
@@ -70,7 +71,16 @@ namespace Pchp.CodeAnalysis.Symbols
             _type = type;
             _name = name;
             _index = index;
+
+            if (notNull)
+            {
+                _attributes = ImmutableArray.Create(
+                    this.DeclaringCompilation.CreateNullableAttribute(NullableContextUtils.NotAnnotatedAttributeValue)
+                );
+            }
         }
+
+        public override ImmutableArray<AttributeData> GetAttributes() => _attributes;
 
         /// <summary>
         /// Determines whether given parameter is treated as a special Context parameter
