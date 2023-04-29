@@ -5,7 +5,7 @@
     },
     "build \"index.php\"": {
       "commandName": "Executable",
-      "executablePath": "..\\..\\..\\..\\..\\Compiler\\peach\\bin\\Debug\\net461\\peach.exe",
+      "executablePath": "..\\..\\..\\..\\..\\Compiler\\peach\\bin\\Debug\\net50\\peach.exe",
       "commandLineArgs": "/o- /xmldoc index.php"
     }
   }
