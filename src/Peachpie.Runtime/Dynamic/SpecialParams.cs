@@ -173,6 +173,9 @@ namespace Pchp.Core.Dynamic
 
         /// <summary>Initializes the structure.</summary>
         public CallerTypeParam(RuntimeTypeHandle value) => Value = value;
+
+        /// <summary>Creates the structure.</summary>
+        public static CallerTypeParam Create(RuntimeTypeHandle value) => new CallerTypeParam(value);
     }
 
     /// <summary>

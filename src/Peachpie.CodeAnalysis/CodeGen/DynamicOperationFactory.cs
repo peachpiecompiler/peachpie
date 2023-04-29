@@ -399,11 +399,24 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <summary>Emits new instance of wrapper with value. Returns wrapper.</summary>
             public TypeSymbol EmitWrapParam(NamedTypeSymbol wrapper, ITypeSymbol value)
             {
-                // Template: new wrapper(<STACK:value>)
+                TypeSymbol t;
 
-                var ctor = wrapper.InstanceConstructors.Single(m => m.ParameterCount == 1);
-                Debug.Assert(SymbolEqualityComparer.Default.Equals(ctor.Parameters[0].Type, value));
-                var t = _cg.EmitCall(ILOpCode.Newobj, ctor);
+                // prefer factory method Create(RuntimeTypeHandle) over the struct's .ctor
+
+                // Template: wrapper.Create( <STACK:value> )
+                var create = wrapper.GetMembers("Create").OfType<MethodSymbol>().SingleOrDefault(m => m.ParameterCount == 1);
+                if (create != null)
+                {
+                    Debug.Assert(SymbolEqualityComparer.Default.Equals(create.Parameters[0].Type, value));
+                    t = _cg.EmitCall(ILOpCode.Call, create);
+                }
+                else
+                {
+                    // Template: new wrapper(<STACK:value>)
+                    var ctor = wrapper.InstanceConstructors.Single(m => m.ParameterCount == 1);
+                    Debug.Assert(SymbolEqualityComparer.Default.Equals(ctor.Parameters[0].Type, value));
+                    t = _cg.EmitCall(ILOpCode.Newobj, ctor);
+                }
 
                 AddArg(t, byref: false);
 
