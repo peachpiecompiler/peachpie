@@ -860,13 +860,13 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>
-        /// Template: new IndirectLocal( LOCALS, NAME )
+        /// Template: IndirectLocal.Create( LOCALS, NAME )
         /// </summary>
         internal TypeSymbol LoadIndirectLocal(CodeGenerator cg)
         {
             LoadVariablesArray(cg);
             BoundName.EmitVariableName(cg);
-            return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.IndirectLocal_PhpArray_String);
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CreateIndirectLocal_PhpArray_String);
         }
     }
 
