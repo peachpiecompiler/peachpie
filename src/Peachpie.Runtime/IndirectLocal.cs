@@ -63,6 +63,8 @@ namespace Pchp.Core
         {
         }
 
+        public static IndirectLocal Create(PhpArray/*!*/locals, string/*!*/name) => new IndirectLocal(locals, name);
+
         public override string ToString() => DisplayString;
     }
 }

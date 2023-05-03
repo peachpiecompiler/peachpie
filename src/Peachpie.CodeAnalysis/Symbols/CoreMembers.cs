@@ -1004,8 +1004,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 ScriptDiedException = ct.ScriptDiedException.Ctor();
                 ScriptDiedException_Long = ct.ScriptDiedException.Ctor(ct.Long);
                 ScriptDiedException_PhpValue = ct.ScriptDiedException.Ctor(ct.PhpValue);
-
-                IndirectLocal_PhpArray_String = ct.IndirectLocal.Ctor(ct.PhpArray, ct.String);
             }
 
             public readonly CoreConstructor
@@ -1016,8 +1014,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ScriptAttribute_string_long, PhpTraitAttribute, PharAttribute_string, PhpTypeAttribute_string_string, PhpTypeAttribute_string_string_byte, PhpFieldsOnlyCtorAttribute, PhpHiddenAttribute,
                 DefaultValueAttribute_string,
                 NullableAttribute_byte, NullableContextAttribute_byte,
-                ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue,
-                IndirectLocal_PhpArray_String;
+                ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue
+                ;
         }
 
         public struct ContextHolder
@@ -1090,12 +1088,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetPhpTypeInfo_T = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo");
                 GetPhpTypeInfo_Object = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.Object);
                 GetPhpTypeInfo_RuntimeTypeHandle = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.RuntimeTypeHandle);
+
+                CreateIndirectLocal_PhpArray_String = ct.IndirectLocal.Method("Create", ct.PhpArray, ct.String);
             }
 
             public readonly CoreMethod
                 BinderFactory_Function, BinderFactory_InstanceFunction, BinderFactory_StaticFunction,
                 GetFieldBinder, SetFieldBinder, GetClassConstBinder,
-                GetPhpTypeInfo_T, GetPhpTypeInfo_Object, GetPhpTypeInfo_RuntimeTypeHandle;
+                GetPhpTypeInfo_T, GetPhpTypeInfo_Object, GetPhpTypeInfo_RuntimeTypeHandle,
+                CreateIndirectLocal_PhpArray_String;
         }
 
         public struct ReflectionHolder
