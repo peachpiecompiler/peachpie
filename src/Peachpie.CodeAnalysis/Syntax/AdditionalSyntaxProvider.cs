@@ -50,6 +50,8 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public string TokenText => _provider.TokenText;
 
+        public ReadOnlySpan<char> TokenTextSpan => _provider.TokenTextSpan;
+
         public IDocBlock DocComment { get => _provider.DocComment; set => _provider.DocComment = value; }
 
         public int GetNextToken()

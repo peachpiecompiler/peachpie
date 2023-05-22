@@ -127,7 +127,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             return call;
         }
 
-        public override LangElement GlobalCode(Span span, IEnumerable<LangElement> statements, NamingContext context)
+        public override LangElement GlobalCode(Span span, Statement[] statements, NamingContext context)
         {
             Debug.Assert(_annotations == null || _annotations.Count == 0, $"file {this.SourceUnit.FilePath} contains CLR annotations we did not consume! Probably a bogus in AdditionalSyntaxProvider."); // all parsed custom annotations have to be consumed
 
@@ -189,13 +189,19 @@ namespace Peachpie.CodeAnalysis.Syntax
             return AddAndReturn(ref _yieldNodes, base.YieldFrom(span, fromExpr));
         }
 
-        public Literal Literal(Span span, long lvalue) => new LongIntLiteral(span, lvalue); // overload to avoid boxing
-
-        public Literal Literal(Span span, double dvalue) => new DoubleLiteral(span, dvalue); // overload to avoid boxing
-
-        public override LangElement Literal(Span span, object value, string originalValue)
+        public override LangElement Literal(Span span, double value, ReadOnlySpan<char> originalValue)
         {
-            return base.Literal(span, value, originalValue: null);  // discard the original value string, not needed, free some memory
+            return base.Literal(span, value, originalValue: null);
+        }
+
+        public override LangElement Literal(Span span, long value, ReadOnlySpan<char> originalValue)
+        {
+            return base.Literal(span, value, originalValue: null);
+        }
+
+        public override LangElement Literal(Span span, object value, ReadOnlySpan<char> originalValue)
+        {
+            return base.Literal(span, value, originalValue: null);
         }
 
         public override LangElement EncapsedExpression(Span span, LangElement expression, Tokens openDelimiter) => expression;
