@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Index of the source parameter, relative to the first source parameter.
         /// </summary>
         readonly int _relindex;
-        
+
         ImmutableArray<AttributeData> _attributes;
 
         TypeSymbol _lazyType;
@@ -55,7 +55,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_lazyDefaultValueField == null && Initializer != null && ExplicitDefaultConstantValue == null)
                 {
                     TypeSymbol fldtype; // type of the field
-                    
+
                     if (Initializer is BoundArrayEx arr)
                     {
                         // special case: empty array
@@ -191,6 +191,17 @@ namespace Pchp.CodeAnalysis.Symbols
                     return false;
                 }
 
+                if (_syntax.TypeHint is PrimitiveTypeRef ptref)
+                {
+                    switch (ptref.PrimitiveTypeName)
+                    {
+                        case PrimitiveTypeRef.PrimitiveType.never:
+                        case PrimitiveTypeRef.PrimitiveType.mixed:
+                            // can be null
+                            return false;
+                    }
+                }
+
                 //
                 return true;
             }
@@ -301,7 +312,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override ImmutableArray<AttributeData> GetAttributes() => _attributes;
-        
+
         internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
         {
             // [param]   
