@@ -795,14 +795,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var end = NewBlock();
 
             var conditions = x.Conditions;
-            Debug.Assert(conditions.Count != 0);
+            Debug.Assert(conditions.Length != 0);
             BoundBlock elseBlock = null;
-            for (int i = 0; i < conditions.Count; i++)
+            for (int i = 0; i < conditions.Length; i++)
             {
                 var cond = conditions[i];
                 if (cond.Condition != null)  // if (Condition) ...
                 {
-                    elseBlock = (i == conditions.Count - 1) ? end : NewBlock();
+                    elseBlock = (i == conditions.Length - 1) ? end : NewBlock();
                     _current = Connect(_current, NewBlock(), elseBlock, cond.Condition);
                 }
                 else  // else ...

@@ -81,6 +81,8 @@ namespace Peachpie.CodeAnalysis.Syntax
             }
         }
 
+        public ReadOnlySpan<char> TokenTextSpan => TokenText.AsSpan();
+
         public IDocBlock DocComment
         {
             get => _docblock;
