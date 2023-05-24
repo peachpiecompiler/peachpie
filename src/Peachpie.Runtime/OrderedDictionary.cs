@@ -103,6 +103,8 @@ namespace Pchp.Core
 
         public static implicit operator IntStringKey(PhpValue value) => Convert.ToIntStringKey(value);
 
+        public static implicit operator IntStringKey(PhpAlias value) => Convert.ToIntStringKey(value.Value);
+
         public static implicit operator IntStringKey(PhpNumber value) => new IntStringKey(value.ToLong());
 
         public static bool operator ==(IntStringKey a, long b) => a.Integer == b && a.IsInteger;
