@@ -556,7 +556,7 @@ namespace Pchp.Core.Dynamic
                 public override Expression BindWriteBack(int targetarg, Expression expression)
                 {
                     // args[ targetarg ]
-                    var element = Expression.ArrayIndex(_argsarray, Expression.Constant(targetarg));
+                    var element = Expression.ArrayAccess(_argsarray, Expression.Constant(targetarg));
 
                     // args[ targetarg ] = (T)expression
                     return Expression.Assign(element, ConvertExpression.Bind(expression, element.Type, _ctx));

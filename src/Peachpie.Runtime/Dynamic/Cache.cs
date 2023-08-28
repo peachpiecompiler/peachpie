@@ -195,21 +195,35 @@ namespace Pchp.Core.Dynamic
         /// <summary>
         /// Gets method info in given type.
         /// </summary>
-        public static MethodInfo GetMethod(this Type type, string name, params Type[] ptypes)
+        public static bool TryGetMethod(Type type, string name, Type[] ptypes, out MethodInfo method)
         {
             var result = type.GetRuntimeMethod(name, ptypes);
             if (result != null)
             {
-                return result;
+                method = result;
+                return true;
             }
 
             foreach (var m in type.GetTypeInfo().GetDeclaredMethods(name))  // non public methods
             {
                 if (ParamsMatch(m.GetParameters(), ptypes))
-                    return m;
+                {
+                    method = m;
+                    return true;
+                }
             }
 
-            throw new InvalidOperationException($"{type.Name}.{name}({string.Join<Type>(", ", ptypes)}) was not resolved.");
+            //
+            method = null;
+            return false;
+        }
+
+        public static MethodInfo GetMethod(this Type type, string name, params Type[] ptypes)
+        {
+            return TryGetMethod(type, name, ptypes, out var method)
+                ? method
+                : throw new InvalidOperationException($"{type.Name}.{name}({string.Join<Type>(", ", ptypes)}) was not resolved.")
+                ;
         }
 
         static MethodInfo GetOpImplicit(this Type type, Type resultType) =>

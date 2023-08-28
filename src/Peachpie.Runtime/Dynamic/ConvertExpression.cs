@@ -166,7 +166,10 @@ namespace Pchp.Core.Dynamic
             //    BindToValue(arg));
 
             //
-            throw new NotImplementedException($"{arg.Type} -> {target}");
+            return Expression.Block(
+                ThrowTypeError($"{arg.Type} -> {target}"),
+                BindDefault(target)
+            );
         }
 
         private static bool IsNullConstant(Expression arg)
@@ -964,7 +967,12 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            if (!target.IsValueType)
+            if (target.IsValueType)
+            {
+                // conversion to a struct?
+                
+            }
+            else
             {
                 if (target.IsByRef)
                 {
@@ -986,7 +994,15 @@ namespace Pchp.Core.Dynamic
             }
 
             // fallback
-            return Expression.Call(typeof(CostOf).GetMethod("To" + target.Name, arg.Type), arg);
+            if (Cache.TryGetMethod(typeof(CostOf), "To" + target.Name, new[] { arg.Type }, out var method))
+            {
+                return Expression.Call(method, arg);
+            }
+            else
+            {
+                // TODO
+                return Expression.Constant(ConversionCost.NoConversion);
+            }
         }
 
         static ConversionCost BindCostFromBool(Expression arg, Type target)
