@@ -9,10 +9,10 @@
 <h3 align="center">The open-source PHP compiler to .NET</h3>
 
 <p align="center">
-<a href="https://www.nuget.org/profiles/peachpie"><img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>
+<a href="https://discord.com/invite/4UeGPJTjbf"><img src="https://img.shields.io/badge/chat-discord-purple.svg"></a>
 <a href="https://docs.peachpie.io"><img src="https://img.shields.io/badge/docs-peachpie.io-green.svg"></a>  
-<a href="https://www.peachpie.io"><img src="https://img.shields.io/badge/Web-peachpie.io-orange.svg"></a>
-<a href="https://twitter.com/pchpcompiler"><img src="https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg"></a>
+<a href="https://www.peachpie.io"><img src="https://img.shields.io/badge/www-peachpie.io-orange.svg"></a>
+<a href="https://twitter.com/pchpcompiler"><img src="https://img.shields.io/badge/x-%40pchpcompiler-blue.svg"></a>
 <a href="https://www.patreon.com/pchpcompiler" target="_blank"><img src="https://img.shields.io/badge/Sponsor-Become_a_Patron-ff69b4.svg?maxAge=2592000&amp;style=flat"></a>
 </p>
 
@@ -31,10 +31,6 @@ PeachPie is a member project of the [.NET Foundation](https://www.dotnetfoundati
 
 PeachPie is a modern PHP compiler based on the Microsoft Roslyn compiler platform. It allows PHP to be compiled and executed under the .NET runtime, thereby opening the door for PHP developers into the world of .NET – and vice versa.
 
-## Status and Compatibility
-
-You can find an up-to-date status of the project in our [Roadmap](https://docs.peachpie.io/roadmap/) section. Please note that the status is dynamic; PeachPie is a work in progress, which means that the list of finished and planned features frequently changes and will be updated on a regular basis. To see the current status of compatibility with the PHP language, please refer to our [Compatibility overview](https://docs.peachpie.io/php/Compatibility/). 
-
 ## Project goals
 
 - **Both-way interoperability**: the project allows for hybrid applications, where parts are written in C# and others in PHP. The parts will be entirely compatible and can communicate seamlessly, all within the .NET framework.  
@@ -49,7 +45,7 @@ You can find an up-to-date status of the project in our [Roadmap](https://docs.p
 
 ## How to use PeachPie
 
-There are currently two ways of using PeachPie via `dotnet`: in your favorite shell or comfortably in Visual Studio 2017/Visual Studio Code using our official extensions. 
+There are currently two ways of using PeachPie via `dotnet`: in your favorite shell or comfortably in Visual Studio using our official extension. 
 
 ### Visual Studio
 
@@ -67,6 +63,10 @@ Alternatively, you can also work with PeachPie on the command line. Please refer
 ### Nightly builds
 
 The most convenient way of using PeachPie is to consume NuGet packages. We provide nightly builds and release builds to our subscribers on Patreon. [Become a Patron](https://www.patreon.com/pchpcompiler) to get access and get listed as our sponsor!
+
+## Status and Compatibility
+
+You can find an up-to-date status of the project in our [Roadmap](https://docs.peachpie.io/roadmap/) section. Please note that the status is dynamic; PeachPie is a work in progress, which means that the list of finished and planned features frequently changes and will be updated on a regular basis. To see the current status of compatibility with the PHP language, please refer to our [Compatibility overview](https://docs.peachpie.io/php/Compatibility/). 
 
 ## How to contribute?
 
