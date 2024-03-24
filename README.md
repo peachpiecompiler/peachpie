@@ -9,11 +9,11 @@
 <h3 align="center">The open-source PHP compiler to .NET</h3>
 
 <p align="center">
-<a href="https://discord.com/invite/4UeGPJTjbf"><img src="https://img.shields.io/badge/chat-discord-purple.svg"></a>
+<a href="https://discord.com/invite/SAs8VP2XqP"><img src="https://img.shields.io/badge/chat-discord-purple.svg"></a>
 <a href="https://docs.peachpie.io"><img src="https://img.shields.io/badge/docs-peachpie.io-green.svg"></a>  
 <a href="https://www.peachpie.io"><img src="https://img.shields.io/badge/www-peachpie.io-orange.svg"></a>
 <a href="https://twitter.com/pchpcompiler"><img src="https://img.shields.io/badge/x-%40pchpcompiler-blue.svg"></a>
-<a href="https://www.patreon.com/pchpcompiler" target="_blank"><img src="https://img.shields.io/badge/Sponsor-Become_a_Patron-ff69b4.svg?maxAge=2592000&amp;style=flat"></a>
+<a href="https://www.patreon.com/pchpcompiler" target="_blank"><img src="https://img.shields.io/badge/sponsor-become_a_patron-ff69b4.svg?maxAge=2592000&amp;style=flat"></a>
 </p>
 
 [<img align="right" src="https://github.com/peachpiecompiler/peachpie/blob/master/docs/logos/dotnet-foundation-logo.png" width="100" />](https://www.dotnetfoundation.org/)
@@ -78,7 +78,7 @@ You can also support the project on [Patreon](https://www.patreon.com/pchpcompil
 
 ## Providing feedback
 
-If you found a bug, have a question or if you have an improvement suggestion, the easiest way of providing feedback is to ask on [Discord](https://discord.com/invite/4UeGPJTjbf) or submit an issue here on GitHub. We try to respond as quickly as possible.
+If you found a bug, have a question or if you have an improvement suggestion, the easiest way of providing feedback is to ask on [Discord](https://discord.gg/SAs8VP2XqP) or submit an issue here on GitHub. We try to respond as quickly as possible.
 
 
 ## .NET Foundation
