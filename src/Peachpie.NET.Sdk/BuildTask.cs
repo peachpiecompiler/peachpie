@@ -108,6 +108,10 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary></summary>
         public ITaskItem[] Resources { get; set; }
 
+        /// <summary></summary>
+        /// <remarks>https://learn.microsoft.com/en-us/dotnet/standard/assembly/set-attributes-project-file#set-arbitrary-attributes</remarks>
+        public ITaskItem[] AssemblyAttribute { get; set; }
+
         /// <summary>Autoload PSR-4 map. Each item provides properties:<br/>
         /// - Prefix<br/>
         /// - Path<br/>
@@ -206,6 +210,23 @@ namespace Peachpie.NET.Sdk.Tools
                 foreach (var res in Resources)
                 {
                     args.Add(FormatArgFromItem(res, "res", "LogicalName", "Access"));
+                }
+            }
+
+            if (AssemblyAttribute != null)
+            {
+                foreach (var attr in AssemblyAttribute)
+                {
+                    // /attr:FQN("value1","value2","value3")
+                    args.Add($@"/attr:{attr.ItemSpec}:({
+                        string.Join(
+                            ",",
+                            Enumerable.Range(1, 128)
+                            .Select(n => attr.GetMetadata($"_Parameter{n}"))
+                            .TakeWhile(value => value != null)
+                            .Select(value => $"\"{value.Replace("\"", "\\\"")}\"")
+                        )
+                    })");
                 }
             }
 

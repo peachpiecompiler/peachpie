@@ -208,8 +208,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             {
                 Debug.Assert(optionsEnded || !arg.StartsWith("@", StringComparison.Ordinal));
 
-                string name, value;
-                if (optionsEnded || !TryParseOption2(arg, out name, out value))
+                if (optionsEnded || !TryParseOption2(arg, out var name, out var value))
                 {
                     sourceFiles.AddRange(ExpandFileArgument(arg, baseDirectory, diagnostics));
                     continue;
@@ -705,6 +704,11 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         // not handled
                         diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_BadCompilationOptionValue, Location.None, name, value));
+                        break;
+
+                    case "attr":
+                        // FQN("value1","value2")
+
                         break;
 
                     default:
