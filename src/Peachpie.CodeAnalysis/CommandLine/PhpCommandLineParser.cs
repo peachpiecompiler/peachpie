@@ -11,6 +11,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Pchp.CodeAnalysis.Utilities;
+using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -165,6 +167,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var additionalFiles = new List<CommandLineSourceFile>();
             var embeddedFiles = new List<CommandLineSourceFile>();
             var managedResources = new List<ResourceDescription>();
+            var globalAttributes = new List<AttributeElement>();
             var defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             string outputDirectory = baseDirectory;
             string subDirectory = null;
@@ -707,7 +710,23 @@ namespace Pchp.CodeAnalysis.CommandLine
                         break;
 
                     case "attr":
+
                         // FQN("value1","value2")
+
+                        if (string.IsNullOrWhiteSpace(value))
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
+                            break;
+                        }
+
+                        if (TryParseAttributeSpec(value.Trim(), out var attr))
+                        {
+                            globalAttributes.Add(attr);
+                        }
+                        else
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_BadCompilationOptionValue, Location.None, name, value));
+                        }
 
                         break;
 
@@ -995,6 +1014,102 @@ namespace Pchp.CodeAnalysis.CommandLine
                     defines[pair.Remove(eq)] = pair.Substring(eq + 1);
                 }
             }
+        }
+
+        private static bool TryParseAttributeSpec(string value, out AttributeElement attr)
+        {
+            attr = null;
+
+            ReadOnlySpan<char> fqn;
+            var signature = new List<ActualParam>();
+            var span = Devsense.PHP.Text.Span.Invalid;
+
+            // FQN("value1","value2")
+            var parenIdx = value.IndexOf('(');
+            if (parenIdx >= 0)
+            {
+                fqn = value.AsSpan(0, parenIdx);
+                
+                var args = value.AsSpan(parenIdx).Trim();
+                
+                bool ConsumeChar(ref ReadOnlySpan<char> text, char ch)
+                {
+                    if (text.Length != 0 && text[0] == ch)
+                    {
+                        text = text.Slice(1);
+                        return true;
+                    }
+                    return false;
+                }
+
+                bool ConsumeArg(ref ReadOnlySpan<char> text, out ActualParam p)
+                {
+                    p = default(ActualParam);
+
+                    if (!ConsumeChar(ref text, '"')) return false;
+
+                    var str = new StringBuilder();
+                    var escaped = false;
+                    var closed = false;
+                    while (text.Length != 0)
+                    {
+                        var ch = text[0];
+                        text = text.Slice(1);
+
+                        if (escaped) { }
+                        else if (ch == '\\') { escaped = true; continue; }
+                        else if (ch == '"') { closed = true; break; }
+
+                        str.Append(ch);
+                    }
+
+                    if (!closed)
+                    {
+                        return false;
+                    }
+
+                    p = new ActualParam(
+                        Devsense.PHP.Text.Span.Invalid,
+                        new StringLiteral(Devsense.PHP.Text.Span.Invalid, str.ToString())
+                    );
+                    return true;
+                }
+
+                if (ConsumeChar(ref args, '('))
+                {
+                    do
+                    {
+                        if (ConsumeChar(ref args, ')')) break;
+                        if (ConsumeChar(ref args, ',')) continue;
+                        if (ConsumeArg(ref args, out var p))
+                        {
+                            signature.Add(p);
+                            continue;
+                        }
+                        break;
+                    } while (args.Length != 0);
+                }
+
+                if (args.IsWhiteSpace() == false)
+                    return false; // unexpected
+            }
+            else
+            {
+                fqn = value.AsSpan();
+            }
+
+            if (fqn.IsWhiteSpace())
+            {
+                return false;
+            }
+
+            //
+            attr = new AttributeElement(
+                span,
+                new ClassTypeRef(span, QualifiedName.Parse(fqn.Trim().ToString().Replace('.', QualifiedName.Separator), true)),
+                new CallSignature(signature, span)
+            );
+            return true;
         }
 
         internal override void GenerateErrorForNoFilesFoundInRecurse(string path, IList<Diagnostic> errors)

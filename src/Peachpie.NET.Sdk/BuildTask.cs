@@ -217,13 +217,20 @@ namespace Peachpie.NET.Sdk.Tools
             {
                 foreach (var attr in AssemblyAttribute)
                 {
+                    // metadata names
+                    var props = new HashSet<string>(
+                        attr.MetadataNames.OfType<string>(),
+                        StringComparer.OrdinalIgnoreCase
+                    );
+
                     // /attr:FQN("value1","value2","value3")
-                    args.Add($@"/attr:{attr.ItemSpec}:({
+                    args.Add($@"/attr:{attr.ItemSpec}({
                         string.Join(
                             ",",
                             Enumerable.Range(1, 128)
-                            .Select(n => attr.GetMetadata($"_Parameter{n}"))
-                            .TakeWhile(value => value != null)
+                            .Select(n => $"_Parameter{n}")
+                            .TakeWhile(prop => props.Contains(prop))
+                            .Select(prop => attr.GetMetadata(prop))
                             .Select(value => $"\"{value.Replace("\"", "\\\"")}\"")
                         )
                     })");
