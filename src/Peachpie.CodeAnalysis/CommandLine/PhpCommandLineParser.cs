@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Pchp.CodeAnalysis.Utilities;
-using Devsense.PHP.Syntax.Ast;
+using AST = Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.CommandLine
@@ -167,7 +167,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var additionalFiles = new List<CommandLineSourceFile>();
             var embeddedFiles = new List<CommandLineSourceFile>();
             var managedResources = new List<ResourceDescription>();
-            var globalAttributes = new List<AttributeElement>();
+            var assemblyAttributes = new List<AST.IAttributeElement>();
             var defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             string outputDirectory = baseDirectory;
             string subDirectory = null;
@@ -721,7 +721,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         if (TryParseAttributeSpec(value.Trim(), out var attr))
                         {
-                            globalAttributes.Add(attr);
+                            assemblyAttributes.Add(attr);
                         }
                         else
                         {
@@ -864,6 +864,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 Autoload_PSR4 = autoload_psr4,
                 Autoload_ClassMapFiles = autoload_classmapfiles,
                 Autoload_Files = autoload_files,
+                AssemblyAttributes = assemblyAttributes,
             };
 
             if (debugPlus)
@@ -1016,12 +1017,12 @@ namespace Pchp.CodeAnalysis.CommandLine
             }
         }
 
-        private static bool TryParseAttributeSpec(string value, out AttributeElement attr)
+        private static bool TryParseAttributeSpec(string value, out AST.IAttributeElement attr)
         {
             attr = null;
 
             ReadOnlySpan<char> fqn;
-            var signature = new List<ActualParam>();
+            var signature = new List<AST.ActualParam>();
             var span = Devsense.PHP.Text.Span.Invalid;
 
             // FQN("value1","value2")
@@ -1042,9 +1043,9 @@ namespace Pchp.CodeAnalysis.CommandLine
                     return false;
                 }
 
-                bool ConsumeArg(ref ReadOnlySpan<char> text, out ActualParam p)
+                bool ConsumeArg(ref ReadOnlySpan<char> text, out AST.ActualParam p)
                 {
-                    p = default(ActualParam);
+                    p = default(AST.ActualParam);
 
                     if (!ConsumeChar(ref text, '"')) return false;
 
@@ -1068,9 +1069,9 @@ namespace Pchp.CodeAnalysis.CommandLine
                         return false;
                     }
 
-                    p = new ActualParam(
+                    p = new AST.ActualParam(
                         Devsense.PHP.Text.Span.Invalid,
-                        new StringLiteral(Devsense.PHP.Text.Span.Invalid, str.ToString())
+                        new AST.StringLiteral(Devsense.PHP.Text.Span.Invalid, str.ToString())
                     );
                     return true;
                 }
@@ -1104,10 +1105,10 @@ namespace Pchp.CodeAnalysis.CommandLine
             }
 
             //
-            attr = new AttributeElement(
+            attr = new AST.AttributeElement(
                 span,
-                new ClassTypeRef(span, QualifiedName.Parse(fqn.Trim().ToString().Replace('.', QualifiedName.Separator), true)),
-                new CallSignature(signature, span)
+                new AST.ClassTypeRef(span, QualifiedName.Parse(fqn.Trim().ToString().Replace('.', QualifiedName.Separator), true)),
+                new AST.CallSignature(signature, span)
             );
             return true;
         }

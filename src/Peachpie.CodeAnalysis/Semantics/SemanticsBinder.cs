@@ -301,7 +301,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        protected Location GetLocation(AST.ITreeNode expr) => ContainingFile.GetLocation(expr);
+        protected Location GetLocation(AST.ITreeNode expr) => ContainingFile?.GetLocation(expr);
 
         #endregion
 
@@ -320,19 +320,23 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 foreach (var a in g.Attributes)
                 {
-                    var attribute = new SourceCustomAttribute(
-                        DeclaringCompilation,
-                        Self,
-                        GetLocation(a),
-                        BoundTypeRefFactory.CreateFromTypeRef(a.ClassRef, this, Self),
-                        BindArguments(a.CallSignature.Parameters));
-
-                    attrs.Add(attribute);
+                    attrs.Add(BindAttribute(a));
                 }
             }
 
 
             return attrs.ToImmutableArray();
+        }
+
+        public AttributeData BindAttribute(AST.IAttributeElement a)
+        {
+            return new SourceCustomAttribute(
+                DeclaringCompilation,
+                Self,
+                GetLocation(a),
+                BoundTypeRefFactory.CreateFromTypeRef(a.ClassRef, this, Self),
+                BindArguments(a.CallSignature.Parameters)
+            );
         }
 
         #endregion

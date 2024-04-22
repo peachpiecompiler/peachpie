@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -160,6 +161,17 @@ namespace Pchp.CodeAnalysis.Symbols
                         ctor,
                         ImmutableArray.Create(DeclaringCompilation.CreateTypedConstant(scriptType)),
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                }
+            }
+            
+            // user assembly attributes
+            if (DeclaringCompilation.Options.AssemblyAttributes != null)
+            {
+                var binder = new SemanticsBinder(DeclaringCompilation, file: null);
+
+                foreach (var attr in DeclaringCompilation.Options.AssemblyAttributes)
+                {
+                    yield return binder.BindAttribute(attr);
                 }
             }
 

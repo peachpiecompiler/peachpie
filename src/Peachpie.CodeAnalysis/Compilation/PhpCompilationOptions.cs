@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
 using Roslyn.Utilities;
+using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis
 {
@@ -105,6 +106,11 @@ namespace Pchp.CodeAnalysis
         /// Global Nullable context options.
         /// </summary>
         public override NullableContextOptions NullableContextOptions { get; protected set; }
+
+        /// <summary>
+        /// Source module attributes.
+        /// </summary>
+        public IReadOnlyList<AST.IAttributeElement> AssemblyAttributes { get; internal set; }
 
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
@@ -277,6 +283,7 @@ namespace Pchp.CodeAnalysis
             Autoload_ClassMapFiles = other.Autoload_ClassMapFiles;
             Autoload_Files = other.Autoload_Files;
             Autoload_PSR4 = other.Autoload_PSR4;
+            AssemblyAttributes = other.AssemblyAttributes;
         }
 
         public override string Language => Constants.PhpLanguageName;
