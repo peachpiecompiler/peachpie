@@ -18,6 +18,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Emitter;
 using Pchp.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Emit
 {
@@ -219,6 +220,17 @@ namespace Pchp.CodeAnalysis.Emit
                 if (_assemblyinformationalversionAttribute != null)
                 {
                     yield return _assemblyinformationalversionAttribute;
+                }
+            }
+
+            // [assembly: ...]
+            if (Compilation.Options.AssemblyAttributes != null)
+            {
+                var binder = new SemanticsBinder(Compilation, file: null);
+
+                foreach (var attr in Compilation.Options.AssemblyAttributes)
+                {
+                    yield return binder.BindAttribute(attr);
                 }
             }
 

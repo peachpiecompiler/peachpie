@@ -164,17 +164,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
             
-            // user assembly attributes
-            if (DeclaringCompilation.Options.AssemblyAttributes != null)
-            {
-                var binder = new SemanticsBinder(DeclaringCompilation, file: null);
-
-                foreach (var attr in DeclaringCompilation.Options.AssemblyAttributes)
-                {
-                    yield return binder.BindAttribute(attr);
-                }
-            }
-
             //
             yield break;
         }

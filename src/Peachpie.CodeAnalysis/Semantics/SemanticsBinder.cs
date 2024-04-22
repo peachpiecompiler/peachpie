@@ -328,7 +328,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return attrs.ToImmutableArray();
         }
 
-        public AttributeData BindAttribute(AST.IAttributeElement a)
+        public SourceCustomAttribute BindAttribute(AST.IAttributeElement a)
         {
             return new SourceCustomAttribute(
                 DeclaringCompilation,
