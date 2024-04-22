@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="IDS_Donate" xml:space="preserve">
-    <value>Donate to support the development of PeachPie! https://bit.ly/3pfXw2q</value>
+    <value>Join us on Patreon and Discord! https://www.patreon.com/pchpcompiler</value>
   </data>
   <data name="IDS_Help" xml:space="preserve">
     <value>
