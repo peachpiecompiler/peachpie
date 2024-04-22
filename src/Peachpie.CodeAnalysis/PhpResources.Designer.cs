@@ -61,7 +61,7 @@ namespace Peachpie.CodeAnalysis {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Donate to support the development of PeachPie! https://bit.ly/3pfXw2q.
+        ///   Looks up a localized string similar to Join us on Patreon and Discord! https://www.patreon.com/pchpcompiler.
         /// </summary>
         internal static string IDS_Donate {
             get {
