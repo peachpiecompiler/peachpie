@@ -653,12 +653,14 @@ namespace Pchp.CodeAnalysis.Symbols
             const string prefix = "get_";
             if (method.DeclaredAccessibility != Accessibility.Private &&
                 method.IsStatic == false &&
+                method.IsAbstract == false &&
+                method.IsOverride == false &&
                 method.Name.StartsWith(prefix, StringComparison.Ordinal) &&
                 method.ParameterCount == 0 && !method.ReturnsVoid
                 )
             {
                 propertyName = method.Name.Substring(prefix.Length);
-                return true;
+                return propertyName.Length > 0;
             }
 
             return false;
@@ -684,6 +686,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     phphidden: true
                 );
             }
+
+            // TODO: override base property?
 
             //
             var property = new SynthesizedPropertySymbol(this, propertyName, getter.IsStatic, type, getter.DeclaredAccessibility, getter, setter);
