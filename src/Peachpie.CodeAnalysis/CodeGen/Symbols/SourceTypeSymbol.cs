@@ -627,25 +627,91 @@ namespace Pchp.CodeAnalysis.Symbols
             // synthesized field accessors:
             foreach (var srcf in GetMembers().OfType<SourceFieldSymbol>())
             {
-                var paccessor = srcf.FieldAccessorProperty;
-                if (paccessor != null)
+                FinalizeFieldAccessorProperty(module, diagnostics, srcf, srcf.FieldAccessorProperty);
+            }
+
+            // synthesize properties from get_ methods
+            foreach (var m in GetMembers().OfType<MethodSymbol>())
+            {
+                if (CanBePropertyGetter(m, out var propertyName) && !GetMembers(propertyName).OfType<PropertySymbol>().Any())
                 {
-                    GenerateFieldAccessorProperty(module, diagnostics, srcf, paccessor);
+                    var setter = GetMembers($"set_{propertyName}").OfType<MethodSymbol>().SingleOrDefault();
+                    
+                    SynthesizeProperty(
+                        module, diagnostics, propertyName,
+                        getter: m,
+                        setter: CanBePropertySetter(setter) ? setter : null
+                    );
                 }
             }
         }
 
-        void GenerateFieldAccessorProperty(Emit.PEModuleBuilder module, DiagnosticBag diagnostics, SourceFieldSymbol srcf, PropertySymbol paccessor)
+        static bool CanBePropertyGetter(MethodSymbol method, out string propertyName)
         {
+            propertyName = null;
+
+            const string prefix = "get_";
+            if (method.DeclaredAccessibility != Accessibility.Private &&
+                method.IsStatic == false &&
+                method.Name.StartsWith(prefix, StringComparison.Ordinal) &&
+                method.ParameterCount == 0 && !method.ReturnsVoid
+                )
+            {
+                propertyName = method.Name.Substring(prefix.Length);
+                return true;
+            }
+
+            return false;
+        }
+
+        static bool CanBePropertySetter(MethodSymbol method)
+        {
+            return method.IsStatic == false && method.ParameterCount == 1;
+        }
+
+        PropertySymbol SynthesizeProperty(Emit.PEModuleBuilder module, DiagnosticBag diagnostics, string propertyName, MethodSymbol getter, MethodSymbol setter)
+        {
+            var type = getter.ReturnType;
+
+            // setter ghost?
+            if (setter != null && (!setter.ReturnsVoid || setter.ParameterCount != 1 || !setter.Parameters[0].Type.Equals(type)))
+            {
+                setter = GhostMethodBuilder.CreateGhostOverload(setter, this, module, diagnostics,
+                    ghostreturn: DeclaringCompilation.CoreTypes.Void,
+                    ghostparams: ImmutableArray.Create<ParameterSymbol>(
+                        new SynthesizedParameterSymbol(setter, type, 0, RefKind.None, name: "value")
+                    ),
+                    phphidden: true
+                );
+            }
+
             //
+            var property = new SynthesizedPropertySymbol(this, propertyName, getter.IsStatic, type, getter.DeclaredAccessibility, getter, setter);
+
+            module.SynthesizedManager.AddProperty(this, property);
+            
+            return property;
+        }
+
+        void FinalizeFieldAccessorProperty(Emit.PEModuleBuilder module, DiagnosticBag diagnostics, SourceFieldSymbol srcf, PropertySymbol paccessor)
+        {
+            if (paccessor == null)
+            {
+                // no property defined
+                return;
+            }
+
             module.SynthesizedManager.AddProperty(this, paccessor);
 
             //
             var get_body = MethodGenerator.GenerateMethodBody(module, paccessor.GetMethod, (il) =>
             {
+                // using var cg = new CodeGenerator(il, module, diagnostics, PhpOptimizationLevel.Release, false, this, null, new ArgPlace(this, 0));
+
                 // Template: return field;
                 var place = new FieldPlace(new ArgPlace(this, 0), srcf.OverridenDefinition, module);
                 place.EmitLoad(il);
+                // cg.EmitConvert(...)
                 il.EmitRet(false);
             }, null, diagnostics, false);
 
