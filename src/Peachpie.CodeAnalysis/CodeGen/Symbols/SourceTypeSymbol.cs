@@ -690,7 +690,10 @@ namespace Pchp.CodeAnalysis.Symbols
             // TODO: override base property?
 
             //
-            var property = new SynthesizedPropertySymbol(this, propertyName, getter.IsStatic, type, getter.DeclaredAccessibility, getter, setter);
+            var property = new SynthesizedPropertySymbol(this, propertyName, getter.IsStatic, type, getter.DeclaredAccessibility,
+                getter, setter,
+                phphidden: true
+            );
 
             module.SynthesizedManager.AddProperty(this, property);
             
