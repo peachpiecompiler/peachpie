@@ -668,7 +668,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         static bool CanBePropertySetter(MethodSymbol method)
         {
-            return method.IsStatic == false && method.ParameterCount == 1;
+            return method != null && method.IsStatic == false && method.ParameterCount == 1;
         }
 
         PropertySymbol SynthesizeProperty(Emit.PEModuleBuilder module, DiagnosticBag diagnostics, string propertyName, MethodSymbol getter, MethodSymbol setter)
