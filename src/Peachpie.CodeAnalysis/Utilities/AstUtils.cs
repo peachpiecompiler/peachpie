@@ -14,6 +14,7 @@ using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using System.Runtime.InteropServices;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis
 {
@@ -355,6 +356,37 @@ namespace Pchp.CodeAnalysis
 
             // spans are not available
             return default;
+        }
+
+        public static bool TryGetPath(this BoundBlock block, out string path, out int line)
+        {
+            path = null;
+            line = -1;
+
+            if (block != null)
+            {
+                if (block.PhpSyntax != null)
+                {
+                    var unit = block.PhpSyntax.ContainingSourceUnit;
+                    if (unit != null)
+                    {
+                        path = unit.FilePath;
+
+                        if (block.PhpSyntax.Span.IsValid)
+                        {
+                            line = unit.GetLineFromPosition(block.PhpSyntax.Span.Start);
+                        }
+                    }
+
+                    //if (path == null && block.FlowState?.Routine != null)
+                    //{
+                    //    path = block.FlowState.Routine...
+                    //}
+                }
+            }
+
+            //
+            return path != null;
         }
 
         sealed class ElementVisitor<TElement> : TreeVisitor
