@@ -1131,7 +1131,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            return builder.MoveToImmutable();
+            return builder.ToImmutable();
         }
 
         protected BoundExpression BindItemUse(AST.ItemUse x, BoundAccess access)
