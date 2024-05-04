@@ -324,6 +324,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemAlias_IPhpArray_PhpValue_Bool = ct.Operators.Method("EnsureItemAlias", ct.IPhpArray, ct.PhpValue, ct.Boolean);
                 EnsureItemArray_IPhpArray_PhpValue = ct.Operators.Method("EnsureItemArray", ct.IPhpArray, ct.PhpValue);
                 EnsureItemObject_IPhpArray_PhpValue = ct.Operators.Method("EnsureItemObject", ct.IPhpArray, ct.PhpValue);
+                AddRange_PhpArray_PhpValue = ct.Operators.Method("AddRange", ct.PhpArray, ct.PhpValue);
                 IsSet_PhpValue = ct.Operators.Method("IsSet", ct.PhpValue);
                 IsEmpty_PhpValue = ct.Operators.Method("IsEmpty", ct.PhpValue);
                 IsNullOrEmpty_String = ct.String.Method("IsNullOrEmpty", ct.String);
@@ -471,6 +472,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemAlias_IPhpArray_PhpValue_Bool, EnsureItemAlias_PhpValue_PhpValue_Bool,
                 EnsureItemArray_IPhpArray_PhpValue,
                 EnsureItemObject_IPhpArray_PhpValue,
+                AddRange_PhpArray_PhpValue,
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToBoolean_String, ToBoolean_PhpString,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double, Long_ToString,

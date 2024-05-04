@@ -2816,9 +2816,10 @@ namespace Pchp.CodeAnalysis.Semantics
                     // $arguments: PhpArray
                     BoundArgument.Create(
                         new BoundArrayEx(
-                            _arguments.Select(
-                                arg => new KeyValuePair<BoundExpression, BoundExpression>(null, arg.Value)
-                            ).ToImmutableArray())
+                            _arguments.SelectAsArray(
+                                arg => new BoundArrayEx.BoundArrayItem(null, arg.Value)
+                            )
+                        )
                         .WithAccess(BoundAccess.Read))
                     );
             }
@@ -4091,7 +4092,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            if (_items.Length == 0)
+            if (this.Items.IsDefaultOrEmpty)
             {
                 if (Access.IsNone && !cg.EmitPdbSequencePoints)
                 {
@@ -4122,18 +4123,26 @@ namespace Pchp.CodeAnalysis.Semantics
         TypeSymbol EmitNewPhpArray(CodeGenerator cg)
         {
             // new PhpArray(count)
-            cg.Builder.EmitIntConstant(_items.Length);
+            cg.Builder.EmitIntConstant(this.Items.Length);
             var result = cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int)
                 .Expect(cg.CoreTypes.PhpArray);
 
-            foreach (var x in _items)
+            foreach (var x in this.Items)
             {
                 Debug.Assert(x.Value != null);
 
                 // <PhpArray>
                 cg.Builder.EmitOpCode(ILOpCode.Dup);
 
-                if (x.Key == null)
+                if (x.IsSpreadArray)
+                {
+                    Debug.Assert(x.Key == null);
+
+                    // Operators.AddRange(<stack>, value)
+                    cg.EmitConvertToPhpValue(x.Value);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.AddRange_PhpArray_PhpValue));
+                }
+                else if (x.Key == null)
                 {
                     // <stack>.Add(value) : int
                     cg.EmitConvertToPhpValue(x.Value);

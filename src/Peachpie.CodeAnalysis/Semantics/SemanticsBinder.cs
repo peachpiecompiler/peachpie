@@ -16,6 +16,7 @@ using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Peachpie.CodeAnalysis.Syntax;
+using BoundArrayItem = Pchp.CodeAnalysis.Semantics.BoundArrayEx.BoundArrayItem;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -1081,53 +1082,45 @@ namespace Pchp.CodeAnalysis.Semantics
             return builder.MoveToImmutable();
         }
 
-        protected ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items)
+        protected ImmutableArray<BoundArrayItem> BindArrayItems(ReadOnlySpan<AST.Item> items)
         {
             // trim trailing empty items
-            int count = items.Length;
-            while (count > 0 && items[count - 1] == null)
+            while (items.Length != 0 && items[items.Length - 1] == null)
             {
-                count--;
+                items = items.Slice(0, items.Length - 1);
             }
 
-            if (count == 0)
+            if (items.IsEmpty)
             {
-                return ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>>.Empty;
+                return ImmutableArray<BoundArrayItem>.Empty;
             }
 
-            var builder = ImmutableArray.CreateBuilder<KeyValuePair<BoundExpression, BoundExpression>>(count);
+            var builder = ImmutableArray.CreateBuilder<BoundArrayItem>(items.Length);
 
-            for (int i = 0; i < count; i++)
+            foreach (var x in items)
             {
-                var x = items[i];
                 if (x == null)
                 {
                     throw ExceptionUtilities.Unreachable;
                 }
 
-                if (x is AST.SpreadItem)
-                {
-                    Diagnostics.Add(
-                        ContainingFile.GetLocation(x.Value.Span.ToTextSpan()),
-                        Errors.ErrorCode.ERR_NotYetImplemented,
-                        "'...' spread array operator");
-                    continue;
-                }
+                // bind key, value
+                var boundIndex = x.Index != null ? BindExpression(x.Index, BoundAccess.Read) : null;
+                var boundValue = BindExpression((AST.Expression)x.Value, x.IsByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+                var isSpreadArray = x is AST.SpreadItem;
 
-                Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
-
-                var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
-                var value = (AST.Expression)((AST.IArrayItem)x).Value;
-
-                // read access
-                var boundValue = BindExpression(value, x.IsByRef ? BoundAccess.ReadRef : BoundAccess.Read);
-
-                if (!x.IsByRef)
+                if (!x.IsByRef && !isSpreadArray)
                 {
                     boundValue = BindCopyValue(boundValue);
                 }
 
-                builder.Add(new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue));
+                //
+                builder.Add(
+                    new BoundArrayItem(boundIndex, boundValue)
+                    {
+                        IsSpreadArray = isSpreadArray
+                    }
+                );
             }
 
             //

@@ -96,6 +96,38 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return alternate?.MoveToImmutable() ?? arr;
         }
 
+        protected ImmutableArray<BoundArrayEx.BoundArrayItem> VisitArrayItemArray(ImmutableArray<BoundArrayEx.BoundArrayItem> arr)
+        {
+            if (arr.IsDefaultOrEmpty)
+            {
+                return arr;
+            }
+
+            ImmutableArray<BoundArrayEx.BoundArrayItem>.Builder alternate = null;
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                var orig = arr[i];
+                var visitedKey = (BoundExpression)orig.Key?.Accept(this);
+                var visitedValue = (BoundExpression)orig.Value?.Accept(this);
+
+                if (visitedKey != orig.Key || visitedValue != orig.Value)
+                {
+                    if (alternate == null)
+                    {
+                        alternate = arr.ToBuilder();
+                    }
+
+                    alternate[i] = new BoundArrayEx.BoundArrayItem(visitedKey, visitedValue)
+                    {
+                        IsSpreadArray = orig.IsSpreadArray,
+                    };
+                }
+            }
+
+            return alternate?.MoveToImmutable() ?? arr;
+        }
+
         protected ImmutableArray<KeyValuePair<T1, T2>> VisitImmutableArrayPairs<T1, T2>(ImmutableArray<KeyValuePair<T1, T2>> arr)
             where T1 : BoundOperation, IPhpOperation
             where T2 : BoundOperation, IPhpOperation
@@ -483,7 +515,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override object VisitArray(BoundArrayEx x)
         {
-            return x.Update(VisitImmutableArrayPairs(x.Items));
+            return x.Update(VisitArrayItemArray(x.Items));
         }
 
         public override object VisitArrayItem(BoundArrayItemEx x)

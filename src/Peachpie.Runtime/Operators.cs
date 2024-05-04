@@ -1936,7 +1936,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Copy, Unpack
+        #region Copy, Unpack, AddRange
 
         /// <summary>
         /// Gets copy of given value.
@@ -2187,6 +2187,70 @@ namespace Pchp.Core
             else
             {
                 throw new ArgumentException();
+            }
+        }
+
+        /// <summary>
+        /// Add values from <paramref name="spread"/>, expecting it to be an array or <see cref="Traversable"/>.
+        /// Implements spread operator <c>...</c>.
+        /// </summary>
+        /// <param name="array">Target array object.</param>
+        /// <param name="spread"><see cref="PhpArray"/>, <see cref="Traversable"/>, or <see cref="IEnumerable"/>.</param>
+        /// <remarks>
+        /// Throws error exception if <paramref name="spread"/> is not foreachable.
+        /// </remarks>
+        public static void AddRange(this PhpArray array, PhpValue spread)
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            switch (spread.TypeCode)
+            {
+                case PhpTypeCode.PhpArray:
+                    AddRange(array, other: spread.Array);
+                    break;
+                case PhpTypeCode.Object:
+
+                    var e = GetForeachEnumerator(spread.Object, false, default(RuntimeTypeHandle));
+                    while (e.MoveNext())
+                    {
+                        var value = e.CurrentValue.DeepCopy();
+                        if (e.CurrentKey.TryToIntStringKey(out var key) && key.IsString)
+                        {
+                            array[key] = value;
+                        }
+                        else
+                        {
+                            array.AddValue(value);
+                        }
+                    }
+                    
+                    break;
+                default:
+                    PhpException.Throw(PhpError.E_ERROR, ErrResources.unpack_argument_error, PhpVariable.GetTypeName(spread));
+                    break;
+            }
+        }
+
+        static void AddRange(this PhpArray array, PhpArray other)
+        {
+            // only string keys are preserved
+
+            var e = other.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                var value = e.CurrentValue.DeepCopy();
+                var key = e.CurrentKey;
+                if (key.IsString)
+                {
+                    array[key] = value;
+                }
+                else
+                {
+                    array.AddValue(value);
+                }
             }
         }
 

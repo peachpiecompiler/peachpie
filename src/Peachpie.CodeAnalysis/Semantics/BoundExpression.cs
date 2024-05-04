@@ -1975,7 +1975,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             public override bool IsDeeplyCopied => false;
 
-            ImmutableArray<IOperation> IArrayInitializerOperation.ElementValues => _array._items.Select(x => x.Value).Cast<IOperation>().AsImmutable();
+            ImmutableArray<IOperation> IArrayInitializerOperation.ElementValues => _array.Items.Select(x => x.Value).Cast<IOperation>().AsImmutable();
 
             public BoundArrayInitializer(BoundArrayEx array)
             {
@@ -1984,14 +1984,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
             public BoundArrayInitializer Update(BoundArrayEx array)
             {
-                if (array == _array)
-                {
-                    return this;
-                }
-                else
-                {
-                    return new BoundArrayInitializer(array).WithContext(this);
-                }
+                return array != _array
+                    ? new BoundArrayInitializer(array).WithContext(this)
+                    : this;
             }
 
             public override void Accept(OperationVisitor visitor)
@@ -2009,37 +2004,51 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
+        public struct BoundArrayItem
+        {
+            public readonly BoundExpression Key;
+            
+            public readonly BoundExpression Value;
+
+            /// <summary>
+            /// Flag indicating the <see cref="Value"/> is spread using <c>...</c> operator.
+            /// </summary>
+            public bool IsSpreadArray;
+
+            public bool RequiresContext => (Key != null && Key.RequiresContext) || Value.RequiresContext;
+
+            public BoundArrayItem(BoundExpression key, BoundExpression value)
+            {
+                Key = key;
+                Value = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
         public override bool IsDeeplyCopied => false;   // Emit() always creates an instance that does not need to be deepcopied again
 
         public override OperationKind Kind => OperationKind.ArrayCreation;
 
-        public override bool RequiresContext => _items.Any(x => (x.Key != null && x.Key.RequiresContext) || x.Value.RequiresContext);
+        public override bool RequiresContext => this.Items.Any(x => (x.Key != null && x.Key.RequiresContext) || x.Value.RequiresContext);
 
-        ImmutableArray<IOperation> IArrayCreationOperation.DimensionSizes => ImmutableArray.Create<IOperation>(new BoundLiteral(_items.Length));
+        ImmutableArray<IOperation> IArrayCreationOperation.DimensionSizes => ImmutableArray.Create<IOperation>(new BoundLiteral(this.Items.Length));
 
         IArrayInitializerOperation IArrayCreationOperation.Initializer => new BoundArrayInitializer(this);
 
         /// <summary>
-        /// Array items.
+        /// Bound array items.
         /// </summary>
-        public ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> Items { get => _items; internal set => _items = value; }
-        ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> _items;
+        public ImmutableArray<BoundArrayItem> Items { get; internal set; }
 
-        public BoundArrayEx(ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> items)
+        public BoundArrayEx(ImmutableArray<BoundArrayItem> items)
         {
-            _items = items;
+            this.Items = items;
         }
 
-        public BoundArrayEx Update(ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> items)
+        public BoundArrayEx Update(ImmutableArray<BoundArrayItem> items)
         {
-            if (items == _items)
-            {
-                return this;
-            }
-            else
-            {
-                return new BoundArrayEx(items).WithContext(this);
-            }
+            return items != this.Items
+                ? new BoundArrayEx(items).WithContext(this)
+                : this;
         }
 
         public override void Accept(OperationVisitor visitor)

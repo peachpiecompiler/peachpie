@@ -1649,4 +1649,7 @@ Additional information:
   <data name="too_few_arguments" xml:space="preserve">
     <value>Too few arguments to function {0}(), {1} passed and at least {2} expected</value>
   </data>
+  <data name="unpack_argument_error" xml:space="preserve">
+    <value>Only arrays and Traversables can be unpacked. {0} given.</value>
+  </data>
 </root>
