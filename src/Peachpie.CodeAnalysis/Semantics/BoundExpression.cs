@@ -2021,6 +2021,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 Key = key;
                 Value = value ?? throw new ArgumentNullException(nameof(value));
+                IsSpreadArray = false;
             }
         }
 
