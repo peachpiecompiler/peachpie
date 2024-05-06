@@ -644,7 +644,7 @@ namespace Pchp.Core.Dynamic
                     // Template: Operators.SetValue(ref fld, (PhpValue)value)
                     expr = Expression.Call(Cache.Operators.SetValue_PhpValueRef_PhpValue, expr, ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
                 }
-                else if (expr.Type.GetGenericTypeDefinition() == typeof(ClrEvent<>))
+                else if (expr.Type.IsGenericType && expr.Type.GetGenericTypeDefinition() == typeof(ClrEvent<>))
                 {
                     // Template: $object->eventHandler += rvalue; return rvalue;
                     // rvalue is (eventHadler + callable)
