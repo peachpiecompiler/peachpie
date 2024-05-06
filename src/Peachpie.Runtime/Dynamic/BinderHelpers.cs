@@ -644,6 +644,14 @@ namespace Pchp.Core.Dynamic
                     // Template: Operators.SetValue(ref fld, (PhpValue)value)
                     expr = Expression.Call(Cache.Operators.SetValue_PhpValueRef_PhpValue, expr, ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
                 }
+                else if (expr.Type.GetGenericTypeDefinition() == typeof(ClrEvent<>))
+                {
+                    // Template: $object->eventHandler += rvalue; return rvalue;
+                    // rvalue is (eventHadler + callable)
+                    expr = Expression.Block(
+                        rvalue
+                    );
+                }
                 else
                 {
                     // Template: fld = value
@@ -859,7 +867,7 @@ namespace Pchp.Core.Dynamic
             // lookup a declared field
             if (TryResolveDeclaredProperty(type, classCtx, target == null, field, out var prop))
             {
-                if (access.Write() && prop.IsReadOnly)
+                if (access.Write() && prop.IsReadOnly && !(prop is PhpPropertyInfo.ClrEvent))
                 {
                     return BindInvalidPropertyAccess(type.Name, field, classCtx, prop);
                 }

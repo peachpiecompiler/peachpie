@@ -7,7 +7,12 @@ using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
-    public class ClrEvent<TDelegate> : IPhpCallable where TDelegate : Delegate
+    internal interface IClrEvent
+    {
+        IDisposable Add(IPhpCallable callable);
+    }
+
+    public class ClrEvent<TDelegate> : IPhpConvertible, IClrEvent, IPhpCallable where TDelegate : Delegate
     {
         sealed class Hook : IDisposable
         {
@@ -40,6 +45,9 @@ namespace Pchp.Core
         }
 
         [PhpHidden]
+        protected readonly Context _ctx;
+
+        [PhpHidden]
         public EventInfo EventInfo { get; }
 
         [PhpHidden]
@@ -57,6 +65,8 @@ namespace Pchp.Core
 
         internal ClrEvent(Context ctx, object target, EventInfo eventInfo)
         {
+            _ctx = ctx;
+
             this.Target = target;
             this.EventInfo = eventInfo ?? throw new ArgumentNullException(nameof(eventInfo));
         }
@@ -79,6 +89,15 @@ namespace Pchp.Core
             throw new NotSupportedException();
         }
 
+        #region IClrEvent
+
+        IDisposable/*!*/IClrEvent.Add(IPhpCallable callable) =>
+            this.add(
+                callback: PhpCallableToDelegate<TDelegate>.Get(callable, _ctx)
+            );
+
+        #endregion
+
         #region IPhpCallable
 
         PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments)
@@ -89,15 +108,27 @@ namespace Pchp.Core
 
         PhpValue IPhpCallable.ToPhpValue() => PhpValue.FromClr(this);
 
-        //public PhpValue __invoke([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, params PhpValue[] arguments)
-        //{
-        //    if (caller.Equals(default(RuntimeTypeHandle)))
-        //    {
-        //        return false;
-        //    }
+        #endregion
 
-        //    return PhpValue.Null;
-        //}
+        #region IPhpConvertible
+
+        double IPhpConvertible.ToDouble() => throw new NotSupportedException();
+
+        long IPhpConvertible.ToLong() => throw new NotSupportedException();
+
+        bool IPhpConvertible.ToBoolean() => throw new NotSupportedException();
+
+        Convert.NumberInfo IPhpConvertible.ToNumber(out PhpNumber number)
+        {
+            number = 0;
+            return Convert.NumberInfo.Unconvertible;
+        }
+
+        string IPhpConvertible.ToString() => name;
+
+        object IPhpConvertible.ToClass() => this;
+
+        PhpArray IPhpConvertible.ToArray() => throw new NotSupportedException();
 
         #endregion
     }
