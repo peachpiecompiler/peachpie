@@ -111,5 +111,37 @@ class C {
                 Assert.AreEqual("Hello", (string)c_type.GetProperty("StringOnly").GetValue(c));
             }
         }
+
+        class ClrEventTestClass
+        {
+            public event EventHandler e;
+            public void fire() => e?.Invoke(this, EventArgs.Empty);
+        }
+
+        [TestMethod]
+        public void ClrEvent()
+        {
+            using (var ctx = Context.CreateEmpty())
+            {
+                // $x = new ClrEventTestClass;
+                ctx.Globals["x"] = PhpValue.FromClass(
+                    new ClrEventTestClass()
+                );
+
+                var output = CompileAndRun(ctx, @"<?php
+
+$hook = $x->e->add(
+    function ($sender, $args) {
+        echo '1';
+    }
+);
+$x->fire(); // invoke event
+$hook->close(); // unsubscribe callable
+$x->fire(); // invoke empty event
+
+");
+                Assert.AreEqual("1", output);
+            }
+        }
     }
 }
