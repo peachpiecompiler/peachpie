@@ -399,7 +399,7 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => Event.Name;
 
-            public override Type PropertyType => typeof(PhpValue);
+            public override Type PropertyType => ConstructedClrEventType;
 
             public override PhpValue GetValue(Context ctx, object instance)
             {
