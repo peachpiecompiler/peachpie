@@ -980,15 +980,13 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             EnsureAllMembersAreLoaded();
 
-            ImmutableArray<Symbol> m;
-            if (!_lazyMembersByName.TryGetValue(name, out m))
+            if (!_lazyMembersByName.TryGetValue(name, out var m))
             {
                 m = ImmutableArray<Symbol>.Empty;
             }
 
             // nested types are not common, but we need to check just in case
-            ImmutableArray<PENamedTypeSymbol> t;
-            if (_lazyNestedTypes.TryGetValue(name, out t))
+            if (_lazyNestedTypes.TryGetValue(name, out var t))
             {
                 m = m.Concat(StaticCast<Symbol>.From(t));
             }

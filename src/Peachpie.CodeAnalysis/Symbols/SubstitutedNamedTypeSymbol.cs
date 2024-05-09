@@ -378,9 +378,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (_unbound) return StaticCast<Symbol>.From(GetTypeMembers(name));
 
-            ImmutableArray<Symbol> result;
             var cache = _lazyMembersByNameCache;
-            if (cache != null && cache.TryGetValue(name, out result))
+            if (cache != null && cache.TryGetValue(name, out var result))
             {
                 return result;
             }

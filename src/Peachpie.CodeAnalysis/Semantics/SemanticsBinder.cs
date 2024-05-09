@@ -2,6 +2,7 @@
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.PooledObjects;
 using Pchp.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
@@ -10,7 +11,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using AST = Devsense.PHP.Syntax.Ast;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.FlowAnalysis;
@@ -1095,8 +1095,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 return ImmutableArray<BoundArrayItem>.Empty;
             }
 
-            var builder = ImmutableArray.CreateBuilder<BoundArrayItem>(items.Length);
-
+            var builder = ArrayBuilder<BoundArrayItem>.GetInstance();
+            
             foreach (var x in items)
             {
                 if (x == null)
@@ -1124,7 +1124,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            return builder.ToImmutable();
+            return builder.ToImmutableAndFree();
         }
 
         protected BoundExpression BindItemUse(AST.ItemUse x, BoundAccess access)
