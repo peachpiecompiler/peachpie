@@ -12,7 +12,7 @@ namespace Pchp.Core
         IDisposable Add(IPhpCallable callable);
     }
 
-    public class ClrEvent<TDelegate> : IPhpConvertible, IClrEvent, IPhpCallable where TDelegate : Delegate
+    internal class ClrEvent<TDelegate> : IPhpConvertible, IClrEvent, IPhpCallable where TDelegate : Delegate
     {
         sealed class Hook : IDisposable
         {
