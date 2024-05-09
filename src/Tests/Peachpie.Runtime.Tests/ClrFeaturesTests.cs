@@ -1,7 +1,7 @@
 using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
-using ComponentAce.Compression.Libs.zlib;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Pchp.Core;
 using Pchp.Core.Reflection;
@@ -19,7 +19,7 @@ namespace Peachpie.Runtime.Tests
             }
         }
 
-        string CompileAndRun(Context ctx, string code)
+        string CompileAndRun(Context ctx, string code, string[] additionalReferences = null)
         {
             var outputStream = new MemoryStream();
 
@@ -37,7 +37,7 @@ namespace Peachpie.Runtime.Tests
                 IsSubmission = false,
                 //EmitDebugInformation = true,
                 Location = new Location(Path.GetFullPath("dummy.php"), 0, 0),
-                //AdditionalReferences = AdditionalReferences,
+                AdditionalReferences = additionalReferences,
             }, code);
 
             // run
@@ -112,12 +112,6 @@ class C {
             }
         }
 
-        class ClrEventTestClass
-        {
-            public event EventHandler e;
-            public void fire() => e?.Invoke(this, EventArgs.Empty);
-        }
-
         [TestMethod]
         public void ClrEvent()
         {
@@ -143,5 +137,124 @@ $x->fire(); // invoke empty event
                 Assert.AreEqual("1", output);
             }
         }
+
+        [TestMethod]
+        public void ExplicitOverridesWithGenerics()
+        {
+            using (var ctx = Context.CreateEmpty())
+            {
+                // compiler must bind all the generic explicitly defined properties and methods correctly
+                CompileAndRun(ctx, $@"<?php
+class MyCollection extends {typeof(ObservableCollection).GetPhpTypeInfo().Name} //
+{{
+}}
+",
+                    additionalReferences: new[] { typeof(ObservableCollection).Assembly.Location }
+                );
+
+                Assert.IsNotNull(ctx.Create("MyCollection"));
+            }
+        }
     }
+
+    #region Test Classes
+
+    /// <summary>
+    /// Implements both <see cref="ObservableCollection{T}"/> and PHP's <see cref="Iterator"/>.
+    /// </summary>
+    public class ObservableCollection : ObservableCollection<object>, Iterator, ArrayAccess
+    {
+        private int _position = 0;
+
+        public ObservableCollection() : base()
+        {
+
+        }
+
+        public ObservableCollection(PhpArray phpArray)
+        {
+            if (phpArray.IntrinsicEnumerator == null)
+            {
+                return;
+            }
+
+            foreach (var item in phpArray)
+            {
+                Add(item.Value.Alias);
+            }
+        }
+
+        public void SetAll(PhpArray phpArray)
+        {
+            if (phpArray.IntrinsicEnumerator == null)
+            {
+                return;
+            }
+
+            Clear();
+
+            foreach (var item in phpArray)
+            {
+                Add(item.Value.Alias);
+            }
+        }
+
+        public void rewind()
+        {
+            _position = 0;
+        }
+
+        public void next()
+        {
+            _position++;
+        }
+
+        public bool valid()
+        {
+            return _position >= 0 && _position < Count;
+        }
+
+        public PhpValue key()
+        {
+            return _position;
+        }
+
+        public PhpValue current()
+        {
+            return PhpValue.FromClr(this[_position]);
+        }
+
+        public PhpValue offsetGet(PhpValue offset)
+        {
+            return PhpValue.FromClr(this[offset.ToInt()]);
+        }
+
+        public void offsetSet(PhpValue offset, PhpValue value)
+        {
+            this[offset.ToInt()] = value.ToClr();
+        }
+
+        public void offsetUnset(PhpValue offset)
+        {
+            RemoveAt(offset.ToInt());
+        }
+
+        public bool offsetExists(PhpValue offset)
+        {
+            return offset.ToInt() >= 0 && offset.ToInt() < Count;
+        }
+
+        public PhpArray toArray()
+        {
+            return new PhpArray(this);
+        }
+    }
+
+    class ClrEventTestClass
+    {
+        public event EventHandler e;
+        public void fire() => e?.Invoke(this, EventArgs.Empty);
+    }
+
+    #endregion
 }
