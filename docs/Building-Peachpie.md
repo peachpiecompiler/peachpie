@@ -1,13 +1,13 @@
-The solution consists of a set of stadard msbuild 15.0 project files. The standard build procedure follows:
+The solution consists of a set of standard MSBuild 15.0 project files. The standard build procedure follows:
 
 ## Prerequisites
 
-- .NET Core 3.0 SDK
-- Visual Studio 2017 (Optional)
+- .NET 5.0 SDK
+- Visual Studio 2019 (Optional)
 
 ## Command Line
 
-Build the solution or projects separately using build command:
+Build the solution or projects separately using the build command:
 
 ```shell
 dotnet build
@@ -17,13 +17,13 @@ The build process outputs NuGet packages locally in `\.nugs\` directory. Package
 
 ## Visual Studio 2017+
 
-Visual Studio should automatically restore NuGet packages. If this feature is disabled or not working properly, run `dotnet restore` on commandline first.
+Visual Studio should automatically restore NuGet packages. If this feature is disabled or not working properly, run `dotnet restore` on command line first.
 
 ## Developing with Peachpie from sources
 
-Peachpie platform is distributed as NuGet packages (`Peachpie.*`). After building Peachpie from sources, all the packages are located in `\.nugs\` directory with the suffix `-dev` by default.
+The PeachPie platform is distributed as NuGet packages (`Peachpie.*`). After building Peachpie from sources, all the packages are located in `\.nugs\` directory with the suffix `-dev` by default.
 
-In order to use your development packages, after successful build run the helper script `.\update-cache.ps1`. It copies packages from `/.nugs` to your local NuGet packages cache.
+In order to use your development packages, after a successful build run the helper script `.\update-cache.ps1`. It copies packages from `/.nugs` to your local NuGet packages cache.
    
 ```shell
 PS \build\> .\update-cache.ps1
