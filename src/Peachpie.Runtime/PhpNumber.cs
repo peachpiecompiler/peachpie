@@ -491,6 +491,12 @@ namespace Pchp.Core
             {
                 return (PhpValue)PhpArray.Union(arr_x, arr_y);
             }
+            else if (x.AsObject() is IClrEvent clrEvent)
+            {
+                // event += function
+                clrEvent.Add(y.AsCallable());
+                return x; // returns itself
+            }
 
             //PhpException.UnsupportedOperandTypes();
             //return 0;

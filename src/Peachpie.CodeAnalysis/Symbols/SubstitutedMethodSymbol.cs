@@ -220,13 +220,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public sealed override MethodSymbol OriginalDefinition
-        {
-            get
-            {
-                return originalDefinition;
-            }
-        }
+        protected override Symbol OriginalSymbolDefinition => originalDefinition;
 
         public sealed override bool IsExtern
         {

@@ -146,15 +146,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         void Process(T block)
         {
-            var list = _analyzers;
-            for (int i = 0; i < list.Count; i++)
+            try
             {
-                list[i](block);
+                var list = _analyzers;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    list[i](block);
+                }
             }
+            catch (Exception e)
+            {
+                if (block.TryGetPath(out var path, out var line))
+                {
+                    // write more information to the output:
+                    Console.WriteLine(
+                        $"{e.Message} caused by block at at {path}:{line}"
+                    );
+                }
+                // block.FlowState.Routine.
 
-            // block.FlowState.Routine.
+                //CompilerLogSource.Log.Count("BoundBlockProcessings");
 
-            //CompilerLogSource.Log.Count("BoundBlockProcessings");
+                throw;
+            }
         }
 
         /// <summary>
