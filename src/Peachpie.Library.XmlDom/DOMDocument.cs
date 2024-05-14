@@ -272,21 +272,28 @@ namespace Peachpie.Library.XmlDom
 
         #region Construction
 
-        public DOMDocument(string version = null, string encoding = null)
-        {
-            this.XmlDocument = PhpXmlDocument.Create();
-
-            __construct(version, encoding);
-        }
+        // used when inheriting this class
+        // does not call __construct()
+        [PhpFieldsOnlyCtor]
+        protected DOMDocument()
+            : this(xmlDocument: PhpXmlDocument.Create())
+        { }
 
         internal DOMDocument(XmlDocument xmlDocument)
         {
             this.XmlDocument = xmlDocument;
         }
 
+        public DOMDocument(string version = null, string encoding = null)
+            : this(xmlDocument: PhpXmlDocument.Create())
+        {
+            __initialize(version, encoding);
+        }
+
         private protected override DOMNode CloneObjectInternal(bool deepCopyFields) => new DOMDocument(XmlDocument);
 
-        public virtual void __construct(string version = null, string encoding = null)
+        /// <summary>Minimal initialization.</summary>
+        private protected void __initialize(string version = null, string encoding = null)
         {
             // To prevent problems from subsequent calls
             if (XmlDocument.HasChildNodes)
@@ -295,8 +302,16 @@ namespace Peachpie.Library.XmlDom
             }
 
             // append the corresponding XML declaration to the document
-            XmlDocument.AppendChild(XmlDocument.CreateXmlDeclaration(version ?? "1.0", encoding, string.Empty));
+            XmlDocument.AppendChild(
+                XmlDocument.CreateXmlDeclaration(
+                    version: version ?? "1.0",
+                    encoding: string.IsNullOrEmpty(encoding) ? null : encoding,
+                    standalone: string.Empty
+                )
+            );
         }
+
+        public void __construct(string version = "1.0", string encoding = "") => __initialize(version, encoding);
 
         #endregion
 
@@ -1030,7 +1045,7 @@ namespace Peachpie.Library.XmlDom
         public virtual bool schemaValidateSource(Context ctx, string schemaString, int flags = 0)
         {
             XmlSchema schema;
-            
+
             try
             {
                 schema = XmlSchema.Read(new System.IO.StringReader(schemaString), null);
@@ -1181,7 +1196,7 @@ namespace Peachpie.Library.XmlDom
 
                     // By validating externally we prevent the default values from being created
                     var xpathNavigator = XmlDocument.CreateNavigator();
-                    xpathNavigator.CheckValidity(schemaSet, null); 
+                    xpathNavigator.CheckValidity(schemaSet, null);
                 }
             }
             catch (XmlSchemaException)

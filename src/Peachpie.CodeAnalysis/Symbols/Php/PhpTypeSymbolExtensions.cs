@@ -106,13 +106,17 @@ namespace Pchp.CodeAnalysis.Symbols
 
             for (var t = type; t != null; t = t.BaseType)
             {
-                candidate = t.GetMembers(name).OfType<FieldSymbol>().Where(f => !f.IsConst && !f.IsPhpStatic()).SingleOrDefault();
+                var members = t.GetMembers(name);
+
+                candidate = members.OfType<FieldSymbol>().SingleOrDefault(f => !f.IsConst && !f.IsPhpStatic() && !f.IsPhpHidden);
                 if (candidate != null)
                 {
+                    // TODO: if field is private, check also `event` with the same name
+
                     return candidate;
                 }
 
-                candidate = t.GetMembers(name).OfType<PropertySymbol>().Where(p => !p.IsStatic).SingleOrDefault();
+                candidate = members.OfType<PropertySymbol>().SingleOrDefault(p => !p.IsStatic);
                 if (candidate != null)
                 {
                     return candidate;

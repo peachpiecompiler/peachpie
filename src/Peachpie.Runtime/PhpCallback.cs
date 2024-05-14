@@ -569,6 +569,7 @@ namespace Pchp.Core
             if (typeof(TFunc) == typeof(Action)) return (TFunc)(object)new Action(() => callable.Invoke(ctx));
             if (typeof(TFunc) == typeof(Func<bool>)) return (TFunc)(object)new Func<bool>(() => (bool)callable.Invoke(ctx));
             if (typeof(TFunc) == typeof(Func<long, long>)) return (TFunc)(object)new Func<long, long>((p1) => (long)callable.Invoke(ctx, p1));
+            if (typeof(TFunc) == typeof(EventHandler)) return (TFunc)(object)new EventHandler((s, a) => callable.Invoke(ctx, PhpValue.FromClass(s), PhpValue.FromClass(a)));
 
             //
             return Dynamic.BinderHelpers.CreateDelegate<TFunc>(callable, ctx);

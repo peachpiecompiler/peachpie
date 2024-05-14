@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -76,6 +77,11 @@ namespace Pchp.Core.Reflection
                 }
             }
 
+            foreach (var e in tinfo.DeclaredEvents)
+            {
+                properties[e.Name] = new PhpPropertyInfo.ClrEvent(t, e);
+            }
+
             //
             _properties = properties.Count != 0 ? properties : EmptyDictionary<string, PhpPropertyInfo>.Singleton;
         }
@@ -92,7 +98,9 @@ namespace Pchp.Core.Reflection
                 !ReflectionUtils.IsRuntimeFields(f) &&
                 !ReflectionUtils.IsContextField(f) &&
                 !f.IsPhpHidden() &&
-                !f.FieldType.IsPointer;
+                !f.FieldType.IsPointer &&
+                !(f.IsPrivate && f.GetCustomAttribute<CompilerGeneratedAttribute>() != null)
+                ;
         }
 
         static bool IsAllowedProperty(PropertyInfo p)

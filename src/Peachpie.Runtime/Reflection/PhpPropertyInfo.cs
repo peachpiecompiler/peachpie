@@ -344,6 +344,88 @@ namespace Pchp.Core.Reflection
 
         #endregion
 
+        #region ClrEvent
+
+        internal sealed class ClrEvent : PhpPropertyInfo
+        {
+            Type ConstructedClrEventType
+            {
+                get
+                {
+                    return _constructedClrEventType ??= typeof(ClrEvent<>).MakeGenericType(Event.EventHandlerType ?? throw new NotSupportedException());
+                }
+            }
+            Type? _constructedClrEventType;
+
+            ConstructorInfo ConstructorInfo
+                => ConstructedClrEventType.GetConstructor(BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Instance, null, new[] { typeof(Context), typeof(object), typeof(EventInfo) }, null)
+                ?? throw new InvalidOperationException()
+                ;
+
+            public EventInfo Event { get; }
+
+            public override MemberInfo? Member => Event;
+
+            public ClrEvent(PhpTypeInfo tinfo, EventInfo @event)
+                : base(tinfo)
+            {
+                Event = @event ?? throw new ArgumentNullException(nameof(@event));
+            }
+
+            public override FieldAttributes Attributes
+            {
+                get
+                {
+                    FieldAttributes attrs = 0;
+
+                    if (Event.AddMethod != null)
+                    {
+                        attrs = (FieldAttributes)(Event.AddMethod.Attributes & (MethodAttributes.MemberAccessMask | MethodAttributes.Static));
+                    }
+                    else
+                    {
+                        attrs = FieldAttributes.Private;
+                    }
+
+                    return attrs;
+                }
+            }
+
+            public override bool IsReadOnly => true;
+
+            public override bool IsConstant => false;
+
+            public override bool IsRuntimeProperty => false;
+
+            public override string PropertyName => Event.Name;
+
+            public override Type PropertyType => ConstructedClrEventType;
+
+            public override PhpValue GetValue(Context ctx, object instance)
+            {
+                return PhpValue.FromClass(
+                    Activator.CreateInstance(ConstructedClrEventType, ctx, instance, Event)
+                );
+            }
+
+            public override void SetValue(Context ctx, object instance, PhpValue value) => throw new NotSupportedException();
+
+            public override Expression Bind(Expression ctx, Expression target)
+            {
+                // new ClrEvent<TDelegate>( ctx, target, Event )
+                return Expression.New(
+                    ConstructorInfo,
+                    ctx,
+                    Expression.Convert(target, Cache.Types.Object[0]),
+                    Expression.Constant(Event)
+                );
+            }
+
+            public override IPhpArray EnsureArray(Context ctx, object instance) => throw new NotSupportedException();
+        }
+
+        #endregion
+
         #region RuntimeProperty
 
         internal sealed class RuntimeProperty : PhpPropertyInfo

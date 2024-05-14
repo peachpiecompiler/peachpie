@@ -25,6 +25,7 @@ namespace Peachpie.Test
                     IsSubmission = false,
                     AdditionalReferences = new string[] {
                         typeof(Program).Assembly.Location,
+                        typeof(Library.XmlDom.DOMDocument).Assembly.Location,
                         typeof(Library.Graphics.PhpImage).Assembly.Location,
                         typeof(Library.MySql.MySql).Assembly.Location,
                         typeof(Library.Network.CURLFunctions).Assembly.Location,

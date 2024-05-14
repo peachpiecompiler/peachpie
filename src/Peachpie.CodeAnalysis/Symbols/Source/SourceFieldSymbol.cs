@@ -148,7 +148,10 @@ namespace Pchp.CodeAnalysis.Symbols
                         new SynthesizedPropertySymbol(
                             this.ContainingType, this.Name, false,
                             type, this.DeclaredAccessibility,
-                            getter: getter, setter: setter);
+                            getter: getter,
+                            setter: setter
+                        );
+
                     Interlocked.CompareExchange(ref _fieldAccessorProperty, fieldAccessorProperty, null);
                 }
 

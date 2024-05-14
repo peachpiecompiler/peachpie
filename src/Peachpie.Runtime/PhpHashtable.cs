@@ -1048,14 +1048,21 @@ namespace Pchp.Core
         /// </remarks>
         public PhpHashtable Unite(PhpHashtable array)
         {
-            if (array == null) throw new ArgumentNullException("array");
-            if (array.table == this.table) return this;
-
-            var enumerator = array.GetFastEnumerator();
-            while (enumerator.MoveNext())
+            if (ReferenceEquals(array, null))
             {
-                if (!this.table.ContainsKey(enumerator.CurrentKey))
-                    this[enumerator.CurrentKey] = enumerator.CurrentValue;  // TODO: DeepCopy value ?
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            if (ReferenceEquals(array.table, this.table) == false)
+            {
+                var enumerator = array.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    if (!this.table.ContainsKey(enumerator.CurrentKey))
+                    {
+                        this[enumerator.CurrentKey] = enumerator.CurrentValue;  // TODO: DeepCopy value ?
+                    }
+                }
             }
 
             return this;

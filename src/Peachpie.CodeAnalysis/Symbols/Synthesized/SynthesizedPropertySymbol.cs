@@ -18,7 +18,20 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly bool _isStatic;
         readonly TypeSymbol _type;
 
-        public SynthesizedPropertySymbol(NamedTypeSymbol containing, string name, bool isStatic, TypeSymbol type, Accessibility accessibility, MethodSymbol getter, MethodSymbol setter)
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            if (IsPhpHidden)
+            {
+                // [PhpHiddenAttribute]
+                yield return new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpHiddenAttribute,
+                    ImmutableArray<TypedConstant>.Empty,
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty
+                );
+            }
+        }
+
+        public SynthesizedPropertySymbol(NamedTypeSymbol containing, string name, bool isStatic, TypeSymbol type, Accessibility accessibility, MethodSymbol getter, MethodSymbol setter, bool phphidden = false)
         {
             _containing = containing;
             _name = name;
@@ -27,7 +40,11 @@ namespace Pchp.CodeAnalysis.Symbols
             _getMethod = getter;
             _type = type;
             _isStatic = isStatic;
+
+            this.IsPhpHidden = phphidden;
         }
+
+        public bool IsPhpHidden { get; }
 
         public override Symbol ContainingSymbol => _containing;
 
