@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
 
-    <Version Condition=" '$(Version)'=='' ">1.0.0-dev</Version>
+    <Version Condition=" '$(Version)'=='' ">1.2.0-dev</Version>
     <PackageOnlyBuild>true</PackageOnlyBuild>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
