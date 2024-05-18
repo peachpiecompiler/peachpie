@@ -6,8 +6,6 @@ using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Pchp.Core.Reflection;
 
 namespace Pchp.Core.Dynamic
@@ -126,9 +124,10 @@ namespace Pchp.Core.Dynamic
             // 
             if (target.IsValueType == false)
             {
-                Debug.Assert(typeof(Nullable<bool>).IsValueType);
-
-                return BindAsReferenceType(arg, target, ctx);
+                if (TryBindAsReferenceType(arg, target, ctx, out var expression))
+                {
+                    return expression;
+                }
             }
             else
             {
@@ -160,16 +159,16 @@ namespace Pchp.Core.Dynamic
                 }
             }
 
-            //// PhpValueConverter.Cast<T>( (PhpValue ) : T
-            //return Expression.Call(
-            //    typeof(PhpValueConverter).GetMethod("Cast", BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(target),
-            //    BindToValue(arg));
-
-            //
-            return Expression.Block(
-                ThrowTypeError($"{arg.Type} -> {target}"),
-                BindDefault(target)
+            // Template: PhpValueConverter.Cast<T>( PhpValue ) : T
+            return Expression.Call(
+                Cache.Operators.Cast_PhpValue_T.MakeGenericMethod(target),
+                BindToValue(arg)
             );
+
+            //return Expression.Block(
+            //    ThrowTypeError($"{arg.Type} -> {target}"),
+            //    BindDefault(target)
+            //);
         }
 
         private static bool IsNullConstant(Expression arg)
@@ -687,13 +686,17 @@ namespace Pchp.Core.Dynamic
             return Expression.Call(Cache.Operators.PhpValue_AsObjectOrThrow, BindToValue(expr));
         }
 
-        static Expression BindAsReferenceType(Expression expr, Type target, Expression ctx)
+        /// <summary>
+        /// Specialized conversion to a referenced type.
+        /// </summary>
+        static bool TryBindAsReferenceType(Expression expr, Type target, Expression ctx, out Expression expression)
         {
             Debug.Assert(expr.Type != typeof(PhpAlias));
 
             if (IsNullConstant(expr))
             {
-                return Expression.Constant(null, typeof(object));
+                expression = Expression.Constant(null, typeof(object));
+                return true;
             }
 
             // to System.Delegate,
@@ -702,9 +705,10 @@ namespace Pchp.Core.Dynamic
             {
                 // Template: PhpCallableToDelegate<target>.Get( BindAsCallable(expr), Context )
                 var callable = BindAsCallable(expr);
-                return Expression.Call(
+                expression = Expression.Call(
                     typeof(PhpCallableToDelegate<>).MakeGenericType(target).GetMethod("Get"),
                     callable, ctx);
+                return true;
             }
 
             //// from PhpValue:
@@ -723,10 +727,9 @@ namespace Pchp.Core.Dynamic
             //// just cast:
             //return Expression.Convert(expr, target);
 
-            // Template: PhpValueConverter.Cast<T>( PhpValue )
-            return Expression.Call(
-                    Cache.Operators.Cast_PhpValue_T.MakeGenericMethod(target),
-                    BindToValue(expr));
+            //
+            expression = null;
+            return false;
         }
 
         private static Expression BindAsArray(Expression expr, Type target)
@@ -911,6 +914,12 @@ namespace Pchp.Core.Dynamic
                 if (typeof(PhpResource).IsAssignableFrom(t)) // resource -> {target}
                 {
                     return Expression.Constant(ConversionCost.NoConversion); // if value can be converted, it would be handled above
+                }
+
+                // to System.Delegate
+                if (target.IsSubclassOf(typeof(Delegate)) && t == typeof(Closure))
+                {
+                    return Expression.Constant(ConversionCost.ImplicitCast);
                 }
 
                 if (ReflectionUtils.IsPhpClassType(target))
