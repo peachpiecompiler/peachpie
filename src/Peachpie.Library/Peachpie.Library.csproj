@@ -26,7 +26,7 @@
     <PackageReference Include="FluentFTP" Version="39.4.0" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.10" />
     <PackageReference Include="Mono.Posix" Version="7.1.0-final.1.21458.1" />
-    <PackageReference Include="NGettext" Version="0.6.6" />
+    <PackageReference Include="NGettext" Version="0.6.7" />
     <PackageReference Include="Peachpie.Library.RegularExpressions" Version="$(PeachpieLibraryRegularExpressionsVersion)" />
     <PackageReference Include="Rationals" Version="2.3.0" />
     <PackageReference Include="System.IO.FileSystem.AccessControl" Version="4.7.0" />
