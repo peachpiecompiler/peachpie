@@ -816,7 +816,7 @@ namespace Pchp.Library
             {
                 // Use the async version to prevent calling Write on the output stream, as it might be not allowed
                 // (e.g. in Kestrel)
-                return resource.Client.DownloadAsync(stream.RawStream, remotefile, resumepos).Result;
+                return resource.Client.DownloadStream(stream.RawStream, remotefile, resumepos);
             }
             catch (FtpException ex)
             {
@@ -864,7 +864,7 @@ namespace Pchp.Library
 
             try
             {
-                return resource.Client.Upload(stream.RawStream, remote_file, FtpRemoteExists.Overwrite) != FtpStatus.Failed;
+                return resource.Client.UploadStream(stream.RawStream, remote_file, FtpRemoteExists.Overwrite) != FtpStatus.Failed;
             }
             catch (FtpException ex)
             {
@@ -923,7 +923,7 @@ namespace Pchp.Library
         /// Loads file on server.
         /// </summary>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        private static bool Put(Context context, PhpResource ftp_stream, string remote_file, string local_file, int mode, bool append, int startpos)
+        private static bool Put(Context context, PhpResource ftp_stream, string remote_file, string local_file, int mode, bool addToEnd, int startpos)
         {
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
@@ -944,7 +944,7 @@ namespace Pchp.Library
 
             try
             {
-                return resource.Client.UploadFile(localPath, remote_file, append ? FtpRemoteExists.Append : FtpRemoteExists.Overwrite) != FtpStatus.Failed;
+                return resource.Client.UploadFile(localPath, remote_file, addToEnd ? FtpRemoteExists.AddToEnd : FtpRemoteExists.Overwrite) != FtpStatus.Failed;
             }
             /* FtpException everytime wraps other exceptions (Message from server). 
             * https://github.com/robinrodricks/FluentFTP/blob/master/FluentFTP/Client/FtpClient_HighLevelUpload.cs#L595 */
@@ -1224,7 +1224,7 @@ namespace Pchp.Library
 
             resource.PrepareForPendingOperation(mode);
 
-            resource.PendingOperationTask = resource.Client.UploadAsync(stream.RawStream, remote_file, FtpRemoteExists.Overwrite, false, null, resource.TokenSource.Token);
+            resource.PendingOperationTask = resource.Client.UploadStreamAsync(stream.RawStream, remote_file, FtpRemoteExists.Overwrite, false, null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }
@@ -1289,7 +1289,7 @@ namespace Pchp.Library
 
             resource.PrepareForPendingOperation(mode);
 
-            resource.PendingOperationTask = resource.Client.DownloadAsync(stream.RawStream, remote_file, resumepos, null, resource.TokenSource.Token);
+            resource.PendingOperationTask = resource.Client.DownloadStreamAsync(stream.RawStream, remote_file, resumepos, null, resource.TokenSource.Token);
 
             return TasksGetInfo(resource);
         }

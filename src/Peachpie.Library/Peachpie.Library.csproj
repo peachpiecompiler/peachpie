@@ -23,7 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.2" />
-    <PackageReference Include="FluentFTP" Version="33.0.3" />
+    <PackageReference Include="FluentFTP" Version="39.4.0" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.10" />
     <PackageReference Include="Mono.Posix" Version="7.1.0-final.1.21458.1" />
     <PackageReference Include="NGettext" Version="0.6.6" />
