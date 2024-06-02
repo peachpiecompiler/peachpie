@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using Pchp.Core;
 using Pchp.Library.Streams;
@@ -767,7 +768,7 @@ namespace Peachpie.Library.Graphics
             // TODO: cache statically
 
             // Get the first available of specified sans serif system fonts
-            var result = SystemFonts.TryFind("Consolas", out var fontFamily) || SystemFonts.TryFind("Lucida Console", out fontFamily) || SystemFonts.TryFind("Arial", out fontFamily) || SystemFonts.TryFind("Verdana", out fontFamily) || SystemFonts.TryFind("Tahoma", out fontFamily);
+            var result = SystemFonts.TryGet("Consolas", out var fontFamily) || SystemFonts.TryGet("Lucida Console", out fontFamily) || SystemFonts.TryGet("Arial", out fontFamily) || SystemFonts.TryGet("Verdana", out fontFamily) || SystemFonts.TryGet("Tahoma", out fontFamily);
 
             // Couldn't find the system font.
             if (!result)
@@ -777,7 +778,7 @@ namespace Peachpie.Library.Graphics
             var fontStyle = FontStyle.Regular;
             if (fontInd == 3 || fontInd >= 5)
             {
-                if (fontFamily.IsStyleAvailable(FontStyle.Bold))
+                if (fontFamily.TryGetMetrics(FontStyle.Bold, out _))
                 {
                     fontStyle = FontStyle.Bold;
                 }
@@ -811,12 +812,7 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                family = new FontCollection().Install(font_stream.RawStream); // TODO: perf: global font collection cache
-
-                if (family == null)
-                {
-                    throw new InvalidDataException();
-                }
+                family = new FontCollection().Add(font_stream.RawStream); // TODO: perf: global font collection cache
             }
             catch
             {
@@ -830,19 +826,19 @@ namespace Peachpie.Library.Graphics
 
             FontStyle style;
 
-            if (family.IsStyleAvailable(FontStyle.Regular))
+            if (family.TryGetMetrics(FontStyle.Regular, out _))
             {
                 style = FontStyle.Regular;
             }
-            else if (family.IsStyleAvailable(FontStyle.Bold))
+            else if (family.TryGetMetrics(FontStyle.Bold, out _))
             {
                 style = FontStyle.Bold;
             }
-            else if (family.IsStyleAvailable(FontStyle.Italic))
+            else if (family.TryGetMetrics(FontStyle.Italic, out _))
             {
                 style = FontStyle.Italic;
             }
-            else if (family.IsStyleAvailable(FontStyle.BoldItalic))
+            else if (family.TryGetMetrics(FontStyle.BoldItalic, out _))
             {
                 style = FontStyle.BoldItalic;
             }
@@ -1034,7 +1030,7 @@ namespace Peachpie.Library.Graphics
 
             var rect = new RectangleF(x1, y1, x2 - x1, y2 - y1);
 
-            var opt = new ShapeGraphicsOptions();
+            var opt = new DrawingOptions();
             opt.GraphicsOptions.Antialias = img.AntiAlias;
 
             img.Image.Mutate(o => o.Draw(opt, FromRGBA(col), 1.0f, rect));
@@ -1109,8 +1105,8 @@ namespace Peachpie.Library.Graphics
                 return null;
             }
 
-            var rendererOptions = new RendererOptions(font);
-            var textsize = TextMeasurer.Measure(text, rendererOptions);
+            var rendererOptions = new TextOptions(font);
+            var textsize = TextMeasurer.MeasureSize(text, rendererOptions);
 
             // text transformation:
             var matrix = (angle == 0.0) ? Matrix3x2.Identity : Matrix3x2.CreateRotation((float)(angle * -2.0 * Math.PI / 360.0f));
@@ -1213,9 +1209,11 @@ namespace Peachpie.Library.Graphics
             var img = PhpGdImageResource.ValidImage(im);
             if (img != null)
             {
-                var opt = new ShapeGraphicsOptions();
+                var opt = new DrawingOptions();
                 opt.GraphicsOptions.Antialias = img.AntiAlias;
-                img.Image.Mutate(o => o.DrawLines(opt, GetAlphaColor(img, color), 1.0f, new PointF[] { new PointF(x1, y1), new PointF(x2, y2) }));
+                img.Image.Mutate(
+                    o => o.DrawLine(opt, GetAlphaColor(img, color), 1.0f, new PointF[] { new PointF(x1, y1), new PointF(x2, y2) })
+                );
 
                 return true;
             }
@@ -1518,7 +1516,7 @@ namespace Peachpie.Library.Graphics
 
             var ellipse = new EllipsePolygon(cx, cy, w, h);
 
-            var opt = new ShapeGraphicsOptions();
+            var opt = new DrawingOptions();
             opt.GraphicsOptions.Antialias = img.AntiAlias;
 
             img.Image.Mutate(o => o.Draw(opt, GetAlphaColor(img, col), 1.0f, ellipse));
@@ -1536,7 +1534,7 @@ namespace Peachpie.Library.Graphics
                 return false;
 
             var ellipse = new EllipsePolygon(cx, cy, w, h);
-            var opt = new ShapeGraphicsOptions();
+            var opt = new DrawingOptions();
             opt.GraphicsOptions.Antialias = img.AntiAlias;
 
             if (img.tiled != null)
@@ -1674,9 +1672,11 @@ namespace Peachpie.Library.Graphics
 
         static bool DrawText(PhpResource im, int fontInd, int x, int y, string text, long col, bool up = false)
         {
-            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
+            {
                 return false;
+            }
 
             if (x < 0 || y < 0) return true;
             if (x > img.Image.Width || y > img.Image.Height) return true;
@@ -1684,7 +1684,7 @@ namespace Peachpie.Library.Graphics
             var font = CreateFontById(fontInd);
             var color = FromRGBA(col);
 
-            var opt = new TextGraphicsOptions();
+            var opt = new DrawingOptions();
             opt.GraphicsOptions.Antialias = img.AntiAlias;
 
             if (up)
@@ -1732,7 +1732,7 @@ namespace Peachpie.Library.Graphics
             var font = CreateFontById(fontInd);
             if (font != null)
             {
-                var size = TextMeasurer.Measure("X", new RendererOptions(font));
+                var size = TextMeasurer.MeasureSize("X", new TextOptions(font));
 
                 if (arr == null || arr.Length <= fontInd)
                 {
@@ -1823,9 +1823,10 @@ namespace Peachpie.Library.Graphics
             AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
 
             // Path Builder object to be used in all the branches
-            PathBuilder pathBuilder = new PathBuilder();
+            var pathBuilder = new PathBuilder();
             var color = FromRGBA(col);
-            var pen = new Pen(color, 1);
+
+            var pen = new SolidPen(color, 1);
 
             // edge points, used for both pie and chord
             PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
@@ -2073,7 +2074,7 @@ namespace Peachpie.Library.Graphics
 
             var pointsF = GetPointFsFromArray(points, num_points);
 
-            img.Image.Mutate(o => o.DrawLines(new Pen(FromRGBA(color), 1.0f), pointsF));
+            img.Image.Mutate(o => o.DrawLine(new SolidPen(FromRGBA(color), 1.0f), pointsF));
 
             return true;
         }
@@ -2107,29 +2108,19 @@ namespace Peachpie.Library.Graphics
 
             if (filled)
             {
-                IBrush brush;
-
-                switch (col)
+                var brush = col switch
                 {
-                    case (long)ColorValues.TILED:
-                        brush = img.tiled;
-                        break;
-                    case (long)ColorValues.STYLED:
-                        brush = img.styled;
-                        break;
-                    case (long)ColorValues.BRUSHED:
-                        brush = img.brushed;
-                        break;
-                    default:
-                        brush = new SolidBrush(FromRGBA(col));
-                        break;
-                }
+                    (long)ColorValues.TILED => img.tiled,
+                    (long)ColorValues.STYLED => img.styled,
+                    (long)ColorValues.BRUSHED => img.brushed,
+                    _ => new SolidBrush(FromRGBA(col))
+                };
 
                 img.Image.Mutate(o => o.FillPolygon(brush, points));
             }
             else
             {
-                img.Image.Mutate(o => o.DrawPolygon(new Pen(FromRGBA(col), 1.0f), points));
+                img.Image.Mutate(o => o.DrawPolygon(new SolidPen(FromRGBA(col), 1.0f), points));
             }
 
             return true;

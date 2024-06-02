@@ -35,69 +35,73 @@ namespace Peachpie.Library.Graphics
             //var pixelSpan = source.GetPixelSpan();
             //int rowLength = source.Width;
 
-            var segmentQueue = new Queue<(Point point, int rightEdge)>();
-            segmentQueue.Enqueue((_startPoint, _startPoint.X));
-
-            while (segmentQueue.Count > 0)
+            source.ProcessPixelRows(accessor =>
             {
-                var (currentPoint, rightEdge) = segmentQueue.Dequeue();
-                var currentY = currentPoint.Y;
-                var currentX = currentPoint.X;
 
-                var rowSpan = source.GetPixelRowSpan(currentY);
+                var segmentQueue = new Queue<(Point point, int rightEdge)>();
+                segmentQueue.Enqueue((_startPoint, _startPoint.X));
 
-                int leftEdge;
-                leftEdge = currentX;
-
-                // Filling until reaching a border of specified color
-                if (_toBorder)
+                while (segmentQueue.Count > 0)
                 {
-                    // Get the row segment to be colored
-                    while (rightEdge + 1 < source.Width)
+                    var (currentPoint, rightEdge) = segmentQueue.Dequeue();
+                    var currentY = currentPoint.Y;
+                    var currentX = currentPoint.X;
+
+                    var rowSpan = accessor.GetRowSpan(currentY);
+                    int leftEdge;
+                    leftEdge = currentX;
+
+                    // Filling until reaching a border of specified color
+                    if (_toBorder)
                     {
-                        var edgeColor = GetPixel(rowSpan, rightEdge + 1);
-                        if (edgeColor.Equals(_borderColor) || edgeColor.Equals(_fillColor))
-                            break;
+                        // Get the row segment to be colored
+                        while (rightEdge + 1 < source.Width)
+                        {
+                            var edgeColor = GetPixel(rowSpan, rightEdge + 1);
+                            if (edgeColor.Equals(_borderColor) || edgeColor.Equals(_fillColor))
+                                break;
 
-                        rightEdge++;
+                            rightEdge++;
+                        }
+                        while (leftEdge - 1 < source.Width)
+                        {
+                            var edgeColor = GetPixel(rowSpan, leftEdge - 1);
+                            if (edgeColor.Equals(_borderColor) || edgeColor.Equals(_fillColor))
+                                break;
+
+                            leftEdge--;
+                        }
+
+                        // Actually color the row
+                        SetPixelRow(rowSpan, leftEdge, rightEdge, _fillColor);
+
+                        // Add the segments to be filled above and below to the queue
+                        if (currentY > 0)
+                            AddFillingSegmentsToQueueWithBorder(floodFrom, accessor.GetRowSpan(currentY - 1), segmentQueue, leftEdge, rightEdge, currentY - 1);
+                        if (currentY + 1 < source.Height)
+                            AddFillingSegmentsToQueueWithBorder(floodFrom, accessor.GetRowSpan(currentY + 1), segmentQueue, leftEdge, rightEdge, currentY + 1);
                     }
-                    while (leftEdge - 1 < source.Width)
+                    else
+                    // Filling whole region of same color
                     {
-                        var edgeColor = GetPixel(rowSpan, leftEdge - 1);
-                        if (edgeColor.Equals(_borderColor) || edgeColor.Equals(_fillColor))
-                            break;
+                        // Get the row segment to be colored
+                        while (rightEdge + 1 < source.Width && GetPixel(rowSpan, rightEdge + 1).Equals(floodFrom))
+                            rightEdge++;
+                        while (leftEdge > 0 && GetPixel(rowSpan, leftEdge - 1).Equals(floodFrom))
+                            leftEdge--;
 
-                        leftEdge--;
+                        // Actually color the row
+                        SetPixelRow(rowSpan, leftEdge, rightEdge, _fillColor);
+
+                        // Add the segments to be filled above and below to the queue
+                        if (currentY > 0)
+                            AddFillingSegmentsToQueue(floodFrom, accessor.GetRowSpan(currentY - 1), segmentQueue, leftEdge, rightEdge, currentY - 1);
+                        if (currentY + 1 < source.Height)
+                            AddFillingSegmentsToQueue(floodFrom, accessor.GetRowSpan(currentY + 1), segmentQueue, leftEdge, rightEdge, currentY + 1);
                     }
-
-                    // Actually color the row
-                    SetPixelRow(rowSpan, leftEdge, rightEdge, _fillColor);
-
-                    // Add the segments to be filled above and below to the queue
-                    if (currentY > 0)
-                        AddFillingSegmentsToQueueWithBorder(floodFrom, source.GetPixelRowSpan(currentY - 1), segmentQueue, leftEdge, rightEdge, currentY - 1);
-                    if (currentY + 1 < source.Height)
-                        AddFillingSegmentsToQueueWithBorder(floodFrom, source.GetPixelRowSpan(currentY + 1), segmentQueue, leftEdge, rightEdge, currentY + 1);
                 }
-                else
-                // Filling whole region of same color
-                {
-                    // Get the row segment to be colored
-                    while (rightEdge + 1 < source.Width && GetPixel(rowSpan, rightEdge + 1).Equals(floodFrom))
-                        rightEdge++;
-                    while (leftEdge > 0 && GetPixel(rowSpan, leftEdge - 1).Equals(floodFrom))
-                        leftEdge--;
 
-                    // Actually color the row
-                    SetPixelRow(rowSpan, leftEdge, rightEdge, _fillColor);
-
-                    // Add the segments to be filled above and below to the queue
-                    if (currentY > 0)
-                        AddFillingSegmentsToQueue(floodFrom, source.GetPixelRowSpan(currentY - 1), segmentQueue, leftEdge, rightEdge, currentY - 1);
-                    if (currentY + 1 < source.Height)
-                        AddFillingSegmentsToQueue(floodFrom, source.GetPixelRowSpan(currentY + 1), segmentQueue, leftEdge, rightEdge, currentY + 1);
-                }
-            }
+            });
         }
 
         private static void AddFillingSegmentsToQueue(TPixel floodFrom, Span<TPixel> rowSpan, Queue<(Point, int)> segmentQueue, int xStart, int xEnd, int y)
