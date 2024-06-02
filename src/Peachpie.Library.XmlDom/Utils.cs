@@ -376,14 +376,21 @@ namespace Peachpie.Library.XmlDom
 
                     // <element
                     var element = AppendChildElement(containing, xmldoc.CreateElement(name));
+                    var element_attrs = element.Attributes;
 
                     // attributes
                     var attrs = node.Attributes;
                     for (int ai = 0; ai < attrs.Count; ai++)
                     {
+                        if (element_attrs == null)
+                        {
+                            PhpException.Throw(PhpError.Notice, "Attributes ignored.");
+                            continue;
+                        }
+
                         var element_attr = CreateAttributeFromHtml(xmldoc, attrs[ai]);
 
-                        element.Attributes.Append(element_attr);
+                        element_attrs.Append(element_attr);
 
                         // add the attribute to the attribute ID map:
                         phpdoc?.HandleNewAttribute(element_attr);
