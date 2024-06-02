@@ -70,17 +70,16 @@ namespace Peachpie.CodeAnalysis {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 
-        ///                            PeachPie PHP Compiler Options
+        ///   Looks up a localized string similar to PeachPie PHP Compiler Options
         ///                            
         ///                    - OUTPUT FILES -
-        ////out:&lt;file&gt;                 Specify output file name (default: base name of
+        ///-out:{file}                 Specify output file name (default: base name of
         ///                            file with main class or first file)
-        ////target:exe                 Build a console executable (default) (Short
+        ///-target:exe                 Build a console executable (default) (Short
         ///                            form: /t:exe)
-        ////target:winexe              Build a Windows executable (Short form:
+        ///-target:winexe              Build a Windows executable (Short form:
         ///                            /t:winexe)
-        ////target:library  [rest of string was truncated]&quot;;.
+        ///-target:library             Build a library (S [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string IDS_Help {
             get {
