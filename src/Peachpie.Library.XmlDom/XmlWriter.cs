@@ -48,7 +48,7 @@ namespace Peachpie.Library.XmlDom
         // There can be actually two levels, where the state of xmlwriter can be situated. You can move to DtdElement if you are in DTD and you can move to CDATA if you are in PI.
         Stack<State> _state = new Stack<State>(2);
 
-        static XmlWriterSettings DefaultSettings = new XmlWriterSettings()
+        static readonly XmlWriterSettings DefaultSettings = new XmlWriterSettings()
         {
             Encoding = new UTF8Encoding(false),     // Disable BOM
             Indent = false,
@@ -531,7 +531,7 @@ namespace Peachpie.Library.XmlDom
                 return false;
             }
 
-            return CheckedCall(() => _writer.WriteStartElement(name));
+            return CheckedCall(() => _writer.WriteStartElement(name, "http://schemas.openxmlformats.org/package/2006/content-types"));
         }
 
         public bool startPi(string target)
