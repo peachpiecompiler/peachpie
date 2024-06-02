@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net50</TargetFramework>
+    <TargetFramework>net60</TargetFramework>
     <AssemblyName>peach</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>peach</PackageId>
