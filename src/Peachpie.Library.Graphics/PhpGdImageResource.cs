@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using Pchp.Core;
@@ -58,10 +56,10 @@ namespace Peachpie.Library.Graphics
 
         internal Rgba32 transparentColor;
         internal bool IsTransparentColSet = false;
-
-        internal IBrush styled = null;
-        internal IBrush brushed = null;
-        internal IBrush tiled = null;
+        
+        internal Brush styled = null;
+        internal Brush brushed = null;
+        internal Brush tiled = null;
 
         internal int LineThickness = 1;
 
