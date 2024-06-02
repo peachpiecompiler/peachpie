@@ -41,7 +41,7 @@ namespace Pchp.Core.Reflection
                 var pctx = Expression.Parameter(typeof(Context));
                 var pinstance = Expression.Parameter(typeof(object));
 
-                var expr = Bind(pctx, Expression.Convert(pinstance, Field.DeclaringType));
+                var expr = Bind(pctx, Expression.Convert(pinstance, ContainingType.Type));
                 if (access == AccessMask.Read)
                 {
                     expr = ConvertExpression.BindToValue(expr);
@@ -83,7 +83,7 @@ namespace Pchp.Core.Reflection
                     var pvalue = Expression.Parameter(typeof(PhpValue));
 
                     // field_expr: <instance>.<field>
-                    var field_expr = Bind(pctx, Expression.Convert(pinstance, Field.DeclaringType));
+                    var field_expr = Bind(pctx, Expression.Convert(pinstance, ContainingType.Type));
 
                     // expr: <field> := <value>
                     // var expr = BinderHelpers.BindAccess(field_expr, pctx, AccessMask.Write, pvalue); // <-- does not allow passing PhpAlias
@@ -235,7 +235,7 @@ namespace Pchp.Core.Reflection
                 {
                     var pinstance = Expression.Parameter(typeof(object));
 
-                    var expr = Bind(null!, Expression.Convert(pinstance, Property.DeclaringType));
+                    var expr = Bind(null!, Expression.Convert(pinstance, ContainingType.Type));
                     expr = ConvertExpression.BindToValue(expr);
 
                     //
@@ -259,7 +259,7 @@ namespace Pchp.Core.Reflection
                     var pvalue = Expression.Parameter(typeof(PhpValue));
 
                     // expr: <instance>.<field>
-                    var expr = Bind(pctx, Expression.Convert(pinstance, Property.DeclaringType));
+                    var expr = Bind(pctx, Expression.Convert(pinstance, ContainingType.Type));
 
                     // expr: <property> := <value>
                     expr = Expression.Assign(expr, ConvertExpression.Bind(pvalue, expr.Type, pctx));    // TODO: PHP semantic (Operators.SetValue)
