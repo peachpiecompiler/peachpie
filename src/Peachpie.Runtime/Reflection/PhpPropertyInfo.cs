@@ -275,8 +275,9 @@ namespace Pchp.Core.Reflection
             {
                 get
                 {
+                    var getter = Property.GetMethod ?? throw new InvalidOperationException($"getter is null");
                     var flags = (FieldAttributes)0;
-                    var attr = Property.GetMethod.Attributes;
+                    var attr = getter.Attributes;
 
                     switch (attr & MethodAttributes.MemberAccessMask)
                     {
@@ -313,9 +314,16 @@ namespace Pchp.Core.Reflection
 
             public override Expression Bind(Expression ctx, Expression target)
             {
-                return Expression.Property(
-                    Property.GetMethod.IsStatic ? null : target,
-                    Property);
+                var getter = Property.GetMethod;
+                if (getter != null)
+                {
+                    return Expression.Property(
+                        getter.IsStatic ? null : target,
+                        Property
+                    );
+                }
+
+                throw new InvalidOperationException($"Property '{ContainingType.Name}::{Property.Name}' does not have a getter.");
             }
         }
 

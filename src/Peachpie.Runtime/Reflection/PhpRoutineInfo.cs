@@ -120,13 +120,15 @@ namespace Pchp.Core.Reflection
 
         public override int GetHashCode() => _handle.GetHashCode();
 
-        public override MethodInfo[] Methods => new[] { (MethodInfo)MethodBase.GetMethodFromHandle(_handle) };
+        public override MethodInfo[] Methods => new[] { GetMethodFromHandle(_handle) };
 
         public override PhpTypeInfo? DeclaringType => null;
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? BindDelegate();
 
         PhpCallable BindDelegate() => _lazyDelegate = Dynamic.BinderHelpers.BindToPhpCallable(Methods);
+
+        private static MethodInfo/*!*/GetMethodFromHandle(RuntimeMethodHandle handle) => (MethodInfo)(MethodBase.GetMethodFromHandle(handle) ?? throw new InvalidOperationException());
 
         internal static PhpRoutineInfo Create(string name, RuntimeMethodHandle handle, params RuntimeMethodHandle[] overloads)
         {
@@ -162,10 +164,10 @@ namespace Pchp.Core.Reflection
                     // [Method] + Overloads
 
                     var methods = new MethodInfo[1 + overloads.Length];
-                    methods[0] = (MethodInfo)MethodBase.GetMethodFromHandle(Handle);
+                    methods[0] = GetMethodFromHandle(Handle);
                     for (int i = 0; i < overloads.Length; i++)
                     {
-                        methods[1 + i] = (MethodInfo)MethodBase.GetMethodFromHandle(overloads[i]);
+                        methods[1 + i] = GetMethodFromHandle(overloads[i]);
                     }
 
                     //
@@ -203,7 +205,7 @@ namespace Pchp.Core.Reflection
 
         public override PhpTypeInfo? DeclaringType => null;
 
-        internal override object Target => _delegate.Target;
+        internal override object? Target => _delegate.Target;
 
         public override int GetHashCode() => _delegate.GetHashCode();
 
