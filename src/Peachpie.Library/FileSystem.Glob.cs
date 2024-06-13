@@ -250,10 +250,9 @@ namespace Pchp.Library
 
                 int pos = 0;
                 string baseDirectory = ".";
-                if (_pattern[0] == '/' || (_pattern.Length >= 2 && _pattern[1] == ':'))//is pattern rooted?
+                if (Path.IsPathRooted(_pattern))
                 {
-                    bool containsWildcard;
-                    pos = FindNextSeparator(0, false, out containsWildcard);
+                    pos = FindNextSeparator(0, false, out var containsWildcard);
                     if (pos == _pattern.Length)
                     {
                         TestPath(_pattern, pos, true);
