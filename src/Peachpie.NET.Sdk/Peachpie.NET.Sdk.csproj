@@ -19,7 +19,7 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackToolsDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(_TargetFramework)\publish</PackToolsDir>
+    <PackToolsDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)\publish</PackToolsDir>
     <NuspecFile>$(MSBuildThisFileDirectory)$(MSbuildProjectName).nuspec</NuspecFile>
   </PropertyGroup>
 
@@ -89,7 +89,7 @@
   </ItemGroup>
 
   <Target Name="PublishAll">
-    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="publish" Properties="GeneratePackageOnBuild=false;Version=$(Version);TargetFramework=$(_TargetFramework);" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="publish" Properties="GeneratePackageOnBuild=false;Version=$(Version);TargetFramework=$(TargetFramework);" />
   </Target>
 
   <Target Name="SetPackageDependencies" BeforeTargets="GenerateNuspec" DependsOnTargets="PublishAll">

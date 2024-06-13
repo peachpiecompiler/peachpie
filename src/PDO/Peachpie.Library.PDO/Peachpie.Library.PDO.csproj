@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net50</TargetFrameworks>
     <AssemblyName>Peachpie.Library.PDO</AssemblyName>
     <PackageId>Peachpie.Library.PDO</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>

@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>    
-    <TargetFrameworks>net60</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 

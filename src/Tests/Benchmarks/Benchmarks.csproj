@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net60</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;</NoWarn>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
