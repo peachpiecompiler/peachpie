@@ -292,7 +292,7 @@ namespace Pchp.Library
 
                 int patternEnd = FindNextSeparator(position, true, out var containsWildcard);
                 bool isLastPathSegment = (patternEnd == _pattern.Length);
-                string dirSegment = _pattern.Substring(position, patternEnd - position);
+                var dirSegment = _pattern.AsSpan(position, patternEnd - position);
 
                 if (!isLastPathSegment)
                 {
@@ -301,7 +301,7 @@ namespace Pchp.Library
 
                 if (!containsWildcard)
                 {
-                    var path = Path.Combine(baseDirectory, dirSegment);
+                    var path = Path.Combine(baseDirectory, dirSegment.ToString());
                     TestPath(path, patternEnd, isLastPathSegment);
                     return;
                 }
@@ -329,7 +329,7 @@ namespace Pchp.Library
                 {
                     if (fnmatch(dirSegment, ".", _fnMatchFlags))
                     {
-                        string directory = baseDirectory + CurrentPlatform.DirectorySeparatorString + ".";
+                        var directory = baseDirectory + CurrentPlatform.DirectorySeparatorString + ".";
                         if (_dirOnly)
                         {
                             directory += CurrentPlatform.DirectorySeparatorString;
@@ -338,7 +338,7 @@ namespace Pchp.Library
                     }
                     if (fnmatch(dirSegment, "..", _fnMatchFlags))
                     {
-                        string directory = baseDirectory + CurrentPlatform.DirectorySeparatorString + "..";
+                        var directory = baseDirectory + CurrentPlatform.DirectorySeparatorString + "..";
                         if (_dirOnly)
                         {
                             directory += CurrentPlatform.DirectorySeparatorString;
@@ -629,9 +629,9 @@ namespace Pchp.Library
             builder.Append(']');
         }
 
-        static string/*!*/ PatternToRegex(string/*!*/ pattern, bool pathName, bool noEscape)
+        static string/*!*/ PatternToRegex(ReadOnlySpan<char>/*!*/pattern, bool pathName, bool noEscape)
         {
-            var result = new StringBuilder(pattern.Length);
+            var result = ObjectPools.GetStringBuilder();
             result.Append("\\G");
 
             bool inEscape = false;
@@ -701,7 +701,15 @@ namespace Pchp.Library
                 }
             }
 
-            return (charClass == null) ? result.ToString() : string.Empty;
+            if (charClass == null)
+            {
+                return ObjectPools.GetStringAndReturn(result);
+            }
+            else
+            {
+                ObjectPools.Return(result);
+                return string.Empty;
+            }
         }
 
         static ValueList<string> UngroupGlobs(string/*!*/ pattern, bool noEscape, bool brace)
@@ -804,9 +812,9 @@ namespace Pchp.Library
         /// <param name="flags">Additional flags.</param>
         /// <returns><c>true</c> if the <paramref name="path"/> matches with the given 
         /// wildcard <paramref name="pattern"/>.</returns>
-        public static bool fnmatch(string/*!*/ pattern, string/*!*/ path, FnMatchOptions flags = FnMatchOptions.None)
+        public static bool fnmatch(ReadOnlySpan<char>/*!*/pattern, string/*!*/ path, FnMatchOptions flags = FnMatchOptions.None)
         {
-            if (string.IsNullOrEmpty(pattern))
+            if (pattern.IsEmpty)
             {
                 return string.IsNullOrEmpty(path);
             }
