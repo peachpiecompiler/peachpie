@@ -68,6 +68,28 @@ namespace Peachpie.App.Tests
             return true;
         }
 
+        public static void OverloadFoo(int i) { }
+        public static void OverloadFoo(double d) { }
+        public static void OverloadFoo(string s) { }
+
+        [TestMethod]
+        public void TestOverloadByNamedParameter()
+        {
+            var script = Compile($@"<?php
+
+function test($value) {{
+    {typeof(CompiledILTest).FullName.Replace('.', '\\')}::{nameof(OverloadFoo)}( s: $value );
+}}
+");
+            DecompileFunction(script, "test", out var method, out var ast);
+            var bodyCode = ast.LastChild.LastChild.Descendants.ElementAt(1).ToString().Trim();
+
+            Assert.IsTrue(
+                // method body
+                $"{nameof(CompiledILTest)}.{nameof(OverloadFoo)}" == bodyCode
+            );
+        }
+
         [TestMethod]
         public void TestSimpleFunction()
         {
@@ -75,7 +97,7 @@ namespace Peachpie.App.Tests
 
 function test() { return 1; }
 ");
-            var testAst = DecompileFunction(script, "test", out var method, out var ast);
+            DecompileFunction(script, "test", out var method, out var ast);
 
             Assert.IsTrue(method.ReturnType.FullName == typeof(long).FullName);
 
