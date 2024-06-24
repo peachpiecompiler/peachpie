@@ -5,7 +5,7 @@
     <!-- version -->
     <Version Condition=" '$(APPVEYOR_BUILD_VERSION)'!='' ">$(APPVEYOR_BUILD_VERSION)</Version>
     <Version Condition=" '$(Version)'=='' ">1.2.0-dev</Version>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <PackageVersion>$(Version)</PackageVersion>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
 
