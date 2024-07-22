@@ -505,8 +505,66 @@ namespace Pchp.Library
         /// <summary>
         /// Gets multiple variables and optionally filters them.
         /// </summary>
-        public static PhpValue filter_var_array(PhpArray data, PhpValue definition = default, bool add_empty = true)
+        public static PhpValue filter_var_array(Context ctx, PhpArray array, PhpValue options = default, bool add_empty = true)
         {
+            if (options.IsLong(out var op_long))
+            {
+                // fiter_var recursively on each element of array
+                PhpArray filter_var_recursively(Context ctx, PhpArray array, int filter)
+                {
+                    var result = new PhpArray(array.Count);
+                    var e = array.GetFastEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if (e.CurrentValue.IsPhpArray(out var arr_element)) // eventually dereferences element
+                        {
+                            result[e.CurrentKey] = filter_var_recursively(ctx, arr_element, filter);
+                        }
+                        else
+                        {
+                            result[e.CurrentKey] = filter_var(ctx, arr_element, filter);
+                        }
+                    }
+
+                    return result;
+                }
+
+                return filter_var_recursively(ctx, array, (int)op_long);
+            }
+            else if (options.IsPhpArray(out var op_ht))
+            {
+                var result = new PhpArray(array.Count);
+                var e = op_ht.GetFastEnumerator();
+                while (e.MoveNext())
+                {
+                    if (string.IsNullOrEmpty(e.CurrentKey.String))
+                    {
+                        PhpException.InvalidArgument(nameof(options), "must contain only non-empty string keys");
+                        return PhpValue.False;
+                    }
+
+                    if (array.TryGetValue(e.CurrentKey, out var variable))
+                    {
+                        result[e.CurrentKey] = filter_var(ctx, variable,
+                            filter: e.CurrentValue.IsLong(out var filter2) ? (int)filter2 : FILTER_DEFAULT,
+                            options: e.CurrentValue.IsPhpArray(out var options2) ? options2 : null
+                        );
+                    }
+                    else if (add_empty)
+                    {
+                        result[e.CurrentKey] = PhpValue.Null;
+                    }
+                }
+
+                //
+                return result;
+            }
+            else
+            {
+                PhpException.InvalidArgumentType(nameof(options), "array|int");
+                return PhpValue.False;
+            }
+
             PhpException.FunctionNotSupported(nameof(filter_var_array));
             return PhpValue.False;
         }
@@ -627,53 +685,10 @@ namespace Pchp.Library
             return value;
         }
 
-        /// <summary>
-        /// Filters a variable with a specified filter.
-        /// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="variable">Value to filter.</param>
-        /// <param name="filter">The ID of the filter to apply.</param>
-        /// <param name="options">Associative array of options or bitwise disjunction of flags. If filter accepts options, flags can be provided in "flags" field of array. For the "callback" filter, callback type should be passed. The callback must accept one argument, the value to be filtered, and return the value after filtering/sanitizing it.</param>
-        /// <returns>Returns the filtered data, or <c>false</c> if the filter fails.</returns>
-        public static PhpValue filter_var(Context ctx, PhpValue variable, int filter = FILTER_DEFAULT, PhpValue options = default)
+        private static PhpValue filter_var_core(Context ctx, PhpValue variable, int filter, long flags, PhpValue options, PhpValue @default)
         {
-            var @default = PhpValue.False; // a default value
-            PhpArray? options_arr;
-            long flags = 0;
-            long l; // tmp
-
-            // process options
-
-            if (Operators.IsSet(options))
-            {
-                options_arr = options.AsArray();
-                if (options_arr != null)
-                {
-                    // [flags]
-                    if (options_arr.TryGetValue("flags", out var flagsval))
-                    {
-                        flagsval.IsLong(out flags);
-                    }
-
-                    // [options] => { "min_range" => ??, "default" => ?? }
-                    if (options_arr.TryGetValue("options", out var optionsval) && optionsval.IsPhpArray(out var opts_arr))
-                    {
-                        // [default]
-                        if (opts_arr != null && opts_arr.TryGetValue("default", out var defaultval))
-                        {
-                            @default = defaultval;
-                        }
-                    }
-                }
-                else
-                {
-                    options.IsLong(out flags);
-                }
-            }
-            else
-            {
-                options_arr = null;
-            }
+            long l;
+            PhpArray? options_arr = options.AsArray();
 
             switch (filter)
             {
@@ -695,7 +710,8 @@ namespace Pchp.Library
                     return SanitizeString(variable.ToString(ctx), (FilterFlag)flags);
 
                 case (int)FilterSanitize.ENCODED:
-                    return System.Web.HttpUtility.UrlEncode(StripBacktickIfSet(variable.ToString(ctx), (FilterFlag)flags));
+                    //return System.Web.HttpUtility.UrlEncode(StripBacktickIfSet(variable.ToString(ctx), (FilterFlag)flags));
+                    return Uri.EscapeDataString(StripBacktickIfSet(variable.ToString(ctx), (FilterFlag)flags)); // gets uppercase encoded characters
 
                 case (int)FilterSanitize.EMAIL:
                     // Remove all characters except letters, digits and !#$%&'*+-/=?^_`{|}~@.[].
@@ -933,6 +949,72 @@ namespace Pchp.Library
             }
 
             return PhpValue.False;
+        }
+
+        /// <summary>
+        /// Filters a variable with a specified filter.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="variable">Value to filter.</param>
+        /// <param name="filter">The ID of the filter to apply.</param>
+        /// <param name="options">Associative array of options or bitwise disjunction of flags. If filter accepts options, flags can be provided in "flags" field of array. For the "callback" filter, callback type should be passed. The callback must accept one argument, the value to be filtered, and return the value after filtering/sanitizing it.</param>
+        /// <returns>Returns the filtered data, or <c>false</c> if the filter fails.</returns>
+        public static PhpValue filter_var(Context ctx, PhpValue variable, int filter = FILTER_DEFAULT, PhpValue options = default)
+        {
+            var @default = PhpValue.False; // a default value
+            PhpArray? options_arr;
+            long flags = 0;
+            long l; // tmp
+
+            // process options
+
+            if (Operators.IsSet(options))
+            {
+                options_arr = options.AsArray();
+                if (options_arr != null)
+                {
+                    // [filter]
+                    if (options_arr.TryGetValue("filter", out var filterval))
+                    {
+                        filter = filterval.ToInt();
+                    }
+
+                    // [flags]
+                    if (options_arr.TryGetValue("flags", out var flagsval))
+                    {
+                        flagsval.IsLong(out flags);
+                    }
+
+                    // [options] => { "min_range" => ??, "default" => ?? }
+                    if (options_arr.TryGetValue("options", out var optionsval) && optionsval.IsPhpArray(out var opts_arr))
+                    {
+                        // [default]
+                        if (opts_arr != null && opts_arr.TryGetValue("default", out var defaultval))
+                        {
+                            @default = defaultval;
+                        }
+                    }
+                }
+                else
+                {
+                    options.IsLong(out flags);
+                }
+            }
+            else
+            {
+                options_arr = null;
+            }
+
+            var result = filter_var_core(ctx, variable, filter, flags, options, @default);
+
+            //
+            if ((flags & FILTER_FORCE_ARRAY) != 0)
+            {
+                result = new PhpArray(1) { result };
+            }
+
+            //
+            return result;
         }
 
         #endregion
