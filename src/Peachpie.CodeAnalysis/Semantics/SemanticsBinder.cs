@@ -386,6 +386,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 return new BoundBlock(
                     stmt.VarList
+                        .WhereNotNull()
                         .Select(BindUnsetStmt)
                         .ToList()
                     );
