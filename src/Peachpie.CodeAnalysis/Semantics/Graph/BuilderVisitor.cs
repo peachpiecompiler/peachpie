@@ -509,7 +509,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitDeclareStmt(DeclareStmt x)
         {
-            // ignore declare();
+            Add(x); // add to flow graph // will be ignored by semanti binder
         }
 
         public override void VisitGlobalCode(GlobalCode x)
