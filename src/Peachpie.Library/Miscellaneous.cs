@@ -595,7 +595,9 @@ namespace Pchp.Library.Standard
         {
             if (extension != null)
             {
+#if DEBUG // too distracting with WordPress, won't be fixed anyways
                 PhpException.FunctionNotSupported(nameof(phpversion));
+#endif
                 return null; // false;
             }
 
