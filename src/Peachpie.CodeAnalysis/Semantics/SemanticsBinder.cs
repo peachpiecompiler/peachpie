@@ -361,7 +361,11 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.StaticStmt staticStm) return BindStaticStmt(staticStm);
             if (stmt is AST.UnsetStmt unsetStm) return BindUnsetStmt(unsetStm);
             if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
-            if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement();
+            if (stmt is AST.DeclareStmt declareStm)
+            {
+                Diagnostics.Add(GetLocation(stmt), Errors.ErrorCode.WRN_NotYetImplementedIgnored, $"declare()");
+                return new BoundDeclareStatement();
+            }
 
             //
             Diagnostics.Add(GetLocation(stmt), Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
