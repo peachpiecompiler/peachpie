@@ -519,20 +519,21 @@ namespace Pchp.Library.Standard
 		/// Parses a version and splits it into an array of parts.
 		/// </summary>
 		/// <param name="version">The version to be parsed (can be a <B>null</B> reference).</param>
-		/// <returns>An array of parts.</returns>
+        /// <param name="result">Version parts will be added there.</param>
+		/// <returns>If we collected version parts.</returns>
 		/// <remarks>
 		/// Non-alphanumeric characters are eliminated.
 		/// The version is split in between a digit following a non-digit and by   
 		/// characters '.', '-', '+', '_'. 
 		/// </remarks>
-		static string[] VersionToArray(string version)
+		static bool VersionToArray(string version, List<string> result)
         {
             if (string.IsNullOrEmpty(version))
             {
-                return Array.Empty<string>();
+                return false;
             }
 
-            var sb = new StringBuilder(version.Length);
+            var sb = ObjectPools.GetStringBuilder();
             char last = '\0';
 
             for (int i = 0; i < version.Length; i++)
@@ -566,12 +567,25 @@ namespace Pchp.Library.Standard
                 }
             }
 
-            if (last == '.')
+            // split into {result}
+            int from = 0;
+            for (int i = 0; i < sb.Length; i++)
             {
-                sb.Length--;
+                if (sb[i] == '.')
+                {
+                    result.Add(sb.ToString(from, i - from));
+                    from = i + 1;
+                }
             }
-
-            return sb.ToString().Split('.');
+            
+            if (from < sb.Length)
+            {
+                result.Add(sb.ToString(from, sb.Length - from));
+            }
+            
+            //
+            ObjectPools.Return(sb);
+            return true;
         }
 
         #endregion
@@ -593,31 +607,45 @@ namespace Pchp.Library.Standard
         /// </summary>
         public static int version_compare(string version1, string version2)
         {
-            string[] v1 = VersionToArray(version1);
-            string[] v2 = VersionToArray(version2);
-            int result;
+            var v1 = ListPool<string>.Pool.Get();
+            var v2 = ListPool<string>.Pool.Get();
 
-            for (int i = 0; i < Math.Max(v1.Length, v2.Length); i++)
+            try
             {
-                string item1 = (i < v1.Length) ? v1[i] : " ";
-                string item2 = (i < v2.Length) ? v2[i] : " ";
 
-                if (item1.Length == 0) item1 = "0";
-                if (item2.Length == 0) item2 = "0";
+                VersionToArray(version1, v1);
+                VersionToArray(version2, v2);
 
-                if (char.IsDigit(item1[0]) && char.IsDigit(item2[0]))
+                int result;
+
+                for (int i = 0; i < Math.Max(v1.Count, v2.Count); i++)
                 {
-                    result = Comparison.Compare(Pchp.Core.Convert.StringToLongInteger(item1), Pchp.Core.Convert.StringToLongInteger(item2));
-                }
-                else
-                {
-                    result = CompareParts(char.IsDigit(item1[0]) ? "#" : item1, char.IsDigit(item2[0]) ? "#" : item2);
+                    string item1 = (i < v1.Count) ? v1[i] : " ";
+                    string item2 = (i < v2.Count) ? v2[i] : " ";
+
+                    if (item1.Length == 0) item1 = "0";
+                    if (item2.Length == 0) item2 = "0";
+
+                    if (char.IsDigit(item1[0]) && char.IsDigit(item2[0]))
+                    {
+                        result = Comparison.Compare(Pchp.Core.Convert.StringToLongInteger(item1), Pchp.Core.Convert.StringToLongInteger(item2));
+                    }
+                    else
+                    {
+                        result = CompareParts(char.IsDigit(item1[0]) ? "#" : item1, char.IsDigit(item2[0]) ? "#" : item2);
+                    }
+
+                    if (result != 0)
+                    {
+                        return result;
+                    }
                 }
 
-                if (result != 0)
-                {
-                    return result;
-                }
+            }
+            finally
+            {
+                ListPool<string>.Pool.Return(v1);
+                ListPool<string>.Pool.Return(v2);
             }
 
             return 0;
@@ -626,11 +654,11 @@ namespace Pchp.Library.Standard
         /// <summary>
         /// Compares two "PHP-standardized" version number strings.
         /// </summary>
-        public static bool version_compare(string version1, string version2, string op)
+        public static bool version_compare(string version1, string version2, string @operator)
         {
             var compare = version_compare(version1, version2);
 
-            switch (op)
+            switch (@operator)
             {
                 case "<":
                 case "lt": return compare < 0;
