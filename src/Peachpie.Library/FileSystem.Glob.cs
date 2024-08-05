@@ -148,13 +148,13 @@ namespace Pchp.Library
             }
         }
 
-        sealed class GlobMatcher
+        sealed class GlobMatcher : IDisposable
         {
             readonly Context/*!*/_ctx;
             readonly string/*!*/ _pattern;
             readonly GlobOptions _flags;
-            readonly List<string>/*!*/ _result;
             readonly bool _dirOnly;
+            List<string>/*!*/ _result;
             bool _stripTwo;
             bool _relative;
             FnMatchOptions _fnMatchFlags;
@@ -172,12 +172,19 @@ namespace Pchp.Library
                 _ctx = ctx;
                 _pattern = pattern;
                 _flags = flags;
-                _result = new List<string>();
+                _result = ListPool<string>.Pool.Get();
                 _dirOnly = PathUtils.IsDirectorySeparator((char)_pattern.LastCharacter()) || (flags & GlobOptions.OnlyDir) != 0;
 
                 _fnMatchFlags = NoEscapes ? FnMatchOptions.NoEscape : FnMatchOptions.None;
             }
 
+            public void Dispose()
+            {
+                ListPool<string>.Pool.Return(_result);
+                _result = null;
+            }
+
+            bool IsDisposed => _result == null;
 
             private static string/*!*/ Unescape(string/*!*/ path, int start)
             {
@@ -243,6 +250,11 @@ namespace Pchp.Library
 
             internal List<string>/*!*/ DoGlob()
             {
+                if (IsDisposed)
+                {
+                    throw new ObjectDisposedException(nameof(GlobMatcher));
+                }
+
                 if (_pattern.Length == 0)
                 {
                     return _result;
@@ -790,7 +802,7 @@ namespace Pchp.Library
 
             foreach (string group in groups)
             {
-                var matcher = new GlobMatcher(ctx, group, flags);
+                using var matcher = new GlobMatcher(ctx, group, flags);
 
                 foreach (string filename in matcher.DoGlob())
                 {

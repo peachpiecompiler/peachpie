@@ -2583,11 +2583,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             public static void WriteBackAndFree(CodeGenerator cg, IList<WriteBackInfo> writebacks)
             {
-                if (writebacks != null && writebacks.Count != 0)
+                if (writebacks != null)
                 {
-                    foreach (var w in writebacks)
+                    for (int i = 0; i < writebacks.Count; i++)
                     {
-                        w.WriteBackAndFree(cg);
+                        writebacks[i].WriteBackAndFree(cg);
                     }
                 }
             }

@@ -1,5 +1,6 @@
 ﻿using Pchp.Core;
 using Pchp.Core.Resources;
+using Pchp.Core.Utilities;
 using Pchp.Library.Resources;
 using System;
 using System.Collections;
@@ -533,8 +534,15 @@ namespace Pchp.Library.Standard
         {
             if (count == 1)
             {
-                var result = new List<PhpValue>(1);
-                return RandomSubset(array.Keys, result, count, PhpMath.Generator) ? result[0] : PhpValue.Null;
+                var result = ListPool<PhpValue>.Pool.Get();
+                try
+                {
+                    return RandomSubset(array.Keys, result, count, PhpMath.Generator) ? result[0] : PhpValue.Null;
+                }
+                finally
+                {
+                    ListPool<PhpValue>.Pool.Return(result);
+                }
             }
             else
             {
