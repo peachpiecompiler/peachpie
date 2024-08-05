@@ -40,18 +40,18 @@ namespace Pchp.Library.Streams
         #region stream_context_create
 
         /// <summary>Create a new stream context.</summary>
-        /// <param name="data">The 2-dimensional array in format "options[wrapper][option]".</param>
-        public static PhpResource stream_context_create(PhpArray data = null)
+        /// <param name="options">The 2-dimensional array in format "options[wrapper][option]".</param>
+        public static PhpResource stream_context_create(PhpArray options = null)
         {
-            if (data == null)
+            if (options == null)
             {
                 return StreamContext.Default;
             }
 
             // OK, data lead to a valid stream-context.
-            if (CheckContextData(data))
+            if (CheckContextData(options))
             {
-                return new StreamContext(data);
+                return new StreamContext(options);
             }
 
             // Otherwise..
@@ -62,12 +62,12 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Check whether the provided argument is a valid stream-context data array.
         /// </summary>
-        /// <param name="data">The data to be stored into context.</param>
+        /// <param name="options">The data to be stored into context.</param>
         /// <returns></returns>
-        static bool CheckContextData(PhpArray data)
+        static bool CheckContextData(PhpArray options)
         {
             // Check if the supplied data are correctly formed.
-            var enumerator = data.GetFastEnumerator();
+            var enumerator = options.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
                 if (enumerator.CurrentValue.AsArray() == null)
