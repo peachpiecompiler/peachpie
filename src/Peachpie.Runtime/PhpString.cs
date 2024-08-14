@@ -1090,7 +1090,7 @@ namespace Pchp.Core
                 if (chunks != null)
                 {
                     return (chunks is object[] objs)
-                        ? ChunkToString(encoding, objs, _chunksCount)
+                        ? ChunkToString(encoding, objs.AsSpan(0, _chunksCount))
                         : ChunkToString(encoding, chunks);
                 }
                 else
@@ -1099,19 +1099,23 @@ namespace Pchp.Core
                 }
             }
 
-            static string ChunkToString(Encoding encoding, object[] chunks, int count)
+            static string ChunkToString(Encoding encoding, ReadOnlySpan<object> chunks)
             {
-                if (count == 1)
+                if (chunks.Length == 1)
                 {
                     return ChunkToString(encoding, chunks[0]);
+                }
+                else if (chunks.Length == 2)
+                {
+                    return ChunkToString(encoding, chunks[0]) + ChunkToString(encoding, chunks[1]);
                 }
                 else
                 {
                     var builder = ObjectPools.GetStringBuilder();
 
-                    for (int i = 0; i < count; i++)
+                    foreach (var chunk in chunks)
                     {
-                        builder.Append(ChunkToString(encoding, chunks[i]));
+                        builder.Append(ChunkToString(encoding, chunk));
                     }
 
                     return ObjectPools.GetStringAndReturn(builder);
