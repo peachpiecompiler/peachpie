@@ -2,9 +2,11 @@
 using Pchp.Core.Text;
 using Pchp.Core.Utilities;
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -104,17 +106,24 @@ namespace Pchp.Core.Text
 
         static Exception InvalidValueException(PhpValue value) => new NotSupportedException(value.TypeCode.ToString());
 
+        public static string ToString(BlobChar[] chars, Encoding enc)
+        {
+            var builder = ObjectPools.GetStringBuilder();
+
+            GetChars(chars, enc, builder);
+            
+            return ObjectPools.GetStringAndReturn(builder);
+        }
+
         /// <summary>
-        /// Copies characters to a new array of <see cref="char"/>s.
+        /// Appends encoded characters to a <see cref="StringBuilder"/>.
         /// Single-byte chars are encoded to Unicode chars.
         /// </summary>
-        public static Span<char> ToCharArray(BlobChar[] chars, Encoding enc)
+        public static int GetChars(BlobChar[] chars, Encoding enc, StringBuilder builder)
         {
-            // TODO: more decent code
-
-            var result = new ValueList<char>(chars.Length);
-
             Debug.Assert(chars != null);
+
+            int count = 0;
 
             for (int i = 0; i < chars.Length; i++)
             {
@@ -127,25 +136,28 @@ namespace Pchp.Core.Text
                     }
 
                     // encode bytes (i..j] to char array
-                    var maxchars = enc.GetMaxCharCount(j - i);
-                    var tmp = new char[maxchars];
-                    var src = new byte[j - i];
+                    var nbytes = j - i;
+                    var src = ArrayPool<byte>.Shared.Rent(nbytes);
 
-                    for (int b = 0; b < src.Length; b++, i++)
+                    for (int b = 0; b < nbytes; b++, i++)
                     {
                         src[b] = (byte)chars[i]._b;
                     }
 
-                    var charscount = enc.GetChars(src, 0, src.Length, tmp, 0);
-                    result.AddRange(tmp, 0, charscount);
+                    count += enc.GetChars(src.AsSpan(0, nbytes), builder);
+
+                    //
+                    ArrayPool<byte>.Shared.Return(src);
                 }
                 else
                 {
-                    result.Add(chars[i]._ch);
+                    builder.Append(chars[i]._ch);
+                    count++;
                 }
             }
 
-            return result.AsSpan();
+            //
+            return count;
         }
 
         /// <summary>
@@ -817,7 +829,7 @@ namespace Pchp.Core
                 var enc = ctx.StringEncoding;
 
                 Span<char> ch = stackalloc char[1];
-                var bytes =  new byte[ReferenceEquals(enc, Encoding.UTF8) ? 8 : enc.GetMaxByteCount(1)];
+                var bytes = new byte[ReferenceEquals(enc, Encoding.UTF8) ? 8 : enc.GetMaxByteCount(1)];
 
                 //int size = 0;
 
@@ -1099,6 +1111,35 @@ namespace Pchp.Core
                 }
             }
 
+            public void GetChars(Encoding encoding, StringBuilder builder)
+            {
+                Debug.Assert(encoding != null);
+                Debug.Assert(builder != null);
+
+                if (_string != null)
+                {
+                    builder.Append(_string);
+                }
+                else
+                {
+                    var chunks = _chunks;
+                    if (chunks != null)
+                    {
+                        if (chunks is object[] objs)
+                        {
+                            foreach (var obj in objs.AsSpan())
+                            {
+                                ChunkToString(encoding, builder, chunk: obj);
+                            }
+                        }
+                        else
+                        {
+                            ChunkToString(encoding, builder, chunk: chunks);
+                        }
+                    }
+                }
+            }
+
             static string ChunkToString(Encoding encoding, ReadOnlySpan<object> chunks)
             {
                 if (chunks.Length == 1)
@@ -1115,7 +1156,7 @@ namespace Pchp.Core
 
                     foreach (var chunk in chunks)
                     {
-                        builder.Append(ChunkToString(encoding, chunk));
+                        ChunkToString(encoding, builder, chunk);
                     }
 
                     return ObjectPools.GetStringAndReturn(builder);
@@ -1130,8 +1171,37 @@ namespace Pchp.Core
                     byte[] barr => encoding.GetString(barr),
                     Blob b => b.ToString(encoding),
                     char[] carr => new string(carr),
-                    BlobChar[] barr => BlobChar.ToCharArray(barr, encoding).ToString(),
+                    BlobChar[] barr => BlobChar.ToString(barr, encoding),
                     _ => throw InvalidChunkException(chunk),
+                };
+            }
+
+            static void ChunkToString(Encoding encoding, StringBuilder builder, object chunk)
+            {
+                switch (chunk)
+                {
+                    case string str:
+                        builder.Append(str);
+                        break;
+
+                    case byte[] barr:
+                        encoding.GetChars(barr, builder);
+                        break;
+
+                    case Blob b:
+                        b.GetChars(encoding, builder);
+                        break;
+
+                    case char[] carr:
+                        builder.Append(carr);
+                        break;
+
+                    case BlobChar[] barr:
+                        BlobChar.GetChars(barr, encoding, builder);
+                        break;
+
+                    default:
+                        throw InvalidChunkException(chunk);
                 };
             }
 
