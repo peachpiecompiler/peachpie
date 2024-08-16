@@ -391,6 +391,9 @@ namespace Pchp.CodeAnalysis
             /// <summary><c>method_exists</c> function name.</summary>
             public static QualifiedName method_exists => new QualifiedName(new Name("method_exists"));
 
+            /// <summary><c>interface_exists</c> function name.</summary>
+            public static QualifiedName interface_exists => new QualifiedName(new Name("interface_exists"));
+
             public static QualifiedName ini_get = new QualifiedName(new Name("ini_get"));
 
             public static QualifiedName extension_loaded = new QualifiedName(new Name("extension_loaded"));
