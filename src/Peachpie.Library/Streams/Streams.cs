@@ -41,7 +41,8 @@ namespace Pchp.Library.Streams
 
         /// <summary>Create a new stream context.</summary>
         /// <param name="options">The 2-dimensional array in format "options[wrapper][option]".</param>
-        public static PhpResource stream_context_create(PhpArray options = null)
+        /// <param name="params">Must be an associative array in the format $arr['parameter'] = $value, or null. Refers to context parameters.</param>
+        public static PhpResource stream_context_create(PhpArray options = null, PhpArray @params = null)
         {
             if (options == null)
             {
@@ -51,7 +52,10 @@ namespace Pchp.Library.Streams
             // OK, data lead to a valid stream-context.
             if (CheckContextData(options))
             {
-                return new StreamContext(options);
+                return new StreamContext(options)
+                {
+                    Parameters = @params,
+                };
             }
 
             // Otherwise..
