@@ -1127,7 +1127,7 @@ namespace Pchp.Core
                     {
                         if (chunks is object[] objs)
                         {
-                            foreach (var obj in objs.AsSpan())
+                            foreach (var obj in objs.AsSpan(0, _chunksCount))
                             {
                                 ChunkToString(encoding, builder, chunk: obj);
                             }
