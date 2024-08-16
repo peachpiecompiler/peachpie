@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static Pchp.Library.Streams.PhpStreams;
@@ -526,30 +525,39 @@ namespace Pchp.Library
         /// Affected by run-time quoting (data are unqouted before written)
         /// (<see cref="LocalConfiguration.VariablesSection.QuoteRuntimeVariables"/>).
         /// </remarks>
-        public static int fputcsv(Context ctx, PhpResource handle, PhpArray fields, char delimiter = DefaultCsvDelimiter, char enclosure = DefaultCsvEnclosure)
+        public static int fputcsv(Context ctx,
+            PhpResource stream,
+            PhpArray fields,
+            char separator = DefaultCsvDelimiter,
+            char enclosure = DefaultCsvEnclosure,
+            string escape = "\\",
+            string eol = "\n"
+            )
         {
-            PhpStream stream = PhpStream.GetValid(handle, FileAccess.Write);
-            if (stream == null || !stream.CanWrite) return -1;
+            // TODO: {escape}
 
-            char[] special_chars = { delimiter, ' ', '\\', '\t', '\r', '\n' };
-            string str_enclosure = enclosure.ToString();
-            string str_delimiter = delimiter.ToString();
+            var handle = PhpStream.GetValid(stream, FileAccess.Write);
+            if (handle == null || !handle.CanWrite) return -1;
 
-            int initial_position = stream.WritePosition;
+            char[] special_chars = { separator, ' ', '\\', '\t', '\r', '\n' };
+            string str_enclosure = enclosure == '"' ? "\"" : enclosure.ToString();
+            string str_delimiter = separator == ',' ? "," : separator.ToString();
+
+            int initial_position = handle.WritePosition;
             var enumerator = fields.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
                 var str_field = StringUtils.StripCSlashes(enumerator.CurrentValue.ToString(ctx));
 
-                if (stream.WritePosition > initial_position)
-                    stream.WriteString(str_delimiter);
+                if (handle.WritePosition > initial_position)
+                    handle.WriteString(str_delimiter);
 
                 int special_char_index = str_field.IndexOfAny(special_chars);
                 int enclosure_index = str_field.IndexOf(enclosure);
 
                 if (special_char_index >= 0 || enclosure_index >= 0)
                 {
-                    stream.WriteString(str_enclosure);
+                    handle.WriteString(str_enclosure);
 
                     if (enclosure_index >= 0)
                     {
@@ -558,8 +566,8 @@ namespace Pchp.Library
                         for (; ; )
                         {
                             // writes string starting after the last enclosure and ending by the next one:
-                            stream.WriteString(str_field.Substring(start, enclosure_index - start + 1));
-                            stream.WriteString(str_enclosure);
+                            handle.WriteString(str_field.Substring(start, enclosure_index - start + 1));
+                            handle.WriteString(str_enclosure);
 
                             start = enclosure_index + 1;
                             if (start >= str_field.Length) break;
@@ -568,27 +576,27 @@ namespace Pchp.Library
                             if (enclosure_index < 0)
                             {
                                 // remaining substring: 
-                                stream.WriteString(str_field.Substring(start));
+                                handle.WriteString(str_field.Substring(start));
                                 break;
                             }
                         }
                     }
                     else
                     {
-                        stream.WriteString(str_field);
+                        handle.WriteString(str_field);
                     }
 
-                    stream.WriteString(str_enclosure);
+                    handle.WriteString(str_enclosure);
                 }
                 else
                 {
-                    stream.WriteString(str_field);
+                    handle.WriteString(str_field);
                 }
             }
 
-            stream.WriteString("\n");
+            handle.WriteString(eol);
 
-            return (initial_position == -1) ? stream.WritePosition : stream.WritePosition - initial_position;
+            return (initial_position == -1) ? handle.WritePosition : handle.WritePosition - initial_position;
         }
 
         #endregion
