@@ -360,16 +360,11 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.GlobalStmt glStmt) return BindGlobalStmt(glStmt);
             if (stmt is AST.StaticStmt staticStm) return BindStaticStmt(staticStm);
             if (stmt is AST.UnsetStmt unsetStm) return BindUnsetStmt(unsetStm);
-            if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
-            if (stmt is AST.DeclareStmt declareStm)
-            {
-                Diagnostics.Add(GetLocation(stmt), Errors.ErrorCode.WRN_NotYetImplementedIgnored, $"declare()");
-                return new BoundDeclareStatement();
-            }
-
+            if (stmt is AST.PHPDocStmt) return BindEmptyStmt(stmt.Span);
+            
             //
             Diagnostics.Add(GetLocation(stmt), Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
-            return new BoundEmptyStatement(stmt.Span.ToTextSpan());
+            return BindEmptyStmt(stmt.Span);
         }
 
         BoundStatement BindEcho(AST.EchoStmt stmt, ImmutableArray<BoundArgument> args)
@@ -408,7 +403,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (varuse is AST.DirectVarUse dvar && dvar.VarName.IsAutoGlobal)
             {
                 // do not bind superglobals
-                return new BoundEmptyStatement(dvar.Span.ToTextSpan());
+                return BindEmptyStmt(dvar.Span);
             }
 
             return new BoundGlobalVariableStatement(

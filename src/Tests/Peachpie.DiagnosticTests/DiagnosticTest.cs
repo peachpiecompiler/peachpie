@@ -113,17 +113,17 @@ namespace Peachpie.DiagnosticTests
             while (iActual < actual.Length && iExpected < expected.Count)
             {
                 // The comment is right after the expected diagnostic
-                int posActual = actual[iActual].Location.SourceSpan.End;
-                int posExpected = expected[iExpected].Index;
+                var posActual = actual[iActual].Location.SourceSpan;
+                var posExpected = new TextSpan(expected[iExpected].Index, expected[iExpected].Length);
 
-                if (posActual < posExpected)
+                if (posActual.End < posExpected.Start)
                 {
                     isCorrect = false;
                     ReportUnexpectedDiagnostic(actual[iActual]);
 
                     iActual++;
                 }
-                else if (posActual > posExpected)
+                else if (posActual.Start > posExpected.End)
                 {
                     isCorrect = false;
                     ReportMissingDiagnostic(syntaxTree, expected[iExpected]);

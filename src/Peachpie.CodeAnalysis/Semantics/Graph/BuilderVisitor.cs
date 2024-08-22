@@ -1,6 +1,7 @@
 ﻿using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -509,7 +509,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitDeclareStmt(DeclareStmt x)
         {
-            Add(x); // add to flow graph // will be ignored by semanti binder
+            // Add(x); // add to flow graph // will be ignored by semantic binder
+
+            // declare() is ignored
+            _binder.Diagnostics.Add(
+                _binder.Routine,
+                Span.FromBounds(x.Span.Start, x.Statement.Span.Start).ToTextSpan(),
+                Errors.ErrorCode.WRN_NotYetImplementedIgnored,
+                $"declare()"
+            );
+
+            // bind the inner block
+            VisitElement(x.Statement);
         }
 
         public override void VisitGlobalCode(GlobalCode x)
