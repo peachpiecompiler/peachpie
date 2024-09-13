@@ -434,10 +434,20 @@ namespace Pchp.CodeAnalysis.Semantics
         MethodSymbol TryWellKnownImplicitConversion(TypeSymbol from, TypeSymbol to)
         {
             // Object -> PhpValue
-            if (to == _compilation.CoreTypes.PhpValue && from.IsReferenceType && !IsSpecialReferenceType(from))
+            if (to == _compilation.CoreTypes.PhpValue)
             {
-                // expecting the object to be a class instance
-                return _compilation.CoreMethods.PhpValue.FromClass_Object;
+                if (from.IsReferenceType && !IsSpecialReferenceType(from))
+                {
+                    if (from.Is_IPhpArray()) // Blob or PhpArray
+                    {
+                        return _compilation.CoreMethods.PhpValue.Create_IPhpArray;
+                    }
+                    else
+                    {
+                        // expecting the object to be a class instance
+                        return _compilation.CoreMethods.PhpValue.FromClass_Object;
+                    }
+                }
             }
 
             //

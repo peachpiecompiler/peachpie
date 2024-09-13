@@ -96,7 +96,15 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (from.IsReferenceType)
                 {
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
+                    if (from.Is_IPhpArray()) // Blob or PhpArray
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_IPhpArray).Expect(CoreTypes.PhpValue);
+                    }
+                    else
+                    {
+                        Debug.Assert(!Conversions.IsSpecialReferenceType(from));
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
+                    }
                 }
                 else if (from.SpecialType == SpecialType.System_Void)
                 {

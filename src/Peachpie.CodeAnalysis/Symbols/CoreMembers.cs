@@ -580,6 +580,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_PhpString = ct.PhpValue.Method("Create", ct.PhpString);
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
                 Create_PhpArray = ct.PhpValue.Method("Create", ct.PhpArray);
+                Create_IPhpArray = ct.PhpValue.Method("Create", ct.IPhpArray);
                 Create_PhpAlias = ct.PhpValue.Method("Create", ct.PhpAlias);
                 Create_IntStringKey = ct.PhpValue.Method("Create", ct.IntStringKey);
 
@@ -598,7 +599,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeepCopy, GetValue,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String, Eq_String_PhpValue,
                 Ineq_PhpValue_PhpValue, Ineq_PhpValue_String, Ineq_String_PhpValue,
-                Create_Boolean, Create_Long, Create_Int, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
+                Create_Boolean, Create_Long, Create_Int, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IPhpArray, Create_IntStringKey,
                 FromClr_Object, FromClass_Object, FromStruct_T;
 
             public readonly CoreField
