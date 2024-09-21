@@ -15,6 +15,20 @@ namespace Pchp.Library
     [PhpExtension("iconv", Registrator = typeof(PhpIconv.Registrator))]
     public static class PhpIconv
     {
+                /// <summary>
+                /// wjw add 2024-04-08 增加一个静态构造,汉字编码支持 18行
+                /// </summary>
+                static PhpIconv()
+                {
+                    try
+                    {
+                        Encoding.GetEncoding("GBK");
+                    }
+                    catch (Exception)
+                    {
+                        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                    }
+                }
         #region IconvConfig, Options
 
         sealed class IconvConfig : IPhpConfiguration
