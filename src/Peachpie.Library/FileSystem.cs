@@ -366,9 +366,9 @@ namespace Pchp.Library
         /// ...
         /// </summary>
         /// <returns>Next line of CSV data or NULL in case of EOF.</returns>
-        delegate string CsvLineReader();
+        internal delegate string CsvLineReader();
 
-        static PhpArray ReadLineCsv(CsvLineReader reader, char delimiter/*=','*/, char enclosure/*='"'*/, char escape_char /*= '\\'*/ )
+        internal static PhpArray ReadLineCsv(CsvLineReader reader, char delimiter/*=','*/, char enclosure/*='"'*/, char escape_char /*= '\\'*/ )
         {
             // collect results
             PhpArray result = new PhpArray();
