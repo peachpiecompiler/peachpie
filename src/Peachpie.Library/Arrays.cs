@@ -881,7 +881,7 @@ namespace Pchp.Library.Standard
         public static PhpValue array_key_last(PhpArray array)
         {
             var enumerator = array.GetFastEnumerator();
-            if (enumerator.MovePrevious())
+            if (enumerator.MoveLast())
             {
                 return PhpValue.Create(enumerator.CurrentKey);
             }
