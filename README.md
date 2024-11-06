@@ -19,6 +19,9 @@
 [<img align="right" src="https://github.com/peachpiecompiler/peachpie/blob/master/docs/logos/dotnet-foundation-logo.png" width="100" />](https://www.dotnetfoundation.org/)
 PeachPie is a member project of the [.NET Foundation](https://www.dotnetfoundation.org/about).
 
+## 本分支是为修复汉字的兼容性   
+  > This branch is to fix the compatibility of Chinese characters
+
 ## Continuous Integration
 
 | Service  | Platform  | Build Status  |
