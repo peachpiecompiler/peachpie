@@ -272,7 +272,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         // unused, parsed for backward compat only
                         if (!string.IsNullOrEmpty(value))
                         {
-                            switch (value.ToLower())
+                            switch (value.ToLowerInvariant())
                             {
                                 case "full":
                                 case "pdbonly":
@@ -283,6 +283,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                                     break;
                                 case "embedded":
                                     debugInformationFormat = DebugInformationFormat.Embedded;
+                                    break;
+                                case "none": // == /debug-
+                                    debugInformationFormat = DebugInformationFormat.PortablePdb;
+                                    emitPdb = false;
+                                    debugPlus = false;
                                     break;
                                 default:
                                     //AddDiagnostic(diagnostics, ErrorCode.ERR_BadDebugType, value);
