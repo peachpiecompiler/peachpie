@@ -71,6 +71,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly BoundExpression _initializer;
 
+        /// <summary>
+        /// Optional. Typed constant or typed field.
+        /// In case of field, we must asusme the value can be referenced (wrapped into PhpAlias).
+        /// </summary>
+        readonly TypeRef _typeRef;
+
         ImmutableArray<AttributeData> _attributes;
 
         /// <summary>
@@ -164,7 +170,8 @@ namespace Pchp.CodeAnalysis.Symbols
             SourceTypeSymbol type, string name, Location location, Accessibility accessibility,
             IDocBlock phpdoc, PhpPropertyKind kind,
             BoundExpression initializer = null,
-            ImmutableArray<AttributeData> attributes = default)
+            ImmutableArray<AttributeData> attributes = default,
+            TypeRef typeRef = null)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(name);
@@ -176,6 +183,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _initializer = initializer;
             _location = location;
             _attributes = attributes.IsDefault ? ImmutableArray<AttributeData>.Empty : attributes;
+            _typeRef = typeRef;
             PHPDocBlock = phpdoc;
 
             // implicit attributes from PHPDoc
@@ -235,6 +243,12 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             if ((IsConst || IsReadOnly) && Initializer != null)
             {
+                if (_typeRef != null)
+                {
+                    // PHP 8.3 typed class constant
+                    return DeclaringCompilation.GetTypeFromTypeRef(_typeRef, _containingType);
+                }
+                
                 // resolved type symbol if possible
                 if (Initializer.ResultType != null)
                 {

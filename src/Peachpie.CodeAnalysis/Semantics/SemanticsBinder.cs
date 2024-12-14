@@ -614,21 +614,38 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindConstUse(AST.ConstantUse x)
         {
-            if (x is AST.GlobalConstUse)
+            if (x is AST.GlobalConstUse gConst)
             {
-                return BindGlobalConstUse((AST.GlobalConstUse)x);
+                return BindGlobalConstUse(gConst);
             }
 
-            if (x is AST.DirectClassConstUse cx)
+            if (x is AST.ClassConstUse cconst)
             {
-                var typeref = BindTypeRef(cx.TargetType, objectTypeInfoSemantic: true);
+                var typeref = BindTypeRef(cconst.TargetType, objectTypeInfoSemantic: true);
 
-                if (cx.Name.Equals("class"))   // pseudo class constant
+                // FOO::BAR
+                if (cconst is AST.DirectClassConstUse directConst)
                 {
-                    return new BoundPseudoClassConst(typeref, AST.PseudoClassConstUse.Types.Class);
+                    if (directConst.Name.Equals("class")) // pseudo class constant
+                    {
+                        return new BoundPseudoClassConst(typeref, AST.PseudoClassConstUse.Types.Class);
+                    }
+
+                    return BoundFieldRef.CreateClassConst(
+                        typeref,
+                        new BoundVariableName(directConst.Name)
+                    );
                 }
 
-                return BoundFieldRef.CreateClassConst(typeref, new BoundVariableName(cx.Name));
+                // FOO::{$bar}
+                if (cconst is AST.IndirectClassConstUse indirectConst)
+                {
+                    return BoundFieldRef.CreateClassConst(
+                        typeref,
+                        new BoundVariableName(BindExpression(indirectConst.NameExpression, BoundAccess.Read))
+                    );
+
+                }
             }
 
             throw ExceptionUtilities.UnexpectedValue(x);
