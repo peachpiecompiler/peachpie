@@ -1132,7 +1132,9 @@ namespace Pchp.CodeAnalysis.Symbols
                         flist.Modifiers.GetAccessibility(), flist.PHPDoc,
                         fkind,
                         initializer: (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null,
-                        attributes: binder.BindAttributes(flist.GetAttributes()));
+                        attributes: binder.BindAttributes(flist.GetAttributes()),
+                        typeRef: flist.Type // CONSIDER: readonly non-aliased fields only?
+                    );
                 }
             }
 
@@ -1146,7 +1148,9 @@ namespace Pchp.CodeAnalysis.Symbols
                         clist.Modifiers.GetAccessibility(), clist.PHPDoc,
                         PhpPropertyKind.ClassConstant,
                         initializer: binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement(),
-                        attributes: binder.BindAttributes(clist.GetAttributes()));
+                        attributes: binder.BindAttributes(clist.GetAttributes()),
+                        typeRef: clist.Type
+                    );
                 }
             }
         }
