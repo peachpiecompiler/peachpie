@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Devsense.PHP.Text;
 using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis

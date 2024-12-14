@@ -836,7 +836,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitLabelStmt(LabelStmt x)
         {
-            var/*!*/label = GetLabelBlock(x.Name.Name.Value);
+            var/*!*/label = GetLabelBlock(x.Label);
             if ((label.Flags & ControlFlowGraph.LabelBlockFlags.Defined) != 0)
             {
                 label.Flags |= ControlFlowGraph.LabelBlockFlags.Redefined;  // label was defined already
@@ -844,7 +844,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Defined;        // label is defined
-            label.LabelSpan = x.Name.Span;
+            label.LabelSpan = x.LabelSpan;
 
             _current = WithNewOrdinal(Connect(_current, label.TargetBlock));
         }

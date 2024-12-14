@@ -1141,8 +1141,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 foreach (var c in clist.Constants)
                 {
-                    yield return new SourceFieldSymbol(this, c.Name.Name.Value,
-                        CreateLocation(c.Name.Span),
+                    yield return new SourceFieldSymbol(this, c.Name.Value,
+                        CreateLocation(c.NameSpan),
                         clist.Modifiers.GetAccessibility(), clist.PHPDoc,
                         PhpPropertyKind.ClassConstant,
                         initializer: binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement(),
@@ -1755,7 +1755,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return Syntax.PHPDoc?.Summary ?? string.Empty;
+            return Syntax.PHPDoc?.SummaryOrDefault() ?? string.Empty;
         }
     }
 

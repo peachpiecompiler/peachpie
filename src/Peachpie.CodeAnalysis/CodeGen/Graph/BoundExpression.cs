@@ -14,6 +14,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -3480,9 +3481,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // get location of evaluated code
             var filepath = cg.ContainingFile.RelativeFilePath;
-            int line, col;
             var unit = this.PhpSyntax.ContainingSourceUnit;
-            unit.GetLineColumnFromPosition(this.CodeExpression.PhpSyntax.Span.Start, out line, out col);
+            unit.GetLineColumnFromPosition(this.CodeExpression.PhpSyntax.Span.Start, out var line, out var col);
 
             // Template: Operators.Eval(ctx, locals, @this, self, code, currentpath, line, column)
             cg.EmitLoadContext();
