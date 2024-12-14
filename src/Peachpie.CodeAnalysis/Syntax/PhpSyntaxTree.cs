@@ -86,11 +86,13 @@ namespace Pchp.CodeAnalysis
             { new Version(8, 0), LanguageFeatures.Php80Set },
             { new Version(8, 1), LanguageFeatures.Php81Set },
             { new Version(8, 2), LanguageFeatures.Php82Set },
+            { new Version(8, 3), LanguageFeatures.Php83Set },
+            { new Version(8, 4), LanguageFeatures.Php84Set },
         };
 
         public static Version LatestLanguageVersion => SupportedLanguageVersions.Max();
 
-        public static Version DefaultLanguageVersion => new Version(8, 2);
+        public static Version DefaultLanguageVersion => new Version(8, 4);
 
         public static IReadOnlyCollection<Version> SupportedLanguageVersions => s_langversions.Keys;
 
