@@ -290,7 +290,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 return usevars.SelectAsArray(v =>
                 {
-                    var varuse = new AST.DirectVarUse(v.Name.Span, v.Name.Name);
+                    var varuse = AST.DirectVarUse.Create(v.Name.Span, v.Name.Name);
                     var boundvar = BindExpression(varuse, v.PassedByRef ? BoundAccess.ReadRef : BoundAccess.Read);
 
                     return BoundArgument.Create(boundvar);
@@ -392,7 +392,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        BoundStatement BindUnsetStmt(AST.VariableUse varuse)
+        BoundStatement BindUnsetStmt(AST.IExpression varuse)
         {
             Debug.Assert(varuse != null);
             return new BoundUnset((BoundReferenceExpression)BindExpression(varuse, BoundAccess.Unset));
@@ -509,11 +509,16 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access) => BindExpression(expr, access);
+        public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.IExpression expr, BoundAccess access) =>
+            BindExpression(expr, access)
+            ;
 
-        protected virtual BoundExpression BindExpression(AST.Expression expr, BoundAccess access) => BindExpressionCore(expr, access).WithSyntax(expr);
+        protected virtual BoundExpression BindExpression(AST.IExpression expr, BoundAccess access) =>
+            BindExpressionCore(expr, access)
+            .WithSyntax(expr as AST.LangElement)
+            ;
 
-        protected BoundExpression BindExpressionCore(AST.Expression expr, BoundAccess access)
+        protected BoundExpression BindExpressionCore(AST.IExpression expr, BoundAccess access)
         {
             Debug.Assert(expr != null);
 
@@ -588,7 +593,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 useparams = captured
-                    .Select(vname => new AST.FormalParam(Span.Invalid, vname.Value, Span.Invalid, null, AST.FormalParam.Flags.Default, null))
+                    .Select(vname => new AST.FormalParam(Span.Invalid, vname))
                     .ToList();
             }
             else
@@ -614,9 +619,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 return BindGlobalConstUse((AST.GlobalConstUse)x);
             }
 
-            if (x is AST.ClassConstUse)
+            if (x is AST.DirectClassConstUse cx)
             {
-                var cx = (AST.ClassConstUse)x;
                 var typeref = BindTypeRef(cx.TargetType, objectTypeInfoSemantic: true);
 
                 if (cx.Name.Equals("class"))   // pseudo class constant
@@ -917,7 +921,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             AST.Expression BindArm(AST.Expression value, AST.MatchArm[] arms)
             {
-                AST.Expression BindArm(AST.Expression value, AST.MatchArm arm, AST.Expression falseExpr)
+                AST.Expression BindArm(AST.IExpression value, AST.MatchArm arm, AST.IExpression falseExpr)
                 {
                     // value === arm.Condition ? arm.Expression : falseExpr
 
@@ -926,7 +930,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     for (int i = 0; i < arm.ConditionList.Length; i++)
                     {
                         // value === condition[i]
-                        var cond = new AST.BinaryEx(arm.ConditionList[i].Span, AST.Operations.Identical, value, arm.ConditionList[i]) { ContainingElement = arm };
+                        var cond = new AST.BinaryEx(arm.ConditionList[i].Span, AST.Operations.Identical, (AST.Expression)value, (AST.Expression)arm.ConditionList[i]) { ContainingElement = arm };
 
                         condition = condition == null
                             ? cond
@@ -939,14 +943,16 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else
                     {
-                        return new AST.ConditionalEx(condition, arm.Expression, falseExpr) { ContainingElement = arm };
+                        return new AST.ConditionalEx(condition, arm.Expression, (AST.Expression)falseExpr) { ContainingElement = arm };
                     }
                 }
 
                 var tmpname = NextMatchVariableName();
 
                 // Template: $tmp = A
-                var tmpvar = new AST.DirectVarUse(value.Span, tmpname) { ContainingElement = value };
+                var tmpvar = AST.DirectVarUse.Create(value.Span, new VariableName(tmpname));
+                tmpvar.ContainingElement = value;
+                
                 var assignment = new AST.ValueAssignEx(value.Span, AST.Operations.AssignValue, tmpvar, value) { ContainingElement = value };
 
                 // Template: throw new UnhandledMatchError                 
@@ -957,7 +963,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 for (int i = arms.Length - 1; i >= 0; i--)
                 {
-                    result = BindArm(i == 0 ? (AST.Expression)assignment : tmpvar, arms[i], result);
+                    result = BindArm(i == 0 ? assignment : tmpvar, arms[i], result);
                 }
 
                 return result;
@@ -1040,7 +1046,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        protected ImmutableArray<KeyValuePair<BoundExpression, BoundReferenceExpression>> BindListItems(AST.Item[] items)
+        protected ImmutableArray<KeyValuePair<BoundExpression, BoundReferenceExpression>> BindListItems(ReadOnlySpan<AST.ArrayItem> items)
         {
             if (items.Length == 0)
             {
@@ -1051,14 +1057,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
             foreach (var x in items)
             {
-                if (x == null)
+                if (x.IsDefault)
                 {
                     // list() may contain empty items
                     builder.Add(default);
                     continue;
                 }
 
-                if (x is AST.SpreadItem)
+                if (x.IsSpreadItem)
                 {
                     Diagnostics.Add(
                         ContainingFile.GetLocation(x.Value.Span.ToTextSpan()),
@@ -1067,10 +1073,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     continue;
                 }
 
-                Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
-
                 var boundIndex = x.Index != null ? BindExpression(x.Index, BoundAccess.Read) : null;
-                var value = (AST.Expression)((AST.IArrayItem)x).Value;
+                var value = x.Value;
 
                 // write access
                 var boundValue = (BoundReferenceExpression)BindExpression(value, x.IsByRef ? BoundAccess.Write.WithWriteRef(0) : BoundAccess.Write);
@@ -1082,10 +1086,10 @@ namespace Pchp.CodeAnalysis.Semantics
             return builder.MoveToImmutable();
         }
 
-        protected ImmutableArray<BoundArrayItem> BindArrayItems(ReadOnlySpan<AST.Item> items)
+        protected ImmutableArray<BoundArrayItem> BindArrayItems(ReadOnlySpan<AST.ArrayItem> items)
         {
             // trim trailing empty items
-            while (items.Length != 0 && items[items.Length - 1] == null)
+            while (items.Length != 0 && items[items.Length - 1].IsDefault)
             {
                 items = items.Slice(0, items.Length - 1);
             }
@@ -1099,15 +1103,15 @@ namespace Pchp.CodeAnalysis.Semantics
             
             foreach (var x in items)
             {
-                if (x == null)
+                if (x.IsDefault)
                 {
                     throw ExceptionUtilities.Unreachable;
                 }
 
                 // bind key, value
                 var boundIndex = x.Index != null ? BindExpression(x.Index, BoundAccess.Read) : null;
-                var boundValue = BindExpression((AST.Expression)x.Value, x.IsByRef ? BoundAccess.ReadRef : BoundAccess.Read);
-                var isSpreadArray = x is AST.SpreadItem;
+                var boundValue = BindExpression(x.Value, x.IsByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+                var isSpreadArray = x.IsSpreadItem;
 
                 if (!x.IsByRef && !isSpreadArray)
                 {
@@ -1129,8 +1133,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindItemUse(AST.ItemUse x, BoundAccess access)
         {
-            AstUtils.PatchItemUse(x);
-
             var arrayAccess = BoundAccess.Read;
 
             if (x.Index == null && (!access.IsEnsure && !access.IsWrite))   // READ variable[]
@@ -1277,7 +1279,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundStatement BindGlobalConstantDecl(AST.GlobalConstantDecl decl)
         {
-            var qname = NameUtils.MakeQualifiedName(new Name(decl.Name.Name.Value), decl.ContainingNamespace);
+            var qname = NameUtils.MakeQualifiedName(new Name(decl.Name.Value), decl.ContainingNamespace);
             return new BoundGlobalConstDeclStatement(qname, BindExpression(decl.Initializer, BoundAccess.Read));
         }
 
@@ -1345,7 +1347,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case AST.Operations.StringCast:
 
                     // workaround (binary) is parsed as (StringCast)
-                    if (expr.ContainingSourceUnit.GetSourceCode(expr.Span).StartsWith("(binary)"))
+                    if (((IPhpSourceUnit)expr.ContainingSourceUnit).GetSourceCode(expr.Span).StartsWith("(binary)".AsSpan(), StringComparison.Ordinal))
                     {
                         goto case AST.Operations.BinaryCast;
                     }
@@ -1644,7 +1646,7 @@ namespace Pchp.CodeAnalysis.Semantics
             _tryScopes = tryScopes;
         }
 
-        public override BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
+        public override BoundItemsBag<BoundExpression> BindWholeExpression(AST.IExpression expr, BoundAccess access)
         {
             Debug.Assert(!AnyPreBoundItems);
 
@@ -1667,12 +1669,12 @@ namespace Pchp.CodeAnalysis.Semantics
             return boundBag;
         }
 
-        protected override BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
+        protected override BoundExpression BindExpression(AST.IExpression expr, BoundAccess access)
         {
             var _underYieldLikeExLevelOnEnter = _underYieldLikeExLevel;
 
             // can't use only AST to determine whether we're under yield<>root route 
-            //  -> there're expressions (such as foreach variable) outside in terms of semantics tree
+            //  -> there are expressions (such as foreach variable) outside in terms of semantics tree
             //  -> for those we don't want to do any moving (can actually be a problem for those)
 
             // update _underYieldLikeExLevel

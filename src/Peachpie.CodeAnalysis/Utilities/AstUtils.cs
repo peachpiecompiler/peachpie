@@ -13,8 +13,10 @@ using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using System.Runtime.InteropServices;
+using Devsense.PHP.Ast.DocBlock;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using Peachpie.CodeAnalysis.Syntax;
 
 namespace Pchp.CodeAnalysis
 {
@@ -62,25 +64,6 @@ namespace Pchp.CodeAnalysis
                 case Operations.Coalesce: return Operations.AssignCoalesce;
                 default:
                     throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(op);
-            }
-        }
-
-        /// <summary>
-        /// Fixes <see cref="ItemUse"/> so it propagates correctly through our visitor.
-        /// </summary>
-        /// <remarks><c>IsMemberOf</c> will be set on Array, not ItemUse itself.</remarks>
-        public static void PatchItemUse(ItemUse item)
-        {
-            if (item.IsMemberOf != null)
-            {
-                var varlike = item.Array as VarLikeConstructUse;
-
-                Debug.Assert(varlike != null);
-                Debug.Assert(varlike.IsMemberOf == null);
-
-                // fix this ast weirdness:
-                varlike.IsMemberOf = item.IsMemberOf;
-                item.IsMemberOf = null;
             }
         }
 
@@ -325,7 +308,7 @@ namespace Pchp.CodeAnalysis
                 int clauseStart = declStmt.Span.Start;
                 int blockStart = declStmt.Statement.Span.Start;
                 var searchSpan = new Span(clauseStart, blockStart - clauseStart);
-                string searchText = declStmt.ContainingSourceUnit.GetSourceCode(searchSpan);
+                var searchText = ((IPhpSourceUnit)declStmt.ContainingSourceUnit).GetSourceCode(searchSpan);
                 int clauseLength = searchText.LastIndexOf(')') + 1;
 
                 return new Microsoft.CodeAnalysis.Text.TextSpan(clauseStart, clauseLength);
@@ -436,5 +419,11 @@ namespace Pchp.CodeAnalysis
                 scope => !(scope is FunctionDecl || scope is ILambdaExpression || scope is TypeDecl || scope is MethodDecl) || scope == root)
                 .Where(dvar => dvar.IsMemberOf == null && !dvar.VarName.IsAutoGlobal && !dvar.VarName.IsThisVariableName);
         }
+        
+        public static string SummaryOrDefault(this IDocBlock doc, string @default = null) =>
+            doc?.HasSummary(out var summary) == true
+            ? summary
+            : @default
+            ;
     }
 }

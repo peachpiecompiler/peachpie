@@ -282,12 +282,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var summary = string.Empty;
-
-            if (PHPDocBlock != null)
+            if (PHPDocBlock?.HasSummary(out var summary) == true)
             {
-                summary = PHPDocBlock.Summary;
-
                 if (string.IsNullOrWhiteSpace(summary))
                 {
                     // try @var or @staticvar:
@@ -297,9 +293,11 @@ namespace Pchp.CodeAnalysis.Symbols
                         summary = vartag.ToString();
                     }
                 }
+
+                return summary;
             }
 
-            return summary;
+            return string.Empty;
         }
     }
 }

@@ -1076,7 +1076,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                     p = new AST.ActualParam(
                         Devsense.PHP.Text.Span.Invalid,
-                        new AST.StringLiteral(Devsense.PHP.Text.Span.Invalid, str.ToString())
+                        AST.StringLiteral.Create(Devsense.PHP.Text.Span.Invalid, str.ToString())
                     );
                     return true;
                 }
@@ -1113,7 +1113,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             attr = new AST.AttributeElement(
                 span,
                 new AST.ClassTypeRef(span, QualifiedName.Parse(fqn.Trim().ToString().Replace('.', QualifiedName.Separator), true)),
-                new AST.CallSignature(signature, span)
+                new AST.CallSignature(signature.ToArray(), span)
             );
             return true;
         }

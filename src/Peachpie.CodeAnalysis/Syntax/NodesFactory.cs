@@ -134,26 +134,27 @@ namespace Peachpie.CodeAnalysis.Syntax
             return Root = (GlobalCode)base.GlobalCode(span, statements, context);
         }
 
-        public override LangElement Function(Span span, bool conditional, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Name name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, LangElement body)
+        public override LangElement Function(Span span, bool conditional, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Name name, Span nameSpan, FormalTypeParam[] typeParamsOpt, FormalParam[] formalParams, Span formalParamsSpan, LangElement body)
         {
             return AddAndReturn(
                 ref _functions,
-                (FunctionDecl)base.Function(span, conditional, aliasReturn, attributes, returnType, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, body));
+                (FunctionDecl)base.Function(span, conditional, aliasReturn, attributes, returnType, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, body)
+            );
         }
 
-        public override LangElement Type(Span span, Span headingSpan, bool conditional, PhpMemberAttributes attributes, Name name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, INamedTypeRef baseClassOpt, IEnumerable<INamedTypeRef> implements, IEnumerable<LangElement> members, Span bodySpan)
+        public override LangElement Type(Span span, Span headingSpan, bool conditional, PhpMemberAttributes attributes, Name name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, INamedTypeRef baseClassOpt, INamedTypeRef[] implements, IEnumerable<LangElement> members, Span bodySpan)
         {
             var tref = (TypeDecl)base.Type(span, headingSpan, conditional, attributes, name, nameSpan, typeParamsOpt, baseClassOpt, implements, members, bodySpan);
 
             return AddAndReturn(ref _types, tref);
         }
 
-        public override LangElement DeclList(Span span, PhpMemberAttributes attributes, IList<LangElement> decls, TypeRef type)
+        public override LangElement DeclList(Span span, PhpMemberAttributes attributes, IReadOnlyList<LangElement> decls, TypeRef type)
         {
             return base.DeclList(span, attributes, decls, type);
         }
 
-        public override LangElement Method(Span span, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Span returnTypeSpan, string name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<ActualParam> baseCtorParams, LangElement body)
+        public override LangElement Method(Span span, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Span returnTypeSpan, string name, Span nameSpan, FormalTypeParam[] typeParamsOpt, FormalParam[] formalParams, Span formalParamsSpan, ActualParam[] baseCtorParams, LangElement body)
         {
             return base.Method(span, aliasReturn, attributes, returnType, returnTypeSpan, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, baseCtorParams, body);
         }
@@ -167,16 +168,16 @@ namespace Peachpie.CodeAnalysis.Syntax
             return tref;
         }
 
-        public override LangElement Lambda(Span span, Span headingSpan, bool aliasReturn, TypeRef returnType, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<FormalParam> lexicalVars, LangElement body)
+        public override LangElement Lambda(Span span, Span headingSpan, bool aliasReturn, TypeRef returnType, FormalParam[] @params, Span formalParamsSpan, FormalParam[] formalParams, LangElement body)
         {
             return AddAndReturn(ref _lambdas,
-                (LambdaFunctionExpr)base.Lambda(span, headingSpan, aliasReturn, returnType, formalParams, formalParamsSpan, lexicalVars, body));
+                (LambdaFunctionExpr)base.Lambda(span, headingSpan, aliasReturn, returnType, formalParams, formalParamsSpan, formalParams, body));
         }
 
-        public override LangElement ArrowFunc(Span span, Span headingSpan, bool aliasReturn, TypeRef returnType, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, LangElement expression)
+        public override LangElement ArrowFunc(Span span, Span headingSpan, bool aliasReturn, TypeRef returnType, FormalParam[] @params, Span formalParamsSpan, LangElement expression)
         {
             return AddAndReturn(ref _lambdas,
-                (ArrowFunctionExpr)base.ArrowFunc(span, headingSpan, aliasReturn, returnType, formalParams, formalParamsSpan, expression));
+                (ArrowFunctionExpr)base.ArrowFunc(span, headingSpan, aliasReturn, returnType, @params, formalParamsSpan, expression));
         }
 
         public override LangElement Yield(Span span, LangElement keyOpt, LangElement valueOpt)
