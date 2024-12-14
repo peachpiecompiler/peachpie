@@ -168,16 +168,25 @@ namespace Peachpie.CodeAnalysis.Syntax
             return tref;
         }
 
-        public override LangElement Lambda(Span span, Span headingSpan, bool aliasReturn, TypeRef returnType, FormalParam[] @params, Span formalParamsSpan, FormalParam[] formalParams, LangElement body)
+        public override LangElement Lambda(
+            Span span,
+            Span headingSpan,
+            bool aliasReturn,
+            TypeRef returnType,
+            FormalParam[] formalParams,
+            Span formalParamsSpan,
+            FormalParam[] lexicalVars,
+            LangElement body)
         {
             return AddAndReturn(ref _lambdas,
-                (LambdaFunctionExpr)base.Lambda(span, headingSpan, aliasReturn, returnType, formalParams, formalParamsSpan, formalParams, body));
+                (LambdaFunctionExpr)base.Lambda(span, headingSpan, aliasReturn, returnType, formalParams, formalParamsSpan, lexicalVars, body)
+            );
         }
 
-        public override LangElement ArrowFunc(Span span, Span headingSpan, bool aliasReturn, TypeRef returnType, FormalParam[] @params, Span formalParamsSpan, LangElement expression)
+        public override LangElement ArrowFunc(Span span, Span headingSpan, bool aliasReturn, TypeRef returnType, FormalParam[] @params, Span paramsSpan, LangElement expression)
         {
             return AddAndReturn(ref _lambdas,
-                (ArrowFunctionExpr)base.ArrowFunc(span, headingSpan, aliasReturn, returnType, @params, formalParamsSpan, expression));
+                (ArrowFunctionExpr)base.ArrowFunc(span, headingSpan, aliasReturn, returnType, @params, paramsSpan, expression));
         }
 
         public override LangElement Yield(Span span, LangElement keyOpt, LangElement valueOpt)
