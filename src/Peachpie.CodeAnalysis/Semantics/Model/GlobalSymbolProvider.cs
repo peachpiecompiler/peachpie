@@ -388,8 +388,27 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             foreach (var container in ExtensionContainers)
             {
                 // container.Constant
-                var match = container.GetMembers(name).Where(IsGlobalConstant).SingleOrDefault();
-                if (match is IPhpValue phpv) // != null
+                var members = container.GetMembers(name);
+                var symbol = (Symbol)null;
+                
+                // single-or-null
+                for (var i = 0; i < members.Length; i++)
+                {
+                    var member = members[i];
+                    if (IsGlobalConstant(member))
+                    {
+                        if (symbol != null)
+                        {
+                            // TODO: report warning
+                            return null; // ambiguity!
+                        }
+
+                        symbol = member;
+                    }
+                }
+                
+                //
+                if (symbol is IPhpValue phpv)
                 {
                     return phpv;
                 }
