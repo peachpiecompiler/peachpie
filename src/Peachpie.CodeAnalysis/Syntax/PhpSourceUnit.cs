@@ -63,11 +63,6 @@ namespace Peachpie.CodeAnalysis.Syntax
             Parse((NodesFactory)factory, errors, recovery, LanguageFeatures.Basic, Lexer.LexicalStates.INITIAL);
         }
 
-        static ILineBreaks CreateLineBreaks(SourceText source)
-        {
-            return Devsense.PHP.Text.LineBreaks.Create(
-                source.ToString(),
-                source.Lines.Select(line => line.EndIncludingLineBreak).ToList());
-        }
+        static ILineBreaks CreateLineBreaks(SourceText source) => new SourceLineBreaks(source);
     }
 }
