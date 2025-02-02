@@ -113,6 +113,10 @@ namespace Peachpie.Library.Scripting
                 }
             }
 
+//#if DEBUG
+//            File.WriteAllBytes("index.dll", _image.ToArray());
+//#endif
+
             if (_entryPoint == null)
             {
                 throw new InvalidOperationException();

@@ -964,8 +964,7 @@ namespace Pchp.Library
             var @default = PhpValue.False; // a default value
             PhpArray? options_arr;
             long flags = 0;
-            long l; // tmp
-
+            
             // process options
 
             if (Operators.IsSet(options))
