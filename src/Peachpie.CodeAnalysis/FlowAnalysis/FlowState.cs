@@ -1,4 +1,5 @@
 ﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
@@ -213,18 +214,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public void SetLocalType(VariableHandle handle, TypeRefMask tmask)
         {
             handle.ThrowIfInvalid();
+            SetLocalType(handle.Slot, tmask);
+        }
 
-            if (handle >= _varsType.Length)
+        /// <summary>
+        /// Sets variable type in this state.
+        /// </summary>
+        /// <param name="varindex">Variable slot.</param>
+        /// <param name="tmask">Variable type. If <c>uninitialized</c>, the variable is set as not initialized in this state.</param>
+        public void SetLocalType(int varindex, TypeRefMask tmask)
+        {
+            if (varindex >= _varsType.Length)
             {
-                Array.Resize(ref _varsType, handle + 1);
+                Array.Resize(ref _varsType, varindex + 1);
             }
 
-            _varsType[handle] = tmask;
+            _varsType[varindex] = tmask;
 
-            this.FlowContext.AddVarType(handle, tmask);    // TODO: collect merged type information at the end of analysis
+            this.FlowContext.AddVarType(varindex, tmask);    // TODO: collect merged type information at the end of analysis
 
             // update the _initializedMask
-            SetVarInitialized(handle);
+            SetVarInitialized(varindex);
         }
 
         /// <summary>
@@ -282,9 +292,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 ? TypeRefMask.AnyType.WithRefFlag
                 : TypeRefMask.AnyType;
 
-            foreach (var v in FlowContext.EnumerateVariables())
+            //foreach (var v in FlowContext.EnumerateVariables())
+            //{
+            //    SetLocalType(v, tmask);
+            //}
+
+            for (int i = 0; i < FlowContext.VarsType.Length; i++)
             {
-                SetLocalType(v, tmask);
+                SetLocalType(i, tmask);
             }
 
             // all initialized
@@ -306,9 +321,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             FlowContext.ReturnType |= type;
         }
 
-        public void SetVarInitialized(VariableHandle handle)
+        public void SetVarInitialized(VariableHandle handle) => SetVarInitialized(handle.Slot);
+
+        public void SetVarInitialized(int varindex)
         {
-            int varindex = handle.Slot;
             if (varindex >= 0 && varindex < FlowContext.BitsCount)
             {
                 _initializedMask |= 1ul << varindex;

@@ -132,17 +132,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return new VariableHandle() { Slot = index, Name = name };
         }
 
-        /// <summary>
-        /// Enumerates all known variables as pairs of their index and name.
-        /// </summary>
-        public IEnumerable<VariableHandle> EnumerateVariables()
-        {
-            return _varsIndex.Select(pair => new VariableHandle()
-            {
-                Slot = pair.Value,
-                Name = pair.Key,
-            });
-        }
+        ///// <summary>
+        ///// Enumerates all known variables as pairs of their index and name.
+        ///// </summary>
+        //public IEnumerable<VariableHandle> EnumerateVariables()
+        //{
+        //    return _varsIndex.Select(pair => new VariableHandle()
+        //    {
+        //        Slot = pair.Value,
+        //        Name = pair.Key,
+        //    });
+        //}
 
         public void SetReference(int varindex)
         {
