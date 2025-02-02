@@ -1731,7 +1731,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.LocalReference;
 
-        internal bool IsLowerTemp() => this is BoundTemporalVariableRef || (_name.IsDirect && _name.NameValue.Value.StartsWith("<match>'"));
+        internal bool IsLowerTemp() => this is BoundTemporalVariableRef || (_name.IsDirect && _name.NameValue.Value.StartsWith(WellKnownPchpNames.MatchTempVariablePrefix, StringComparison.Ordinal));
 
         /// <summary>
         /// The type of variable before it gets accessed by this expression.

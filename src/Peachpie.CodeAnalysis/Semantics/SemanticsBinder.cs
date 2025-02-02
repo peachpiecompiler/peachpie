@@ -138,9 +138,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         int _tmpVariableIndex = 0;
 
-        protected string NextTempVariableName() => "<sm>'" + _tmpVariableIndex++;
+        protected string NextTempVariableName() => WellKnownPchpNames.TempVariablePrefix + _tmpVariableIndex++;
 
-        protected string NextMatchVariableName() => "<match>'" + _tmpVariableIndex++;
+        protected string NextMatchVariableName() => WellKnownPchpNames.MatchTempVariablePrefix + _tmpVariableIndex++;
 
         #region Construction
 
@@ -1218,7 +1218,7 @@ namespace Pchp.CodeAnalysis.Semantics
                             // Diagnostics.Add(GetLocation(expr), Errors.ErrorCode.ERR_ThisOutOfObjectContext);
                         }
                     }
-                    else if (varname.NameValue.Value.StartsWith("<match>'"))
+                    else if (varname.NameValue.Value.StartsWith(WellKnownPchpNames.MatchTempVariablePrefix, StringComparison.Ordinal))
                     {
                         return new BoundTemporalVariableRef(varname.NameValue).WithAccess(access);
                     }
