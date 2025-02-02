@@ -288,7 +288,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             // all initialized
-            _initializedMask = ~0u;
+            _initializedMask = ~0ul;
         }
 
         /// <summary>
