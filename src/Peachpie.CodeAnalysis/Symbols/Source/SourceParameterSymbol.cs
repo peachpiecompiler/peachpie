@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets enumeration of parameter source attributes.
         /// </summary>
-        public IEnumerable<SourceCustomAttribute> SourceAttributes => _attributes.OfType<SourceCustomAttribute>();
+        public IReadOnlyList<SourceCustomAttribute> SourceAttributes => _attributes.OfTypeToReadOnlyList<AttributeData, SourceCustomAttribute>();
 
         /// <summary>
         /// Whether the parameter needs to be copied when passed by value.

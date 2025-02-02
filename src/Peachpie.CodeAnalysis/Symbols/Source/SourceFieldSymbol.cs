@@ -82,7 +82,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets enumeration of property source attributes.
         /// </summary>
-        public IEnumerable<SourceCustomAttribute> SourceAttributes => _attributes.OfType<SourceCustomAttribute>();
+        public IReadOnlyList<SourceCustomAttribute> SourceAttributes => _attributes.OfTypeToReadOnlyList<AttributeData, SourceCustomAttribute>();
 
         /// <summary>
         /// Gets value indicating whether this field redefines a field from a base type.

@@ -489,7 +489,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets enumeration of function attributes.
         /// </summary>
-        public IEnumerable<SourceCustomAttribute> SourceAttributes => GetAttributes().OfType<SourceCustomAttribute>();
+        public IReadOnlyList<SourceCustomAttribute> SourceAttributes => this.GetAttributes().OfTypeToReadOnlyList<AttributeData, SourceCustomAttribute>();
 
         ImmutableArray<AttributeData> PopulateSourceAttributes()
         {

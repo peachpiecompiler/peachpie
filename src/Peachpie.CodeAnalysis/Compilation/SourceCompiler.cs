@@ -119,7 +119,7 @@ namespace Pchp.CodeAnalysis
             _worklist.Enqueue(routine.ControlFlowGraph?.Start);
 
             // enqueue routine parameter default values
-            foreach (var p in routine.SourceParameters)
+            foreach (var p in routine.SourceParameters.AsSpan())
             {
                 if (p.Initializer != null)
                 {
@@ -132,13 +132,17 @@ namespace Pchp.CodeAnalysis
             EnqueueAttributes(routine.SourceAttributes);
         }
 
-        void EnqueueAttributes(IEnumerable<SourceCustomAttribute> attributes)
+        void EnqueueAttributes(IReadOnlyList<SourceCustomAttribute> attributes)
         {
-            foreach (var attr in attributes)
+            if (attributes != null && attributes.Count != 0)
             {
-                foreach (var a in attr.Arguments)
+                for (int i = 0; i < attributes.Count; i++)
                 {
-                    EnqueueExpression(a.Value, attr.TypeCtx);
+                    var attr = attributes[i];
+                    foreach (var a in attr.Arguments)
+                    {
+                        EnqueueExpression(a.Value, attr.TypeCtx);
+                    }
                 }
             }
         }
@@ -178,7 +182,7 @@ namespace Pchp.CodeAnalysis
                 EnqueueAttributes(f.SourceAttributes);
             });
 
-            EnqueueAttributes(type.SourceAttributes.OfType<SourceCustomAttribute>());
+            EnqueueAttributes(type.SourceAttributes.OfTypeToReadOnlyList<AttributeData, SourceCustomAttribute>());
         }
 
         internal void ReanalyzeMethods()
