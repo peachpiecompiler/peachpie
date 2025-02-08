@@ -12,5 +12,5 @@ namespace Peachpie.Library.PDO
     /// <param name="pdo">The pdo instance.</param>
     /// <param name="args">The arguments when method is called.</param>
     /// <returns>Method return value</returns>
-    public delegate PhpValue ExtensionMethodDelegate(PDO pdo, PhpArray args);
+    public delegate PhpValue ExtensionMethodDelegate(Context ctx, PDO pdo, PhpArray args);
 }
