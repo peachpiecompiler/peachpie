@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.Data.Sqlite;
 using Pchp.Core;
 using Peachpie.Library.PDO.Utilities;
+using SQLitePCL;
+using Convert = Pchp.Core.Convert;
 
 namespace Peachpie.Library.PDO.Sqlite
 {
@@ -60,19 +63,38 @@ namespace Peachpie.Library.PDO.Sqlite
             return null;
         }
 
-        private static PhpValue sqliteCreateAggregate(PDO pdo, PhpArray arguments)
+        private static PhpValue sqliteCreateAggregate(Context ctx, PDO pdo, PhpArray arguments)
         {
             return PhpValue.False;
         }
-        private static PhpValue sqliteCreateCollation(PDO pdo, PhpArray arguments)
+        private static PhpValue sqliteCreateCollation(Context ctx, PDO pdo, PhpArray arguments)
         {
             return PhpValue.False;
         }
 
-        private static PhpValue sqliteCreateFunction(PDO pdo, PhpArray arguments)
+        private static PhpValue sqliteCreateFunction(Context ctx, PDO pdo, PhpArray arguments)
         {
-            //Microsoft connector does not support CreateFunction
-            return PhpValue.False;
+            if (pdo.GetCurrentConnection<SqliteConnection>() is not {} connection)
+                return PhpValue.False;
+
+            var name = arguments[0].String;
+            var callable = arguments[1].AsCallable();
+            var numberOfArguments = -1;
+            if (arguments.TryGetValue(2, out var args) && args.IsInteger())
+                numberOfArguments = args.ToInt();
+            var flags = 0;
+            if (arguments.TryGetValue(3, out var flagsValue) && flagsValue.IsInteger())
+                flags = args.ToInt();
+            
+            var handle = connection.Handle;
+            
+            raw.sqlite3_create_function(
+                handle,
+                name,
+                numberOfArguments,
+                flags,
+                CreateScalarFunction(ctx, callable));
+            return PhpValue.True;
         }
 
         /// <inheritDoc />
@@ -102,6 +124,56 @@ namespace Peachpie.Library.PDO.Sqlite
                 object value = cmd.ExecuteScalar(); // can't be null
                 return value != null ? value.ToString() : string.Empty;
             }
+        }
+
+        private static delegate_function_scalar CreateScalarFunction(Context ctx, IPhpCallable callback)
+        {
+            return (sqliteContext, data, args) =>
+            {
+                var phpArgs = args
+                    .Select(AsPhp)
+                    .ToArray();
+                var ret = callback.Invoke(ctx, phpArgs);
+
+                
+                if (ret.IsLong(out var longValue))
+                {
+                    raw.sqlite3_result_int64(sqliteContext, longValue);
+                }
+                else if (ret.IsInteger())
+                {
+                    raw.sqlite3_result_int(sqliteContext, ret.ToInt());
+                }
+                else if (ret.IsDouble(out var doubleValue))
+                {
+                    raw.sqlite3_result_double(sqliteContext, doubleValue);
+                }
+                else if (ret.IsString(out var stringValue))
+                {
+                    var foo = stringValue;
+                    raw.sqlite3_result_text(sqliteContext, foo);
+                }
+                else
+                {
+                    raw.sqlite3_result_null(sqliteContext);
+                }
+            };
+        }
+        
+        private static PhpValue AsPhp(sqlite3_value value)
+        {
+            switch (raw.sqlite3_value_type(value))
+            {
+                case raw.SQLITE_INTEGER:
+                    return PhpValue.FromClr(raw.sqlite3_value_int(value));
+                case raw.SQLITE_TEXT:
+                    return PhpValue.FromClr(raw.sqlite3_value_text(value).utf8_to_string());
+                case raw.SQLITE_FLOAT:
+                    return PhpValue.FromClr(raw.sqlite3_value_double(value));
+                case raw.SQLITE_NULL:
+                    return PhpValue.Null;
+            }
+            throw new NotImplementedException();
         }
     }
 }
