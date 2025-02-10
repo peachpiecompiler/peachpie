@@ -88,7 +88,21 @@ namespace Peachpie.Library.PDO.Sqlite
         }
         private static PhpValue sqliteCreateCollation(Context ctx, PDO pdo, PhpArray arguments)
         {
-            return PhpValue.False;
+            if (pdo.GetCurrentConnection<SqliteConnection>() is not {} connection)
+                return PhpValue.False;
+            
+            
+            var name = arguments[0].String;
+            var callable = arguments[1].AsCallable();
+            
+            var handle = connection.Handle;
+            raw.sqlite3_create_collation(
+                handle,
+                name,
+                null,
+                CreateSortFunction(ctx, callable)
+            );
+            return PhpValue.True;
         }
 
         private static PhpValue sqliteCreateFunction(Context ctx, PDO pdo, PhpArray arguments)
@@ -177,6 +191,24 @@ namespace Peachpie.Library.PDO.Sqlite
                 
                 var ret = callback.Invoke(ctx, state.Value, state.RowIndex);
                 SetSqliteReturnValue(ret, sqliteContext);
+            };
+        }
+        
+        private static strdelegate_collation CreateSortFunction(Context ctx, IPhpCallable callback)
+        {
+            return (data, left, right) =>
+            {
+                var ret = callback.Invoke(
+                    ctx,
+                    PhpValue.FromClr(left),
+                    PhpValue.FromClr(right)
+                );
+                if (ret.IsInteger())
+                {
+                    return ret.ToInt();
+                }
+
+                return 0;
             };
         }
         
