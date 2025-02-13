@@ -145,7 +145,7 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     /// <summary>
     /// Binds and calls the closure.
     /// </summary>
-    public PhpValue call(object newthis, params PhpValue[] parameters)
+    public PhpValue call(object newthis, params ReadOnlySpan<PhpValue> parameters)
     {
         return bindTo(newthis).__invoke(parameters);
     }

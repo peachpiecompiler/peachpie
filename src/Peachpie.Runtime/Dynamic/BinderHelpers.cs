@@ -1364,6 +1364,23 @@ namespace Pchp.Core.Dynamic
                 // NOTE: instead of "HasToBeCalledNonVirtually" magic above, it would be great to just use ".call" opcode always (as of now Linq cannot do that)
 
                 //
+                var methodParameterTypes = method.GetParametersType();
+
+                for (var i = 0; i < methodParameterTypes.Length; i++)
+                {
+                    var targetType = methodParameterTypes[i];
+                    var source = boundargs[i];
+                    
+                    if (source.Type == targetType)
+                        continue;
+
+                    if (source.Type == typeof(ReadOnlySpan<PhpValue>) && targetType == typeof(PhpValue[]))
+                        boundargs[i] = Expression.Call(boundargs[i], _spanAsArray);
+                    else if(source.Type == typeof(PhpValue[]) && targetType == typeof(ReadOnlySpan<PhpValue>))
+                        boundargs[i] = Expression.Call(null, _arrayAsSpan, boundargs[i]);
+
+                }
+                
                 methodcall = Expression.Call(instance, (MethodInfo)method, boundargs);
             }
 
@@ -1439,9 +1456,20 @@ namespace Pchp.Core.Dynamic
                     expressions.AsReadOnly()
                 );
             }
-
+            
             return methodcall;
         }
+
+        private static MethodInfo _arrayAsSpan = typeof(MemoryExtensions)
+            .GetMethods()
+            .Where(x => x.Name == nameof(MemoryExtensions.AsSpan))
+            .Where(x => x.IsGenericMethodDefinition)
+            .Select(x => x.MakeGenericMethod(typeof(PhpValue)))
+            .Where(x => x.GetParametersType() is { Length: 1 } parametersType && parametersType[0] == typeof(PhpValue[]))
+            .Single()!;
+        
+        private static MethodInfo _spanAsArray = typeof(ReadOnlySpan<PhpValue>)
+            .GetMethod(nameof(ReadOnlySpan<PhpValue>.ToArray))!;
 
         /// <summary>
         /// Determines whether we has to use ".call" opcode explicitly.

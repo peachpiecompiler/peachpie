@@ -445,6 +445,11 @@ namespace Pchp.Core.Dynamic
                     .GetProperty(nameof(ReadOnlySpan<PhpValue>.Length));
                 private readonly MethodInfo _spanItemGetter = typeof(ArgsSpanBinder)
                     .GetMethod(nameof(GetFromSpan), BindingFlags.Static | BindingFlags.NonPublic)!;
+
+                private readonly MethodInfo _slice = typeof(ReadOnlySpan<PhpValue>)
+                    .GetMethods()
+                    .Where(x => x.Name == nameof(ReadOnlySpan<PhpValue>.Slice))
+                    .Single(x => x.GetParameters() is { Length: 1 });
                 
                 
                 /// <summary>
@@ -571,74 +576,14 @@ namespace Pchp.Core.Dynamic
 
                 public override Expression BindParams(int fromarg, Type element_type)
                 {
-                    /* 
-                     * length = argc - fromarg;
-                     * IF (length > 0)
-                     *   Array.Copy(values, argv, fromarg)
-                     * ELSE
-                     *   Array.Empty()
-                     */
-
-                    /*
-                     */
-
-                    var var_length = Expression.Variable(typeof(int), "params_length");
-                    var var_array = Expression.Variable(element_type.MakeArrayType(), "params_array");
-
-                    //
-                    Expression expr_emptyarr = Expression.Property(null, typeof(ReadOnlySpan<PhpValue>), nameof(ReadOnlySpan<PhpValue>.Empty));
-                    Expression expr_newarr = Expression.Assign(var_array, Expression.NewArrayBounds(element_type, var_length));  // array = new [length];
-
                     //if (element_type == _argsarray.Type.GetElementType())
-                    if (true)
-                    {
-                        if (fromarg == 0)
-                        {
-                            // return argv;
-                            return _argsarray;
-                        }
-                        else
-                        {
-                            // static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-                            var array_copy = typeof(Array).GetMethod("Copy", typeof(Array), typeof(int), typeof(Array), typeof(int), typeof(int)); // TODO: to cache
-
-                            expr_newarr = Expression.Block(
-                                expr_newarr,
-                                Expression.Call(array_copy, _argsarray, Expression.Constant(fromarg), var_array, Cache.Expressions.Create(0), var_length),   // Array.Copy(argv, fromarg, array, 0, length)
-                                var_array
-                                );
-                        }
-                    }
-                    else
-                    {
-                        var expr = Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length));
-
-                        /* newarr = new T[length];
-                         * while (--length >= 0) newarr[length] = convert(argv[fromarg + length]);
-                         * lblend: return newarr;
-                         */
-                        var lblend = Expression.Label("lblend");
-                        expr_newarr = Expression.Block(var_array.Type,
-                            expr_newarr,
-                            Expression.Loop(
-                                Expression.IfThenElse(
-                                    Expression.GreaterThanOrEqual(Expression.PreDecrementAssign(var_length), Cache.Expressions.Create(0)),
-                                    Expression.Assign(
-                                        Expression.ArrayAccess(var_array, var_length),
-                                        ConvertExpression.Bind(expr, element_type, _ctx)),
-                                    Expression.Break(lblend)
-                                    )),
-                            Expression.Label(lblend),
-                            var_array);
-                    }
-
-                    return Expression.Block(
-                        var_array.Type,
-                        new ParameterExpression[] { var_length, var_array },
-                        Expression.Assign(var_length, Expression.Subtract(BindArgsCount(), Expression.Constant(fromarg))),  // length = argc - fromarg;
-                        Expression.Condition(
-                            Expression.GreaterThan(var_length, Cache.Expressions.Create(0)), // return (length > 0) ? newarr : emptyarr;
-                            expr_newarr, expr_emptyarr));
+                    //if (true)
+                    if (fromarg == 0)
+                        return _argsarray;
+                    return Expression.Call(
+                        _argsarray,
+                        _slice,
+                        Cache.Expressions.Create(fromarg));
                 }
 
                 public override Expression CreatePreamble(List<ParameterExpression> variables)
