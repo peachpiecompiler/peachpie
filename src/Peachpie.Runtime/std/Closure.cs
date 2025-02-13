@@ -174,12 +174,12 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
             //
             parameters.CopyTo(newargs.Slice(1 + @static.Count, parameters.Length));
 
-            return _callable.InvokeCore(_ctx, newargs);
+            return _callable.Invoke(_ctx, newargs);
         }
         else
         {
             Debug.Assert(@static.Count == 0);
-            return _callable.InvokeCore(_ctx, parameters);
+            return _callable.Invoke(_ctx, parameters);
         }
     }
 
@@ -188,7 +188,7 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     /// </summary>
     PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments) => __invoke(arguments);
     
-    PhpValue IPhpCallable.InvokeCore(Context ctx, params ReadOnlySpan<PhpValue> arguments) => __invoke(arguments);
+    PhpValue IPhpCallable.Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments) => __invoke(arguments);
 
     PhpValue IPhpCallable.ToPhpValue() => PhpValue.FromClass(this);
 }

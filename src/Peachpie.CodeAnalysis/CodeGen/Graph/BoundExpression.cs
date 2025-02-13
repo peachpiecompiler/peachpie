@@ -2974,13 +2974,19 @@ namespace Pchp.CodeAnalysis.Semantics
                 // better to use PhpCallback.Invoke instead of call sites
 
                 // Template: NameExpression.AsCallback().Invoke(Context, PhpValue[])
+                // TODO: Replace with call to .InvokeCore(Context, ReadOnlySpan<PhpValue>)
 
                 cg.EmitConvert(_name.NameExpression, cg.CoreTypes.IPhpCallable);    // (IPhpCallable)Name
                 cg.EmitLoadContext();       // Context
                 cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask)); // PhpValue[]
 
+                static bool IsArrayOverload(MethodSymbol method)
+                {
+                    return method.Parameters[1].Type.IsArray();
+                }
+                
                 return cg.EmitMethodAccess(
-                    stack: cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.IPhpCallable.Symbol.LookupMember<MethodSymbol>("Invoke")),
+                    stack: cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.IPhpCallable.Symbol.LookupMember<MethodSymbol>("Invoke", IsArrayOverload)),
                     method: null,
                     access: this.Access);
             }

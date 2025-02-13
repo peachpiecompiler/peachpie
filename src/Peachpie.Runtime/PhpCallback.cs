@@ -19,7 +19,10 @@ namespace Pchp.Core
         /// <summary>
         /// Invokes the object with given arguments.
         /// </summary>
-        PhpValue Invoke(Context ctx, params PhpValue[] arguments);
+        PhpValue Invoke(Context ctx, params PhpValue[] arguments)
+        {
+            return Invoke(ctx, arguments.AsSpan());
+        }
 
         /// <summary>
         /// Gets PHP value representing the callback.
@@ -29,7 +32,7 @@ namespace Pchp.Core
         /// <summary>
         /// Invokes the object with given arguments.
         /// </summary>
-        PhpValue InvokeCore(Context ctx, params ReadOnlySpan<PhpValue> arguments)
+        PhpValue Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments)
         {
             return Invoke(ctx, arguments.ToArray());
         }
@@ -552,7 +555,7 @@ namespace Pchp.Core
         /// <summary>
         /// Invokes the callback with given arguments.
         /// </summary>
-        public PhpValue InvokeCore(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Bind(ctx)(ctx, arguments);
+        public PhpValue Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Bind(ctx)(ctx, arguments);
 
         /// <summary>
         /// Gets value representing the callback.
@@ -563,10 +566,8 @@ namespace Pchp.Core
         #endregion
     }
 
-    public static class PhpCallableExtension
+    internal static class PhpCallableExtension
     {
-        public static PhpValue Invoke(this IPhpCallable callable, Context ctx, params ReadOnlySpan<PhpValue> arguments) => callable.InvokeCore(ctx, arguments);
-        
         /// <summary>
         /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> by fixing the target argument.
         /// </summary>

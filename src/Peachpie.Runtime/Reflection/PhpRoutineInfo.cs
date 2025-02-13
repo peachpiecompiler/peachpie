@@ -103,7 +103,7 @@ namespace Pchp.Core.Reflection
 
         PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments) => Invoke(ctx, Target, arguments);
         
-        PhpValue IPhpCallable.InvokeCore(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Invoke(ctx, Target, arguments);
+        PhpValue IPhpCallable.Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Invoke(ctx, Target, arguments);
 
         PhpValue IPhpCallable.ToPhpValue() => PhpValue.Null;
 
