@@ -2,6 +2,7 @@
 using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -24,15 +25,23 @@ namespace Pchp.Core
         /// Gets PHP value representing the callback.
         /// </summary>
         PhpValue ToPhpValue();
-    }
 
+        /// <summary>
+        /// Invokes the object with given arguments.
+        /// </summary>
+        PhpValue InvokeCore(Context ctx, params ReadOnlySpan<PhpValue> arguments)
+        {
+            return Invoke(ctx, arguments.ToArray());
+        }
+    }
+    
     /// <summary>
     /// Delegate for dynamic routine invocation.
     /// </summary>
     /// <param name="ctx">Current runtime context. Cannot be <c>null</c>.</param>
     /// <param name="arguments">List of arguments to be passed to called routine.</param>
     /// <returns>Result of the invocation.</returns>
-    public delegate PhpValue PhpCallable(Context ctx, params PhpValue[] arguments);
+    public delegate PhpValue PhpCallable(Context ctx, params ReadOnlySpan<PhpValue> arguments);
 
     /// <summary>
     /// Delegate for dynamic method invocation.
@@ -41,7 +50,7 @@ namespace Pchp.Core
     /// <param name="target">For instance methods, the target object.</param>
     /// <param name="arguments">List of arguments to be passed to called routine.</param>
     /// <returns>Result of the invocation.</returns>
-    internal delegate PhpValue PhpInvokable(Context ctx, object target, params PhpValue[] arguments);
+    internal delegate PhpValue PhpInvokable(Context ctx, object target, params ReadOnlySpan<PhpValue> arguments);
 
     /// <summary>
     /// Callable object representing callback to a routine.
@@ -71,7 +80,7 @@ namespace Pchp.Core
         /// Resolved routine to be invoked.
         /// </summary>
         protected PhpCallable _lazyResolved;
-
+        
         /// <summary>
         /// Gets value indicating the callback is valid.
         /// </summary>
@@ -207,6 +216,8 @@ namespace Pchp.Core
 
                 return null;
             }
+            
+           
 
             protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
             {
@@ -215,6 +226,7 @@ namespace Pchp.Core
             }
 
             PhpTypeInfo ResolveType(Context ctx) => ctx.ResolveType(_class, _callerCtx, true);
+
 
             protected override PhpCallable BindCore(Context ctx)
             {
@@ -230,7 +242,7 @@ namespace Pchp.Core
                     tinfo = @static;
                 }
 
-                return BindCore(tinfo);
+                return BindCore(tinfo).ToLegacyCallable();
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as MethodCallback);
@@ -369,7 +381,7 @@ namespace Pchp.Core
 
                 //
 
-                return BindCore(ctx, tinfo, target);
+                return BindCore(ctx, tinfo, target).ToLegacyCallable();
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as ArrayCallback);
@@ -396,7 +408,7 @@ namespace Pchp.Core
 
             public override PhpValue ToPhpValue() => PhpValue.Null;
 
-            protected override PhpCallable BindCore(Context ctx) => (_1, _2) => PhpValue.Null;
+            protected override PhpCallable BindCore(Context ctx) => (_, _) => PhpValue.Null;
 
             public override bool IsValid => true;
 
@@ -480,6 +492,7 @@ namespace Pchp.Core
         /// Ensures the routine delegate is bound.
         /// </summary>
         private PhpCallable Bind(Context ctx) => _lazyResolved ?? BindNew(ctx);
+        
 
         /// <summary>
         /// Binds the routine delegate.
@@ -509,12 +522,18 @@ namespace Pchp.Core
             throw PhpException.ErrorException(ErrResources.invalid_callback);
         }
 
+        protected virtual PhpValue InvokeError(Context ctx, ReadOnlySpan<PhpValue> arguments)
+        {
+            return InvokeError(ctx, arguments.ToArray());
+        }
+
+        
         /// <summary>
         /// Performs binding to the routine delegate.
         /// </summary>
         /// <returns>Actual delegate or <c>null</c> if routine cannot be bound.</returns>
         protected abstract PhpCallable BindCore(Context ctx);
-
+        
         /// <summary>
         /// Binds callback to given late static bound type.
         /// </summary>
@@ -528,6 +547,12 @@ namespace Pchp.Core
         /// Invokes the callback with given arguments.
         /// </summary>
         public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Bind(ctx)(ctx, arguments);
+        
+        
+        /// <summary>
+        /// Invokes the callback with given arguments.
+        /// </summary>
+        public PhpValue InvokeCore(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Bind(ctx)(ctx, arguments);
 
         /// <summary>
         /// Gets value representing the callback.
@@ -538,18 +563,32 @@ namespace Pchp.Core
         #endregion
     }
 
-    internal static class PhpCallableExtension
+    public static class PhpCallableExtension
     {
+        public static PhpValue Invoke(this IPhpCallable callable, Context ctx, params ReadOnlySpan<PhpValue> arguments) => callable.InvokeCore(ctx, arguments);
+        
         /// <summary>
         /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> by fixing the target argument.
         /// </summary>
-        public static PhpCallable Bind(this PhpInvokable invokable, object target) => (ctx, arguments) => invokable(ctx, target, arguments);
-
+        internal static PhpCallable Bind(this PhpInvokable invokable, object target) => (ctx, arguments) => invokable(ctx, target, arguments);
+        
         /// <summary>
         /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> while wrapping arguments to a single argument of type <see cref="PhpArray"/>.
         /// </summary>
-        public static PhpCallable BindMagicCall(this PhpInvokable invokable, object target, string name)
-            => (ctx, arguments) => invokable(ctx, target, new[] { (PhpValue)name, (PhpValue)PhpArray.New(arguments) });
+        internal static PhpCallable BindMagicCall(this PhpInvokable invokable, object target, string name)
+            => (ctx, arguments) => 
+            {
+                using var buffer = MemoryPool<PhpValue>.Shared.Rent(arguments.Length + 1);
+                var curryArgs = buffer.Memory.Span.Slice(0, arguments.Length + 1);
+                buffer.Memory.Span[0] = name;
+                arguments.CopyTo(curryArgs[1..]);
+                return invokable(ctx, target, curryArgs);
+            };
+
+        internal static PhpCallable ToLegacyCallable(this PhpCallable callable)
+        {
+            return callable;
+        }
     }
 
     /// <summary>

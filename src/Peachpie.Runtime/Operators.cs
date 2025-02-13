@@ -2508,6 +2508,7 @@ namespace Pchp.Core
             }
 
             public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => _invokable.Invoke(ctx, _target, arguments);
+            public PhpValue InvokeCore(Context ctx, params ReadOnlySpan<PhpValue> arguments) => _invokable.Invoke(ctx, _target, arguments);
 
             public PhpValue ToPhpValue() => PhpValue.Null;
         }

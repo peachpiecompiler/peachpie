@@ -439,8 +439,14 @@ namespace Pchp.Core.Dynamic
 
             #region ArgsArrayBinder
 
-            internal sealed class ArgsArrayBinder : ArgumentsBinder
+            internal sealed class ArgsSpanBinder : ArgumentsBinder
             {
+                private readonly PropertyInfo _spanLength = typeof(ReadOnlySpan<PhpValue>)
+                    .GetProperty(nameof(ReadOnlySpan<PhpValue>.Length));
+                private readonly MethodInfo _spanItemGetter = typeof(ArgsSpanBinder)
+                    .GetMethod(nameof(GetFromSpan), BindingFlags.Static | BindingFlags.NonPublic)!;
+                
+                
                 /// <summary>
                 /// Expression representing array of input arguments.
                 /// </summary>
@@ -451,11 +457,11 @@ namespace Pchp.Core.Dynamic
                 /// </summary>
                 ParameterExpression _lazyArgc = null;
 
-                public ArgsArrayBinder(Expression ctx, Expression argsarray)
+                public ArgsSpanBinder(Expression ctx, Expression argsarray)
                     : base(ctx)
                 {
                     if (argsarray == null) throw new ArgumentNullException();
-                    if (!argsarray.Type.IsArray) throw new ArgumentException();
+                    if (argsarray.Type != typeof(ReadOnlySpan<PhpValue>)) throw new ArgumentException();
 
                     _argsarray = argsarray;
                 }
@@ -467,7 +473,8 @@ namespace Pchp.Core.Dynamic
                         _lazyArgc = Expression.Variable(typeof(int), "argc");
 
                         // argc = argv.Length;
-                        _lazyInitBlock.Add(Expression.Assign(_lazyArgc, Expression.ArrayLength(_argsarray)));
+                        var length = Expression.Property(_argsarray, _spanLength);
+                        _lazyInitBlock.Add(Expression.Assign(_lazyArgc, length));
                     }
 
                     return _lazyArgc;
@@ -484,7 +491,7 @@ namespace Pchp.Core.Dynamic
                     {
                         value = new TmpVarValue();
 
-                        value.TrueInitializer = Expression.ArrayIndex(_argsarray, Expression.Constant(srcarg));
+                        value.TrueInitializer = Expression.Call(_spanItemGetter, _argsarray, Expression.Constant(srcarg));
                         value.FalseInitializer = ConvertExpression.BindDefault(value.TrueInitializer.Type); // ~ default(_argsarray.Type.GetElementType())
                         value.Expression = Expression.Variable(value.TrueInitializer.Type, "arg_" + srcarg);
 
@@ -579,10 +586,11 @@ namespace Pchp.Core.Dynamic
                     var var_array = Expression.Variable(element_type.MakeArrayType(), "params_array");
 
                     //
-                    Expression expr_emptyarr = BinderHelpers.EmptyArray(element_type);
+                    Expression expr_emptyarr = Expression.Property(null, typeof(ReadOnlySpan<PhpValue>), nameof(ReadOnlySpan<PhpValue>.Empty));
                     Expression expr_newarr = Expression.Assign(var_array, Expression.NewArrayBounds(element_type, var_length));  // array = new [length];
 
-                    if (element_type == _argsarray.Type.GetElementType())
+                    //if (element_type == _argsarray.Type.GetElementType())
+                    if (true)
                     {
                         if (fromarg == 0)
                         {
@@ -644,6 +652,8 @@ namespace Pchp.Core.Dynamic
 
                     return body;
                 }
+
+                private static PhpValue GetFromSpan(ReadOnlySpan<PhpValue> span, int index) => span[index];
             }
 
             #endregion
@@ -977,7 +987,7 @@ namespace Pchp.Core.Dynamic
         {
             for (; ; )
             {
-                var result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsArrayBinder(ctx, argsarray), isStaticCallSyntax, lateStaticType);
+                var result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsSpanBinder(ctx, argsarray), isStaticCallSyntax, lateStaticType);
                 if (result != null)
                 {
                     return result;

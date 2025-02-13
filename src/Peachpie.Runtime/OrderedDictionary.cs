@@ -1069,6 +1069,22 @@ namespace Pchp.Core
             }
             // FastEnumerator does not have to be disposed
         }
+        
+        /// <summary>
+        /// Copy values into given array.
+        /// </summary>
+        /// <param name="array">Target array.</param>
+        /// <param name="arrayIndex">Index where to start copying in <paramref name="array"/>.</param>
+        public void CopyTo(Span<TValue> array)
+        {
+            var enumerator = GetEnumerator();
+            var arrayIndex = 0;
+            while (enumerator.MoveNext())
+            {
+                array[arrayIndex++] = enumerator.CurrentValue;
+            }
+            // FastEnumerator does not have to be disposed
+        }
 
         #endregion
 

@@ -32,7 +32,7 @@ namespace Pchp.Core
         /// <param name="function">Function name valid within current runtime context.</param>
         /// <param name="arguments">Arguments to be passed to the function call.</param>
         /// <returns>Returns value given from the function call.</returns>
-        public PhpValue Call(string function, params PhpValue[] arguments) => PhpCallback.Create(function).Invoke(this, arguments);
+        public PhpValue Call(string function, params ReadOnlySpan<PhpValue> arguments) => PhpCallback.Create(function).Invoke(this, arguments);
 
         /// <summary>
         /// Call a function by its name dynamically.
@@ -52,7 +52,15 @@ namespace Pchp.Core
         /// <typeparam name="T">Object type.</typeparam>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>New instance of <typeparamref name="T"/>.</returns>
-        public T Create<T>(params PhpValue[] arguments) => (T)TypeInfoHolder<T>.TypeInfo.Creator(this, arguments);
+        public T Create<T>(params PhpValue[] arguments) => Create<T>(arguments.AsSpan());
+        
+        /// <summary>
+        /// Creates an instance of a type dynamically with constructor overload resolution.
+        /// </summary>
+        /// <typeparam name="T">Object type.</typeparam>
+        /// <param name="arguments">Arguments to be passed to the constructor.</param>
+        /// <returns>New instance of <typeparamref name="T"/>.</returns>
+        public T Create<T>(params ReadOnlySpan<PhpValue> arguments) => (T)TypeInfoHolder<T>.TypeInfo.Creator(this, arguments);
 
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.
@@ -64,13 +72,25 @@ namespace Pchp.Core
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>New instance of <typeparamref name="T"/>.</returns>
         public T Create<T>([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, params PhpValue[] arguments)
+            => Create<T>(caller, arguments.AsSpan());
+        
+        /// <summary>
+        /// Creates an instance of a type dynamically with constructor overload resolution.
+        /// </summary>
+        /// <typeparam name="T">Object type.</typeparam>
+        /// <param name="caller">
+        /// Class context for resolving constructors visibility.
+        /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
+        /// <param name="arguments">Arguments to be passed to the constructor.</param>
+        /// <returns>New instance of <typeparamref name="T"/>.</returns>
+        public T Create<T>([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, params ReadOnlySpan<PhpValue> arguments)
             => (T)TypeInfoHolder<T>.TypeInfo.ResolveCreator(Type.GetTypeFromHandle(caller))(this, arguments);
 
         /// <summary>
         /// Creates an instance of a type dynamically.
         /// </summary>
         /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
-        public object Create(string classname) => Create(classname, Array.Empty<PhpValue>());
+        public object Create(string classname) => Create(classname, ReadOnlySpan<PhpValue>.Empty);
 
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.
@@ -79,7 +99,7 @@ namespace Pchp.Core
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>The object instance.</returns>
         /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
-        public object Create(string classname, params object[] arguments) => Create(classname, PhpValue.FromClr(arguments));
+        public object Create(string classname, params object[] arguments) => Create(default(RuntimeTypeHandle), classname, PhpValue.FromClr(arguments));
 
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.
@@ -88,7 +108,16 @@ namespace Pchp.Core
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>The object instance.</returns>
         /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
-        public object Create(string classname, params PhpValue[] arguments) => Create(default(RuntimeTypeHandle), classname, arguments);
+        public object Create(string classname, params PhpValue[] arguments) => Create(default(RuntimeTypeHandle), classname, arguments.AsSpan());
+        
+        /// <summary>
+        /// Creates an instance of a type dynamically with constructor overload resolution.
+        /// </summary>
+        /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
+        /// <param name="arguments">Arguments to be passed to the constructor.</param>
+        /// <returns>The object instance.</returns>
+        /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
+        public object Create(string classname, params ReadOnlySpan<PhpValue> arguments) => Create(default(RuntimeTypeHandle), classname, arguments);
 
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.
@@ -101,6 +130,22 @@ namespace Pchp.Core
         /// <returns>The object instance.</returns>
         /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
         public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, string classname, params PhpValue[] arguments)
+        {
+            var tinfo = this.GetDeclaredTypeOrThrow(classname, true);
+            return Create(caller, tinfo, arguments.AsSpan());
+        }
+        
+        /// <summary>
+        /// Creates an instance of a type dynamically with constructor overload resolution.
+        /// </summary>
+        /// <param name="caller">
+        /// Class context for resolving constructors visibility.
+        /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
+        /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
+        /// <param name="arguments">Arguments to be passed to the constructor.</param>
+        /// <returns>The object instance.</returns>
+        /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
+        public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, string classname, params ReadOnlySpan<PhpValue> arguments)
         {
             var tinfo = this.GetDeclaredTypeOrThrow(classname, true);
             return Create(caller, tinfo, arguments);
@@ -117,6 +162,21 @@ namespace Pchp.Core
         /// <returns>The object instance.</returns>
         /// <exception cref="ArgumentNullException">If provided <paramref name="tinfo"/> is <c>null</c>.</exception>
         public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpTypeInfo tinfo, params PhpValue[] arguments)
+        {
+            return Create(caller, tinfo, arguments.AsSpan());
+        }
+        
+        /// <summary>
+        /// Creates an instance of a type dynamically with constructor overload resolution.
+        /// </summary>
+        /// <param name="caller">
+        /// Class context for resolving constructors visibility.
+        /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
+        /// <param name="tinfo">Type to be instantiated.</param>
+        /// <param name="arguments">Arguments to be passed to the constructor.</param>
+        /// <returns>The object instance.</returns>
+        /// <exception cref="ArgumentNullException">If provided <paramref name="tinfo"/> is <c>null</c>.</exception>
+        public object Create([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, PhpTypeInfo tinfo, params ReadOnlySpan<PhpValue> arguments)
         {
             if (tinfo != null)
             {

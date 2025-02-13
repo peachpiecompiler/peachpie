@@ -620,7 +620,7 @@ namespace Pchp.Core.Reflection
     /// <param name="ctx">Current runtime context. Cannot be <c>null</c>.</param>
     /// <param name="arguments">List of arguments to be passed to called constructor.</param>
     /// <returns>Object instance.</returns>
-    public delegate object TObjectCreator(Context ctx, params PhpValue[] arguments);
+    public delegate object TObjectCreator(Context ctx, params ReadOnlySpan<PhpValue> arguments);
 
     #endregion
 

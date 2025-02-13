@@ -1543,7 +1543,7 @@ namespace Pchp.Core.Dynamic
             Debug.Assert(targets.All(t => t.IsStatic), "Only static methods can be bound to PhpCallable delegate.");
 
             // (Context ctx, PhpValue[] arguments)
-            var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };
+            var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(ReadOnlySpan<PhpValue>), "argv") };
 
             // invoke targets
             var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), null, targets, ps[0], ps[1], true);
@@ -1594,7 +1594,7 @@ namespace Pchp.Core.Dynamic
             var ps = new ParameterExpression[] {
                 Expression.Parameter(typeof(Context), "ctx"),
                 Expression.Parameter(typeof(object), "target"),
-                Expression.Parameter(typeof(PhpValue[]), "argv") };
+                Expression.Parameter(typeof(ReadOnlySpan<PhpValue>), "argv") };
 
             // invoke targets
             var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), ps[1], methods, ps[0], ps[2], true, lateStaticType);
@@ -1610,7 +1610,7 @@ namespace Pchp.Core.Dynamic
             Debug.Assert(ctors.All(ctor => ctor?.DeclaringType == type));
 
             // (Context ctx, PhpValue[] arguments)
-            var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };
+            var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(ReadOnlySpan<PhpValue>), "argv") };
 
             if (ctors.Length != 0)
             {

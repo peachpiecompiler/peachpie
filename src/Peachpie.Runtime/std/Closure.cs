@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Pchp.Core;
@@ -152,30 +153,33 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     /// <summary>
     /// Magic method <c>__invoke</c> invokes the anonymous function with given arguments.
     /// </summary>
-    public PhpValue __invoke(params PhpValue[] parameters)
+    public PhpValue __invoke(params ReadOnlySpan<PhpValue> parameters)
     {
         if (_callable is PhpAnonymousRoutineInfo)
         {
             // { Closure, ... @static, ... parameters }
 
-            var newargs = new PhpValue[1 + @static.Count + parameters.Length];
+            var newArgsLength = 1 + @static.Count + parameters.Length;
+            using var newArgsBuffer = MemoryPool<PhpValue>.Shared.Rent(newArgsLength);
+            var newargs = newArgsBuffer.Memory.Span[..newArgsLength];
 
             newargs[0] = PhpValue.FromClass(this);
 
             if (@static.Count != 0)
             {
-                @static.CopyValuesTo(newargs, 1);
+                
+                @static.CopyValuesTo(newargs[1..]);
             }
 
             //
-            Array.Copy(parameters, 0, newargs, 1 + @static.Count, parameters.Length);
+            parameters.CopyTo(newargs.Slice(1 + @static.Count, parameters.Length));
 
-            return _callable.Invoke(_ctx, newargs);
+            return _callable.InvokeCore(_ctx, newargs);
         }
         else
         {
             Debug.Assert(@static.Count == 0);
-            return _callable.Invoke(_ctx, parameters);
+            return _callable.InvokeCore(_ctx, parameters);
         }
     }
 
@@ -183,6 +187,8 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     /// Implementation of <see cref="IPhpCallable"/>, invokes the anonymous function.
     /// </summary>
     PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments) => __invoke(arguments);
+    
+    PhpValue IPhpCallable.InvokeCore(Context ctx, params ReadOnlySpan<PhpValue> arguments) => __invoke(arguments);
 
     PhpValue IPhpCallable.ToPhpValue() => PhpValue.FromClass(this);
 }
