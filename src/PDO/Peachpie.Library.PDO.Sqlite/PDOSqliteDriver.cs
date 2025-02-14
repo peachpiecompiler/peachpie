@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Linq;
 using Microsoft.Data.Sqlite;
 using Pchp.Core;
 using Peachpie.Library.PDO.Utilities;
 using SQLitePCL;
-using Convert = Pchp.Core.Convert;
 
 namespace Peachpie.Library.PDO.Sqlite
 {
@@ -168,13 +166,20 @@ namespace Peachpie.Library.PDO.Sqlite
                     sqliteContext.state = state = new StepFunctionState();
                 }
                 var rowIndex = state.RowIndex++;
+
+                // [state, rowIndex, ...args]
+                // TODO: stackalloc Span<PhpValue> instead (or rent Array), once we have IPhpCallable.Invoke( ctx, Span<PhpValue> ) // https://github.com/peachpiecompiler/peachpie/issues/1155
+                var phpArgs = new PhpValue[2 + args.Length];
+
+                phpArgs[0] = state.Value;
+                phpArgs[1] = rowIndex;
+
+                for (int i = 0; i < args.Length; i++)
+                {
+                    phpArgs[i + 2] = AsPhp(args[i]);
+                }
                 
-                var phpArgs = args
-                    .Select(AsPhp)
-                    .Prepend(PhpValue.FromClr(rowIndex))
-                    .Prepend(state.Value)
-                    .ToArray();
-                
+                //
                 var ret = callback.Invoke(ctx, phpArgs);
                 state.Value = ret;
             };
@@ -216,9 +221,14 @@ namespace Peachpie.Library.PDO.Sqlite
         {
             return (sqliteContext, data, args) =>
             {
-                var phpArgs = args
-                    .Select(AsPhp)
-                    .ToArray();
+                // TODO: stackalloc Span once we have IPhpCallable.Invoke( ctx, Span<PhpValue> ) // https://github.com/peachpiecompiler/peachpie/issues/1155 
+                var phpArgs = args.Length != 0 ? new PhpValue[args.Length] : Array.Empty<PhpValue>();
+                for (int i = 0; i < args.Length; i++)
+                {
+                    phpArgs[i] = AsPhp(args[i]);
+                }
+                
+                //
                 var ret = callback.Invoke(ctx, phpArgs);
                 SetSqliteReturnValue(ret, sqliteContext);
             };
@@ -254,21 +264,14 @@ namespace Peachpie.Library.PDO.Sqlite
             public int RowIndex { get; set; }
             public PhpValue Value { get; set; } = PhpValue.Null;
         }
-        
-        private static PhpValue AsPhp(sqlite3_value value)
+
+        private static PhpValue AsPhp(sqlite3_value value) => raw.sqlite3_value_type(value) switch
         {
-            switch (raw.sqlite3_value_type(value))
-            {
-                case raw.SQLITE_INTEGER:
-                    return PhpValue.FromClr(raw.sqlite3_value_int(value));
-                case raw.SQLITE_TEXT:
-                    return PhpValue.FromClr(raw.sqlite3_value_text(value).utf8_to_string());
-                case raw.SQLITE_FLOAT:
-                    return PhpValue.FromClr(raw.sqlite3_value_double(value));
-                case raw.SQLITE_NULL:
-                    return PhpValue.Null;
-            }
-            throw new NotImplementedException();
-        }
+            raw.SQLITE_INTEGER => raw.sqlite3_value_int(value),
+            raw.SQLITE_TEXT => raw.sqlite3_value_text(value).utf8_to_string(),
+            raw.SQLITE_FLOAT => raw.sqlite3_value_double(value),
+            raw.SQLITE_NULL => PhpValue.Null,
+            _ => throw new NotImplementedException($"sqlite3_value {raw.sqlite3_value_type(value)}")
+        };
     }
 }
