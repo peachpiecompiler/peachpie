@@ -39,7 +39,7 @@
     </Compile>
     <Compile Update="PhpResources.Designer.cs">
       <DesignTime>True</DesignTime>
-      <AutoGen>False</AutoGen>
+      <AutoGen>True</AutoGen>
       <DependentUpon>PhpResources.resx</DependentUpon>
     </Compile>
   </ItemGroup>

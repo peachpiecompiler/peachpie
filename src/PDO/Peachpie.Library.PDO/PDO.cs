@@ -133,12 +133,12 @@ namespace Peachpie.Library.PDO
         public bool inTransaction() => CurrentTransaction != null;
 
         /// <inheritDoc />
-        public PhpValue __call(string name, PhpArray arguments)
+        public PhpValue __call(Context ctx, string name, PhpArray arguments)
         {
             var method = Driver.TryGetExtensionMethod(name)
                 ?? throw new PDOException($"Method '{name}' not found"); // TODO: resources
 
-            return method.Invoke(this, arguments);
+            return method.Invoke(ctx, this, arguments);
         }
 
         /// <inheritDoc />
