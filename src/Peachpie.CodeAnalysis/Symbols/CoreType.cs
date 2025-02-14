@@ -139,7 +139,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpMemberVisibilityAttributeName = "PhpMemberVisibilityAttribute";
 
         public readonly CoreType
-            Context, Operators, Convert, StrictConvert, Comparison, StrictComparison, PhpException, PhpCallableToDelegate,
+            Context, Operators, Convert, StrictConvert, Comparison, StrictComparison, PhpException, PhpCallableToDelegate_T,
             ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, DefaultValueAttribute, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute, PhpCustomAtribute,
             NullableAttribute, NullableContextAttribute,
             ScriptDiedException,
@@ -150,8 +150,8 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys, Helpers, PhpValueConverter,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable, ImportValueAttribute, DummyFieldsOnlyCtor,
-            Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception, IDictionary,
-            RuntimeTypeHandle, RuntimeMethodHandle,
+            Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception, IDictionary, ReadOnlySpan_T,
+            RuntimeTypeHandle, RuntimeMethodHandle, MemoryExtensions,
             stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, Stringable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
 
         public CoreTypes(PhpCompilation compilation)
@@ -171,6 +171,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Exception = CreateFromFullName(WellKnownTypes.GetMetadataName(WellKnownType.System_Exception));
             RuntimeTypeHandle = Create(SpecialType.System_RuntimeTypeHandle);
             RuntimeMethodHandle = Create(SpecialType.System_RuntimeMethodHandle);
+            MemoryExtensions = CreateFromFullName("System.MemoryExtensions");
 
             PhpNumber = Create("PhpNumber");
             PhpAlias = Create("PhpAlias");
@@ -193,7 +194,8 @@ namespace Pchp.CodeAnalysis.Symbols
             Convert = Create("Convert");
             StrictConvert = Create("StrictConvert");
             PhpException = Create("PhpException");
-            PhpCallableToDelegate = Create("PhpCallableToDelegate`1"); // Arity 1
+            PhpCallableToDelegate_T = Create("PhpCallableToDelegate`1"); // Arity 1
+            ReadOnlySpan_T = CreateFromFullName("System.ReadOnlySpan"); // Arity 1
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create(PhpTraitAttributeName);
             PharAttribute = Create("PharAttribute");

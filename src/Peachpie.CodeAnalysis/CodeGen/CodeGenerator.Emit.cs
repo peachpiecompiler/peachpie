@@ -1089,13 +1089,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits <c>PhpValue[]</c> containing given <paramref name="args"/>.
         /// Argument unpacking is taken into account and flatterned.
         /// </summary>
-        internal void Emit_ArgumentsIntoArray(ImmutableArray<BoundArgument> args, PhpSignatureMask byrefargs)
+        internal void Emit_ArgumentsIntoReadOnlySpan(ImmutableArray<BoundArgument> args, PhpSignatureMask byrefargs)
         {
+            var readonlyspan_phpvalue = CoreTypes.ReadOnlySpan_T.Symbol.Construct(CoreTypes.PhpValue);
+
             if (args.Length == 0)
             {
-                Emit_EmptyArray(CoreTypes.PhpValue);
+                // default( ReadOnlySpan<PhpValue> )
+                EmitLoadDefaultOfValueType(readonlyspan_phpvalue);
+                return;
             }
-            else if (args.Last().IsUnpacking)   // => handle unpacking   // last argument must be unpacking otherwise unpacking is not allowed anywhere else
+            
+            //
+            if (args.Last().IsUnpacking)   // => handle unpacking   // last argument must be unpacking otherwise unpacking is not allowed anywhere else
             {
                 UnpackArgumentsIntoArray(args, byrefargs);
             }
@@ -1103,6 +1109,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Emit_NewArray(CoreTypes.PhpValue, args);
             }
+
+            // AsSpan<PhpValue>( <STACK> )
+            // TODO: rent array
+            var span_t = EmitCall(
+                ILOpCode.Call,
+                CoreMethods.Helpers.AsSpan_T.Symbol.Construct(CoreTypes.PhpValue.Symbol)
+            );
+
+            // ReadOnlySpan`1 op_implicit(Span`1)
+            this.EmitImplicitConversion(span_t, readonlyspan_phpvalue);
         }
 
         /// <summary>

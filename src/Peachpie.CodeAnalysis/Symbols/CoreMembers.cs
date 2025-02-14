@@ -253,6 +253,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly PhpValueHolder PhpValue;
         public readonly PhpAliasHolder PhpAlias;
         public readonly PhpArrayHolder PhpArray;
+        public readonly IPhpCallableHolder IPhpCallable;
         public readonly IPhpArrayHolder IPhpArray;
         public readonly IPhpConvertibleHolder IPhpConvertible;
         public readonly PhpNumberHolder PhpNumber;
@@ -275,6 +276,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpValue = new PhpValueHolder(types);
             PhpAlias = new PhpAliasHolder(types);
             PhpArray = new PhpArrayHolder(types);
+            IPhpCallable = new IPhpCallableHolder(types);
             IPhpArray = new IPhpArrayHolder(types);
             IPhpConvertible = new IPhpConvertibleHolder(types);
             PhpNumber = new PhpNumberHolder(types);
@@ -616,6 +618,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EmptyRuntimeTypeHandle = ct.Helpers.Field(nameof(EmptyRuntimeTypeHandle));
                 EmptyNullable_T = ct.Helpers.Method(nameof(EmptyNullable_T));
                 IsUserTypeDeclared_Context_PhpTypeInfo = ct.Helpers.Method("IsUserTypeDeclared", ct.Context, ct.PhpTypeInfo);
+                AsSpan_T = new CoreGenericMethod(ct.MemoryExtensions, "AsSpan", 1);
 
                 implicit_int_to_intstringkey = ct.Int32.CastImplicit(ct.IntStringKey);
                 implicit_long_to_intstringkey = ct.Long.CastImplicit(ct.IntStringKey);
@@ -624,9 +627,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreField EmptyRuntimeTypeHandle;
 
-            public readonly CoreMethod EmptyNullable_T;
-
-            public readonly CoreMethod IsUserTypeDeclared_Context_PhpTypeInfo;
+            public readonly CoreMethod
+                EmptyNullable_T,
+                IsUserTypeDeclared_Context_PhpTypeInfo,
+                AsSpan_T
+                ;
 
             public readonly CoreCast
                 implicit_int_to_intstringkey,
@@ -884,6 +889,17 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             MethodSymbol _Add_ByteArray;
+        }
+
+        public struct IPhpCallableHolder
+        {
+            public IPhpCallableHolder(CoreTypes ct)
+            {
+                Invoke_Context_ReadOnlySpanPhpValue = ct.IPhpCallable.Method("Invoke", ct.Context, ct.ReadOnlySpan_T);
+            }
+
+            public readonly CoreMethod
+                Invoke_Context_ReadOnlySpanPhpValue;
         }
 
         public struct IPhpArrayHolder

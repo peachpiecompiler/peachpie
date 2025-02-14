@@ -505,7 +505,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // PhpCallableToDelegate<to>.Get( IPhpCallable, Context ) : to
                 EmitConvertToIPhpCallable(from, fromHint);
                 EmitLoadContext();
-                var get_callable_ctx = (MethodSymbol)CoreTypes.PhpCallableToDelegate.Symbol.Construct(to).GetMembers("Get").SingleOrDefault();
+                var get_callable_ctx = (MethodSymbol)CoreTypes.PhpCallableToDelegate_T.Symbol.Construct(to).GetMembers("Get").SingleOrDefault();
                 EmitCall(ILOpCode.Callvirt, get_callable_ctx).Expect(to);
                 return;
             }

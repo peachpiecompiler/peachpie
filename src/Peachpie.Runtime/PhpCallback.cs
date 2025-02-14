@@ -24,13 +24,13 @@ namespace Pchp.Core
         /// <summary>
         /// Invokes the object with given arguments.
         /// </summary>
-        PhpValue Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments);
+        PhpValue Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Invoke(ctx, arguments.ToArray());
 
         /// <summary>
         /// Invokes the object with given arguments.
         /// </summary>
         [Obsolete("Use Invoke(Context, ReadOnlySpan<PhpValue>) instead.")]
-        sealed PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Invoke(ctx, arguments.AsSpan());
+        PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Invoke(ctx, arguments.AsSpan());
     }
     
     /// <summary>
@@ -217,8 +217,6 @@ namespace Pchp.Core
 
                 return null;
             }
-            
-           
 
             protected override PhpValue InvokeError(Context ctx, params ReadOnlySpan<PhpValue> arguments)
             {
@@ -227,7 +225,6 @@ namespace Pchp.Core
             }
 
             PhpTypeInfo ResolveType(Context ctx) => ctx.ResolveType(_class, _callerCtx, true);
-
 
             protected override PhpCallable BindCore(Context ctx)
             {

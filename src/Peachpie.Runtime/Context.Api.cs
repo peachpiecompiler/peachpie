@@ -52,6 +52,7 @@ namespace Pchp.Core
         /// <typeparam name="T">Object type.</typeparam>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>New instance of <typeparamref name="T"/>.</returns>
+        [Obsolete]
         public T Create<T>(params PhpValue[] arguments) => Create<T>(arguments.AsSpan());
         
         /// <summary>
@@ -71,6 +72,7 @@ namespace Pchp.Core
         /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>New instance of <typeparamref name="T"/>.</returns>
+        [Obsolete]
         public T Create<T>([ImportValue(ImportValueAttribute.ValueSpec.CallerClass)] RuntimeTypeHandle caller, params PhpValue[] arguments)
             => Create<T>(caller, arguments.AsSpan());
         
