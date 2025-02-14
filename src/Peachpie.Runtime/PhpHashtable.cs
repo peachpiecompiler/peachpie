@@ -920,7 +920,6 @@ namespace Pchp.Core
         /// Copy values of this array into single dimensional array.
         /// </summary>
         /// <param name="dst"></param>
-        /// <param name="offset"></param>
         public void CopyValuesTo(Span<PhpValue>/*!*/dst) => table.CopyTo(dst);
 
         /// <summary>

@@ -564,9 +564,6 @@ namespace Pchp.Library
                 PhpException.InvalidArgumentType(nameof(options), "array|int");
                 return PhpValue.False;
             }
-
-            PhpException.FunctionNotSupported(nameof(filter_var_array));
-            return PhpValue.False;
         }
 
         #endregion
