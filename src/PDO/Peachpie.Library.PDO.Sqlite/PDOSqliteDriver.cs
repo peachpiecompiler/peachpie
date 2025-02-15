@@ -159,6 +159,7 @@ namespace Peachpie.Library.PDO.Sqlite
 
         private static delegate_function_aggregate_step CreateAggregateStep(Context ctx, IPhpCallable callback)
         {
+            
             return (sqliteContext, data, args) =>
             {
                 if (sqliteContext.state is not StepFunctionState state)
@@ -168,19 +169,21 @@ namespace Peachpie.Library.PDO.Sqlite
                 var rowIndex = state.RowIndex++;
 
                 // [state, rowIndex, ...args]
-                // TODO: stackalloc Span<PhpValue> instead (or rent Array), once we have IPhpCallable.Invoke( ctx, Span<PhpValue> ) // https://github.com/peachpiecompiler/peachpie/issues/1155
-                var phpArgs = new PhpValue[2 + args.Length];
+                if (state.ArgumentBuffer.Length != 2 + args.Length)
+                {
+                    state.ArgumentBuffer = new PhpValue[2 + args.Length];
+                }
 
-                phpArgs[0] = state.Value;
-                phpArgs[1] = rowIndex;
+                state.ArgumentBuffer[0] = state.Value;
+                state.ArgumentBuffer[1] = rowIndex;
 
                 for (int i = 0; i < args.Length; i++)
                 {
-                    phpArgs[i + 2] = AsPhp(args[i]);
+                    state.ArgumentBuffer[i + 2] = AsPhp(args[i]);
                 }
                 
                 //
-                var ret = callback.Invoke(ctx, phpArgs);
+                var ret = callback.Invoke(ctx, state.ArgumentBuffer);
                 state.Value = ret;
             };
         }
@@ -219,18 +222,30 @@ namespace Peachpie.Library.PDO.Sqlite
         
         private static delegate_function_scalar CreateScalarFunction(Context ctx, IPhpCallable callback)
         {
+            
             return (sqliteContext, data, args) =>
             {
-                // TODO: stackalloc Span once we have IPhpCallable.Invoke( ctx, Span<PhpValue> ) // https://github.com/peachpiecompiler/peachpie/issues/1155 
-                var phpArgs = args.Length != 0 ? new PhpValue[args.Length] : Array.Empty<PhpValue>();
-                for (int i = 0; i < args.Length; i++)
+                if (sqliteContext.state is not PhpValue[] phpArgs || phpArgs.Length != args.Length)
                 {
-                    phpArgs[i] = AsPhp(args[i]);
+                    // TODO: Replace this with a Memory so we can slice, for better
+                    // reuse of array
+                    sqliteContext.state = phpArgs = new PhpValue[args.Length];
                 }
-                
-                //
-                var ret = callback.Invoke(ctx, phpArgs);
-                SetSqliteReturnValue(ret, sqliteContext);
+                try
+                {
+                    for (int i = 0; i < args.Length; i++)
+                    {
+                        phpArgs[i] = AsPhp(args[i]);
+                    }
+
+                    //
+                    var ret = callback.Invoke(ctx, phpArgs);
+                    SetSqliteReturnValue(ret, sqliteContext);
+                }
+                finally
+                {
+                    Array.Clear(phpArgs);
+                }
             };
         }
 
@@ -263,6 +278,10 @@ namespace Peachpie.Library.PDO.Sqlite
         {
             public int RowIndex { get; set; }
             public PhpValue Value { get; set; } = PhpValue.Null;
+
+            // TODO: Replace this with a Memory so we can slice, for better
+            // reuse of array
+            public PhpValue[] ArgumentBuffer = Array.Empty<PhpValue>();
         }
 
         private static PhpValue AsPhp(sqlite3_value value) => raw.sqlite3_value_type(value) switch
