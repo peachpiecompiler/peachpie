@@ -893,13 +893,36 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public struct IPhpCallableHolder
         {
+            CoreTypes CoreTypes { get; }
+
             public IPhpCallableHolder(CoreTypes ct)
             {
-                Invoke_Context_ReadOnlySpanPhpValue = ct.IPhpCallable.Method("Invoke", ct.Context, ct.ReadOnlySpan_T);
+                CoreTypes = ct;
+                //Invoke_Context_PhpValueArray = ct.IPhpCallable.Method("Invoke", ct.Context, ct.PhpValueArray);
             }
 
-            public readonly CoreMethod
-                Invoke_Context_ReadOnlySpanPhpValue;
+            public MethodSymbol Invoke_Context_PhpValueArray
+            {
+                get
+                {
+                    if (_Invoke_Context_PhpValueArray == null)
+                    {
+                        Interlocked.CompareExchange(
+                            ref _Invoke_Context_PhpValueArray,
+                            CoreTypes.IPhpCallable.Symbol
+                                .GetMembers("Invoke")
+                                .OfType<MethodSymbol>()
+                                .Single(m => m.ParameterCount == 2 && m.Parameters[1].Type.Is_PhpValueArray()),
+                            null
+                        );
+                    }
+
+                    return _Invoke_Context_PhpValueArray ?? throw new InvalidOperationException();
+                }
+            }
+
+            MethodSymbol
+                _Invoke_Context_PhpValueArray;
         }
 
         public struct IPhpArrayHolder

@@ -2972,16 +2972,16 @@ namespace Pchp.CodeAnalysis.Semantics
                 Debug.Assert(_name.NameExpression != null);
 
                 // better to use PhpCallback.Invoke instead of call sites
-                // Template: NameExpression.AsCallback().Invoke(Context, ReadOnlySpan<PhpValue>)
-                
-                // TODO: Replace with call to .InvokeCore(Context, ReadOnlySpan<PhpValue>)
+                // Template: NameExpression.AsCallback().Invoke(Context, PhpValue[])
+
+                // TODO: Replace with call to .InvokeCore(Context, ReadOnlySpan<PhpValue>) for small number of arguments
 
                 cg.EmitConvert(_name.NameExpression, cg.CoreTypes.IPhpCallable);    // (IPhpCallable)Name
                 cg.EmitLoadContext();       // Context
-                cg.Emit_ArgumentsIntoReadOnlySpan(_arguments, default(PhpSignatureMask)); // ReadOnlySpan<PhpValue>
+                cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask)); // PhpValue[]
 
                 return cg.EmitMethodAccess(
-                    stack: cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpCallable.Invoke_Context_ReadOnlySpanPhpValue),
+                    stack: cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpCallable.Invoke_Context_PhpValueArray),
                     method: null,
                     access: this.Access
                 );
@@ -3099,44 +3099,44 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (((BoundTypeRef)_typeref).ResolvedType.IsValidType())
                 {
-                    // ensure type is delcared
+                    // ensure type is declared
                     cg.EmitExpectTypeDeclared(_typeref.Type);
 
-                    // context.Create<T>(caller, params ReadOnlySpan`1)
+                    // context.Create<T>(caller, params PhpValue[])
                     var create_t = cg.CoreTypes.Context.Symbol.GetMembers("Create")
                         .OfType<MethodSymbol>()
                         .Where(s =>
                             s.Arity == 1 &&
                             s.ParameterCount == 2 &&
                             s.Parameters[1].IsParams &&
-                            s.Parameters[1].Type.IsReadOnlySpan(cg.CoreTypes.PhpValue) &&
+                            s.Parameters[1].Type.Is_PhpValueArray() &&
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single()
                         .Construct(_typeref.Type);
 
                     cg.EmitLoadContext();               // Context
                     cg.EmitCallerTypeHandle();          // RuntimeTypeHandle
-                    cg.Emit_ArgumentsIntoReadOnlySpan(_arguments, default);  // ReadOnlySpan<PhpValue>
+                    cg.Emit_ArgumentsIntoArray(_arguments, default);  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create_t);
                 }
                 else
                 {
-                    // ctx.Create(caller, PhpTypeInfo, params ReadOnlySpan`1)
+                    // ctx.Create(caller, PhpTypeInfo, params PhpValue[])
                     var create = cg.CoreTypes.Context.Symbol.GetMembers("Create")
                         .OfType<MethodSymbol>()
                         .Where(s =>
                             s.Arity == 0 &&
                             s.ParameterCount == 3 &&
                             s.Parameters[1].Type == cg.CoreTypes.PhpTypeInfo &&
-                            s.Parameters[2].IsParams && s.Parameters[2].Type.IsReadOnlySpan(cg.CoreTypes.PhpValue) &&
+                            s.Parameters[2].IsParams && s.Parameters[2].Type.Is_PhpValueArray() &&
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single();
 
                     cg.EmitLoadContext();               // Context
                     cg.EmitCallerTypeHandle();          // RuntimeTypeHandle
                     _typeref.EmitLoadTypeInfo(cg, true);// PhpTypeInfo
-                    cg.Emit_ArgumentsIntoReadOnlySpan(_arguments, default);  // ReadOnlySpan<PhpValue>
+                    cg.Emit_ArgumentsIntoArray(_arguments, default);  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create);
                 }

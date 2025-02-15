@@ -478,6 +478,18 @@ namespace Pchp.CodeAnalysis.Symbols
                 array.ElementType.SpecialType == SpecialType.System_Byte;
         }
 
+        /// <summary>Gets value indicating the given type represents a <c>PhpValue[]</c> array type.</summary>
+        public static bool Is_PhpValueArray(this ITypeSymbol type)
+        {
+            Debug.Assert((object)type != null);
+            return
+                type.TypeKind == TypeKind.Array &&
+                type is ArrayTypeSymbol array &&
+                array.IsSZArray &&
+                array.ElementType.Is_PhpValue()
+                ;
+        }
+
         // If the type is a delegate type, it returns it. If the type is an
         // expression tree type associated with a delegate type, it returns
         // the delegate type. Otherwise, null.

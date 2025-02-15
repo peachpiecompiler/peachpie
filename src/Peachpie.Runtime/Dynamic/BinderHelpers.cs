@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Semantics;
 using System.Runtime.CompilerServices;
 using Pchp.Core.Collections;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core.Dynamic
 {
@@ -1597,15 +1598,15 @@ namespace Pchp.Core.Dynamic
 
             //
 
-            var invoke = typeof(IPhpCallable).GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance);
+            // TODO: use Invoke(Context, ReadOnlySpan`1) for small number of arguments
 
             var ctxexpr = Expression.Constant(ctx);
-            var arguments = ps.Select(p => ConvertExpression.Bind(p, typeof(PhpValue), ctxexpr));
+            var arguments = ps.SelectToArray(p => ConvertExpression.Bind(p, typeof(PhpValue), ctxexpr));
 
             // Template: callable.Invoke(ctx, args)
             Expression invocation = Expression.Call(
                 instance: Expression.Constant(callable),
-                method: invoke,
+                method: Cache.Operators.IPhpCallable_Invoke_Context_PhpValueArray,
                 arguments: new Expression[] { ctxexpr, Expression.NewArrayInit(typeof(PhpValue), arguments) });
 
             // return type

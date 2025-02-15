@@ -29,6 +29,7 @@ namespace Pchp.Core.Dynamic
             public static Type[] PhpArray = new Type[] { typeof(Core.PhpArray) };
 
             public static Type IndirectLocal = typeof(Core.IndirectLocal);
+            public static Type IPhpCallable = typeof(Core.IPhpCallable);
         }
 
         public static class Operators
@@ -105,6 +106,9 @@ namespace Pchp.Core.Dynamic
 
             /// <summary>T Cast{T}(PhpValue)</summary>
             public static MethodInfo Cast_PhpValue_T = typeof(PhpValueConverter).GetMethod(nameof(PhpValueConverter.Cast), Types.PhpValue);
+
+            /// <summary>IPhpCallable.Invoke(Context, params PhpValue[])</summary>
+            public static MethodInfo IPhpCallable_Invoke_Context_PhpValueArray = Types.IPhpCallable.GetMethod(nameof(IPhpCallable.Invoke), typeof(Core.Context), typeof(PhpValue[]));
         }
 
         public static class Exceptions

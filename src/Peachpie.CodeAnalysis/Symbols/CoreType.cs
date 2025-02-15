@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
             StrictConvert = Create("StrictConvert");
             PhpException = Create("PhpException");
             PhpCallableToDelegate_T = Create("PhpCallableToDelegate`1"); // Arity 1
-            ReadOnlySpan_T = CreateFromFullName("System.ReadOnlySpan"); // Arity 1
+            ReadOnlySpan_T = CreateFromFullName("System.ReadOnlySpan`1"); // Arity 1
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create(PhpTraitAttributeName);
             PharAttribute = Create("PharAttribute");
