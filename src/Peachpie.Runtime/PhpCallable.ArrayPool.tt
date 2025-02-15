@@ -1,0 +1,50 @@
+﻿<#@ output extension=".tt.cs" #>
+using System;
+using System.Buffers;
+namespace Pchp.Core;
+using System.Runtime.CompilerServices;
+
+partial interface IPhpCallable
+{
+    /// <summary>
+    /// Invokes the object with given arguments.
+    /// Using ArrayPool to avoid allocation.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    sealed PhpValue Invoke(Context ctx) => Invoke(ctx, ReadOnlySpan<PhpValue>.Empty);
+
+<#
+
+    for(int arity = 1; arity <= 16; arity++)
+    {
+#>
+    /// <summary>
+    /// Invokes the object with given arguments.
+    /// Using ArrayPool to avoid allocation.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    sealed PhpValue Invoke(
+        Context ctx,        
+<# for(int p = 0; p < arity - 1; p++) { #>
+        PhpValue p<#= p #>,
+<# } #>
+        PhpValue p<#= arity - 1 #>)
+    {
+        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(<#= arity #>);
+        try
+        {
+<# for(int p = 0; p < arity; p++) { #>
+            phpArgs[<#= p #>] = p<#= p #>;
+<# } #>
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..<#= arity #>]);
+        }
+        finally
+        {
+            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
+        }
+    }
+
+<#
+    }
+#>
+}
