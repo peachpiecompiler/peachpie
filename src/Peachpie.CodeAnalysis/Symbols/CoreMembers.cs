@@ -898,6 +898,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public IPhpCallableHolder(CoreTypes ct)
             {
                 CoreTypes = ct;
+                _Invoke_Context_PhpValueArray = null; // lazy
                 //Invoke_Context_PhpValueArray = ct.IPhpCallable.Method("Invoke", ct.Context, ct.PhpValueArray);
             }
 
