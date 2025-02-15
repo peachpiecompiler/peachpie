@@ -240,7 +240,7 @@ namespace Pchp.Core
                     tinfo = @static;
                 }
 
-                return BindCore(tinfo).ToLegacyCallable();
+                return BindCore(tinfo);
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as MethodCallback);
@@ -380,7 +380,7 @@ namespace Pchp.Core
 
                 //
 
-                return BindCore(ctx, tinfo, target).ToLegacyCallable();
+                return BindCore(ctx, tinfo, target);
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as ArrayCallback);
@@ -555,7 +555,7 @@ namespace Pchp.Core
         #endregion
     }
 
-    internal static class PhpCallableExtension
+    public static partial class PhpCallableExtension
     {
         /// <summary>
         /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> by fixing the target argument.
@@ -574,11 +574,6 @@ namespace Pchp.Core
                 arguments.CopyTo(curryArgs[1..]);
                 return invokable(ctx, target, curryArgs);
             };
-
-        internal static PhpCallable ToLegacyCallable(this PhpCallable callable)
-        {
-            return callable;
-        }
     }
 
     /// <summary>
