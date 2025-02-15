@@ -14,7 +14,7 @@ namespace Pchp.Core
     /// An object that can be invoked dynamically.
     /// </summary>
     /// <remarks>The interface is implemented by compiler for classes with <c>__invoke</c> method.</remarks>
-    public interface IPhpCallable
+    public partial interface IPhpCallable
     {
         /// <summary>
         /// Gets PHP value representing the callback.
