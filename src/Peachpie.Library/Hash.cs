@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using static Pchp.Library.PhpHash;
 using System.Globalization;
+using System.Buffers;
 
 namespace Pchp.Library
 {
@@ -2090,21 +2091,18 @@ namespace Pchp.Library
 
                     return result;
                 }
-                private static byte[] Encode(uint[] nums, int startIndex, int bytesCount)
+                private static void Encode(Span<byte> result, ReadOnlySpan<uint> nums)
                 {
-                    Debug.Assert(bytesCount > 0);
-                    Debug.Assert((bytesCount % 4) == 0);
+                    Debug.Assert(result.Length > 0);
+                    Debug.Assert((result.Length % 4) == 0);
 
-                    byte[] result = new byte[bytesCount];
-
-                    int index = 0;
-                    while (index < bytesCount)
+                    while (result.Length > 0)
                     {
-                        Array.Copy(BitConverter.GetBytes(nums[startIndex++]), 0, result, index, 4);
-                        index += 4;
+                        Debug.Assert(result.Length >= 4);
+                        BitConverter.TryWriteBytes(result, nums[0]);
+                        result = result.Slice(4);
+                        nums = nums.Slice(1);
                     }
-
-                    return result;
                 }
 
                 /// <summary>
@@ -2242,25 +2240,29 @@ namespace Pchp.Library
                 public override byte[] Final()
                 {
                     // save length
-                    byte[] bits = Encode(count, 0, 8);
+                    Span<byte> bits = stackalloc byte[8]; // count.Length * sizeof(uint)
+                    Encode(bits, count);
 
                     // padd to 56 mod 64
-                    int bufferUsage;
-                    byte[] buffer = GetBufferedBlock(out bufferUsage);
-                    if (buffer == null) buffer = new byte[64];
-                    Debug.Assert(buffer.Length == 64);
+                    byte[] buffer = GetBufferedBlock(out int bufferUsage);
+                    //if (buffer == null) buffer = new byte[64];
+                    //Debug.Assert(buffer.Length == 64);
                     int padLen = (bufferUsage < 56) ? (56 - bufferUsage) : (120 - bufferUsage);
                     if (padLen > 0)
                     {
-                        byte[] padding = new byte[padLen];
-                        padding[0] = 0x80;
-                        Update(padding);
+                        //byte[] padding = new byte[padLen];
+                        //Span<byte> padding = stackalloc byte[padLen];
+                        var padbuffer = ArrayPool<byte>.Shared.Rent(padLen);
+                        padbuffer[0] = 0x80;
+                        Update(padbuffer.Slice(0, padLen));
+                        ArrayPool<byte>.Shared.Return(padbuffer);
                     }
 
                     Update(bits);
 
-                    byte[] result = Encode(state, 0, 16);
-
+                    byte[] result = new byte[16]; // state.Length * sizeof(uint)
+                    Encode(result.AsSpan(), state.AsSpan());
+                    
                     // cleanup sensitive data
                     Array.Clear(state, 0, state.Length);
                     Array.Clear(count, 0, count.Length);
