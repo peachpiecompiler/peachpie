@@ -111,7 +111,7 @@ namespace Pchp.Core.Text
             var builder = ObjectPools.GetStringBuilder();
 
             GetChars(chars, enc, builder);
-            
+
             return ObjectPools.GetStringAndReturn(builder);
         }
 
@@ -1609,6 +1609,12 @@ namespace Pchp.Core
             }
 
             #endregion
+
+            #region implicit operator
+
+            public static implicit operator ReadOnlySpan<char>(Blob self) => self.IsEmpty ? default : self.ToString().AsSpan();
+
+            #endregion
         }
 
         /// <summary>
@@ -1700,6 +1706,26 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="value">String value, can be <c>null</c>.</param>
         public static implicit operator PhpString(byte[] value) => new PhpString(value);
+
+        public static implicit operator ReadOnlySpan<char>(PhpString self)
+        {
+            if (self.IsDefault)
+            {
+                return default;
+            }
+
+            if (self._data is string str)
+            {
+                return str.AsSpan();
+            }
+
+            if (self._data is Blob b)
+            {
+                return b;
+            }
+
+            throw new InvalidOperationException();
+        }
 
         /// <summary>
         /// Converts <see cref="char"/> array to <see cref="PhpString"/>.

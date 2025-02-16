@@ -175,7 +175,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return
                 t != null &&
-                t.OriginalDefinition.MetadataName == "ReadOnlySpan" &&
+                t.OriginalDefinition.MetadataName == "ReadOnlySpan`1" &&
                 t is INamedTypeSymbol named &&
                 named.TypeArguments.Length == 1 &&
                 named.TypeArguments[0].Equals(ofType, SymbolEqualityComparer.Default)
