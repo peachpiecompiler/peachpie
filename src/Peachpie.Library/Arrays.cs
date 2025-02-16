@@ -3,6 +3,7 @@ using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
 using Pchp.Library.Resources;
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -3067,32 +3068,31 @@ namespace Pchp.Library.Standard
                 return null;
             }
 
-            var result = new PhpArray(array.Count);
-            var args = new PhpValue[(flag == ArrayFilterFlags.UseBoth) ? 2 : 1];
-
+            var result = new PhpArray();
+            
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
             {
                 var entry = iterator.Current;
+                var filter = default(PhpValue);
 
                 // no deep copying needed because it is done so in callback:
 
                 switch (flag)
                 {
                     case ArrayFilterFlags.UseBoth:
-                        args[0] = entry.Value;
-                        args[1] = PhpValue.Create(entry.Key);
+                        filter = callback.Invoke(ctx, entry.Value, PhpValue.Create(entry.Key));
                         break;
                     case ArrayFilterFlags.UseKey:
-                        args[0] = PhpValue.Create(entry.Key);
+                        filter = callback.Invoke(ctx, entry.Key);
                         break;
                     default:
-                        args[0] = entry.Value;
+                        filter = callback.Invoke(ctx, entry.Value);
                         break;
                 }
 
                 // adds entry to the resulting array if callback returns true:
-                if (callback.Invoke(ctx, args).ToBoolean())
+                if (filter.ToBoolean())
                 {
                     result.Add(entry);
                 }
