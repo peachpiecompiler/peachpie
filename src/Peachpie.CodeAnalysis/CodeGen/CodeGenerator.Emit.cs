@@ -1679,18 +1679,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // pass argument:
                 if (p.IsParams)
                 {
-                    Debug.Assert(p.Type.IsArray());
-
-                    if (((ArrayTypeSymbol)p.Type).ElementType == CoreTypes.PhpValue && arg_index == 0)
+                    if (p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType == CoreTypes.PhpValue && arg_index == 0)
                     {
-                        // just pass argsarray as it is
+                        // Template: params PhpValue[]
+                        // just pass {argsarray} as it is
                         tmpargs_place.EmitLoad(_il);
                     }
                     else
                     {
                         // create new array and copy&convert values from argsarray
+                        var elementType =
+                            p.Type.IsSZArray() ? ((ArrayTypeSymbol)p.Type).ElementType : // T[]
+                            p.Type.OriginalDefinition == CoreTypes.ReadOnlySpan_T && p.Type is NamedTypeSymbol named && named.TypeArguments.Length == 1 ? named.TypeArguments[0] : // ReadOnlySpan<T>
+                            throw new NotImplementedException($"params {p.Type} is unhandled");
 
-                        ArrayToNewArray(tmpargs_place, arg_index, ((ArrayTypeSymbol)p.Type).ElementType);
+                        // Array<ElementType>
+                        var arrayType = ArrayToNewArray(tmpargs_place, arg_index, elementType);
+
+                        //
+                        EmitConvert(arrayType, 0, p.Type);
                     }
 
                     break;  // p is last one
@@ -2800,8 +2807,22 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (targetp.IsParams)
             {
-                // Template: System.Array.Empty<T>()
-                Emit_EmptyArray(((ArrayTypeSymbol)targetp.Type).ElementType);
+                if (targetp.Type.IsSZArray())
+                {
+                    // Template: System.Array.Empty<T>()
+                    Emit_EmptyArray(((ArrayTypeSymbol)targetp.Type).ElementType);
+                }
+                //else if (targetp.Type.OriginalDefinition == CoreTypes.ReadOnlySpan_T)
+                else if (targetp.Type.IsValueType)
+                {
+                    // Template: default(ReadOnlySpan<T>)
+                    EmitLoadDefaultOfValueType(targetp.Type);
+                }
+                else
+                {
+                    throw new NotImplementedException($"default ({targetp.Type})");
+                }
+
                 return;
             }
             else

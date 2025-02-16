@@ -718,6 +718,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 // attributes are requested.
                 if (!_lazyIsParams.HasValue())
                 {
+                    // TODO: [ParamCollectionAttribute]
                     _lazyIsParams = _moduleSymbol.Module.HasParamsAttribute(_handle).ToThreeState();
                 }
                 return _lazyIsParams.Value();

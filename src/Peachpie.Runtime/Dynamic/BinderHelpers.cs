@@ -21,6 +21,7 @@ namespace Pchp.Core.Dynamic
     {
         public static bool IsParamsParameter(this ParameterInfo p)
         {
+            //TODO: [ParamCollectionAttribute] Span<T>
             return p.ParameterType.IsArray && p.CustomAttributes.Any(attr => attr.AttributeType == typeof(ParamArrayAttribute));
         }
 
