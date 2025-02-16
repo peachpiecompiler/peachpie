@@ -1377,9 +1377,9 @@ namespace Pchp.Core.Dynamic
                         continue;
 
                     if (source.Type == typeof(ReadOnlySpan<PhpValue>) && targetType == typeof(PhpValue[]))
-                        boundargs[i] = Expression.Call(boundargs[i], _spanAsArray);
+                        boundargs[i] = Expression.Call(boundargs[i], Cache.Operators.ReadOnlySpanPhpValue_ToArray);
                     else if(source.Type == typeof(PhpValue[]) && targetType == typeof(ReadOnlySpan<PhpValue>))
-                        boundargs[i] = Expression.Call(null, _arrayAsSpan, boundargs[i]);
+                        boundargs[i] = Expression.Call(Cache.Operators.PhpValueArray_AsReadOnlySpan, boundargs[i]);
 
                 }
                 
@@ -1461,17 +1461,6 @@ namespace Pchp.Core.Dynamic
             
             return methodcall;
         }
-
-        private static MethodInfo _arrayAsSpan = typeof(MemoryExtensions)
-            .GetMethods()
-            .Where(x => x.Name == nameof(MemoryExtensions.AsSpan))
-            .Where(x => x.IsGenericMethodDefinition)
-            .Select(x => x.MakeGenericMethod(typeof(PhpValue)))
-            .Where(x => x.GetParametersType() is { Length: 1 } parametersType && parametersType[0] == typeof(PhpValue[]))
-            .Single()!;
-        
-        private static MethodInfo _spanAsArray = typeof(ReadOnlySpan<PhpValue>)
-            .GetMethod(nameof(ReadOnlySpan<PhpValue>.ToArray))!;
 
         /// <summary>
         /// Determines whether we has to use ".call" opcode explicitly.

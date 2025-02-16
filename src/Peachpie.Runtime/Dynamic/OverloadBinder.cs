@@ -441,17 +441,6 @@ namespace Pchp.Core.Dynamic
 
             internal sealed class ArgsSpanBinder : ArgumentsBinder
             {
-                private readonly PropertyInfo _spanLength = typeof(ReadOnlySpan<PhpValue>)
-                    .GetProperty(nameof(ReadOnlySpan<PhpValue>.Length));
-                private readonly MethodInfo _spanItemGetter = typeof(ArgsSpanBinder)
-                    .GetMethod(nameof(GetFromSpan), BindingFlags.Static | BindingFlags.NonPublic)!;
-
-                private readonly MethodInfo _slice = typeof(ReadOnlySpan<PhpValue>)
-                    .GetMethods()
-                    .Where(x => x.Name == nameof(ReadOnlySpan<PhpValue>.Slice))
-                    .Single(x => x.GetParameters() is { Length: 1 });
-                
-                
                 /// <summary>
                 /// Expression representing array of input arguments.
                 /// </summary>
@@ -478,7 +467,7 @@ namespace Pchp.Core.Dynamic
                         _lazyArgc = Expression.Variable(typeof(int), "argc");
 
                         // argc = argv.Length;
-                        var length = Expression.Property(_argsarray, _spanLength);
+                        var length = Expression.Property(_argsarray, Cache.Properties.ReadOnlySpanPhpValue_Length);
                         _lazyInitBlock.Add(Expression.Assign(_lazyArgc, length));
                     }
 
@@ -496,9 +485,9 @@ namespace Pchp.Core.Dynamic
                     {
                         value = new TmpVarValue();
 
-                        value.TrueInitializer = Expression.Call(_spanItemGetter, _argsarray, Expression.Constant(srcarg));
-                        value.FalseInitializer = ConvertExpression.BindDefault(value.TrueInitializer.Type); // ~ default(_argsarray.Type.GetElementType())
-                        value.Expression = Expression.Variable(value.TrueInitializer.Type, "arg_" + srcarg);
+                        value.TrueInitializer = Expression.Call(Cache.Operators.GetItem_ReadOnlySpanPhpValue_Int, _argsarray, Expression.Constant(srcarg));
+                        value.FalseInitializer = ConvertExpression.BindDefault(Cache.Types.PhpValue); // ~ default(_argsarray.Type.GetElementType())
+                        value.Expression = Expression.Variable(Cache.Types.PhpValue, "arg_" + srcarg);
 
                         //
                         _tmpvars[key] = value;
@@ -579,11 +568,15 @@ namespace Pchp.Core.Dynamic
                     //if (element_type == _argsarray.Type.GetElementType())
                     //if (true)
                     if (fromarg == 0)
+                    {
                         return _argsarray;
+                    }
+
                     return Expression.Call(
                         _argsarray,
-                        _slice,
-                        Cache.Expressions.Create(fromarg));
+                        Cache.Operators.ReadOnlySpanPhpValue_Slice_Int,
+                        Cache.Expressions.Create(fromarg)
+                    );
                 }
 
                 public override Expression CreatePreamble(List<ParameterExpression> variables)
@@ -597,8 +590,6 @@ namespace Pchp.Core.Dynamic
 
                     return body;
                 }
-
-                private static PhpValue GetFromSpan(ReadOnlySpan<PhpValue> span, int index) => span[index];
             }
 
             #endregion

@@ -108,7 +108,28 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo Cast_PhpValue_T = typeof(PhpValueConverter).GetMethod(nameof(PhpValueConverter.Cast), Types.PhpValue);
 
             /// <summary>IPhpCallable.Invoke(Context, params PhpValue[])</summary>
-            public static MethodInfo IPhpCallable_Invoke_Context_PhpValueArray = Types.IPhpCallable.GetMethod(nameof(IPhpCallable.Invoke), typeof(Core.Context), typeof(PhpValue[]));
+            public static readonly MethodInfo IPhpCallable_Invoke_Context_PhpValueArray = Types.IPhpCallable.GetMethod(nameof(IPhpCallable.Invoke), typeof(Core.Context), typeof(PhpValue[]));
+
+            public static readonly MethodInfo PhpValueArray_AsReadOnlySpan = typeof(Operators)
+                .GetMethod(nameof(AsReadOnlySpan_Helper), BindingFlags.Static | BindingFlags.NonPublic)
+                .MakeGenericMethod(Types.PhpValue)
+                ;
+
+            public static readonly MethodInfo ReadOnlySpanPhpValue_ToArray = typeof(ReadOnlySpan<PhpValue>).GetMethod(nameof(ReadOnlySpan<PhpValue>.ToArray))!;
+
+            public static readonly MethodInfo ReadOnlySpanPhpValue_Slice_Int = typeof(ReadOnlySpan<PhpValue>).GetMethod(nameof(ReadOnlySpan<PhpValue>.Slice), Types.Int);
+
+            public static readonly MethodInfo GetItem_ReadOnlySpanPhpValue_Int = typeof(Operators)
+                .GetMethod(nameof(get_Item_Helper), BindingFlags.Static | BindingFlags.NonPublic)
+                .MakeGenericMethod(Types.PhpValue)
+                ;
+
+            /// <summary>Helper method tu dereference a value. (LINQ lacks it, https://github.com/dotnet/runtime/issues/84173)</summary>
+            internal static T deref_Helper<T>(ref T value) => value;
+
+            internal static T get_Item_Helper<T>(ReadOnlySpan<T> span, int index) => span[index];
+
+            internal static ReadOnlySpan<T> AsReadOnlySpan_Helper<T>(T[] array) => array.AsSpan();
         }
 
         public static class Exceptions
@@ -131,17 +152,18 @@ namespace Pchp.Core.Dynamic
             public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetField("Default");
             public static readonly PropertyInfo PhpValue_IsNull = Types.PhpValue.GetProperty("IsNull");
             public static readonly PropertyInfo PhpValue_IsFalse = Types.PhpValue.GetProperty("IsFalse");
+            public static readonly PropertyInfo ReadOnlySpanPhpValue_Length = typeof(ReadOnlySpan<PhpValue>).GetProperty(nameof(ReadOnlySpan<PhpValue>.Length));
         }
 
         public static class PhpString
         {
             public static ConstructorInfo ctor_String = Types.PhpString[0].GetCtor(Types.String);
             public static ConstructorInfo ctor_ByteArray = Types.PhpString[0].GetCtor(typeof(byte[]));
-            public static readonly MethodInfo ToString_Context = Types.PhpString[0].GetMethod("ToString", typeof(Context));
-            public static readonly MethodInfo ToBytes_Context = Types.PhpString[0].GetMethod("ToBytes", typeof(Context));
-            public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetProperty("IsDefault");
-            public static MethodInfo ToBoolean = Types.PhpString[0].GetMethod("ToBoolean");
-            public static MethodInfo ToDouble = Types.PhpString[0].GetMethod("ToDouble");
+            public static readonly MethodInfo ToString_Context = Types.PhpString[0].GetMethod(nameof(Core.PhpString.ToString), typeof(Context));
+            public static readonly MethodInfo ToBytes_Context = Types.PhpString[0].GetMethod(nameof(Core.PhpString.ToBytes), typeof(Context));
+            public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetProperty(nameof(Core.PhpString.IsDefault));
+            public static MethodInfo ToBoolean = Types.PhpString[0].GetMethod(nameof(Core.PhpString.ToBoolean));
+            public static MethodInfo ToDouble = Types.PhpString[0].GetMethod(nameof(Core.PhpString.ToDouble));
             public static MethodInfo ToLongOrThrow = new Func<Core.PhpString, long>(Core.StrictConvert.ToLong).Method;
         }
 

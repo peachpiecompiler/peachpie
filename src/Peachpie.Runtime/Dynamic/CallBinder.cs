@@ -93,19 +93,21 @@ namespace Pchp.Core.Dynamic
 
                 if (bound.HasArgumentUnpacking)
                 {
-                    var args_var = Expression.Variable(typeof(PhpValue[]), "args_array");
+                    var args_var = Expression.Variable(typeof(ReadOnlySpan<PhpValue>), "args_array");
 
                     /*
-                     * args_var = ArgumentsToArray()
+                     * args_var = ArgumentsToArray().AsSpan()
                      * call(...args_var...)
                      */
 
                     invocation = Expression.Block(new[] { args_var },
-                            Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments, bound.Context, bound.ClassContext)),
-                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var,
-                                isStaticCallSyntax: bound.IsStaticSyntax,
-                                lateStaticType: lateStaticTypeArg)
-                        );
+                        // args_var = ArgumentsToArray(...).AsSpan()
+                        Expression.Assign(args_var, Expression.Call(Cache.Operators.PhpValueArray_AsReadOnlySpan, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments, bound.Context, bound.ClassContext))),
+                        // 
+                        OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var,
+                            isStaticCallSyntax: bound.IsStaticSyntax,
+                            lateStaticType: lateStaticTypeArg)
+                    );
                 }
                 else
                 {

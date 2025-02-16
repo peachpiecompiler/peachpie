@@ -24,14 +24,11 @@ namespace Pchp.Core
         /// <summary>
         /// Invokes the object with given arguments.
         /// </summary>
-#pragma warning disable CS0618 // Type or member is obsolete
         PhpValue Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Invoke(ctx, arguments.ToArray());
-#pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary>
         /// Invokes the object with given arguments.
         /// </summary>
-        [Obsolete("Use Invoke(Context, ReadOnlySpan<PhpValue>) instead.")]
         PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Invoke(ctx, arguments.AsSpan());
     }
     
