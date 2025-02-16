@@ -186,6 +186,11 @@ namespace Pchp.CodeAnalysis.Semantics
             return new CommonConversion(true, false, false, false, true, false, _compilation.CoreMethods.PhpString.implicit_from_string.Symbol);
         }
 
+        public CommonConversion StringToReadOnlySpanChar()
+        {
+            return new CommonConversion(true, false, false, false, true, false, _compilation.CoreMethods.Operators.ToReadOnlySpanChar_String.Symbol);
+        }
+
         // resolve operator method
         public MethodSymbol ResolveOperator(TypeSymbol receiver, bool hasref, string[] opnames, TypeSymbol[] extensions, TypeSymbol operand = null, TypeSymbol target = null)
         {
@@ -223,10 +228,17 @@ namespace Pchp.CodeAnalysis.Semantics
                                 if (target != null && method.ReturnType != target)
                                 {
                                     var conv = ClassifyConversion(method.ReturnType, target, ConversionKind.Numeric | ConversionKind.Reference);
-                                    if (conv.Exists == false && method.ReturnType.SpecialType == SpecialType.System_String && target.Is_PhpString())
+                                    if (conv.Exists == false && method.ReturnType.SpecialType == SpecialType.System_String)
                                     {
-                                        // String -> PhpString implicitly
-                                        conv = StringToPhpString();
+                                        if (target.Is_PhpString())
+                                        {
+                                            // String -> PhpString implicitly
+                                            conv = StringToPhpString();
+                                        }
+                                        else if (target.IsReadOnlySpan(_compilation.GetSpecialType(SpecialType.System_Char)))
+                                        {
+                                            conv = StringToReadOnlySpanChar();
+                                        }
                                     }
 
                                     if (conv.Exists)    // TODO: chain the conversion, sum the cost
@@ -352,6 +364,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     // ToPhpString
                     if (target == _compilation.CoreTypes.PhpString.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToPhpString", "ToString" };
+
+                    // ReadOnlySpan<char> == string.AsSpan()
+                    if (target.IsReadOnlySpan(_compilation.GetSpecialType(SpecialType.System_Char))) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToString" };
 
                     // AsResource
                     // AsObject
@@ -530,6 +545,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (from.SpecialType == SpecialType.System_String && to.Is_PhpString())
                 {
                     return StringToPhpString();
+                }
+
+                // string -> ReadOnlySpan<char> implicitly
+                if (from.SpecialType == SpecialType.System_String && to.IsReadOnlySpan(_compilation.GetSpecialType(SpecialType.System_Char)))
+                {
+                    return StringToReadOnlySpanChar();
                 }
 
                 var op = TryWellKnownImplicitConversion(from, to) ?? ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to);

@@ -150,7 +150,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys, Helpers, PhpValueConverter,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable, ImportValueAttribute, DummyFieldsOnlyCtor,
-            Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception, IDictionary,
+            Void, Object, Byte, Int32, Long, Double, Boolean, String, Exception, IDictionary, ReadOnlySpan_T,
             RuntimeTypeHandle, RuntimeMethodHandle,
             stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, Stringable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
 
@@ -194,6 +194,7 @@ namespace Pchp.CodeAnalysis.Symbols
             StrictConvert = Create("StrictConvert");
             PhpException = Create("PhpException");
             PhpCallableToDelegate = Create("PhpCallableToDelegate`1"); // Arity 1
+            ReadOnlySpan_T = CreateFromFullName("System.ReadOnlySpan`1"); // Arity 1
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create(PhpTraitAttributeName);
             PharAttribute = Create("PharAttribute");

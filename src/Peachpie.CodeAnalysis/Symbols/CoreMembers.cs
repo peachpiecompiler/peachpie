@@ -223,7 +223,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     m.IsStatic &&
                     m.ParameterCount == 1 &&
                     m.Parameters[0].Type == castfrom &&
-                    m.ReturnType == castTo)
+                    (castTo.IsDefinition ? m.ReturnType.OriginalDefinition == castTo : m.ReturnType == castTo))
                 {
                     return m;
                 }
@@ -459,6 +459,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 BitwiseAnd_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseAndOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseXor_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.ExclusiveOrOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseNot_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.OnesComplementOperatorName, ct.PhpValue);
+                ToReadOnlySpanChar_String = ct.String.CastImplicit(ct.ReadOnlySpan_T);
             }
 
             public readonly CoreMethod
@@ -527,7 +528,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 StrictCeq_PhpValue_bool, StrictCeqNull_PhpValue,
 
                 Div_PhpValue_PhpValue, Div_long_PhpValue, Div_double_PhpValue,
-                BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseXor_PhpValue_PhpValue, BitwiseNot_PhpValue;
+                BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseXor_PhpValue_PhpValue, BitwiseNot_PhpValue,
+                ToReadOnlySpanChar_String
+                ;
 
             public readonly CoreProperty
                 GetName_PhpTypeInfo, GetTypeHandle_PhpTypeInfo;
