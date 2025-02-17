@@ -2253,6 +2253,7 @@ namespace Pchp.Library
                         //byte[] padding = new byte[padLen];
                         //Span<byte> padding = stackalloc byte[padLen];
                         var padbuffer = ArrayPool<byte>.Shared.Rent(padLen);
+                        Array.Clear(padbuffer, 0, padLen);
                         padbuffer[0] = 0x80;
                         Update(padbuffer.Slice(0, padLen));
                         ArrayPool<byte>.Shared.Return(padbuffer);
