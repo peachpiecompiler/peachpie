@@ -196,7 +196,7 @@ namespace Pchp.Core
             }
         }
 
-        void ICollection<PhpValue>.CopyTo(PhpValue[] array, int arrayIndex) => table.CopyTo(array, arrayIndex);
+        void ICollection<PhpValue>.CopyTo(PhpValue[] array, int arrayIndex) => table.CopyTo(array.AsSpan(arrayIndex));
 
         void ICollection<PhpValue>.Add(PhpValue item) => Add(item);
 
@@ -914,7 +914,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="dst"></param>
         /// <param name="offset"></param>
-        public void CopyValuesTo(PhpValue[]/*!*/dst, int offset) => table.CopyTo(dst, offset);
+        public void CopyValuesTo(PhpValue[]/*!*/dst, int offset) => CopyValuesTo(dst.AsSpan(offset));
         
         /// <summary>
         /// Copy values of this array into single dimensional array.

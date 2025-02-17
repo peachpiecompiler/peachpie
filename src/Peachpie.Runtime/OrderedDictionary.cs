@@ -519,7 +519,7 @@ namespace Pchp.Core
                 return false;
             }
 
-            public void CopyTo(TValue[] array, int arrayIndex) => _array.CopyTo(array, arrayIndex);
+            public void CopyTo(TValue[] array, int arrayIndex) => _array.CopyTo(array.AsSpan(arrayIndex));
 
             public IEnumerator<TValue> GetEnumerator()
             {
@@ -1974,7 +1974,7 @@ namespace Pchp.Core
             if (table.Count != 0)
             {
                 var array = new TValue[table.Count];
-                table.CopyTo(array, 0);
+                table.CopyTo(array.AsSpan());
                 return array;
             }
             else
