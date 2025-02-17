@@ -2,38 +2,23 @@
 using System.Buffers;
 namespace Pchp.Core;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 partial interface IPhpCallable
 {
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with no arguments.
     /// </summary>
     sealed PhpValue Invoke(Context ctx) => Invoke(ctx, ReadOnlySpan<PhpValue>.Empty);
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given argument.
     /// </summary>
-    sealed PhpValue Invoke(
-        Context ctx,        
-        PhpValue p0)
-    {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(1);
-        try
-        {
-            phpArgs[0] = p0;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..1]);
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
-    }
+    sealed PhpValue Invoke(Context ctx, PhpValue p0) => Invoke(ctx, MemoryMarshal.CreateReadOnlySpan(ref p0, 1));
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -45,7 +30,7 @@ partial interface IPhpCallable
         {
             phpArgs[0] = p0;
             phpArgs[1] = p1;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..2]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 2));
         }
         finally
         {
@@ -54,8 +39,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -69,7 +54,7 @@ partial interface IPhpCallable
             phpArgs[0] = p0;
             phpArgs[1] = p1;
             phpArgs[2] = p2;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..3]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 3));
         }
         finally
         {
@@ -78,8 +63,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -95,7 +80,7 @@ partial interface IPhpCallable
             phpArgs[1] = p1;
             phpArgs[2] = p2;
             phpArgs[3] = p3;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..4]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 4));
         }
         finally
         {
@@ -104,8 +89,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -123,7 +108,7 @@ partial interface IPhpCallable
             phpArgs[2] = p2;
             phpArgs[3] = p3;
             phpArgs[4] = p4;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..5]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 5));
         }
         finally
         {
@@ -132,8 +117,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -153,7 +138,7 @@ partial interface IPhpCallable
             phpArgs[3] = p3;
             phpArgs[4] = p4;
             phpArgs[5] = p5;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..6]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 6));
         }
         finally
         {
@@ -162,8 +147,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -185,7 +170,7 @@ partial interface IPhpCallable
             phpArgs[4] = p4;
             phpArgs[5] = p5;
             phpArgs[6] = p6;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..7]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 7));
         }
         finally
         {
@@ -194,8 +179,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -219,7 +204,7 @@ partial interface IPhpCallable
             phpArgs[5] = p5;
             phpArgs[6] = p6;
             phpArgs[7] = p7;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..8]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 8));
         }
         finally
         {
@@ -228,8 +213,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -255,7 +240,7 @@ partial interface IPhpCallable
             phpArgs[6] = p6;
             phpArgs[7] = p7;
             phpArgs[8] = p8;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..9]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 9));
         }
         finally
         {
@@ -264,8 +249,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -293,7 +278,7 @@ partial interface IPhpCallable
             phpArgs[7] = p7;
             phpArgs[8] = p8;
             phpArgs[9] = p9;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..10]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 10));
         }
         finally
         {
@@ -302,8 +287,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -333,7 +318,7 @@ partial interface IPhpCallable
             phpArgs[8] = p8;
             phpArgs[9] = p9;
             phpArgs[10] = p10;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..11]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 11));
         }
         finally
         {
@@ -342,8 +327,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -375,7 +360,7 @@ partial interface IPhpCallable
             phpArgs[9] = p9;
             phpArgs[10] = p10;
             phpArgs[11] = p11;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..12]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 12));
         }
         finally
         {
@@ -384,8 +369,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -419,7 +404,7 @@ partial interface IPhpCallable
             phpArgs[10] = p10;
             phpArgs[11] = p11;
             phpArgs[12] = p12;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..13]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 13));
         }
         finally
         {
@@ -428,8 +413,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -465,7 +450,7 @@ partial interface IPhpCallable
             phpArgs[11] = p11;
             phpArgs[12] = p12;
             phpArgs[13] = p13;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..14]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 14));
         }
         finally
         {
@@ -474,8 +459,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -513,7 +498,7 @@ partial interface IPhpCallable
             phpArgs[12] = p12;
             phpArgs[13] = p13;
             phpArgs[14] = p14;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..15]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 15));
         }
         finally
         {
@@ -522,8 +507,8 @@ partial interface IPhpCallable
     }
 
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -563,7 +548,7 @@ partial interface IPhpCallable
             phpArgs[13] = p13;
             phpArgs[14] = p14;
             phpArgs[15] = p15;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..16]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 16));
         }
         finally
         {

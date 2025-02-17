@@ -3,23 +3,28 @@ using System;
 using System.Buffers;
 namespace Pchp.Core;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 partial interface IPhpCallable
 {
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with no arguments.
     /// </summary>
     sealed PhpValue Invoke(Context ctx) => Invoke(ctx, ReadOnlySpan<PhpValue>.Empty);
 
+    /// <summary>
+    /// Invokes the callback with given argument.
+    /// </summary>
+    sealed PhpValue Invoke(Context ctx, PhpValue p0) => Invoke(ctx, MemoryMarshal.CreateReadOnlySpan(ref p0, 1));
+
 <#
 
-    for(int arity = 1; arity <= 16; arity++)
+    for(int arity = 2; arity <= 16; arity++)
     {
 #>
     /// <summary>
-    /// Invokes the object with given arguments.
-    /// Using ArrayPool to avoid allocation.
+    /// Invokes the callback with given arguments.
+    /// Uses ArrayPool to avoid allocation.
     /// </summary>
     sealed PhpValue Invoke(
         Context ctx,        
@@ -34,7 +39,7 @@ partial interface IPhpCallable
 <# for(int p = 0; p < arity; p++) { #>
             phpArgs[<#= p #>] = p<#= p #>;
 <# } #>
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs)[..<#= arity #>]);
+            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, <#= arity #>));
         }
         finally
         {
