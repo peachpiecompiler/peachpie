@@ -157,13 +157,13 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     {
         if (_callable is PhpAnonymousRoutineInfo)
         {
-            // { Closure, ... @static, ... parameters }
-            var newArgsLength = 1 + @static.Count + parameters.Length;
-            using var newArgsBuffer = MemoryPool<PhpValue>.Shared.Rent(newArgsLength);
-            
-            //
-            var newArgs = newArgsBuffer.Memory.Span[..newArgsLength];
+            var pool = ArrayPool<PhpValue>.Shared;
 
+            var newArgsLength = 1 + @static.Count + parameters.Length;
+            var newArgsBuffer = pool.Rent(newArgsLength);
+            var newArgs = newArgsBuffer.AsSpan(..newArgsLength);
+
+            // { Closure, ... @static, ... parameters }
             newArgs[0] = PhpValue.FromClass(this);
 
             if (@static.Count != 0)
@@ -174,7 +174,14 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
             parameters.CopyTo(newArgs[(1 + @static.Count)..]);
 
             //
-            return _callable.Invoke(_ctx, newArgs);
+            try
+            {
+                return _callable.Invoke(_ctx, newArgs);
+            }
+            finally
+            {
+                pool.Return(newArgsBuffer, true);
+            }
         }
         else
         {
