@@ -13,7 +13,7 @@ Build the solution or projects separately using the build command:
 dotnet build
 ```
 
-The build process outputs NuGet packages locally in `\.nugs\` directory. Packages are versioned with `1.0.0` version, `-dev` suffix.
+The build process outputs NuGet packages locally in `\.nugs\` directory. Packages are versioned with `1.2.0` version, `-dev` suffix.
 
 ## Visual Studio 2017+
 
@@ -31,17 +31,17 @@ PS \build\> .\update-cache.ps1
 
 Reference the development packages by your projects, i.e.
 ```xml
-<Project Sdk="Peachpie.NET.Sdk/1.0.0-dev">
+<Project Sdk="Peachpie.NET.Sdk/1.2.0-dev">
 ```
 or
 ```xml
-<PackageReference Include="Peachpie.Library.PDO.MySql" Version="1.0.0-dev" />
+<PackageReference Include="Peachpie.Library.PDO.MySql" Version="1.2.0-dev" />
 ```
 or when using `global.json` to specify Sdks versions:
 ```json
 {
     "msbuild-sdks": {
-        "Peachpie.NET.Sdk": "1.0.0-dev"
+        "Peachpie.NET.Sdk": "1.2.0-dev"
     }
 }
 ```
