@@ -368,6 +368,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     // ReadOnlySpan<char> == string.AsSpan()
                     if (target.IsReadOnlySpan(_compilation.GetSpecialType(SpecialType.System_Char))) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToString" };
 
+                    // ReadOnlySpan<PhpValue>
+                    if (target.IsReadOnlySpan(_compilation.CoreTypes.PhpValue.Symbol)) return new[] { WellKnownMemberNames.ImplicitConversionName, "AsSpan", "GetSpan" };
+
                     // AsResource
                     // AsObject
                     // AsPhpValue

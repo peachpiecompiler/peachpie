@@ -157,6 +157,13 @@ namespace Pchp.Core.Dynamic
                 {
                     return BindToDateTime(arg, ctx);
                 }
+
+                // ReadOnlySpan<char>
+                if (target == typeof(ReadOnlySpan<char>))
+                {
+                    // (ReadOnlySpan<char>)ToPhpString() // implicit operator
+                    return Expression.Convert(BindToPhpString(arg, ctx), target);
+                }
             }
 
             // Template: PhpValueConverter.Cast<T>( PhpValue ) : T

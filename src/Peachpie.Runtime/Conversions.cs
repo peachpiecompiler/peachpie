@@ -445,6 +445,12 @@ namespace Pchp.Core
 
         #endregion
 
+        #region ToSpan
+
+        public static ReadOnlySpan<PhpValue> ToSpan(PhpArray array) => array.GetSpan();
+
+        #endregion
+
         #region ToDictionary
 
         public static Dictionary<K, V>/*!*/ToDictionary<K, V>(this PhpValue value)

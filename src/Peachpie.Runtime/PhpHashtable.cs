@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Utilities;
@@ -926,6 +927,29 @@ namespace Pchp.Core
         /// Copies values to a new array.
         /// </summary>
         public PhpValue[] GetValues() => table.GetValues();
+
+        /// <summary>
+        /// Copies values to a new array and get it as a span.
+        /// </summary>
+        public ReadOnlySpan<PhpValue> GetSpan()
+        {
+            if (table.Count == 0)
+            {
+                return default;
+            }
+
+            if (table.Count == 1)
+            {
+                var e = table.GetEnumerator();
+                if (e.MoveNext()) // always true
+                {
+                    return MemoryMarshal.CreateReadOnlySpan(ref e.CurrentValue, 1);
+                }
+            }
+
+            // copy array and get span
+            return GetValues().AsSpan();
+        }
 
         #endregion
 
