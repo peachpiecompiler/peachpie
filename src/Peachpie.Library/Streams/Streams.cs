@@ -180,7 +180,16 @@ namespace Pchp.Library.Streams
         /// <param name="stream_or_context">The PhpResource of either PhpStream or StreamContext type.</param>
         /// <param name="options">The options to set for <paramref name="stream_or_context"/>.</param>
         /// <returns>True on success.</returns>
-        public static bool stream_context_set_option(PhpResource stream_or_context, PhpArray options)
+        //[Obsolete("Deprecated as of PHP 8.4.0, use stream_context_set_options() instead.")]
+        public static bool stream_context_set_option(PhpResource stream_or_context, PhpArray options) => stream_context_set_options(stream_or_context, options);
+
+        /// <summary>
+        /// Sets an option for a stream/wrapper/context.
+        /// </summary> 
+        /// <param name="stream_or_context">The PhpResource of either PhpStream or StreamContext type.</param>
+        /// <param name="options">The options to set for <paramref name="stream_or_context"/>.</param>
+        /// <returns>True on success.</returns>
+        public static bool stream_context_set_options(PhpResource stream_or_context, PhpArray options)
         {
             // OK, creates the context if Default, so that Data is always a PhpArray.
             // Fails only if the first argument is not a stream nor context.
