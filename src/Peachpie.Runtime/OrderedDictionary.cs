@@ -192,11 +192,11 @@ namespace Pchp.Core
 
         static class BucketPool
         {
-            public static Bucket[] RentData(uint size) => ArrayPool<Bucket>.Shared.Rent(unchecked((int)size));
+            public static Bucket[] RentData(uint size) => new Bucket[size]; // ArrayPool<Bucket>.Shared.Rent(unchecked((int)size));
 
             public static int[] RentHash(uint size) => ArrayPool<int>.Shared.Rent(unchecked((int)size));
 
-            public static void Return(Bucket[] array) => ArrayPool<Bucket>.Shared.Return(array, clearArray: true);
+            public static void Return(Bucket[] array) { } // ArrayPool<Bucket>.Shared.Return(array, clearArray: true);
 
             public static void Return(int[] array)
             {
