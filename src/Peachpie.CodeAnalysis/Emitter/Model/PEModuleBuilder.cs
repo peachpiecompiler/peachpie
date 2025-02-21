@@ -19,7 +19,6 @@ using Pchp.CodeAnalysis.Emitter;
 using Pchp.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Semantics;
-using ReferenceEqualityComparer = Roslyn.Utilities.ReferenceEqualityComparer;
 
 namespace Pchp.CodeAnalysis.Emit
 {
