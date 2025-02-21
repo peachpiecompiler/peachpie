@@ -213,12 +213,10 @@ namespace Pchp.CodeAnalysis.Symbols
         internal ImmutableArray<AttributeData> GetCustomAttributesFilterExtensions(EntityHandle token, out bool foundExtension)
         {
             CustomAttributeHandle extensionAttribute;
-            CustomAttributeHandle ignore;
             var result = GetCustomAttributesForToken(token,
-                out extensionAttribute,
-                AttributeDescription.CaseSensitiveExtensionAttribute,
-                out ignore,
-                default(AttributeDescription));
+                out extensionAttribute, AttributeDescription.CaseSensitiveExtensionAttribute,
+                out _, default(AttributeDescription)
+            );
 
             foundExtension = !extensionAttribute.IsNil;
             return result;
@@ -239,10 +237,14 @@ namespace Pchp.CodeAnalysis.Symbols
             out CustomAttributeHandle filteredOutAttribute1,
             AttributeDescription filterOut1,
             out CustomAttributeHandle filteredOutAttribute2,
-            AttributeDescription filterOut2)
+            AttributeDescription filterOut2,
+            out CustomAttributeHandle filteredOutAttribute3,
+            AttributeDescription filterOut3)
         {
-            filteredOutAttribute1 = default(CustomAttributeHandle);
-            filteredOutAttribute2 = default(CustomAttributeHandle);
+            filteredOutAttribute1 = default;
+            filteredOutAttribute2 = default;
+            filteredOutAttribute3 = default;
+
             ArrayBuilder<AttributeData> customAttributesBuilder = null;
 
             try
@@ -264,6 +266,15 @@ namespace Pchp.CodeAnalysis.Symbols
                         // It is important to capture the last application of the attribute that we run into,
                         // it makes a difference for default and constant values.
                         filteredOutAttribute2 = customAttributeHandle;
+                        continue;
+                    }
+
+                    if (filterOut3.Signatures != null &&
+                        Module.GetTargetAttributeSignatureIndex(customAttributeHandle, filterOut3) != -1)
+                    {
+                        // It is important to capture the last application of the attribute that we run into,
+                        // it makes a difference for default and constant values.
+                        filteredOutAttribute3 = customAttributeHandle;
                         continue;
                     }
 
@@ -289,13 +300,11 @@ namespace Pchp.CodeAnalysis.Symbols
         internal ImmutableArray<AttributeData> GetCustomAttributesForToken(EntityHandle token)
         {
             // Do not filter anything and therefore ignore the out results
-            CustomAttributeHandle ignore1;
-            CustomAttributeHandle ignore2;
             return GetCustomAttributesForToken(token,
-                out ignore1,
-                default(AttributeDescription),
-                out ignore2,
-                default(AttributeDescription));
+                out _, default(AttributeDescription),
+                out _, default(AttributeDescription),
+                out _, default(AttributeDescription)
+            );
         }
 
         /// <summary>
@@ -307,13 +316,25 @@ namespace Pchp.CodeAnalysis.Symbols
         internal ImmutableArray<AttributeData> GetCustomAttributesForToken(EntityHandle token,
             out CustomAttributeHandle paramArrayAttribute)
         {
-            CustomAttributeHandle ignore;
             return GetCustomAttributesForToken(
                 token,
-                out paramArrayAttribute,
-                AttributeDescription.ParamArrayAttribute,
-                out ignore,
-                default(AttributeDescription));
+                out paramArrayAttribute, AttributeDescription.ParamArrayAttribute,
+                out _, default,
+                out _, default
+            );
+        }
+
+        internal ImmutableArray<AttributeData> GetCustomAttributesForToken(EntityHandle token,
+            out CustomAttributeHandle filteredOutAttribute1,
+            AttributeDescription filterOut1,
+            out CustomAttributeHandle filteredOutAttribute2,
+            AttributeDescription filterOut2)
+        {
+            return GetCustomAttributesForToken(token,
+                out filteredOutAttribute1, filterOut1,
+                out filteredOutAttribute2, filterOut2,
+                out _, default
+            );
         }
 
 

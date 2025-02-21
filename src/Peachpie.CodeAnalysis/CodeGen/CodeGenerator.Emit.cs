@@ -872,8 +872,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 .Expect(CoreTypes.PhpArray);
         }
 
-        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => Emit(a.Value));
-        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => Emit(a));
+        public TypeSymbol Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => Emit(a.Value));
+        public TypeSymbol Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => Emit(a));
 
         public TypeSymbol Emit_NewArray(TypeSymbol elementType, int length)
         {
@@ -1857,12 +1857,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                     continue;
                 }
 
-                if (p.IsParams)
+                if (p.IsParams) // params T[], or params ReadOnlySpan<T>
                 {
                     Debug.Assert(parameters.Length == param_index + 1, $"params should be the last parameter, at {method.ContainingType.PhpName()}::{method.Name}()."); // p is last one
-                    Debug.Assert(p.Type.IsArray(), $"params should be of type array, at {method.ContainingType.PhpName()}::{method.Name}().");
+                    Debug.Assert(p.Type.IsArray() || p.Type.IsReadOnlySpan(null), $"params should be of type array or ReadOnlySpan, at {method.ContainingType.PhpName()}::{method.Name}().");
 
-                    var p_element = ((ArrayTypeSymbol)p.Type).ElementType;
+                    TypeSymbol result_type; // type of array emitted on stack
+
+                    var p_element =
+                        p.Type is ArrayTypeSymbol arrType ? arrType.ElementType :
+                        p.Type is ConstructedNamedTypeSymbol spanType ? spanType.TypeArguments[0] :
+                        throw ExceptionUtilities.UnexpectedValue(p.Type);
 
                     if (arg_params_index >= 0)
                     {
@@ -1893,7 +1898,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                         _il.EmitOpCode(ILOpCode.Newarr);
                         EmitSymbolToken(p_element, null);
 
-                        var params_loc = GetTemporaryLocal(p.Type, false);
+                        result_type = ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, p_element);
+
+                        var params_loc = GetTemporaryLocal(result_type, false);
                         _il.EmitLocalStore(params_loc);
 
                         // { arg_i, ..., arg_(n-1) }
@@ -1930,12 +1937,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
+                        // TODO: 1 argument can be marshaled to ReadOnlySpan<T> without allocation
+
                         // easy case,
                         // wrap remaining arguments to array
                         var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
                         arg_index += values.Length;
-                        Emit_NewArray(p_element, values);
+                        result_type = Emit_NewArray(p_element, values);
                     }
+
+                    // eventually convert to ReadOnlySpan<T>
+                    EmitConvert(result_type, 0, p.Type);
 
                     break;  // p is last one
                 }

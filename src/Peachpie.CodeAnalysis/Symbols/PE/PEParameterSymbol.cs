@@ -147,7 +147,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
         private ImmutableArray<AttributeData> _lazyCustomAttributes;
         private ConstantValue _lazyDefaultValue = ConstantValue.Unset;
-        private ThreeState _lazyIsParams;
+
+        [Flags]
+        private enum IsParamsValues : byte
+        {
+            NotInitialized = 0,
+            Initialized = 1,
+            Array = 2,
+            Collection = 4,
+        }
+
+        private IsParamsValues _lazyIsParams;
+
         private ImportValueAttributeData _lazyImportValueAttributeData;
         private FieldSymbol _lazyDefaultValueField; // field used to load a default value of the optional parameter
 
@@ -223,7 +234,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 _lazyCustomAttributes = ImmutableArray<AttributeData>.Empty;
                 _lazyHiddenAttributes = ImmutableArray<AttributeData>.Empty;
                 _lazyDefaultValue = ConstantValue.NotAvailable;
-                _lazyIsParams = ThreeState.False;
+                _lazyIsParams = IsParamsValues.Initialized;
             }
             else
             {
@@ -709,22 +720,6 @@ namespace Pchp.CodeAnalysis.Symbols
         //    }
         //}
 
-        public override bool IsParams
-        {
-            get
-            {
-                // This is also populated by loading attributes, but loading
-                // attributes is more expensive, so we should only do it if
-                // attributes are requested.
-                if (!_lazyIsParams.HasValue())
-                {
-                    // TODO: [ParamCollectionAttribute]
-                    _lazyIsParams = _moduleSymbol.Module.HasParamsAttribute(_handle).ToThreeState();
-                }
-                return _lazyIsParams.Value();
-            }
-        }
-
         public override bool IsImplicitlyDeclared
         {
             get
@@ -769,6 +764,47 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override bool IsParamsArray
+        {
+            get
+            {
+                return (GetIsParamsValues() & IsParamsValues.Array) != 0;
+            }
+        }
+
+        public override bool IsParamsCollection
+        {
+            get
+            {
+                return (GetIsParamsValues() & IsParamsValues.Collection) != 0;
+            }
+        }
+
+        private IsParamsValues GetIsParamsValues()
+        {
+            // This is also populated by loading attributes, but loading
+            // attributes is more expensive, so we should only do it if
+            // attributes are requested.
+            if ((_lazyIsParams & IsParamsValues.Initialized) == 0)
+            {
+                IsParamsValues result = IsParamsValues.Initialized;
+
+                if (_moduleSymbol.Module.HasParamsAttribute(_handle)) // HasParamArrayAttribute
+                {
+                    result |= IsParamsValues.Array;
+                }
+
+                if (_moduleSymbol.Module.HasParamCollectionAttribute(_handle))
+                {
+                    result |= IsParamsValues.Collection;
+                }
+
+                _lazyIsParams = result;
+            }
+
+            return _lazyIsParams;
+        }
+
         public override ImmutableArray<Location> Locations
         {
             get
@@ -794,7 +830,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 // Filter out ParamArrayAttributes if necessary and cache
                 // the attribute handle for GetCustomAttributesToEmit
-                bool filterOutParamArrayAttribute = (!_lazyIsParams.HasValue() || _lazyIsParams.Value());
+                bool filterOutParamArrayAttribute = ((_lazyIsParams & (IsParamsValues.Initialized | IsParamsValues.Array)) is 0 or (IsParamsValues.Initialized | IsParamsValues.Array));
+                bool filterOutParamCollectionAttribute = ((_lazyIsParams & (IsParamsValues.Initialized | IsParamsValues.Collection)) is 0 or (IsParamsValues.Initialized | IsParamsValues.Collection));
 
                 ConstantValue defaultValue = this.ExplicitDefaultConstantValue;
                 AttributeDescription filterOutConstantAttributeDescription = default(AttributeDescription);
@@ -811,55 +848,67 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                 }
 
-                if (filterOutParamArrayAttribute || filterOutConstantAttributeDescription.Signatures != null)
+                ImmutableArray<AttributeData> attributes =
+                    containingPEModuleSymbol.GetCustomAttributesForToken(
+                        _handle,
+                        out var paramArrayAttribute,
+                        filterOutParamArrayAttribute ? AttributeDescription.ParamArrayAttribute : default(AttributeDescription),
+                        out var paramCollectionAttribute,
+                        filterOutParamCollectionAttribute ? AttributeDescription.ParamCollectionAttribute : default,
+                        out var constantAttribute,
+                        filterOutConstantAttributeDescription
+                    );
+
+                if (!paramArrayAttribute.IsNil || !constantAttribute.IsNil || !paramCollectionAttribute.IsNil)
                 {
-                    CustomAttributeHandle paramArrayAttribute;
-                    CustomAttributeHandle constantAttribute;
+                    var builder = ArrayBuilder<AttributeData>.GetInstance();
 
-                    ImmutableArray<AttributeData> attributes =
-                        containingPEModuleSymbol.GetCustomAttributesForToken(
-                            _handle,
-                            out paramArrayAttribute,
-                            filterOutParamArrayAttribute ? AttributeDescription.ParamArrayAttribute : default(AttributeDescription),
-                            out constantAttribute,
-                            filterOutConstantAttributeDescription);
-
-                    if (!paramArrayAttribute.IsNil || !constantAttribute.IsNil)
+                    if (!paramArrayAttribute.IsNil)
                     {
-                        var builder = ArrayBuilder<AttributeData>.GetInstance();
-
-                        if (!paramArrayAttribute.IsNil)
-                        {
-                            builder.Add(new PEAttributeData(containingPEModuleSymbol, paramArrayAttribute));
-                        }
-
-                        if (!constantAttribute.IsNil)
-                        {
-                            builder.Add(new PEAttributeData(containingPEModuleSymbol, constantAttribute));
-                        }
-
-                        ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, builder.ToImmutableAndFree());
-                    }
-                    else
-                    {
-                        ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, ImmutableArray<AttributeData>.Empty);
+                        builder.Add(new PEAttributeData(containingPEModuleSymbol, paramArrayAttribute));
                     }
 
-                    if (!_lazyIsParams.HasValue())
+                    if (!paramCollectionAttribute.IsNil)
                     {
-                        Debug.Assert(filterOutParamArrayAttribute);
-                        _lazyIsParams = (!paramArrayAttribute.IsNil).ToThreeState();
+                        builder.Add(new PEAttributeData(containingPEModuleSymbol, paramCollectionAttribute));
                     }
 
-                    ImmutableInterlocked.InterlockedInitialize(
-                        ref _lazyCustomAttributes,
-                        attributes);
+                    if (!constantAttribute.IsNil)
+                    {
+                        builder.Add(new PEAttributeData(containingPEModuleSymbol, constantAttribute));
+                    }
+
+                    ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, builder.ToImmutableAndFree());
                 }
                 else
                 {
                     ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, ImmutableArray<AttributeData>.Empty);
-                    containingPEModuleSymbol.LoadCustomAttributes(_handle, ref _lazyCustomAttributes);
                 }
+
+                if ((_lazyIsParams & IsParamsValues.Initialized) == 0)
+                {
+                    Debug.Assert(filterOutParamArrayAttribute);
+                    Debug.Assert(filterOutParamCollectionAttribute);
+
+                    IsParamsValues result = IsParamsValues.Initialized;
+
+                    if (!paramArrayAttribute.IsNil)
+                    {
+                        result |= IsParamsValues.Array;
+                    }
+
+                    if (!paramCollectionAttribute.IsNil)
+                    {
+                        result |= IsParamsValues.Collection;
+                    }
+
+                    _lazyIsParams = result;
+                }
+
+                ImmutableInterlocked.InterlockedInitialize(
+                    ref _lazyCustomAttributes,
+                    attributes
+                );
             }
 
             Debug.Assert(!_lazyHiddenAttributes.IsDefault);

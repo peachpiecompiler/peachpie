@@ -171,14 +171,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Check the type represents<see cref="ReadOnlySpan{T}"/> where T is '<paramref name="ofType"/>'.
         /// </summary>
-        public static bool IsReadOnlySpan(this TypeSymbol t, TypeSymbol ofType)
+        public static bool IsReadOnlySpan(this TypeSymbol t, TypeSymbol ofType = null)
         {
             return
                 t != null &&
                 t.OriginalDefinition.MetadataName == "ReadOnlySpan`1" &&
                 t is INamedTypeSymbol named &&
                 named.TypeArguments.Length == 1 &&
-                named.TypeArguments[0].Equals(ofType, SymbolEqualityComparer.Default)
+                (ofType == null || named.TypeArguments[0].Equals(ofType, SymbolEqualityComparer.Default))
                 ;
         }
 
