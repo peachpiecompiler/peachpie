@@ -620,6 +620,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 EmptyRuntimeTypeHandle = ct.Helpers.Field(nameof(EmptyRuntimeTypeHandle));
                 EmptyNullable_T = ct.Helpers.Method(nameof(EmptyNullable_T));
+                CreateReadOnlySpan_T = new CoreGenericMethod(ct.Helpers, "CreateReadOnlySpan", 1);
                 IsUserTypeDeclared_Context_PhpTypeInfo = ct.Helpers.Method("IsUserTypeDeclared", ct.Context, ct.PhpTypeInfo);
                 AsSpan_T = new CoreGenericMethod(ct.MemoryExtensions, "AsSpan", 1);
 
@@ -631,7 +632,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreField EmptyRuntimeTypeHandle;
 
             public readonly CoreMethod
-                EmptyNullable_T,
+                EmptyNullable_T, CreateReadOnlySpan_T,
                 IsUserTypeDeclared_Context_PhpTypeInfo,
                 AsSpan_T
                 ;

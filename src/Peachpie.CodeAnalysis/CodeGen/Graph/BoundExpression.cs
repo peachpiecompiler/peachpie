@@ -3387,7 +3387,7 @@ namespace Pchp.CodeAnalysis.Semantics
             EmitThis(cg);                   // $this
             cg.EmitCallerTypeHandle();      // scope
             EmitStaticType(cg);             // statictype : PhpTypeInfo
-            EmitParametersArray(cg);        // "parameters"
+            EmitCachedParametersArray(cg, ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParams);        // "parameters"
             EmitUseArray(cg);               // "static"
 
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray);
@@ -3447,36 +3447,74 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        void EmitParametersArray(CodeGenerator cg)
+        void EmitNewParametersArray(CodeGenerator cg, FormalParam[] ps)
         {
-            var ps = ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParams;
-            if (ps != null && ps.Length != 0)
+            // new PhpArray(<count>){ ... }
+            cg.Builder.EmitIntConstant(ps.Length);
+            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
+
+            foreach (var p in ps)
             {
-                // TODO: cache singleton
+                var keyname = "$" + p.Name.Name.Value;
+                if (p.PassedByRef) keyname = "&" + keyname;
+                var value = (p.InitValue != null) ? "<optional>" : "<required>";
 
-                // new PhpArray(<count>){ ... }
-                cg.Builder.EmitIntConstant(ps.Length);
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
-
-                foreach (var p in ps)
-                {
-                    var keyname = "$" + p.Name.Name.Value;
-                    if (p.PassedByRef) keyname = "&" + keyname;
-                    var value = (p.InitValue != null) ? "<optional>" : "<required>";
-
-                    // <stack>.SetItemValue("&$name", "<optional>"|"<required>")
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-                    cg.EmitIntStringKey(keyname);
-                    cg.Builder.EmitStringConstant(value);
-                    cg.EmitConvertToPhpValue(cg.CoreTypes.String, 0);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
-                }
+                // <stack>.SetItemValue("&$name", "<optional>"|"<required>")
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.EmitIntStringKey(keyname);
+                cg.Builder.EmitStringConstant(value);
+                cg.EmitConvertToPhpValue(cg.CoreTypes.String, 0);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
             }
-            else
+        }
+
+        /// <summary>
+        /// Caches the array instance into an internal app-static field,
+        /// so repetitious creations only uses the existing instance.
+        /// </summary>
+        TypeSymbol EmitCachedParametersArray(CodeGenerator cg, FormalParam[] ps)
+        {
+            if (ps == null || ps.Length == 0)
             {
                 // PhpArray.Empty
-                cg.Emit_PhpArray_Empty();
+                return cg.Emit_PhpArray_Empty();
             }
+
+            // static PhpArray <arr>`;
+            var fld = cg.Factory.CreateSynthesizedField(cg.CoreTypes.PhpArray, "<params>", true);
+            var fldplace = new FieldPlace(null, fld, cg.Module);
+
+            // TODO: reuse existing cached PhpArray with the same content
+
+            // <fld> = new PhpArray(...)
+            var cctor = cg.Factory.CctorBuilder;
+
+            lock (cctor)
+            {
+                using (var cctor_cg = new CodeGenerator(cctor, cg.Module, cg.Diagnostics, cg.DeclaringCompilation.Options.OptimizationLevel, false, cg.Factory.Container, null, null, cg.Routine)
+                {
+                    CallerType = cg.CallerType,
+                    ContainingFile = cg.ContainingFile,
+                    IsInCachedArrayExpression = true,
+                })
+                {
+                    fldplace.EmitStorePrepare(cctor_cg.Builder);
+                    EmitNewParametersArray(cctor_cg, ps);
+                    fldplace.EmitStore(cctor_cg.Builder);
+                }
+            }
+
+            // LOAD <fld>
+            fld.EmitLoad(cg);
+
+            //// .DeepCopy()
+            //// if (this.Access.IsReadCopy) // unsafe ?
+            //{
+            //    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.DeepCopy);
+            //}
+
+            //
+            return fld.Type;    // ~ PhpArray
         }
     }
 

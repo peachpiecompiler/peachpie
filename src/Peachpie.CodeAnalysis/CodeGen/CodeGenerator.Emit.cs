@@ -20,7 +20,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -1937,12 +1936,30 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        // TODO: 1 argument can be marshaled to ReadOnlySpan<T> without allocation
 
                         // easy case,
                         // wrap remaining arguments to array
                         var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
                         arg_index += values.Length;
+
+                        // special cases:
+
+                        // []
+                        if (values.IsDefaultOrEmpty && p.Type.IsReadOnlySpan(null))
+                        {
+                            // default(ReadOnlySpan<T>)
+                            EmitLoadDefaultOfValueType(p.Type);
+                            break; // done
+                        }
+                        else if (values.Length == 1 && p.Type.IsReadOnlySpan(CoreTypes.PhpValue))
+                        {
+                            // 1 argument can be marshaled to ReadOnlySpan<T> without allocation
+                            EmitConvert(Emit(values[0].Value), 0, p_element);
+                            EmitCall(ILOpCode.Call, CoreMethods.Helpers.CreateReadOnlySpan_T.Symbol.Construct(p_element));
+                            break;
+                        }
+
+                        // 
                         result_type = Emit_NewArray(p_element, values);
                     }
 
