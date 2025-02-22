@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Pchp.Core.Utilities;
@@ -188,22 +189,27 @@ namespace Pchp.Core
     [DebuggerDisplay("dictionary (count = {Count})")]
     public sealed class OrderedDictionary/*<TValue>*/ : IEnumerable<KeyValuePair<IntStringKey, TValue>>, IEnumerable<TValue>
     {
-        #region BucketPool
+        #region ArrayHelper
 
-        static class BucketPool
+        static class ArrayHelper
         {
-            public static Bucket[] RentData(uint size) => new Bucket[size]; // ArrayPool<Bucket>.Shared.Rent(unchecked((int)size));
+            public static Bucket[] GetBucketArray(uint size) => new Bucket[size]; // ArrayPool<Bucket>.Shared.Rent(unchecked((int)size));
 
-            public static int[] RentHash(uint size) => ArrayPool<int>.Shared.Rent(unchecked((int)size));
+            public static int[] GetIntArray(uint size) => new int[size]; // ArrayPool<int>.Shared.Rent(unchecked((int)size));
 
-            public static void Return(Bucket[] array) { } // ArrayPool<Bucket>.Shared.Return(array, clearArray: true);
+            public static void Free(Bucket[] array) { } // ArrayPool<Bucket>.Shared.Return(array, clearArray: true);
 
-            public static void Return(int[] array)
+            public static void Free(int[] array) { }
+
+            public static void Resize<T>(ref T[] array, int oldsize, uint newsize)
             {
-                if (array != null)
-                {
-                    ArrayPool<int>.Shared.Return(array, clearArray: false);
-                }
+                //Array.Resize(ref this._data, (int)size); // slower
+
+                var newarray = new T[newsize];
+
+                Array.Copy(array, 0, newarray, 0, oldsize); // faster than Memory<T>.CopyTo() and Array.Resize<T>
+
+                Interlocked.Exchange(ref array, newarray);
             }
         }
 
@@ -326,12 +332,12 @@ namespace Pchp.Core
             _size = from._size;
             _dataUsed = from._dataUsed;
 
-            _data = BucketPool.RentData(_size);
+            _data = ArrayHelper.GetBucketArray(_size);
             Array.Copy(from._data, 0, _data, 0, _dataUsed);
             
             if (from._hash != null)
             {
-                _hash = BucketPool.RentHash(_size);
+                _hash = ArrayHelper.GetIntArray(_size);
                 Array.Copy(from._hash, 0, _hash, 0, _size);
             }
 
@@ -404,7 +410,7 @@ namespace Pchp.Core
             //
 
             _mask = mask;
-            _data = BucketPool.RentData(size);
+            _data = ArrayHelper.GetBucketArray(size);
             _hash = null; // no keys
             _dataUsed = 0;
             _dataDeleted = 0;
@@ -418,15 +424,7 @@ namespace Pchp.Core
             Debug.Assert(size > _size);
             Debug.Assert(_isPowerOfTwo(size));
 
-            //Array.Resize(ref this._data, (int)size); // slower
-
-            var newdata = BucketPool.RentData(size);
-
-            Array.Copy(_data, 0, newdata, 0, _dataUsed); // faster than Memory<T>.CopyTo() and Array.Resize<T>
-
-            BucketPool.Return(
-                Interlocked.Exchange(ref _data, newdata)
-            );
+            ArrayHelper.Resize(ref _data, _dataUsed, size);
 
             _mask = size - 1;
             _size = size;
@@ -473,8 +471,8 @@ namespace Pchp.Core
 
         private void _createhash()
         {
-            BucketPool.Return(
-                Interlocked.Exchange(ref this._hash, BucketPool.RentHash(this._size))
+            ArrayHelper.Free(
+                Interlocked.Exchange(ref this._hash, ArrayHelper.GetIntArray(this._size))
             );
 
             _rehash();
@@ -1142,7 +1140,7 @@ namespace Pchp.Core
 
             // shuffle and compact elements:
 
-            var newData = BucketPool.RentData(_size);
+            var newData = ArrayHelper.GetBucketArray(_size);
             var i = 0; // where to put next element
 
             var enumerator = GetEnumerator();
@@ -1166,7 +1164,7 @@ namespace Pchp.Core
                 i++;
             }
 
-            BucketPool.Return(
+            ArrayHelper.Free(
                 Interlocked.Exchange(ref _data, newData) // _data = newData;
             );
 
@@ -1178,7 +1176,7 @@ namespace Pchp.Core
 
             if (this._hash == null)
             {
-                this._hash = BucketPool.RentHash(this._size);
+                this._hash = ArrayHelper.GetIntArray(this._size);
             }
 
             _rehash();
@@ -1196,7 +1194,7 @@ namespace Pchp.Core
 
             // copy elements in reverse order and compact:
 
-            var newData = BucketPool.RentData(_size);
+            var newData = ArrayHelper.GetBucketArray(_size);
             var i = Count; // where to put next element
 
             var enumerator = GetEnumerator();
@@ -1209,7 +1207,7 @@ namespace Pchp.Core
                 bucket.Value = current.Value;
             }
 
-            BucketPool.Return(
+            ArrayHelper.Free(
                 Interlocked.Exchange(ref _data, newData)
             );
 
@@ -1221,7 +1219,7 @@ namespace Pchp.Core
 
             if (this._hash == null)
             {
-                this._hash = BucketPool.RentHash(this._size);
+                this._hash = ArrayHelper.GetIntArray(this._size);
             }
 
             _rehash();
@@ -1277,7 +1275,7 @@ namespace Pchp.Core
                 {
                     if (this._hash == null)
                     {
-                        this._hash = BucketPool.RentHash(this._size);
+                        this._hash = ArrayHelper.GetIntArray(this._size);
                     }
 
                     _rehash();
