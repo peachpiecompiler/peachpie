@@ -13,22 +13,24 @@ namespace Peachpie.CodeAnalysis.Semantics
         /// <summary>
         /// Gets value indicating the type refers to a nullable type (<c>?TYPE</c>).
         /// </summary>
-        public static bool IsNullable(this TypeRef tref)
+        public static bool IsNullable(this TypeRef tref) => tref switch
         {
-            return tref is NullableTypeRef;
-            //return tref switch
-            //{
-            //    NullableTypeRef _ => true,
-            //    PrimitiveTypeRef pt => pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.@null;
-            //    _ => false;
-            //};
-        }
+            NullableTypeRef _ => true,
+            PrimitiveTypeRef pt => pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.@null,
+            MultipleTypeRef m => m.MultipleTypes.LastOrDefault().IsNullable(),
+            _ => false,
+        };
 
         /// <summary>
         /// Whether the type refers to a special "null" class name, valid only within a union.
         /// </summary>
         public static bool IsNullClass(this TypeRef tref)
         {
+            if (tref is PrimitiveTypeRef pt)
+            {
+                return pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.@null;
+            }
+
             var ct = (tref is TranslatedTypeRef tr ? tr.OriginalType : tref) as ClassTypeRef;
             return ct != null && ct.ClassName == QualifiedName.Null;
         }

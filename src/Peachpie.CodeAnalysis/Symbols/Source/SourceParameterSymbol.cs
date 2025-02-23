@@ -11,6 +11,7 @@ using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.Semantics;
 using System.Threading;
 using Devsense.PHP.Ast.DocBlock;
+using Peachpie.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -186,7 +187,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 // when providing type hint, only allow null if explicitly specified:
-                if (_syntax.TypeHint == null || _syntax.TypeHint is NullableTypeRef || DefaultsToNull)
+                if (_syntax.TypeHint == null || DefaultsToNull)
                 {
                     return false;
                 }
@@ -197,13 +198,13 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         case PrimitiveTypeRef.PrimitiveType.never:
                         case PrimitiveTypeRef.PrimitiveType.mixed:
+                        case PrimitiveTypeRef.PrimitiveType.@null:
                             // can be null
                             return false;
                     }
                 }
 
-                //
-                return true;
+                return !_syntax.TypeHint.IsNullable();
             }
         }
 
