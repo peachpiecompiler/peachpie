@@ -175,7 +175,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                                 return TypeCtx.IsAString(valuetype);
 
                             case PrimitiveTypeRef.PrimitiveType.@object:
-                                return false;
+                                return TypeCtx.IsObject(valuetype);
 
                             case PrimitiveTypeRef.PrimitiveType.@float:
                             case PrimitiveTypeRef.PrimitiveType.@int:
@@ -184,7 +184,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     else if (thint is ClassTypeRef classtref)
                     {
-                        return false; // cannot have default value other than NULL
+                        //return false; // cannot have default value other than NULL
                     }
                 }
             }
