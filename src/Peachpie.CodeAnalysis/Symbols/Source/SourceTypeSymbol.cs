@@ -13,7 +13,6 @@ using Devsense.PHP.Syntax;
 using System.Globalization;
 using System.Threading;
 using Microsoft.CodeAnalysis.Text;
-using static Pchp.CodeAnalysis.AstUtils;
 using Pchp.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Errors;
 using System.IO;
@@ -1453,7 +1452,10 @@ namespace Pchp.CodeAnalysis.Symbols
                         {
                             if (s is SynthesizedFieldSymbol fld)
                             {
-                                if (fieldsset == null) fieldsset = new HashSet<string>();
+                                if (fieldsset == null)
+                                {
+                                    fieldsset = new HashSet<string>();
+                                }
 
                                 if (fieldsset.Add(fld.Name) == false)
                                 {
@@ -1461,9 +1463,9 @@ namespace Pchp.CodeAnalysis.Symbols
                                     return false;
                                 }
 
-                                if (this.Syntax.Members.OfType<FieldDeclList>().SelectMany(list => list.Fields).Select(fdecl => fdecl.Name.Value).Contains(fld.Name))
+                                var members = EnsureMembers(); // get symbols declared in this type, without traits
+                                if (members.Any(m => m is IFieldSymbol f && f.Name == fld.Name))
                                 {
-                                    // field already declared by containing class
                                     return false;
                                 }
                             }
