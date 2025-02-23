@@ -820,12 +820,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 boundTarget = BindIsMemberOfChain(x.IsMemberOf, BoundAccess.Read/*Object?*/);
             }
 
-            // callable convert syntax (...)
-            if (x.CallSignature.IsCallableConvert)
-            {
-                throw new NotImplementedException("callable convert");
-            }
-
             BoundRoutineCall result;
 
             if (x is AST.DirectFcnCall)
@@ -834,6 +828,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 // $x->func(...)
 
                 var fname = ((AST.DirectFcnCall)x).FullName;
+
+                if (x.CallSignature.IsCallableConvert)  // callable convert syntax (...)
+                {
+                    return new BoundCallableConvert(boundTarget, new BoundRoutineName(fname.Name), DeclaringCompilation);
+                }
 
                 if (boundTarget == null)
                 {
@@ -863,15 +862,22 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     Debug.Assert(fname.FallbackName.HasValue == false);
                     Debug.Assert(fname.Name.QualifiedName.IsSimpleName);
+
                     result = new BoundInstanceFunctionCall(boundTarget, fname.Name, BindArguments(x.CallSignature.Parameters));
                 }
             }
-            else if (x is AST.IndirectFcnCall)
+            else if (x is AST.IndirectFcnCall indirect)
             {
                 // $func(...)
                 // $x->$func(...)
 
-                var nameExpr = BindExpression(((AST.IndirectFcnCall)x).NameExpr);
+                var nameExpr = BindExpression(indirect.NameExpr);
+                
+                if (x.CallSignature.IsCallableConvert)  // callable convert syntax (...)
+                {
+                    return new BoundCallableConvert(boundTarget, new BoundRoutineName(nameExpr), DeclaringCompilation);
+                }
+
                 if (boundTarget == null)
                 {
                     result = new BoundGlobalFunctionCall(nameExpr, BindArguments(x.CallSignature.Parameters));
@@ -887,11 +893,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 Debug.Assert(boundTarget == null);
 
-                var boundname = (staticMtdCall is AST.DirectStMtdCall dm)
+                var boundStaticTarget = BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true);
+                var boundName = (staticMtdCall is AST.DirectStMtdCall dm)
                     ? new BoundRoutineName(new QualifiedName(dm.MethodName))
                     : new BoundRoutineName(new BoundConversionEx(BindExpression(((AST.IndirectStMtdCall)staticMtdCall).MethodNameExpression), BoundTypeRefFactory.StringTypeRef));
 
-                result = new BoundStaticFunctionCall(BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true), boundname, BindArguments(x.CallSignature.Parameters));
+                if (x.CallSignature.IsCallableConvert)  // callable convert syntax (...)
+                {
+                    return new BoundCallableConvert(boundStaticTarget, boundName, DeclaringCompilation);
+                }
+
+                result = new BoundStaticFunctionCall(boundStaticTarget, boundName, BindArguments(x.CallSignature.Parameters));
             }
             else
             {

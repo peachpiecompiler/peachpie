@@ -735,7 +735,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 {
                     TransformationCount++;
                     x.Access = x.Access.WithRead(DeclaringCompilation.CoreTypes.String);    // read the literal as string, do not rewrite it to BoundCallableConvert again
-                    return new BoundCallableConvert(x, DeclaringCompilation) { TargetCallable = symbol }.WithContext(x);
+                    return new BoundConvertToCallable(x, DeclaringCompilation) { TargetCallable = symbol }.WithContext(x);
                 }
             }
 
@@ -813,13 +813,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
             }
 
-            BoundCallableConvert Transform(BoundArrayEx origArray, IMethodSymbol targetCallable, BoundExpression receiver = null)
+            BoundConvertToCallable Transform(BoundArrayEx origArray, IMethodSymbol targetCallable, BoundExpression receiver = null)
             {
                 // read the literal as array, do not rewrite it to BoundCallableConvert again
                 origArray.Access = origArray.Access.WithRead(DeclaringCompilation.CoreTypes.PhpArray);
 
                 TransformationCount++;
-                return new BoundCallableConvert(origArray, DeclaringCompilation)
+                return new BoundConvertToCallable(origArray, DeclaringCompilation)
                 {
                     TargetCallable = targetCallable,
                     Receiver = receiver

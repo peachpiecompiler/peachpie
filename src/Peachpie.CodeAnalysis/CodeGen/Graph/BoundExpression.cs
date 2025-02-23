@@ -2354,6 +2354,14 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            throw new NotImplementedException();
+        }
+    }
+
+    partial class BoundConvertToCallable
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
             var m = TargetCallable as MethodSymbol;
 
             if ((m != null && m.IsValidMethod()) ||
@@ -3384,18 +3392,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
             cg.EmitLoadContext();           // Context
             idxfld.EmitLoad(cg);            // routine
-            EmitThis(cg);                   // $this
+            cg.EmitPhpThisOrNull();         // $this
             cg.EmitCallerTypeHandle();      // scope
             EmitStaticType(cg);             // statictype : PhpTypeInfo
             EmitCachedParametersArray(cg, ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParamsFixed());        // "parameters"
             EmitUseArray(cg);               // "static"
 
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray);
-        }
-
-        void EmitThis(CodeGenerator cg)
-        {
-            cg.EmitPhpThisOrNull();
         }
 
         void EmitStaticType(CodeGenerator cg)

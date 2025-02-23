@@ -1574,6 +1574,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
+        public override T VisitCallableConvert(BoundCallableConvert x)
+        {
+            x.TypeRefMask = TypeCtx.GetClosureTypeMask();
+
+            return base.VisitCallableConvert(x);
+        }
+
         #endregion
 
         #region Visit InstanceOf
