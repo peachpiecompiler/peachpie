@@ -287,7 +287,7 @@ namespace Pchp.Core.Dynamic
             /// <summary>
             /// Bind arguments to array of parameters.
             /// </summary>
-            public abstract Expression BindParams(int fromarg, Type element_type);
+            public abstract Expression BindParamsArray(int fromarg, Type element_type);
 
             /// <summary>
             /// Gets expression representing cost of argument binding operation.
@@ -563,7 +563,7 @@ namespace Pchp.Core.Dynamic
                     return Expression.Assign(element, ConvertExpression.Bind(expression, element.Type, _ctx));
                 }
 
-                public override Expression BindParams(int fromarg, Type element_type)
+                public override Expression BindParamsArray(int fromarg, Type element_type)
                 {
                     //if (element_type == _argsarray.Type.GetElementType())
                     //if (true)
@@ -778,7 +778,7 @@ namespace Pchp.Core.Dynamic
                     return BinderHelpers.BindAssign(arg, expression, _ctx);
                 }
 
-                public override Expression BindParams(int fromarg, Type element_type)
+                public override Expression BindParamsArray(int fromarg, Type element_type)
                 {
                     var count = _args.Length - fromarg;
 
@@ -862,11 +862,9 @@ namespace Pchp.Core.Dynamic
             for (int im = 0; im < nmandatory + noptional; im++)
             {
                 var p = ps[nimplicit + im];
-                if (noptional != 0 && p.Position == ps.Length - 1 && p.IsParamsParameter())
+                if (noptional != 0 && p.Position == ps.Length - 1 && p.IsParamsParameter(out var element_type))
                 {
                     hasparams = true;
-
-                    var element_type = p.ParameterType.GetElementType();
 
                     // for (int o = io + nmandatory; o < argc; o++) result |= CostOf(argv[o], p.ElementType)
                     if (argc_opt.HasValue)

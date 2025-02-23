@@ -69,7 +69,7 @@ namespace Pchp.Core.Dynamic
                 if (!method.DeclaringType.GetPhpTypeInfo().IsPhpType) // only methods declared outside PHP code
                 {
                     if (count > 2) return true;
-                    if (ps.Last().IsParamsParameter()) return true;
+                    if (ps.Last().IsParamsParameter(out _)) return true;
                 }
             }
 

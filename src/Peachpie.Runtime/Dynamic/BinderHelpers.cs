@@ -19,10 +19,34 @@ namespace Pchp.Core.Dynamic
     [DebuggerNonUserCode]
     internal static class BinderHelpers
     {
-        public static bool IsParamsParameter(this ParameterInfo p)
+        public static bool IsParamsParameter(this ParameterInfo p, out Type elementType)
         {
-            //TODO: [ParamCollectionAttribute] Span<T>
-            return p.ParameterType.IsArray && p.CustomAttributes.Any(attr => attr.AttributeType == typeof(ParamArrayAttribute));
+            if (p.ParameterType.IsArray)
+            {
+                // [ParamArray] T[]
+                if (p.CustomAttributes.Any(attr => attr.AttributeType == typeof(ParamArrayAttribute)))
+                {
+                    elementType = p.ParameterType.GetElementType();
+                    return true;
+                }
+            }
+            else if (p.ParameterType.IsConstructedGenericType && p.CustomAttributes.Any(attr => attr.AttributeType.Name == "ParamCollectionAttribute"))   // [ParamCollectionAttribute] Span<T>
+            {
+                var def_args = p.ParameterType.GenericTypeArguments;
+                if (def_args.Length == 1)
+                {
+                    var def = p.ParameterType.GetGenericTypeDefinition();
+                    if (def == typeof(Span<>) || def == typeof(ReadOnlySpan<>))
+                    {
+                        elementType = def_args[0]; // T
+                        return true;
+                    }
+                }
+            }
+
+            //
+            elementType = null;
+            return false;
         }
 
         /// <summary>
@@ -201,7 +225,7 @@ namespace Pchp.Core.Dynamic
                 !p.HasDefaultValue && // CLR default value
                 !p.IsOptional && // has [Optional} attribute
                 p.GetCustomAttribute<DefaultValueAttribute>() == null && // has [DefaultValue] attribute
-                !p.IsParamsParameter(); // is params
+                !p.IsParamsParameter(out _); // is params
         }
 
         /// <summary>
@@ -1278,9 +1302,9 @@ namespace Pchp.Core.Dynamic
 
                 // regular parameter:
 
-                if (i == ps.Length - 1 && p.IsParamsParameter())
+                if (i == ps.Length - 1 && p.IsParamsParameter(out var elementType))
                 {
-                    boundargs[i] = args.BindParams(argi, p.ParameterType.GetElementType());
+                    boundargs[i] = Expression.Convert(args.BindParamsArray(argi, elementType), p.ParameterType);
                 }
                 else
                 {
