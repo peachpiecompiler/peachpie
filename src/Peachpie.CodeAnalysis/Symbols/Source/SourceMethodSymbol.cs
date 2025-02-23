@@ -135,8 +135,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     if (_syntax.ReturnType != null)
                     {
-                        // {0} cannot declare a return type
-                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_CannotDeclareReturnType, _type.FullName.ToString(name, false));
+                        //// {0} cannot declare a return type
+                        //diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_CannotDeclareReturnType, _type.FullName.ToString(name, false)); // it seem it can
                     }
                 }
                 else if (name.IsCallName) // __call($name, $args)

@@ -425,5 +425,20 @@ namespace Pchp.CodeAnalysis
             ? summary
             : @default
             ;
+
+        /// <summary>
+        /// Trims trailing <c>,</c> parameter.
+        /// </summary>
+        public static ReadOnlySpan<FormalParam> FormalParamsFixed(this Signature sig)
+        {
+            var fp = sig.FormalParams.AsSpan();
+
+            if (fp.Length > 0 && fp[fp.Length - 1] == null)
+            {
+                fp = fp[..^1];
+            }
+
+            return fp;
+        }
     }
 }

@@ -3387,7 +3387,7 @@ namespace Pchp.CodeAnalysis.Semantics
             EmitThis(cg);                   // $this
             cg.EmitCallerTypeHandle();      // scope
             EmitStaticType(cg);             // statictype : PhpTypeInfo
-            EmitCachedParametersArray(cg, ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParams);        // "parameters"
+            EmitCachedParametersArray(cg, ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParamsFixed());        // "parameters"
             EmitUseArray(cg);               // "static"
 
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray);
@@ -3447,7 +3447,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        void EmitNewParametersArray(CodeGenerator cg, FormalParam[] ps)
+        void EmitNewParametersArray(CodeGenerator cg, ReadOnlySpan<FormalParam> ps)
         {
             // new PhpArray(<count>){ ... }
             cg.Builder.EmitIntConstant(ps.Length);
@@ -3472,7 +3472,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Caches the array instance into an internal app-static field,
         /// so repetitious creations only uses the existing instance.
         /// </summary>
-        TypeSymbol EmitCachedParametersArray(CodeGenerator cg, FormalParam[] ps)
+        TypeSymbol EmitCachedParametersArray(CodeGenerator cg, ReadOnlySpan<FormalParam> ps)
         {
             if (ps == null || ps.Length == 0)
             {

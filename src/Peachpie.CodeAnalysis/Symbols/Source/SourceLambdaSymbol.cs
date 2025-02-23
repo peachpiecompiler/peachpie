@@ -142,7 +142,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // remove vars specified in parameters
-            foreach (var p in fn.Signature.FormalParams)
+            foreach (var p in fn.Signature.FormalParamsFixed())
             {
                 capturedvars.Remove(p.Name.Name);
             }

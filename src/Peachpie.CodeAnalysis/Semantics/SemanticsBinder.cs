@@ -587,7 +587,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     captured.Add(v.VarName);
                 }
 
-                foreach (var p in fn.Signature.FormalParams)
+                foreach (var p in fn.Signature.FormalParamsFixed())
                 {
                     captured.Remove(p.Name.Name);
                 }
@@ -818,6 +818,12 @@ namespace Pchp.CodeAnalysis.Semantics
             if (boundTarget == null)
             {
                 boundTarget = BindIsMemberOfChain(x.IsMemberOf, BoundAccess.Read/*Object?*/);
+            }
+
+            // callable convert syntax (...)
+            if (x.CallSignature.IsCallableConvert)
+            {
+                throw new NotImplementedException("callable convert");
             }
 
             BoundRoutineCall result;

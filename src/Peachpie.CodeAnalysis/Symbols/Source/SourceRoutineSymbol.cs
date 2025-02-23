@@ -168,7 +168,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             // check mandatory behind and optional parameter
             bool foundopt = false;
-            var ps = SyntaxSignature.FormalParams;
+            var ps = SyntaxSignature.FormalParamsFixed();
             for (int i = 0; i < ps.Length; i++)
             {
                 var p = ps[i];
@@ -225,7 +225,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     else if (p.TypeHint is PrimitiveTypeRef pt && (
                         pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.callable ||
-                        pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.iterable ||
+                        //pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.iterable || // it seems it's allowed now
                         pt.PrimitiveTypeName == PrimitiveTypeRef.PrimitiveType.never))
                     {
                         diagnostic.Add(this, p, Errors.ErrorCode.ERR_PropertyTypeNotAllowed, this.ContainingType.PhpName(), p.Name, pt.PrimitiveTypeName.ToString());
