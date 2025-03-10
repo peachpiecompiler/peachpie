@@ -384,6 +384,19 @@ namespace Peachpie.NET.Sdk.Tools
                 UseShellExecute = false,
             };
 
+            var output = new DataReceivedEventHandler((o, e) =>
+            {
+                if (e.Data != null)
+                {
+                    if (this.Log.LogMessageFromText(e.Data, MessageImportance.High) == false)
+                    {
+                        // plain text
+                        this.Log.LogMessage(MessageImportance.High, e.Data);
+                        Console.WriteLine(e.Data);
+                    }
+                }
+            });
+
             // non-windows?
             if (Environment.OSVersion.Platform != PlatformID.Win32NT)
             {
@@ -392,29 +405,35 @@ namespace Peachpie.NET.Sdk.Tools
             }
 
             //
-            var process = Process.Start(pi);
-            var dataReceived = new DataReceivedEventHandler((o, e) =>
-            {
-                this.Log.LogMessageFromText(e.Data, MessageImportance.High);
-            });
+            this.Log.LogCommandLine(MessageImportance.High, $"{pi.FileName} {pi.Arguments}");
 
-            process.OutputDataReceived += dataReceived;
-            process.ErrorDataReceived += dataReceived;
+            //
+            using (var process = new Process() { StartInfo = pi, })
+            {
+                process.OutputDataReceived += output;
+                process.ErrorDataReceived += output;
 
-            using (var cancellationHandler = cancellation.Register(() =>
-            {
-                if (process.HasExited == false)
-                {
-                    this.Log.LogMessageFromText("Cancelled by user", MessageImportance.High);
-                    // TODO: send signal first
-                    process.Kill();
-                }
-            }))
-            {
-                process.WaitForExit();
-                process.StandardOutput.ReadToEnd();
+                process.Start();
+                
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
                 //
-                return process.ExitCode == 0;
+                using (var cancellationHandler = cancellation.Register(() =>
+                {
+                    if (process.HasExited == false)
+                    {
+                        this.Log.LogMessageFromText("Cancelled by user", MessageImportance.High);
+                        // TODO: send signal first
+                        process.Kill();
+                    }
+                }))
+                {
+                    process.WaitForExit();
+
+                    //
+                    return process.ExitCode == 0;
+                }
             }
         }
 
@@ -464,8 +483,8 @@ namespace Peachpie.NET.Sdk.Tools
                 // sanitize {arg}
                 sb.Append('\"');
                 sb.Append(arg.Trim()
-                    //.Replace("\\", "\\\\")
-                    //.Replace("\"", "\\\"")
+                //.Replace("\\", "\\\\")
+                //.Replace("\"", "\\\"")
                 );
                 sb.Append('\"');
             }
@@ -528,78 +547,6 @@ namespace Peachpie.NET.Sdk.Tools
                 }
 
                 return false;
-            }
-        }
-
-        // honestly I don't know why msbuild in VS does not handle Console.Output,
-        // so we have our custom TextWriter that we pass to Log
-        sealed class LogWriter : TextWriter
-        {
-            TaskLoggingHelper Log { get; }
-
-            StringBuilder Buffer { get; } = new StringBuilder();
-
-            public override Encoding Encoding => Encoding.UTF8;
-
-            public LogWriter(TaskLoggingHelper log)
-            {
-                Debug.Assert(log != null);
-
-                this.Log = log;
-                this.NewLine = "\n";
-            }
-
-            bool TryLogCompleteMessage()
-            {
-                string line = null;
-
-                lock (Buffer)   // accessed in parallel
-                {
-                    // get line from the buffer:
-                    for (int i = 0; i < Buffer.Length; i++)
-                    {
-                        if (Buffer[i] == '\n')
-                        {
-                            line = Buffer.ToString(0, i);
-
-                            Buffer.Remove(0, i + 1);
-                        }
-                    }
-                }
-
-                //
-                return line != null && LogCompleteMessage(line);
-            }
-
-            bool LogCompleteMessage(string line)
-            {
-                // TODO: following logs only Warnings and Errors,
-                // to log Info diagnostics properly, parse it by ourselves
-
-                return this.Log.LogMessageFromText(line.Trim(), MessageImportance.High);
-            }
-
-            public override void Write(char value)
-            {
-                lock (Buffer) // accessed in parallel
-                {
-                    Buffer.Append(value);
-                }
-
-                if (value == '\n')
-                {
-                    TryLogCompleteMessage();
-                }
-            }
-
-            public override void Write(string value)
-            {
-                lock (Buffer)
-                {
-                    Buffer.Append(value);
-                }
-
-                TryLogCompleteMessage();
             }
         }
     }
