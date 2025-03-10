@@ -21,13 +21,8 @@ using Peachpie.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
-    /// <summary>
-    /// Implementation of <c>pchp.exe</c>.
-    /// </summary>
     internal class PhpCompiler : CommonCompiler
     {
-        internal const string ResponseFileName = "php.rsp";
-
         readonly DiagnosticFormatter _diagnosticFormatter;
         readonly string _tempDirectory;
 
