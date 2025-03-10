@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Devsense.PHP.Syntax;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using SimpleJSON;
@@ -251,19 +250,19 @@ namespace Peachpie.NET.Sdk.Tools
                         break;
 
                     case "authors":
-                        Authors = Authors.Concat(GetAuthors(node.Value.AsArray)).AsArray();
+                        Authors = Authors.Concat(GetAuthors(node.Value.AsArray)).ToArray();
                         break;
 
                     case "require":
                         // { "name": "version constraint", }
-                        Dependencies = Dependencies.Concat(GetDependencies(node.Value)).AsArray();
+                        Dependencies = Dependencies.Concat(GetDependencies(node.Value)).ToArray();
                         break;
 
                     case "require-dev":
                         if (ComposerIncludeDevPackages)
                         {
                             // { "name": "version constraint", }
-                            Dependencies = Dependencies.Concat(GetDependencies(node.Value)).AsArray();
+                            Dependencies = Dependencies.Concat(GetDependencies(node.Value)).ToArray();
                         }
                         break;
 
@@ -273,7 +272,7 @@ namespace Peachpie.NET.Sdk.Tools
                             // CONSIDER: Suggest packages are only informative, does not make much sense to reference those "names" directly.
 
                             // { "name": "description", }
-                            Dependencies = Dependencies.Concat(GetDependencies(node.Value, ignoreVersion: true)).AsArray();
+                            Dependencies = Dependencies.Concat(GetDependencies(node.Value, ignoreVersion: true)).ToArray();
                         }
                         break;
 
@@ -284,11 +283,11 @@ namespace Peachpie.NET.Sdk.Tools
                             switch (autoload.Key.ToLowerInvariant())
                             {
                                 case "psr-4":
-                                    Autoload_PSR4 = Autoload_PSR4.Concat(GetAutoloadPsr4FromPsr4(autoload.Value.AsObject)).AsArray();
+                                    Autoload_PSR4 = Autoload_PSR4.Concat(GetAutoloadPsr4FromPsr4(autoload.Value.AsObject)).ToArray();
                                     break;
 
                                 case "psr-0":
-                                    Autoload_PSR4 = Autoload_PSR4.Concat(GetAutoloadPsr4FromPsr0(autoload.Value.AsObject)).AsArray();
+                                    Autoload_PSR4 = Autoload_PSR4.Concat(GetAutoloadPsr4FromPsr0(autoload.Value.AsObject)).ToArray();
                                     break;
 
                                 case "classmap":

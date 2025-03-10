@@ -247,6 +247,8 @@
                OutputName="%(IntermediateAssembly.Filename)"
                TempOutputPath="$(TempOutputDir)"
                TargetFramework="$(TargetFrameworkMoniker)"
+               PeachpieCompilerFullPath="$(PeachpieCompilerFullPath)"
+               ResponseFilePath="$(TempOutputDir)%(IntermediateAssembly.Filename).rsp"
                NetFrameworkPath="$(NetFrameworkPath)"
                BasePath="$(PhpBasePath)"
                Optimization="$(Optimize)"

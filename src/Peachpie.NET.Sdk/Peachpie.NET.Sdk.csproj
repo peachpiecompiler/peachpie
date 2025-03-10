@@ -1,10 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <_TargetFramework>net6.0</_TargetFramework>
+    <_TargetFramework>netstandard2.0</_TargetFramework>
+    <_CompilerFramework>net6.0</_CompilerFramework>
     <TargetFrameworks>$(_TargetFramework)</TargetFrameworks>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
 
+    <CompilerProjectPath>$(MSBuildThisFileDirectory)../Peachpie.CodeAnalysis/Peachpie.CodeAnalysis.csproj</CompilerProjectPath>
+    
     <Version Condition=" '$(Version)'=='' ">1.0.0-dev</Version>
     <PackageOnlyBuild>true</PackageOnlyBuild>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
@@ -22,6 +25,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackToolsDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(_TargetFramework)\publish</PackToolsDir>
+    <CompilerDir>$(MSBuildThisFileDirectory)..\Peachpie.CodeAnalysis\bin\$(Configuration)\$(_CompilerFramework)\publish</CompilerDir>
     <NuspecFile>$(MSBuildThisFileDirectory)$(MSbuildProjectName).nuspec</NuspecFile>
   </PropertyGroup>
 
@@ -85,12 +89,13 @@
   </ItemGroup-->
 
   <ItemGroup>
-    <ProjectReference Include="..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
+    <!--ProjectReference Include="$(CompilerProjectPath)" /-->
     <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="[15.8.*,]" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.13.9" />
   </ItemGroup>
 
   <Target Name="PublishAll">
+    <MSBuild Projects="$(CompilerProjectPath)" Targets="publish" Properties="GeneratePackageOnBuild=false;Version=$(Version);TargetFramework=$(_CompilerFramework);" />
     <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="publish" Properties="GeneratePackageOnBuild=false;Version=$(Version);TargetFramework=$(_TargetFramework);" />
   </Target>
 
@@ -98,6 +103,7 @@
     <PropertyGroup>
       <NuspecProperties>$(NuspecProperties);id=$(PackageId)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);packToolsDir=$(PackToolsDir)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);compilerDir=$(CompilerDir)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);description=$(Description)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);version=$(PackageVersion)</NuspecProperties>
     </PropertyGroup>
@@ -113,5 +119,9 @@
     </ItemGroup>
     <WriteLinesToFile File="build\Peachpie.Version.props" Overwrite="true" Lines="@(_PropsLine)" />
   </Target>
+
+  <ItemGroup>
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+  </ItemGroup>
 
 </Project>
