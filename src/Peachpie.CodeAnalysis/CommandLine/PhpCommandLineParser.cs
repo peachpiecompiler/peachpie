@@ -20,7 +20,13 @@ namespace Pchp.CodeAnalysis.CommandLine
     {
         public static PhpCommandLineParser Default { get; } = new PhpCommandLineParser();
 
+        static readonly HashSet<string> s_true_values = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "true", "1", "yes", "on"
+        };
+
         protected override string RegularFileExtension { get; } = Constants.ScriptFileExtension;
+
         protected override string ScriptFileExtension { get; } = Constants.ScriptFileExtension;
 
         internal PhpCommandLineParser()
@@ -28,7 +34,7 @@ namespace Pchp.CodeAnalysis.CommandLine
         {
         }
 
-        static bool TryParseOption2(string arg, out string name, out string value)
+        internal static bool TryParseOption2(string arg, out string name, out string value)
         {
             // additional support for "--argument:value"
             // TODO: remove once implemented in CodeAnalysis
@@ -73,6 +79,11 @@ namespace Pchp.CodeAnalysis.CommandLine
             // default behavior:
             return CommandLineParser.TryParseEncodingName(arg);
         }
+
+        /// <summary>
+        /// Gets value indicating the given string represents <c>true</c> option value.
+        /// </summary>
+        static bool IsTrueValue(string value) => value != null && s_true_values.Contains(value.Trim());
 
         IEnumerable<CommandLineSourceFile> ExpandFileArgument(string path, string baseDirectory, List<Diagnostic> diagnostics)
         {
@@ -204,7 +215,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var autoload_files = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
             var autoload_psr4 = new List<(string prefix, string path)>();
 
-            if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
+            if (!string.IsNullOrEmpty(sdkDirectoryOpt)) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
 
             foreach (string arg in flattenedArgs)
@@ -223,6 +234,18 @@ namespace Pchp.CodeAnalysis.CommandLine
                     case "help":
                         displayHelp = true;
                         continue;
+
+                    case "attach":
+                        if (IsTrueValue(value) || value == null)
+                        {
+                            Debugger.Launch();
+                        }
+                        else
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_BadCompilationOptionValue, Location.None, name, value));
+
+                        }
+                        break;
 
                     case "d":
                     case "define":
@@ -1035,9 +1058,9 @@ namespace Pchp.CodeAnalysis.CommandLine
             if (parenIdx >= 0)
             {
                 fqn = value.AsSpan(0, parenIdx);
-                
+
                 var args = value.AsSpan(parenIdx).Trim();
-                
+
                 bool ConsumeChar(ref ReadOnlySpan<char> text, char ch)
                 {
                     if (text.Length != 0 && text[0] == ch)
