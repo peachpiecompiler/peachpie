@@ -368,10 +368,12 @@ namespace Peachpie.NET.Sdk.Tools
         {
             cancellation.ThrowIfCancellationRequested();
 
-            Debug.Assert(File.Exists(PeachpieCompilerFullPath));
+            var compilerPath = Path.GetFullPath(PeachpieCompilerFullPath);
+
+            Debug.Assert(File.Exists(compilerPath));
 
             //
-            var pi = new ProcessStartInfo(PeachpieCompilerFullPath)
+            var pi = new ProcessStartInfo(compilerPath)
             {
                 Arguments = FlatternArgs(args),
                 CreateNoWindow = true,
@@ -381,6 +383,13 @@ namespace Peachpie.NET.Sdk.Tools
                 StandardErrorEncoding = Encoding.UTF8,
                 UseShellExecute = false,
             };
+
+            // non-windows?
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+            {
+                pi.FileName = "dotnet";
+                pi.Arguments = $"\"{Path.ChangeExtension(compilerPath, ".dll")}\" {pi.Arguments}";
+            }
 
             //
             var process = Process.Start(pi);

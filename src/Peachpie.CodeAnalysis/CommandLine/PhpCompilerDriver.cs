@@ -18,8 +18,6 @@ namespace Pchp.CodeAnalysis.CommandLine
         /// </summary>
         public static int Main(string[] args)
         {
-            Debugger.Launch();
-
             // $"/baseDirectory:{BasePath}",
             // $"/sdkDirectory:{NetFrameworkPath}",
             // $"/additionalReferenceDirectories:{libs}",
