@@ -34,4 +34,4 @@ Write-Host -f green "Deleting '$version-$suffix' packages from '$packagesSource'
 
 # Reinstall the packages by restoring a dummy project that depends on them
 Write-Host -f green "Installing packages to nuget cache ..."
-dotnet restore "$rootDir/build/dummy"
+dotnet restore "$rootDir/build/dummy" --ignore-failed-sources
