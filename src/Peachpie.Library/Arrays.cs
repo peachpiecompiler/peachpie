@@ -3069,7 +3069,7 @@ namespace Pchp.Library.Standard
             }
 
             var result = new PhpArray();
-            
+
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
             {
@@ -3183,87 +3183,98 @@ namespace Pchp.Library.Standard
 
             int count = arrays.Length;
             bool preserve_keys = count == 1;
-            var args = new PhpValue[count];
-            var iterators = new OrderedDictionary.FastEnumerator[count];
             PhpArray result;
 
-            // initializes iterators and args array, computes length of the longest array:
-            int max_count = 0;
-            for (int i = 0; i < arrays.Length; i++)
+            var argsbuffer = ArrayPool<PhpValue>.Shared.Rent(count);
+            var args = argsbuffer.AsSpan(0, count);
+            var iterators = ArrayPool<OrderedDictionary.FastEnumerator>.Shared.Rent(count);
+
+            try
             {
-                var array = arrays[i];
-
-                if (array == null)
-                {
-                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 2).ToString());// +2 (first arg is callback) 
-                    return null;
-                }
-
-                iterators[i] = array.GetFastEnumerator();
-                if (array.Count > max_count) max_count = array.Count;
-            }
-
-            // keys are preserved in a case of a single array and re-indexed otherwise:
-            result = new PhpArray(arrays[0].Count);
-
-            for (; ; )
-            {
-                bool hasvalid = false;
-
-                // fills args[] with items from arrays:
+                // initializes iterators and args array, computes length of the longest array:
+                int max_count = 0;
                 for (int i = 0; i < arrays.Length; i++)
                 {
-                    if (!iterators[i].IsDefault)
-                    {
-                        if (iterators[i].MoveNext())
-                        {
-                            hasvalid = true;
+                    var array = arrays[i];
 
-                            // note: deep copy is not necessary since a function copies its arguments if needed:
-                            args[i] = iterators[i].CurrentValue;
-                            // TODO: throws if the CurrentValue is an alias
-                        }
-                        else
+                    if (array == null)
+                    {
+                        PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 2).ToString());// +2 (first arg is callback) 
+                        return null;
+                    }
+
+                    iterators[i] = array.GetFastEnumerator();
+                    if (array.Count > max_count) max_count = array.Count;
+                }
+
+                // keys are preserved in a case of a single array and re-indexed otherwise:
+                result = new PhpArray(arrays[0].Count);
+
+                for (; ; )
+                {
+                    bool hasvalid = false;
+
+                    // fills args[] with items from arrays:
+                    for (int i = 0; i < arrays.Length; i++)
+                    {
+                        if (!iterators[i].IsDefault)
                         {
-                            args[i] = PhpValue.Null;
-                            iterators[i] = default;   // IsDefault, !IsValid
+                            if (iterators[i].MoveNext())
+                            {
+                                hasvalid = true;
+
+                                // note: deep copy is not necessary since a function copies its arguments if needed:
+                                args[i] = iterators[i].CurrentValue;
+                                // TODO: throws if the CurrentValue is an alias
+                            }
+                            else
+                            {
+                                args[i] = PhpValue.Null;
+                                iterators[i] = default;   // IsDefault, !IsValid
+                            }
+                        }
+                    }
+
+                    if (!hasvalid) break;
+
+                    // invokes callback:
+                    var return_value = map.Invoke(ctx, args);
+
+                    // return value is not deeply copied:
+                    if (preserve_keys)
+                    {
+                        result.Add(iterators[0].CurrentKey, return_value);
+                    }
+                    else
+                    {
+                        result.Add(return_value);
+                    }
+
+                    // loads new values (callback may modify some by ref arguments):
+                    for (int i = 0; i < arrays.Length; i++)
+                    {
+                        if (iterators[i].IsValid)
+                        {
+                            var item = iterators[i].CurrentValue;
+                            if (item.IsAlias)
+                            {
+                                item.Alias.Value = args[i].GetValue();
+                            }
+                            else
+                            {
+                                iterators[i].CurrentValue = args[i].GetValue();
+                            }
                         }
                     }
                 }
-
-                if (!hasvalid) break;
-
-                // invokes callback:
-                var return_value = map.Invoke(ctx, args);
-
-                // return value is not deeply copied:
-                if (preserve_keys)
-                {
-                    result.Add(iterators[0].CurrentKey, return_value);
-                }
-                else
-                {
-                    result.Add(return_value);
-                }
-
-                // loads new values (callback may modify some by ref arguments):
-                for (int i = 0; i < arrays.Length; i++)
-                {
-                    if (iterators[i].IsValid)
-                    {
-                        var item = iterators[i].CurrentValue;
-                        if (item.IsAlias)
-                        {
-                            item.Alias.Value = args[i].GetValue();
-                        }
-                        else
-                        {
-                            iterators[i].CurrentValue = args[i].GetValue();
-                        }
-                    }
-                }
+            }
+            finally
+            {
+                ArrayPool<PhpValue>.Shared.Return(argsbuffer);
+                ArrayPool<OrderedDictionary.FastEnumerator>.Shared.Return(iterators);
             }
 
+            //
             return result;
         }
 
