@@ -3112,7 +3112,7 @@ namespace Pchp.Library.Standard
         /// Default callback for <see cref="Map"/>.
         /// </summary>
         /// <returns>A delegate returning <see cref="PhpArray"/> containing items on the stack (passed as arguments).</returns>
-        private static readonly IPhpCallable _mapIdentity = PhpCallback.Create((ctx, args) =>
+        private static readonly IPhpCallable s_mapIdentity = PhpCallback.Create((ctx, args) =>
         {
             var result = new PhpArray(args.Length);
 
@@ -3132,7 +3132,10 @@ namespace Pchp.Library.Standard
         /// A callback to be called on tuples. The number of arguments should be the same as
         /// the number of arrays specified by <pramref name="arrays"/>.
         /// Arguments passed by reference modifies elements of <pramref name="arrays"/>.
-        /// A <B>null</B> means default callback which makes integer indexed arrays from the tuples is used. 
+        /// 
+        /// <c>null</c> can be passed as a value to callback to perform a zip operation on multiple arrays and return an array
+        /// whose elements are each an array holding the elements of the input arrays of the same index.
+        /// If only one array is provided, array_map() will return the input array.
         /// </param>
         /// <param name="arrays">Arrays where to load tuples from. </param>
         /// <returns>An array of return values of the callback
@@ -3168,7 +3171,14 @@ namespace Pchp.Library.Standard
             // if callback has not been specified uses the default one:
             if (map == null)
             {
-                map = _mapIdentity;
+                // If only one array is provided, array_map() will return the input array.
+                if (arrays.Length == 1)
+                {
+                    return arrays[0].DeepCopy();
+                }
+
+                //
+                map = s_mapIdentity;
             }
 
             int count = arrays.Length;
