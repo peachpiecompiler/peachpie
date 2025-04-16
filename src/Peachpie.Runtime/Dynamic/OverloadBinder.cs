@@ -286,6 +286,7 @@ namespace Pchp.Core.Dynamic
 
             /// <summary>
             /// Bind arguments to array of parameters.
+            /// Can return expression with element_type[] or ReadOnlySpan&lt;element_type&gt;
             /// </summary>
             public abstract Expression BindParamsArray(int fromarg, Type element_type);
 
@@ -460,6 +461,8 @@ namespace Pchp.Core.Dynamic
                     _argsarray = argsarray;
                 }
 
+                public Type ElementType => _argsarray.Type.GenericTypeArguments[0];
+
                 public override Expression BindArgsCount()
                 {
                     if (_lazyArgc == null)
@@ -565,8 +568,12 @@ namespace Pchp.Core.Dynamic
 
                 public override Expression BindParamsArray(int fromarg, Type element_type)
                 {
-                    //if (element_type == _argsarray.Type.GetElementType())
-                    //if (true)
+                    var array_element_type = this.ElementType; // PhpValue always
+                    if (array_element_type != element_type)
+                    {
+                        throw new NotImplementedException();
+                    }
+
                     if (fromarg == 0)
                     {
                         return _argsarray;

@@ -1304,7 +1304,19 @@ namespace Pchp.Core.Dynamic
 
                 if (i == ps.Length - 1 && p.IsParamsParameter(out var elementType))
                 {
-                    boundargs[i] = Expression.Convert(args.BindParamsArray(argi, elementType), p.ParameterType);
+                    var arg = args.BindParamsArray(argi, elementType);
+                    if (arg.Type != p.ParameterType)
+                    {
+                        // ReadOnlySpan -> Array
+                        if (arg.Type.IsGenericType && arg.Type.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>) && p.ParameterType.IsArray)
+                        {
+                            arg = Expression.Call(
+                                arg,
+                                arg.Type.GetMethod(nameof(ReadOnlySpan<PhpValue>.ToArray))
+                            );
+                        }
+                    }
+                    boundargs[i] = Expression.Convert(arg, p.ParameterType);
                 }
                 else
                 {
