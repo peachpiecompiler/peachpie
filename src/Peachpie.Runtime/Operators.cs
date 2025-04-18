@@ -1200,9 +1200,9 @@ namespace Pchp.Core
 
             // 3. __get
             var getter = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__get];
-            if (getter != null)
+            if (getter != null) // NOTE: magic methods must be public
             {
-                // return getter.Invoke(ctx, instance, propertyName);
+                return getter.Invoke(null/*expecting non-static PHP method which doesn't need Context, otherwise nullref exception*/, instance, propertyName);
             }
 
             // error
