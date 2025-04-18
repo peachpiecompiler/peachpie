@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -39,6 +40,11 @@ namespace Pchp.Core.Reflection
         /// Gets routine callable delegate.
         /// </summary>
         public abstract PhpCallable PhpCallable { get; }
+
+        /// <summary>
+        /// Invokes the routine.
+        /// </summary>
+        public virtual PhpValue Invoke(Context ctx, object? target, PhpValue p0) => Invoke(ctx, target, MemoryMarshal.CreateReadOnlySpan(ref p0, 1));
 
         /// <summary>
         /// Invokes the routine.
