@@ -447,7 +447,7 @@ namespace Peachpie.Library.Graphics
             return img;
         }
 
-        static PhpGdImageResource imagecreatecommon(int x_size, int y_size, IConfigurationModule configuration, IImageFormat format)
+        static PhpGdImageResource imagecreatecommon(int x_size, int y_size, IImageFormatConfigurationModule configuration, IImageFormat format)
         {
             if (x_size <= 0 || y_size <= 0)
             {
@@ -472,7 +472,9 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                return new PhpGdImageResource(Image.Load<Rgba32>(image, out var format), format);
+                return new PhpGdImageResource(
+                    Image.Load<Rgba32>(image.AsSpan())
+                );
             }
             catch
             {
@@ -562,7 +564,7 @@ namespace Peachpie.Library.Graphics
             return imagercreatefromfile(ctx, filename);
         }
 
-        static PhpGdImageResource imagercreatefromfile(Context ctx, string filename, IConfigurationModule formatOpt = null)
+        static PhpGdImageResource imagercreatefromfile(Context ctx, string filename, IImageFormatConfigurationModule formatOpt = null)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -570,27 +572,27 @@ namespace Peachpie.Library.Graphics
                 return null;
             }
 
-            var configuration = (formatOpt == null)
-                ? Configuration.Default
-                : new Configuration(formatOpt);
+            var decoderOptions =  (formatOpt == null)
+                ? new DecoderOptions()
+                : new DecoderOptions() { Configuration = new Configuration(formatOpt) }
+                ;
 
             Image<Rgba32> img = null;
-            IImageFormat format = null;
-
+            
             using (var stream = Utils.OpenStream(ctx, filename))
             {
                 if (stream != null)
                 {
                     try
                     {
-                        img = Image.Load<Rgba32>(configuration, stream, out format);
+                        img = Image.Load<Rgba32>(decoderOptions, stream);
                     }
                     catch { }
                 }
             }
 
             return (img != null)
-                ? new PhpGdImageResource(img, format)
+                ? new PhpGdImageResource(img)
                 : null;
         }
 
@@ -1264,7 +1266,13 @@ namespace Peachpie.Library.Graphics
                         .Crop(new Rectangle(src_x, src_y, src_w, src_h))
                         .Resize(new Size(src_w, src_h))))
                 {
-                    dst.Image.Mutate(o => o.DrawImage(cropped, opacity: opacity, location: new Point(dst_x, dst_y)));
+                    dst.Image.Mutate<Rgba32>(
+                        o => o.DrawImage(
+                            cropped,
+                            opacity: opacity,
+                            backgroundLocation: new Point(dst_x, dst_y)
+                        )
+                    );
                 }
             }
             catch (Exception ex)
@@ -1320,7 +1328,7 @@ namespace Peachpie.Library.Graphics
             return imagesave(ctx, im, to, (img, stream) =>
             {
                 // use the source's encoder:
-                var encoder = img.GetConfiguration().ImageFormatsManager.FindEncoder(GifFormat.Instance) as GifEncoder;
+                var encoder = img.Configuration.ImageFormatsManager.GetEncoder(GifFormat.Instance) as GifEncoder;
 
                 // or use default encoding options
                 encoder ??= new GifEncoder(); // TODO: ColorTableMode from allocated colors count?
