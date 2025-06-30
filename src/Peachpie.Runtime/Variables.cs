@@ -522,14 +522,14 @@ namespace Pchp.Core
         /// <summary>
         /// Alias to <see cref="ToStringOrNull(PhpValue)"/>.
         /// </summary>
-        public static string AsString(this PhpValue value) => ToStringOrNull(value);
+        public static string? AsString(this PhpValue value) => ToStringOrNull(value);
 
         /// <summary>
         /// In case given value contains a string (<see cref="string"/> or <see cref="PhpString"/>),
         /// its string representation is returned.
         /// Otherwise <c>null</c>.
         /// </summary>
-        public static string ToStringOrNull(this PhpValue value)
+        public static string? ToStringOrNull(this PhpValue value)
         {
             IsString(value, out var @string);
             return @string;
@@ -607,7 +607,7 @@ namespace Pchp.Core
         /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
         /// Single-byte strings are decoded using <c>UTF-8</c>.
         /// </summary>
-        public static bool IsString(this PhpValue value, out string @string) => value.IsStringImpl(out @string);
+        public static bool IsString(this PhpValue value, [MaybeNullWhen(false)]out string @string) => value.IsStringImpl(out @string);
 
         /// <summary>
         /// Checks the value is constructed as mutable <see cref="PhpString"/>.
