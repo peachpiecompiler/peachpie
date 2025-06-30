@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using Pchp.Core;
 using Pchp.Library.Streams;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.Formats;
@@ -53,7 +50,7 @@ namespace Peachpie.Library.Graphics
         public const string GD_EXTRA_VERSION = ""; //"beta";
 
         /// <summary>
-        /// When the bundled version of GD is used this is 1 otherwise its set to 0.
+        /// When the bundled version of GD is used, this is 1 otherwise it's set to 0.
         /// </summary>
         public const int GD_BUNDLED = 1;
 
@@ -186,12 +183,12 @@ namespace Peachpie.Library.Graphics
         public enum ColorValues
         {
             /// <summary>
-            /// Special color option which can be used in stead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
+            /// Special color option which can be used instead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
             /// </summary>
             STYLED = -2,
 
             /// <summary>
-            /// Special color option which can be used in stead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
+            /// Special color option which can be used instead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
             /// </summary>
             BRUSHED = -3,
 
@@ -227,51 +224,51 @@ namespace Peachpie.Library.Graphics
         public enum FilterTypes
         {
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             NEGATE,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             GRAYSCALE,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             BRIGHTNESS,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             CONTRAST,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             COLORIZE,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             EDGEDETECT,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             EMBOSS,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             GAUSSIAN_BLUR,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             SELECTIVE_BLUR,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             MEAN_REMOVAL,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             SMOOTH,
             /// <summary>
-            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// Special GD filter used by the <see cref="imagefilter"/> function.
             /// </summary>
             PIXELATE,
         }
@@ -1032,8 +1029,13 @@ namespace Peachpie.Library.Graphics
 
             var rect = new RectangleF(x1, y1, x2 - x1, y2 - y1);
 
-            var opt = new DrawingOptions();
-            opt.GraphicsOptions.Antialias = img.AntiAlias;
+            var opt = new DrawingOptions
+            {
+                GraphicsOptions =
+                {
+                    Antialias = img.AntiAlias
+                }
+            };
 
             img.Image.Mutate(o => o.Draw(opt, FromRGBA(col), 1.0f, rect));
 
@@ -1356,8 +1358,8 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="im">Image resource.</param>
-        /// <param name="to">Optional. Filename or stream. If not specified the function saves the image to output stream.</param>
-        /// <param name="saveaction">Callback that actually save the image to given stream. Called when all checks pass.</param>
+        /// <param name="to">Optional. Filename or stream. If not specified, the function saves the image to output stream.</param>
+        /// <param name="saveaction">Callback that actually saves the image to given stream. Called when all checks pass.</param>
         /// <returns>True if save succeeded.</returns>
         static bool imagesave(Context ctx, PhpResource im, PhpValue to/* = null*/, Action<Image<Rgba32>, Stream> saveaction)
         {

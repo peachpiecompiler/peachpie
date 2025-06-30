@@ -130,9 +130,8 @@ namespace Peachpie.Library.Graphics
         {
             if (value != null)
             {
-                if (value is Array)
+                if (value is Array arr)
                 {
-                    var arr = (Array)value;
                     var phparr = new PhpArray(arr.Length);
 
                     for (int i = 0; i < arr.Length; i++)
@@ -171,15 +170,15 @@ namespace Peachpie.Library.Graphics
         {
             dval = 0.0;
 
-            if (value is float)
+            if (value is float f)
             {
-                dval = (float)value;
+                dval = f;
                 return true;
             }
 
-            if (value is double)
+            if (value is double d)
             {
-                dval = (double)value;
+                dval = d;
                 return true;
             }
 
@@ -190,45 +189,45 @@ namespace Peachpie.Library.Graphics
         {
             ival = 0;
 
-            if (value is int)
+            if (value is int i)
             {
-                ival = (int)value;
+                ival = i;
                 return true;
             }
 
-            if (value is long)
+            if (value is long l)
             {
-                ival = (long)value;
+                ival = l;
                 return true;
             }
 
-            if (value is uint)
+            if (value is uint u)
             {
-                ival = (uint)value;
+                ival = u;
                 return true;
             }
 
-            if (value is byte)
+            if (value is byte b)
             {
-                ival = (byte)value;
+                ival = b;
                 return true;
             }
 
-            if (value is sbyte)
+            if (value is sbyte sb)
             {
-                ival = (sbyte)value;
+                ival = sb;
                 return true;
             }
 
-            if (value is short)
+            if (value is short s)
             {
-                ival = (short)value;
+                ival = s;
                 return true;
             }
 
-            if (value is ushort)
+            if (value is ushort us)
             {
-                ival = (ushort)value;
+                ival = us;
                 return true;
             }
 
@@ -260,14 +259,7 @@ namespace Peachpie.Library.Graphics
             //}
             //return null;
 
-            if (GetExifTagMap().TryGetValue((ushort)index, out var name))
-            {
-                return name;
-            }
-            else
-            {
-                return null;
-            }
+            return GetExifTagMap().GetValueOrDefault((ushort)index);
         }
 
         /// <summary>
@@ -284,7 +276,7 @@ namespace Peachpie.Library.Graphics
                 var props = typeof(ExifTag).GetProperties();
                 foreach (var p in props)
                 {
-                    if (p.GetMethod.IsStatic && p.GetValue(null) is ExifTag exiftag)
+                    if (p.GetMethod?.IsStatic == true && p.GetValue(null) is ExifTag exiftag)
                     {
                         map[(ushort)exiftag] = exiftag.ToString();
                     }
