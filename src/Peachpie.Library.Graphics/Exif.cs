@@ -97,7 +97,7 @@ namespace Peachpie.Library.Graphics
             //array.Add("FileDateTime", (int)File.GetCreationTime(filename).ToOADate());
             array.Add("FileSize", (int)bytes.Length);
 
-            IImageInfo image;
+            ImageInfo image;
 
             using (var ms = new MemoryStream(bytes))
             {
@@ -374,21 +374,19 @@ namespace Peachpie.Library.Graphics
                 return default(PhpString);
 
             // get thumbnail from <filename>'s content:
-            using (var ms = new MemoryStream(bytes))
+            try
             {
-                try
+                //using (var image = Image.Load(bytes.AsSpan()))
                 {
                     // TODO: Image.Identify needs a new overload that returns the format.
-                    using (var image = Image.Load(ms, out format))
-                    {
-                        // return byte[] ~ image.MetaData.ExifProfile{ this.data, this.thumbnailOffset, this.thumbnailLength }
-                        thumbnail = image.Metadata.ExifProfile.CreateThumbnail<Rgba32>();
-                    }
+                    var imageInfo = Image.Identify(bytes.AsSpan());
+                    // return byte[] ~ image.MetaData.ExifProfile{ this.data, this.thumbnailOffset, this.thumbnailLength }
+                    imageInfo.Metadata.ExifProfile.TryCreateThumbnail<Rgba32>(out thumbnail);
                 }
-                catch
-                {
-                    return default(PhpString);
-                }
+            }
+            catch
+            {
+                return default(PhpString);
             }
 
             if (thumbnail == null)
