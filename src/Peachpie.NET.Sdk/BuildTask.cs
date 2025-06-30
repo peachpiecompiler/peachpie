@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using Pchp.CodeAnalysis.CommandLine;
 
 namespace Peachpie.NET.Sdk.Tools
 {
@@ -16,6 +15,12 @@ namespace Peachpie.NET.Sdk.Tools
     /// </summary>
     public class BuildTask : Task, ICancelableTask // TODO: ToolTask
     {
+        /// <summary>
+        /// Path to <c>Peachpie.CodeAnalysis</c> executable.
+        /// </summary>
+        [Required]
+        public string PeachpieCompilerFullPath { get; set; }
+
         /// <summary></summary>
         [Required]
         public string OutputPath { get; set; }
@@ -27,6 +32,11 @@ namespace Peachpie.NET.Sdk.Tools
         /// <summary></summary>
         [Required]
         public string TempOutputPath { get; set; }
+
+        /// <summary>
+        /// Optional <c>.rsp</c> file to be created.
+        /// </summary>
+        public string ResponseFilePath { get; set; }
 
         /// <summary></summary>
         [Required]
@@ -183,14 +193,14 @@ namespace Peachpie.NET.Sdk.Tools
             AddNoEmpty(args, "sourcelink", SourceLink);
             AddNoEmpty(args, "codepage", CodePage);
             AddNoEmpty(args, "subdir", PhpRelativePath);
-            
-			if (DefineConstants != null)
-			{
-				foreach (var d in DefineConstants)
-				{
-					args.Add("/d:" + d);
-				}
-			}
+
+            if (DefineConstants != null)
+            {
+                foreach (var d in DefineConstants)
+                {
+                    args.Add("/d:" + d);
+                }
+            }
 
             if (ReferencePath != null && ReferencePath.Length != 0)
             {
@@ -224,16 +234,14 @@ namespace Peachpie.NET.Sdk.Tools
                     );
 
                     // /attr:FQN("value1","value2","value3")
-                    args.Add($@"/attr:{attr.ItemSpec}({
-                        string.Join(
+                    args.Add($@"/attr:{attr.ItemSpec}({string.Join(
                             ",",
                             Enumerable.Range(1, 128)
                             .Select(n => $"_Parameter{n}")
                             .TakeWhile(prop => props.Contains(prop))
                             .Select(prop => attr.GetMetadata(prop))
                             .Select(value => $"\"{value.Replace("\"", "\\\"")}\"")
-                        )
-                    })");
+                        )})");
                 }
             }
 
@@ -278,17 +286,26 @@ namespace Peachpie.NET.Sdk.Tools
                 args.AddRange(Compile.Distinct(StringComparer.InvariantCulture));
             }
 
-#if DEBUG
+            if (DebuggerAttach)
+            {
+                args.Add("/attach");
+                Debugger.Launch();
+            }
+
             // save the arguments as .rsp file for debugging purposes:
-            try
+            if (!string.IsNullOrEmpty(ResponseFilePath))
             {
-                File.WriteAllText(Path.Combine(TempOutputPath, "dotnet-php.rsp"), string.Join(Environment.NewLine, args));
+                try
+                {
+                    File.WriteAllText(
+                        Path.Combine(BasePath, ResponseFilePath), string.Join(Environment.NewLine, args.Select(line => $"\"{line.Replace("\\", "\\\\")}\""))
+                    );
+                }
+                catch (Exception ex)
+                {
+                    this.Log.LogWarningFromException(ex);
+                }
             }
-            catch (Exception ex)
-            {
-                this.Log.LogWarningFromException(ex);
-            }
-#endif
 
             //
             // run the compiler:
@@ -299,33 +316,124 @@ namespace Peachpie.NET.Sdk.Tools
                 return false;
             }
 
-            // Debugger.Launch
-            if (DebuggerAttach)
-            {
-                Debugger.Launch();
-            }
-
-            // compile
+            // compile using out-of-process compiler:
             try
             {
-                var resultCode = PhpCompilerDriver.Run(
-                    PhpCommandLineParser.Default,
-                    null,
-                    args: args.ToArray(),
-                    clientDirectory: null,
-                    baseDirectory: BasePath,
-                    sdkDirectory: NetFrameworkPath,
-                    additionalReferenceDirectories: libs,
-                    analyzerLoader: new SimpleAnalyzerAssemblyLoader(),
-                    output: new LogWriter(this.Log),
-                    cancellationToken: _cancellation.Token);
-                
-                return resultCode == 0;
+                //var resultCode = PhpCompilerDriver.Run(
+                //    PhpCommandLineParser.Default,
+                //    null,
+                //    args: args.ToArray(),
+                //    clientDirectory: null,
+                //    baseDirectory: BasePath,
+                //    sdkDirectory: NetFrameworkPath,
+                //    additionalReferenceDirectories: libs,
+                //    analyzerLoader: new SimpleAnalyzerAssemblyLoader(),
+                //    output: new LogWriter(this.Log),
+                //    cancellationToken: _cancellation.Token);
+
+                var compilerArgs = new List<string>()
+                {
+                    $"/baseDirectory:{BasePath}",
+                    $"/sdkDirectory:{NetFrameworkPath}",
+                    $"/additionalReferenceDirectories:{libs}",
+                };
+
+                if (ResponseFilePath != null)
+                {
+                    compilerArgs.Add(
+                        $"/responseFile:{ResponseFilePath}"
+                    );
+                }
+                else
+                {
+                    // pass all arguments instead of a single .rsp file
+                    compilerArgs.AddRange(
+                        args
+                    );
+                }
+
+                return RunCompiler(
+                    compilerArgs.ToArray(),
+                    _cancellation.Token
+                );
             }
             catch (Exception ex)
             {
                 LogException(ex);
                 return false;
+            }
+        }
+
+        bool RunCompiler(string[] args, CancellationToken cancellation = default(CancellationToken))
+        {
+            cancellation.ThrowIfCancellationRequested();
+
+            var compilerPath = Path.GetFullPath(PeachpieCompilerFullPath);
+
+            Debug.Assert(File.Exists(compilerPath));
+
+            //
+            var pi = new ProcessStartInfo(compilerPath)
+            {
+                Arguments = FlatternArgs(args),
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8,
+                UseShellExecute = false,
+            };
+
+            var output = new DataReceivedEventHandler((o, e) =>
+            {
+                if (e.Data != null)
+                {
+                    if (this.Log.LogMessageFromText(e.Data, MessageImportance.High) == false)
+                    {
+                        // plain text
+                        this.Log.LogMessage(MessageImportance.High, e.Data);
+                        Console.WriteLine(e.Data);
+                    }
+                }
+            });
+
+            // non-windows?
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+            {
+                pi.FileName = "dotnet";
+                pi.Arguments = $"\"{Path.ChangeExtension(compilerPath, ".dll")}\" {pi.Arguments}";
+            }
+
+            //
+            this.Log.LogCommandLine(MessageImportance.High, $"{pi.FileName} {pi.Arguments}");
+
+            //
+            using (var process = new Process() { StartInfo = pi, })
+            {
+                process.OutputDataReceived += output;
+                process.ErrorDataReceived += output;
+
+                process.Start();
+                
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                //
+                using (var cancellationHandler = cancellation.Register(() =>
+                {
+                    if (process.HasExited == false)
+                    {
+                        this.Log.LogMessageFromText("Cancelled by user", MessageImportance.High);
+                        // TODO: send signal first
+                        process.Kill();
+                    }
+                }))
+                {
+                    process.WaitForExit();
+
+                    //
+                    return process.ExitCode == 0;
+                }
             }
         }
 
@@ -344,7 +452,7 @@ namespace Peachpie.NET.Sdk.Tools
             }
         }
 
-        bool AddNoEmpty(List<string> args, string optionName, string optionValue)
+        static bool AddNoEmpty(List<string> args, string optionName, string optionValue)
         {
             if (string.IsNullOrEmpty(optionValue))
             {
@@ -355,7 +463,37 @@ namespace Peachpie.NET.Sdk.Tools
             return true;
         }
 
-        private string FormatArgFromItem(ITaskItem item, string switchName, params string[] metadataNames)
+        static string FlatternArgs(string[] args)
+        {
+            var sb = new StringBuilder(args.Length * 8);
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                var arg = args[i];
+                if (string.IsNullOrEmpty(arg))
+                {
+                    continue;
+                }
+
+                if (sb.Length != 0)
+                {
+                    sb.Append(' ');
+                }
+
+                // sanitize {arg}
+                sb.Append('\"');
+                sb.Append(arg.Trim()
+                //.Replace("\\", "\\\\")
+                //.Replace("\"", "\\\"")
+                );
+                sb.Append('\"');
+            }
+
+            //
+            return sb.ToString();
+        }
+
+        static string FormatArgFromItem(ITaskItem item, string switchName, params string[] metadataNames)
         {
             var arg = new StringBuilder($"/{switchName}:{item.ItemSpec}");
 
@@ -409,78 +547,6 @@ namespace Peachpie.NET.Sdk.Tools
                 }
 
                 return false;
-            }
-        }
-
-        // honestly I don't know why msbuild in VS does not handle Console.Output,
-        // so we have our custom TextWriter that we pass to Log
-        sealed class LogWriter : TextWriter
-        {
-            TaskLoggingHelper Log { get; }
-
-            StringBuilder Buffer { get; } = new StringBuilder();
-
-            public override Encoding Encoding => Encoding.UTF8;
-
-            public LogWriter(TaskLoggingHelper log)
-            {
-                Debug.Assert(log != null);
-
-                this.Log = log;
-                this.NewLine = "\n";
-            }
-
-            bool TryLogCompleteMessage()
-            {
-                string line = null;
-
-                lock (Buffer)   // accessed in parallel
-                {
-                    // get line from the buffer:
-                    for (int i = 0; i < Buffer.Length; i++)
-                    {
-                        if (Buffer[i] == '\n')
-                        {
-                            line = Buffer.ToString(0, i);
-
-                            Buffer.Remove(0, i + 1);
-                        }
-                    }
-                }
-
-                //
-                return line != null && LogCompleteMessage(line);
-            }
-
-            bool LogCompleteMessage(string line)
-            {
-                // TODO: following logs only Warnings and Errors,
-                // to log Info diagnostics properly, parse it by ourselves
-
-                return this.Log.LogMessageFromText(line.Trim(), MessageImportance.High);
-            }
-
-            public override void Write(char value)
-            {
-                lock (Buffer) // accessed in parallel
-                {
-                    Buffer.Append(value);
-                }
-
-                if (value == '\n')
-                {
-                    TryLogCompleteMessage();
-                }
-            }
-
-            public override void Write(string value)
-            {
-                lock (Buffer)
-                {
-                    Buffer.Append(value);
-                }
-
-                TryLogCompleteMessage();
             }
         }
     }

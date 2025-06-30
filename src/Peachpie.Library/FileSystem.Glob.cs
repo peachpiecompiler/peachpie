@@ -148,13 +148,13 @@ namespace Pchp.Library
             }
         }
 
-        sealed class GlobMatcher
+        sealed class GlobMatcher : IDisposable
         {
             readonly Context/*!*/_ctx;
             readonly string/*!*/ _pattern;
             readonly GlobOptions _flags;
-            readonly List<string>/*!*/ _result;
             readonly bool _dirOnly;
+            List<string>/*!*/ _result;
             bool _stripTwo;
             bool _relative;
             FnMatchOptions _fnMatchFlags;
@@ -170,14 +170,21 @@ namespace Pchp.Library
                 Debug.Assert(ctx != null);
 
                 _ctx = ctx;
-                _pattern = CanonizePattern(pattern);
+                _pattern = pattern;
                 _flags = flags;
-                _result = new List<string>();
-                _dirOnly = _pattern.LastCharacter() == '/' || (flags & GlobOptions.OnlyDir) != 0;
+                _result = ListPool<string>.Pool.Get();
+                _dirOnly = PathUtils.IsDirectorySeparator((char)_pattern.LastCharacter()) || (flags & GlobOptions.OnlyDir) != 0;
 
                 _fnMatchFlags = NoEscapes ? FnMatchOptions.NoEscape : FnMatchOptions.None;
             }
 
+            public void Dispose()
+            {
+                ListPool<string>.Pool.Return(_result);
+                _result = null;
+            }
+
+            bool IsDisposed => _result == null;
 
             private static string/*!*/ Unescape(string/*!*/ path, int start)
             {
@@ -191,17 +198,12 @@ namespace Pchp.Library
                     {
                         inEscape = false;
                     }
-                    else if (c == '\\')
+                    else if (c == '\\' && i + 1 < path.Length && (IsMetaCharacter(path[i + 1]) || PathUtils.IsDirectorySeparator(path[i + 1])))
                     {
                         inEscape = true;
                         continue;
                     }
                     unescaped.Append(c);
-                }
-
-                if (inEscape)
-                {
-                    unescaped.Append('\\');
                 }
 
                 //
@@ -248,6 +250,11 @@ namespace Pchp.Library
 
             internal List<string>/*!*/ DoGlob()
             {
+                if (IsDisposed)
+                {
+                    throw new ObjectDisposedException(nameof(GlobMatcher));
+                }
+
                 if (_pattern.Length == 0)
                 {
                     return _result;
@@ -255,10 +262,9 @@ namespace Pchp.Library
 
                 int pos = 0;
                 string baseDirectory = ".";
-                if (_pattern[0] == '/' || (_pattern.Length >= 2 && _pattern[1] == ':'))//is pattern rooted?
+                if (Path.IsPathRooted(_pattern))
                 {
-                    bool containsWildcard;
-                    pos = FindNextSeparator(0, false, out containsWildcard);
+                    pos = FindNextSeparator(0, false, out var containsWildcard);
                     if (pos == _pattern.Length)
                     {
                         TestPath(_pattern, pos, true);
@@ -272,7 +278,7 @@ namespace Pchp.Library
                 else
                 {
                     _relative = true;
-                    baseDirectory = CanonizePattern(_ctx.WorkingDirectory);
+                    baseDirectory = _ctx.WorkingDirectory;
                 }
 
                 _stripTwo = (baseDirectory == ".");
@@ -296,10 +302,9 @@ namespace Pchp.Library
                     return;
                 }
 
-                bool containsWildcard;
-                int patternEnd = FindNextSeparator(position, true, out containsWildcard);
+                int patternEnd = FindNextSeparator(position, true, out var containsWildcard);
                 bool isLastPathSegment = (patternEnd == _pattern.Length);
-                string dirSegment = _pattern.Substring(position, patternEnd - position);
+                var dirSegment = _pattern.AsSpan(position, patternEnd - position);
 
                 if (!isLastPathSegment)
                 {
@@ -308,7 +313,7 @@ namespace Pchp.Library
 
                 if (!containsWildcard)
                 {
-                    var path = Path.Combine(baseDirectory, dirSegment);
+                    var path = Path.Combine(baseDirectory, dirSegment.ToString());
                     TestPath(path, patternEnd, isLastPathSegment);
                     return;
                 }
@@ -317,10 +322,10 @@ namespace Pchp.Library
                 {
                     foreach (var file in System.IO.Directory.GetFileSystemEntries(baseDirectory, "*"))
                     {
-                        var objectName = Path.GetFileName(file);
-                        if (fnmatch(dirSegment, objectName, _fnMatchFlags))
+                        var filename = Path.GetFileName(file);
+                        if (fnmatch(dirSegment, filename, _fnMatchFlags))
                         {
-                            TestPath(CanonizePattern(file), patternEnd, isLastPathSegment);
+                            TestPath(file, patternEnd, isLastPathSegment);
                         }
                     }
                 }
@@ -336,19 +341,19 @@ namespace Pchp.Library
                 {
                     if (fnmatch(dirSegment, ".", _fnMatchFlags))
                     {
-                        string directory = baseDirectory + "/.";
+                        var directory = baseDirectory + CurrentPlatform.DirectorySeparatorString + ".";
                         if (_dirOnly)
                         {
-                            directory += '/';
+                            directory += CurrentPlatform.DirectorySeparatorString;
                         }
                         TestPath(directory, patternEnd, true);
                     }
                     if (fnmatch(dirSegment, "..", _fnMatchFlags))
                     {
-                        string directory = baseDirectory + "/..";
+                        var directory = baseDirectory + CurrentPlatform.DirectorySeparatorString + "..";
                         if (_dirOnly)
                         {
-                            directory += '/';
+                            directory += CurrentPlatform.DirectorySeparatorString;
                         }
                         TestPath(directory, patternEnd, true);
                     }
@@ -356,25 +361,30 @@ namespace Pchp.Library
 
             }
 
+            static bool IsMetaCharacter(char c) => c == '*' || c == '?' || c == '[';
+
             private int FindNextSeparator(int position, bool allowWildcard, out bool containsWildcard)
             {
-                int lastSlash = -1;
-                bool inEscape = false;
+                var pattern = _pattern;
+                var lastSlash = -1;
+
                 containsWildcard = false;
-                for (int i = position; i < _pattern.Length; i++)
+
+                for (int i = position; i < pattern.Length; i++)
                 {
-                    if (inEscape)
+                    var c = pattern[i];
+
+                    // skip the escaped character
+                    if (c == '\\' && CurrentPlatform.DirectorySeparator != '\\' && NoEscapes == false && i + 1 < pattern.Length)
                     {
-                        inEscape = false;
-                        continue;
+                        if (IsMetaCharacter(pattern[i + 1]) || PathUtils.IsDirectorySeparator(pattern[i + 1]))
+                        {
+                            i++;
+                            continue;
+                        }
                     }
-                    char c = _pattern[i];
-                    if (c == '\\')
-                    {
-                        inEscape = true;
-                        continue;
-                    }
-                    else if (c == '*' || c == '?' || c == '[')
+
+                    if (IsMetaCharacter(c))
                     {
                         if (!allowWildcard)
                         {
@@ -386,7 +396,7 @@ namespace Pchp.Library
                         }
                         containsWildcard = true;
                     }
-                    else if (c == '/' || c == ':')
+                    else if (PathUtils.IsDirectorySeparator(c) || c == ':')
                     {
                         if (containsWildcard)
                         {
@@ -395,7 +405,7 @@ namespace Pchp.Library
                         lastSlash = i;
                     }
                 }
-                return _pattern.Length;
+                return pattern.Length;
             }
         }
 
@@ -620,17 +630,6 @@ namespace Pchp.Library
             }
         }
 
-        /// <summary>
-        /// Replaces all slashes with <c>/</c>.
-        /// </summary>
-        /// <param name="pattern">Path pattern.</param>
-        /// <returns>Canonized pattern.</returns>
-        static string CanonizePattern(string/*!*/pattern)
-        {
-            Debug.Assert(pattern != null);
-            return pattern.Replace('\\', '/');
-        }
-
         static void AppendExplicitRegexChar(StringBuilder/*!*/ builder, char c)
         {
             builder.Append('[');
@@ -642,9 +641,9 @@ namespace Pchp.Library
             builder.Append(']');
         }
 
-        static string/*!*/ PatternToRegex(string/*!*/ pattern, bool pathName, bool noEscape)
+        static string/*!*/ PatternToRegex(ReadOnlySpan<char>/*!*/pattern, bool pathName, bool noEscape)
         {
-            var result = new StringBuilder(pattern.Length);
+            var result = ObjectPools.GetStringBuilder();
             result.Append("\\G");
 
             bool inEscape = false;
@@ -714,7 +713,15 @@ namespace Pchp.Library
                 }
             }
 
-            return (charClass == null) ? result.ToString() : string.Empty;
+            if (charClass == null)
+            {
+                return ObjectPools.GetStringAndReturn(result);
+            }
+            else
+            {
+                ObjectPools.Return(result);
+                return string.Empty;
+            }
         }
 
         static ValueList<string> UngroupGlobs(string/*!*/ pattern, bool noEscape, bool brace)
@@ -795,11 +802,12 @@ namespace Pchp.Library
 
             foreach (string group in groups)
             {
-                var matcher = new GlobMatcher(ctx, group, flags);
+                using var matcher = new GlobMatcher(ctx, group, flags);
 
                 foreach (string filename in matcher.DoGlob())
                 {
-                    yield return CurrentPlatform.NormalizeSlashes(filename);
+                    //yield return CurrentPlatform.NormalizeSlashes(filename); // NOTE: PHP leave slashes as they were specified in pattern
+                    yield return filename;
                 }
             }
         }
@@ -816,9 +824,9 @@ namespace Pchp.Library
         /// <param name="flags">Additional flags.</param>
         /// <returns><c>true</c> if the <paramref name="path"/> matches with the given 
         /// wildcard <paramref name="pattern"/>.</returns>
-        public static bool fnmatch(string/*!*/ pattern, string/*!*/ path, FnMatchOptions flags = FnMatchOptions.None)
+        public static bool fnmatch(ReadOnlySpan<char>/*!*/pattern, string/*!*/ path, FnMatchOptions flags = FnMatchOptions.None)
         {
-            if (string.IsNullOrEmpty(pattern))
+            if (pattern.IsEmpty)
             {
                 return string.IsNullOrEmpty(path);
             }

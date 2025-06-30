@@ -3,7 +3,7 @@
 # Note: In prior to use Powershell scripts, it might be needed to run:
 # powershell Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 
-param([string]$version = "1.0.0", [string]$suffix = "dev")
+param([string]$version = "1.2.0", [string]$suffix = "dev")
 
 # We suppose the global package source is in the default location 
 $rootDir = [System.IO.Path]::GetFullPath("$PSScriptRoot/..")
@@ -34,4 +34,4 @@ Write-Host -f green "Deleting '$version-$suffix' packages from '$packagesSource'
 
 # Reinstall the packages by restoring a dummy project that depends on them
 Write-Host -f green "Installing packages to nuget cache ..."
-dotnet restore "$rootDir/build/dummy"
+dotnet restore "$rootDir/build/dummy" --ignore-failed-sources

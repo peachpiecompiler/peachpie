@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Pchp.Core.Utilities;
@@ -188,6 +189,32 @@ namespace Pchp.Core
     [DebuggerDisplay("dictionary (count = {Count})")]
     public sealed class OrderedDictionary/*<TValue>*/ : IEnumerable<KeyValuePair<IntStringKey, TValue>>, IEnumerable<TValue>
     {
+        #region ArrayHelper
+
+        static class ArrayHelper
+        {
+            public static Bucket[] GetBucketArray(uint size) => new Bucket[size]; // ArrayPool<Bucket>.Shared.Rent(unchecked((int)size));
+
+            public static int[] GetIntArray(uint size) => new int[size]; // ArrayPool<int>.Shared.Rent(unchecked((int)size));
+
+            public static void Free(Bucket[] array) { } // ArrayPool<Bucket>.Shared.Return(array, clearArray: true);
+
+            public static void Free(int[] array) { }
+
+            public static void Resize<T>(ref T[] array, int oldsize, uint newsize)
+            {
+                //Array.Resize(ref this._data, (int)size); // slower
+
+                var newarray = new T[newsize];
+
+                Array.Copy(array, 0, newarray, 0, oldsize); // faster than Memory<T>.CopyTo() and Array.Resize<T>
+
+                Interlocked.Exchange(ref array, newarray);
+            }
+        }
+
+        #endregion
+
         [DebuggerDisplay("{DebugDisplay,nq}")]
         internal struct Bucket
         {
@@ -302,12 +329,19 @@ namespace Pchp.Core
             if (from == null) throw new ArgumentNullException(nameof(from));
 
             _mask = from._mask;
-            _data = from._data.AsSpan().ToArray();
-            if (from._hash != null)
-                _hash = from._hash.AsSpan().ToArray();
-            _dataUsed = from._dataUsed;
-            _dataDeleted = from._dataDeleted;
             _size = from._size;
+            _dataUsed = from._dataUsed;
+
+            _data = ArrayHelper.GetBucketArray(_size);
+            Array.Copy(from._data, 0, _data, 0, _dataUsed);
+            
+            if (from._hash != null)
+            {
+                _hash = ArrayHelper.GetIntArray(_size);
+                Array.Copy(from._hash, 0, _hash, 0, _size);
+            }
+
+            _dataDeleted = from._dataDeleted;
             //nInternalPointer = from.nInternalPointer;
             _maxIntKey = from._maxIntKey;
         }
@@ -376,7 +410,7 @@ namespace Pchp.Core
             //
 
             _mask = mask;
-            _data = new Bucket[size];
+            _data = ArrayHelper.GetBucketArray(size);
             _hash = null; // no keys
             _dataUsed = 0;
             _dataDeleted = 0;
@@ -390,11 +424,7 @@ namespace Pchp.Core
             Debug.Assert(size > _size);
             Debug.Assert(_isPowerOfTwo(size));
 
-            //Array.Resize(ref this._data, (int)size); // slower
-
-            var newdata = new Bucket[size];
-            Array.Copy(_data, 0, newdata, 0, _dataUsed); // faster than Memory<T>.CopyTo() and Array.Resize<T>
-            _data = newdata;
+            ArrayHelper.Resize(ref _data, _dataUsed, size);
 
             _mask = size - 1;
             _size = size;
@@ -409,13 +439,13 @@ namespace Pchp.Core
 
         private void _rehash()
         {
-            var data = this._data;
-            var hash = this._hash;
+            var data = this._data.AsSpan(0, (int)_size);
+            var hash = this._hash.AsSpan(0, (int)_size);
 
-            Debug.Assert(hash != null, "no hash");
+            Debug.Assert(hash.Length != 0, "no hash");
             Debug.Assert(data.Length == hash.Length, "internal array size mismatch");
 
-            hash.AsSpan().Fill(_invalidIndex);  // some optimizations
+            hash.Fill(_invalidIndex);  // some optimizations
             //Array.Fill(hash, _invalidIndex);  // simple for-loop
 
             for (int i = this._dataUsed - 1; i >= 0; i--)
@@ -441,7 +471,10 @@ namespace Pchp.Core
 
         private void _createhash()
         {
-            this._hash = new int[this._size];
+            ArrayHelper.Free(
+                Interlocked.Exchange(ref this._hash, ArrayHelper.GetIntArray(this._size))
+            );
+
             _rehash();
         }
 
@@ -519,7 +552,7 @@ namespace Pchp.Core
                 return false;
             }
 
-            public void CopyTo(TValue[] array, int arrayIndex) => _array.CopyTo(array, arrayIndex);
+            public void CopyTo(TValue[] array, int arrayIndex) => _array.CopyTo(array.AsSpan(arrayIndex));
 
             public IEnumerator<TValue> GetEnumerator()
             {
@@ -1070,6 +1103,21 @@ namespace Pchp.Core
             // FastEnumerator does not have to be disposed
         }
 
+        /// <summary>
+        /// Copy values into given array.
+        /// </summary>
+        /// <param name="array">Target array.</param>
+        public void CopyTo(Span<TValue> array)
+        {
+            var enumerator = GetEnumerator();
+            var arrayIndex = 0;
+            while (enumerator.MoveNext())
+            {
+                array[arrayIndex++] = enumerator.CurrentValue;
+            }
+            // FastEnumerator does not have to be disposed
+        }
+
         #endregion
 
         #region Shuffle, Reverse, Sort, SetOperation
@@ -1092,7 +1140,7 @@ namespace Pchp.Core
 
             // shuffle and compact elements:
 
-            var newData = new Bucket[_size];
+            var newData = ArrayHelper.GetBucketArray(_size);
             var i = 0; // where to put next element
 
             var enumerator = GetEnumerator();
@@ -1116,7 +1164,10 @@ namespace Pchp.Core
                 i++;
             }
 
-            _data = newData;
+            ArrayHelper.Free(
+                Interlocked.Exchange(ref _data, newData) // _data = newData;
+            );
+
             _dataDeleted = 0;
             _dataUsed = i;
             //nInternalPointer = 0;
@@ -1125,7 +1176,7 @@ namespace Pchp.Core
 
             if (this._hash == null)
             {
-                this._hash = new int[this._size];
+                this._hash = ArrayHelper.GetIntArray(this._size);
             }
 
             _rehash();
@@ -1143,7 +1194,7 @@ namespace Pchp.Core
 
             // copy elements in reverse order and compact:
 
-            var newData = new Bucket[_size];
+            var newData = ArrayHelper.GetBucketArray(_size);
             var i = Count; // where to put next element
 
             var enumerator = GetEnumerator();
@@ -1156,7 +1207,10 @@ namespace Pchp.Core
                 bucket.Value = current.Value;
             }
 
-            _data = newData;
+            ArrayHelper.Free(
+                Interlocked.Exchange(ref _data, newData)
+            );
+
             _dataUsed = Count; // before changing _dataDeleted !!
             _dataDeleted = 0;
             //nInternalPointer = 0;
@@ -1165,7 +1219,7 @@ namespace Pchp.Core
 
             if (this._hash == null)
             {
-                this._hash = new int[this._size];
+                this._hash = ArrayHelper.GetIntArray(this._size);
             }
 
             _rehash();
@@ -1221,7 +1275,7 @@ namespace Pchp.Core
                 {
                     if (this._hash == null)
                     {
-                        this._hash = new int[this._size];
+                        this._hash = ArrayHelper.GetIntArray(this._size);
                     }
 
                     _rehash();
@@ -1236,9 +1290,12 @@ namespace Pchp.Core
         {
             readonly IComparer<KeyValuePair<IntStringKey, TValue>>[]/*!*/ comparers;
 
-            public MultisortComparer(IComparer<KeyValuePair<IntStringKey, TValue>>[]/*!*/ comparers)
+            readonly int length;
+
+            public MultisortComparer(IComparer<KeyValuePair<IntStringKey, TValue>>[]/*!*/ comparers, int length)
             {
                 this.comparers = comparers;
+                this.length = length;
             }
 
             public int Compare(Bucket[] x, Bucket[] y)
@@ -1295,7 +1352,7 @@ namespace Pchp.Core
             }
 
             // sort indices
-            Array.Sort(idx, comparer: new MultisortComparer(comparers));
+            Array.Sort(idx, comparer: new MultisortComparer(comparers, hashtables.Length));
 
             //
             for (int h = 0; h < hashtables.Length; h++)
@@ -1959,7 +2016,7 @@ namespace Pchp.Core
             if (table.Count != 0)
             {
                 var array = new TValue[table.Count];
-                table.CopyTo(array, 0);
+                table.CopyTo(array.AsSpan());
                 return array;
             }
             else

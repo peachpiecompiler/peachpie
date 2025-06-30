@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         /// Matches <c>printf()</c> format specifier.
         /// </summary>
         static readonly Lazy<Regex> s_printfSpecsRegex = new Lazy<Regex>(
-            () => new Regex(@"%(?:(\d)+\$)?[+-]?(?:[ 0]|'.{1})?-?\d*(?:\.\d+)?[bcdeEufFgGosxX]", RegexOptions.Compiled | RegexOptions.CultureInvariant)
+            () => new Regex(@"%(?:(\d+)\$)?[+-]?(?:[ 0]|'.{1})?-?\d*(?:\.\d+)?[bcdeEufFgGosxX]", RegexOptions.Compiled | RegexOptions.CultureInvariant)
         );
 
         void printfCheck(string name, ImmutableArray<BoundArgument> arguments)
@@ -44,7 +44,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     else
                     {
                         // %2$d
-                        int numSpec = int.Parse(numSpecStr);
+                        int numSpec = int.Parse(numSpecStr); // > 0, starts from 1
                         numSpecMax = Math.Max(numSpec, numSpecMax);
                     }
                 }

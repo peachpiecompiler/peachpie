@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.CommandLine
         public Pchp(string[] args, IAnalyzerAssemblyLoader analyzerLoader)
             :base(
                  PhpCommandLineParser.Default,
-                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ResponseFileName),
+                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "php.rsp"),
                  CreateArgs(args),
                  new BuildPaths(
                      clientDir: AppDomain.CurrentDomain.BaseDirectory,

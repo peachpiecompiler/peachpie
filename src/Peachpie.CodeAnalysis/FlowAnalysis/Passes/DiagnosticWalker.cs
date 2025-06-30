@@ -175,7 +175,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                                 return TypeCtx.IsAString(valuetype);
 
                             case PrimitiveTypeRef.PrimitiveType.@object:
-                                return false;
+                                return TypeCtx.IsObject(valuetype);
 
                             case PrimitiveTypeRef.PrimitiveType.@float:
                             case PrimitiveTypeRef.PrimitiveType.@int:
@@ -184,7 +184,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     else if (thint is ClassTypeRef classtref)
                     {
-                        return false; // cannot have default value other than NULL
+                        //return false; // cannot have default value other than NULL
                     }
                 }
             }
@@ -508,11 +508,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                         if (i == ps.Length - 1 && p.IsParams) // vararg
                         {
-                            // handle [Params]
-                            // - resolve the SZArray element type
+                            // handle params:
+                            // - resolve the params element type
                             // - check the all the arguments
-                            Debug.Assert(p.Type.IsSZArray(), "[Params] parameter expected to be of type Array.");
-                            var elementType = (p.Type as ArrayTypeSymbol)?.ElementType;
+
+                            var elementType =
+                                p.IsParamsArray && p.Type != null ? ((ArrayTypeSymbol)p.Type).ElementType : // params T[]
+                                p.IsParamsCollection && p.Type != null ? ((ConstructedNamedTypeSymbol)p.Type).TypeArguments[0] : // params ReadOnlySpan< T >
+                                null;
+
                             if (elementType != null)
                             {
                                 int varargIndex = 0;

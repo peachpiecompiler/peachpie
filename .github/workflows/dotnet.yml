@@ -13,10 +13,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Setup .NET Core
+    - name: Setup .NET 6.0
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
+    - name: Setup .NET 9.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 9.0.x
     - name: Restore
       run: dotnet restore
     - name: Peachpie.Runtime.Tests
@@ -27,4 +31,3 @@ jobs:
 #      run: dotnet test ./src/Tests/Peachpie.ScriptTests --verbosity normal
     - name: Build
       run: dotnet build ./src/Peachpie.NET.Sdk/ -c Release --no-restore -p:VersionSuffix=ghaction${{github.run_number}}
-    

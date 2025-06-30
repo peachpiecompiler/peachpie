@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -256,6 +258,30 @@ namespace Pchp.Core.Utilities
             }
 
             return arr;
+        }
+
+        /// <summary>
+        /// Creates new array with transformed items from <paramref name="array"/>.
+        /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static TResult[] SelectToArray<TSource, TResult>(this TSource[] array, Func<TSource, TResult> func)
+        {
+            if (func == null)
+            {
+                throw new ArgumentNullException(nameof(func));
+            }
+
+            if (array == null || array.Length == 0)
+            {
+                return Array.Empty<TResult>();
+            }
+
+            var result = new TResult[array.Length];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = func(array[i]);
+            }
+            return result;
         }
     }
 

@@ -43,7 +43,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual bool IsOptional => false;
 
-        public virtual bool IsParams => false;
+        public bool IsParams => IsParamsArray || IsParamsCollection;
+
+        public virtual bool IsParamsArray => false;
+
+        public virtual bool IsParamsCollection => false;
 
         public virtual bool IsThis => false;
 

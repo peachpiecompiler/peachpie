@@ -2,5 +2,5 @@
 
 ---
 
-- [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started) - for a quick start with PeachPie, and how to use the platform.
+- [Getting Started](https://docs.peachpie.io/get-started/) - for a quick start with PeachPie, and how to use the platform.
 - [Documentation](https://docs.peachpie.io/) - The project documentation.

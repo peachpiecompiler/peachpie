@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Utilities;
@@ -196,7 +197,7 @@ namespace Pchp.Core
             }
         }
 
-        void ICollection<PhpValue>.CopyTo(PhpValue[] array, int arrayIndex) => table.CopyTo(array, arrayIndex);
+        void ICollection<PhpValue>.CopyTo(PhpValue[] array, int arrayIndex) => table.CopyTo(array.AsSpan(arrayIndex));
 
         void ICollection<PhpValue>.Add(PhpValue item) => Add(item);
 
@@ -914,12 +915,41 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="dst"></param>
         /// <param name="offset"></param>
-        public void CopyValuesTo(PhpValue[]/*!*/dst, int offset) => table.CopyTo(dst, offset);
+        public void CopyValuesTo(PhpValue[]/*!*/dst, int offset) => CopyValuesTo(dst.AsSpan(offset));
+        
+        /// <summary>
+        /// Copy values of this array into single dimensional array.
+        /// </summary>
+        /// <param name="dst"></param>
+        public void CopyValuesTo(Span<PhpValue>/*!*/dst) => table.CopyTo(dst);
 
         /// <summary>
         /// Copies values to a new array.
         /// </summary>
         public PhpValue[] GetValues() => table.GetValues();
+
+        /// <summary>
+        /// Copies values to a new array and get it as a span.
+        /// </summary>
+        public ReadOnlySpan<PhpValue> GetSpan()
+        {
+            if (table.Count == 0)
+            {
+                return default;
+            }
+
+            if (table.Count == 1)
+            {
+                var e = table.GetEnumerator();
+                if (e.MoveNext()) // always true
+                {
+                    return MemoryMarshal.CreateReadOnlySpan(ref e.CurrentValue, 1);
+                }
+            }
+
+            // copy array and get span
+            return GetValues().AsSpan();
+        }
 
         #endregion
 

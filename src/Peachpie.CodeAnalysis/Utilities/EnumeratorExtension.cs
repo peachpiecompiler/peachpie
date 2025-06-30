@@ -4,9 +4,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis
 {
@@ -192,6 +191,29 @@ namespace Pchp.CodeAnalysis
             {
                 return list.ToImmutableArray();
             }
+        }
+
+        public static IReadOnlyList<T> OfTypeToReadOnlyList<TSource, T>(this ImmutableArray<TSource> array)
+        {
+            if (array.Length != 0)
+            {
+                var list = new List<T>(array.Length);
+                foreach (var item in array)
+                {
+                    if (item is T a)
+                    {
+                        list.Add(a);
+                    }
+                }
+
+                if (list.Count != 0)
+                {
+                    return list;
+                }
+            }
+
+            // no attributes
+            return Array.Empty<T>();
         }
     }
 

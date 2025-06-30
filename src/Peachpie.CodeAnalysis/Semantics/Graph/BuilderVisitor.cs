@@ -1,6 +1,7 @@
 ﻿using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -509,9 +509,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitDeclareStmt(DeclareStmt x)
         {
-            Add(x);
+            // Add(x); // add to flow graph // will be ignored by semantic binder
 
-            base.VisitDeclareStmt(x); // visit inner statement, if present
+            // declare() is ignored
+            _binder.Diagnostics.Add(
+                _binder.Routine,
+                Span.FromBounds(x.Span.Start, x.Statement.Span.Start).ToTextSpan(),
+                Errors.ErrorCode.WRN_NotYetImplementedIgnored,
+                $"declare()"
+            );
+
+            // bind the inner block
+            VisitElement(x.Statement);
         }
 
         public override void VisitGlobalCode(GlobalCode x)
@@ -827,7 +836,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitLabelStmt(LabelStmt x)
         {
-            var/*!*/label = GetLabelBlock(x.Name.Name.Value);
+            var/*!*/label = GetLabelBlock(x.Label);
             if ((label.Flags & ControlFlowGraph.LabelBlockFlags.Defined) != 0)
             {
                 label.Flags |= ControlFlowGraph.LabelBlockFlags.Redefined;  // label was defined already
@@ -835,7 +844,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Defined;        // label is defined
-            label.LabelSpan = x.Name.Span;
+            label.LabelSpan = x.LabelSpan;
 
             _current = WithNewOrdinal(Connect(_current, label.TargetBlock));
         }

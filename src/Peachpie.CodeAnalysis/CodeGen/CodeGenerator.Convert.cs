@@ -96,7 +96,15 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (from.IsReferenceType)
                 {
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
+                    if (from.Is_IPhpArray()) // Blob or PhpArray
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_IPhpArray).Expect(CoreTypes.PhpValue);
+                    }
+                    else
+                    {
+                        Debug.Assert(!Conversions.IsSpecialReferenceType(from));
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
+                    }
                 }
                 else if (from.SpecialType == SpecialType.System_Void)
                 {
@@ -497,7 +505,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // PhpCallableToDelegate<to>.Get( IPhpCallable, Context ) : to
                 EmitConvertToIPhpCallable(from, fromHint);
                 EmitLoadContext();
-                var get_callable_ctx = (MethodSymbol)CoreTypes.PhpCallableToDelegate.Symbol.Construct(to).GetMembers("Get").SingleOrDefault();
+                var get_callable_ctx = (MethodSymbol)CoreTypes.PhpCallableToDelegate_T.Symbol.Construct(to).GetMembers("Get").SingleOrDefault();
                 EmitCall(ILOpCode.Callvirt, get_callable_ctx).Expect(to);
                 return;
             }

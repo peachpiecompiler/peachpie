@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net50</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;1574</NoWarn>
     <AssemblyName>Peachpie.Library.XmlDom</AssemblyName>
     <PackageId>Peachpie.Library.XmlDom</PackageId>
@@ -11,7 +10,7 @@
     <NetStandardImplicitPackageVersion></NetStandardImplicitPackageVersion><!-- Clean up the default value -->
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.25" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
     <PackageReference Include="Mvp.Xml.NetStandard" Version="1.1.1" />
     <PackageReference Include="System.Xml.ReaderWriter" Version="4.3.0" />
     <PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />

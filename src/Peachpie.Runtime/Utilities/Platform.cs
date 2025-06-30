@@ -51,6 +51,8 @@ namespace Pchp.Core.Utilities
         /// </summary>
         public static bool IsOsx => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
+        public static string DirectorySeparatorString => DirectorySeparator == '\\' ? "\\" : "/";
+
         public static readonly char DirectorySeparator;
 
         public static readonly char AltDirectorySeparator;

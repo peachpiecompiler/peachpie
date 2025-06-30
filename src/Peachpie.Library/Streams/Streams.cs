@@ -40,18 +40,22 @@ namespace Pchp.Library.Streams
         #region stream_context_create
 
         /// <summary>Create a new stream context.</summary>
-        /// <param name="data">The 2-dimensional array in format "options[wrapper][option]".</param>
-        public static PhpResource stream_context_create(PhpArray data = null)
+        /// <param name="options">The 2-dimensional array in format "options[wrapper][option]".</param>
+        /// <param name="params">Must be an associative array in the format $arr['parameter'] = $value, or null. Refers to context parameters.</param>
+        public static PhpResource stream_context_create(PhpArray options = null, PhpArray @params = null)
         {
-            if (data == null)
+            if (options == null)
             {
                 return StreamContext.Default;
             }
 
             // OK, data lead to a valid stream-context.
-            if (CheckContextData(data))
+            if (CheckContextData(options))
             {
-                return new StreamContext(data);
+                return new StreamContext(options)
+                {
+                    Parameters = @params,
+                };
             }
 
             // Otherwise..
@@ -62,12 +66,12 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Check whether the provided argument is a valid stream-context data array.
         /// </summary>
-        /// <param name="data">The data to be stored into context.</param>
+        /// <param name="options">The data to be stored into context.</param>
         /// <returns></returns>
-        static bool CheckContextData(PhpArray data)
+        static bool CheckContextData(PhpArray options)
         {
             // Check if the supplied data are correctly formed.
-            var enumerator = data.GetFastEnumerator();
+            var enumerator = options.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
                 if (enumerator.CurrentValue.AsArray() == null)
@@ -176,7 +180,16 @@ namespace Pchp.Library.Streams
         /// <param name="stream_or_context">The PhpResource of either PhpStream or StreamContext type.</param>
         /// <param name="options">The options to set for <paramref name="stream_or_context"/>.</param>
         /// <returns>True on success.</returns>
-        public static bool stream_context_set_option(PhpResource stream_or_context, PhpArray options)
+        //[Obsolete("Deprecated as of PHP 8.4.0, use stream_context_set_options() instead.")]
+        public static bool stream_context_set_option(PhpResource stream_or_context, PhpArray options) => stream_context_set_options(stream_or_context, options);
+
+        /// <summary>
+        /// Sets an option for a stream/wrapper/context.
+        /// </summary> 
+        /// <param name="stream_or_context">The PhpResource of either PhpStream or StreamContext type.</param>
+        /// <param name="options">The options to set for <paramref name="stream_or_context"/>.</param>
+        /// <returns>True on success.</returns>
+        public static bool stream_context_set_options(PhpResource stream_or_context, PhpArray options)
         {
             // OK, creates the context if Default, so that Data is always a PhpArray.
             // Fails only if the first argument is not a stream nor context.

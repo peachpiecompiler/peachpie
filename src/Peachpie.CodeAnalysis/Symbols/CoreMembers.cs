@@ -223,7 +223,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     m.IsStatic &&
                     m.ParameterCount == 1 &&
                     m.Parameters[0].Type == castfrom &&
-                    m.ReturnType == castTo)
+                    (castTo.IsDefinition ? m.ReturnType.OriginalDefinition == castTo : m.ReturnType == castTo))
                 {
                     return m;
                 }
@@ -253,6 +253,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly PhpValueHolder PhpValue;
         public readonly PhpAliasHolder PhpAlias;
         public readonly PhpArrayHolder PhpArray;
+        public readonly IPhpCallableHolder IPhpCallable;
         public readonly IPhpArrayHolder IPhpArray;
         public readonly IPhpConvertibleHolder IPhpConvertible;
         public readonly PhpNumberHolder PhpNumber;
@@ -275,6 +276,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpValue = new PhpValueHolder(types);
             PhpAlias = new PhpAliasHolder(types);
             PhpArray = new PhpArrayHolder(types);
+            IPhpCallable = new IPhpCallableHolder(types);
             IPhpArray = new IPhpArrayHolder(types);
             IPhpConvertible = new IPhpConvertibleHolder(types);
             PhpNumber = new PhpNumberHolder(types);
@@ -459,6 +461,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 BitwiseAnd_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseAndOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseXor_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.ExclusiveOrOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseNot_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.OnesComplementOperatorName, ct.PhpValue);
+                ToReadOnlySpanChar_String = ct.String.CastImplicit(ct.ReadOnlySpan_T);
             }
 
             public readonly CoreMethod
@@ -527,7 +530,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 StrictCeq_PhpValue_bool, StrictCeqNull_PhpValue,
 
                 Div_PhpValue_PhpValue, Div_long_PhpValue, Div_double_PhpValue,
-                BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseXor_PhpValue_PhpValue, BitwiseNot_PhpValue;
+                BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseXor_PhpValue_PhpValue, BitwiseNot_PhpValue,
+                ToReadOnlySpanChar_String
+                ;
 
             public readonly CoreProperty
                 GetName_PhpTypeInfo, GetTypeHandle_PhpTypeInfo;
@@ -580,6 +585,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_PhpString = ct.PhpValue.Method("Create", ct.PhpString);
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
                 Create_PhpArray = ct.PhpValue.Method("Create", ct.PhpArray);
+                Create_IPhpArray = ct.PhpValue.Method("Create", ct.IPhpArray);
                 Create_PhpAlias = ct.PhpValue.Method("Create", ct.PhpAlias);
                 Create_IntStringKey = ct.PhpValue.Method("Create", ct.IntStringKey);
 
@@ -598,7 +604,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeepCopy, GetValue,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String, Eq_String_PhpValue,
                 Ineq_PhpValue_PhpValue, Ineq_PhpValue_String, Ineq_String_PhpValue,
-                Create_Boolean, Create_Long, Create_Int, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
+                Create_Boolean, Create_Long, Create_Int, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IPhpArray, Create_IntStringKey,
                 FromClr_Object, FromClass_Object, FromStruct_T;
 
             public readonly CoreField
@@ -614,7 +620,9 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 EmptyRuntimeTypeHandle = ct.Helpers.Field(nameof(EmptyRuntimeTypeHandle));
                 EmptyNullable_T = ct.Helpers.Method(nameof(EmptyNullable_T));
+                CreateReadOnlySpan_T = new CoreGenericMethod(ct.Helpers, "CreateReadOnlySpan", 1);
                 IsUserTypeDeclared_Context_PhpTypeInfo = ct.Helpers.Method("IsUserTypeDeclared", ct.Context, ct.PhpTypeInfo);
+                AsSpan_T = new CoreGenericMethod(ct.MemoryExtensions, "AsSpan", 1);
 
                 implicit_int_to_intstringkey = ct.Int32.CastImplicit(ct.IntStringKey);
                 implicit_long_to_intstringkey = ct.Long.CastImplicit(ct.IntStringKey);
@@ -623,9 +631,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreField EmptyRuntimeTypeHandle;
 
-            public readonly CoreMethod EmptyNullable_T;
-
-            public readonly CoreMethod IsUserTypeDeclared_Context_PhpTypeInfo;
+            public readonly CoreMethod
+                EmptyNullable_T, CreateReadOnlySpan_T,
+                IsUserTypeDeclared_Context_PhpTypeInfo,
+                AsSpan_T
+                ;
 
             public readonly CoreCast
                 implicit_int_to_intstringkey,
@@ -883,6 +893,41 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             MethodSymbol _Add_ByteArray;
+        }
+
+        public struct IPhpCallableHolder
+        {
+            CoreTypes CoreTypes { get; }
+
+            public IPhpCallableHolder(CoreTypes ct)
+            {
+                CoreTypes = ct;
+                _Invoke_Context_PhpValueArray = null; // lazy
+                //Invoke_Context_PhpValueArray = ct.IPhpCallable.Method("Invoke", ct.Context, ct.PhpValueArray);
+            }
+
+            public MethodSymbol Invoke_Context_PhpValueArray
+            {
+                get
+                {
+                    if (_Invoke_Context_PhpValueArray == null)
+                    {
+                        Interlocked.CompareExchange(
+                            ref _Invoke_Context_PhpValueArray,
+                            CoreTypes.IPhpCallable.Symbol
+                                .GetMembers("Invoke")
+                                .OfType<MethodSymbol>()
+                                .Single(m => m.ParameterCount == 2 && m.Parameters[1].Type.Is_PhpValueArray()),
+                            null
+                        );
+                    }
+
+                    return _Invoke_Context_PhpValueArray ?? throw new InvalidOperationException();
+                }
+            }
+
+            MethodSymbol
+                _Invoke_Context_PhpValueArray;
         }
 
         public struct IPhpArrayHolder

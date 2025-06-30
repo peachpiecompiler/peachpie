@@ -1,7 +1,7 @@
 <?php
 
 function foo(int $bar) {
-  declare(ticks = 1);/*!PHP5012!*/
+  declare(ticks = 1)/*!PHP5012!*/;
 
   // Other diagnostics and type analysis must work within the block
   declare(strict_types = 1)/*!PHP5012!*/ {
@@ -14,7 +14,7 @@ function foo(int $bar) {
   }
 }
 
-declare(strict_types = 1);/*!PHP5012!*/
+declare(strict_types = 1)/*!PHP5012!*/;
 
 declare(strict_types = 1)/*!PHP5012!*/ {
   if (false) {

@@ -3714,7 +3714,12 @@ namespace Pchp.Library
             if (string.IsNullOrEmpty(str))
                 return string.Empty;
 
-            return char.ToUpper(str[0]) + str.Substring(1);
+            //return char.ToUpper(str[0]) + str.Substring(1);
+            return string.Create(str.Length, str, static (_span, _str) =>
+            {
+                _span[0] = char.ToUpper(_str[0]);
+                _str.AsSpan(1).CopyTo(_span.Slice(1));
+            });
         }
 
         /// <summary>
@@ -3729,7 +3734,12 @@ namespace Pchp.Library
                 return string.Empty;
 
             // first character to lower case
-            return char.ToLower(str[0]) + str.Substring(1);
+            //return char.ToLower(str[0]) + str.Substring(1);
+            return string.Create(str.Length, str, static (_span, _str) =>
+            {
+                _span[0] = char.ToLower(_str[0]);
+                _str.AsSpan(1).CopyTo(_span.Slice(1));
+            });
         }
 
         /// <summary>

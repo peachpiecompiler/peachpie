@@ -88,7 +88,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Returns the number of columns for the most recent query.
         /// </summary>
-        public int field_count => Connection.LastResult.FieldCount;
+        public int field_count => Connection.LastResult?.FieldCount ?? 0;
 
         /// <summary>
         /// Get MySQL client info.

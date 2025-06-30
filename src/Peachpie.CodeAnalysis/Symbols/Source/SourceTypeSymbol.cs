@@ -13,7 +13,6 @@ using Devsense.PHP.Syntax;
 using System.Globalization;
 using System.Threading;
 using Microsoft.CodeAnalysis.Text;
-using static Pchp.CodeAnalysis.AstUtils;
 using Pchp.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Errors;
 using System.IO;
@@ -1132,7 +1131,9 @@ namespace Pchp.CodeAnalysis.Symbols
                         flist.Modifiers.GetAccessibility(), flist.PHPDoc,
                         fkind,
                         initializer: (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null,
-                        attributes: binder.BindAttributes(flist.GetAttributes()));
+                        attributes: binder.BindAttributes(flist.GetAttributes()),
+                        typeRef: flist.Type // CONSIDER: readonly non-aliased fields only?
+                    );
                 }
             }
 
@@ -1141,12 +1142,14 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 foreach (var c in clist.Constants)
                 {
-                    yield return new SourceFieldSymbol(this, c.Name.Name.Value,
-                        CreateLocation(c.Name.Span),
+                    yield return new SourceFieldSymbol(this, c.Name.Value,
+                        CreateLocation(c.NameSpan),
                         clist.Modifiers.GetAccessibility(), clist.PHPDoc,
                         PhpPropertyKind.ClassConstant,
                         initializer: binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement(),
-                        attributes: binder.BindAttributes(clist.GetAttributes()));
+                        attributes: binder.BindAttributes(clist.GetAttributes()),
+                        typeRef: clist.Type
+                    );
                 }
             }
         }
@@ -1449,7 +1452,10 @@ namespace Pchp.CodeAnalysis.Symbols
                         {
                             if (s is SynthesizedFieldSymbol fld)
                             {
-                                if (fieldsset == null) fieldsset = new HashSet<string>();
+                                if (fieldsset == null)
+                                {
+                                    fieldsset = new HashSet<string>();
+                                }
 
                                 if (fieldsset.Add(fld.Name) == false)
                                 {
@@ -1457,9 +1463,9 @@ namespace Pchp.CodeAnalysis.Symbols
                                     return false;
                                 }
 
-                                if (this.Syntax.Members.OfType<FieldDeclList>().SelectMany(list => list.Fields).Select(fdecl => fdecl.Name.Value).Contains(fld.Name))
+                                var members = EnsureMembers(); // get symbols declared in this type, without traits
+                                if (members.Any(m => m is IFieldSymbol f && f.Name == fld.Name))
                                 {
-                                    // field already declared by containing class
                                     return false;
                                 }
                             }
@@ -1755,7 +1761,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return Syntax.PHPDoc?.Summary ?? string.Empty;
+            return Syntax.PHPDoc?.SummaryOrDefault() ?? string.Empty;
         }
     }
 

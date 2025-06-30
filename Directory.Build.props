@@ -5,8 +5,8 @@
     <!-- version -->
     <Version Condition=" '$(APPVEYOR_BUILD_VERSION)'!='' ">$(APPVEYOR_BUILD_VERSION)</Version>
     <Version Condition=" '$(Version)'=='' ">1.2.0-dev</Version>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <PackageVersion>$(Version)</PackageVersion>
-    <TargetFrameworks>net50</TargetFrameworks>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
 
     <!-- metadata generation -->
@@ -42,8 +42,8 @@
     
     <PeachpieLibraryRegularExpressionsVersion>1.7.0</PeachpieLibraryRegularExpressionsVersion>
     <MySqlConnectorVersion>2.0.0</MySqlConnectorVersion>
-    <ParserVersion>8.2.13161</ParserVersion>
-    <PeachpieMicrosoftCodeAnalysisVersion>3.7.1</PeachpieMicrosoftCodeAnalysisVersion>
+    <ParserVersion>8.4.17524</ParserVersion>
+    <PeachpieMicrosoftCodeAnalysisVersion>3.7.4</PeachpieMicrosoftCodeAnalysisVersion>
     
   </PropertyGroup>
 

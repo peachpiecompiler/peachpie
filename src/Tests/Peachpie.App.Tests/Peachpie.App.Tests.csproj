@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net50</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ICSharpCode.Decompiler" Version="8.2.0.7535" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.0.0" />
     <PackageReference Include="MSTest.TestFramework" Version="2.0.0" />

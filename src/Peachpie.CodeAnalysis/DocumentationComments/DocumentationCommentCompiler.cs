@@ -186,7 +186,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             //var ps = routine.Parameters;
 
             // PHPDoc
-            WriteSummary(output, phpdoc.Summary);
+            WriteSummary(output, phpdoc.SummaryOrDefault());
 
             for (var entry = phpdoc.Entries; entry != null; entry = entry.Next)
             {
@@ -262,7 +262,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             var phpdoc = type.Syntax?.PHPDoc;
             if (phpdoc != null)
             {
-                WriteSummary(_writer, phpdoc.Summary);
+                WriteSummary(_writer, phpdoc.SummaryOrDefault());
             }
             _writer.WriteLine("</member>");
 
@@ -272,9 +272,8 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
             foreach (var field in type.GetMembers().OfType<SourceFieldSymbol>())
             {
-                if ((phpdoc = field.PHPDocBlock) != null)
+                if (field.PHPDocBlock?.HasSummary(out var summary) == true)
                 {
-                    var summary = phpdoc.Summary;
                     var value = string.Empty;
                     if (string.IsNullOrEmpty(summary))
                     {
@@ -289,7 +288,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
                             if (!string.IsNullOrEmpty(typename))
                             {
-                                value = string.Format("<value>{0}</value>", XmlEncode(typename));
+                                value = $"<value>{XmlEncode(typename)}</value>";
                             }
                         }
                     }

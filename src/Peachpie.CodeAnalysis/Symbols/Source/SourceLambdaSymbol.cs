@@ -127,7 +127,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             _body = ImmutableArray.Create<Statement>(new JumpStmt(syntax.Expression.Span, JumpStmt.Types.Return, syntax.Expression));
             _useparams = EnumerateCapturedVariables(syntax)
-                .Select(v => new FormalParam(Span.Invalid, v.Value, Span.Invalid, null, FormalParam.Flags.Default, null))
+                .Select(v => new FormalParam(Span.Invalid, new VariableName(v.Value)))
                 .ToArray();
         }
 
@@ -142,7 +142,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // remove vars specified in parameters
-            foreach (var p in fn.Signature.FormalParams)
+            foreach (var p in fn.Signature.FormalParamsFixed())
             {
                 capturedvars.Remove(p.Name.Name);
             }

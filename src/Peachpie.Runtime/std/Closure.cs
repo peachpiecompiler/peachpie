@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Pchp.Core;
@@ -144,7 +145,7 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     /// <summary>
     /// Binds and calls the closure.
     /// </summary>
-    public PhpValue call(object newthis, params PhpValue[] parameters)
+    public PhpValue call(object newthis, params ReadOnlySpan<PhpValue> parameters)
     {
         return bindTo(newthis).__invoke(parameters);
     }
@@ -152,25 +153,35 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
     /// <summary>
     /// Magic method <c>__invoke</c> invokes the anonymous function with given arguments.
     /// </summary>
-    public PhpValue __invoke(params PhpValue[] parameters)
+    public PhpValue __invoke(params ReadOnlySpan<PhpValue> parameters)
     {
         if (_callable is PhpAnonymousRoutineInfo)
         {
+            var pool = ArrayPool<PhpValue>.Shared;
+
+            var newArgsLength = 1 + @static.Count + parameters.Length;
+            var newArgsBuffer = pool.Rent(newArgsLength);
+            var newArgs = newArgsBuffer.AsSpan(..newArgsLength);
+
             // { Closure, ... @static, ... parameters }
-
-            var newargs = new PhpValue[1 + @static.Count + parameters.Length];
-
-            newargs[0] = PhpValue.FromClass(this);
+            newArgs[0] = PhpValue.FromClass(this);
 
             if (@static.Count != 0)
             {
-                @static.CopyValuesTo(newargs, 1);
+                @static.CopyValuesTo(newArgs[1..]);
             }
 
-            //
-            Array.Copy(parameters, 0, newargs, 1 + @static.Count, parameters.Length);
+            parameters.CopyTo(newArgs[(1 + @static.Count)..]);
 
-            return _callable.Invoke(_ctx, newargs);
+            //
+            try
+            {
+                return _callable.Invoke(_ctx, newArgs);
+            }
+            finally
+            {
+                pool.Return(newArgsBuffer, true);
+            }
         }
         else
         {
@@ -179,10 +190,14 @@ public sealed class Closure : IPhpCallable, IPhpPrintable
         }
     }
 
+    #region IPhpCallable
+
     /// <summary>
     /// Implementation of <see cref="IPhpCallable"/>, invokes the anonymous function.
     /// </summary>
-    PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments) => __invoke(arguments);
+    PhpValue IPhpCallable.Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments) => __invoke(arguments);
 
     PhpValue IPhpCallable.ToPhpValue() => PhpValue.FromClass(this);
+
+    #endregion
 }

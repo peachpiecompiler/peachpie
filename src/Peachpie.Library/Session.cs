@@ -502,7 +502,7 @@ namespace Pchp.Library
 
             public bool open(string save_path, string session_name) => (bool)_open.Invoke(_ctx, (PhpValue)save_path, (PhpValue)session_name);
 
-            public bool close() => (bool)_close.Invoke(_ctx, Array.Empty<PhpValue>());
+            public bool close() => (bool)_close.Invoke(_ctx);
 
             public PhpString read(string session_id) => _read.Invoke(_ctx, (PhpValue)session_id).ToPhpString(_ctx);
 

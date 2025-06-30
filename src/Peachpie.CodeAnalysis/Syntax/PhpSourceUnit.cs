@@ -12,7 +12,12 @@ using Pchp.CodeAnalysis;
 
 namespace Peachpie.CodeAnalysis.Syntax
 {
-    sealed class PhpSourceUnit : SourceUnit
+    interface IPhpSourceUnit
+    {
+        ReadOnlySpan<char> GetSourceCode(Span span);
+    }
+    
+    sealed class PhpSourceUnit : SourceUnit, IPhpSourceUnit
     {
         public SourceText SourceText { get; set; }
 
@@ -27,9 +32,9 @@ namespace Peachpie.CodeAnalysis.Syntax
             // TODO: dispose SourceText ?
         }
 
-        public override string GetSourceCode(Span span)
+        public ReadOnlySpan<char> GetSourceCode(Span span)
         {
-            return SourceText.ToString(span.ToTextSpan());
+            return SourceText.ToString(span.ToTextSpan()).AsSpan();
         }
 
         public void Parse(NodesFactory factory, IErrorSink<Span> errors,
@@ -48,7 +53,7 @@ namespace Peachpie.CodeAnalysis.Syntax
                     factory,
                     parser.CreateTypeRef))
                 {
-                    ast = parser.Parse(provider, factory, features, errors, recovery);
+                    this.Ast = (GlobalCode)parser.Parse(provider, factory, features, errors, recovery);
                 }
             }
         }
@@ -58,11 +63,6 @@ namespace Peachpie.CodeAnalysis.Syntax
             Parse((NodesFactory)factory, errors, recovery, LanguageFeatures.Basic, Lexer.LexicalStates.INITIAL);
         }
 
-        static ILineBreaks CreateLineBreaks(SourceText source)
-        {
-            return Devsense.PHP.Text.LineBreaks.Create(
-                source.ToString(),
-                source.Lines.Select(line => line.EndIncludingLineBreak).ToList());
-        }
+        static ILineBreaks CreateLineBreaks(SourceText source) => new SourceLineBreaks(source);
     }
 }

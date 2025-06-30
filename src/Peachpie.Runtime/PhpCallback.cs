@@ -2,6 +2,7 @@
 using Pchp.Core.Resources;
 using Pchp.Core.Utilities;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -13,26 +14,31 @@ namespace Pchp.Core
     /// An object that can be invoked dynamically.
     /// </summary>
     /// <remarks>The interface is implemented by compiler for classes with <c>__invoke</c> method.</remarks>
-    public interface IPhpCallable
+    public partial interface IPhpCallable
     {
-        /// <summary>
-        /// Invokes the object with given arguments.
-        /// </summary>
-        PhpValue Invoke(Context ctx, params PhpValue[] arguments);
-
         /// <summary>
         /// Gets PHP value representing the callback.
         /// </summary>
         PhpValue ToPhpValue();
-    }
 
+        /// <summary>
+        /// Invokes the object with given arguments.
+        /// </summary>
+        PhpValue Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Invoke(ctx, arguments.ToArray());
+
+        /// <summary>
+        /// Invokes the object with given arguments.
+        /// </summary>
+        PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Invoke(ctx, arguments.AsSpan());
+    }
+    
     /// <summary>
     /// Delegate for dynamic routine invocation.
     /// </summary>
     /// <param name="ctx">Current runtime context. Cannot be <c>null</c>.</param>
     /// <param name="arguments">List of arguments to be passed to called routine.</param>
     /// <returns>Result of the invocation.</returns>
-    public delegate PhpValue PhpCallable(Context ctx, params PhpValue[] arguments);
+    public delegate PhpValue PhpCallable(Context ctx, params ReadOnlySpan<PhpValue> arguments);
 
     /// <summary>
     /// Delegate for dynamic method invocation.
@@ -41,7 +47,7 @@ namespace Pchp.Core
     /// <param name="target">For instance methods, the target object.</param>
     /// <param name="arguments">List of arguments to be passed to called routine.</param>
     /// <returns>Result of the invocation.</returns>
-    internal delegate PhpValue PhpInvokable(Context ctx, object target, params PhpValue[] arguments);
+    internal delegate PhpValue PhpInvokable(Context ctx, object target, params ReadOnlySpan<PhpValue> arguments);
 
     /// <summary>
     /// Callable object representing callback to a routine.
@@ -71,7 +77,7 @@ namespace Pchp.Core
         /// Resolved routine to be invoked.
         /// </summary>
         protected PhpCallable _lazyResolved;
-
+        
         /// <summary>
         /// Gets value indicating the callback is valid.
         /// </summary>
@@ -105,7 +111,9 @@ namespace Pchp.Core
         /// <param name="other">The other instance to compare with.</param>
         /// <returns>Both callbacks represents the same routine.</returns>
         public virtual bool Equals(PhpCallback other) => other != null && ReferenceEquals(_lazyResolved, other._lazyResolved) && _lazyResolved != null;
+
         public override bool Equals(object obj) => Equals(obj as PhpCallback);
+
         public override int GetHashCode() => this.GetType().GetHashCode();
 
         /// <summary>
@@ -149,13 +157,14 @@ namespace Pchp.Core
 
             protected override PhpCallable BindCore(Context ctx) => ctx.GetDeclaredFunction(_function)?.PhpCallable;
 
-            protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
+            protected override PhpValue InvokeError(Context ctx, params ReadOnlySpan<PhpValue> arguments)
             {
                 PhpException.UndefinedFunctionCalled(_function);
                 return PhpValue.Null;
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as FunctionCallback);
+
             bool Equals(FunctionCallback other) => other != null && other._function == _function;
         }
 
@@ -208,7 +217,7 @@ namespace Pchp.Core
                 return null;
             }
 
-            protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
+            protected override PhpValue InvokeError(Context ctx, params ReadOnlySpan<PhpValue> arguments)
             {
                 PhpException.UndefinedMethodCalled(_class, _method);
                 return PhpValue.Null;
@@ -234,6 +243,7 @@ namespace Pchp.Core
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as MethodCallback);
+
             bool Equals(MethodCallback other) => other != null && other._class == _class && other._method == _method;
         }
 
@@ -323,7 +333,7 @@ namespace Pchp.Core
                 return null;
             }
 
-            protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
+            protected override PhpValue InvokeError(Context ctx, params ReadOnlySpan<PhpValue> arguments)
             {
                 ResolveType(ctx, out var tinfo, out _);
                 if (tinfo != null)
@@ -373,6 +383,7 @@ namespace Pchp.Core
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as ArrayCallback);
+
             bool Equals(ArrayCallback other) => other != null && EqualsObj(other._obj, _obj) && other._method == _method;
 
             static bool EqualsObj(PhpValue a, PhpValue b)
@@ -396,7 +407,7 @@ namespace Pchp.Core
 
             public override PhpValue ToPhpValue() => PhpValue.Null;
 
-            protected override PhpCallable BindCore(Context ctx) => (_1, _2) => PhpValue.Null;
+            protected override PhpCallable BindCore(Context ctx) => (_, _) => PhpValue.Null;
 
             public override bool IsValid => true;
 
@@ -428,7 +439,7 @@ namespace Pchp.Core
 
         #region Create
 
-        public static PhpCallback Create(IPhpCallable callable) => Create(callable.Invoke);
+        public static PhpCallback Create(IPhpCallable callable) => Create(callable.Invoke); // TODO: avoid creating delegate, create wrapper class like CallableCallback instead
 
         public static PhpCallback Create(PhpCallable callable) => new CallableCallback(callable);
 
@@ -480,6 +491,7 @@ namespace Pchp.Core
         /// Ensures the routine delegate is bound.
         /// </summary>
         private PhpCallable Bind(Context ctx) => _lazyResolved ?? BindNew(ctx);
+        
 
         /// <summary>
         /// Binds the routine delegate.
@@ -501,20 +513,24 @@ namespace Pchp.Core
             return resolved;
         }
 
+        [Obsolete]
+        protected PhpValue InvokeError(Context ctx, PhpValue[] arguments) => InvokeError(ctx, arguments.AsSpan());
+
         /// <summary>
         /// Missing function call callback.
         /// </summary>
-        protected virtual PhpValue InvokeError(Context ctx, PhpValue[] arguments)
+        protected virtual PhpValue InvokeError(Context ctx, ReadOnlySpan<PhpValue> arguments)
         {
             throw PhpException.ErrorException(ErrResources.invalid_callback);
         }
 
+        
         /// <summary>
         /// Performs binding to the routine delegate.
         /// </summary>
         /// <returns>Actual delegate or <c>null</c> if routine cannot be bound.</returns>
         protected abstract PhpCallable BindCore(Context ctx);
-
+        
         /// <summary>
         /// Binds callback to given late static bound type.
         /// </summary>
@@ -527,7 +543,7 @@ namespace Pchp.Core
         /// <summary>
         /// Invokes the callback with given arguments.
         /// </summary>
-        public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Bind(ctx)(ctx, arguments);
+        public PhpValue Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Bind(ctx)(ctx, arguments);
 
         /// <summary>
         /// Gets value representing the callback.
@@ -538,18 +554,25 @@ namespace Pchp.Core
         #endregion
     }
 
-    internal static class PhpCallableExtension
+    public static partial class PhpCallableExtension
     {
         /// <summary>
         /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> by fixing the target argument.
         /// </summary>
-        public static PhpCallable Bind(this PhpInvokable invokable, object target) => (ctx, arguments) => invokable(ctx, target, arguments);
-
+        internal static PhpCallable Bind(this PhpInvokable invokable, object target) => (ctx, arguments) => invokable(ctx, target, arguments);
+        
         /// <summary>
         /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> while wrapping arguments to a single argument of type <see cref="PhpArray"/>.
         /// </summary>
-        public static PhpCallable BindMagicCall(this PhpInvokable invokable, object target, string name)
-            => (ctx, arguments) => invokable(ctx, target, new[] { (PhpValue)name, (PhpValue)PhpArray.New(arguments) });
+        internal static PhpCallable BindMagicCall(this PhpInvokable invokable, object target, string name)
+            => (ctx, arguments) => 
+            {
+                using var buffer = MemoryPool<PhpValue>.Shared.Rent(arguments.Length + 1);
+                var curryArgs = buffer.Memory.Span.Slice(0, arguments.Length + 1);
+                buffer.Memory.Span[0] = name;
+                arguments.CopyTo(curryArgs[1..]);
+                return invokable(ctx, target, curryArgs);
+            };
     }
 
     /// <summary>

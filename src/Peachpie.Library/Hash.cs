@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using static Pchp.Library.PhpHash;
 using System.Globalization;
+using System.Buffers;
 
 namespace Pchp.Library
 {
@@ -1212,6 +1213,8 @@ namespace Pchp.Library
             private byte[] buffer = null;
             private int bufferUsage = 0;
 
+            internal delegate void ProcessBlockedDelegate(HashPhpResource self, ReadOnlySpan<byte> data);
+
             /// <summary>
             /// Returns blocks of data, using buffered data stored before.
             /// Provided data can be too small to fit the block, so they are buffered and processed when more data comes.
@@ -1220,7 +1223,7 @@ namespace Pchp.Library
             /// <param name="blockSize">Block size, when buffered data fits this, they are returned.</param>
             /// <param name="callback">Called for each block.</param>
             /// <returns>Packs of block, as a pair of byte array and index of first element.</returns>
-            internal void ProcessBlocked(ReadOnlySpan<byte>/*!*/newData, int blockSize, Action<byte[], int> callback)
+            internal void ProcessBlocked(ReadOnlySpan<byte>/*!*/newData, int blockSize, ProcessBlockedDelegate callback)
             {
                 Debug.Assert(blockSize > 0);
 
@@ -1242,7 +1245,7 @@ namespace Pchp.Library
                     }
 
                     newData.Slice(0, bytesToFitBuffer).CopyTo(buffer.AsSpan(bufferUsage, bytesToFitBuffer));
-                    callback(buffer, 0); // use the data from buffer
+                    callback(this, buffer); // use the data from buffer
 
                     bufferUsage = 0;            // buffer is empty now
                     index += bytesToFitBuffer;  // part of newData was used
@@ -1251,7 +1254,7 @@ namespace Pchp.Library
                 // returns blocks from the newData
                 while (index + blockSize <= newData.Length)
                 {
-                    callback(newData.ToArray(), index);
+                    callback(this, newData.Slice(index));
                     index += blockSize;
                 }
 
@@ -1728,16 +1731,16 @@ namespace Pchp.Library
                     Array.Clear(this.checksum, 0, this.checksum.Length);
                 }
 
-                private void TransformBlock(byte[]/*!*//*byte[16+startIndex]*/block, int startIndex)
+                private void TransformBlock(ReadOnlySpan<byte>/*!*//*byte[16+startIndex]*/block)
                 {
                     Debug.Assert(block != null);
-                    Debug.Assert(block.Length >= 16 + startIndex);
+                    Debug.Assert(block.Length >= 16);
 
                     byte i, j, t = 0;
 
                     for (i = 0; i < 16; i++)
                     {
-                        state[16 + i] = block[i + startIndex];
+                        state[16 + i] = block[i];
                         state[32 + i] = (byte)(state[16 + i] ^ state[i]);
                     }
 
@@ -1757,15 +1760,15 @@ namespace Pchp.Library
                     t = checksum[15];
                     for (i = 0; i < 16; i++)
                     {
-                        t = checksum[i] ^= MD2_S[block[i + startIndex] ^ t];
+                        t = checksum[i] ^= MD2_S[block[i] ^ t];
                     }
                 }
 
                 public override bool Update(ReadOnlySpan<byte> data)
                 {
-                    ProcessBlocked(data, 16, (block, index) =>
+                    ProcessBlocked(data, 16, (self, block) =>
                     {
-                        TransformBlock(block, index);
+                        ((MD2)self).TransformBlock(block);
                     });
 
                     return true;
@@ -1785,8 +1788,8 @@ namespace Pchp.Library
                         buffer[i] = remainingBytes;
 
                     //
-                    TransformBlock(buffer, 0);
-                    TransformBlock(checksum, 0);
+                    TransformBlock(buffer.AsSpan());
+                    TransformBlock(checksum.AsSpan());
 
                     //
                     byte[] hash = new byte[16];
@@ -1815,18 +1818,17 @@ namespace Pchp.Library
                 private static void MD4_R1(ref uint a, uint b, uint c, uint d, uint xk, byte s) { unchecked { a = ROTL32(s, a + MD4_F(b, c, d) + xk); } }
                 private static void MD4_R2(ref uint a, uint b, uint c, uint d, uint xk, byte s) { unchecked { a = ROTL32(s, a + MD4_G(b, c, d) + xk + 0x5A827999); } }
                 private static void MD4_R3(ref uint a, uint b, uint c, uint d, uint xk, byte s) { unchecked { a = ROTL32(s, a + MD4_H(b, c, d) + xk + 0x6ED9EBA1); } }
-                private static uint[] Decode(byte[] block, int startIndex, int bytesCount)
+                private static uint[] Decode(ReadOnlySpan<byte> block)
                 {
-                    Debug.Assert(bytesCount > 0);
-                    Debug.Assert((bytesCount % 4) == 0);
+                    Debug.Assert(block.Length > 0);
+                    Debug.Assert((block.Length % 4) == 0);
 
-                    uint[] result = new uint[bytesCount / 4];
+                    uint[] result = new uint[block.Length / 4];
                     int index = 0;
-                    while (bytesCount > 0)
+                    while (block.Length > 0)
                     {
-                        result[index++] = BitConverter.ToUInt32(block, startIndex);
-                        startIndex += 4;
-                        bytesCount -= 4;
+                        result[index++] = BitConverter.ToUInt32(block);
+                        block = block.Slice(4);
                     }
 
                     return result;
@@ -1847,11 +1849,10 @@ namespace Pchp.Library
 
                     return result;
                 }
-                private void MD4Transform(byte[] block, int startIndex)
+                private void MD4Transform(ReadOnlySpan<byte> block)
                 {
                     uint a = state[0], b = state[1], c = state[2], d = state[3];
-                    uint[] x = Decode(block, startIndex, 64);
-
+                    uint[] x = Decode(block.Slice(0, 64));
 
                     /* Round 1 */
                     MD4_R1(ref a, b, c, d, x[0], 3);
@@ -1948,9 +1949,9 @@ namespace Pchp.Library
                         ++count[1];
                     count[1] += ((uint)data.Length >> 29);
 
-                    ProcessBlocked(data, 64, (block, index) =>
+                    ProcessBlocked(data, 64, (self, block) =>
                     {
-                        MD4Transform(block, index);
+                        ((MD4)self).MD4Transform(block);
                     });
 
                     return true;
@@ -2075,49 +2076,44 @@ namespace Pchp.Library
                     }
                 }
 
-                private static uint[] Decode(byte[] block, int startIndex, int bytesCount)
+                private static uint[] Decode(ReadOnlySpan<byte> block)
                 {
-                    Debug.Assert(bytesCount > 0);
-                    Debug.Assert((bytesCount % 4) == 0);
+                    Debug.Assert(block.Length > 0);
+                    Debug.Assert((block.Length % 4) == 0);
 
-                    uint[] result = new uint[bytesCount / 4];
+                    uint[] result = new uint[block.Length / 4];
                     int index = 0;
-                    while (bytesCount > 0)
+                    while (block.Length > 0)
                     {
-                        result[index++] = BitConverter.ToUInt32(block, startIndex);
-                        startIndex += 4;
-                        bytesCount -= 4;
+                        result[index++] = BitConverter.ToUInt32(block);
+                        block = block.Slice(4);
                     }
 
                     return result;
                 }
-                private static byte[] Encode(uint[] nums, int startIndex, int bytesCount)
+                private static void Encode(Span<byte> result, ReadOnlySpan<uint> nums)
                 {
-                    Debug.Assert(bytesCount > 0);
-                    Debug.Assert((bytesCount % 4) == 0);
+                    Debug.Assert(result.Length > 0);
+                    Debug.Assert((result.Length % 4) == 0);
 
-                    byte[] result = new byte[bytesCount];
-
-                    int index = 0;
-                    while (index < bytesCount)
+                    while (result.Length > 0)
                     {
-                        Array.Copy(BitConverter.GetBytes(nums[startIndex++]), 0, result, index, 4);
-                        index += 4;
+                        Debug.Assert(result.Length >= 4);
+                        BitConverter.TryWriteBytes(result, nums[0]);
+                        result = result.Slice(4);
+                        nums = nums.Slice(1);
                     }
-
-                    return result;
                 }
 
                 /// <summary>
                 /// MD5 basic transformation. Transforms state based on block.
                 /// </summary>
                 /// <param name="block"></param>
-                /// <param name="startIndex"></param>
-                private void MD5Transform(byte[]/*[64]*/block, int startIndex)
+                private void MD5Transform(ReadOnlySpan<byte>/*[64]*/block)
                 {
                     uint a = state[0], b = state[1], c = state[2], d = state[3];
 
-                    uint[] x = Decode(block, startIndex, 64);   // [16]
+                    uint[] x = Decode(block.Slice(0, 64));   // [16]
                     Debug.Assert(x.Length == 16);
 
                     /* Round 1 */
@@ -2234,9 +2230,9 @@ namespace Pchp.Library
                     count[1] += ((uint)data.Length >> 29);
 
                     // Transform blocks of 64 bytes
-                    ProcessBlocked(data, 64, (block, index) =>
+                    ProcessBlocked(data, 64, (self, block) =>
                     {
-                        MD5Transform(block, index);
+                        ((MD5)self).MD5Transform(block);
                     });
 
                     return true;
@@ -2244,25 +2240,30 @@ namespace Pchp.Library
                 public override byte[] Final()
                 {
                     // save length
-                    byte[] bits = Encode(count, 0, 8);
+                    Span<byte> bits = stackalloc byte[8]; // count.Length * sizeof(uint)
+                    Encode(bits, count);
 
                     // padd to 56 mod 64
-                    int bufferUsage;
-                    byte[] buffer = GetBufferedBlock(out bufferUsage);
-                    if (buffer == null) buffer = new byte[64];
-                    Debug.Assert(buffer.Length == 64);
+                    byte[] buffer = GetBufferedBlock(out int bufferUsage);
+                    //if (buffer == null) buffer = new byte[64];
+                    //Debug.Assert(buffer.Length == 64);
                     int padLen = (bufferUsage < 56) ? (56 - bufferUsage) : (120 - bufferUsage);
                     if (padLen > 0)
                     {
-                        byte[] padding = new byte[padLen];
-                        padding[0] = 0x80;
-                        Update(padding);
+                        //byte[] padding = new byte[padLen];
+                        //Span<byte> padding = stackalloc byte[padLen];
+                        var padbuffer = ArrayPool<byte>.Shared.Rent(padLen);
+                        Array.Clear(padbuffer, 0, padLen);
+                        padbuffer[0] = 0x80;
+                        Update(padbuffer.Slice(0, padLen));
+                        ArrayPool<byte>.Shared.Return(padbuffer);
                     }
 
                     Update(bits);
 
-                    byte[] result = Encode(state, 0, 16);
-
+                    byte[] result = new byte[16]; // state.Length * sizeof(uint)
+                    Encode(result.AsSpan(), state.AsSpan());
+                    
                     // cleanup sensitive data
                     Array.Clear(state, 0, state.Length);
                     Array.Clear(count, 0, count.Length);
