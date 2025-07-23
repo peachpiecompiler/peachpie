@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Buffers;
-namespace Pchp.Core;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+namespace Pchp.Core;
+
+
 
 partial interface IPhpCallable
 {
@@ -16,6 +16,8 @@ partial interface IPhpCallable
     /// </summary>
     sealed PhpValue Invoke(Context ctx, PhpValue p0) => Invoke(ctx, MemoryMarshal.CreateReadOnlySpan(ref p0, 1));
 
+    
+
     /// <summary>
     /// Invokes the callback with given arguments.
     /// Uses ArrayPool to avoid allocation.
@@ -25,18 +27,17 @@ partial interface IPhpCallable
         PhpValue p0,
         PhpValue p1)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(2);
-        try
+        
+        var tuple = new PhpArgTuple2
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 2));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 2);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -48,19 +49,18 @@ partial interface IPhpCallable
         PhpValue p1,
         PhpValue p2)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(3);
-        try
+        
+        var tuple = new PhpArgTuple3
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 3));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 3);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -73,20 +73,19 @@ partial interface IPhpCallable
         PhpValue p2,
         PhpValue p3)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(4);
-        try
+        
+        var tuple = new PhpArgTuple4
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 4));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 4);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -100,21 +99,20 @@ partial interface IPhpCallable
         PhpValue p3,
         PhpValue p4)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(5);
-        try
+        
+        var tuple = new PhpArgTuple5
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 5));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 5);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -129,22 +127,21 @@ partial interface IPhpCallable
         PhpValue p4,
         PhpValue p5)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(6);
-        try
+        
+        var tuple = new PhpArgTuple6
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 6));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 6);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -160,23 +157,22 @@ partial interface IPhpCallable
         PhpValue p5,
         PhpValue p6)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(7);
-        try
+        
+        var tuple = new PhpArgTuple7
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 7));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 7);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -193,24 +189,23 @@ partial interface IPhpCallable
         PhpValue p6,
         PhpValue p7)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(8);
-        try
+        
+        var tuple = new PhpArgTuple8
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            phpArgs[7] = p7;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 8));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+            Argument7 = p7,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 8);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -228,25 +223,24 @@ partial interface IPhpCallable
         PhpValue p7,
         PhpValue p8)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(9);
-        try
+        
+        var tuple = new PhpArgTuple9
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            phpArgs[7] = p7;
-            phpArgs[8] = p8;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 9));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+            Argument7 = p7,
+            Argument8 = p8,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 9);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -265,26 +259,25 @@ partial interface IPhpCallable
         PhpValue p8,
         PhpValue p9)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(10);
-        try
+        
+        var tuple = new PhpArgTuple10
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            phpArgs[7] = p7;
-            phpArgs[8] = p8;
-            phpArgs[9] = p9;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 10));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+            Argument7 = p7,
+            Argument8 = p8,
+            Argument9 = p9,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 10);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -304,27 +297,26 @@ partial interface IPhpCallable
         PhpValue p9,
         PhpValue p10)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(11);
-        try
+        
+        var tuple = new PhpArgTuple11
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            phpArgs[7] = p7;
-            phpArgs[8] = p8;
-            phpArgs[9] = p9;
-            phpArgs[10] = p10;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 11));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+            Argument7 = p7,
+            Argument8 = p8,
+            Argument9 = p9,
+            Argument10 = p10,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 11);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -345,28 +337,27 @@ partial interface IPhpCallable
         PhpValue p10,
         PhpValue p11)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(12);
-        try
+        
+        var tuple = new PhpArgTuple12
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            phpArgs[7] = p7;
-            phpArgs[8] = p8;
-            phpArgs[9] = p9;
-            phpArgs[10] = p10;
-            phpArgs[11] = p11;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 12));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+            Argument7 = p7,
+            Argument8 = p8,
+            Argument9 = p9,
+            Argument10 = p10,
+            Argument11 = p11,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 12);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -388,29 +379,28 @@ partial interface IPhpCallable
         PhpValue p11,
         PhpValue p12)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(13);
-        try
+        
+        var tuple = new PhpArgTuple13
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            phpArgs[7] = p7;
-            phpArgs[8] = p8;
-            phpArgs[9] = p9;
-            phpArgs[10] = p10;
-            phpArgs[11] = p11;
-            phpArgs[12] = p12;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 13));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+            Argument7 = p7,
+            Argument8 = p8,
+            Argument9 = p9,
+            Argument10 = p10,
+            Argument11 = p11,
+            Argument12 = p12,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 13);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -433,30 +423,29 @@ partial interface IPhpCallable
         PhpValue p12,
         PhpValue p13)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(14);
-        try
+        
+        var tuple = new PhpArgTuple14
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            phpArgs[7] = p7;
-            phpArgs[8] = p8;
-            phpArgs[9] = p9;
-            phpArgs[10] = p10;
-            phpArgs[11] = p11;
-            phpArgs[12] = p12;
-            phpArgs[13] = p13;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 14));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+            Argument7 = p7,
+            Argument8 = p8,
+            Argument9 = p9,
+            Argument10 = p10,
+            Argument11 = p11,
+            Argument12 = p12,
+            Argument13 = p13,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 14);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -480,31 +469,30 @@ partial interface IPhpCallable
         PhpValue p13,
         PhpValue p14)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(15);
-        try
+        
+        var tuple = new PhpArgTuple15
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            phpArgs[7] = p7;
-            phpArgs[8] = p8;
-            phpArgs[9] = p9;
-            phpArgs[10] = p10;
-            phpArgs[11] = p11;
-            phpArgs[12] = p12;
-            phpArgs[13] = p13;
-            phpArgs[14] = p14;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 15));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+            Argument7 = p7,
+            Argument8 = p8,
+            Argument9 = p9,
+            Argument10 = p10,
+            Argument11 = p11,
+            Argument12 = p12,
+            Argument13 = p13,
+            Argument14 = p14,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 15);
+        return Invoke(ctx, phpArgs);
     }
+
+    
 
     /// <summary>
     /// Invokes the callback with given arguments.
@@ -529,31 +517,223 @@ partial interface IPhpCallable
         PhpValue p14,
         PhpValue p15)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(16);
-        try
+        
+        var tuple = new PhpArgTuple16
         {
-            phpArgs[0] = p0;
-            phpArgs[1] = p1;
-            phpArgs[2] = p2;
-            phpArgs[3] = p3;
-            phpArgs[4] = p4;
-            phpArgs[5] = p5;
-            phpArgs[6] = p6;
-            phpArgs[7] = p7;
-            phpArgs[8] = p8;
-            phpArgs[9] = p9;
-            phpArgs[10] = p10;
-            phpArgs[11] = p11;
-            phpArgs[12] = p12;
-            phpArgs[13] = p13;
-            phpArgs[14] = p14;
-            phpArgs[15] = p15;
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, 16));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+            Argument0 = p0,
+            Argument1 = p1,
+            Argument2 = p2,
+            Argument3 = p3,
+            Argument4 = p4,
+            Argument5 = p5,
+            Argument6 = p6,
+            Argument7 = p7,
+            Argument8 = p8,
+            Argument9 = p9,
+            Argument10 = p10,
+            Argument11 = p11,
+            Argument12 = p12,
+            Argument13 = p13,
+            Argument14 = p14,
+            Argument15 = p15,
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, 16);
+        return Invoke(ctx, phpArgs);
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple2
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple3
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple4
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple5
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple6
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple7
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple8
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+        public PhpValue Argument7;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple9
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+        public PhpValue Argument7;
+        public PhpValue Argument8;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple10
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+        public PhpValue Argument7;
+        public PhpValue Argument8;
+        public PhpValue Argument9;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple11
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+        public PhpValue Argument7;
+        public PhpValue Argument8;
+        public PhpValue Argument9;
+        public PhpValue Argument10;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple12
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+        public PhpValue Argument7;
+        public PhpValue Argument8;
+        public PhpValue Argument9;
+        public PhpValue Argument10;
+        public PhpValue Argument11;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple13
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+        public PhpValue Argument7;
+        public PhpValue Argument8;
+        public PhpValue Argument9;
+        public PhpValue Argument10;
+        public PhpValue Argument11;
+        public PhpValue Argument12;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple14
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+        public PhpValue Argument7;
+        public PhpValue Argument8;
+        public PhpValue Argument9;
+        public PhpValue Argument10;
+        public PhpValue Argument11;
+        public PhpValue Argument12;
+        public PhpValue Argument13;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple15
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+        public PhpValue Argument7;
+        public PhpValue Argument8;
+        public PhpValue Argument9;
+        public PhpValue Argument10;
+        public PhpValue Argument11;
+        public PhpValue Argument12;
+        public PhpValue Argument13;
+        public PhpValue Argument14;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple16
+    {  
+        public PhpValue Argument0;
+        public PhpValue Argument1;
+        public PhpValue Argument2;
+        public PhpValue Argument3;
+        public PhpValue Argument4;
+        public PhpValue Argument5;
+        public PhpValue Argument6;
+        public PhpValue Argument7;
+        public PhpValue Argument8;
+        public PhpValue Argument9;
+        public PhpValue Argument10;
+        public PhpValue Argument11;
+        public PhpValue Argument12;
+        public PhpValue Argument13;
+        public PhpValue Argument14;
+        public PhpValue Argument15;
+    }
 }
