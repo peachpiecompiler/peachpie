@@ -737,7 +737,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var field = _lazyDefaultValueField;
+                var tmp = _lazyDefaultValueField;
 
                 if (!_packedFlags.HasDefaultValueFieldPopulated)
                 {
@@ -751,16 +751,16 @@ namespace Pchp.CodeAnalysis.Symbols
                             var container = attr.NamedArguments.SingleOrDefault(pair => pair.Key == "ExplicitType").Value.Value as ITypeSymbol
                                 ?? ContainingType;
 
-                            field = container.GetMembers(fldname).OfType<FieldSymbol>().Single();
-                            Debug.Assert(field.IsStatic);
-                            _lazyDefaultValueField = field;
+                            tmp = container.GetMembers(fldname).OfType<FieldSymbol>().Single();
+                            Debug.Assert(tmp.IsStatic);
+                            _lazyDefaultValueField = tmp;
                         }
                     }
 
                     _packedFlags.SetDefaultValueFieldPopulated();
                 }
 
-                return field;
+                return tmp;
             }
         }
 

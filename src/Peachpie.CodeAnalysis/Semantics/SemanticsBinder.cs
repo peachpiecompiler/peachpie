@@ -715,38 +715,36 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundIncludeEx(BindExpression(x.Target, BoundAccess.Read), x.InclusionType);
         }
 
-        protected BoundExpression BindConcatEx(AST.ConcatEx x) => BindConcatEx(x.Expressions);
+        protected BoundExpression BindConcatEx(AST.ConcatEx x) => BindConcatEx(x);
 
-        protected BoundExpression BindConcatEx(AST.Expression[] args)
+        void BindConcatIntoList(List<BoundArgument> list, AST.Expression expr)
+        {
+            if (expr is AST.ConcatEx cex)
+            {
+                for (int i = 0; i < cex.Expressions.Length; i++)
+                {
+                    BindConcatIntoList(list, cex.Expressions[i]);
+                }
+            }
+            else if (expr is AST.BinaryEx bex && bex.Operation == AST.Operations.Concat)
+            {
+                BindConcatIntoList(list, bex.LeftExpr);
+                BindConcatIntoList(list, bex.RightExpr);
+            }
+            else
+            {
+                list.Add(BindArgument(expr));
+            }
+        }
+
+        protected BoundExpression BindConcatEx(AST.Expression expr)
         {
             // Flatten and bind concat arguments using a stack (its bottom is the last argument)
-            var boundArgs = new List<BoundArgument>(args.Length);
-            var exprStack = new Stack<AST.Expression>(args.Length);
+            var boundArgs = new List<BoundArgument>();
 
-            // args.Reverse().ForEach(exprStack.Push);
-            for (int i = args.Length - 1; i >= 0; i--)
-            {
-                exprStack.Push(args[i]);
-            }
+            BindConcatIntoList(boundArgs, expr);
 
-            while (exprStack.Count != 0)
-            {
-                var arg = exprStack.Pop();
-                if (arg is AST.ConcatEx concat)
-                {
-                    concat.Expressions.Reverse().ForEach(exprStack.Push);
-                }
-                else if (arg is AST.BinaryEx binEx && binEx.Operation == AST.Operations.Concat)
-                {
-                    exprStack.Push(binEx.RightExpr);
-                    exprStack.Push(binEx.LeftExpr);
-                }
-                else
-                {
-                    boundArgs.Add(BindArgument(arg));
-                }
-            }
-
+            //
             return BindConcatEx(boundArgs);
         }
 
@@ -1325,7 +1323,7 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (expr.Operation)
             {
                 case AST.Operations.Concat:     // Left . Right
-                    return BindConcatEx(new[] { expr.LeftExpr, expr.RightExpr });
+                    return BindConcatEx(expr);
 
                 case AST.Operations.Coalesce:
                     laccess = BoundAccess.Read.WithQuiet(); // Template: A ?? B; // read A quietly
