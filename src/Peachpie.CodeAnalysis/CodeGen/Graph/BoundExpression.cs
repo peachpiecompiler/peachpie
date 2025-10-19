@@ -187,6 +187,10 @@ namespace Pchp.CodeAnalysis.Semantics
                     returned_type = EmitSpaceship(cg);
                     break;
 
+                case Operations.Pipe:
+                    returned_type = EmitPipeCall(cg);
+                    break;
+
                 default:
                     throw cg.NotImplementedException(message: $"BinaryEx {this.Operation} is not implemented.", op: this);
             }
@@ -2084,6 +2088,17 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
 
             }
+        }
+
+        private TypeSymbol EmitPipeCall(CodeGenerator cg)
+        {
+            // Template: ((IPhpCallable)RValue).invoke( ctx, LValue )
+
+            cg.EmitConvert(this.Right, cg.CoreTypes.IPhpCallable); // Left is already a BoundConvertToCallable
+            cg.EmitLoadContext();
+            cg.EmitConvertToPhpValue(cg.Emit(this.Left), this.Right.TypeRefMask);
+
+            return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpCallable.Invoke_Context_PhpValue);
         }
     }
 

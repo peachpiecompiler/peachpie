@@ -802,21 +802,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override void VisitIfStmt(IfStmt x)
         {
             var end = NewBlock();
-
             var conditions = x.Conditions;
-            Debug.Assert(conditions.Length != 0);
+            
             BoundBlock elseBlock = null;
-            for (int i = 0; i < conditions.Length; i++)
+            foreach (var cond in conditions)
             {
-                var cond = conditions[i];
                 if (cond.Condition != null)  // if (Condition) ...
                 {
-                    elseBlock = (i == conditions.Length - 1) ? end : NewBlock();
+                    elseBlock = cond.Else == null ? end : NewBlock();
                     _current = Connect(_current, NewBlock(), elseBlock, cond.Condition);
                 }
                 else  // else ...
                 {
-                    Debug.Assert(i != 0 && elseBlock != null);
                     var body = elseBlock;
                     elseBlock = end;    // last ConditionalStmt
                     _current = WithNewOrdinal(body);

@@ -88,6 +88,7 @@ namespace Pchp.CodeAnalysis
             { new Version(8, 2), LanguageFeatures.Php82Set },
             { new Version(8, 3), LanguageFeatures.Php83Set },
             { new Version(8, 4), LanguageFeatures.Php84Set },
+            { new Version(8, 5), LanguageFeatures.Php85Set },
         };
 
         public static Version LatestLanguageVersion => SupportedLanguageVersions.Max();

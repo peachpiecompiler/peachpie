@@ -902,9 +902,17 @@ namespace Pchp.CodeAnalysis.Symbols
             public IPhpCallableHolder(CoreTypes ct)
             {
                 CoreTypes = ct;
-                _Invoke_Context_PhpValueArray = null; // lazy
+                
+                // lazy
+                _Invoke_Context = null;
+                _Invoke_Context_PhpValue = null;
+                _Invoke_Context_PhpValueArray = null;
                 //Invoke_Context_PhpValueArray = ct.IPhpCallable.Method("Invoke", ct.Context, ct.PhpValueArray);
             }
+
+            public MethodSymbol Invoke_Context => _Invoke_Context ??= CoreTypes.IPhpCallable.Method("Invoke", CoreTypes.Context).Symbol;
+
+            public MethodSymbol Invoke_Context_PhpValue => _Invoke_Context_PhpValue ??= CoreTypes.IPhpCallable.Method("Invoke", CoreTypes.Context, CoreTypes.PhpValue).Symbol;
 
             public MethodSymbol Invoke_Context_PhpValueArray
             {
@@ -927,6 +935,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             MethodSymbol
+                _Invoke_Context,
+                _Invoke_Context_PhpValue,
                 _Invoke_Context_PhpValueArray;
         }
 

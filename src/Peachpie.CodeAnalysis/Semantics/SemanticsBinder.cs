@@ -715,8 +715,6 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundIncludeEx(BindExpression(x.Target, BoundAccess.Read), x.InclusionType);
         }
 
-        protected BoundExpression BindConcatEx(AST.ConcatEx x) => BindConcatEx(x);
-
         void BindConcatIntoList(List<BoundArgument> list, AST.Expression expr)
         {
             if (expr is AST.ConcatEx cex)
@@ -963,11 +961,23 @@ namespace Pchp.CodeAnalysis.Semantics
                     for (int i = 0; i < arm.ConditionList.Length; i++)
                     {
                         // value === condition[i]
-                        var cond = new AST.BinaryEx(arm.ConditionList[i].Span, AST.Operations.Identical, (AST.Expression)value, (AST.Expression)arm.ConditionList[i]) { ContainingElement = arm };
+                        var cond = AST.BinaryEx.Create(
+                            arm.ConditionList[i].Span,
+                            AST.Operations.Identical,
+                            (AST.Expression)value,
+                            (AST.Expression)arm.ConditionList[i])
+                        ;
+                        cond.ContainingElement = arm;
 
-                        condition = condition == null
-                            ? cond
-                            : new AST.BinaryEx(Span.Invalid, AST.Operations.Or, condition, cond) { ContainingElement = arm };
+                        if (condition == null)
+                        {
+                            condition = cond;
+                        }
+                        else
+                        {
+                            condition = AST.BinaryEx.Create(Span.Invalid, AST.Operations.Or, condition, cond);
+                            condition.ContainingElement = arm;
+                        }
                     }
 
                     if (condition == null)
@@ -1328,6 +1338,16 @@ namespace Pchp.CodeAnalysis.Semantics
                 case AST.Operations.Coalesce:
                     laccess = BoundAccess.Read.WithQuiet(); // Template: A ?? B; // read A quietly
                     goto default;
+
+                case AST.Operations.Pipe:
+                    // Template: A |> B;
+                    // A: PhpValue
+                    // B: IPhpoCallable
+                    return new BoundBinaryEx(
+                        BindExpression(expr.LeftExpr, laccess),
+                        new BoundConvertToCallable(BindExpression(expr.RightExpr, BoundAccess.Read), this.DeclaringCompilation),
+                        expr.Operation
+                    );
 
                 default:
                     return new BoundBinaryEx(

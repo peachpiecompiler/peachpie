@@ -1286,6 +1286,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Spaceship:
                     return TypeCtx.GetLongTypeMask(); // -1, 0, +1
 
+                case Operations.Pipe:
+                    return TypeRefMask.AnyType; // TODO: return value of the callback in R-Value
+
                 default:
                     throw ExceptionUtilities.UnexpectedValue(x.Operation);
             }
