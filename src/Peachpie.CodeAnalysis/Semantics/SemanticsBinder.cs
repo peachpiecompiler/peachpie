@@ -804,7 +804,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindFunctionCall(AST.FunctionCall x, BoundExpression boundTarget = null)
         {
-            if (Routine != null)
+            if (Routine != null && x.CallSignature.IsCallableConvert == false)
             {
                 // TODO: ignore well-known library functions
                 Routine.Flags |= RoutineFlags.HasUserFunctionCall;
@@ -827,6 +827,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (x.CallSignature.IsCallableConvert)  // callable convert syntax (...)
                 {
+                    if (boundTarget == null)
+                    {
+                        // TODO: consider global function fallback name // return new BoundConvertToCallable(new BoundLiteral(fname.Name), DeclaringCompilation);
+                    }
+
                     return new BoundCallableConvert(boundTarget, new BoundRoutineName(fname.Name), DeclaringCompilation);
                 }
 
@@ -1340,12 +1345,15 @@ namespace Pchp.CodeAnalysis.Semantics
                     goto default;
 
                 case AST.Operations.Pipe:
+
+                    var target = BindExpression(expr.RightExpr, BoundAccess.Read);
+
                     // Template: A |> B;
                     // A: PhpValue
-                    // B: IPhpoCallable
+                    // B: IPhpCallable
                     return new BoundBinaryEx(
                         BindExpression(expr.LeftExpr, laccess),
-                        new BoundConvertToCallable(BindExpression(expr.RightExpr, BoundAccess.Read), this.DeclaringCompilation),
+                        target as BoundConvertToCallable ?? new BoundConvertToCallable(target, this.DeclaringCompilation),
                         expr.Operation
                     );
 
