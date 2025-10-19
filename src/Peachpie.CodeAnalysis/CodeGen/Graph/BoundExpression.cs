@@ -2369,7 +2369,37 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            throw new NotImplementedException();
+            var target = cg.CoreTypes.IPhpCallable;
+
+            if (Receiver != null)
+            {
+                // Receiver -> Name(...)
+                throw new NotImplementedException();
+            }
+            else if (StaticReceiver != null)
+            {
+                // StaticReceiver :: Name(...)
+                throw new NotImplementedException();
+            }
+            else
+            {
+                // Name(...)
+                if (this.Name.IsDirect)
+                {
+                    // TODO: PERF: use existing IPhpRoutine singleton
+                    cg.Builder.EmitStringConstant(this.Name.NameValue.ToString());
+                }
+                else
+                {
+                    cg.EmitConvertToString(cg.Emit(this.Name.NameExpression), this.Name.NameExpression.TypeRefMask);
+                }
+
+                // -> IPhpCallable
+                cg.EmitConvert(cg.CoreTypes.String, FlowAnalysis.TypeRefMask.AnyType, target);
+            }
+            
+            //
+            return target;
         }
     }
 
