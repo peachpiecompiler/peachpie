@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0</TargetFrameworks>
     <OutputType>exe</OutputType>
-    <NoWarn>$(NoWarn);1591</NoWarn>
+    <NoWarn>$(NoWarn);1591;RS1009</NoWarn>
     <AssemblyName>Peachpie.CodeAnalysis</AssemblyName>
     <PackageId>Peachpie.CodeAnalysis</PackageId>
     <PackageTags>php;peachpie;dotnet;compiler</PackageTags>
