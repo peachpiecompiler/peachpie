@@ -9,6 +9,7 @@
 	<PackageReference Include="Peachpie.AspNetCore.Web" Version="$(PeachpieVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.AspNetCore.Mvc" Version="$(PeachpieVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.PDO" Version="$(PeachpieVersion)" PrivateAssets="Build" />
+	<PackageReference Include="Peachpie.Library.PDO.PgSQL" Version="$(PeachpieVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(PeachpieVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.PDO.SqlSrv" Version="$(PeachpieVersion)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.PDO.Sqlite" Version="$(PeachpieVersion)" PrivateAssets="Build" />

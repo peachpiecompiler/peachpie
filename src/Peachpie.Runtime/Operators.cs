@@ -2475,8 +2475,13 @@ namespace Pchp.Core
                 },
                 code);
 
-            //
-            return script.Evaluate(ctx, locals, @this, self);
+            try {
+                return script.Evaluate(ctx, locals, @this, self);
+
+            } catch (Pchp.Core.PhpFatalErrorException e) {
+                PhpException.Throw(PhpError.Warning, e.Message);
+                return false;
+            }
         }
 
         #endregion
