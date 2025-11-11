@@ -62,6 +62,29 @@ You can also use VS Code or Rider to build and debug PeachPie projects.
 
 Alternatively, you can also work with PeachPie on the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler on the command line and to the [Getting Started](https://docs.peachpie.io/get-started/) section in our documentation.
 
+### Getting Started with Command Line
+
+For beginners, here is a simple step-by-step guide to run PeachPie projects using the command line:
+
+1. **Install .NET SDK** (7.0 or higher):
+  - [Download .NET SDK](https://dotnet.microsoft.com/en-us/download)
+
+2. **Clone the PeachPie repository** (or your own project):
+```bash
+git clone https://github.com/your-user/peachpie.git
+cd peachpie
+
+3. **Run a PHP example script**:
+Create a simple file called `HelloWord.php` in `examples/HelloWorld/`:
+```php
+<?php
+echo "Hello, PeachPie!";
+
+4. **Compile the Project**:
+```bash
+dotnet build
+dotnet run --project examples/HelloWorld/HelloWord.csproj
+
 ### Nightly builds
 
 The most convenient way of using PeachPie is to consume NuGet packages. We provide nightly builds and release builds to our subscribers on Patreon. [Become a Patron](https://www.patreon.com/pchpcompiler) to get access and get listed as our sponsor!
