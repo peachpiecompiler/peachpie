@@ -1,9 +1,10 @@
 ﻿<#@ output extension=".tt.cs" #>
+<#@ import namespace="System.Linq" #>
 using System;
-using System.Buffers;
-namespace Pchp.Core;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+namespace Pchp.Core;
+
+
 
 partial interface IPhpCallable
 {
@@ -22,6 +23,8 @@ partial interface IPhpCallable
     for(int arity = 2; arity <= 16; arity++)
     {
 #>
+    
+
     /// <summary>
     /// Invokes the callback with given arguments.
     /// Uses ArrayPool to avoid allocation.
@@ -33,21 +36,30 @@ partial interface IPhpCallable
 <# } #>
         PhpValue p<#= arity - 1 #>)
     {
-        var phpArgs = ArrayPool<PhpValue>.Shared.Rent(<#= arity #>);
-        try
+        
+        var tuple = new PhpArgTuple<#= arity #>
         {
 <# for(int p = 0; p < arity; p++) { #>
-            phpArgs[<#= p #>] = p<#= p #>;
+            Argument<#= p #> = p<#= p #>,
 <# } #>
-            return Invoke(ctx, new ReadOnlySpan<PhpValue>(phpArgs, 0, <#= arity #>));
-        }
-        finally
-        {
-            ArrayPool<PhpValue>.Shared.Return(phpArgs, true);
-        }
+        };
+        var phpArgs = MemoryMarshal.CreateReadOnlySpan(ref tuple.Argument0, <#= arity #>);
+        return Invoke(ctx, phpArgs);
     }
 
 <#
     }
+
+for (int arity = 2; arity <= 16; arity++)
+{#>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PhpArgTuple<#= arity #>
+    {  
+<# for(int p = 0; p < arity; p++) { #>
+        public PhpValue Argument<#= p #>;
+<# } #>
+    }
+<#        
+}
 #>
 }
