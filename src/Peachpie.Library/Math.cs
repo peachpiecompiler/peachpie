@@ -236,10 +236,7 @@ namespace Pchp.Library
 
             Span<byte> bytes = stackalloc byte[sizeof(long)];
 
-            using (var rng = new RNGCryptoServiceProvider())
-            {
-                rng.GetBytes(bytes);
-            }
+            RandomNumberGenerator.Fill(bytes);
 
             var value = (decimal)BitConverter.ToUInt64(bytes);
 
@@ -261,10 +258,7 @@ namespace Pchp.Library
 
             var bytes = new byte[length];
 
-            using (var rng = new RNGCryptoServiceProvider())
-            {
-                rng.GetBytes(bytes);
-            }
+            RandomNumberGenerator.Fill(bytes);
 
             return new PhpString(bytes);
         }

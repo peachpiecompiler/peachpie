@@ -131,7 +131,7 @@ namespace Pchp.Library
         /// </remarks>
         private class AesCounterMode : SymmetricAlgorithm
         {
-            private readonly AesManaged _aes;
+            private readonly Aes _aes;
 
             public override KeySizes[] LegalKeySizes => _aes.LegalKeySizes;
 
@@ -139,11 +139,9 @@ namespace Pchp.Library
 
             public AesCounterMode()
             {
-                _aes = new AesManaged
-                {
-                    Mode = CipherMode.ECB,
-                    Padding = PaddingMode.None
-                };
+                _aes = Aes.Create();
+                _aes.Mode = CipherMode.ECB;
+                _aes.Padding = PaddingMode.None;
 
                 BlockSizeValue = _aes.BlockSize;
             }
@@ -356,7 +354,11 @@ namespace Pchp.Library
                     if (cipher.Mode == SupportedCipherMode.CTR)
                         alg = new AesCounterMode();
                     else
-                        alg = new RijndaelManaged {Padding = PaddingMode.PKCS7, KeySize = cipher.KeyLength};
+                    {
+                        alg = Aes.Create();
+                        alg.Padding = PaddingMode.PKCS7;
+                        alg.KeySize = cipher.KeyLength;
+                    }
                     break;
                 case CipherType.DES:
                     alg = DES.Create();
@@ -558,9 +560,6 @@ namespace Pchp.Library
             return result;
         }
 
-        // This type is thread safe.
-        private static RNGCryptoServiceProvider randomNumbers = new RNGCryptoServiceProvider();
-
         /// <summary>
         /// Generate a pseudo-random string of bytes.
         /// </summary>
@@ -576,7 +575,7 @@ namespace Pchp.Library
             }
 
             var random = new byte[length];
-            randomNumbers.GetBytes(random);
+            RandomNumberGenerator.Fill(random);
             return new PhpString(random);
         }
 
@@ -599,7 +598,7 @@ namespace Pchp.Library
         // There are algos, which are implemented in .NET but there are not implemented in Hash.cs
         private static Dictionary<string, Func<byte[], byte[]>> AditionaHashMethods = new Dictionary<string, Func<byte[], byte[]>>(StringComparer.OrdinalIgnoreCase)
         {
-            {"sha384", (byte[] data) => SHA384Managed.Create().ComputeHash(data)}
+            {"sha384", static data => SHA384.HashData(data)}
         };
 
         private static Dictionary<string, string> HashAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -712,10 +711,12 @@ namespace Pchp.Library
                 {
                     if (cert.StartsWith(FileSchemePrefix)) // Load from file 
                     {
-                        return new X509Resource(new X509Certificate2(FileSystemUtils.AbsolutePath(ctx, cert)));
+                        return new X509Resource(X509CertificateLoader.LoadCertificateFromFile(FileSystemUtils.AbsolutePath(ctx, cert)));
                     }
                     else // Load from string
-                        return new X509Resource(new X509Certificate2(ctx.StringEncoding.GetBytes(cert)));
+                    {
+                        return new X509Resource(X509CertificateLoader.LoadCertificate(ctx.StringEncoding.GetBytes(cert)));
+                    }
                 }
                 catch (CryptographicException)
                 {
@@ -785,14 +786,20 @@ namespace Pchp.Library
                 builder.AppendFormat("\t\t\tNot After : {0:R}\n", x509.Certificate.NotAfter);
                 builder.AppendFormat("\t\tSubject: {0}\n", x509.Certificate.Subject);
                 builder.Append("\t\tSubject Public Key Info:\n");
-                builder.AppendFormat("\t\t\tPublic Key Algorithm: {0}\n", x509.Certificate.PublicKey.Key.KeyExchangeAlgorithm);
-                builder.AppendFormat("\t\t\t\tRSA Public-Key: ({0} bit)\n", x509.Certificate.PublicKey.Key.KeySize);
-                // Key Parameters       
-                RSAParameters parameters = x509.Certificate.GetRSAPublicKey().ExportParameters(false);
-                builder.Append("\t\t\t\tModulus:\n");
-                builder.AppendFormat("\t\t\t\t\t{0}\n", BitConverter.ToString(parameters.Modulus).Replace("-", ":"));
-                string exponent = BitConverter.ToString(parameters.Exponent).Replace("-", "");
-                builder.AppendFormat("\t\t\t\tExponent: {0} (0x{1})\n", System.Convert.ToInt32(exponent, 16), exponent);
+                builder.AppendFormat("\t\t\tPublic Key Algorithm: {0}\n", x509.Certificate.PublicKey.Oid?.FriendlyName ?? x509.Certificate.PublicKey.Oid?.Value ?? string.Empty);
+                using (RSA rsa = x509.Certificate.GetRSAPublicKey())
+                {
+                    builder.AppendFormat("\t\t\t\tRSA Public-Key: ({0} bit)\n", rsa?.KeySize ?? 0);
+
+                    if (rsa != null)
+                    {
+                        RSAParameters parameters = rsa.ExportParameters(false);
+                        builder.Append("\t\t\t\tModulus:\n");
+                        builder.AppendFormat("\t\t\t\t\t{0}\n", BitConverter.ToString(parameters.Modulus).Replace("-", ":"));
+                        string exponent = BitConverter.ToString(parameters.Exponent).Replace("-", "");
+                        builder.AppendFormat("\t\t\t\tExponent: {0} (0x{1})\n", System.Convert.ToInt32(exponent, 16), exponent);
+                    }
+                }
                 builder.AppendFormat("\t\tX509v{0} extensions:\n", x509.Certificate.Version);
                 // TODO: Extensions
                 builder.AppendFormat("\t\tSigniture Algorithm: {0}\n", x509.Certificate.SignatureAlgorithm.FriendlyName);

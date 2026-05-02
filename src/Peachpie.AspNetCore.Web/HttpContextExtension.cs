@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 using Pchp.Core;
 
 namespace Peachpie.AspNetCore.Web
@@ -16,18 +17,9 @@ namespace Peachpie.AspNetCore.Web
         /// <summary>
         /// Gets default root path.
         /// </summary>
-        [Obsolete]
-        internal static string GetDefaultRootPath(this IHostingEnvironment hostingEnv)
+        internal static string GetDefaultRootPath(this IHostEnvironment hostingEnv)
         {
-            return hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory();
-        }
-
-        /// <summary>
-        /// Gets default root path.
-        /// </summary>
-        internal static string GetDefaultRootPath(this IWebHostEnvironment hostingEnv)
-        {
-            return hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory();
+            return (hostingEnv as IWebHostEnvironment)?.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory();
         }
 
         /// <summary>
@@ -82,7 +74,9 @@ namespace Peachpie.AspNetCore.Web
         {
             var rootpath = httpctx.RequestServices.GetService(typeof(IWebHostEnvironment)) is IWebHostEnvironment webhost
                 ? GetDefaultRootPath(webhost)
-                : GetDefaultRootPath((IHostingEnvironment)httpctx.RequestServices.GetService(typeof(IHostingEnvironment)));
+                : httpctx.RequestServices.GetService(typeof(IHostEnvironment)) is IHostEnvironment host
+                    ? GetDefaultRootPath(host)
+                    : Directory.GetCurrentDirectory();
 
             return new RequestContextCore(httpctx,
                 rootPath: rootpath,
