@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -860,7 +861,7 @@ namespace Peachpie.Library.Network
         /// Sets cURL option.
         /// </summary>
         static bool SetOption<TOption, TValue>(CURLResource resource, TValue value)
-            where TOption : CurlOption<HttpWebRequest, TValue>, new()
+            where TOption : CurlOption<TValue>, new()
             where TValue : class
         {
             if (value != null)
@@ -913,33 +914,289 @@ namespace Peachpie.Library.Network
     {
         int OptionId { get; }
 
-        void Apply(Context ctx, WebRequest request);
+        void Apply(Context ctx, CurlHttpRequest request);
     }
 
     /// <summary>
-    /// An actual cURL option value for specific <see cref="WebRequest"/> (ftp, http, ...) with a value.
+    /// Adapter around <see cref="HttpRequestMessage"/> and its handler so legacy cURL options can be
+    /// mapped onto modern HTTP APIs.
     /// </summary>
-    /// <typeparam name="TRequest">Type of <see cref="WebRequest"/>.</typeparam>
+    sealed class CurlHttpRequest
+    {
+        readonly Dictionary<string, string> _pendingContentHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        public CurlHttpRequest(Uri requestUri)
+        {
+            Message = new HttpRequestMessage(HttpMethod.Get, requestUri);
+            Handler = new SocketsHttpHandler
+            {
+                AutomaticDecompression = DecompressionMethods.None,
+                UseCookies = true,
+                CookieContainer = new CookieContainer(),
+                AllowAutoRedirect = false,
+            };
+        }
+
+        public HttpRequestMessage Message { get; }
+
+        public SocketsHttpHandler Handler { get; }
+
+        public bool AllowAutoRedirect
+        {
+            get => Handler.AllowAutoRedirect;
+            set => Handler.AllowAutoRedirect = value;
+        }
+
+        public int MaximumAutomaticRedirections
+        {
+            get => Handler.MaxAutomaticRedirections;
+            set => Handler.MaxAutomaticRedirections = value;
+        }
+
+        public int Timeout { get; set; } = System.Threading.Timeout.Infinite;
+
+        public int ContinueTimeout
+        {
+            get => (int)Handler.Expect100ContinueTimeout.TotalMilliseconds;
+            set => Handler.Expect100ContinueTimeout = value <= 0 ? global::System.Threading.Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(value);
+        }
+
+        public string Method
+        {
+            get => Message.Method.Method;
+            set => Message.Method = new HttpMethod(value);
+        }
+
+        public string Accept { set => SetHeader("Accept", value); }
+
+        public string UserAgent { set => SetHeader("User-Agent", value); }
+
+        public string Referer { set => SetHeader("Referer", value); }
+
+        public Version ProtocolVersion
+        {
+            get => Message.Version;
+            set => Message.Version = value;
+        }
+
+        public string Host
+        {
+            get => Message.Headers.Host;
+            set => Message.Headers.Host = value;
+        }
+
+        public string ContentType
+        {
+            get => Message.Content?.Headers.ContentType?.ToString();
+            set => SetContentHeader("Content-Type", value);
+        }
+
+        public long ContentLength
+        {
+            get => Message.Content?.Headers.ContentLength ?? -1;
+            set => SetContentLength(value);
+        }
+
+        public string TransferEncoding { set => SetHeader("Transfer-Encoding", value); }
+
+        public bool KeepAlive
+        {
+            set => Message.Headers.ConnectionClose = value ? false : true;
+        }
+
+        public string Connection
+        {
+            set => SetConnection(value);
+        }
+
+        public ICredentials Credentials
+        {
+            get => Handler.Credentials;
+            set => Handler.Credentials = value;
+        }
+
+        public CookieContainer CookieContainer
+        {
+            get => Handler.CookieContainer ??= new CookieContainer();
+            set
+            {
+                Handler.UseCookies = true;
+                Handler.CookieContainer = value;
+            }
+        }
+
+        public IWebProxy Proxy
+        {
+            get => Handler.Proxy;
+            set
+            {
+                Handler.Proxy = value;
+                Handler.UseProxy = value != null;
+            }
+        }
+
+        public bool UseNagleAlgorithm { get; set; } = true;
+
+        public void SetHeader(string name, string value)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return;
+            }
+
+            if (IsContentHeader(name))
+            {
+                SetContentHeader(name, value);
+                return;
+            }
+
+            Message.Headers.Remove(name);
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                Message.Headers.TryAddWithoutValidation(name, value);
+            }
+        }
+
+        public void SetContentHeader(string name, string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                _pendingContentHeaders.Remove(name);
+                Message.Content?.Headers.Remove(name);
+            }
+            else
+            {
+                _pendingContentHeaders[name] = value;
+                Message.Content?.Headers.Remove(name);
+                Message.Content?.Headers.TryAddWithoutValidation(name, value);
+            }
+        }
+
+        public void SetContentLength(long value)
+        {
+            _pendingContentHeaders["Content-Length"] = value.ToString();
+            if (Message.Content != null)
+            {
+                Message.Content.Headers.ContentLength = value;
+            }
+        }
+
+        public void SetConnection(string value)
+        {
+            Message.Headers.Connection.Clear();
+            Message.Headers.ConnectionClose = null;
+
+            if (string.IsNullOrEmpty(value))
+            {
+                return;
+            }
+
+            if (value.Equals("keep-alive", StringComparison.OrdinalIgnoreCase))
+            {
+                Message.Headers.ConnectionClose = false;
+            }
+            else if (value.Equals("close", StringComparison.OrdinalIgnoreCase))
+            {
+                Message.Headers.ConnectionClose = true;
+            }
+            else
+            {
+                Message.Headers.TryAddWithoutValidation("Connection", value);
+            }
+        }
+
+        public void SetContent(HttpContent content)
+        {
+            Message.Content = content;
+
+            if (Message.Content == null)
+            {
+                return;
+            }
+
+            foreach (var pair in _pendingContentHeaders)
+            {
+                if (pair.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (long.TryParse(pair.Value, out var length))
+                    {
+                        Message.Content.Headers.ContentLength = length;
+                    }
+                }
+                else
+                {
+                    Message.Content.Headers.Remove(pair.Key);
+                    if (!string.IsNullOrEmpty(pair.Value))
+                    {
+                        Message.Content.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
+                    }
+                }
+            }
+        }
+
+        public string BuildRequestHeaders()
+        {
+            var pathAndQuery = Message.RequestUri?.PathAndQuery ?? "/";
+            var host = Message.Headers.Host ?? Message.RequestUri?.Authority ?? string.Empty;
+            var builder = new StringBuilder()
+                .Append(Message.Method.Method)
+                .Append(' ')
+                .Append(pathAndQuery)
+                .Append(" HTTP/")
+                .Append(Message.Version.ToString(2))
+                .Append("\r\nHost: ")
+                .Append(host)
+                .Append("\r\n");
+
+            AppendHeaders(builder, Message.Headers);
+            if (Message.Content != null)
+            {
+                AppendHeaders(builder, Message.Content.Headers);
+            }
+            else
+            {
+                foreach (var pair in _pendingContentHeaders)
+                {
+                    if (!string.IsNullOrEmpty(pair.Value))
+                    {
+                        builder.Append(pair.Key).Append(": ").Append(pair.Value).Append("\r\n");
+                    }
+                }
+            }
+
+            builder.Append("\r\n");
+            return builder.ToString();
+        }
+
+        static bool IsContentHeader(string name) =>
+            name.StartsWith("Content-", StringComparison.OrdinalIgnoreCase);
+
+        static void AppendHeaders(StringBuilder builder, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            foreach (var header in headers)
+            {
+                foreach (var value in header.Value)
+                {
+                    builder.Append(header.Key).Append(": ").Append(value).Append("\r\n");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// An actual cURL option value with a value.
+    /// </summary>
     /// <typeparam name="TValue">Option value type.</typeparam>
-    abstract class CurlOption<TRequest, TValue> : ICurlOption where TRequest : WebRequest
+    abstract class CurlOption<TValue> : ICurlOption
     {
         public abstract int OptionId { get; }
 
         public TValue OptionValue { get; set; }
 
-        void ICurlOption.Apply(Context ctx, WebRequest request)
-        {
-            if (request is TRequest r)
-            {
-                Apply(ctx, r);
-            }
-            else
-            {
-                throw new ArgumentException();
-            }
-        }
+        void ICurlOption.Apply(Context ctx, CurlHttpRequest request) => Apply(ctx, request);
 
-        public abstract void Apply(Context ctx, TRequest request);
+        public abstract void Apply(Context ctx, CurlHttpRequest request);
 
         bool IEquatable<ICurlOption>.Equals(ICurlOption other)
         {
@@ -947,50 +1204,50 @@ namespace Peachpie.Library.Network
         }
     }
 
-    sealed class CurlOption_UserAgent : CurlOption<HttpWebRequest, string>
+    sealed class CurlOption_UserAgent : CurlOption<string>
     {
         public override int OptionId => CURLConstants.CURLOPT_USERAGENT;
-        public override void Apply(Context ctx, HttpWebRequest request) => request.UserAgent = this.OptionValue;
+        public override void Apply(Context ctx, CurlHttpRequest request) => request.UserAgent = this.OptionValue;
     }
 
-    sealed class CurlOption_Referer : CurlOption<HttpWebRequest, string>
+    sealed class CurlOption_Referer : CurlOption<string>
     {
         public override int OptionId => CURLConstants.CURLOPT_REFERER;
-        public override void Apply(Context ctx, HttpWebRequest request) => request.Referer = this.OptionValue;
+        public override void Apply(Context ctx, CurlHttpRequest request) => request.Referer = this.OptionValue;
     }
 
-    sealed class CurlOption_ProtocolVersion : CurlOption<HttpWebRequest, Version>
+    sealed class CurlOption_ProtocolVersion : CurlOption<Version>
     {
         public override int OptionId => CURLConstants.CURLOPT_HTTP_VERSION;
-        public override void Apply(Context ctx, HttpWebRequest request) => request.ProtocolVersion = this.OptionValue;
+        public override void Apply(Context ctx, CurlHttpRequest request) => request.ProtocolVersion = this.OptionValue;
     }
 
-    sealed class CurlOption_Private : CurlOption<WebRequest, PhpValue>
+    sealed class CurlOption_Private : CurlOption<PhpValue>
     {
         public override int OptionId => CURLConstants.CURLOPT_PRIVATE;
-        public override void Apply(Context ctx, WebRequest request) { }
+        public override void Apply(Context ctx, CurlHttpRequest request) { }
     }
 
     /// <summary>
     /// Controls the "Accept-Encoding" header.
     /// </summary>
-    sealed class CurlOption_AcceptEncoding : CurlOption<HttpWebRequest, string>
+    sealed class CurlOption_AcceptEncoding : CurlOption<string>
     {
         public override int OptionId => CURLConstants.CURLOPT_ACCEPT_ENCODING;
 
-        public override void Apply(Context ctx, HttpWebRequest request)
+        public override void Apply(Context ctx, CurlHttpRequest request)
         {
             if (this.OptionValue != null)
             {
                 if (this.OptionValue.Length != 0)
                 {
-                    request.Headers.Set(HttpRequestHeader.AcceptEncoding, this.OptionValue);
+                    request.SetHeader("Accept-Encoding", this.OptionValue);
                 }
             }
             else
             {
                 // NULL specifically disables sending accept-encoding header
-                request.Headers.Remove(HttpRequestHeader.AcceptEncoding);
+                request.SetHeader("Accept-Encoding", null);
             }
         }
     }
@@ -999,11 +1256,11 @@ namespace Peachpie.Library.Network
     /// Headers to be send with the request.
     /// Keys of the array are ignored, values are in form of <c>header-name: value</c>
     /// </summary>
-    sealed class CurlOption_Headers : CurlOption<HttpWebRequest, PhpArray>
+    sealed class CurlOption_Headers : CurlOption<PhpArray>
     {
         public override int OptionId => CURLConstants.CURLOPT_HTTPHEADER;
 
-        public override void Apply(Context ctx, HttpWebRequest request)
+        public override void Apply(Context ctx, CurlHttpRequest request)
         {
             foreach (var value in this.OptionValue)
             {
@@ -1041,7 +1298,7 @@ namespace Peachpie.Library.Network
                         }
                         else if (header_value.EqualsOrdinalIgnoreCase("close"))
                         {
-                            request.Connection = null; // ???
+                            request.Connection = "close";
                         }
                         else
                         {
@@ -1090,31 +1347,31 @@ namespace Peachpie.Library.Network
                     }
                     else if (string.IsNullOrEmpty(header_value))
                     {
-                        request.Headers.Remove(header_name);
+                        request.SetHeader(header_name, null);
                     }
                     else
                     {
-                        request.Headers.Set(header_name, header_value);
+                        request.SetHeader(header_name, header_value);
                     }
                 }
             }
         }
     }
 
-    sealed class CurlOption_DisableTcpNagle : CurlOption<HttpWebRequest, bool>
+    sealed class CurlOption_DisableTcpNagle : CurlOption<bool>
     {
         public override int OptionId => CURLConstants.CURLOPT_TCP_NODELAY;
-        public override void Apply(Context ctx, HttpWebRequest request) => request.ServicePoint.UseNagleAlgorithm = !OptionValue;
+        public override void Apply(Context ctx, CurlHttpRequest request) => request.UseNagleAlgorithm = !OptionValue;
     }
 
     /// <summary>
     /// Provides value of <see cref="CURLConstants.CURLOPT_COOKIEJAR"/> option.
     /// </summary>
-    sealed class CurlOption_CookieJar : CurlOption<HttpWebRequest, string>
+    sealed class CurlOption_CookieJar : CurlOption<string>
     {
         public override int OptionId => CURLConstants.CURLOPT_COOKIEJAR;
 
-        public override void Apply(Context ctx, HttpWebRequest request)
+        public override void Apply(Context ctx, CurlHttpRequest request)
         {
             // invoked when initializing WebRequest
             // do nothing
@@ -1177,7 +1434,7 @@ namespace Peachpie.Library.Network
     /// <summary>
     /// Reads cookies from a file according to <see cref="CURLConstants.CURLOPT_COOKIEFILE"/> option.
     /// </summary>
-    sealed class CurlOption_CookieFile : CurlOption<HttpWebRequest, List<string>>
+    sealed class CurlOption_CookieFile : CurlOption<List<string>>
     {
         public override int OptionId => CURLConstants.CURLOPT_COOKIEFILE;
 
@@ -1189,7 +1446,7 @@ namespace Peachpie.Library.Network
             Cookies = cookies ?? new CookieCollection();
         }
 
-        public override void Apply(Context ctx, HttpWebRequest request)
+        public override void Apply(Context ctx, CurlHttpRequest request)
         {
             var container = request.CookieContainer ??= new CookieContainer();
 
@@ -1316,14 +1573,11 @@ namespace Peachpie.Library.Network
         /// Gets response status header (the first line),
         /// ASCII only, in form of <c>HTTP/X.X CODE DESCRIPTION</c>.
         /// </summary>
-        public static string StatusHeader(HttpWebResponse response) => $"HTTP/{response.ProtocolVersion.ToString(2)} {(int)response.StatusCode} {response.StatusDescription}";
+        public static string StatusHeader(HttpResponseMessage response) => $"HTTP/{response.Version.ToString(2)} {(int)response.StatusCode} {response.ReasonPhrase}";
 
         public const string HeaderSeparator = "\r\n";
 
-        public static string HeaderString(HttpWebRequest req)
-        {
-            return $"{req.Method} {req.RequestUri.PathAndQuery} HTTP/{req.ProtocolVersion.ToString(2)}\r\nHost: {req.Host}\r\n{req.Headers.ToString()}\r\n";
-        }
+        public static string HeaderString(CurlHttpRequest req) => req.BuildRequestHeaders();
     }
 
     #region CurlErrors

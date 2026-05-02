@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core;
@@ -240,7 +241,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Ongoing request handled by the framework. Must be set to null after being processed.
         /// </summary>
-        internal Task<WebResponse> ResponseTask { get; set; }
+        internal Task<CurlHttpExecution> ResponseTask { get; set; }
 
         /// <summary>
         /// Response after the execution.
@@ -337,7 +338,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Applies all the options to the request.
         /// </summary>
-        internal void ApplyOptions(Context ctx, WebRequest request)
+        internal void ApplyOptions(Context ctx, CurlHttpRequest request)
         {
             foreach (var option in this.Options)
             {
@@ -406,6 +407,28 @@ namespace Peachpie.Library.Network
     }
 
     #endregion
+
+    sealed class CurlHttpExecution : IDisposable
+    {
+        public CurlHttpExecution(CurlHttpRequest request, HttpClient client, HttpResponseMessage response)
+        {
+            Request = request;
+            Client = client;
+            Response = response;
+        }
+
+        public CurlHttpRequest Request { get; }
+
+        public HttpClient Client { get; }
+
+        public HttpResponseMessage Response { get; }
+
+        public void Dispose()
+        {
+            Response.Dispose();
+            Client.Dispose();
+        }
+    }
 
     sealed class CURLResponse
     {
@@ -504,17 +527,17 @@ namespace Peachpie.Library.Network
                 ErrorMessage = ex?.Message,
             };
 
-        public CURLResponse(PhpValue execvalue, HttpWebResponse response = null, CURLResource ch = null)
+        public CURLResponse(PhpValue execvalue, HttpResponseMessage response = null, WebHeaderCollection headers = null, CookieCollection cookies = null, CURLResource ch = null)
         {
             this.ExecValue = execvalue;
 
             if (response != null)
             {
-                this.ResponseUri = response.ResponseUri;
+                this.ResponseUri = response.RequestMessage?.RequestUri;
                 this.StatusCode = response.StatusCode;
-                this.Headers = response.Headers;
+                this.Headers = headers;
                 this.StatusHeader = HttpHeaders.StatusHeader(response);
-                this.Cookies = response.Cookies;
+                this.Cookies = cookies;
             }
 
             if (ch != null)
