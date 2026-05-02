@@ -344,8 +344,6 @@ namespace Pchp.Library
         /// <returns><paramref name="encoding"/> without optional options.</returns>
         static string ParseOutputEncoding(ReadOnlySpan<char>/*!*/encoding, out bool transliterate, out bool discard_ilseq)
         {
-            Debug.Assert(encoding != null);
-
             transliterate = false;
             discard_ilseq = false;
 

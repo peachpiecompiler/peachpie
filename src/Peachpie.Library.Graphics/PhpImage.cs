@@ -213,12 +213,12 @@ namespace Peachpie.Library.Graphics
                 byte[] buffer = new byte[4];
 
                 // Width
-                stream.Read(buffer, 0, 4);
+                stream.ReadExactly(buffer, 0, 4);
                 buffer = ReversedBytes(buffer, 0, 4, BitConverter.IsLittleEndian);
                 info.width = (uint)BitConverter.ToInt32(buffer, 0);
 
                 // Height
-                stream.Read(buffer, 0, 4);
+                stream.ReadExactly(buffer, 0, 4);
                 buffer = ReversedBytes(buffer, 0, 4, BitConverter.IsLittleEndian);
                 info.height = (uint)BitConverter.ToInt32(buffer, 0);
 
@@ -226,7 +226,7 @@ namespace Peachpie.Library.Graphics
 
                 // Channels
                 buffer = new byte[2];
-                stream.Read(buffer, 0, 2);
+                stream.ReadExactly(buffer, 0, 2);
                 buffer = ReversedBytes(buffer, 0, 2, BitConverter.IsLittleEndian);
                 int channels = BitConverter.ToInt16(buffer, 0);
 
@@ -692,7 +692,7 @@ namespace Peachpie.Library.Graphics
             {
                 byte[] buffer = new byte[2];
 
-                stream.Read(buffer, 0, 2);
+                stream.ReadExactly(buffer, 0, 2);
                 return (((int)buffer[0] << 8) | buffer[1]);
             }
 
@@ -801,7 +801,7 @@ namespace Peachpie.Library.Graphics
 
                 buffer = new byte[markerLength];
 
-                ms.Read(buffer, 0, markerLength);
+                ms.ReadExactly(buffer, 0, markerLength);
 
                 if (!array.Contains(markerName))
                 {

@@ -403,7 +403,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             bool IsDeclared(QualifiedName qname)
             {
                 if (_declarations != null &&
-                    _declarations.OfType<TypeDecl>().FirstOrDefault(t => t.QualifiedName == qname) != default)
+                    _declarations.OfType<BoundTypeDeclStatement>().Any(t => t.TypeDecl.QualifiedName == qname))
                 {
                     return true;
                 }

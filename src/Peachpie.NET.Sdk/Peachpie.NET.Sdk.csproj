@@ -3,7 +3,7 @@
   <PropertyGroup>
     <_TargetFramework>netstandard2.0</_TargetFramework>
     <_CompilerFramework>net10.0</_CompilerFramework>
-    <TargetFrameworks>$(_TargetFramework)</TargetFrameworks>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
 
     <CompilerProjectPath>$(MSBuildThisFileDirectory)../Peachpie.CodeAnalysis/Peachpie.CodeAnalysis.csproj</CompilerProjectPath>

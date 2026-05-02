@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>exe</OutputType>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <AssemblyName>Peachpie.CodeAnalysis</AssemblyName>
@@ -16,20 +16,7 @@
     <PackageReference Include="Devsense.Php.Phar" Version="1.0.40" />
     <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="$(PeachpieMicrosoftCodeAnalysisVersion)" />
     <PackageReference Include="Peachpie.Library.RegularExpressions" Version="$(PeachpieLibraryRegularExpressionsVersion)" />
-    <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
-    <PackageReference Include="System.Memory" Version="4.5.4" />
-    <PackageReference Include="System.Reflection.Metadata" Version="1.6.0" />
     <PackageReference Include="Peachpie.Compiler.Diagnostics" Version="1.0.10" Condition=" '$(Configuration)' == 'Release' " />
-    
-    <!-- Prevent package downgrades -->
-    <PackageReference Include="System.Collections" Version="4.3.0" />  
-    <PackageReference Include="System.Diagnostics.Debug" Version="4.3.0" />  
-    <PackageReference Include="System.Resources.ResourceManager" Version="4.3.0" />  
-    <PackageReference Include="System.Runtime.Extensions" Version="4.3.0" />  
-    <PackageReference Include="System.Runtime.Handles" Version="4.3.0" />
-    <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
-    <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />  
-    <PackageReference Include="System.Threading" Version="4.3.0" />  
   </ItemGroup>
 
   <ItemGroup>

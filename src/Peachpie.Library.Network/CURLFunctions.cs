@@ -351,6 +351,7 @@ namespace Peachpie.Library.Network
 
         static readonly IWebProxy s_DefaultProxy = new WebProxy();
 
+#pragma warning disable SYSLIB0014
         static Task<WebResponse> ExecHttpRequestInternalAsync(Context ctx, CURLResource ch, Uri uri)
         {
             var req = WebRequest.CreateHttp(uri);
@@ -432,6 +433,7 @@ namespace Peachpie.Library.Network
             //
             return req.GetResponseAsync();
         }
+#pragma warning restore SYSLIB0014
 
         static void ProcessPut(Context ctx, HttpWebRequest req, CURLResource ch)
         {

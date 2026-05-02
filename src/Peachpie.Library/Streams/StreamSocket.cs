@@ -649,7 +649,7 @@ namespace Pchp.Library.Streams
             var sslstream = new SslStream(new NetworkStream(socket, System.IO.FileAccess.ReadWrite, false), false,
                             null, //(sender, certificate, chain, sslPolicyErrors) => true,
                             null, //(sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => ??,
-                            EncryptionPolicy.AllowNoEncryption);
+                            EncryptionPolicy.RequireEncryption);
 
             // TODO: cryptomethod -> SslProtocols
 

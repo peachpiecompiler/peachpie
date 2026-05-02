@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Pchp.Core;
 using Pchp.Library;
@@ -21,25 +22,30 @@ namespace Peachpie.App.Tests
 
             using var ctx = Context.CreateEmpty();
 
-            var prefixes = new string[]
-            {
-                cwd.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + "\\",
-                cwd.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + "/",
-                cwd + "\\",
-                cwd + "/",
-            };
+            var prefixes = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? new string[]
+                {
+                    cwd.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + "\\",
+                    cwd.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + "/",
+                    cwd + "\\",
+                    cwd + "/",
+                }
+                : new string[]
+                {
+                    cwd + "/",
+                };
 
             foreach (var prefix in prefixes)
             {
                 var files = PhpPath.glob(ctx, prefix + "*.php");
 
-                Assert.IsTrue(files.Count != 0);
+                Assert.IsTrue(files.Count != 0, $"No files for prefix '{prefix}' in cwd '{cwd}'");
 
                 foreach (var fileObj in files.Values)
                 {
                     var file = fileObj.ToStringOrThrow(ctx);
 
-                    Assert.IsTrue(file.StartsWith(prefix));
+                    Assert.IsTrue(file.StartsWith(prefix), $"Expected '{file}' to start with '{prefix}'");
                 }
             }
         }
