@@ -1,4 +1,4 @@
-name: .NET Core
+name: .NET
 
 on:
   push:
@@ -8,26 +8,18 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET 6.0
-      uses: actions/setup-dotnet@v1
+    - uses: actions/checkout@v4
+    - name: Setup .NET 10.0
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 6.0.x
-    - name: Setup .NET 9.0
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
+        cache: true
     - name: Restore
-      run: dotnet restore
-    - name: Peachpie.Runtime.Tests
-      run: dotnet test ./src/Tests/Peachpie.Runtime.Tests --verbosity normal
-    - name: Peachpie.DiagnosticTests
-      run: dotnet test ./src/Tests/Peachpie.DiagnosticTests --verbosity normal
-#    - name: Peachpie.ScriptTests
-#      run: dotnet test ./src/Tests/Peachpie.ScriptTests --verbosity normal
+      run: dotnet restore Peachpie.sln
     - name: Build
-      run: dotnet build ./src/Peachpie.NET.Sdk/ -c Release --no-restore -p:VersionSuffix=ghaction${{github.run_number}}
+      run: dotnet build Peachpie.sln -c Release --no-restore -p:VersionSuffix=ghaction${{ github.run_number }}
+    - name: Test
+      run: dotnet test Peachpie.sln -c Release --no-build --verbosity normal
