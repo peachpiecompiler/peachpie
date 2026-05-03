@@ -20,6 +20,43 @@ jobs:
     - name: Restore
       run: dotnet restore Peachpie.sln
     - name: Build
-      run: dotnet build Peachpie.sln -c Release --no-restore -p:VersionSuffix=ghaction${{ github.run_number }}
+      run: dotnet build Peachpie.sln -c Release --no-restore
+    - name: Smoke Test Packaged SDK
+      shell: bash
+      run: |
+        tmpdir="$(mktemp -d)"
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        cat > "$tmpdir/NuGet.Config" <<EOF
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+          <packageSources>
+            <clear />
+            <add key="Peachpie Debug Packages" value="${{ github.workspace }}/.nugs" />
+          </packageSources>
+        </configuration>
+        EOF
+
+        cat > "$tmpdir/smoke.msbuildproj" <<'EOF'
+        <Project Sdk="Peachpie.NET.Sdk/1.2.0-dev">
+          <PropertyGroup>
+            <OutputType>Exe</OutputType>
+            <TargetFramework>net10.0</TargetFramework>
+            <StartupObject>program.php</StartupObject>
+          </PropertyGroup>
+
+          <ItemGroup>
+            <Compile Include="**/*.php" />
+          </ItemGroup>
+        </Project>
+        EOF
+
+        cat > "$tmpdir/program.php" <<'EOF'
+        <?php
+        echo "smoke";
+        EOF
+
+        dotnet run --project "$tmpdir/smoke.msbuildproj" --verbosity minimal > "$tmpdir/output.txt"
+        grep -q "smoke" "$tmpdir/output.txt"
     - name: Test
       run: dotnet test Peachpie.sln -c Release --no-build --verbosity normal
