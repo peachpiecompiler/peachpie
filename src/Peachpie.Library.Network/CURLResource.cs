@@ -17,7 +17,12 @@ namespace Peachpie.Library.Network
     public sealed class CURLResource : PhpResource
     {
         const Flags DefaultFlags = default; // 0
-        static string DefaultMethod => WebRequestMethods.Http.Get;
+        internal const string HttpGetMethod = "GET";
+        internal const string HttpPostMethod = "POST";
+        internal const string HttpPutMethod = "PUT";
+        internal const string HttpHeadMethod = "HEAD";
+
+        static string DefaultMethod => HttpGetMethod;
         const string DefaultScheme = "http";
         const int DefaultMaxRedirects = -1;
         const int DefaultTimeout = 0;

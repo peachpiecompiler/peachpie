@@ -597,7 +597,7 @@ namespace Peachpie.Library.Network
             {
                 case CURLOPT_URL: return (ch.Url = value.AsString()) != null;
                 case CURLOPT_DEFAULT_PROTOCOL: return (ch.DefaultSheme = value.AsString()) != null;
-                case CURLOPT_HTTPGET: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Get; } break;
+                case CURLOPT_HTTPGET: if (value.ToBoolean()) { ch.Method = CURLResource.HttpGetMethod; } break;
                 case CURLOPT_UPLOAD:
                     // The idea behind CURLOPT_UPLOAD is to tell curl to use PUT method,
                     // add some common file uploading headers for that such as
@@ -607,9 +607,9 @@ namespace Peachpie.Library.Network
                 case CURLOPT_NOSIGNAL:
                     // ignored
                     return true;
-                case CURLOPT_POST: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Post; } break;
-                case CURLOPT_PUT: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Put; } break;
-                case CURLOPT_NOBODY: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Head; } break;
+                case CURLOPT_POST: if (value.ToBoolean()) { ch.Method = CURLResource.HttpPostMethod; } break;
+                case CURLOPT_PUT: if (value.ToBoolean()) { ch.Method = CURLResource.HttpPutMethod; } break;
+                case CURLOPT_NOBODY: if (value.ToBoolean()) { ch.Method = CURLResource.HttpHeadMethod; } break;
                 case CURLOPT_CUSTOMREQUEST: return (ch.Method = value.AsString()) != null;
                 case CURLOPT_POSTFIELDS: ch.PostFields = value.GetValue().DeepCopy(); break;
                 case CURLOPT_FOLLOWLOCATION: ch.FollowLocation = value.ToBoolean(); break;
@@ -1373,7 +1373,7 @@ namespace Peachpie.Library.Network
 
         public override void Apply(Context ctx, CurlHttpRequest request)
         {
-            // invoked when initializing WebRequest
+            // Cookie export is handled when the curl handle is closed.
             // do nothing
         }
 
@@ -1449,8 +1449,6 @@ namespace Peachpie.Library.Network
         public override void Apply(Context ctx, CurlHttpRequest request)
         {
             var container = request.CookieContainer ??= new CookieContainer();
-
-            // invoked when initializing WebRequest
 
             var list = this.OptionValue;
 

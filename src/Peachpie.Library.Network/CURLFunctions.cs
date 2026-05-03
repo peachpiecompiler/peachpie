@@ -379,21 +379,21 @@ namespace Peachpie.Library.Network
             // make request:
 
             // GET, HEAD
-            if (string.Equals(ch.Method, WebRequestMethods.Http.Get, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(ch.Method, CURLResource.HttpGetMethod, StringComparison.OrdinalIgnoreCase))
             {
                 req.SetContent(CreateRequestContent(ctx, ch, ch.ProcessingRequest.Stream, defaultContentType: null));
             }
-            else if (string.Equals(ch.Method, WebRequestMethods.Http.Head, StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(ch.Method, CURLResource.HttpHeadMethod, StringComparison.OrdinalIgnoreCase))
             {
                 //
             }
             // POST
-            else if (string.Equals(ch.Method, WebRequestMethods.Http.Post, StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(ch.Method, CURLResource.HttpPostMethod, StringComparison.OrdinalIgnoreCase))
             {
                 req.SetContent(ProcessPost(ctx, req, ch));
             }
             // PUT
-            else if (string.Equals(ch.Method, WebRequestMethods.Http.Put, StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(ch.Method, CURLResource.HttpPutMethod, StringComparison.OrdinalIgnoreCase))
             {
                 req.SetContent(ProcessPut(ctx, req, ch));
             }
