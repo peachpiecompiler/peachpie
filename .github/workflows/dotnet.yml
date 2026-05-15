@@ -16,7 +16,8 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
-        cache: true
+        # Temporarily disabled until packages.lock.json is added
+        # cache: true
     - name: Restore
       run: dotnet restore Peachpie.sln
     - name: Build
