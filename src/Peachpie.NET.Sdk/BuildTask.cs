@@ -400,8 +400,12 @@ namespace Peachpie.NET.Sdk.Tools
             // non-windows?
             if (Environment.OSVersion.Platform != PlatformID.Win32NT)
             {
+                var compilerDllPath = compilerPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                    ? Path.ChangeExtension(compilerPath, ".dll")
+                    : compilerPath + ".dll";
+
                 pi.FileName = "dotnet";
-                pi.Arguments = $"\"{Path.ChangeExtension(compilerPath, ".dll")}\" {pi.Arguments}";
+                pi.Arguments = $"\"{compilerDllPath}\" {pi.Arguments}";
             }
 
             //

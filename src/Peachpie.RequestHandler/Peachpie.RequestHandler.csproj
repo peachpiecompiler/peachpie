@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48</TargetFrameworks>
+    <TargetFramework>net48</TargetFramework>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <AssemblyName>Peachpie.RequestHandler</AssemblyName>
     <PackageId>Peachpie.RequestHandler</PackageId>

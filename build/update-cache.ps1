@@ -9,11 +9,12 @@ param([string]$version = "1.2.0", [string]$suffix = "dev")
 $rootDir = [System.IO.Path]::GetFullPath("$PSScriptRoot/..")
 Write-Host "Root at" $rootDir
 $packagesSource = (Resolve-Path "~/.nuget/packages").Path
-$defaultArgs = "/p:VersionPrefix=$version,VersionSuffix=$suffix"
+$peachpieVersion = "$version-$suffix"
+$restoreArgs = @("/p:PeachpieVersion=$peachpieVersion", "/p:VersionPrefix=$version", "/p:VersionSuffix=$suffix")
 
 ## Delete old nuget packages
 Write-Host -f green "Deleting '$version-$suffix' packages from '$packagesSource' ..."
-@("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.Scripting", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.Library.Graphics", "Peachpie.Library.Network", "Peachpie.Library.PDO", "Peachpie.Library.XmlDom", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.AspNetCore.Web", "Peachpie.RequestHandler", "Peachpie.AspNetCore.Mvc", "Peachpie.NET.Sdk", "Peachpie.Library.PDO.MySql", "Peachpie.Library.PDO.Sqlite", "Peachpie.Library.SqlSrv") | % {
+@("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.Scripting", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.Library.Graphics", "Peachpie.Library.Network", "Peachpie.Library.PDO", "Peachpie.Library.XmlDom", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.AspNetCore.Web", "Peachpie.RequestHandler", "Peachpie.AspNetCore.Mvc", "Peachpie.NET.Sdk", "Peachpie.Library.PDO.MySQL", "Peachpie.Library.PDO.Sqlite", "Peachpie.Library.PDO.SqlSrv") | % {
 	$installedFolder = "$packagesSource/$_/$version-$suffix"
     if (Test-Path $installedFolder) {
         Remove-Item -Recurse -Force $installedFolder
@@ -34,4 +35,4 @@ Write-Host -f green "Deleting '$version-$suffix' packages from '$packagesSource'
 
 # Reinstall the packages by restoring a dummy project that depends on them
 Write-Host -f green "Installing packages to nuget cache ..."
-dotnet restore "$rootDir/build/dummy" --ignore-failed-sources
+dotnet restore "$rootDir/build/dummy" @restoreArgs --ignore-failed-sources

@@ -1538,7 +1538,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+#pragma warning disable SYSLIB0050
         public override bool IsSerializable => (_flags & TypeAttributes.Serializable) != 0;
+#pragma warning restore SYSLIB0050
 
         internal override bool IsMetadataSealed => (_flags & TypeAttributes.Sealed) != 0;
 

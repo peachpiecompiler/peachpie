@@ -1733,7 +1733,6 @@ namespace Pchp.Library
 
                 private void TransformBlock(ReadOnlySpan<byte>/*!*//*byte[16+startIndex]*/block)
                 {
-                    Debug.Assert(block != null);
                     Debug.Assert(block.Length >= 16);
 
                     byte i, j, t = 0;
@@ -2364,8 +2363,6 @@ namespace Pchp.Library
 
                 public override bool Update(ReadOnlySpan<byte>/*!*/data)
                 {
-                    Debug.Assert(data != null);
-
                     return _HashData(data, 0, data.Length);
                 }
 

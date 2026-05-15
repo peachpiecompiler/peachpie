@@ -3522,7 +3522,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         TypeSymbol EmitCachedParametersArray(CodeGenerator cg, ReadOnlySpan<FormalParam> ps)
         {
-            if (ps == null || ps.Length == 0)
+            if (ps.Length == 0)
             {
                 // PhpArray.Empty
                 return cg.Emit_PhpArray_Empty();

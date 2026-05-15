@@ -105,7 +105,8 @@ function test() { return 1; }
 
             Assert.IsTrue(
                 // method body
-                "{\r\n\treturn 1L;\r\n}" == bodyCode
+                "{\n\treturn 1L;\n}" == bodyCode.Replace("\r\n", "\n"),
+                $"Unexpected body: {bodyCode}"
             );
         }
     }

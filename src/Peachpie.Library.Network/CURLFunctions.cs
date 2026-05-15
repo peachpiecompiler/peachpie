@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -291,69 +292,50 @@ namespace Peachpie.Library.Network
             return result;
         }
 
-        static async Task<CURLResponse> ProcessHttpResponseTask(Context ctx, CURLResource ch, Task<WebResponse> responseTask)
+        static async Task<CURLResponse> ProcessHttpResponseTask(Context ctx, CURLResource ch, Task<CurlHttpExecution> responseTask)
         {
             try
             {
-                using (var response = (HttpWebResponse)responseTask.Result)
+                using (var execution = await responseTask)
                 {
-                    return new CURLResponse(await ProcessResponse(ctx, ch, response), response, ch);
+                    var response = execution.Response;
+                    var headers = ToWebHeaders(response);
+                    var cookies = GetResponseCookies(ch, execution);
+                    return new CURLResponse(await ProcessResponse(ctx, ch, response, headers), response, headers, cookies, ch);
                 }
             }
-            catch (AggregateException agEx)
+            catch (TaskCanceledException ex)
             {
-                var ex = agEx.InnerException;
-                if (ex == null)
-                {
-                    throw;
-                }
-                
                 ch.VerboseOutput(ex.ToString());
-
-                if (ex is WebException webEx)
-                {
-                    // TODO: ch.FailOnError ?
-
-                    var exception = webEx.InnerException ?? webEx;
-
-                    switch (webEx.Status)
-                    {
-                        case WebExceptionStatus.ProtocolError:
-                            // actually ok, 301, 500, etc .. process the response:
-                            return new CURLResponse(
-                                await ProcessResponse(ctx, ch, (HttpWebResponse)(webEx.Response ?? throw new InvalidOperationException("No HttpWebResponse"))),
-                                (HttpWebResponse)webEx.Response,
-                                ch);
-
-                        case WebExceptionStatus.Timeout:
-                            return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, exception);
-                        case WebExceptionStatus.TrustFailure:
-                            return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, exception);
-                        case WebExceptionStatus.ConnectFailure:
-                        default:
-                            return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, exception);
-                    }
-                }
-                else if (ex is ProtocolViolationException)
-                {
-                    return CURLResponse.CreateError(CurlErrors.CURLE_FAILED_INIT, ex);
-                }
-                else if (ex is CryptographicException)
-                {
-                    return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CERTPROBLEM, ex);
-                }
-                else
-                {
-                    throw ex;
-                }
+                return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, ex);
+            }
+            catch (HttpRequestException ex) when (ex.InnerException is CryptographicException)
+            {
+                ch.VerboseOutput(ex.ToString());
+                return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CERTPROBLEM, ex.InnerException);
+            }
+            catch (HttpRequestException ex)
+            {
+                ch.VerboseOutput(ex.ToString());
+                return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, ex);
+            }
+            catch (ProtocolViolationException ex)
+            {
+                ch.VerboseOutput(ex.ToString());
+                return CURLResponse.CreateError(CurlErrors.CURLE_FAILED_INIT, ex);
+            }
+            catch (CryptographicException ex)
+            {
+                ch.VerboseOutput(ex.ToString());
+                return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CERTPROBLEM, ex);
             }
         }
 
         static readonly IWebProxy s_DefaultProxy = new WebProxy();
 
-        static Task<WebResponse> ExecHttpRequestInternalAsync(Context ctx, CURLResource ch, Uri uri)
+        static async Task<CurlHttpExecution> ExecHttpRequestInternalAsync(Context ctx, CURLResource ch, Uri uri)
         {
-            var req = WebRequest.CreateHttp(uri);
+            var req = new CurlHttpRequest(uri);
 
             // setup request:
 
@@ -371,10 +353,8 @@ namespace Peachpie.Library.Network
             }
             if (ch.Cookies != null)
             {
-                req.CookieContainer ??= new CookieContainer(); // NOTE: default max capacity := 300
                 req.CookieContainer.Add(ch.Cookies);
             }
-            //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
             if (ch.Username != null) req.Credentials = new NetworkCredential(ch.Username, ch.Password ?? string.Empty);
             // TODO: certificate
@@ -399,23 +379,23 @@ namespace Peachpie.Library.Network
             // make request:
 
             // GET, HEAD
-            if (string.Equals(ch.Method, WebRequestMethods.Http.Get, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(ch.Method, CURLResource.HttpGetMethod, StringComparison.OrdinalIgnoreCase))
             {
-                WriteRequestStream(ctx, req, ch, ch.ProcessingRequest.Stream);
+                req.SetContent(CreateRequestContent(ctx, ch, ch.ProcessingRequest.Stream, defaultContentType: null));
             }
-            else if (string.Equals(ch.Method, WebRequestMethods.Http.Head, StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(ch.Method, CURLResource.HttpHeadMethod, StringComparison.OrdinalIgnoreCase))
             {
                 //
             }
             // POST
-            else if (string.Equals(ch.Method, WebRequestMethods.Http.Post, StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(ch.Method, CURLResource.HttpPostMethod, StringComparison.OrdinalIgnoreCase))
             {
-                ProcessPost(ctx, req, ch);
+                req.SetContent(ProcessPost(ctx, req, ch));
             }
             // PUT
-            else if (string.Equals(ch.Method, WebRequestMethods.Http.Put, StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(ch.Method, CURLResource.HttpPutMethod, StringComparison.OrdinalIgnoreCase))
             {
-                ProcessPut(ctx, req, ch);
+                req.SetContent(ProcessPut(ctx, req, ch));
             }
             // DELETE, or custom method
             else
@@ -430,15 +410,21 @@ namespace Peachpie.Library.Network
             }
 
             //
-            return req.GetResponseAsync();
+            var client = new HttpClient(req.Handler, disposeHandler: true);
+            using var cts = req.Timeout > 0
+                ? new CancellationTokenSource(req.Timeout)
+                : new CancellationTokenSource();
+
+            var response = await client.SendAsync(req.Message, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+            return new CurlHttpExecution(req, client, response);
         }
 
-        static void ProcessPut(Context ctx, HttpWebRequest req, CURLResource ch)
+        static HttpContent? ProcessPut(Context ctx, CurlHttpRequest req, CURLResource ch)
         {
-            WriteRequestStream(ctx, req, ch, ch.ProcessingRequest.Stream);
+            return CreateRequestContent(ctx, ch, ch.ProcessingRequest.Stream, defaultContentType: null);
         }
 
-        static void ProcessPost(Context ctx, HttpWebRequest req, CURLResource ch)
+        static HttpContent ProcessPost(Context ctx, CurlHttpRequest req, CURLResource ch)
         {
             byte[] bytes;
 
@@ -461,50 +447,49 @@ namespace Peachpie.Library.Network
                 }
             }
 
+            var content = new ByteArrayContent(bytes);
             req.ContentLength = bytes.Length;
-
-            using (var stream = req.GetRequestStream())
-            {
-                stream.Write(bytes);
-            }
+            return content;
         }
 
-        static bool WriteRequestStream(Context ctx, HttpWebRequest req, CURLResource ch, PhpStream infile)
+        static HttpContent? CreateRequestContent(Context ctx, CURLResource ch, PhpStream infile, string? defaultContentType)
         {
             if (infile != null)
             {
-                using (var stream = req.GetRequestStream())
+                using var buffer = new MemoryStream();
+                if (ch.ReadFunction == null)
                 {
-                    if (ch.ReadFunction == null)
+                    infile.RawStream.CopyTo(buffer);
+                }
+                else
+                {
+                    for (; ; )
                     {
-                        // req.ContentLength = bytes.Length;
-                        infile.RawStream.CopyTo(stream);
-                        return true;
-                    }
-                    else
-                    {
-                        for (; ; )
+                        var result = ch.ReadFunction.Invoke(ctx, ch, infile, ch.BufferSize);
+                        if (result.IsString() || !result.IsEmpty)
                         {
-                            var result = ch.ReadFunction.Invoke(ctx, ch, infile, ch.BufferSize);
-                            if (result.IsString() || !result.IsEmpty)
+                            var chunk = result.ToBytes(ctx);
+                            if (chunk.Length != 0)
                             {
-                                var bytes = result.ToBytes(ctx);
-                                if (bytes.Length != 0)
-                                {
-                                    stream.Write(bytes);
-                                    continue;
-                                }
+                                buffer.Write(chunk, 0, chunk.Length);
+                                continue;
                             }
-
-                            break;
                         }
 
-                        return true;
+                        break;
                     }
                 }
+
+                var bytes = buffer.ToArray();
+                var content = new ByteArrayContent(bytes);
+                if (!string.IsNullOrEmpty(defaultContentType))
+                {
+                    content.Headers.TryAddWithoutValidation("Content-Type", defaultContentType);
+                }
+                return content;
             }
 
-            return false;
+            return null;
         }
 
         static byte[] GetMultipartFormData(Context ctx, PhpArray postParameters, string boundary)
@@ -560,26 +545,60 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Add the Cookie header if not present.
         /// </summary>
-        static void TryAddCookieHeader(WebRequest req, string value)
+        static void TryAddCookieHeader(CurlHttpRequest req, string value)
         {
-            if (req.Headers.Get(HttpRequestHeader.Cookie.ToString()) == null)
+            if (!req.Message.Headers.TryGetValues("Cookie", out _))
             {
-                req.Headers.Add(HttpRequestHeader.Cookie, value);
+                req.SetHeader("Cookie", value);
             }
         }
 
-        static async Task<PhpValue> ProcessResponse(Context ctx, CURLResource ch, HttpWebResponse response)
+        static CookieCollection? GetResponseCookies(CURLResource ch, CurlHttpExecution execution)
         {
-            // copy response cookies
-            if (ch.Cookies != null && response.Cookies != null)
+            var responseUri = execution.Response.RequestMessage?.RequestUri;
+            if (responseUri == null || ch.Cookies == null)
             {
-                // TODO: for compatibility with cURL,
-                // parse the SetCookie header and include all the cookies into the collection as they are,
-                // incl. the expired onces
-                //var setCookieHeader = response.Headers[HttpResponseHeader.SetCookie];
-                
-                ch.Cookies.Add(response.Cookies);
+                return null;
             }
+
+            // TODO: for compatibility with cURL,
+            // parse the SetCookie header and include all the cookies into the collection as they are,
+            // incl. the expired ones.
+            var responseCookies = execution.Request.CookieContainer.GetCookies(responseUri);
+            if (responseCookies.Count != 0)
+            {
+                ch.Cookies.Add(responseCookies);
+            }
+
+            return responseCookies;
+        }
+
+        static WebHeaderCollection ToWebHeaders(HttpResponseMessage response)
+        {
+            var headers = new WebHeaderCollection();
+
+            foreach (var header in response.Headers)
+            {
+                foreach (var value in header.Value)
+                {
+                    headers.Add(header.Key, value);
+                }
+            }
+
+            foreach (var header in response.Content.Headers)
+            {
+                foreach (var value in header.Value)
+                {
+                    headers.Add(header.Key, value);
+                }
+            }
+
+            return headers;
+        }
+
+        static async Task<PhpValue> ProcessResponse(Context ctx, CURLResource ch, HttpResponseMessage response, WebHeaderCollection headers)
+        {
+            var responseUri = response.RequestMessage?.RequestUri;
 
             // in case we are returning the response value
             var returnstream = ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN
@@ -611,10 +630,10 @@ namespace Peachpie.Library.Network
                             PhpValue.Create(statusHeaders)
                         );
 
-                        for (int i = 0; i < response.Headers.Count; i++)
+                        for (int i = 0; i < headers.Count; i++)
                         {
-                            var key = response.Headers.GetKey(i);
-                            var value = response.Headers.Get(i);
+                            var key = headers.GetKey(i);
+                            var value = headers.Get(i);
 
                             if (key == null || key.Length != 0)
                             {
@@ -639,7 +658,7 @@ namespace Peachpie.Library.Network
                         if (outputHeadersStream != null)
                         {
                             await outputHeadersStream.WriteAsync(Encoding.ASCII.GetBytes(statusHeaders));
-                            await outputHeadersStream.WriteAsync(response.Headers.ToByteArray());
+                            await outputHeadersStream.WriteAsync(headers.ToByteArray());
                         }
                         else
                         {
@@ -649,10 +668,10 @@ namespace Peachpie.Library.Network
                 }
             }
 
-            var stream = response.GetResponseStream();
+            var stream = await response.Content.ReadAsStreamAsync();
 
             // gzip decode if necessary
-            if (response.ContentEncoding == "gzip") // TODO: // && ch.AcceptEncoding.Contains("gzip") ??
+            if (response.Content.Headers.ContentEncoding.Any(e => string.Equals(e, "gzip", StringComparison.OrdinalIgnoreCase)))
             {
                 ch.VerboseOutput("Decompressing the output stream using GZipStream.");
                 stream = new GZipStream(stream, CompressionMode.Decompress, leaveOpen: false);
@@ -665,7 +684,7 @@ namespace Peachpie.Library.Network
                 case ProcessMethodEnum.RETURN: stream.CopyTo(returnstream!); break;
                 case ProcessMethodEnum.FILE: await stream.CopyToAsync(ch.ProcessingResponse.Stream.RawStream); break;
                 case ProcessMethodEnum.USER:
-                    if (response.ContentLength != 0)
+                    if ((response.Content.Headers.ContentLength ?? -1) != 0)
                     {
                         // preallocate a buffer to read to,
                         // this should be according to PHP's behavior and slightly more effective than memory stream
@@ -689,9 +708,9 @@ namespace Peachpie.Library.Network
             stream.Dispose();
 
             //
-            if (response.ResponseUri != null)
+            if (responseUri != null)
             {
-                ch.Url = response.ResponseUri.AbsoluteUri;
+                ch.Url = responseUri.AbsoluteUri;
             }
 
             return (returnstream != null)

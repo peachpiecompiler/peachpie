@@ -137,10 +137,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsNotSerialized
         {
+#pragma warning disable SYSLIB0050
             get
             {
                 return (_flags & FieldAttributes.NotSerialized) != 0;
             }
+#pragma warning restore SYSLIB0050
         }
 
         internal override MarshalPseudoCustomAttributeData MarshallingInformation

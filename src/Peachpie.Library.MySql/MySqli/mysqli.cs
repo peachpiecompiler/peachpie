@@ -8,6 +8,7 @@ using MySqlConnector;
 using Pchp.Core;
 using static Peachpie.Library.MySql.MySqli.Functions;
 
+#pragma warning disable CS8981
 namespace Peachpie.Library.MySql.MySqli
 {
     /// <summary>
@@ -464,3 +465,4 @@ namespace Peachpie.Library.MySql.MySqli
         public bool thread_safe() => true;
     }
 }
+#pragma warning restore CS8981

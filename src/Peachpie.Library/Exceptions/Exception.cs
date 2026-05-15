@@ -112,8 +112,11 @@ namespace Pchp.Library.Spl
         [PhpHidden]
         public override System.Exception GetBaseException() => base.GetBaseException();
 
+        [Obsolete]
         [PhpHidden]
+#pragma warning disable SYSLIB0051
         public override void GetObjectData(SerializationInfo info, StreamingContext context) => base.GetObjectData(info, context);
+#pragma warning restore SYSLIB0051
 
         [PhpHidden]
         public new Type GetType() => base.GetType();

@@ -6,6 +6,7 @@ using System.Text;
 using Pchp.Core;
 using Pchp.Library.Streams;
 
+#pragma warning disable CS8981
 namespace Pchp.Library
 {
     [PhpExtension(ExtensionName)]
@@ -429,3 +430,4 @@ namespace Pchp.Library
         }
     }
 }
+#pragma warning restore CS8981

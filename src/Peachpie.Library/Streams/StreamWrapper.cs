@@ -8,7 +8,9 @@ using System.IO;
 using Pchp.Core.Reflection;
 using System.Text;
 using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Mono.Unix;
 
 namespace Pchp.Library.Streams
@@ -1201,6 +1203,11 @@ namespace Pchp.Library.Streams
     /// </summary>
     public class HttpStreamWrapper : StreamWrapper
     {
+        static readonly HttpClient s_httpClient = new HttpClient(new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+        });
+
         public HttpStreamWrapper(string scheme)
         {
             this.Scheme = scheme ?? throw new ArgumentNullException(nameof(scheme));
@@ -1229,16 +1236,13 @@ namespace Pchp.Library.Streams
 
             try
             {
-                //
-                // create HTTP request
-                //
-                var request = WebRequest.Create(path) as HttpWebRequest;
-                if (request == null)
+                if (!Uri.TryCreate(path, UriKind.Absolute, out var requestUri))
                 {
-                    // Not a HTTP URL.
                     PhpException.Throw(PhpError.Warning, ErrResources.stream_url_invalid, FileSystemUtils.StripPassword(path));
                     return null;
                 }
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
 
                 //
                 // apply stream context parameters
@@ -1248,29 +1252,29 @@ namespace Pchp.Library.Streams
                 //
                 // get response synchronously
                 //
-                var response_async = request.GetResponseAsync();
-                if (response_async.Wait((int)(dtimeout * 1000)))
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(dtimeout));
+                using var httpResponse = s_httpClient.Send(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                if (!httpResponse.IsSuccessStatusCode)
                 {
-                    var httpResponse = response_async.Result;
-                    var httpStream = httpResponse.GetResponseStream();
-
-                    //
-                    // create the PhpStream
-                    //
-                    return new NativeStream(ctx, httpStream, this, ao, path, context)
-                    {
-                        WrapperSpecificData = CreateWrapperData((HttpWebResponse)httpResponse)
-                    };
-                }
-                else
-                {
-                    // timeout:
-                    PhpException.Throw(PhpError.Warning, ErrResources.stream_error, "timeout"); // TODO: correct error message
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), $"{(int)httpResponse.StatusCode} {httpResponse.ReasonPhrase}");
                     return null;
-
                 }
+
+                var httpStream = httpResponse.Content.ReadAsStream(cts.Token);
+
+                //
+                // create the PhpStream
+                //
+                return new NativeStream(ctx, httpStream, this, ao, path, context)
+                {
+                    WrapperSpecificData = CreateWrapperData(httpResponse)
+                };
 
                 // EX: check for StreamAccessOptions.Exclusive (N/A)
+            }
+            catch (OperationCanceledException)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_error, "timeout");
             }
             catch (UriFormatException)
             {
@@ -1290,9 +1294,9 @@ namespace Pchp.Library.Streams
         }
 
         /// <summary>
-        /// Init the parameters of the HttpWebRequest, use the StreamCOntext and/or default values.
+        /// Init the parameters of the HTTP request, use the StreamContext and/or default values.
         /// </summary>
-        static void ApplyContext(Context ctx, HttpWebRequest request, StreamContext context, out double dtimeout)
+        static void ApplyContext(Context ctx, HttpRequestMessage request, StreamContext context, out double dtimeout)
         {
             var config = ctx.Configuration.Core;
             var options = context.GetOptions(scheme) ?? PhpArray.Empty;
@@ -1327,13 +1331,13 @@ namespace Pchp.Library.Streams
             var method = options["method"].AsString();
             if (method != null)
             {
-                request.Method = method;
+                request.Method = new HttpMethod(method);
             }
 
             //
             // user_agent - Value to send with User-Agent: header. This value will only be used if user-agent is not specified in the header context option above.  php.ini setting: user_agent  
             //
-            request.Headers["User-Agent"] = options["user_agent"].AsString() ?? config.UserAgent;
+            request.Headers.TryAddWithoutValidation("User-Agent", options["user_agent"].AsString() ?? config.UserAgent);
 
             // TODO: proxy - URI specifying address of proxy server. (e.g. tcp://proxy.example.com:5100 ).    
             // TODO: request_fulluri - When set to TRUE, the entire URI will be used when constructing the request. (i.e. GET http://www.example.com/path/to/file.html HTTP/1.0). While this is a non-standard request format, some proxy servers require it.  FALSE 
@@ -1360,7 +1364,8 @@ namespace Pchp.Library.Streams
                     switch (name)
                     {
                         case "content-type":
-                            request.ContentType = value;
+                            request.Content ??= new ByteArrayContent(Array.Empty<byte>());
+                            request.Content.Headers.TryAddWithoutValidation("Content-Type", value);
                             break;
                         //case "content-length":
                         //    request.ContentLength = long.Parse(value);
@@ -1369,7 +1374,7 @@ namespace Pchp.Library.Streams
                         //    request.UserAgent = value;
                         //    break;
                         case "accept":
-                            request.Accept = value;
+                            request.Headers.TryAddWithoutValidation("Accept", value);
                             break;
                         //case "connection":
                         //    request.Connection = value;
@@ -1378,10 +1383,11 @@ namespace Pchp.Library.Streams
                         //    request.Expect = value;
                         //    break;
                         case "date":
-                            request.Headers["Date"] =
+                            request.Headers.TryAddWithoutValidation(
+                                "Date",
                                 System.DateTime.Parse(value, System.Globalization.CultureInfo.InvariantCulture)
                                 .ToUniversalTime()
-                                .ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+                                .ToString("R", System.Globalization.CultureInfo.InvariantCulture));
                             break;
                         //case "host":
                         //    request.Host = value;
@@ -1400,7 +1406,7 @@ namespace Pchp.Library.Streams
                         //    break;
 
                         default:
-                            request.Headers[name] = value;
+                            request.Headers.TryAddWithoutValidation(name, value);
                             break;
                     }
                 }
@@ -1412,10 +1418,13 @@ namespace Pchp.Library.Streams
             var content = options["content"].ToBytes(ctx);
             if (content != null && content.Length != 0)
             {
-                using (var body = request.GetRequestStreamAsync().Result)
+                var body = new ByteArrayContent(content);
+                if (request.Content?.Headers.ContentType != null)
                 {
-                    body.Write(content, 0, content.Length);
+                    body.Headers.ContentType = request.Content.Headers.ContentType;
                 }
+
+                request.Content = body;
             }
         }
 
@@ -1423,27 +1432,38 @@ namespace Pchp.Library.Streams
         /// Gets (actually constructs) the HTTP response header.
         /// </summary>
         /// <remarks>see Peachpie.Library.Network</remarks>
-        static string StatusHeader(HttpWebResponse response) => $"HTTP/{response.ProtocolVersion.ToString(2)} {(int)response.StatusCode} {response.StatusDescription}";
+        static string StatusHeader(HttpResponseMessage response) => $"HTTP/{response.Version.ToString(2)} {(int)response.StatusCode} {response.ReasonPhrase}";
 
         /// <summary>
         /// see stream_get_meta_data()["wrapper_data"]
         /// </summary>
         /// <param name="response"></param>
         /// <returns></returns>
-        static object CreateWrapperData(HttpWebResponse response)
+        static object CreateWrapperData(HttpResponseMessage response)
         {
             if (response == null)
                 return null;
 
-            var array = new PhpArray(1 + response.Headers.Count);
+            var array = new PhpArray();
 
             // HTTP/x.x
             array.Add(StatusHeader(response));
 
             // other headers
-            for (int i = 0; i < response.Headers.Count; i++)
+            foreach (var header in response.Headers)
             {
-                array.Add(response.Headers[i]);
+                foreach (var value in header.Value)
+                {
+                    array.Add($"{header.Key}: {value}");
+                }
+            }
+
+            foreach (var header in response.Content.Headers)
+            {
+                foreach (var value in header.Value)
+                {
+                    array.Add($"{header.Key}: {value}");
+                }
             }
 
             //
