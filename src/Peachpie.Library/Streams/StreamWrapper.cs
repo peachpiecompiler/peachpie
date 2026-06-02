@@ -1443,7 +1443,7 @@ namespace Pchp.Library.Streams
             // other headers
             for (int i = 0; i < response.Headers.Count; i++)
             {
-                array.Add(response.Headers[i]);
+                array.Add(string.Concat(response.Headers.Keys[i],": ", response.Headers[i]));
             }
 
             //
