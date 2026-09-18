@@ -1015,8 +1015,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 // Template: $tmp = A
                 var tmpvar = AST.DirectVarUse.Create(value.Span, new VariableName(tmpname));
                 tmpvar.ContainingElement = value;
-                
-                var assignment = new AST.ValueAssignEx(value.Span, AST.Operations.AssignValue, tmpvar, value) { ContainingElement = value };
+
+                var assignment = AST.ValueAssignEx.Create(value.Span, AST.Operations.AssignValue, tmpvar, value);
+                assignment.ContainingElement = value;
 
                 // Template: throw new UnhandledMatchError                 
                 AST.Expression result = new AST.ThrowEx(value.Span,
@@ -1163,7 +1164,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             var builder = ArrayBuilder<BoundArrayItem>.GetInstance();
-            
+
             foreach (var x in items)
             {
                 if (x.IsDefault)
@@ -1390,6 +1391,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     operandAccess = access; // TODO: | Quiet
                     break;
                 case AST.Operations.UnsetCast:
+                case AST.Operations.VoidCast:
                     operandAccess = BoundAccess.None;
                     break;
             }
