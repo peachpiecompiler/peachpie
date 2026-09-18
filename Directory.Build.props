@@ -40,7 +40,7 @@
   <!-- packages version -->
   <PropertyGroup>
     
-    <PeachpieLibraryRegularExpressionsVersion>1.7.0</PeachpieLibraryRegularExpressionsVersion>
+    <PeachpieLibraryRegularExpressionsVersion>1.7.1</PeachpieLibraryRegularExpressionsVersion>
     <MySqlConnectorVersion>2.0.0</MySqlConnectorVersion>
     <ParserVersion>8.5.18350</ParserVersion>
     <PeachpieMicrosoftCodeAnalysisVersion>3.7.4</PeachpieMicrosoftCodeAnalysisVersion>
