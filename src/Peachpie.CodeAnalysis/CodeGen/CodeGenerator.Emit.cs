@@ -365,7 +365,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(TypeSymbol stack, TypeRefMask tmask)
         {
-            Debug.Assert(!stack.IsUnreachable);
+            Debug.Assert(stack.IsEmittableType());
 
             // specialize type if possible
             if (tmask.IsSingleType && !tmask.IsRef)
@@ -530,7 +530,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public void EmitNotNull(TypeSymbol t, TypeRefMask tmask)
         {
-            Debug.Assert(!t.IsUnreachable);
             // CanBeNull(tmask)
             // CanBeNull(t)
 
@@ -2886,8 +2885,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal TypeSymbol EmitCastClass(TypeSymbol from, TypeSymbol to)
         {
-            Debug.Assert(!from.IsUnreachable);
-            Debug.Assert(!to.IsUnreachable);
+            Debug.Assert(from.IsEmittableType());
+            Debug.Assert(to.IsEmittableType());
 
             if (from.IsOfType(to))
             {
@@ -2902,7 +2901,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitCastClass(TypeSymbol type)
         {
-            Debug.Assert(!type.IsUnreachable);
+            Debug.Assert(type.IsEmittableType());
 
             // (T)
             if (type.IsReferenceType)
@@ -3413,6 +3412,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     foreach (var d in dependent)
                     {
+                        if (d.IsUnreachable)
+                        {
+                            // type is unreachable,
+                            // declaring this type will fail eventually
+                            continue;
+                        }
+
                         if (IsTypeDeclaredCheckNecessary(d))
                         {
                             lblSkip ??= new NamedLabel("skip_DeclareType");
@@ -3515,13 +3521,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// If necessary, emits autoload and check the given type is loaded into context.
         /// </summary>
-        public void EmitExpectTypeDeclared(ITypeSymbol d)
+        public void EmitExpectTypeDeclared(ITypeSymbol s)
         {
-            Debug.Assert(((TypeSymbol)d).IsValidType());
-            Debug.Assert(!((TypeSymbol)d).IsUnreachable);
-
-            if (IsTypeDeclaredCheckNecessary(d) && d is NamedTypeSymbol ntype)
+            Debug.Assert(s is TypeSymbol t && t.IsValidType());
+            
+            if (IsTypeDeclaredCheckNecessary(s) && s is NamedTypeSymbol ntype)
             {
+                if (ntype.IsUnreachable)
+                {
+                    // always fail
+                    this.EmitThrowException($"Type {ntype.GetFullName()} is unreachable.");
+                    return;
+                }
+
                 if (ntype.OriginalDefinition is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, this.ContainingFile) && !srct.Syntax.IsConditional)
                 {
                     // declared in same file unconditionally,

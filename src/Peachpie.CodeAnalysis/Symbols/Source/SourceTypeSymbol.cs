@@ -479,7 +479,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (_nextVersion == null)
             {
-                return IsUnreachable ? ImmutableArray<SourceTypeSymbol>.Empty : ImmutableArray.Create(this);
+                return this.IsEmittableType() ? ImmutableArray.Create(this) : ImmutableArray<SourceTypeSymbol>.Empty;
             }
             else
             {
@@ -488,7 +488,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 for (var x = this; x != null; x = x.NextVersion)
                 {
                     Debug.Assert(x._version > 0 && x._version <= builder.Capacity);
-                    if (!x.IsUnreachable)
+                    if (x.IsEmittableType())
                     {
                         builder.Add(x);
                     }
@@ -860,7 +860,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ambiguity = (types[i] as ErrorTypeSymbol).CandidateSymbols.Cast<T>().ToList();
 
             // in case there is an ambiguity that is declared in current scope unconditionally, pick this one and ignore the others
-            var best = ambiguity.FirstOrDefault(x => x is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, containingFile) && !srct.Syntax.IsConditional);
+            var best = ambiguity.FirstOrDefault(x => x is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, containingFile) && !srct.Syntax.IsConditional && !srct.IsUnreachable);
             if (best != null)
             {
                 ambiguity = new List<T>(1) { best };

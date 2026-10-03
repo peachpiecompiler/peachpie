@@ -44,6 +44,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>Gets value indicating the type is not null, not ambiguous and not error type.</summary>
         public static bool IsValidType(this TypeSymbol type) => !IsErrorTypeOrNull(type);
 
+        public static bool IsEmittableType(this TypeSymbol type) => type != null && !type.IsErrorType() && !type.IsDynamic() && !type.IsUnreachable;
+
         public static bool IsTraitType(this TypeSymbol type)
         {
             return type != null && type.OriginalDefinition is IPhpTypeSymbol phpt && phpt.IsTrait;

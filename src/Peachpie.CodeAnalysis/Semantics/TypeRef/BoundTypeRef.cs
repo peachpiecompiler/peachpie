@@ -365,7 +365,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
         public override ITypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)
         {
             var t = ResolvedType ?? (TypeSymbol)ResolveTypeSymbol(cg.DeclaringCompilation);
-            if (t.IsValidType())
+            if (t.IsEmittableType())
             {
                 return cg.EmitLoadPhpTypeInfo(t);
             }
@@ -384,7 +384,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public override ITypeSymbol ResolveTypeSymbol(PhpCompilation compilation)
         {
-            if (ResolvedType.IsValidType() && !ResolvedType.IsUnreachable)
+            if (ResolvedType.IsEmittableType())
             {
                 return ResolvedType;
             }
@@ -411,11 +411,11 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             {
                 TypeSymbol best = null;
 
-                // choose the one declared in this file unconditionally
+                // if possible, choose the one declared in this file unconditionally
                 foreach (var x in ambiguous
                     .CandidateSymbols
                     .Cast<TypeSymbol>()
-                    .Where(t => !t.IsUnreachable)
+                    .Where(t => t.IsEmittableType())
                     .Where(x => x is SourceTypeSymbol srct && !srct.Syntax.IsConditional && srct.ContainingFile == containingFile))
                 {
                     if (best == null)
@@ -444,7 +444,10 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             }
 
             //
-            return (ResolvedType = type);
+            ResolvedType = type;
+
+            //
+            return type.IsEmittableType() ? type : null;
         }
 
         public override string ToString() => ClassName.ToString();
