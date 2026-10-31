@@ -1,0 +1,88 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [ master, feat/benchmark-suite-net10 ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-benchmark:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET 6.0 SDK (for PeachPie core build)
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
+
+    - name: Setup .NET 10 SDK (for benchmark execution)
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Build PeachPie solution
+      run: dotnet build Peachpie.sln -c Release -f net6.0 --no-restore
+
+    - name: Build PeachPie compiler (peach.dll)
+      run: dotnet build src/Compiler/peach/peach.csproj -c Release -f net6.0 --no-restore
+
+    - name: Compile PHP scripts to BenchmarkPhp.dll
+      run: |
+        mkdir -p /tmp/php_compile_temp
+        dotnet src/Compiler/peach/bin/Release/net6.0/peach.dll \
+          /output-name:BenchmarkPhp_TightLoop \
+          /target:library /o:release /fullpaths:true \
+          /out:/tmp/BenchmarkPhp_TightLoop.dll \
+          /target-framework:net6.0 /temp-output:/tmp/php_compile_temp /debug- \
+          src/Tests/Benchmarks.PhpVsNet/PhpScripts/TightLoop.php
+
+        dotnet src/Compiler/peach/bin/Release/net6.0/peach.dll \
+          /output-name:BenchmarkPhp_ObjectOriented \
+          /target:library /o:release /fullpaths:true \
+          /out:/tmp/BenchmarkPhp_ObjectOriented.dll \
+          /target-framework:net6.0 /temp-output:/tmp/php_compile_temp /debug- \
+          src/Tests/Benchmarks.PhpVsNet/PhpScripts/ObjectOriented.php
+
+        dotnet src/Compiler/peach/bin/Release/net6.0/peach.dll \
+          /output-name:BenchmarkPhp_ArrayOperations \
+          /target:library /o:release /fullpaths:true \
+          /out:/tmp/BenchmarkPhp_ArrayOperations.dll \
+          /target-framework:net6.0 /temp-output:/tmp/php_compile_temp /debug- \
+          src/Tests/Benchmarks.PhpVsNet/PhpScripts/ArrayOperations.php
+
+        dotnet src/Compiler/peach/bin/Release/net6.0/peach.dll \
+          /output-name:BenchmarkPhp_StringOperations \
+          /target:library /o:release /fullpaths:true \
+          /out:/tmp/BenchmarkPhp_StringOperations.dll \
+          /target-framework:net6.0 /temp-output:/tmp/php_compile_temp /debug- \
+          src/Tests/Benchmarks.PhpVsNet/PhpScripts/StringOperations.php
+
+        dotnet src/Compiler/peach/bin/Release/net6.0/peach.dll \
+          /output-name:BenchmarkPhp_FunctionCalls \
+          /target:library /o:release /fullpaths:true \
+          /out:/tmp/BenchmarkPhp_FunctionCalls.dll \
+          /target-framework:net6.0 /temp-output:/tmp/php_compile_temp /debug- \
+          src/Tests/Benchmarks.PhpVsNet/PhpScripts/FunctionCalls.php
+
+    - name: Copy compiled PHP DLLs to benchmark output directory
+      run: |
+        mkdir -p src/Tests/Benchmarks.PhpVsNet/bin/Release/net10.0/php_assemblies
+        cp /tmp/BenchmarkPhp_*.dll src/Tests/Benchmarks.PhpVsNet/bin/Release/net10.0/php_assemblies/
+
+    - name: Build benchmark project (.NET 10)
+      run: dotnet build src/Tests/Benchmarks.PhpVsNet/Benchmarks.PhpVsNet.csproj -c Release -f net10.0 --no-restore
+
+    - name: Run benchmarks
+      run: dotnet run --project src/Tests/Benchmarks.PhpVsNet/Benchmarks.PhpVsNet.csproj -c Release -f net10.0 --no-build
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: benchmark-results
+        path: src/Tests/Benchmarks.PhpVsNet/BenchmarkDotNet.Artifacts/
+        retention-days: 7
