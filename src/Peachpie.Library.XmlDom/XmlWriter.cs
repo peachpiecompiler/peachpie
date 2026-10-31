@@ -16,6 +16,7 @@ namespace Peachpie.Library.XmlDom
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension("xmlwriter")]
     public class XMLWriter : IDisposable
     {
+       
         #region Constants
 
         private protected const string DefaultXmlVersion = "1.0";
@@ -23,8 +24,9 @@ namespace Peachpie.Library.XmlDom
         #endregion
 
         #region Fields and properties
+        XmlTextWriter _writer;
 
-        System.Xml.XmlWriter _writer;
+        //wjw - System.Xml.XmlWriter _writer; 
         MemoryStream _memoryStream;
         PhpStream _uriPhpStream;
 
@@ -212,7 +214,7 @@ namespace Peachpie.Library.XmlDom
             _state.Pop();
 
             // Closes dtd section.
-            string end = _writer.Settings.Indent ? _writer.Settings.NewLineChars : "";
+            string end = _writer.Formatting == Formatting.Indented ? DefaultSettings.NewLineChars : ""; // string end = _writer.Settings.Indent ? _writer.Settings.NewLineChars : "";
             end += _dtdStart ? ">" : "]>";
             _dtdStart = false;
 
@@ -292,7 +294,9 @@ namespace Peachpie.Library.XmlDom
         {
             Clear();
             _memoryStream = new MemoryStream();
-            _writer = System.Xml.XmlWriter.Create(_memoryStream, DefaultSettings);
+            _writer = new XmlTextWriter(_memoryStream, DefaultSettings.Encoding); //_writer = System.Xml.XmlWriter.Create(_memoryStream, DefaultSettings);
+            _writer.Formatting = DefaultSettings.Indent ? Formatting.Indented : Formatting.None;
+            
             ctx.RegisterDisposable(this);
             return true;
         }
@@ -309,7 +313,7 @@ namespace Peachpie.Library.XmlDom
 
             try
             {
-                _writer = System.Xml.XmlWriter.Create(_uriPhpStream.RawStream, DefaultSettings);
+                _writer = new XmlTextWriter(_uriPhpStream.RawStream, DefaultSettings.Encoding); //_writer = System.Xml.XmlWriter.Create(_uriPhpStream.RawStream, DefaultSettings);
                 ctx.RegisterDisposable(this);
                 return true;
             }
@@ -340,13 +344,13 @@ namespace Peachpie.Library.XmlDom
                 return false;
 
             // The settings is read-only, but we can create a new xmlwriter if the current xmlwriter haven't written anything yet. 
-            var settings = _writer.Settings.Clone();
+            var settings =DefaultSettings.Clone(); // var settings = _writer.Settings.Clone();
             settings.IndentChars = indentString;
 
             if (_uriPhpStream == null)
-                _writer = XmlWriter.Create(_memoryStream, settings);
+                _writer = new XmlTextWriter(_memoryStream, settings.Encoding);  //_writer = XmlWriter.Create(_memoryStream, settings);
             else
-                _writer = XmlWriter.Create(_uriPhpStream.RawStream, settings);
+                _writer = new XmlTextWriter(_uriPhpStream.RawStream, settings.Encoding); //_writer = XmlWriter.Create(_uriPhpStream.RawStream, settings);
 
             return true;
         }
@@ -357,13 +361,13 @@ namespace Peachpie.Library.XmlDom
                 return false;
 
             // The settings is read-only, but we can create a new xmlwriter if the current xmlwriter haven't written anything yet. 
-            var settings = _writer.Settings.Clone();
+            var settings = DefaultSettings.Clone(); // var settings = _writer.Settings.Clone();
             settings.Indent = indent;
 
             if (_uriPhpStream == null)
-                _writer = XmlWriter.Create(_memoryStream, settings);
+                _writer = new XmlTextWriter(_memoryStream, settings.Encoding); //_writer = XmlWriter.Create(_memoryStream, settings);
             else
-                _writer = XmlWriter.Create(_uriPhpStream.RawStream, settings);
+                _writer = new XmlTextWriter(_uriPhpStream.RawStream, settings.Encoding); //_writer = XmlWriter.Create(_uriPhpStream.RawStream, settings);
 
             return true;
         }
@@ -422,16 +426,16 @@ namespace Peachpie.Library.XmlDom
             if (string.IsNullOrEmpty(standalone))
             {
                 bool res = CheckedCall(() => _writer.WriteStartDocument());
-                if (!_writer.Settings.Indent) // Php writes a new line character after prolog.
-                    res &= CheckedCall(() => _writer.WriteRaw(_writer.Settings.NewLineChars));
+                if (_writer.Formatting==Formatting.None) // if (!_writer.Settings.Indent) // Php writes a new line character after prolog.
+                    res &= CheckedCall(() => _writer.WriteRaw(DefaultSettings.NewLineChars)); //res &= CheckedCall(() => _writer.WriteRaw(_writer.Settings.NewLineChars));
 
                 return res;
             }
             else
             {
                 bool res = CheckedCall(() => _writer.WriteStartDocument(standalone == "yes"));
-                if (!_writer.Settings.Indent) // Php writes a new line character after prolog.
-                    res &= CheckedCall(() => _writer.WriteRaw(_writer.Settings.NewLineChars));
+                if (_writer.Formatting == Formatting.None) // if (!_writer.Settings.Indent) // Php writes a new line character after prolog.
+                    res &= CheckedCall(() => _writer.WriteRaw(DefaultSettings.NewLineChars)); // res &= CheckedCall(() => _writer.WriteRaw(_writer.Settings.NewLineChars));
 
                 return res;
             }
@@ -476,7 +480,8 @@ namespace Peachpie.Library.XmlDom
         public bool startDtd(string qualifiedName, string publicId = null, string systemId = null)
         {
             if (_state.Count != 0 || // DTD can be only placed in default section and prolog.
-              (_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
+                                     //(_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
+              (DefaultSettings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
             {
                 PhpException.Throw(PhpError.Warning, Resources.XmlWritterDtdInProlog);
                 return false;
@@ -491,9 +496,11 @@ namespace Peachpie.Library.XmlDom
             // Makes a doctype
             string doctype = $"<!DOCTYPE {qualifiedName}";
             if (!String.IsNullOrEmpty(publicId))
-                doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}PUBLIC \"{publicId}\"" : $" PUBLIC \"{publicId}\"";
+                //doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}PUBLIC \"{publicId}\"" : $" PUBLIC \"{publicId}\"";
+                doctype += _writer.Formatting==Formatting.Indented ? $"{DefaultSettings.NewLineChars}PUBLIC \"{publicId}\"" : $" PUBLIC \"{publicId}\"";
             if (!String.IsNullOrEmpty(systemId))
-                doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}SYSTEM \"{systemId}\"" : $" SYSTEM \"{systemId}\"";
+                //doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}SYSTEM \"{systemId}\"" : $" SYSTEM \"{systemId}\"";
+                doctype += _writer.Formatting == Formatting.Indented ? $"{DefaultSettings.NewLineChars}SYSTEM \"{systemId}\"" : $" SYSTEM \"{systemId}\"";
 
             CheckDtdStartHelper();
             _state.Push(State.DTD);
@@ -662,7 +669,8 @@ namespace Peachpie.Library.XmlDom
         public bool writeDtd(string name, string publicId = null, string systemId = null, string subset = null)
         {
             if (_state.Count != 0 ||
-              (_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
+              //(_writer.Settings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
+              (DefaultSettings.ConformanceLevel == ConformanceLevel.Document && _writer.WriteState != WriteState.Prolog && _writer.WriteState != WriteState.Start))
             {
                 PhpException.Throw(PhpError.Warning, Resources.XmlWritterDtdInProlog);
                 return false;
@@ -677,9 +685,11 @@ namespace Peachpie.Library.XmlDom
             // Makes doctype
             string doctype = $"<!DOCTYPE {name}";
             if (!String.IsNullOrEmpty(publicId))
-                doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}PUBLIC \"{publicId}\"" : $" PUBLIC \"{publicId}\"";
+                //doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}PUBLIC \"{publicId}\"" : $" PUBLIC \"{publicId}\"";
+                doctype += _writer.Formatting==Formatting.Indented ? $"{DefaultSettings.NewLineChars}PUBLIC \"{publicId}\"" : $" PUBLIC \"{publicId}\"";
             if (!String.IsNullOrEmpty(systemId))
-                doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}       \"{systemId}\"" : $" \"{systemId}\"";
+                //doctype += _writer.Settings.Indent ? $"{_writer.Settings.NewLineChars}       \"{systemId}\"" : $" \"{systemId}\"";
+                doctype += _writer.Formatting == Formatting.Indented ? $"{DefaultSettings.NewLineChars}       \"{systemId}\"" : $" \"{systemId}\"";
             if (!String.IsNullOrEmpty(subset))
                 doctype += $" [{subset}]";
             doctype += ">";
@@ -740,9 +750,9 @@ namespace Peachpie.Library.XmlDom
                 _dtdStart = false;
             }
 
-            if (_writer.Settings.Indent)
+            if (_writer.Formatting==Formatting.Indented) //if (_writer.Settings.Indent)
             {
-                _writer.WriteRaw(_writer.Settings.NewLineChars);
+                _writer.WriteRaw(DefaultSettings.NewLineChars);  //_writer.WriteRaw(_writer.Settings.NewLineChars);
 
                 if (_state.Count != 0 && _state.Peek() == State.DTD)
                     _writer.WriteRaw(" ");

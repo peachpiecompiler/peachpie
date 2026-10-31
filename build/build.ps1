@@ -1,5 +1,5 @@
 Param(
-  [string]$version = "1.0.0-dev",
+  [string]$version = "1.2.0-dev",
   [string]$config = "Debug"
 )
 

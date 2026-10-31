@@ -7,8 +7,8 @@
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
 
     <CompilerProjectPath>$(MSBuildThisFileDirectory)../Peachpie.CodeAnalysis/Peachpie.CodeAnalysis.csproj</CompilerProjectPath>
-    
-    <Version Condition=" '$(Version)'=='' ">1.0.0-dev</Version>
+
+    <Version Condition=" '$(Version)'=='' ">1.2.0-dev</Version>
     <PackageOnlyBuild>true</PackageOnlyBuild>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
