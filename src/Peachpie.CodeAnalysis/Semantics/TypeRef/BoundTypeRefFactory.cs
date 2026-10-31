@@ -109,6 +109,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     case Ast.PrimitiveTypeRef.PrimitiveType.@int: return LongTypeRef; // CONSIDER: phpLang ? LongTypeRef : Create(Int32);
                     case Ast.PrimitiveTypeRef.PrimitiveType.@float: return DoubleTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.@string: return phpLang ? WritableStringRef : StringTypeRef;
+                    case Ast.PrimitiveTypeRef.PrimitiveType.@true:
+                    case Ast.PrimitiveTypeRef.PrimitiveType.@false:
                     case Ast.PrimitiveTypeRef.PrimitiveType.@bool: return BoolTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.array: return ArrayTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.callable: return CallableTypeRef;
@@ -117,6 +119,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     case Ast.PrimitiveTypeRef.PrimitiveType.@object: return ObjectTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.mixed: return MixedTypeRef;
                     case Ast.PrimitiveTypeRef.PrimitiveType.never: return VoidTypeRef;
+                    case Ast.PrimitiveTypeRef.PrimitiveType.@null: return NullTypeRef;
                     default: throw ExceptionUtilities.UnexpectedValue(pt.PrimitiveTypeName);
                 }
             }

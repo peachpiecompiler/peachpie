@@ -29,20 +29,20 @@ namespace Pchp.Core.Utilities
             if (separator == null) separator = string.Empty;
 
             var length = bytes.Length * 2 + (bytes.Length - 1) * separator.Length;
-            return string.Create(length, (bytes, separator), (buffer, state) =>
+            return string.Create(length, (bytes, separator), static (buffer, state) =>
             {
                 const string hex_digs = "0123456789abcdef";
                 var bufferpos = 0;
 
                 // appends characters to the result for each byte:
-                for (int i = 0; i < bytes.Length; i++)
+                for (int i = 0; i < state.bytes.Length; i++)
                 {
-                    var c = bytes[i];
+                    var c = state.bytes[i];
 
                     if (i != 0)
                     {
-                        separator.AsSpan().CopyTo(buffer.Slice(bufferpos, separator.Length));
-                        bufferpos += separator.Length;
+                        state.separator.AsSpan().CopyTo(buffer.Slice(bufferpos, state.separator.Length));
+                        bufferpos += state.separator.Length;
                     }
 
                     buffer[bufferpos++] = hex_digs[(c & 0xf0) >> 4];

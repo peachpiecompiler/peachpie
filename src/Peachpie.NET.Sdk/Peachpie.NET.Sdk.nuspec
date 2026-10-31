@@ -12,13 +12,14 @@
     <summary></summary>
     <tags>php,compile-php,peachpie,sdk</tags>
     <dependencies>
-      <group targetFramework=".NETStandard2.0">
+      <group targetFramework="net6.0">
         <dependency id="Peachpie.App" version="$version$" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="$packToolsDir$\**" target="tools\" />
+    <file src="$packToolsDir$\**" target="tools\task\" />
+    <file src="$compilerDir$\**" target="tools\compiler\" />
     <file src=".\build\**" target="build\" />
     <file src=".\buildCrossTargeting\**" target="buildCrossTargeting\" />
     <file src=".\Sdk\**" target="Sdk\" />    

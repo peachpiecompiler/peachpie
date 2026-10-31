@@ -20,7 +20,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -366,7 +365,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(TypeSymbol stack, TypeRefMask tmask)
         {
-            Debug.Assert(!stack.IsUnreachable);
+            Debug.Assert(stack.IsEmittableType());
 
             // specialize type if possible
             if (tmask.IsSingleType && !tmask.IsRef)
@@ -531,7 +530,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public void EmitNotNull(TypeSymbol t, TypeRefMask tmask)
         {
-            Debug.Assert(!t.IsUnreachable);
             // CanBeNull(tmask)
             // CanBeNull(t)
 
@@ -872,8 +870,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 .Expect(CoreTypes.PhpArray);
         }
 
-        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => Emit(a.Value));
-        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => Emit(a));
+        public TypeSymbol Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => Emit(a.Value));
+        public TypeSymbol Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => Emit(a));
 
         public TypeSymbol Emit_NewArray(TypeSymbol elementType, int length)
         {
@@ -1679,18 +1677,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // pass argument:
                 if (p.IsParams)
                 {
-                    Debug.Assert(p.Type.IsArray());
-
-                    if (((ArrayTypeSymbol)p.Type).ElementType == CoreTypes.PhpValue && arg_index == 0)
+                    if (p.Type.IsSZArray() && ((ArrayTypeSymbol)p.Type).ElementType == CoreTypes.PhpValue && arg_index == 0)
                     {
-                        // just pass argsarray as it is
+                        // Template: params PhpValue[]
+                        // just pass {argsarray} as it is
                         tmpargs_place.EmitLoad(_il);
                     }
                     else
                     {
                         // create new array and copy&convert values from argsarray
+                        var elementType =
+                            p.Type.IsSZArray() ? ((ArrayTypeSymbol)p.Type).ElementType : // T[]
+                            p.Type.OriginalDefinition == CoreTypes.ReadOnlySpan_T && p.Type is NamedTypeSymbol named && named.TypeArguments.Length == 1 ? named.TypeArguments[0] : // ReadOnlySpan<T>
+                            throw new NotImplementedException($"params {p.Type} is unhandled");
 
-                        ArrayToNewArray(tmpargs_place, arg_index, ((ArrayTypeSymbol)p.Type).ElementType);
+                        // Array<ElementType>
+                        var arrayType = ArrayToNewArray(tmpargs_place, arg_index, elementType);
+
+                        //
+                        EmitConvert(arrayType, 0, p.Type);
                     }
 
                     break;  // p is last one
@@ -1850,12 +1855,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                     continue;
                 }
 
-                if (p.IsParams)
+                if (p.IsParams) // params T[], or params ReadOnlySpan<T>
                 {
                     Debug.Assert(parameters.Length == param_index + 1, $"params should be the last parameter, at {method.ContainingType.PhpName()}::{method.Name}()."); // p is last one
-                    Debug.Assert(p.Type.IsArray(), $"params should be of type array, at {method.ContainingType.PhpName()}::{method.Name}().");
+                    Debug.Assert(p.Type.IsArray() || p.Type.IsReadOnlySpan(null), $"params should be of type array or ReadOnlySpan, at {method.ContainingType.PhpName()}::{method.Name}().");
 
-                    var p_element = ((ArrayTypeSymbol)p.Type).ElementType;
+                    TypeSymbol result_type; // type of array emitted on stack
+
+                    var p_element =
+                        p.Type is ArrayTypeSymbol arrType ? arrType.ElementType :
+                        p.Type is ConstructedNamedTypeSymbol spanType ? spanType.TypeArguments[0] :
+                        throw ExceptionUtilities.UnexpectedValue(p.Type);
 
                     if (arg_params_index >= 0)
                     {
@@ -1886,7 +1896,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                         _il.EmitOpCode(ILOpCode.Newarr);
                         EmitSymbolToken(p_element, null);
 
-                        var params_loc = GetTemporaryLocal(p.Type, false);
+                        result_type = ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, p_element);
+
+                        var params_loc = GetTemporaryLocal(result_type, false);
                         _il.EmitLocalStore(params_loc);
 
                         // { arg_i, ..., arg_(n-1) }
@@ -1923,12 +1935,35 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
+
                         // easy case,
                         // wrap remaining arguments to array
                         var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
                         arg_index += values.Length;
-                        Emit_NewArray(p_element, values);
+
+                        // special cases:
+
+                        // []
+                        if (values.IsDefaultOrEmpty && p.Type.IsReadOnlySpan(null))
+                        {
+                            // default(ReadOnlySpan<T>)
+                            EmitLoadDefaultOfValueType(p.Type);
+                            break; // done
+                        }
+                        else if (values.Length == 1 && p.Type.IsReadOnlySpan(CoreTypes.PhpValue))
+                        {
+                            // 1 argument can be marshaled to ReadOnlySpan<T> without allocation
+                            EmitConvert(Emit(values[0].Value), 0, p_element);
+                            EmitCall(ILOpCode.Call, CoreMethods.Helpers.CreateReadOnlySpan_T.Symbol.Construct(p_element));
+                            break;
+                        }
+
+                        // 
+                        result_type = Emit_NewArray(p_element, values);
                     }
+
+                    // eventually convert to ReadOnlySpan<T>
+                    EmitConvert(result_type, 0, p.Type);
 
                     break;  // p is last one
                 }
@@ -2583,11 +2618,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             public static void WriteBackAndFree(CodeGenerator cg, IList<WriteBackInfo> writebacks)
             {
-                if (writebacks != null && writebacks.Count != 0)
+                if (writebacks != null)
                 {
-                    foreach (var w in writebacks)
+                    for (int i = 0; i < writebacks.Count; i++)
                     {
-                        w.WriteBackAndFree(cg);
+                        writebacks[i].WriteBackAndFree(cg);
                     }
                 }
             }
@@ -2800,8 +2835,22 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (targetp.IsParams)
             {
-                // Template: System.Array.Empty<T>()
-                Emit_EmptyArray(((ArrayTypeSymbol)targetp.Type).ElementType);
+                if (targetp.Type.IsSZArray())
+                {
+                    // Template: System.Array.Empty<T>()
+                    Emit_EmptyArray(((ArrayTypeSymbol)targetp.Type).ElementType);
+                }
+                //else if (targetp.Type.OriginalDefinition == CoreTypes.ReadOnlySpan_T)
+                else if (targetp.Type.IsValueType)
+                {
+                    // Template: default(ReadOnlySpan<T>)
+                    EmitLoadDefaultOfValueType(targetp.Type);
+                }
+                else
+                {
+                    throw new NotImplementedException($"default ({targetp.Type})");
+                }
+
                 return;
             }
             else
@@ -2836,8 +2885,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal TypeSymbol EmitCastClass(TypeSymbol from, TypeSymbol to)
         {
-            Debug.Assert(!from.IsUnreachable);
-            Debug.Assert(!to.IsUnreachable);
+            Debug.Assert(from.IsEmittableType());
+            Debug.Assert(to.IsEmittableType());
 
             if (from.IsOfType(to))
             {
@@ -2852,7 +2901,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitCastClass(TypeSymbol type)
         {
-            Debug.Assert(!type.IsUnreachable);
+            Debug.Assert(type.IsEmittableType());
 
             // (T)
             if (type.IsReferenceType)
@@ -3363,6 +3412,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     foreach (var d in dependent)
                     {
+                        if (d.IsUnreachable)
+                        {
+                            // type is unreachable,
+                            // declaring this type will fail eventually
+                            continue;
+                        }
+
                         if (IsTypeDeclaredCheckNecessary(d))
                         {
                             lblSkip ??= new NamedLabel("skip_DeclareType");
@@ -3465,13 +3521,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// If necessary, emits autoload and check the given type is loaded into context.
         /// </summary>
-        public void EmitExpectTypeDeclared(ITypeSymbol d)
+        public void EmitExpectTypeDeclared(ITypeSymbol s)
         {
-            Debug.Assert(((TypeSymbol)d).IsValidType());
-            Debug.Assert(!((TypeSymbol)d).IsUnreachable);
-
-            if (IsTypeDeclaredCheckNecessary(d) && d is NamedTypeSymbol ntype)
+            Debug.Assert(s is TypeSymbol t && t.IsValidType());
+            
+            if (IsTypeDeclaredCheckNecessary(s) && s is NamedTypeSymbol ntype)
             {
+                if (ntype.IsUnreachable)
+                {
+                    // always fail
+                    this.EmitThrowException($"Type {ntype.GetFullName()} is unreachable.");
+                    return;
+                }
+
                 if (ntype.OriginalDefinition is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, this.ContainingFile) && !srct.Syntax.IsConditional)
                 {
                     // declared in same file unconditionally,

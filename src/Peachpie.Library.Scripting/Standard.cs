@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Devsense.PHP.Syntax;
-using Devsense.PHP.Text;
 using Pchp.Core;
 using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
@@ -26,14 +25,11 @@ namespace Peachpie.Library.Scripting
             }
 
             Tokens t;
+            
             var result = ObjectPools.GetStringBuilder();
+            var source = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
 
-            void Append(StringBuilder sb, CharSpan span)
-            {
-                sb.Append(span.Buffer, span.Start, span.Length);
-            }
-
-            using (var tokenizer = new Lexer(new StreamReader(stream, Encoding.UTF8), Encoding.UTF8))
+            using (var tokenizer = new Lexer(source.AsMemory(), Encoding.UTF8))
             {
                 while ((t = tokenizer.GetNextToken()) != Tokens.EOF)
                 {
@@ -46,9 +42,7 @@ namespace Peachpie.Library.Scripting
                             result.Append(' ');
                             break;
                         default:
-                            //result.Append(tokenizer.TokenText);
-                            // avoid copying and allocating string
-                            Append(result, tokenizer.GetTokenSpan());
+                            result.Append(tokenizer.TokenSource);
                             break;
                     }
                 }

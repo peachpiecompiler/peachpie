@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Pchp.Core;
 using Pchp.Core.Collections;
 using Pchp.Core.Text;
+using Pchp.Core.Utilities;
 
 namespace Peachpie.Runtime.Tests
 {
@@ -62,6 +63,34 @@ namespace Peachpie.Runtime.Tests
             list.AddBytes("hello", Encoding.UTF8);
 
             Assert.AreEqual(Encoding.UTF8.GetString(list.ToArray()), "hello");
+        }
+
+        [DataTestMethod]
+        [DataRow("")]
+        [DataRow("lorem ipsum")]
+        [DataRow("顧客は非常に重要です、顧客は顧客に続きます")]
+        public void GetCharsTest(string input)
+        {
+            string value = input;
+
+            for (int multiplier = 0; multiplier < 10; multiplier++)
+            {
+                var encoding = Encoding.UTF8;
+                var bytes = encoding.GetBytes(value);
+
+                var builder = new StringBuilder();
+                var count = Pchp.Core.Utilities.EncodingExtensions.GetChars(encoding, bytes, builder);
+
+                Assert.AreEqual(value.Length, count, "Length don't match");
+                Assert.AreEqual(value, builder.ToString(), "String don't match");
+
+                // add ~1M chars
+                for (int i = 0; i < 1_000_000 / (input.Length + 1); i++)
+                {
+                    builder.Append(input);
+                }
+                value = builder.ToString();
+            }
         }
     }
 }

@@ -451,6 +451,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 (BoundTypeRef)Accept(x.TargetType));
         }
 
+        public override object VisitCallableConvert(BoundCallableConvert x)
+        {
+            return x;
+        }
+
         public override object VisitIncDec(BoundIncDecEx x)
         {
             return x.Update(

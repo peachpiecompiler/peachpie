@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using Pchp.Core;
@@ -58,10 +56,10 @@ namespace Peachpie.Library.Graphics
 
         internal Rgba32 transparentColor;
         internal bool IsTransparentColSet = false;
-
-        internal IBrush styled = null;
-        internal IBrush brushed = null;
-        internal IBrush tiled = null;
+        
+        internal Brush styled = null;
+        internal Brush brushed = null;
+        internal Brush tiled = null;
 
         internal int LineThickness = 1;
 
@@ -72,7 +70,7 @@ namespace Peachpie.Library.Graphics
         {
         }
 
-        internal PhpGdImageResource(int x, int y, IConfigurationModule configuration, IImageFormat format)
+        internal PhpGdImageResource(int x, int y, IImageFormatConfigurationModule configuration, IImageFormat format)
             : this(new TImage(new Configuration(configuration), x, y), format)
         {
         }
@@ -80,7 +78,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         ///  Creates PhpGdImageResource without creating internal image.
         /// </summary>
-        internal PhpGdImageResource(TImage/*!*/image, IImageFormat format)
+        internal PhpGdImageResource(TImage/*!*/image, IImageFormat format = null)
             : this()
         {
             Debug.Assert(image != null);
@@ -90,7 +88,7 @@ namespace Peachpie.Library.Graphics
 
             //
             _image = image;
-            _format = format;
+            _format = format ?? image.Metadata.DecodedImageFormat;
         }
 
         static void RemoveFramesRange(TImage/*!*/image, int from, int count)

@@ -10,6 +10,7 @@ using Pchp.Library.Resources;
 using System.IO;
 using System.Diagnostics;
 using System.Reflection;
+using System.Buffers;
 
 namespace Pchp.Library
 {
@@ -814,27 +815,36 @@ namespace Pchp.Library
 
                     if (length != 0)
                     {
-                        var bytes = new byte[length];
-
-                        // :"<bytes>";
-                        Consume(Tokens.Colon);
-                        Consume(Tokens.Quote);
-                        if (_stream.Read(bytes, 0, length) != length)
-                        {
-                            ThrowEndOfStream();
-                        }
-                        Consume(Tokens.Quote);
-
-                        //
+                        var bytesBuffer = ArrayPool<byte>.Shared.Rent(length);
+                        
                         try
                         {
-                            // unicode string
-                            return PhpValue.Create(_encoding.GetString(bytes));
+                            var bytes = bytesBuffer.AsSpan(0, length);
+                            
+                            // :"<bytes>";
+                            Consume(Tokens.Colon);
+                            Consume(Tokens.Quote);
+                            if (_stream.Read(bytes) != length)
+                            {
+                                ThrowEndOfStream();
+                            }
+                            Consume(Tokens.Quote);
+
+                            //
+                            try
+                            {
+                                // unicode string
+                                return PhpValue.Create(_encoding.GetString(bytes));
+                            }
+                            catch (DecoderFallbackException)
+                            {
+                                // binary string
+                                return PhpValue.Create(new PhpString(bytes.ToArray()));
+                            }
                         }
-                        catch (DecoderFallbackException)
+                        finally
                         {
-                            // binary string
-                            return PhpValue.Create(new PhpString(bytes));
+                            ArrayPool<byte>.Shared.Return(bytesBuffer);
                         }
                     }
                     else

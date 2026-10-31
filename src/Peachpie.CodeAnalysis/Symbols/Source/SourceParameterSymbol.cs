@@ -11,6 +11,7 @@ using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.Semantics;
 using System.Threading;
 using Devsense.PHP.Ast.DocBlock;
+using Peachpie.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -40,7 +41,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets enumeration of parameter source attributes.
         /// </summary>
-        public IEnumerable<SourceCustomAttribute> SourceAttributes => _attributes.OfType<SourceCustomAttribute>();
+        public IReadOnlyList<SourceCustomAttribute> SourceAttributes => _attributes.OfTypeToReadOnlyList<AttributeData, SourceCustomAttribute>();
 
         /// <summary>
         /// Whether the parameter needs to be copied when passed by value.
@@ -54,14 +55,14 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_lazyDefaultValueField == null && Initializer != null && ExplicitDefaultConstantValue == null)
                 {
-                    TypeSymbol fldtype; // type of the field
+                    TypeSymbol fldtype; // type of the tmp
 
                     if (Initializer is BoundArrayEx arr)
                     {
                         // special case: empty array
                         if (arr.Items.Length == 0 && !_syntax.PassedByRef)
                         {
-                            // OPTIMIZATION: reference the singleton field directly, the called routine is responsible to perform copy if necessary
+                            // OPTIMIZATION: reference the singleton tmp directly, the called routine is responsible to perform copy if necessary
                             // parameter MUST NOT be `PassedByRef` https://github.com/peachpiecompiler/peachpie/issues/591
                             // PhpArray.Empty
                             return DeclaringCompilation.CoreMethods.PhpArray.Empty;
@@ -90,7 +91,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             DeclaringCompilation.CoreTypes.PhpValue);
                     }
 
-                    // determine the field container:
+                    // determine the tmp container:
                     NamedTypeSymbol fieldcontainer = ContainingType; // by default in the containing class/trait/file
                     string fieldname = $"<{ContainingSymbol.Name}.{Name}>_DefaultValue";
 
@@ -101,7 +102,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     //}
 
                     // public static readonly T ..;
-                    var field = new SynthesizedFieldSymbol(
+                    var tmp = new SynthesizedFieldSymbol(
                         fieldcontainer,
                         fldtype,
                         fieldname,
@@ -109,7 +110,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         isStatic: true, isReadOnly: true);
 
                     //
-                    Interlocked.CompareExchange(ref _lazyDefaultValueField, field, null);
+                    Interlocked.CompareExchange(ref _lazyDefaultValueField, tmp, null);
                 }
                 return _lazyDefaultValueField;
             }
@@ -186,7 +187,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 // when providing type hint, only allow null if explicitly specified:
-                if (_syntax.TypeHint == null || _syntax.TypeHint is NullableTypeRef || DefaultsToNull)
+                if (_syntax.TypeHint == null || DefaultsToNull)
                 {
                     return false;
                 }
@@ -197,13 +198,13 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         case PrimitiveTypeRef.PrimitiveType.never:
                         case PrimitiveTypeRef.PrimitiveType.mixed:
+                        case PrimitiveTypeRef.PrimitiveType.@null:
                             // can be null
                             return false;
                     }
                 }
 
-                //
-                return true;
+                return !_syntax.TypeHint.IsNullable();
             }
         }
 
@@ -286,7 +287,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override bool IsParams => _syntax.IsVariadic;
+        public override bool IsParamsArray => _syntax.IsVariadic;
 
         public override int Ordinal => _relindex + _routine.ImplicitParameters.Length;
 

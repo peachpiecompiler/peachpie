@@ -473,13 +473,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (FilterOutDecimalConstantAttribute())
                 {
                     // filter out DecimalConstantAttribute
-                    CustomAttributeHandle ignore1;
-                    CustomAttributeHandle ignore2;
                     var attributes = containingPEModuleSymbol.GetCustomAttributesForToken(
                         _handle,
-                        out ignore1,
+                        out _,
                         AttributeDescription.DecimalConstantAttribute,
-                        out ignore2,
+                        out _,
                         default(AttributeDescription));
 
                     ImmutableInterlocked.InterlockedInitialize(ref _lazyCustomAttributes, attributes);

@@ -16,10 +16,22 @@ using Pchp.Core.Utilities;
 namespace Peachpie.Library.Scripting
 {
     /// <summary>
+    /// Represents a script created by <see cref="ScriptingProvider"/>.
+    /// </summary>
+    [PhpHidden]
+    public interface IScript : Context.IScript
+    {
+        /// <summary>
+        /// Assembly byte content.
+        /// </summary>
+        ImmutableArray<byte> Image { get; }
+    }
+
+    /// <summary>
     /// Script representing a compiled submission.
     /// </summary>
     [DebuggerDisplay("Script ({AssemblyName.Name})")]
-    sealed class Script : Context.IScript
+    sealed class Script : IScript
     {
         #region Fields & Properties
 
@@ -100,6 +112,10 @@ namespace Peachpie.Library.Scripting
                     break;
                 }
             }
+
+//#if DEBUG
+//            File.WriteAllBytes("index.dll", _image.ToArray());
+//#endif
 
             if (_entryPoint == null)
             {

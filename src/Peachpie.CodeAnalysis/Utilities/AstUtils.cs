@@ -13,8 +13,11 @@ using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using System.Runtime.InteropServices;
+using Devsense.PHP.Ast.DocBlock;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using Peachpie.CodeAnalysis.Syntax;
+using static Peachpie.CodeAnalysis.Syntax.PhpTokenProvider;
 
 namespace Pchp.CodeAnalysis
 {
@@ -66,52 +69,14 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
-        /// Fixes <see cref="ItemUse"/> so it propagates correctly through our visitor.
-        /// </summary>
-        /// <remarks><c>IsMemberOf</c> will be set on Array, not ItemUse itself.</remarks>
-        public static void PatchItemUse(ItemUse item)
-        {
-            if (item.IsMemberOf != null)
-            {
-                var varlike = item.Array as VarLikeConstructUse;
-
-                Debug.Assert(varlike != null);
-                Debug.Assert(varlike.IsMemberOf == null);
-
-                // fix this ast weirdness:
-                varlike.IsMemberOf = item.IsMemberOf;
-                item.IsMemberOf = null;
-            }
-        }
-
-        /// <summary>
-        /// Creates new struct with updated <see cref="CompleteToken.TokenText"/>.
-        /// </summary>
-        public static CompleteToken WithTokenText(this CompleteToken t, string text)
-        {
-            return new CompleteToken(t.Token, t.TokenValue, t.TokenPosition, text);
-        }
-
-        /// <summary>
-        /// Creates new struct with updated <see cref="CompleteToken.TokenText"/>.
-        /// </summary>
-        public static CompleteToken WithToken(this CompleteToken t, Tokens token)
-        {
-            return new CompleteToken(token, t.TokenValue, t.TokenPosition, t.TokenText);
-        }
-
-        /// <summary>
         /// Gets value indicating the token is an ignored token - whitespace or comment.
         /// </summary>
-        public static bool IsWhitespace(this CompleteToken t) => t.Token == Tokens.T_WHITESPACE || t.Token == Tokens.T_COMMENT; // not T_DOC_COMMENT
+        internal static bool IsWhitespace(this TokenSnapshot t) => t.Token == Tokens.T_WHITESPACE || t.Token == Tokens.T_COMMENT; // not T_DOC_COMMENT
 
         /// <summary>
         /// Determines whether method has <c>$this</c> variable.
         /// </summary>
-        public static bool HasThisVariable(MethodDecl method)
-        {
-            return method != null && (method.Modifiers & PhpMemberAttributes.Static) == 0;
-        }
+        public static bool HasThisVariable(MethodDecl method) => method != null && (method.Modifiers & PhpMemberAttributes.Static) == 0;
 
         public static Span BodySpanOrInvalid(this AstNode routine)
         {
@@ -325,7 +290,7 @@ namespace Pchp.CodeAnalysis
                 int clauseStart = declStmt.Span.Start;
                 int blockStart = declStmt.Statement.Span.Start;
                 var searchSpan = new Span(clauseStart, blockStart - clauseStart);
-                string searchText = declStmt.ContainingSourceUnit.GetSourceCode(searchSpan);
+                var searchText = ((IPhpSourceUnit)declStmt.ContainingSourceUnit).GetSourceCode(searchSpan);
                 int clauseLength = searchText.LastIndexOf(')') + 1;
 
                 return new Microsoft.CodeAnalysis.Text.TextSpan(clauseStart, clauseLength);
@@ -435,6 +400,27 @@ namespace Pchp.CodeAnalysis
             return root.SelectElements<DirectVarUse>(
                 scope => !(scope is FunctionDecl || scope is ILambdaExpression || scope is TypeDecl || scope is MethodDecl) || scope == root)
                 .Where(dvar => dvar.IsMemberOf == null && !dvar.VarName.IsAutoGlobal && !dvar.VarName.IsThisVariableName);
+        }
+        
+        public static string SummaryOrDefault(this IDocBlock doc, string @default = null) =>
+            doc?.HasSummary(out var summary) == true
+            ? summary
+            : @default
+            ;
+
+        /// <summary>
+        /// Trims trailing <c>,</c> parameter.
+        /// </summary>
+        public static ReadOnlySpan<FormalParam> FormalParamsFixed(this Signature sig)
+        {
+            var fp = sig.FormalParams.AsSpan();
+
+            if (fp.Length > 0 && fp[fp.Length - 1] == null)
+            {
+                fp = fp[..^1];
+            }
+
+            return fp;
         }
     }
 }

@@ -26,3 +26,6 @@ namespace arrays\array_map;
   print_r($b);
   print_r($c);
   print_r($d);
+
+  // https://github.com/peachpiecompiler/peachpie/issues/1164
+  print_r( array_map(null, [1,2,3]) );

@@ -286,8 +286,9 @@ namespace Pchp.Core.Dynamic
 
             /// <summary>
             /// Bind arguments to array of parameters.
+            /// Can return expression with element_type[] or ReadOnlySpan&lt;element_type&gt;
             /// </summary>
-            public abstract Expression BindParams(int fromarg, Type element_type);
+            public abstract Expression BindParamsArray(int fromarg, Type element_type);
 
             /// <summary>
             /// Gets expression representing cost of argument binding operation.
@@ -439,7 +440,7 @@ namespace Pchp.Core.Dynamic
 
             #region ArgsArrayBinder
 
-            internal sealed class ArgsArrayBinder : ArgumentsBinder
+            internal sealed class ArgsSpanBinder : ArgumentsBinder
             {
                 /// <summary>
                 /// Expression representing array of input arguments.
@@ -451,14 +452,16 @@ namespace Pchp.Core.Dynamic
                 /// </summary>
                 ParameterExpression _lazyArgc = null;
 
-                public ArgsArrayBinder(Expression ctx, Expression argsarray)
+                public ArgsSpanBinder(Expression ctx, Expression argsarray)
                     : base(ctx)
                 {
                     if (argsarray == null) throw new ArgumentNullException();
-                    if (!argsarray.Type.IsArray) throw new ArgumentException();
+                    if (argsarray.Type != typeof(ReadOnlySpan<PhpValue>)) throw new ArgumentException();
 
                     _argsarray = argsarray;
                 }
+
+                public Type ElementType => _argsarray.Type.GenericTypeArguments[0];
 
                 public override Expression BindArgsCount()
                 {
@@ -467,7 +470,8 @@ namespace Pchp.Core.Dynamic
                         _lazyArgc = Expression.Variable(typeof(int), "argc");
 
                         // argc = argv.Length;
-                        _lazyInitBlock.Add(Expression.Assign(_lazyArgc, Expression.ArrayLength(_argsarray)));
+                        var length = Expression.Property(_argsarray, Cache.Properties.ReadOnlySpanPhpValue_Length);
+                        _lazyInitBlock.Add(Expression.Assign(_lazyArgc, length));
                     }
 
                     return _lazyArgc;
@@ -484,9 +488,9 @@ namespace Pchp.Core.Dynamic
                     {
                         value = new TmpVarValue();
 
-                        value.TrueInitializer = Expression.ArrayIndex(_argsarray, Expression.Constant(srcarg));
-                        value.FalseInitializer = ConvertExpression.BindDefault(value.TrueInitializer.Type); // ~ default(_argsarray.Type.GetElementType())
-                        value.Expression = Expression.Variable(value.TrueInitializer.Type, "arg_" + srcarg);
+                        value.TrueInitializer = Expression.Call(Cache.Operators.GetItem_ReadOnlySpanPhpValue_Int, _argsarray, Expression.Constant(srcarg));
+                        value.FalseInitializer = ConvertExpression.BindDefault(Cache.Types.PhpValue); // ~ default(_argsarray.Type.GetElementType())
+                        value.Expression = Expression.Variable(Cache.Types.PhpValue, "arg_" + srcarg);
 
                         //
                         _tmpvars[key] = value;
@@ -562,75 +566,24 @@ namespace Pchp.Core.Dynamic
                     return Expression.Assign(element, ConvertExpression.Bind(expression, element.Type, _ctx));
                 }
 
-                public override Expression BindParams(int fromarg, Type element_type)
+                public override Expression BindParamsArray(int fromarg, Type element_type)
                 {
-                    /* 
-                     * length = argc - fromarg;
-                     * IF (length > 0)
-                     *   Array.Copy(values, argv, fromarg)
-                     * ELSE
-                     *   Array.Empty()
-                     */
-
-                    /*
-                     */
-
-                    var var_length = Expression.Variable(typeof(int), "params_length");
-                    var var_array = Expression.Variable(element_type.MakeArrayType(), "params_array");
-
-                    //
-                    Expression expr_emptyarr = BinderHelpers.EmptyArray(element_type);
-                    Expression expr_newarr = Expression.Assign(var_array, Expression.NewArrayBounds(element_type, var_length));  // array = new [length];
-
-                    if (element_type == _argsarray.Type.GetElementType())
+                    var array_element_type = this.ElementType; // PhpValue always
+                    if (array_element_type != element_type)
                     {
-                        if (fromarg == 0)
-                        {
-                            // return argv;
-                            return _argsarray;
-                        }
-                        else
-                        {
-                            // static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-                            var array_copy = typeof(Array).GetMethod("Copy", typeof(Array), typeof(int), typeof(Array), typeof(int), typeof(int)); // TODO: to cache
-
-                            expr_newarr = Expression.Block(
-                                expr_newarr,
-                                Expression.Call(array_copy, _argsarray, Expression.Constant(fromarg), var_array, Cache.Expressions.Create(0), var_length),   // Array.Copy(argv, fromarg, array, 0, length)
-                                var_array
-                                );
-                        }
-                    }
-                    else
-                    {
-                        var expr = Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length));
-
-                        /* newarr = new T[length];
-                         * while (--length >= 0) newarr[length] = convert(argv[fromarg + length]);
-                         * lblend: return newarr;
-                         */
-                        var lblend = Expression.Label("lblend");
-                        expr_newarr = Expression.Block(var_array.Type,
-                            expr_newarr,
-                            Expression.Loop(
-                                Expression.IfThenElse(
-                                    Expression.GreaterThanOrEqual(Expression.PreDecrementAssign(var_length), Cache.Expressions.Create(0)),
-                                    Expression.Assign(
-                                        Expression.ArrayAccess(var_array, var_length),
-                                        ConvertExpression.Bind(expr, element_type, _ctx)),
-                                    Expression.Break(lblend)
-                                    )),
-                            Expression.Label(lblend),
-                            var_array);
+                        throw new NotImplementedException();
                     }
 
-                    return Expression.Block(
-                        var_array.Type,
-                        new ParameterExpression[] { var_length, var_array },
-                        Expression.Assign(var_length, Expression.Subtract(BindArgsCount(), Expression.Constant(fromarg))),  // length = argc - fromarg;
-                        Expression.Condition(
-                            Expression.GreaterThan(var_length, Cache.Expressions.Create(0)), // return (length > 0) ? newarr : emptyarr;
-                            expr_newarr, expr_emptyarr));
+                    if (fromarg == 0)
+                    {
+                        return _argsarray;
+                    }
+
+                    return Expression.Call(
+                        _argsarray,
+                        Cache.Operators.ReadOnlySpanPhpValue_Slice_Int,
+                        Cache.Expressions.Create(fromarg)
+                    );
                 }
 
                 public override Expression CreatePreamble(List<ParameterExpression> variables)
@@ -832,7 +785,7 @@ namespace Pchp.Core.Dynamic
                     return BinderHelpers.BindAssign(arg, expression, _ctx);
                 }
 
-                public override Expression BindParams(int fromarg, Type element_type)
+                public override Expression BindParamsArray(int fromarg, Type element_type)
                 {
                     var count = _args.Length - fromarg;
 
@@ -916,11 +869,9 @@ namespace Pchp.Core.Dynamic
             for (int im = 0; im < nmandatory + noptional; im++)
             {
                 var p = ps[nimplicit + im];
-                if (noptional != 0 && p.Position == ps.Length - 1 && p.IsParamsParameter())
+                if (noptional != 0 && p.Position == ps.Length - 1 && p.IsParamsParameter(out var element_type))
                 {
                     hasparams = true;
-
-                    var element_type = p.ParameterType.GetElementType();
 
                     // for (int o = io + nmandatory; o < argc; o++) result |= CostOf(argv[o], p.ElementType)
                     if (argc_opt.HasValue)
@@ -977,7 +928,7 @@ namespace Pchp.Core.Dynamic
         {
             for (; ; )
             {
-                var result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsArrayBinder(ctx, argsarray), isStaticCallSyntax, lateStaticType);
+                var result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsSpanBinder(ctx, argsarray), isStaticCallSyntax, lateStaticType);
                 if (result != null)
                 {
                     return result;

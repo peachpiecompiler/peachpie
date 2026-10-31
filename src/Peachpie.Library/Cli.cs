@@ -52,7 +52,10 @@ namespace Pchp.Library
             try
             {
                 // Process.GetCurrentProcess().MainWindowTitle ?
+
+#pragma warning disable CA1416 // Validate platform compatibility // We want the runtime exception, we don't want the compile-time warning
                 return Console.Title;
+#pragma warning restore CA1416
             }
             catch (Exception ex)
             {

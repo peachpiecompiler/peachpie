@@ -11,6 +11,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Peachpie.CodeAnalysis\Semantics\AccessMask.cs" Link="Dynamic\AccessMask.cs" />
+    <Compile Update="PhpCallable.ArrayPool.tt.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>PhpCallable.ArrayPool.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +37,13 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>ErrResources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="PhpCallable.ArrayPool.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>PhpCallable.ArrayPool.tt.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 
 </Project>

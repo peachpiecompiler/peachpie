@@ -12,7 +12,12 @@ using Pchp.CodeAnalysis;
 
 namespace Peachpie.CodeAnalysis.Syntax
 {
-    sealed class PhpSourceUnit : SourceUnit
+    interface IPhpSourceUnit
+    {
+        ReadOnlySpan<char> GetSourceCode(Span span);
+    }
+    
+    sealed class PhpSourceUnit : SourceUnit, IPhpSourceUnit
     {
         public SourceText SourceText { get; set; }
 
@@ -27,42 +32,35 @@ namespace Peachpie.CodeAnalysis.Syntax
             // TODO: dispose SourceText ?
         }
 
-        public override string GetSourceCode(Span span)
+        public ReadOnlySpan<char> GetSourceCode(Span span)
         {
-            return SourceText.ToString(span.ToTextSpan());
+            return SourceText.ToString(span.ToTextSpan()).AsSpan();
         }
 
         public void Parse(NodesFactory factory, IErrorSink<Span> errors,
-            IErrorRecovery recovery = null,
             LanguageFeatures features = LanguageFeatures.Basic,
             Lexer.LexicalStates state = Lexer.LexicalStates.INITIAL)
         {
             var parser = new Parser();
 
-            using (var source = new StringReader(SourceText.ToString()))
-            {
-                using (var provider = new AdditionalSyntaxProvider(
+            using (
+                var provider = new AdditionalSyntaxProvider(
                     new PhpTokenProvider(
-                        new Lexer(source, Encoding.UTF8, errors, features, initialState: state),
-                        this),
+                        new Lexer(SourceText.ToString().AsMemory(), Encoding.UTF8, errors, features, initialState: state),
+                        this
+                    ),
                     factory,
                     parser.CreateTypeRef))
-                {
-                    ast = parser.Parse(provider, factory, features, errors, recovery);
-                }
+            {
+                this.Ast = (GlobalCode)parser.Parse(provider, factory, features, errors);
             }
         }
 
-        public override void Parse(INodesFactory<LangElement, Span> factory, IErrorSink<Span> errors, IErrorRecovery recovery = null)
+        public override void Parse(INodesFactory<LangElement, Span> factory, IErrorSink<Span> errors)
         {
-            Parse((NodesFactory)factory, errors, recovery, LanguageFeatures.Basic, Lexer.LexicalStates.INITIAL);
+            Parse((NodesFactory)factory, errors, LanguageFeatures.Basic, Lexer.LexicalStates.INITIAL);
         }
 
-        static ILineBreaks CreateLineBreaks(SourceText source)
-        {
-            return Devsense.PHP.Text.LineBreaks.Create(
-                source.ToString(),
-                source.Lines.Select(line => line.EndIncludingLineBreak).ToList());
-        }
+        static ILineBreaks CreateLineBreaks(SourceText source) => new SourceLineBreaks(source);
     }
 }

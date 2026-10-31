@@ -731,6 +731,15 @@ namespace Peachpie.Library.Network
                     // always enabled
                     break;
 
+                case CURLOPT_CAINFO:
+                    if (value.IsFalse || value.IsNull) // ignored
+                    {
+                        break;
+                    }
+
+                    // not supported
+                    goto default;
+
                 case CURLINFO_HEADER_OUT: ch.StoreRequestHeaders = value.ToBoolean(); break;
                 case CURLOPT_VERBOSE: ch.Verbose = value.ToBoolean(); break;
                 case CURLOPT_STDERR: return (ch.VerboseOutput = TryProcessMethodFromStream(value)) != null || value.IsNull;

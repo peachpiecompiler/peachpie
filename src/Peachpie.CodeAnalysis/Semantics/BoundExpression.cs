@@ -1359,7 +1359,7 @@ namespace Pchp.CodeAnalysis.Semantics
             this.TargetType = targetType ?? throw ExceptionUtilities.ArgumentNull(nameof(targetType));
         }
 
-        internal BoundConversionEx Update(BoundExpression operand, BoundTypeRef targetType)
+        internal virtual BoundConversionEx Update(BoundExpression operand, BoundTypeRef targetType)
         {
             if (operand == this.Operand && targetType == this.TargetType)
             {
@@ -1379,7 +1379,7 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     /// <summary>
-    /// Conversion to <c>IPhpCallable</c> (callable).
+    /// Callable convert syntax.
     /// </summary>
     public partial class BoundCallableConvert : BoundConversionEx
     {
@@ -1391,9 +1391,90 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>In case of an instance method, this is its receiver instance.</summary>
         internal BoundExpression Receiver { get; set; }
 
-        internal BoundCallableConvert(BoundExpression operand, PhpCompilation compilation)
+        /// <summary>In case of a static method, this is its receiver type.</summary>
+        internal IBoundTypeRef StaticReceiver { get; set; }
+
+        /// <summary>
+        /// Bound function name in case it's callable convert.
+        /// </summary>
+        internal BoundRoutineName Name { get; set; }
+
+        internal BoundCallableConvert(BoundExpression receiver, BoundRoutineName name, PhpCompilation compilation)
+            : this(new BoundLiteral(null), compilation)
+        {
+            this.Receiver = receiver;
+            this.Name = name;
+        }
+
+        internal BoundCallableConvert(IBoundTypeRef receiver, BoundRoutineName name, PhpCompilation compilation)
+            : this(new BoundLiteral(null), compilation)
+        {
+            this.StaticReceiver = receiver;
+            this.Name = name;
+        }
+
+        private BoundCallableConvert(BoundExpression operand, PhpCompilation compilation)
             : base(operand, compilation.TypeRefFactory.Create(compilation.CoreTypes.IPhpCallable.Symbol))
         {
+        }
+
+        internal override BoundConversionEx Update(BoundExpression operand, BoundTypeRef targetType)
+        {
+            throw ExceptionUtilities.Unreachable;
+
+            //if (operand == this.Operand && targetType == this.TargetType)
+            //{
+            //    return this;
+            //}
+            //else
+            //{
+            //    return new BoundCallableConvert(operand, targetType).WithContext(this);
+            //}
+        }
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.VisitConversion(this, argument);
+
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitCallableConvert(this);
+    }
+
+    /// <summary>
+    /// Conversion to <c>IPhpCallable</c> (callable).
+    /// </summary>
+    public partial class BoundConvertToCallable : BoundConversionEx
+    {
+        /// <summary>
+        /// Resolved method to be converted to callable.
+        /// </summary>
+        public IMethodSymbol TargetCallable { get; internal set; }
+
+        /// <summary>In case of an instance method, this is its receiver instance.</summary>
+        internal BoundExpression Receiver { get; set; }
+
+        internal BoundConvertToCallable(BoundExpression operand, PhpCompilation compilation)
+            : this(operand, compilation.TypeRefFactory.Create(compilation.CoreTypes.IPhpCallable.Symbol))
+        {
+        }
+
+        private BoundConvertToCallable(BoundExpression operand, BoundTypeRef targetType)
+            : base(operand, targetType)
+        {
+
+        }
+
+        internal override BoundConversionEx Update(BoundExpression operand, BoundTypeRef targetType)
+        {
+            if (operand == this.Operand && targetType == this.TargetType)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundConvertToCallable(operand, targetType)
+                {
+                    TargetCallable = TargetCallable,
+                    Receiver = Receiver,
+                }.WithContext(this);
+            }
         }
     }
 
@@ -1731,7 +1812,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.LocalReference;
 
-        internal bool IsLowerTemp() => this is BoundTemporalVariableRef || (_name.IsDirect && _name.NameValue.Value.StartsWith("<match>'"));
+        internal bool IsLowerTemp() => this is BoundTemporalVariableRef || (_name.IsDirect && _name.NameValue.Value.StartsWith(WellKnownPchpNames.MatchTempVariablePrefix, StringComparison.Ordinal));
 
         /// <summary>
         /// The type of variable before it gets accessed by this expression.

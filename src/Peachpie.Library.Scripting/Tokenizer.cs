@@ -118,7 +118,7 @@ namespace Peachpie.Library.Scripting
             }
 
             var lines = LineBreaks.Create(code);
-            using (var tokenizer = new Lexer(new StringReader(code), Encoding.UTF8))
+            using (var tokenizer = new Lexer(code.AsMemory(), Encoding.UTF8))
             {
                 Tokens t;
                 while ((t = tokenizer.GetNextToken()) != Tokens.EOF)
@@ -367,8 +367,11 @@ namespace Peachpie.Library.Scripting
         ///<summary>insteadof Traits(available since PHP 5.4.0)</summary>
         public const int T_INSTEADOF = (int)Tokens.T_INSTEADOF;
 
-        ///<summary>int) or(integer)  type-casting</summary>
+        ///<summary>(int) or(integer)  type-casting</summary>
         public const int T_INT_CAST = (int)Tokens.T_INT_CAST;
+
+        /// <summary>(void) type-casting.</summary>
+        public const int T_VOID_CAST = (int)Tokens.T_VOID_CAST;
 
         ///<summary>interface Object Interfaces</summary>
         public const int T_INTERFACE = (int)Tokens.T_INTERFACE;
@@ -616,7 +619,7 @@ namespace Peachpie.Library.Scripting
 
             Tokens t;
             var lines = LineBreaks.Create(source);
-            using (var tokenizer = new Lexer(new StringReader(source), Encoding.UTF8))
+            using (var tokenizer = new Lexer(source.AsMemory(), Encoding.UTF8))
             {
                 while ((t = tokenizer.GetNextToken()) != Tokens.EOF)
                 {

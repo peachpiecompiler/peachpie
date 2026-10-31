@@ -1097,8 +1097,19 @@ namespace Pchp.Library.Streams
         {
             try
             {
-                File.Move(fromPath, toPath);
-                return true;
+                if (System.IO.File.Exists(fromPath))
+                {
+                    System.IO.File.Move(fromPath, toPath);
+                }
+                else if (System.IO.Directory.Exists(fromPath))
+                {
+                    System.IO.Directory.Move(fromPath, toPath);
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.file_not_exists, FileSystemUtils.StripPassword(fromPath));
+                    return false;
+                }
             }
             catch (UnauthorizedAccessException)
             {
@@ -1435,15 +1446,17 @@ namespace Pchp.Library.Streams
             if (response == null)
                 return null;
 
-            var array = new PhpArray(1 + response.Headers.Count);
+            var headers = response.Headers;
+            var array = new PhpArray(1 + headers.Count);
 
             // HTTP/x.x
             array.Add(StatusHeader(response));
 
             // other headers
-            for (int i = 0; i < response.Headers.Count; i++)
+            // Name: Value
+            for (int i = 0; i < headers.Count; i++)
             {
-                array.Add(response.Headers[i]);
+                array.Add(string.Concat(headers.GetKey(i), ": ", headers.Get(i)));
             }
 
             //

@@ -139,6 +139,13 @@ namespace Pchp.Library
                     PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
                 }
             }
+            catch (UnauthorizedAccessException)
+            {
+                if (!quiet)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
+                }
+            }
             catch (System.Exception e)
             {
                 if (!quiet)

@@ -1027,7 +1027,11 @@ namespace Pchp.Library
                     _indent++;
 
                     // object members
-                    var flds = (obj is IPhpPrintable printable ? printable.Properties : TypeMembersUtils.EnumerateInstanceFieldsForPrint(obj)).ToList();
+                    var flds = obj is IPhpPrintable printable
+                        ? printable.Properties
+                        : TypeMembersUtils.EnumerateInstanceFieldsForPrint(obj)
+                        ;
+
                     foreach (var fld in flds)
                     {
                         // [name] => value

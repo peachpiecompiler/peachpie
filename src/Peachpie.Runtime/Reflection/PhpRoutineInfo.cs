@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -43,8 +44,13 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Invokes the routine.
         /// </summary>
-        public virtual PhpValue Invoke(Context ctx, object? target, params PhpValue[] arguments) => PhpCallable(ctx, arguments);
+        public virtual PhpValue Invoke(Context ctx, object? target, PhpValue p0) => Invoke(ctx, target, MemoryMarshal.CreateReadOnlySpan(ref p0, 1));
 
+        /// <summary>
+        /// Invokes the routine.
+        /// </summary>
+        public virtual PhpValue Invoke(Context ctx, object? target, params ReadOnlySpan<PhpValue> arguments) => PhpCallable(ctx, arguments);
+        
         //ulong _aliasedParams; // bit field corresponding to parameters that are passed by reference
         //_routineFlags;    // routine requirements, accessibility
 
@@ -98,7 +104,7 @@ namespace Pchp.Core.Reflection
 
         #region IPhpCallable
 
-        PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments) => Invoke(ctx, Target, arguments);
+        PhpValue IPhpCallable.Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments) => Invoke(ctx, Target, arguments);
 
         PhpValue IPhpCallable.ToPhpValue() => PhpValue.Null;
 
@@ -120,13 +126,15 @@ namespace Pchp.Core.Reflection
 
         public override int GetHashCode() => _handle.GetHashCode();
 
-        public override MethodInfo[] Methods => new[] { (MethodInfo)MethodBase.GetMethodFromHandle(_handle) };
+        public override MethodInfo[] Methods => new[] { GetMethodFromHandle(_handle) };
 
         public override PhpTypeInfo? DeclaringType => null;
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? BindDelegate();
 
         PhpCallable BindDelegate() => _lazyDelegate = Dynamic.BinderHelpers.BindToPhpCallable(Methods);
+
+        private static MethodInfo/*!*/GetMethodFromHandle(RuntimeMethodHandle handle) => (MethodInfo)(MethodBase.GetMethodFromHandle(handle) ?? throw new InvalidOperationException());
 
         internal static PhpRoutineInfo Create(string name, RuntimeMethodHandle handle, params RuntimeMethodHandle[] overloads)
         {
@@ -162,10 +170,10 @@ namespace Pchp.Core.Reflection
                     // [Method] + Overloads
 
                     var methods = new MethodInfo[1 + overloads.Length];
-                    methods[0] = (MethodInfo)MethodBase.GetMethodFromHandle(Handle);
+                    methods[0] = GetMethodFromHandle(Handle);
                     for (int i = 0; i < overloads.Length; i++)
                     {
-                        methods[1 + i] = (MethodInfo)MethodBase.GetMethodFromHandle(overloads[i]);
+                        methods[1 + i] = GetMethodFromHandle(overloads[i]);
                     }
 
                     //
@@ -203,7 +211,7 @@ namespace Pchp.Core.Reflection
 
         public override PhpTypeInfo? DeclaringType => null;
 
-        internal override object Target => _delegate.Target;
+        internal override object? Target => _delegate.Target;
 
         public override int GetHashCode() => _delegate.GetHashCode();
 
@@ -225,10 +233,10 @@ namespace Pchp.Core.Reflection
             return _lazyInvokable;
         }
 
-        public override PhpCallable PhpCallable => (ctx, args) => Invoke(ctx, Target, args);
+        public override PhpCallable PhpCallable => (ctx, args) => PhpInvokable(ctx, Target, args);
 
-        public override PhpValue Invoke(Context ctx, object? target, params PhpValue[] arguments) => PhpInvokable(ctx, target, arguments);
-
+        public override PhpValue Invoke(Context ctx, object? target, params ReadOnlySpan<PhpValue> arguments) => PhpInvokable(ctx, target, arguments);
+        
         public DelegateRoutineInfo(string name, Delegate @delegate)
             : base(0, name)
         {
@@ -364,6 +372,6 @@ namespace Pchp.Core.Reflection
             }
         }
 
-        public override PhpValue Invoke(Context ctx, object? target, params PhpValue[] arguments) => PhpInvokable(ctx, target, arguments);
+        public override PhpValue Invoke(Context ctx, object? target, params ReadOnlySpan<PhpValue> arguments) => PhpInvokable(ctx, target, arguments);
     }
 }

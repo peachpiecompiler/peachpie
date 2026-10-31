@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
+    <OutputType>exe</OutputType>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <AssemblyName>Peachpie.CodeAnalysis</AssemblyName>
     <PackageId>Peachpie.CodeAnalysis</PackageId>
@@ -39,7 +40,7 @@
     </Compile>
     <Compile Update="PhpResources.Designer.cs">
       <DesignTime>True</DesignTime>
-      <AutoGen>False</AutoGen>
+      <AutoGen>True</AutoGen>
       <DependentUpon>PhpResources.resx</DependentUpon>
     </Compile>
   </ItemGroup>

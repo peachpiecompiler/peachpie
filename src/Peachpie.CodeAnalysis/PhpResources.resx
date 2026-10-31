@@ -121,70 +121,69 @@
     <value>Join us on Patreon and Discord! https://www.patreon.com/pchpcompiler</value>
   </data>
   <data name="IDS_Help" xml:space="preserve">
-    <value>
-                            PeachPie PHP Compiler Options
+    <value>PeachPie PHP Compiler Options
                             
                     - OUTPUT FILES -
-/out:&lt;file&gt;                 Specify output file name (default: base name of
+--out:{file}                 Specify output file name (default: base name of
                             file with main class or first file)
-/target:exe                 Build a console executable (default) (Short
+--target:exe                 Build a console executable (default) (Short
                             form: /t:exe)
-/target:winexe              Build a Windows executable (Short form:
+--target:winexe              Build a Windows executable (Short form:
                             /t:winexe)
-/target:library             Build a library (Short form: /t:library)
-/target:module              Build a module that can be added to another
+--target:library             Build a library (Short form: /t:library)
+--target:module              Build a module that can be added to another
                             assembly (Short form: /t:module)
-/target:appcontainerexe     Build an Appcontainer executable (Short form:
+--target:appcontainerexe     Build an Appcontainer executable (Short form:
                             /t:appcontainerexe)
-/doc:&lt;file&gt;                 XML Documentation file to generate
+--doc:{file}                 XML Documentation file to generate
 
                      - INPUT FILES -                        
-/reference:&lt;file list&gt;      Reference metadata from the specified assembly
+--reference:{file list}      Reference metadata from the specified assembly
                             files (Short form: /r)
-&lt;file&gt;                      Source file to be compiled
-&lt;wildcards&gt;                 Pattern matching files to be compiled
+{file}                      Source file to be compiled
+{wildcards}                 Pattern matching files to be compiled
 
                     - CODE GENERATION -
-/debug[+|-]                 Emit debugging information
-/debug:{full|pdbonly|portable|embedded}
+--debug[+|-]                 Emit debugging information
+--debug:{full|pdbonly|portable|embedded}
                             Specify debugging type ('full' is default,
                             'portable' is a cross-platform format,
                             'embedded' is a cross-platform format embedded into
                             the target .dll or .exe)
-/optimize[+|-]              Enable optimizations (Short form: /o)
+--optimize[+|-]              Enable optimizations (Short form: /o)
 
                      - ERRORS AND WARNINGS -
-/nowarn:&lt;warn list&gt;         Disable specific warning messages
+--nowarn:{warn list}         Disable specific warning messages
 
                     - LANGUAGE -
-/langversion:&lt;string&gt;       Specify language version such as
+--langversion:{string}       Specify language version such as
                             `default` (latest major version)
                             or specific versions like `5.6.` or `7.0`
-/shortopentag[+|-]          Whether to enable PHP short open tag syntax (&lt;?).
+--shortopentag[+|-]          Whether to enable PHP short open tag syntax (&lt;?).
                             Disabled by default.
 
                     - SECURITY -
-/delaysign[+|-]             Delay-sign the assembly using only the public
+--delaysign[+|-]             Delay-sign the assembly using only the public
                             portion of the strong name key
-/publicsign[+|-]            Public-sign the assembly using only the public
+--publicsign[+|-]            Public-sign the assembly using only the public
                             portion of the strong name key
-/keyfile:&lt;file&gt;             Specify a strong name key file
-/keycontainer:&lt;string&gt;      Specify a strong name key container
+--keyfile:{file}             Specify a strong name key file
+--keycontainer:{string}      Specify a strong name key container
  
                     - MISCELLANEOUS -
-@&lt;file&gt;                     Read response file for more options
-/help                       Display this usage message (Short form: /?)
-/nologo                     Suppress compiler copyright message
-/parallel[+|-]              Concurrent build.
+@{file}                     Read response file for more options
+--help                       Display this usage message (Short form: /?)
+--nologo                     Suppress compiler copyright message
+--parallel[+|-]              Concurrent build.
 
                     - ADVANCED -
-/main:&lt;type&gt;                Specify the script file, class or function
+--main:{type}                Specify the script file, class or function
                             representing the entry point (Short form: /m)
-/pdb:&lt;file&gt;                 Specify debug information file name (default:
+--pdb:{file}                 Specify debug information file name (default:
                             output file name with .pdb extension)
-/modulename:&lt;string&gt;        Specify the name of the source module
-/define:&lt;name&gt;=&lt;value&gt;      Defines compile-time constant. (Short form: /d)
-/version:&lt;value&gt;            Specifies the assembly version string. (Short form: /v)</value>
+--modulename:{string}        Specify the name of the source module
+--define:{name}={value}      Defines compile-time constant. (Short form: /d)
+--version:{value}            Specifies the assembly version string. (Short form: /v)</value>
   </data>
   <data name="IDS_LangVersions" xml:space="preserve">
     <value>Language versions:</value>

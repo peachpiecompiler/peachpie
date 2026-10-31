@@ -605,10 +605,11 @@ namespace Peachpie.Library.Network
                         // pass headers one by one,
                         // in original implementation we should pass them as they are read from socket:
 
-                        ch.ProcessingHeaders.User.Invoke(ctx, new[] {
+                        ch.ProcessingHeaders.User.Invoke(
+                            ctx,
                             PhpValue.FromClass(ch),
                             PhpValue.Create(statusHeaders)
-                        });
+                        );
 
                         for (int i = 0; i < response.Headers.Count; i++)
                         {
@@ -618,18 +619,20 @@ namespace Peachpie.Library.Network
                             if (key == null || key.Length != 0)
                             {
                                 // header
-                                ch.ProcessingHeaders.User.Invoke(ctx, new[] {
+                                ch.ProcessingHeaders.User.Invoke(
+                                    ctx,
                                     PhpValue.FromClr(ch),
-                                    PhpValue.Create(key + ": " + value + HttpHeaders.HeaderSeparator),
-                                });
+                                    PhpValue.Create(key + ": " + value + HttpHeaders.HeaderSeparator)
+                                );
                             }
                         }
 
                         // \r\n
-                        ch.ProcessingHeaders.User.Invoke(ctx, new[] {
+                        ch.ProcessingHeaders.User.Invoke(
+                            ctx,
                             PhpValue.FromClr(ch),
                             PhpValue.Create(HttpHeaders.HeaderSeparator)
-                        });
+                        );
 
                         break;
                     default:
@@ -671,11 +674,11 @@ namespace Peachpie.Library.Network
 
                         while ((bufferread = stream.Read(buffer, 0, buffer.Length)) > 0)
                         {
-                            ch.ProcessingResponse.User.Invoke(ctx, new[]
-                            {
+                            ch.ProcessingResponse.User.Invoke(
+                                ctx,
                                 PhpValue.FromClr(ch),
-                                PhpValue.Create(new PhpString(buffer.AsSpan(0, bufferread).ToArray())), // clone the array and pass to function
-                            });
+                                PhpValue.Create(new PhpString(buffer.AsSpan(0, bufferread).ToArray())) // clone the array and pass to function
+                            );
                         }
                     }
                     break;

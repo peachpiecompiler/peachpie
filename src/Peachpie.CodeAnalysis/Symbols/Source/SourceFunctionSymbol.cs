@@ -112,7 +112,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 // __autoload must have exactly one parameter
-                if (_syntax.Signature.FormalParams.Length != 1)
+                if (_syntax.Signature.FormalParamsFixed().Length != 1)
                 {
                     diagnostic.Add(this, _syntax.Signature.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Function", this.QualifiedName.ToString(), 1);
                 }

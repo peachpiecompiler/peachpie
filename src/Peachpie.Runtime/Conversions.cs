@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
+using Pchp.Core.Dynamic;
 using Pchp.Core.Reflection;
 using Pchp.Core.Text;
 
@@ -442,6 +442,12 @@ namespace Pchp.Core
 
             return obj != null && tinfo != null && tinfo.Type.IsInstanceOfType(obj);
         }
+
+        #endregion
+
+        #region ToSpan
+
+        public static ReadOnlySpan<PhpValue> ToSpan(PhpArray array) => array.GetSpan();
 
         #endregion
 
@@ -1376,6 +1382,36 @@ namespace Pchp.Core
         }
 
         #endregion
+
+        #region UnwrapStruct
+
+        /// <summary>
+        /// Given <typeparamref name="T"/> is a CLR value type (not a scalar PHP type!),
+        /// this method tries to unwrap <paramref name="value"/> to <typeparamref name="T"/>.
+        /// No conversion is performed. The method throws an exception is the value type does not match.
+        /// If <paramref name="value"/> is <c>NULL</c>, the method returns default of <typeparamref name="T"/>.
+        /// </summary>
+        public static T UnwrapStruct<T>(PhpValue value) where T : struct
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Null: return default(T);
+                case PhpTypeCode.Alias: return UnwrapStruct<T>(value.Alias.Value);
+                case PhpTypeCode.Object:
+                    var obj = value.Object;
+
+                    if (obj is StructBox<T> box_t) return box_t.Value;
+                    if (obj is IStructBox box) return (T)box.BoxedValue; // throws
+
+                    return (T)obj; // throws if type does not match
+
+                default:
+                    // throws:
+                    return (T)value.ToClr();
+            }
+        }
+
+        #endregion
     }
 
     #endregion
@@ -1499,7 +1535,7 @@ namespace Pchp.Core
             PhpTypeCode.Null => null,
             _ => throw PhpException.TypeErrorException(string.Format(Resources.ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(value))),
         };
-        
+
         public static object AsResource(PhpValue value) => value.TypeCode switch
         {
             PhpTypeCode.Object => value.Object as PhpResource ?? throw PhpException.TypeErrorException(),

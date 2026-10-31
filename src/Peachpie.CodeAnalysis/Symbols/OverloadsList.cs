@@ -110,6 +110,22 @@ namespace Pchp.CodeAnalysis.Symbols
             // only visible methods:
             RemoveInaccessible(result, scope);
 
+            // remove functions with no specified named parameters:
+            for (int i = result.Count - 1; i >= 0; i--)
+            {
+                foreach (var arg in args)
+                {
+                    if (arg.ParameterName != null && result[i].Parameters.All(p => p.Name != arg.ParameterName))
+                    {
+                        // the named parameter does not exist in the method,
+                        // it's not the matching overload
+                        result.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+
+            //
             if (result.Count == 0)
             {
                 return new InaccessibleMethodSymbol(_methods.AsImmutable());

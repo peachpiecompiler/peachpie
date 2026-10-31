@@ -55,19 +55,19 @@ namespace Pchp.Library.Streams
         /// <summary>
 		/// Create a new context resource from an array of wrapper options.
 		/// </summary>
-		/// <param name="data">A 2-dimensional array of wrapper options</param>
-        public StreamContext(PhpArray data)
-            : this(data, true) { }
+		/// <param name="options">A 2-dimensional array of wrapper options</param>
+        public StreamContext(PhpArray options)
+            : this(options, true) { }
 
         /// <summary>
         /// Create a new context resource from an array of wrapper options.
         /// </summary>
-        /// <param name="data">A 2-dimensional array of wrapper options</param>
+        /// <param name="options">A 2-dimensional array of wrapper options</param>
         /// <param name="registerInCtx">Whether to register this instance in current <see cref="Context"/>. Should be <c>false</c> for static resources.</param>
-        private StreamContext(PhpArray data, bool registerInCtx)
+        private StreamContext(PhpArray options, bool registerInCtx)
             : base(StreamContextTypeName/*, registerInCtx*/)
         {
-            this.Data = data;
+            this.Data = options;
         }
 
         #endregion

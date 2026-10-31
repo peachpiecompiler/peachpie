@@ -1,7 +1,9 @@
 ﻿using Pchp.Core;
 using Pchp.Core.Resources;
+using Pchp.Core.Utilities;
 using Pchp.Library.Resources;
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -533,8 +535,15 @@ namespace Pchp.Library.Standard
         {
             if (count == 1)
             {
-                var result = new List<PhpValue>(1);
-                return RandomSubset(array.Keys, result, count, PhpMath.Generator) ? result[0] : PhpValue.Null;
+                var result = ListPool<PhpValue>.Pool.Get();
+                try
+                {
+                    return RandomSubset(array.Keys, result, count, PhpMath.Generator) ? result[0] : PhpValue.Null;
+                }
+                finally
+                {
+                    ListPool<PhpValue>.Pool.Return(result);
+                }
             }
             else
             {
@@ -873,7 +882,7 @@ namespace Pchp.Library.Standard
         public static PhpValue array_key_last(PhpArray array)
         {
             var enumerator = array.GetFastEnumerator();
-            if (enumerator.MovePrevious())
+            if (enumerator.MoveLast())
             {
                 return PhpValue.Create(enumerator.CurrentKey);
             }
@@ -1162,10 +1171,10 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
-        /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
+        /// <param name="flags">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool sort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool sort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod flags = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1173,7 +1182,7 @@ namespace Pchp.Library.Standard
                 return false;
             }
 
-            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, false));
+            array.Sort(GetComparer(ctx, flags, SortingOrder.Ascending, false));
             array.ReindexAll();
             array.RestartIntrinsicEnumerator();
 
@@ -1185,10 +1194,10 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
-        /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
+        /// <param name="flags">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool asort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool asort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod flags = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1196,7 +1205,7 @@ namespace Pchp.Library.Standard
                 return false;
             }
 
-            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, false));
+            array.Sort(GetComparer(ctx, flags, SortingOrder.Ascending, false));
             array.RestartIntrinsicEnumerator();
 
             return true;
@@ -1207,10 +1216,10 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
-        /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
+        /// <param name="flags">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool ksort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool ksort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod flags = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1218,7 +1227,7 @@ namespace Pchp.Library.Standard
                 return false;
             }
 
-            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, true));
+            array.Sort(GetComparer(ctx, flags, SortingOrder.Ascending, true));
             array.RestartIntrinsicEnumerator();
 
             return true;
@@ -1229,10 +1238,10 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
-        /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
+        /// <param name="flags">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool rsort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool rsort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod flags = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1240,7 +1249,7 @@ namespace Pchp.Library.Standard
                 return false;
             }
 
-            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, false));
+            array.Sort(GetComparer(ctx, flags, SortingOrder.Descending, false));
             array.ReindexAll();
             array.RestartIntrinsicEnumerator();
 
@@ -1253,10 +1262,10 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
-        /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
+        /// <param name="flags">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool arsort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool arsort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod flags = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1264,7 +1273,7 @@ namespace Pchp.Library.Standard
                 return false;
             }
 
-            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, false));
+            array.Sort(GetComparer(ctx, flags, SortingOrder.Descending, false));
             array.RestartIntrinsicEnumerator();
 
             return true;
@@ -1275,10 +1284,10 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
-        /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
+        /// <param name="flags">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool krsort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool krsort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod flags = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1286,7 +1295,7 @@ namespace Pchp.Library.Standard
                 return false;
             }
 
-            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, true));
+            array.Sort(GetComparer(ctx, flags, SortingOrder.Descending, true));
             array.RestartIntrinsicEnumerator();
 
             return true;
@@ -1301,20 +1310,20 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
-        /// <param name="compare">The user callback to be used for comparison of values.</param>
+        /// <param name="callback">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool usort(Context ctx /*, caller*/, [In, Out, PhpRw] PhpArray array, IPhpCallable compare)
+        public static bool usort(Context ctx /*, caller*/, [In, Out, PhpRw] PhpArray array, IPhpCallable callback)
         {
             if (array == null)
             {
                 PhpException.ArgumentNull(nameof(array));
                 return false;
             }
-            if (!PhpVariable.IsValidCallback(compare)) return false;
+            if (!PhpVariable.IsValidCallback(callback)) return false;
 
             // sorts array using callback for comparisons:
-            array.Sort(new ValueComparer(new PhpUserComparer(ctx, compare), false));
+            array.Sort(new ValueComparer(new PhpUserComparer(ctx, callback), false));
 
             array.ReindexAll();
             array.RestartIntrinsicEnumerator();
@@ -1327,20 +1336,20 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
-        /// <param name="compare">The user callback to be used for comparison of values.</param>
+        /// <param name="callback">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool uasort(Context ctx /*, caller*/, [In, Out, PhpRw] PhpArray array, IPhpCallable compare)
+        public static bool uasort(Context ctx /*, caller*/, [In, Out, PhpRw] PhpArray array, IPhpCallable callback)
         {
             if (array == null)
             {
                 PhpException.ArgumentNull(nameof(array));
                 return false;
             }
-            if (!PhpVariable.IsValidCallback(compare)) return false;
+            if (!PhpVariable.IsValidCallback(callback)) return false;
 
             // sorts array using callback for comparisons:
-            array.Sort(new ValueComparer(new PhpUserComparer(ctx, compare), false));
+            array.Sort(new ValueComparer(new PhpUserComparer(ctx, callback), false));
 
             return true;
         }
@@ -1350,19 +1359,19 @@ namespace Pchp.Library.Standard
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
-        /// <param name="compare">The user callback to be used for comparison of values.</param>
+        /// <param name="callback">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool uksort(Context ctx /*, caller*/, [In, Out, PhpRw] PhpArray array, IPhpCallable compare)
+        public static bool uksort(Context ctx /*, caller*/, [In, Out, PhpRw] PhpArray array, IPhpCallable callback)
         {
             if (array == null)
             {
                 PhpException.ArgumentNull(nameof(array));
                 return false;
             }
-            if (!PhpVariable.IsValidCallback(compare)) return false;
+            if (!PhpVariable.IsValidCallback(callback)) return false;
 
-            array.Sort(new KeyComparer(new PhpUserComparer(ctx, compare), false));
+            array.Sort(new KeyComparer(new PhpUserComparer(ctx, callback), false));
 
             return true;
         }
@@ -1535,29 +1544,29 @@ namespace Pchp.Library.Standard
         /// Sort multiple arrays.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="first">The first array to be sorted.</param>
+        /// <param name="array1">The first array to be sorted.</param>
         /// <param name="args">Arrays to be sorted along with flags affecting sort order and 
         /// comparison methods to be used. See PHP manual for more details.</param>
         /// <returns>Whether arrays were sorted successfully.</returns>
         /// <remarks>Reindexes integer keys in the sorted arrays and restarts their intrinsic enumerators.</remarks>
-        /// <exception cref="PhpException"><paramref name="first"/> is a <B>null</B> reference (Warning).</exception>
+        /// <exception cref="PhpException"><paramref name="array1"/> is a <B>null</B> reference (Warning).</exception>
         /// <exception cref="PhpException">Arrays has different lengths (Warning).</exception>
         /// <exception cref="PhpException">Invalid sorting flags (Warning).</exception>
         /// <exception cref="PhpException">Multiple sorting flags applied on single array (Warning).</exception>
-        public static bool array_multisort(Context ctx, [In, Out, PhpRw] PhpArray first, params PhpValue[] args)
+        public static bool array_multisort(Context ctx, [In, Out, PhpRw] PhpArray array1, params PhpValue[] args)
         {
             // some "args" are also [PhpRw] but which ones is compile time unknown
             // but it is not neccessary to mark them since this attribute has no important effect
 
-            if (first == null)
+            if (array1 == null)
             {
-                PhpException.ArgumentNull(nameof(first));
+                PhpException.ArgumentNull(nameof(array1));
                 return false;
             }
 
             IComparer<KeyValuePair<IntStringKey, PhpValue>>[] comparers;
             PhpArray[] arrays;
-            int length = MultiSortResolveArgs(ctx, first, args, null, null);
+            int length = MultiSortResolveArgs(ctx, array1, args, null, null);
 
             if (length == 0)
             {
@@ -1566,16 +1575,16 @@ namespace Pchp.Library.Standard
             if (length == 1)
             {
                 comparers = new IComparer<KeyValuePair<IntStringKey, PhpValue>>[1];
-                MultiSortResolveArgs(ctx, first, args, null, comparers);
-                first.Sort(comparers[0]);
-                first.ReindexIntegers(0);
-                first.RestartIntrinsicEnumerator();
+                MultiSortResolveArgs(ctx, array1, args, null, comparers);
+                array1.Sort(comparers[0]);
+                array1.ReindexIntegers(0);
+                array1.RestartIntrinsicEnumerator();
                 return true;
             }
 
             arrays = new PhpArray[length];
             comparers = new IComparer<KeyValuePair<IntStringKey, PhpValue>>[length];
-            MultiSortResolveArgs(ctx, first, args, arrays, comparers);
+            MultiSortResolveArgs(ctx, array1, args, arrays, comparers);
             PhpHashtable.Sort(arrays, comparers); // + reindex + restart intrinsic
 
             return true;
@@ -3059,32 +3068,31 @@ namespace Pchp.Library.Standard
                 return null;
             }
 
-            var result = new PhpArray(array.Count);
-            var args = new PhpValue[(flag == ArrayFilterFlags.UseBoth) ? 2 : 1];
+            var result = new PhpArray();
 
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
             {
                 var entry = iterator.Current;
+                var filter = default(PhpValue);
 
                 // no deep copying needed because it is done so in callback:
 
                 switch (flag)
                 {
                     case ArrayFilterFlags.UseBoth:
-                        args[0] = entry.Value;
-                        args[1] = PhpValue.Create(entry.Key);
+                        filter = callback.Invoke(ctx, entry.Value, PhpValue.Create(entry.Key));
                         break;
                     case ArrayFilterFlags.UseKey:
-                        args[0] = PhpValue.Create(entry.Key);
+                        filter = callback.Invoke(ctx, entry.Key);
                         break;
                     default:
-                        args[0] = entry.Value;
+                        filter = callback.Invoke(ctx, entry.Value);
                         break;
                 }
 
                 // adds entry to the resulting array if callback returns true:
-                if (callback.Invoke(ctx, args).ToBoolean())
+                if (filter.ToBoolean())
                 {
                     result.Add(entry);
                 }
@@ -3104,7 +3112,7 @@ namespace Pchp.Library.Standard
         /// Default callback for <see cref="Map"/>.
         /// </summary>
         /// <returns>A delegate returning <see cref="PhpArray"/> containing items on the stack (passed as arguments).</returns>
-        private static readonly IPhpCallable _mapIdentity = PhpCallback.Create((ctx, args) =>
+        private static readonly IPhpCallable s_mapIdentity = PhpCallback.Create((ctx, args) =>
         {
             var result = new PhpArray(args.Length);
 
@@ -3124,7 +3132,10 @@ namespace Pchp.Library.Standard
         /// A callback to be called on tuples. The number of arguments should be the same as
         /// the number of arrays specified by <pramref name="arrays"/>.
         /// Arguments passed by reference modifies elements of <pramref name="arrays"/>.
-        /// A <B>null</B> means default callback which makes integer indexed arrays from the tuples is used. 
+        /// 
+        /// <c>null</c> can be passed as a value to callback to perform a zip operation on multiple arrays and return an array
+        /// whose elements are each an array holding the elements of the input arrays of the same index.
+        /// If only one array is provided, array_map() will return the input array.
         /// </param>
         /// <param name="arrays">Arrays where to load tuples from. </param>
         /// <returns>An array of return values of the callback
@@ -3160,92 +3171,110 @@ namespace Pchp.Library.Standard
             // if callback has not been specified uses the default one:
             if (map == null)
             {
-                map = _mapIdentity;
+                // If only one array is provided, array_map() will return the input array.
+                if (arrays.Length == 1)
+                {
+                    return arrays[0].DeepCopy();
+                }
+
+                //
+                map = s_mapIdentity;
             }
 
             int count = arrays.Length;
             bool preserve_keys = count == 1;
-            var args = new PhpValue[count];
-            var iterators = new OrderedDictionary.FastEnumerator[count];
             PhpArray result;
 
-            // initializes iterators and args array, computes length of the longest array:
-            int max_count = 0;
-            for (int i = 0; i < arrays.Length; i++)
+            var argsbuffer = ArrayPool<PhpValue>.Shared.Rent(count);
+            var args = argsbuffer.AsSpan(0, count);
+            var iterators = ArrayPool<OrderedDictionary.FastEnumerator>.Shared.Rent(count);
+
+            try
             {
-                var array = arrays[i];
-
-                if (array == null)
-                {
-                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 2).ToString());// +2 (first arg is callback) 
-                    return null;
-                }
-
-                iterators[i] = array.GetFastEnumerator();
-                if (array.Count > max_count) max_count = array.Count;
-            }
-
-            // keys are preserved in a case of a single array and re-indexed otherwise:
-            result = new PhpArray(arrays[0].Count);
-
-            for (; ; )
-            {
-                bool hasvalid = false;
-
-                // fills args[] with items from arrays:
+                // initializes iterators and args array, computes length of the longest array:
+                int max_count = 0;
                 for (int i = 0; i < arrays.Length; i++)
                 {
-                    if (!iterators[i].IsDefault)
-                    {
-                        if (iterators[i].MoveNext())
-                        {
-                            hasvalid = true;
+                    var array = arrays[i];
 
-                            // note: deep copy is not necessary since a function copies its arguments if needed:
-                            args[i] = iterators[i].CurrentValue;
-                            // TODO: throws if the CurrentValue is an alias
-                        }
-                        else
+                    if (array == null)
+                    {
+                        PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 2).ToString());// +2 (first arg is callback) 
+                        return null;
+                    }
+
+                    iterators[i] = array.GetFastEnumerator();
+                    if (array.Count > max_count) max_count = array.Count;
+                }
+
+                // keys are preserved in a case of a single array and re-indexed otherwise:
+                result = new PhpArray(arrays[0].Count);
+
+                for (; ; )
+                {
+                    bool hasvalid = false;
+
+                    // fills args[] with items from arrays:
+                    for (int i = 0; i < arrays.Length; i++)
+                    {
+                        if (!iterators[i].IsDefault)
                         {
-                            args[i] = PhpValue.Null;
-                            iterators[i] = default;   // IsDefault, !IsValid
+                            if (iterators[i].MoveNext())
+                            {
+                                hasvalid = true;
+
+                                // note: deep copy is not necessary since a function copies its arguments if needed:
+                                args[i] = iterators[i].CurrentValue;
+                                // TODO: throws if the CurrentValue is an alias
+                            }
+                            else
+                            {
+                                args[i] = PhpValue.Null;
+                                iterators[i] = default;   // IsDefault, !IsValid
+                            }
+                        }
+                    }
+
+                    if (!hasvalid) break;
+
+                    // invokes callback:
+                    var return_value = map.Invoke(ctx, args);
+
+                    // return value is not deeply copied:
+                    if (preserve_keys)
+                    {
+                        result.Add(iterators[0].CurrentKey, return_value);
+                    }
+                    else
+                    {
+                        result.Add(return_value);
+                    }
+
+                    // loads new values (callback may modify some by ref arguments):
+                    for (int i = 0; i < arrays.Length; i++)
+                    {
+                        if (iterators[i].IsValid)
+                        {
+                            var item = iterators[i].CurrentValue;
+                            if (item.IsAlias)
+                            {
+                                item.Alias.Value = args[i].GetValue();
+                            }
+                            else
+                            {
+                                iterators[i].CurrentValue = args[i].GetValue();
+                            }
                         }
                     }
                 }
-
-                if (!hasvalid) break;
-
-                // invokes callback:
-                var return_value = map.Invoke(ctx, args);
-
-                // return value is not deeply copied:
-                if (preserve_keys)
-                {
-                    result.Add(iterators[0].CurrentKey, return_value);
-                }
-                else
-                {
-                    result.Add(return_value);
-                }
-
-                // loads new values (callback may modify some by ref arguments):
-                for (int i = 0; i < arrays.Length; i++)
-                {
-                    if (iterators[i].IsValid)
-                    {
-                        var item = iterators[i].CurrentValue;
-                        if (item.IsAlias)
-                        {
-                            item.Alias.Value = args[i].GetValue();
-                        }
-                        else
-                        {
-                            iterators[i].CurrentValue = args[i].GetValue();
-                        }
-                    }
-                }
+            }
+            finally
+            {
+                ArrayPool<PhpValue>.Shared.Return(argsbuffer);
+                ArrayPool<OrderedDictionary.FastEnumerator>.Shared.Return(iterators);
             }
 
+            //
             return result;
         }
 

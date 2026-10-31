@@ -4,7 +4,8 @@
     <WarningLevel>4</WarningLevel>
 
     <!-- PeachpieToolFullPath pointing to the task dll -->
-    <PeachpieToolFullPath Condition=" '$(PeachpieToolFullPath)'=='' ">$(MSBuildThisFileDirectory)../tools/Peachpie.NET.Sdk.dll</PeachpieToolFullPath>
+    <PeachpieToolFullPath Condition=" '$(PeachpieToolFullPath)'=='' ">$(MSBuildThisFileDirectory)../tools/task/Peachpie.NET.Sdk.dll</PeachpieToolFullPath>
+    <PeachpieCompilerFullPath Condition=" '$(PeachpieCompilerFullPath)'=='' ">$(MSBuildThisFileDirectory)../tools/compiler/Peachpie.CodeAnalysis.exe</PeachpieCompilerFullPath >
     
     <!-- project guid used by dotnet sln add -->
     <!--TODO DefaultProjectTypeGuid Condition=" '$(DefaultProjectTypeGuid)' == '' ">{F2A71F9B-5D33-465A-A702-920D77279786}</DefaultProjectTypeGuid -->

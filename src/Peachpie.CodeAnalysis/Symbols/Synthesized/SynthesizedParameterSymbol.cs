@@ -19,7 +19,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private readonly MethodSymbol _container;
         private readonly TypeSymbol _type;
         private readonly string _name;
-        private readonly bool _isParams;
+        private readonly bool _isParamsArray;
         private readonly ImmutableArray<CustomModifier> _customModifiers;
         private readonly ushort _countOfCustomModifiersPrecedingByRef;
         private readonly RefKind _refKind;
@@ -53,7 +53,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _ordinal = ordinal;
             _refKind = refKind;
             _name = name;
-            _isParams = isParams;
+            _isParamsArray = isParams;
             _customModifiers = customModifiers.NullToEmpty();
             _countOfCustomModifiersPrecedingByRef = countOfCustomModifiersPrecedingByRef;
             _explicitDefaultConstantValue = explicitDefaultConstantValue;
@@ -174,7 +174,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override int Ordinal => _ordinal;
         internal void UpdateOrdinal(int newordinal) { _ordinal = newordinal; }
 
-        public override bool IsParams => _isParams;
+        public override bool IsParamsArray => _isParamsArray;
 
         //internal override bool IsMetadataOptional
         //{

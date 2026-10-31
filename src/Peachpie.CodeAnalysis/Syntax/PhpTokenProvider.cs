@@ -18,16 +18,49 @@ namespace Peachpie.CodeAnalysis.Syntax
     /// </summary>
     sealed class PhpTokenProvider : ITokenProvider<TValue, TSpan>, IDisposable
     {
+        #region TokenSnapshot
+
+        public readonly struct TokenSnapshot // <ValueType, PositionType>
+        {
+            public readonly Tokens Token;
+
+            public readonly TSpan TokenPosition;
+
+            public readonly ReadOnlyMemory<char> TokenSource;
+
+            public readonly TValue TokenValue;
+
+            public TokenSnapshot(Tokens token, ITokenProvider<TValue, TSpan> lexer)
+                : this(token, lexer.TokenPosition, lexer.TokenSource, lexer.TokenValue)
+            {
+            }
+
+            public TokenSnapshot(Tokens token, TSpan position, ReadOnlyMemory<char> source, TValue value)
+            {
+                Token = token;
+                TokenPosition = position;
+                TokenSource = source;
+                TokenValue = value;
+            }
+
+            public TokenSnapshot WithToken(Tokens token) => new TokenSnapshot(token, TokenPosition, TokenSource, TokenValue);
+        }
+
+        #endregion
+        
         readonly ITokenProvider<TValue, TSpan> _provider;
+
         readonly PhpSourceUnit _sourceunit;
 
         StringTable _strings;
+
         IDocBlock _docblock;
 
         /// <summary>
         /// Buffered tokens.
         /// </summary>
-        readonly List<CompleteToken> _buffer = new List<CompleteToken>();
+        readonly List<TokenSnapshot> _buffer = new List<TokenSnapshot>();
+
         int _bufferidx = 0;
 
         public PhpTokenProvider(ITokenProvider<TValue, TSpan> provider, PhpSourceUnit sourceunit)
@@ -41,22 +74,9 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public Tokens Token => (_bufferidx < _buffer.Count) ? _buffer[_bufferidx].Token : default;
 
-        public TValue TokenValue
-        {
-            get => (_bufferidx < _buffer.Count) ? _buffer[_bufferidx].TokenValue : _provider.TokenValue;
-            set
-            {
-                if (_bufferidx < _buffer.Count)
-                {
-                    var previous = _buffer[_bufferidx];
-                    _buffer[_bufferidx] = new CompleteToken(previous.Token, value, previous.TokenPosition, previous.TokenText);
-                }
-                else
-                {
-                    _provider.TokenValue = value;
-                }
-            }
-        }
+        public TValue TokenValue => (_bufferidx < _buffer.Count) ? _buffer[_bufferidx].TokenValue : _provider.TokenValue;
+
+        public ReadOnlyMemory<char> TokenSource => (_bufferidx < _buffer.Count) ? _buffer[_bufferidx].TokenSource : _provider.TokenSource;
 
         public TSpan TokenPosition => (_bufferidx < _buffer.Count) ? _buffer[_bufferidx].TokenPosition : _provider.TokenPosition;
 
@@ -66,13 +86,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             {
                 if (_bufferidx < _buffer.Count)
                 {
-                    var tinfo = _buffer[_bufferidx];
-                    if (tinfo.TokenText == null)
-                    {
-                        _buffer[_bufferidx] = tinfo = tinfo.WithTokenText(_strings.Add(_sourceunit.GetSourceCode(TokenPosition)));
-                    }
-
-                    return tinfo.TokenText;
+                    return _buffer[_bufferidx].TokenSource.ToString();
                 }
                 else
                 {
@@ -81,7 +95,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             }
         }
 
-        public ReadOnlySpan<char> TokenTextSpan => TokenText.AsSpan();
+        public ReadOnlySpan<char> TokenTextSpan => TokenSource.Span;
 
         public IDocBlock DocComment
         {
@@ -123,7 +137,7 @@ namespace Peachpie.CodeAnalysis.Syntax
                 t = (Tokens)_provider.GetNextToken();
 
                 // add to buffer
-                _buffer.Add(new CompleteToken(t, _provider.TokenValue, _provider.TokenPosition, null));
+                _buffer.Add(new TokenSnapshot(t, _provider));
 
             } while (t != Tokens.END && _buffer.Count < count);
         }
@@ -143,7 +157,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             (_provider as IDisposable)?.Dispose();
         }
 
-        public void UpdateToken(CompleteToken t)
+        public void UpdateToken(TokenSnapshot t)
         {
             _buffer[_bufferidx] = t;
         }
@@ -151,7 +165,7 @@ namespace Peachpie.CodeAnalysis.Syntax
         /// <summary>
         /// Gets token information.
         /// </summary>
-        public CompleteToken Lookup(int index)
+        public TokenSnapshot Lookup(int index)
         {
             if (index < 0) throw new ArgumentOutOfRangeException();
 
@@ -183,16 +197,6 @@ namespace Peachpie.CodeAnalysis.Syntax
                 var idx = start + i;
                 _buffer[idx] = _buffer[idx].WithToken(Tokens.T_WHITESPACE);
             }
-        }
-
-        public CompleteToken WithTokenText(CompleteToken token)
-        {
-            if (token.TokenText == null)
-            {
-                token = token.WithTokenText(_strings.Add(_sourceunit.GetSourceCode(token.TokenPosition)));
-            }
-
-            return token;
         }
     }
 }

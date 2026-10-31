@@ -102,10 +102,9 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return underlyingParameter.Ordinal; }
         }
 
-        public override bool IsParams
-        {
-            get { return underlyingParameter.IsParams; }
-        }
+        public override bool IsParamsArray => underlyingParameter.IsParamsArray;
+
+        public override bool IsParamsCollection => underlyingParameter.IsParamsCollection;
 
         //internal override bool IsMetadataOptional
         //{

@@ -150,13 +150,30 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     {
                         // method_exists(FALSE, ...) -> FALSE
                         var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
-                        if (value.HasValue && value.TryConvertToBool(out var bvalue) && !bvalue)
+                        if (value.TryConvertToBool(out var bvalue) && !bvalue)
                         {
                             return new BoundLiteral(false.AsObject()).WithContext(x);
                         }
                     }
                     return null;
                 } },
+                //{ NameUtils.SpecialNames.interface_exists, x =>
+                //{
+                //    // interface_exists(class_name [, autoload]) -> TRUE
+                //    if (x.ArgumentsInSourceOrder.Length >= 1)
+                //    {
+                //        var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
+                //        if (value.TryConvertToString(out var classname))
+                //        {
+                //            var symbol = DeclaringCompilation.GetTypeByMetadataName( QualifiedName.Parse(classname, true).ClrName() );
+                //            if (symbol != null && symbol.TypeKind == TypeKind.Interface)
+                //            {
+                //                return new BoundLiteral(true.AsObject()).WithContext(x);
+                //            }
+                //        }
+                //    }
+                //    return null;
+                //} },
                 { NameUtils.SpecialNames.ini_get, x =>
                 {
                     // ini_get( {svalue} ) : string|FALSE
@@ -416,52 +433,55 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override object VisitBinaryExpression(BoundBinaryEx x)
         {
-            if (x.Operation == Ast.Operations.And ||
-                x.Operation == Ast.Operations.Or)
+            switch (x.Operation)
             {
                 // AND, OR:
-                if (x.Left.ConstantValue.TryConvertToBool(out var bleft))
-                {
-                    if (x.Operation == Ast.Operations.And)
+                case Ast.Operations.And:
+                case Ast.Operations.Or:
+                    if (x.Left.ConstantValue.TryConvertToBool(out var bleft))
                     {
-                        TransformationCount++;
-                        // TRUE && Right => Right
-                        // FALSE && Right => FALSE
-                        return bleft ? x.Right : x.Left;
+                        if (x.Operation == Ast.Operations.And)
+                        {
+                            TransformationCount++;
+                            // TRUE && Right => Right
+                            // FALSE && Right => FALSE
+                            return bleft ? x.Right : x.Left;
+                        }
+                        else if (x.Operation == Ast.Operations.Or)
+                        {
+                            TransformationCount++;
+                            // TRUE || Right => TRUE
+                            // FALSE || Right => Right
+                            return bleft ? x.Left : x.Right;
+                        }
                     }
-                    else if (x.Operation == Ast.Operations.Or)
-                    {
-                        TransformationCount++;
-                        // TRUE || Right => TRUE
-                        // FALSE || Right => Right
-                        return bleft ? x.Left : x.Right;
-                    }
-                }
 
-                if (x.Right.ConstantValue.TryConvertToBool(out var bright))
-                {
-                    if (x.Operation == Ast.Operations.And && bright == true)
+                    if (x.Right.ConstantValue.TryConvertToBool(out var bright))
                     {
-                        TransformationCount++;
-                        return x.Left; // Left && TRUE => Left
+                        if (x.Operation == Ast.Operations.And && bright == true)
+                        {
+                            TransformationCount++;
+                            return x.Left; // Left && TRUE => Left
+                        }
+                        else if (x.Operation == Ast.Operations.Or && bright == false)
+                        {
+                            TransformationCount++;
+                            // Left || FALSE => Left
+                            return x.Left;
+                        }
                     }
-                    else if (x.Operation == Ast.Operations.Or && bright == false)
+                    break;
+
+                // *
+                case Ast.Operations.Mul:
+                    if ((x.Left.ConstantValue.TryConvertToLong(out long leftCons) && leftCons == -1)
+                        || (x.Right.ConstantValue.TryConvertToLong(out long rightCons) && rightCons == -1))
                     {
+                        // X * -1, -1 * X -> -X
                         TransformationCount++;
-                        // Left || FALSE => Left
-                        return x.Left;
+                        return new BoundUnaryEx(leftCons == -1 ? x.Right : x.Left, Ast.Operations.Minus).WithAccess(x.Access);
                     }
-                }
-            }
-            else if (x.Operation == Ast.Operations.Mul)
-            {
-                if ((x.Left.ConstantValue.TryConvertToLong(out long leftCons) && leftCons == -1)
-                    || (x.Right.ConstantValue.TryConvertToLong(out long rightCons) && rightCons == -1))
-                {
-                    // X * -1, -1 * X -> -X
-                    TransformationCount++;
-                    return new BoundUnaryEx(leftCons == -1 ? x.Right : x.Left, Ast.Operations.Minus).WithAccess(x.Access);
-                }
+                    break;
             }
 
             //
@@ -622,7 +642,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             int i;
 
             // flattern nested concats:
-            for (i = 0; i < newargs.Length; )
+            for (i = 0; i < newargs.Length;)
             {
                 // flattern concat:
                 if (newargs[i].Value is BoundConcatEx concat)
@@ -718,7 +738,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 {
                     TransformationCount++;
                     x.Access = x.Access.WithRead(DeclaringCompilation.CoreTypes.String);    // read the literal as string, do not rewrite it to BoundCallableConvert again
-                    return new BoundCallableConvert(x, DeclaringCompilation) { TargetCallable = symbol }.WithContext(x);
+                    return new BoundConvertToCallable(x, DeclaringCompilation) { TargetCallable = symbol }.WithContext(x);
                 }
             }
 
@@ -796,13 +816,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
             }
 
-            BoundCallableConvert Transform(BoundArrayEx origArray, IMethodSymbol targetCallable, BoundExpression receiver = null)
+            BoundConvertToCallable Transform(BoundArrayEx origArray, IMethodSymbol targetCallable, BoundExpression receiver = null)
             {
                 // read the literal as array, do not rewrite it to BoundCallableConvert again
                 origArray.Access = origArray.Access.WithRead(DeclaringCompilation.CoreTypes.PhpArray);
 
                 TransformationCount++;
-                return new BoundCallableConvert(origArray, DeclaringCompilation)
+                return new BoundConvertToCallable(origArray, DeclaringCompilation)
                 {
                     TargetCallable = targetCallable,
                     Receiver = receiver

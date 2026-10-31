@@ -100,7 +100,7 @@ namespace Pchp.Core
 
         #region IPhpCallable
 
-        PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments)
+        PhpValue IPhpCallable.Invoke(Context ctx, params ReadOnlySpan<PhpValue> arguments)
         {
             //TODO: check caller, invoke EventInfo.RaiseMethod?.Invoke(Target, arguments)
             throw new NotSupportedException();

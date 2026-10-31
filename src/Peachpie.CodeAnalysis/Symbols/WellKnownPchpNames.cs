@@ -50,5 +50,15 @@ namespace Pchp.CodeAnalysis.Symbols
         /// so PHP <c>__FUNCTION__</c> constant and eventual reflection is compatible with regular PHP.
         /// </summary>
         public const string LambdaMethodName = "anonymous@function";
+
+        /// <summary>
+        /// Prefix for temporary variable name used to store <c>match</c> control value.
+        /// </summary>
+        public const string MatchTempVariablePrefix = "<match>'";
+
+        /// <summary>
+        /// Prefix for temporary variable name.
+        /// </summary>
+        public const string TempVariablePrefix = "<sm>'";
     }
 }

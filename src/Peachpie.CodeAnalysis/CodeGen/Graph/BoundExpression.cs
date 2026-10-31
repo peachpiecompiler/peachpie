@@ -13,7 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
-using System.Threading.Tasks;
+using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -184,6 +184,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.Spaceship:
                     returned_type = EmitSpaceship(cg);
+                    break;
+
+                case Operations.Pipe:
+                    returned_type = EmitPipeCall(cg);
                     break;
 
                 default:
@@ -2084,6 +2088,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
             }
         }
+
+        private TypeSymbol EmitPipeCall(CodeGenerator cg)
+        {
+            // Template: ((IPhpCallable)RValue).invoke( ctx, LValue )
+
+            cg.EmitConvert(this.Right, cg.CoreTypes.IPhpCallable); // Left is already a BoundConvertToCallable
+            cg.EmitLoadContext();
+            cg.EmitConvertToPhpValue(cg.Emit(this.Left), this.Right.TypeRefMask);
+
+            return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpCallable.Invoke_Context_PhpValue);
+        }
     }
 
     partial class BoundUnaryEx
@@ -2353,25 +2368,99 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            var target = cg.CoreTypes.IPhpCallable;
+
+            // Context
+            cg.EmitLoadContext();
+
+            // IPhpCallable
+            if (TargetCallable is MethodSymbol m && m.IsValidMethod())
+            {
+                cg.EmitConvert(Receiver, cg.CoreTypes.Object);
+                m.EmitLoadRoutineInfo(cg);
+
+                // Operators.AsCallable((object)Receiver, methodRoutineInfo)
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.AsCallable_Object_RoutineInfo)
+                    .Expect(target);
+            }
+            else if (Receiver != null)
+            {
+                // Receiver -> Name(...)
+                throw new NotImplementedException();
+            }
+            else if (StaticReceiver != null)
+            {
+                // StaticReceiver :: Name(...)
+                throw new NotImplementedException();
+            }
+            else
+            {
+                // Name(...)
+                if (this.Name.IsDirect)
+                {
+                    // TODO: PERF: use existing IPhpRoutine singleton
+                    cg.Builder.EmitStringConstant(this.Name.NameValue.ToString());
+                }
+                else
+                {
+                    cg.EmitConvertToString(cg.Emit(this.Name.NameExpression), this.Name.NameExpression.TypeRefMask);
+                }
+
+                // -> IPhpCallable
+                cg.EmitConvert(cg.CoreTypes.String, FlowAnalysis.TypeRefMask.AnyType, target);
+            }
+
+            // $this
+            cg.Builder.EmitNullConstant();
+
+            // scope : RuntimeTypeHandle
+            cg.EmitCallerTypeHandle();
+
+            // statictype : PhpTypeInfo
+            if (StaticReceiver != null)
+            {
+                StaticReceiver.EmitLoadTypeInfo(cg, true);
+            }
+            else
+            {
+                cg.Builder.EmitNullConstant();
+            }
+
+            // parameter
+            cg.Emit_PhpArray_Empty();
+
+            // static
+            cg.Emit_PhpArray_Empty();
+
+            // BuildClosure( Context, IPhpCallable, null, default, PhpTypeInfo, [], []) : Closure
+            return cg.EmitCall(
+                ILOpCode.Call,
+                cg.CoreMethods.Operators.BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray
+            );
+        }
+    }
+
+    partial class BoundConvertToCallable
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
             var m = TargetCallable as MethodSymbol;
 
             if ((m != null && m.IsValidMethod()) ||
                 (m is AmbiguousMethodSymbol a && a.IsOverloadable && a.Ambiguities.Length != 0))
             {
-                if (m.IsStatic)
+                // Operators.AsCallable((object)Receiver, methodRoutineInfo) : IPhpCallable
+                if (Receiver == null)
                 {
-                    return m.EmitLoadRoutineInfo(cg);
+                    cg.Builder.EmitNullConstant();
                 }
                 else
                 {
-                    Debug.Assert(Receiver != null);
-
-                    // PhpCallback.Create((object)Receiver, methodRoutineInfo)
                     cg.EmitConvert(Receiver, cg.CoreTypes.Object);
-                    m.EmitLoadRoutineInfo(cg);
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BindTargetToMethod_Object_RoutineInfo)
-                        .Expect(cg.CoreTypes.IPhpCallable);
                 }
+                m.EmitLoadRoutineInfo(cg);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.AsCallable_Object_RoutineInfo)
+                    .Expect(cg.CoreTypes.IPhpCallable);
             }
 
             // generic conversion to IPhpCallable:
@@ -2971,17 +3060,19 @@ namespace Pchp.CodeAnalysis.Semantics
                 Debug.Assert(_name.NameExpression != null);
 
                 // better to use PhpCallback.Invoke instead of call sites
-
                 // Template: NameExpression.AsCallback().Invoke(Context, PhpValue[])
+
+                // TODO: Replace with call to .InvokeCore(Context, ReadOnlySpan<PhpValue>) for small number of arguments
 
                 cg.EmitConvert(_name.NameExpression, cg.CoreTypes.IPhpCallable);    // (IPhpCallable)Name
                 cg.EmitLoadContext();       // Context
                 cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask)); // PhpValue[]
 
                 return cg.EmitMethodAccess(
-                    stack: cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.IPhpCallable.Symbol.LookupMember<MethodSymbol>("Invoke")),
+                    stack: cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpCallable.Invoke_Context_PhpValueArray),
                     method: null,
-                    access: this.Access);
+                    access: this.Access
+                );
             }
         }
 
@@ -3096,14 +3187,17 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (((BoundTypeRef)_typeref).ResolvedType.IsValidType())
                 {
-                    // ensure type is delcared
+                    // ensure type is declared
                     cg.EmitExpectTypeDeclared(_typeref.Type);
 
-                    // context.Create<T>(caller, params)
+                    // context.Create<T>(caller, params PhpValue[])
                     var create_t = cg.CoreTypes.Context.Symbol.GetMembers("Create")
                         .OfType<MethodSymbol>()
-                        .Where(s => s.Arity == 1 && s.ParameterCount == 2 &&
+                        .Where(s =>
+                            s.Arity == 1 &&
+                            s.ParameterCount == 2 &&
                             s.Parameters[1].IsParams &&
+                            s.Parameters[1].Type.Is_PhpValueArray() &&
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single()
                         .Construct(_typeref.Type);
@@ -3116,12 +3210,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
-                    // ctx.Create(caller, PhpTypeInfo, params)
+                    // ctx.Create(caller, PhpTypeInfo, params PhpValue[])
                     var create = cg.CoreTypes.Context.Symbol.GetMembers("Create")
                         .OfType<MethodSymbol>()
-                        .Where(s => s.Arity == 0 && s.ParameterCount == 3 &&
+                        .Where(s =>
+                            s.Arity == 0 &&
+                            s.ParameterCount == 3 &&
                             s.Parameters[1].Type == cg.CoreTypes.PhpTypeInfo &&
-                            s.Parameters[2].IsParams && ((ArrayTypeSymbol)s.Parameters[2].Type).ElementType == cg.CoreTypes.PhpValue &&
+                            s.Parameters[2].IsParams && s.Parameters[2].Type.Is_PhpValueArray() &&
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single();
 
@@ -3376,18 +3472,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
             cg.EmitLoadContext();           // Context
             idxfld.EmitLoad(cg);            // routine
-            EmitThis(cg);                   // $this
+            cg.EmitPhpThisOrNull();         // $this
             cg.EmitCallerTypeHandle();      // scope
             EmitStaticType(cg);             // statictype : PhpTypeInfo
-            EmitParametersArray(cg);        // "parameters"
+            EmitCachedParametersArray(cg, ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParamsFixed());        // "parameters"
             EmitUseArray(cg);               // "static"
 
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray);
-        }
-
-        void EmitThis(CodeGenerator cg)
-        {
-            cg.EmitPhpThisOrNull();
         }
 
         void EmitStaticType(CodeGenerator cg)
@@ -3439,36 +3530,74 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        void EmitParametersArray(CodeGenerator cg)
+        void EmitNewParametersArray(CodeGenerator cg, ReadOnlySpan<FormalParam> ps)
         {
-            var ps = ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParams;
-            if (ps != null && ps.Length != 0)
+            // new PhpArray(<count>){ ... }
+            cg.Builder.EmitIntConstant(ps.Length);
+            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
+
+            foreach (var p in ps)
             {
-                // TODO: cache singleton
+                var keyname = "$" + p.Name.Name.Value;
+                if (p.PassedByRef) keyname = "&" + keyname;
+                var value = (p.InitValue != null) ? "<optional>" : "<required>";
 
-                // new PhpArray(<count>){ ... }
-                cg.Builder.EmitIntConstant(ps.Length);
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
-
-                foreach (var p in ps)
-                {
-                    var keyname = "$" + p.Name.Name.Value;
-                    if (p.PassedByRef) keyname = "&" + keyname;
-                    var value = (p.InitValue != null) ? "<optional>" : "<required>";
-
-                    // <stack>.SetItemValue("&$name", "<optional>"|"<required>")
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-                    cg.EmitIntStringKey(keyname);
-                    cg.Builder.EmitStringConstant(value);
-                    cg.EmitConvertToPhpValue(cg.CoreTypes.String, 0);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
-                }
+                // <stack>.SetItemValue("&$name", "<optional>"|"<required>")
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.EmitIntStringKey(keyname);
+                cg.Builder.EmitStringConstant(value);
+                cg.EmitConvertToPhpValue(cg.CoreTypes.String, 0);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
             }
-            else
+        }
+
+        /// <summary>
+        /// Caches the array instance into an internal app-static field,
+        /// so repetitious creations only uses the existing instance.
+        /// </summary>
+        TypeSymbol EmitCachedParametersArray(CodeGenerator cg, ReadOnlySpan<FormalParam> ps)
+        {
+            if (ps == null || ps.Length == 0)
             {
                 // PhpArray.Empty
-                cg.Emit_PhpArray_Empty();
+                return cg.Emit_PhpArray_Empty();
             }
+
+            // static PhpArray <arr>`;
+            var fld = cg.Factory.CreateSynthesizedField(cg.CoreTypes.PhpArray, "<params>", true);
+            var fldplace = new FieldPlace(null, fld, cg.Module);
+
+            // TODO: reuse existing cached PhpArray with the same content
+
+            // <fld> = new PhpArray(...)
+            var cctor = cg.Factory.CctorBuilder;
+
+            lock (cctor)
+            {
+                using (var cctor_cg = new CodeGenerator(cctor, cg.Module, cg.Diagnostics, cg.DeclaringCompilation.Options.OptimizationLevel, false, cg.Factory.Container, null, null, cg.Routine)
+                {
+                    CallerType = cg.CallerType,
+                    ContainingFile = cg.ContainingFile,
+                    IsInCachedArrayExpression = true,
+                })
+                {
+                    fldplace.EmitStorePrepare(cctor_cg.Builder);
+                    EmitNewParametersArray(cctor_cg, ps);
+                    fldplace.EmitStore(cctor_cg.Builder);
+                }
+            }
+
+            // LOAD <fld>
+            fld.EmitLoad(cg);
+
+            //// .DeepCopy()
+            //// if (this.Access.IsReadCopy) // unsafe ?
+            //{
+            //    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.DeepCopy);
+            //}
+
+            //
+            return fld.Type;    // ~ PhpArray
         }
     }
 
@@ -3480,9 +3609,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // get location of evaluated code
             var filepath = cg.ContainingFile.RelativeFilePath;
-            int line, col;
             var unit = this.PhpSyntax.ContainingSourceUnit;
-            unit.GetLineColumnFromPosition(this.CodeExpression.PhpSyntax.Span.Start, out line, out col);
+            unit.GetLineColumnFromPosition(this.CodeExpression.PhpSyntax.Span.Start, out var line, out var col);
 
             // Template: Operators.Eval(ctx, locals, @this, self, code, currentpath, line, column)
             cg.EmitLoadContext();

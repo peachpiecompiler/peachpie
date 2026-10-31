@@ -193,6 +193,12 @@ namespace Pchp.Library.Spl
 
         private protected PhpStream _stream;
 
+        private protected char _delimiter = ',';
+        private protected char _enclosure = '\"';
+        private protected char _escape = '\\';
+        private protected int _flags = 0;
+        private protected long _maxLineLength = 0;
+
         public SplFileObject(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
             : this(ctx)
         {
@@ -230,45 +236,116 @@ namespace Pchp.Library.Spl
 
         #region SeekableIterator, RecursiveIterator
 
-        public virtual PhpValue/*string|array*/ current()
-        {
-            throw new NotImplementedException();
-        }
+        private protected long _line = -1;
+        private protected PhpValue _value = PhpValue.False;
 
-        public virtual RecursiveIterator getChildren()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual PhpValue /*string|array*/ current() => _value;
 
-        public virtual bool hasChildren()
-        {
-            throw new NotImplementedException();
-        }
+        /// <summary>Get line number.</summary>
+        /// <remarks>This number may not reflect the actual line number in the file if <see cref="setMaxLineLen"/> is used to read fixed lengths of the file.</remarks>
+        public virtual PhpValue key() => _line < 0 ? 0 : _line;
 
-        public virtual PhpValue key()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual void next() => movenextimpl();
 
-        public virtual void next()
+        private protected void resetimpl()
         {
-            throw new NotImplementedException();
+            _line = -1;
+            _stream.Seek(0, SeekOrigin.Begin);
+        }
+        
+        private protected bool movenextimpl()
+        {
+            // read next line
+            if ((_flags & READ_CSV) == 0)
+            {
+                for (;;)
+                {
+                    if (_stream.Eof)
+                    {
+                        _value = PhpValue.False;
+                        return false;
+                    }
+                    
+                    var text = _stream.ReadLine(
+                        (int)(_maxLineLength <= 0 ? -1 : _maxLineLength),
+                        null
+                    );
+
+                    _line++;
+
+                    if ((_flags & SKIP_EMPTY) != 0 && string.IsNullOrWhiteSpace(text))
+                    {
+                        continue;
+                    }
+
+                    _value = (_flags & DROP_NEW_LINE) != 0 && text.Length > 0 && text.LastChar() == '\n'
+                        ? text.Substring(0, text.Length - 1)
+                        : text;
+
+                    return true;
+                }
+            }
+            else
+            {
+                if (_stream.Eof)
+                {
+                    _value = PhpValue.False;
+                    return false;
+                }
+                
+                _value = PhpPath.ReadLineCsv(
+                    () => _stream.ReadLine(-1, null), _delimiter, _enclosure, _escape
+                );
+                _line++;
+                return true;
+            }
         }
 
         public virtual void rewind()
         {
-            throw new NotImplementedException();
+            resetimpl();
+            movenextimpl();
         }
 
+        /// <summary>
+        /// Seek to specified line.
+        /// </summary>
+        /// <param name="line_pos">Zero-based line number.</param>
         public virtual void seek(long line_pos)
         {
-            throw new NotImplementedException();
+            if (line_pos == _line)
+            {
+                // do nothing
+                return;
+            }
+
+            if (line_pos < 0)
+            {
+                throw new ValueError(
+                    string.Format(Resources.Resources.arg_negative, nameof(line_pos))
+                );
+            }
+            
+            resetimpl();
+
+            // read N lines
+            while (_line < line_pos && movenextimpl())
+            {
+                // 
+            }
         }
 
         public virtual bool valid()
         {
-            throw new NotImplementedException();
+            if (_line < 0)
+                movenextimpl();
+
+            return !_value.IsFalse;
         }
+        
+        public virtual RecursiveIterator getChildren() => null; // no purpose
+
+        public virtual bool hasChildren() => false; // never true
 
         #endregion
 
@@ -316,17 +393,31 @@ namespace Pchp.Library.Spl
         [return: CastToFalse]
         public virtual int fwrite(PhpString data, int length = -1) => PhpPath.fwrite(_ctx, _stream, data, length);
 
-        public virtual PhpArray getCsvControl() { throw new NotImplementedException(); }
-        public virtual int getFlags() { throw new NotImplementedException(); }
-        public virtual int getMaxLineLen() { throw new NotImplementedException(); }
-        public virtual void setCsvControl(string delimiter = ",", string enclosure = "\"", string escape = "\\") { throw new NotImplementedException(); }
-        public virtual void setFlags(int flags) { throw new NotImplementedException(); }
-        public virtual void setMaxLineLen(int max_len) { throw new NotImplementedException(); }
+        public virtual PhpArray getCsvControl() => new PhpArray(3) { _delimiter.ToString(), _enclosure.ToString(), _escape.ToString() };
+        
+        public virtual int getFlags() => _flags;
+
+        public virtual long getMaxLineLen() => _maxLineLength;
+
+        public virtual void setCsvControl(char delimiter = ',', char enclosure = '\"', char escape = '\\')
+        {
+            _delimiter = delimiter;
+            _enclosure = enclosure;
+            _escape = escape;
+        }
+
+        public virtual void setFlags(int flags)
+        {
+            _flags = flags;
+        }
+        
+        public virtual void setMaxLineLen(long max_len) { _maxLineLength = max_len; }
+        
         public virtual PhpString getCurrentLine() => fgets();
     }
 
     /// <summary>
-    /// The SplTempFileObject class offers an object oriented interface for a temporary file.
+    /// The SplTempFileObject class offers an object-oriented interface for a temporary file.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplTempFileObject : SplFileObject

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Pchp.Core.Utilities
@@ -23,5 +24,10 @@ namespace Pchp.Core.Utilities
         /// Gets value indicating the given user PHP type is declared in specified <see cref="Context"/>.
         /// </summary>
         public static bool IsUserTypeDeclared(Context ctx, Reflection.PhpTypeInfo tinfo) => ctx.IsUserTypeDeclared(tinfo);
+
+        /// <summary>
+        /// Create single-length readonlyspan from value on stack.
+        /// </summary>
+        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(T value) => MemoryMarshal.CreateReadOnlySpan(ref value, 1);
     }
 }

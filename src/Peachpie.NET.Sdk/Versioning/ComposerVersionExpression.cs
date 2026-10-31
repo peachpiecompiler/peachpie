@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
-using Devsense.PHP.Errors;
 
 namespace Peachpie.NET.Sdk.Versioning
 {

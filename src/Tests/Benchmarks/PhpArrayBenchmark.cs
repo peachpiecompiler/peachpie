@@ -7,9 +7,7 @@ using Pchp.Core;
 
 namespace Benchmarks
 {
-    //[SimpleJob(RuntimeMoniker.Net472)]
-    [SimpleJob(RuntimeMoniker.NetCoreApp31)]
-    [SimpleJob(RuntimeMoniker.NetCoreApp50, baseline: true)]
+    //[SimpleJob(RuntimeMoniker.Net472)]    [SimpleJob(RuntimeMoniker.Net60, baseline: true)]
     //[MarkdownExporter]
     public class PhpArrayBenchmark
     {

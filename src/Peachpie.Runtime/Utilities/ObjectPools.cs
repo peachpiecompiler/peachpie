@@ -16,6 +16,8 @@ namespace Pchp.Core.Utilities
         /// </summary>
         public static ObjectPool<StringBuilder> StringBuilderPool { get; } = new DefaultObjectPoolProvider().Create(new StringBuilderPooledObjectPolicy());
 
+        public static ObjectPool<List<T>> GetListPool<T>() => ListPool<T>.Pool;
+
         /// <summary>Gets pooled instance of <see cref="StringBuilder"/>.</summary>
         public static StringBuilder GetStringBuilder() => StringBuilderPool.Get();
 

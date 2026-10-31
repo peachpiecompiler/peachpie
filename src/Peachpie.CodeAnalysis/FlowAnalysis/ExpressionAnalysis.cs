@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Devsense.PHP.Text;
 using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
@@ -1285,6 +1286,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Spaceship:
                     return TypeCtx.GetLongTypeMask(); // -1, 0, +1
 
+                case Operations.Pipe:
+                    return TypeRefMask.AnyType; // TODO: return value of the callback in R-Value
+
                 default:
                     throw ExceptionUtilities.UnexpectedValue(x.Operation);
             }
@@ -1571,6 +1575,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = x.TargetType.GetTypeRefMask(TypeCtx);
 
             return default;
+        }
+
+        public override T VisitCallableConvert(BoundCallableConvert x)
+        {
+            x.TypeRefMask = TypeCtx.GetClosureTypeMask();
+
+            return base.VisitCallableConvert(x);
         }
 
         #endregion
@@ -1890,12 +1901,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var rflags = method.InvocationFlags(out var localaccess);
                 Routine.Flags |= rflags;
 
-                if ((rflags & RoutineFlags.UsesLocals) != 0
-                    //&& (x is BoundGlobalFunctionCall gf && gf.Name.NameValue.Name.Value == "extract") // "compact" does not change locals // CONSIDER // TODO
-                    )
+                if ((rflags & RoutineFlags.UsesLocals) != 0)
                 {
-                    // function may change/add local variables
-                    State.SetAllUnknown(true);
+                    if (call is BoundGlobalFunctionCall && method.Name == "compact")
+                    {
+                        // "compact" does not change locals // NOTE: it's ugly cause we don't have flags for that yet
+                    }
+                    else
+                    {
+                        // function may change/add local variables
+                        State.SetAllUnknown(true);
+                    }
                 }
 
                 if (localaccess != null)

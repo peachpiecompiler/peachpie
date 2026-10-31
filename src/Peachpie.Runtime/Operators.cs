@@ -1200,9 +1200,9 @@ namespace Pchp.Core
 
             // 3. __get
             var getter = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__get];
-            if (getter != null)
+            if (getter != null) // NOTE: magic methods must be public
             {
-                // return getter.Invoke(ctx, instance, propertyName);
+                return getter.Invoke(null/*expecting non-static PHP method which doesn't need Context, otherwise nullref exception*/, instance, propertyName);
             }
 
             // error
@@ -2320,7 +2320,7 @@ namespace Pchp.Core
 
         public static Context Context(this Closure closure) => closure._ctx;
 
-        /// <summary>Resolves late static bound type of closiure. Can be <c>null</c> reference.</summary>
+        /// <summary>Resolves late static bound type of closure. Can be <c>null</c> reference.</summary>
         public static PhpTypeInfo Static(this Closure closure)
         {
             if (closure._this != null)
@@ -2347,6 +2347,23 @@ namespace Pchp.Core
         /// Gets internal <see cref="IPhpCallable"/> object invoked by the closure.
         /// </summary>
         public static IPhpCallable Callable(this Closure closure) => closure._callable;
+
+        /// <summary>
+        /// Gets <see cref="IPhpCallable"/> interface for given <paramref name="routine"/>.
+        /// </summary>
+        /// <param name="targetInstance">Receiver object for the method non-static routine.</param>
+        /// <param name="routine">Routine.</param>
+        public static IPhpCallable AsCallable(object targetInstance, RoutineInfo routine)
+        {
+            if (targetInstance == null)
+            {
+                return routine;
+            }
+
+            return PhpCallback.Create(
+                (ctx, args) => routine.Invoke(ctx, targetInstance, args)
+            );
+        }
 
         #endregion
 
@@ -2487,43 +2504,6 @@ namespace Pchp.Core
         /// Normalizes path's slashes for the current platform.
         /// </summary>
         public static string NormalizePath(string value) => Utilities.CurrentPlatform.NormalizeSlashes(value);
-
-        #endregion
-
-        #region BindTargetToMethod
-
-        /// <summary>
-        /// Helper lightweight class to reuse already bound <see cref="PhpInvokable"/> to be used as <see cref="PhpCallable"/>
-        /// by calling it on a given target.
-        /// </summary>
-        sealed class BoundTargetCallable : IPhpCallable
-        {
-            readonly object _target;
-            readonly PhpInvokable _invokable;
-
-            public BoundTargetCallable(object target, PhpInvokable invokable)
-            {
-                _target = target;
-                _invokable = invokable;
-            }
-
-            public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => _invokable.Invoke(ctx, _target, arguments);
-
-            public PhpValue ToPhpValue() => PhpValue.Null;
-        }
-
-        /// <summary>
-        /// Creates an <see cref="IPhpCallable"/> from an instance method, binding the target to call the method on.
-        /// </summary>
-        public static IPhpCallable BindTargetToMethod(object targetInstance, RoutineInfo routine)
-        {
-            if (routine is PhpMethodInfo methodInfo)
-            {
-                return new BoundTargetCallable(targetInstance, methodInfo.PhpInvokable);
-            }
-
-            return PhpCallback.CreateInvalid();
-        }
 
         #endregion
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 namespace Pchp.Core
 {
@@ -70,6 +71,8 @@ namespace Pchp.Core
                             if (typeU == typeof(double)) return new Func<PhpValue, Nullable<double>>(x => Operators.IsSet(x) ? (double?)x.ToDouble() : null);
                         }
                     }
+                    
+                    if (typeof(T) == typeof(CancellationToken)) return new Func<PhpValue, CancellationToken>(x => Convert.UnwrapStruct<CancellationToken>(x));
                 }
                 else // type.IsReferenceType
                 {

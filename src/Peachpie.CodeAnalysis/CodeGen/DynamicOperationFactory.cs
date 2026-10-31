@@ -183,9 +183,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <summary>Emits arguments to be passed to callsite.</summary>
             public void EmitArgs(ImmutableArray<BoundArgument> args)
             {
-                foreach (var a in args)
+                for (int i = 0; i < args.Length; i++)
                 {
-                    EmitArg(a);
+                    EmitArg(args[i]);
                 }
             }
 

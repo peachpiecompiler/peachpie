@@ -404,7 +404,7 @@ namespace Pchp.Library
                 GroupsToPhpArray(match.PcreGroups, false, false, matches_arr);
 
                 return callback
-                    .Invoke(ctx, (PhpValue)matches_arr)
+                    .Invoke(ctx, matches_arr)
                     .ToStringOrThrow(ctx);
             });
 

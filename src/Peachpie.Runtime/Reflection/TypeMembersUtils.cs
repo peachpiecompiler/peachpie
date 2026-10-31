@@ -81,7 +81,8 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 (p) => new IntStringKey(p.PropertyName),
                 FuncExtensions.Identity<IntStringKey>(),
-                (m) => m.IsVisible(caller));
+                (m) => m.IsVisible(caller)
+            );
         }
 
         /// <summary>
@@ -93,8 +94,22 @@ namespace Pchp.Core.Reflection
         {
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForPrint,
-                s_keyToString);
+                s_keyToString,
+                getValue: s_getValueWithTryCatch
+            );
         }
+
+        static readonly Func<PhpPropertyInfo, object, PhpValue> s_getValueWithTryCatch = (p, instance) =>
+        {
+            try
+            {
+                return p.GetValue(null, instance);
+            }
+            catch (Exception e)
+            {
+                return $"Property '{p.PropertyName}' threw an exception of type {e.GetType().Name}: {e.Message}";
+            }
+        };
 
         public static readonly Func<IntStringKey, string> s_keyToString = k => k.ToString();
 
@@ -127,7 +142,9 @@ namespace Pchp.Core.Reflection
         {
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForDump,
-                s_keyToString);
+                s_keyToString,
+                getValue: s_getValueWithTryCatch
+            );
         }
 
         /// <summary>
@@ -170,9 +187,10 @@ namespace Pchp.Core.Reflection
         /// <param name="keyFormatter2">Function converting </param>
         /// <param name="predicate">Optional. Predicate filtering fields.</param>
         /// <param name="ignoreRuntimeFields">Whether to ignore listing runtime fields.</param>
+        /// <param name="getValue">Function getting property value on given <paramref name="instance"/>.</param>
         /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
         /// <typeparam name="TKey">Enumerated pairs key. Usually <see cref="IntStringKey"/>.</typeparam>
-        public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<PhpPropertyInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<PhpPropertyInfo, bool> predicate = null, bool ignoreRuntimeFields = false)
+        public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<PhpPropertyInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<PhpPropertyInfo, bool> predicate = null, bool ignoreRuntimeFields = false, Func<PhpPropertyInfo, object, PhpValue> getValue = null)
         {
             Debug.Assert(instance != null);
 
@@ -189,7 +207,8 @@ namespace Pchp.Core.Reflection
                     {
                         yield return new KeyValuePair<TKey, PhpValue>(
                             keyFormatter(p),
-                            p.GetValue(null, instance));
+                            getValue != null ? getValue(p, instance) : p.GetValue(null, instance)
+                        );
                     }
                 }
             }

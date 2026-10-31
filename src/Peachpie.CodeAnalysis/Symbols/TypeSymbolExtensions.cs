@@ -44,6 +44,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>Gets value indicating the type is not null, not ambiguous and not error type.</summary>
         public static bool IsValidType(this TypeSymbol type) => !IsErrorTypeOrNull(type);
 
+        public static bool IsEmittableType(this TypeSymbol type) => type != null && !type.IsErrorType() && !type.IsDynamic() && !type.IsUnreachable;
+
         public static bool IsTraitType(this TypeSymbol type)
         {
             return type != null && type.OriginalDefinition is IPhpTypeSymbol phpt && phpt.IsTrait;
@@ -112,6 +114,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return t.MetadataName == "PhpArray" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
         }
 
+        public static bool Is_IPhpArray(this ITypeSymbol t)
+        {
+            return t.MetadataName == "IPhpArray" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
+        }
+
         public static bool Is_PhpResource(this ITypeSymbol t)
         {
             return t.MetadataName == "PhpResource" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
@@ -161,6 +168,20 @@ namespace Pchp.CodeAnalysis.Symbols
 
             tresult = null;
             return false;
+        }
+
+        /// <summary>
+        /// Check the type represents<see cref="ReadOnlySpan{T}"/> where T is '<paramref name="ofType"/>'.
+        /// </summary>
+        public static bool IsReadOnlySpan(this TypeSymbol t, TypeSymbol ofType = null)
+        {
+            return
+                t != null &&
+                t.OriginalDefinition.MetadataName == "ReadOnlySpan`1" &&
+                t is INamedTypeSymbol named &&
+                named.TypeArguments.Length == 1 &&
+                (ofType == null || named.TypeArguments[0].Equals(ofType, SymbolEqualityComparer.Default))
+                ;
         }
 
         public static bool IsOfType(this TypeSymbol t, TypeSymbol oftype)
@@ -457,6 +478,18 @@ namespace Pchp.CodeAnalysis.Symbols
                 type is ArrayTypeSymbol array &&
                 array.IsSZArray &&
                 array.ElementType.SpecialType == SpecialType.System_Byte;
+        }
+
+        /// <summary>Gets value indicating the given type represents a <c>PhpValue[]</c> array type.</summary>
+        public static bool Is_PhpValueArray(this ITypeSymbol type)
+        {
+            Debug.Assert((object)type != null);
+            return
+                type.TypeKind == TypeKind.Array &&
+                type is ArrayTypeSymbol array &&
+                array.IsSZArray &&
+                array.ElementType.Is_PhpValue()
+                ;
         }
 
         // If the type is a delegate type, it returns it. If the type is an

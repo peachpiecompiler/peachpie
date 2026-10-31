@@ -62,6 +62,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual TResult VisitConversion(BoundConversionEx x) => DefaultVisitOperation(x);
 
+        public virtual TResult VisitCallableConvert(BoundCallableConvert x) => DefaultVisitOperation(x);
+
         public virtual TResult VisitIncDec(BoundIncDecEx x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitConditional(BoundConditionalEx x) => DefaultVisitOperation(x);

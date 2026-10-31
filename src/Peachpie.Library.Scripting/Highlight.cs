@@ -96,7 +96,7 @@ namespace Peachpie.Library.Scripting
                 xmlwriter.WriteStartElement("span");
                 xmlwriter.WriteAttributeString("style", $"color: {config.html}");
 
-                using (var tokenizer = new Lexer(new StringReader(source ?? string.Empty), Encoding.UTF8))
+                using (var tokenizer = new Lexer(source.AsMemory(), Encoding.UTF8))
                 {
                     Tokens t;
                     while ((t = tokenizer.GetNextToken()) != Tokens.EOF)
