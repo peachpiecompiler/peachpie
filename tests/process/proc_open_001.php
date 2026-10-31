@@ -25,4 +25,20 @@ if (is_resource($process)) {
     echo "failed to open process\n";
 }
 
+// Test that commands with quoted arguments containing spaces are passed correctly
+// to the shell. This exercises the ArgumentList path on Linux/macOS.
+if (PHP_OS_FAMILY !== 'Windows') {
+    $pipes2 = null;
+    $process2 = proc_open("printf '%s|' 'a b' c", [1 => ['pipe', 'w']], $pipes2);
+    if (is_resource($process2)) {
+        $output = stream_get_contents($pipes2[1]);
+        fclose($pipes2[1]);
+        $code2 = proc_close($process2);
+        echo "printf output: $output";  // expected: a b|c|
+        echo "printf exit code: $code2\n";  // expected: 0
+    } else {
+        echo "failed to open process for printf test\n";
+    }
+}
+
 echo "done\n";
