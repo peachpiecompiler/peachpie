@@ -51,12 +51,21 @@ namespace Benchmarks
 
         /// <summary>
         /// Invokes a static method on a compiled PHP class via reflection.
+        /// Loads the type from the compiled PeachPie assembly (BenchmarkPhp_*.dll)
+        /// produced by compiling PhpScripts/ with the Peachpie.NET.Sdk peach compiler.
         /// </summary>
         internal static T PhpStatic<T>(string className, string methodName, params object[] args)
         {
-            var type = typeof(Program).Assembly.GetType($"BenchmarkPhp.{className}");
+            // Compiled PHP assemblies are named BenchmarkPhp_<ScriptName>.dll
+            // They are produced by: peach.dll /target:library /out:BenchmarkPhp_<name>.dll PhpScripts/<name>.php
+            var asmName = $"BenchmarkPhp_{className}";
+            var assembly = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == asmName)
+                ?? Assembly.LoadFrom($"/tmp/{asmName}.dll");
+
+            var type = assembly.GetType($"BenchmarkPhp.{className}");
             if (type == null)
-                throw new InvalidOperationException($"PHP class BenchmarkPhp.{className} not found");
+                throw new InvalidOperationException($"PHP class BenchmarkPhp.{className} not found in {asmName}");
             var method = type.GetMethod(methodName);
             if (method == null)
                 throw new InvalidOperationException($"Method {methodName} not found on PHP class {className}");
