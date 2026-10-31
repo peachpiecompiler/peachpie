@@ -24,11 +24,14 @@ jobs:
       with:
         dotnet-version: 10.0.x
 
+    - name: Restore packages
+      run: dotnet restore
+
     - name: Build PeachPie solution
-      run: dotnet build Peachpie.sln -c Release -f net6.0 --no-restore
+      run: dotnet build Peachpie.sln -c Release -f net6.0
 
     - name: Build PeachPie compiler (peach.dll)
-      run: dotnet build src/Compiler/peach/peach.csproj -c Release -f net6.0 --no-restore
+      run: dotnet build src/Compiler/peach/peach.csproj -c Release -f net6.0
 
     - name: Compile PHP scripts to BenchmarkPhp.dll
       run: |
