@@ -5,6 +5,10 @@ using System.Linq;
 using System.Reflection;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Exporters;
+using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Loggers;
 using BenchmarkDotNet.Running;
 using Pchp.Core;
 
@@ -25,18 +29,24 @@ namespace Benchmarks
     /// </summary>
     class Program
     {
+        /// <summary>
+        /// Shared benchmark config: .NET 10, MemoryDiagnoser for GC allocation tracking,
+        /// markdown + HTML exports, and console logging.
+        /// </summary>
+        internal static readonly IConfig Config = ManualConfig.CreateEmpty()
+            .AddJob(Job.MediumRun.WithWarmupCount(3).WithIterationCount(5))
+            .AddDiagnoser(MemoryDiagnoser.Default)
+            .AddExporter(MarkdownExporter.Console)
+            .AddExporter(HtmlExporter.Default)
+            .AddLogger(ConsoleLogger.Default);
+
         static void Main(string[] args)
         {
-            var config = ManualConfig.CreateEmpty()
-                .AddJob(BenchmarkDotNet.Jobs.Job.MediumRun)
-                .AddExporter(BenchmarkDotNet.Exporters.MarkdownExporter.Console)
-                .AddLogger(BenchmarkDotNet.Loggers.ConsoleLogger.Default);
-
-            BenchmarkDotNet.Running.BenchmarkRunner.Run<TightLoopBenchmarks>(config);
-            BenchmarkDotNet.Running.BenchmarkRunner.Run<ObjectOrientedBenchmarks>(config);
-            BenchmarkDotNet.Running.BenchmarkRunner.Run<ArrayOpsBenchmarks>(config);
-            BenchmarkDotNet.Running.BenchmarkRunner.Run<StringOpsBenchmarks>(config);
-            BenchmarkDotNet.Running.BenchmarkRunner.Run<FunctionCallBenchmarks>(config);
+            BenchmarkDotNet.Running.BenchmarkRunner.Run<TightLoopBenchmarks>(Config);
+            BenchmarkDotNet.Running.BenchmarkRunner.Run<ObjectOrientedBenchmarks>(Config);
+            BenchmarkDotNet.Running.BenchmarkRunner.Run<ArrayOpsBenchmarks>(Config);
+            BenchmarkDotNet.Running.BenchmarkRunner.Run<StringOpsBenchmarks>(Config);
+            BenchmarkDotNet.Running.BenchmarkRunner.Run<FunctionCallBenchmarks>(Config);
         }
 
         /// <summary>
@@ -56,7 +66,7 @@ namespace Benchmarks
 
     #region TightLoop Benchmarks
 
-    [MarkdownExporter]
+    [MemoryDiagnoser]
     public class TightLoopBenchmarks
     {
         private const int Size = 10_000;
@@ -84,7 +94,7 @@ namespace Benchmarks
 
     #region Object-Oriented Benchmarks
 
-    [MarkdownExporter]
+    [MemoryDiagnoser]
     public class ObjectOrientedBenchmarks
     {
         private const int Iterations = 1_000;
@@ -138,7 +148,7 @@ namespace Benchmarks
 
     #region Array Operations Benchmarks
 
-    [MarkdownExporter]
+    [MemoryDiagnoser]
     public class ArrayOpsBenchmarks
     {
         private const int Size = 1_000;
@@ -174,7 +184,7 @@ namespace Benchmarks
 
     #region String Operations Benchmarks
 
-    [MarkdownExporter]
+    [MemoryDiagnoser]
     public class StringOpsBenchmarks
     {
         private const int Count = 100;
@@ -203,7 +213,7 @@ namespace Benchmarks
 
     #region Function Call Benchmarks
 
-    [MarkdownExporter]
+    [MemoryDiagnoser]
     public class FunctionCallBenchmarks
     {
         private const int Iterations = 1_000;
