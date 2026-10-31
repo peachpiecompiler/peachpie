@@ -80,7 +80,7 @@ jobs:
       run: dotnet run --project src/Tests/Benchmarks.PhpVsNet/Benchmarks.PhpVsNet.csproj -c Release -f net10.0 --no-build
 
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: benchmark-results
