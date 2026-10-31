@@ -274,8 +274,13 @@ namespace Pchp.Library
                 }
                 else
                 {
+                    // On Linux/macOS, use /bin/sh with ArgumentList so the entire command
+                    // is passed as a single argv element. Setting Arguments (a string) would
+                    // cause .NET to split it using Windows-style rules, dropping any arguments
+                    // after the first word.
                     process.StartInfo.FileName = "/bin/sh";
-                    process.StartInfo.Arguments = "-c " + command;
+                    process.StartInfo.ArgumentList.Add("-c");
+                    process.StartInfo.ArgumentList.Add(command);
                 }
             }
             process.StartInfo.UseShellExecute = false;
