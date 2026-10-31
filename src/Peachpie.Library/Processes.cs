@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 namespace Pchp.Library
@@ -266,8 +267,16 @@ namespace Pchp.Library
             }
             else
             {
-                process.StartInfo.FileName = "cmd.exe"; //(Environment.OSVersion.Platform != PlatformID.Win32Windows) ? "cmd.exe" : "command.com";
-                process.StartInfo.Arguments = "/c " + command;
+                if (CurrentPlatform.IsWindows)
+                {
+                    process.StartInfo.FileName = "cmd.exe";
+                    process.StartInfo.Arguments = "/c " + command;
+                }
+                else
+                {
+                    process.StartInfo.FileName = "/bin/sh";
+                    process.StartInfo.Arguments = "-c " + command;
+                }
             }
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.WorkingDirectory = ctx.WorkingDirectory;
