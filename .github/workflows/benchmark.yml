@@ -27,9 +27,6 @@ jobs:
     - name: Restore packages
       run: dotnet restore
 
-    - name: Build PeachPie solution (excluding benchmark project targeting net10.0)
-      run: dotnet build Peachpie.sln -c Release -f net6.0 --no-restore -p:DisableTransitiveProjectReferences=true
-
     - name: Build core projects needed for PHP compilation
       run: dotnet build src/Peachpie.CodeAnalysis/Peachpie.CodeAnalysis.csproj -c Release -f net6.0 --no-restore && dotnet build src/Peachpie.Runtime/Peachpie.Runtime.csproj -c Release -f net6.0 --no-restore && dotnet build src/Peachpie.Library/Peachpie.Library.csproj -c Release -f net6.0 --no-restore
 
