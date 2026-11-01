@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 namespace Pchp.Library
@@ -266,8 +267,21 @@ namespace Pchp.Library
             }
             else
             {
-                process.StartInfo.FileName = "cmd.exe"; //(Environment.OSVersion.Platform != PlatformID.Win32Windows) ? "cmd.exe" : "command.com";
-                process.StartInfo.Arguments = "/c " + command;
+                if (CurrentPlatform.IsWindows)
+                {
+                    process.StartInfo.FileName = "cmd.exe";
+                    process.StartInfo.Arguments = "/c " + command;
+                }
+                else
+                {
+                    // On Linux/macOS, use /bin/sh with ArgumentList so the entire command
+                    // is passed as a single argv element. Setting Arguments (a string) would
+                    // cause .NET to split it using Windows-style rules, dropping any arguments
+                    // after the first word.
+                    process.StartInfo.FileName = "/bin/sh";
+                    process.StartInfo.ArgumentList.Add("-c");
+                    process.StartInfo.ArgumentList.Add(command);
+                }
             }
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.WorkingDirectory = ctx.WorkingDirectory;
