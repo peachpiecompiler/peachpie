@@ -1434,6 +1434,7 @@ namespace Pchp.Library
                         algs["sha256"] = () => new SHA256();
                         //algs["sha384"] = () => new SHA384();
                         algs["sha512"] = () => new SHA512();
+                        algs["sha3-512"] = () => new SHA3_512();
 
                         //algs["whirlpool"] = () => new WHIRLPOOL();
 
@@ -2955,6 +2956,49 @@ namespace Pchp.Library
                 }
 
                 #endregion
+            }
+            /// <summary>
+            /// Wrapper around <see cref="System.Security.Cryptography.SHA3_512"/> (available since .NET Core 3.0 / .NET Standard 2.1).
+            /// .NET's SHA3 implementation does not expose incremental state cloning, so all input is buffered to support
+            /// <see cref="HashPhpResource.Clone"/> (used by <c>hash_copy()</c>) and incremental <c>hash_update()</c>.
+            /// </summary>
+            public sealed class SHA3_512 : HashPhpResource
+            {
+                readonly System.Security.Cryptography.SHA3_512 _algorithm = System.Security.Cryptography.SHA3_512.Create();
+                readonly List<byte> _buffer = new List<byte>();
+
+                public override HashPhpResource Clone()
+                {
+                    var clone = new SHA3_512();
+                    clone._buffer.AddRange(this._buffer);
+                    CloneHashState(clone);   // copy HMAC key / options so hash_copy() keeps HMAC semantics
+                    return clone;
+                }
+
+                public override void Init()
+                {
+                    _buffer.Clear();
+                }
+
+                public override bool Update(ReadOnlySpan<byte> data)
+                {
+                    // keep a copy of the input so the hash can be recomputed and the context cloned
+                    foreach (var b in data)
+                    {
+                        _buffer.Add(b);
+                    }
+
+                    return true;
+                }
+
+                public override byte[] Final()
+                {
+                    var hash = _algorithm.ComputeHash(_buffer.ToArray());
+                    _buffer.Clear();
+                    return hash;
+                }
+
+                public override int BlockSize { get; } = 72; // SHA3-512 rate: 1600 - 2*512 = 576 bits = 72 bytes
             }
             abstract class FNV1 : HashPhpResource
             {
