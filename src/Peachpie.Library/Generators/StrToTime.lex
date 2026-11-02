@@ -96,6 +96,11 @@ monthabbr				"jan"|"feb"|"mar"|"apr"|"may"|"jun"|"jul"|"aug"|"sep"|"sept"|"oct"|
 monthroman			"i"|"ii"|"iii"|"iv"|"v"|"vi"|"vii"|"viii"|"ix"|"x"|"xi"|"xii"
 monthtext				{monthfull}|{monthabbr}|{monthroman}
 
+lastdayofmonthtext		"last day of "({monthfull}|{monthabbr}|{monthroman})
+firstmonthtext			"first "({monthfull}|{monthabbr}|{monthroman})
+lastmonthtext			"last "({monthfull}|{monthabbr}|{monthroman})
+ofrelativetext			"of "({reltextnumber}[ ]*(("sec"|"second"|"min"|"minute"|"hour"|"day"|"week"|"fortnight"|"forthnight"|"month"|"year")"s"?)|{daytext})
+
 timetiny12      {hour12}[ ]*{meridian}
 timeshort12			{hour12}[:.]{minutelz}[ ]*{meridian}
 timelong12			{hour12}[:.]{minute}[:.]{secondlz}[ ]*{meridian}
@@ -710,6 +715,49 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>[ .,\0\n\r\t] {
   break;
+}
+
+<YYINITIAL>{lastdayofmonthtext} {
+	INIT();
+	if (time.have_date!=0) { return Tokens.ERROR; }
+	time.HAVE_DATE();
+	time.m = DateInfo.ParseMonth(str, ref pos);
+	time.y = DateTime.Now.Year;
+	int daysInMonth = DateTime.DaysInMonth(time.y, time.m);
+	time.d = daysInMonth;
+	DEINIT();
+	return Tokens.DATE_FULL_POINTED;
+}
+
+<YYINITIAL>{firstmonthtext} {
+	INIT();
+	if (time.have_date!=0) { return Tokens.ERROR; }
+	time.HAVE_DATE();
+	time.m = DateInfo.ParseMonth(str, ref pos);
+	time.d = 1;
+	time.y = DateTime.Now.Year;
+	DEINIT();
+	return Tokens.DATE_FULL_POINTED;
+}
+
+<YYINITIAL>{lastmonthtext} {
+	INIT();
+	if (time.have_date!=0) { return Tokens.ERROR; }
+	time.HAVE_DATE();
+	time.m = DateInfo.ParseMonth(str, ref pos);
+	time.y = DateTime.Now.Year;
+	int daysInMonth = DateTime.DaysInMonth(time.y, time.m);
+	time.d = daysInMonth;
+	DEINIT();
+	return Tokens.DATE_FULL_POINTED;
+}
+
+<YYINITIAL>{ofrelativetext} {
+	INIT();
+	time.HAVE_RELATIVE();
+	time.SetRelative(DateInfo.ReadToSpace(str, ref pos), 0, 0);
+	DEINIT();
+	return Tokens.RELATIVE;
 }
 
 <YYINITIAL>{of} {

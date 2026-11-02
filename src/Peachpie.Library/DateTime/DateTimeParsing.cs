@@ -26,7 +26,7 @@ namespace Pchp.Library.DateTime
 {
     #region Enums
 
-    internal enum Tokens
+    public enum Tokens
     {
         EOF,
         ERROR,
