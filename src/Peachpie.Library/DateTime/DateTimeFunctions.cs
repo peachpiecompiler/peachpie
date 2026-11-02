@@ -1550,7 +1550,7 @@ namespace Pchp.Library.DateTime
             }
 
             //
-            var scanner = new Scanner(time.ToLowerInvariant());
+            var scanner = new Scanner(DateInfo.PrepareDateString(time));
             while (true)
             {
                 var token = scanner.Next();
