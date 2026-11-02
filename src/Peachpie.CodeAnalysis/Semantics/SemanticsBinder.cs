@@ -275,7 +275,7 @@ namespace Pchp.CodeAnalysis.Semantics
             for (int i = 0; i < pcount; i++)
             {
                 var p = parameters[i];
-                var arg = BindArgument(p.Expression, p.Ampersand, p.IsUnpack, p.IsNamedArgument ? p.Name.Value.Name.Value : null);
+                var arg = BindArgument(p.Expression, p.Ampersand, p.IsUnpack, p.IsNamedArgument ? p.Name.Name.Value : null);
 
                 //
                 arguments[i] = arg;
