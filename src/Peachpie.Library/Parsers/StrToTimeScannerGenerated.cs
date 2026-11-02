@@ -3928,13 +3928,6 @@ using System.Collections.Generic;
 			while (true)
 			{
 				char lookahead = (is_initial_state && yy_at_bol) ? BOL : Advance();
-
-				// EOF reached with no pending token => end of input
-				if (lookahead == EOF && last_accept_state == NoState)
-				{
-					return Tokens.EOF;
-				}
-
 				int next_state = nextState[rowMap[current_state], colMap[lookahead]];
 				
 				if (next_state != -1)
