@@ -26,7 +26,7 @@ namespace Pchp.Library.DateTime
 {
     #region Enums
 
-    public enum Tokens
+    internal enum Tokens
     {
         EOF,
         ERROR,
@@ -53,9 +53,7 @@ namespace Pchp.Library.DateTime
         TIMEZONE,
         AGO,
         RELATIVE,
-        WEEKDAY,
-        OF,             // NEW: "of" keyword
-        YEAR_MONTH      // NEW: YYYY-MM format
+        WEEKDAY
     }
 
     #endregion
@@ -87,6 +85,18 @@ namespace Pchp.Library.DateTime
             public int weekday;
 
             public int weekday_behavior;
+
+            /// <summary>
+            /// timelib <c>relative.special.type</c> for <c>&lt;ordinal&gt; &lt;weekday&gt; of</c>.
+            /// 0 = none, <see cref="DateInfo.SpecialDayOfWeekInMonth"/>, or <see cref="DateInfo.SpecialLastDayOfWeekInMonth"/>.
+            /// </summary>
+            public int special;
+
+            /// <summary>
+            /// timelib <c>relative.first_last_day_of</c>.
+            /// 0 = none, <see cref="DateInfo.FirstDayOfMonth"/>, or <see cref="DateInfo.LastDayOfMonth"/>.
+            /// </summary>
+            public int first_last_day_of;
         }
 
         /// <summary>
@@ -130,11 +140,80 @@ namespace Pchp.Library.DateTime
 
         #region Parse
 
+        /// <summary>
+        /// PHP accepts Roman month numbers only in uppercase (<c>XII 2020</c>).
+        /// The scanner itself is case-insensitive, so a lowercase roman word is
+        /// masked first; single letters (<c>i</c>, <c>v</c>, <c>x</c>) are left
+        /// alone because they are also military time-zone names.
+        /// </summary>
+        internal static string PrepareDateString(string datestr)
+        {
+            var sb = new System.Text.StringBuilder(datestr.Length);
+            int i = 0;
+            while (i < datestr.Length)
+            {
+                char ch = datestr[i];
+                if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
+                {
+                    int start = i;
+                    i++;
+                    while (i < datestr.Length)
+                    {
+                        char c = datestr[i];
+                        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) i++;
+                        else break;
+                    }
+
+                    int len = i - start;
+                    if (len >= 2 && IsUncasedRomanMonth(datestr, start, len))
+                        sb.Append('z', len);
+                    else
+                        sb.Append(datestr, start, len);
+                }
+                else
+                {
+                    sb.Append(ch);
+                    i++;
+                }
+            }
+
+            return sb.ToString().ToLowerInvariant();
+        }
+
+        static bool IsUncasedRomanMonth(string s, int start, int len)
+        {
+            bool hasLower = false;
+            for (int i = 0; i < len; i++)
+            {
+                char c = s[start + i];
+                if (c >= 'a' && c <= 'z') hasLower = true;
+                else if (c < 'A' || c > 'Z') return false;
+            }
+
+            if (!hasLower) return false;
+
+            switch (s.Substring(start, len).ToLowerInvariant())
+            {
+                case "ii":
+                case "iii":
+                case "iv":
+                case "vi":
+                case "vii":
+                case "viii":
+                case "ix":
+                case "xi":
+                case "xii":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static System.DateTime Parse(string/*!*/ datestr, System.DateTime refdate, ref TimeZoneInfo localtz, out string error)
         {
             Debug.Assert(datestr != null);
 
-            var scanner = new Scanner(datestr.ToLowerInvariant());
+            var scanner = new Scanner(PrepareDateString(datestr));
             for (; ; )
             {
                 var token = scanner.Next();
@@ -155,6 +234,11 @@ namespace Pchp.Library.DateTime
         #endregion
 
         #region
+
+        internal const int SpecialDayOfWeekInMonth = 1;
+        internal const int SpecialLastDayOfWeekInMonth = 2;
+        internal const int FirstDayOfMonth = 1;
+        internal const int LastDayOfMonth = 2;
 
         internal const int TIMELIB_ZONETYPE_OFFSET = 1;
         internal const int TIMELIB_ZONETYPE_ABBR = 2;
@@ -309,6 +393,31 @@ namespace Pchp.Library.DateTime
             if (d == -1) d = start.Day;
             else if (d == 0) { d = 1; --relative.d; }
 
+            // "<ordinal> <weekday> of" and "first/last day of" follow timelib's
+            // do_adjust_special_early + do_adjust_relative order. Other phrases
+            // keep the historical relative-then-weekday order.
+            if (relative.special != 0 || relative.first_last_day_of != 0)
+            {
+                ApplyOfRelative(ref y, ref m, ref d, ref h, ref i, ref s);
+
+                System.DateTime ofResult;
+                try
+                {
+                    ofResult = new System.DateTime(y, m, d, h, i, s, (int)(f * 1000), DateTimeKind.Unspecified);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    return (y > 0) ? System.DateTime.MaxValue : System.DateTime.MinValue;
+                }
+
+                if (have_zone != 0)
+                {
+                    localtz = ResolveTimeZone();
+                }
+
+                return ofResult;
+            }
+
             // relative years and months:
             m += relative.y * 12 + relative.m;
             
@@ -410,7 +519,11 @@ namespace Pchp.Library.DateTime
         public void HAVE_RELATIVE()
         {
             have_relative = 1;
-            relative.weekday_behavior = 0;
+            // A later relative ("+1 day") must not clear the behavior recorded by
+            // "<ordinal> <weekday> of". Behavior 1 is what keeps "first monday"
+            // on a month that already starts on Monday (2021-02-01 + 1 day = 2021-02-02).
+            if (relative.special == 0)
+                relative.weekday_behavior = 0;
         }
 
         public void HAVE_WEEKDAY_RELATIVE()
@@ -498,6 +611,132 @@ namespace Pchp.Library.DateTime
 
             Debug.Assert(month >= 1);
             Debug.Assert(month <= 12);
+        }
+
+        /// <summary>
+        /// timelib <c>do_adjust_special_early</c> then <c>do_adjust_relative</c> for the "of" forms.
+        /// Relative months that belong to a weekday-of are consumed while resetting the day;
+        /// <c>first</c>/<c>last day of</c> is applied again after relative units so
+        /// <c>last day of +1 month</c> is the last day of the following month.
+        /// Hour carry runs after that second snap (<c>last day of +2 hours</c> rolls into the next month).
+        /// </summary>
+        void ApplyOfRelative(ref int y, ref int m, ref int d, ref int h, ref int i, ref int s)
+        {
+            long dd = d;
+
+            if (relative.special == SpecialDayOfWeekInMonth)
+            {
+                dd = 1;
+                m += relative.m;
+                relative.m = 0;
+            }
+            else if (relative.special == SpecialLastDayOfWeekInMonth)
+            {
+                dd = 1;
+                m += relative.m + 1;
+                relative.m = 0;
+            }
+
+            ApplyFirstLastDay(ref m, ref dd);
+            NormalizeYmd(ref y, ref m, ref dd);
+
+            if (have_weekday_relative > 0 && y >= 1 && y <= 9999 && m >= 1 && m <= 12 && dd >= 1 && dd <= DaysInMonthFixed(y, m))
+            {
+                int dow = (int)new System.DateTime(y, m, (int)dd).DayOfWeek;
+                int difference = relative.weekday - dow;
+
+                if ((relative.d < 0 && difference < 0) || (relative.d >= 0 && difference <= -relative.weekday_behavior))
+                    difference += 7;
+
+                if (relative.weekday >= 0)
+                    dd += difference;
+                else
+                    dd += dow - relative.weekday - 7;
+
+                NormalizeYmd(ref y, ref m, ref dd);
+            }
+
+            long hh = h + relative.h;
+            long ii = i + relative.i;
+            long ss = s + relative.s;
+            dd += relative.d;
+            y += relative.y;
+            m += relative.m;
+
+            ApplyFirstLastDay(ref m, ref dd);
+
+            Carry(ref ss, ref ii, 60);
+            Carry(ref ii, ref hh, 60);
+            Carry(ref hh, ref dd, 24);
+            NormalizeYmd(ref y, ref m, ref dd);
+
+            d = (int)dd;
+            h = (int)hh;
+            i = (int)ii;
+            s = (int)ss;
+        }
+
+        void ApplyFirstLastDay(ref int m, ref long dd)
+        {
+            if (relative.first_last_day_of == FirstDayOfMonth)
+            {
+                dd = 1;
+            }
+            else if (relative.first_last_day_of == LastDayOfMonth)
+            {
+                dd = 0;
+                m++;
+            }
+        }
+
+        static void Carry(ref long value, ref long next, long radix)
+        {
+            if (value >= 0 && value < radix)
+                return;
+
+            long q = value / radix;
+            long r = value % radix;
+            if (r < 0)
+            {
+                r += radix;
+                q--;
+            }
+
+            value = r;
+            next += q;
+        }
+
+        static void NormalizeYmd(ref int y, ref int m, ref long d)
+        {
+            NormalizeMonth(ref y, ref m);
+
+            int guard = 0;
+            while (d <= 0 && guard++ < 24000)
+            {
+                m--;
+                if (m < 1)
+                {
+                    y--;
+                    m = 12;
+                }
+
+                if (y < 1) y = 1;
+                d += DaysInMonthFixed(y, m);
+            }
+
+            guard = 0;
+            while (m >= 1 && m <= 12 && d > DaysInMonthFixed(y, m) && guard++ < 24000)
+            {
+                d -= DaysInMonthFixed(y, m);
+                m++;
+                if (m > 12)
+                {
+                    y++;
+                    m = 1;
+                }
+            }
+
+            NormalizeMonth(ref y, ref m);
         }
 
         public static int ParseSignedInt(string str, ref int pos, int maxDigits)
@@ -753,7 +992,7 @@ namespace Pchp.Library.DateTime
         /// </summary>
         public static int ParseMonth(string str, ref int pos)
         {
-            while (pos < str.Length && (str[pos] == ' ' || str[pos] == '-' || str[pos] == '.' || str[pos] == '/'))
+            while (pos < str.Length && (str[pos] == ' ' || str[pos] == '\t' || str[pos] == '-' || str[pos] == '.' || str[pos] == '/'))
             {
                 pos++;
             }
