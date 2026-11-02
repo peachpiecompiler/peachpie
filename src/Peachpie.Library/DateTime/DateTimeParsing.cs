@@ -53,7 +53,9 @@ namespace Pchp.Library.DateTime
         TIMEZONE,
         AGO,
         RELATIVE,
-        WEEKDAY
+        WEEKDAY,
+        OF,             // NEW: "of" keyword
+        YEAR_MONTH      // NEW: YYYY-MM format
     }
 
     #endregion

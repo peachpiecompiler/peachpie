@@ -55,6 +55,8 @@ frac "."[0-9]+
 
 az14            [a-z]|[a-z][a-z]|[a-z][a-z][a-z]|[a-z][a-z][a-z][a-z]
 
+of           "of"
+
 ago "ago"
 
 hour24					[01]?[0-9]|"2"[0-4]
@@ -76,6 +78,7 @@ day							([0-2]?[0-9]|"3"[01]){daysuf}?
 year						[0-9]|[0-9][0-9]|[0-9][0-9][0-9]|[0-9][0-9][0-9][0-9]
 year2						[0-9][0-9]
 year4						[0-9][0-9][0-9][0-9]
+yearmonth				[0-9]{4}"-"[0-9]{2}
 
 dayofyear				"00"[1-9]|"0"[1-9][0-9]|[1-2][0-9][0-9]|"3"[0-5][0-9]|"36"[0-6]
 weekofyear			"0"[1-9]|[1-4][0-9]|"5"[0-3]
@@ -584,6 +587,17 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	return Tokens.CLF;
 }
 
+<YYINITIAL>{yearmonth} {
+	INIT();
+	if (time.have_date != 0) { return Tokens.ERROR; }
+	time.HAVE_DATE();
+	time.y = DateInfo.ParseUnsignedInt(str, ref pos, 4);
+	time.m = DateInfo.ParseUnsignedInt(str, ref pos, 2);
+	time.d = 1;
+	DEINIT();
+	return Tokens.YEAR_MONTH;
+}
+
 <YYINITIAL>{year4} {
 	INIT();
 	
@@ -696,6 +710,12 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>[ .,\0\n\r\t] {
   break;
+}
+
+<YYINITIAL>{of} {
+	INIT();
+	DEINIT();
+	return Tokens.OF;
 }
 
 <YYINITIAL>{any} {
