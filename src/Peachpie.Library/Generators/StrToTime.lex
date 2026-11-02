@@ -20,7 +20,7 @@ using System.Collections.Generic;
 %type Tokens
 %eofval Tokens.EOF
 %errorval Tokens.ERROR
-%attributes internal
+%attributes internal partial
 %class Scanner
 %function GetNextToken
 
@@ -722,8 +722,8 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	if (time.have_date!=0) { return Tokens.ERROR; }
 	time.HAVE_DATE();
 	time.m = DateInfo.ParseMonth(str, ref pos);
-	time.y = DateTime.Now.Year;
-	int daysInMonth = DateTime.DaysInMonth(time.y, time.m);
+	time.y = System.DateTime.Now.Year;
+	int daysInMonth = System.DateTime.DaysInMonth(time.y, time.m);
 	time.d = daysInMonth;
 	DEINIT();
 	return Tokens.DATE_FULL_POINTED;
@@ -735,7 +735,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	time.HAVE_DATE();
 	time.m = DateInfo.ParseMonth(str, ref pos);
 	time.d = 1;
-	time.y = DateTime.Now.Year;
+	time.y = System.DateTime.Now.Year;
 	DEINIT();
 	return Tokens.DATE_FULL_POINTED;
 }
@@ -745,8 +745,8 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	if (time.have_date!=0) { return Tokens.ERROR; }
 	time.HAVE_DATE();
 	time.m = DateInfo.ParseMonth(str, ref pos);
-	time.y = DateTime.Now.Year;
-	int daysInMonth = DateTime.DaysInMonth(time.y, time.m);
+	time.y = System.DateTime.Now.Year;
+	int daysInMonth = System.DateTime.DaysInMonth(time.y, time.m);
 	time.d = daysInMonth;
 	DEINIT();
 	return Tokens.DATE_FULL_POINTED;

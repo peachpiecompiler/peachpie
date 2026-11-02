@@ -285,10 +285,10 @@ namespace Pchp.Library.DateTime
         [return: CastToFalse]
         public static DateInterval createFromDateString(string time)
         {
-            var scanner = new Scanner(new StringReader(time.ToLowerInvariant()));
+            var scanner = new Scanner(time.ToLowerInvariant());
             while (true)
             {
-                var token = scanner.GetNextToken();
+                var token = scanner.Next();
                 if (token == Tokens.ERROR || scanner.Errors > 0)
                 {
                     PhpException.Throw(PhpError.Warning, LibResources.parse_error, scanner.Position.ToString(), time.Substring(scanner.Position));
