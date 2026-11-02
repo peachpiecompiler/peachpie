@@ -285,7 +285,7 @@ namespace Pchp.Library.DateTime
         [return: CastToFalse]
         public static DateInterval createFromDateString(string time)
         {
-            var scanner = new Scanner(time.ToLowerInvariant());
+            var scanner = new Scanner(DateInfo.PrepareDateString(time));
             while (true)
             {
                 var token = scanner.Next();

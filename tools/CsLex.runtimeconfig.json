@@ -1,15 +1,14 @@
 {
   "runtimeOptions": {
-    "tfm": "net10.0",
+    "tfm": "net8.0",
+    "rollForward": "LatestMajor",
     "framework": {
       "name": "Microsoft.NETCore.App",
-      "version": "10.0.0"
+      "version": "8.0.0"
     },
     "configProperties": {
       "System.Globalization.Invariant": true,
-      "System.Globalization.PredefinedCulturesOnly": true,
-      "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
-      "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+      "System.Reflection.Metadata.MetadataUpdater.IsSupported": false
     }
   }
 }

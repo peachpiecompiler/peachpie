@@ -55,8 +55,6 @@ frac "."[0-9]+
 
 az14            [a-z]|[a-z][a-z]|[a-z][a-z][a-z]|[a-z][a-z][a-z][a-z]
 
-of           "of"
-
 ago "ago"
 
 hour24					[01]?[0-9]|"2"[0-4]
@@ -78,7 +76,7 @@ day							([0-2]?[0-9]|"3"[01]){daysuf}?
 year						[0-9]|[0-9][0-9]|[0-9][0-9][0-9]|[0-9][0-9][0-9][0-9]
 year2						[0-9][0-9]
 year4						[0-9][0-9][0-9][0-9]
-yearmonth				[0-9][0-9][0-9][0-9]"-"[0-9][0-9]
+yearmonth				{year4}"-"{month}
 
 dayofyear				"00"[1-9]|"0"[1-9][0-9]|[1-2][0-9][0-9]|"3"[0-5][0-9]|"36"[0-6]
 weekofyear			"0"[1-9]|[1-4][0-9]|"5"[0-3]
@@ -96,23 +94,18 @@ monthabbr				"jan"|"feb"|"mar"|"apr"|"may"|"jun"|"jul"|"aug"|"sep"|"sept"|"oct"|
 monthroman			"i"|"ii"|"iii"|"iv"|"v"|"vi"|"vii"|"viii"|"ix"|"x"|"xi"|"xii"
 monthtext				{monthfull}|{monthabbr}|{monthroman}
 
-lastdayofmonthtext		"last day of "({monthfull}|{monthabbr}|{monthroman})
-firstmonthtext			"first "({monthfull}|{monthabbr}|{monthroman})
-lastmonthtext			"last "({monthfull}|{monthabbr}|{monthroman})
-ofrelativetext			"of "({reltextnumber}[ ]*(("sec"|"second"|"min"|"minute"|"hour"|"day"|"week"|"fortnight"|"forthnight"|"month"|"year")"s"?)|{daytext})
-
 timetiny12      {hour12}[ ]*{meridian}
 timeshort12			{hour12}[:.]{minutelz}[ ]*{meridian}
 timelong12			{hour12}[:.]{minute}[:.]{secondlz}[ ]*{meridian}
 
-timeshort24			{hour24}[:.]{minute}([ ]*{zone})?
-timelong24			{hour24}[:.]{minute}[:.]{second}([ ]*{zone})?
-iso8601long			{hour24}[:.]{minute}[:.]{second}{frac}([ ]*{zone})?
+timeshort24			"t"?{hour24}[:.]{minute}([ ]*{zone})?
+timelong24			"t"?{hour24}[:.]{minute}[:.]{second}([ ]*{zone})?
+iso8601long			"t"?{hour24}[:.]{minute}[:.]{second}{frac}([ ]*{zone})?
 
 iso8601normtz		{hour24}[:.]{minute}[:.]{secondlz}[ ]*{zone}
 
-gnunocolon			{hour24lz}{minutelz}
-iso8601nocolon	{hour24lz}{minutelz}{secondlz}
+gnunocolon			"t"?{hour24lz}{minutelz}
+iso8601nocolon	"t"?{hour24lz}{minutelz}{secondlz}
 
 americanshort		{month}"/"{day}
 american				{month}"/"{day}"/"{year}
@@ -121,19 +114,19 @@ pointeddate4		{day}[-.]{month}[-.]{year4}
 gnudateshort		{year}"-"{month}"-"{day}
 iso8601date			{year4}"-"{monthlz}"-"{daylz}
 pointeddate2		{day}"."{month}"."{year2}
-datefull				{day}([-. ])*{monthtext}([-. ])*{year}
-datenoday				{monthtext}([-. ])*{year4}
-datenodayrev		{year4}([-. ])*{monthtext}
-datetextual			{monthtext}([-. ])*{day}[,.stndrh ]*{year}
-datenoyear			{monthtext}([-. ])*{day}[,.stndrh ]*
-datenoyearrev		{day}([-. ])*{monthtext}
+datefull				{day}([-. \t])*{monthtext}([-. \t])*{year}
+datenoday				{monthtext}([-. \t])*{year4}
+datenodayrev		{year4}([-. \t])*{monthtext}
+datetextual			{monthtext}([-. \t])*{day}[,.stndrh ]*{year}
+datenoyear			{monthtext}([-. \t])*{day}[,.stndrh ]*
+datenoyearrev		{day}([-. \t])*{monthtext}
 datenocolon			{year4}{monthlz}{daylz}
 
 soap						{year4}"-"{monthlz}"-"{daylz}"t"{hour24lz}":"{minutelz}":"{secondlz}{frac}{tzcorrection}?
 xmlrpc					{year4}{monthlz}{daylz}"t"{hour24}":"{minutelz}":"{secondlz}
 xmlrpcnocolon		{year4}{monthlz}{daylz}"t"{hour24}{minutelz}{secondlz}
 wddx						{year4}"-"{month}"-"{day}"t"{hour24}":"{minute}":"{second}
-pgydotd					{year4}"."?{dayofyear}
+pgydotd					{year4}[.-]?{dayofyear}
 pgtextshort			{monthabbr}"-"{daylz}"-"{year}
 pgtextreverse		{year}"-"{monthabbr}"-"{daylz}
 isoweekday			{year4}"w"{weekofyear}[0-7]
@@ -154,6 +147,12 @@ reltextunit			(("sec"|"second"|"min"|"minute"|"hour"|"day"|"week"|"fortnight"|"f
 relnumber						([+-]?[ ]*[0-9]+)
 relative						{relnumber}[ ]*{reltextunit}
 relativetext				{reltextnumber}[ ]*{reltextunit}
+
+ws						[ \t]
+firstdayof				"first day of"
+lastdayof				"last day of"
+weekdayof				{reltextnumber}{ws}+{daytext}{ws}+"of"
+
 
 %%
 
@@ -225,7 +224,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{timetiny12}|{timeshort12}|{timelong12} {
 	INIT();
-	if (time.have_time!=0) { return Tokens.ERROR; }
+	if (time.have_time!=0) { errors++; return Tokens.ERROR; }
 	time.HAVE_TIME();
 	
 	time.h = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -241,7 +240,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	
 	if (!time.SetMeridian(str, ref pos))
 	{
-		return Tokens.ERROR; 
+		errors++; return Tokens.ERROR; 
 	}	
 	DEINIT();
 	return Tokens.TIME12;
@@ -249,7 +248,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{timeshort24}|{timelong24}|{iso8601long} {
 	INIT();
-	if (time.have_time!=0) { return Tokens.ERROR; }
+	if (time.have_time!=0) { errors++; return Tokens.ERROR; }
 	time.HAVE_TIME();
 	
 	time.h = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -287,7 +286,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 			
 		default:
 			DEINIT();
-			return Tokens.ERROR;
+			errors++; return Tokens.ERROR;
   }
 	time.have_time++;
 	DEINIT();
@@ -296,7 +295,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{iso8601nocolon} {
 	INIT();
-	if (time.have_time!=0) { return Tokens.ERROR; }
+	if (time.have_time!=0) { errors++; return Tokens.ERROR; }
 	time.HAVE_TIME();
 	
 	time.h = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -312,7 +311,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{americanshort}|{american} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	time.m = DateInfo.ParseUnsignedInt(str, ref pos, 2);
 	time.d = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -329,7 +328,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{iso8601date}|{iso8601dateslash} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.y = DateInfo.ParseUnsignedInt(str, ref pos, 4);
@@ -342,7 +341,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{datefull} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR;} 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR;} 
 	time.HAVE_DATE();
 	
 	time.d = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -357,7 +356,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{gnudateshort} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.y = DateInfo.ParseUnsignedInt(str, ref pos, 4);
@@ -371,7 +370,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{pointeddate4} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR;} 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR;} 
 	time.HAVE_DATE();
 	
 	time.d = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -384,7 +383,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{pointeddate2} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR;} 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR;} 
 	time.HAVE_DATE();
 	
 	time.d = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -398,7 +397,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{datenoday} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.m = DateInfo.ParseMonth(str, ref pos);
@@ -412,7 +411,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{datenodayrev} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.y = DateInfo.ParseUnsignedInt(str, ref pos, 4);
@@ -427,7 +426,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 <YYINITIAL>{datetextual}|{datenoyear}
 {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.m = DateInfo.ParseMonth(str, ref pos);
@@ -441,7 +440,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{datenoyearrev} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.d = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -454,7 +453,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{datenocolon} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.y = DateInfo.ParseUnsignedInt(str, ref pos, 4);
@@ -467,9 +466,9 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{xmlrpc}|{xmlrpcnocolon}|{soap}|{wddx} {
 	INIT();
-	if (time.have_time!=0) { return Tokens.ERROR; }
+	if (time.have_time!=0) { errors++; return Tokens.ERROR; }
 	time.HAVE_TIME();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.y = DateInfo.ParseUnsignedInt(str, ref pos, 4);
@@ -492,7 +491,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{pgydotd} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.y = DateInfo.ParseUnsignedInt(str, ref pos, 4);
@@ -508,7 +507,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	int week, day;
 
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	time.HAVE_RELATIVE();
 	
@@ -528,7 +527,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 		int w, d;
 
 		INIT();
-		if (time.have_date!=0) { return Tokens.ERROR; } 
+		if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 		time.HAVE_DATE();
 		time.HAVE_RELATIVE();
 		
@@ -546,7 +545,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{pgtextshort} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.m = DateInfo.ParseMonth(str, ref pos);
@@ -560,7 +559,7 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{pgtextreverse} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.y = DateInfo.ParseUnsignedInt(str, ref pos, 4);
@@ -574,9 +573,9 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{clf} {
 	INIT();
-	if (time.have_time!=0) { return Tokens.ERROR; }
+	if (time.have_time!=0) { errors++; return Tokens.ERROR; }
 	time.HAVE_TIME();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 	
 	time.d = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -594,13 +593,13 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{yearmonth} {
 	INIT();
-	if (time.have_date != 0) { return Tokens.ERROR; }
+	if (time.have_date != 0) { errors++; return Tokens.ERROR; }
 	time.HAVE_DATE();
-	time.y = DateInfo.ParseUnsignedInt(str, ref pos, 4);
+	time.y = DateInfo.ProcessYear(DateInfo.ParseUnsignedInt(str, ref pos, 4));
 	time.m = DateInfo.ParseUnsignedInt(str, ref pos, 2);
 	time.d = 1;
 	DEINIT();
-	return Tokens.YEAR_MONTH;
+	return Tokens.ISO_DATE;
 }
 
 <YYINITIAL>{year4} {
@@ -658,6 +657,15 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	return Tokens.WEEKDAY;
 }
 
+<YYINITIAL>{monthfull}|{monthabbr} {
+	INIT();
+	if (time.have_date != 0) { errors++; return Tokens.ERROR; }
+	time.HAVE_DATE();
+	time.m = DateInfo.ParseMonth(str, ref pos);
+	DEINIT();
+	return Tokens.DATE_TEXT;
+}
+
 <YYINITIAL>{tzcorrection}|{tz}
 {
 	INIT();
@@ -670,13 +678,13 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 
 <YYINITIAL>{dateshortwithtimeshort}|{dateshortwithtimelong}|{dateshortwithtimelongtz} {
 	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; } 
+	if (time.have_date!=0) { errors++; return Tokens.ERROR; } 
 	time.HAVE_DATE();
 
 	time.m = DateInfo.ParseMonth(str, ref pos);
 	time.d = DateInfo.ParseUnsignedInt(str, ref pos, 2);
 
-	if (time.have_time!=0) { return Tokens.ERROR; }
+	if (time.have_time!=0) { errors++; return Tokens.ERROR; }
 	time.HAVE_TIME();
 	
 	time.h = DateInfo.ParseUnsignedInt(str, ref pos, 2);
@@ -717,63 +725,33 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
   break;
 }
 
-<YYINITIAL>{lastdayofmonthtext} {
-	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; }
-	time.HAVE_DATE();
-	// skip "last day of " prefix
-	DateInfo.ReadToSpace(str, ref pos); pos++;
-	DateInfo.ReadToSpace(str, ref pos); pos++;
-	DateInfo.ReadToSpace(str, ref pos); pos++;
-	time.m = DateInfo.ParseMonth(str, ref pos);
-	time.y = System.DateTime.Now.Year;
-	int daysInMonth = System.DateTime.DaysInMonth(time.y, time.m);
-	time.d = daysInMonth;
-	DEINIT();
-	return Tokens.DATE_FULL_POINTED;
-}
-
-<YYINITIAL>{firstmonthtext} {
-	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; }
-	time.HAVE_DATE();
-	// skip "first " prefix
-	DateInfo.ReadToSpace(str, ref pos); pos++;
-	time.m = DateInfo.ParseMonth(str, ref pos);
-	time.d = 1;
-	time.y = System.DateTime.Now.Year;
-	DEINIT();
-	return Tokens.DATE_FULL_POINTED;
-}
-
-<YYINITIAL>{lastmonthtext} {
-	INIT();
-	if (time.have_date!=0) { return Tokens.ERROR; }
-	time.HAVE_DATE();
-	// skip "last " prefix
-	DateInfo.ReadToSpace(str, ref pos); pos++;
-	time.m = DateInfo.ParseMonth(str, ref pos);
-	time.y = System.DateTime.Now.Year;
-	int daysInMonth = System.DateTime.DaysInMonth(time.y, time.m);
-	time.d = daysInMonth;
-	DEINIT();
-	return Tokens.DATE_FULL_POINTED;
-}
-
-<YYINITIAL>{ofrelativetext} {
+<YYINITIAL>{firstdayof}|{lastdayof} {
 	INIT();
 	time.HAVE_RELATIVE();
-	time.SetRelative(DateInfo.ReadToSpace(str, ref pos), 0, 0);
+	time.relative.first_last_day_of = (str.Length > 0 && str[0] == 'l')
+		? DateInfo.LastDayOfMonth
+		: DateInfo.FirstDayOfMonth;
 	DEINIT();
 	return Tokens.RELATIVE;
 }
 
-<YYINITIAL>{of} {
+<YYINITIAL>{weekdayof} {
 	INIT();
+	time.HAVE_RELATIVE();
+	int behavior;
+	int amount = DateInfo.ParseRelativeText(str, ref pos, out behavior);
+	while (pos < str.Length && (str[pos] == ' ' || str[pos] == '\t')) pos++;
+	int beh = amount > 0 ? 1 : behavior;
+	time.relative.special = amount > 0
+		? DateInfo.SpecialDayOfWeekInMonth
+		: DateInfo.SpecialLastDayOfWeekInMonth;
+	int start = pos;
+	while (pos < str.Length && str[pos] != ' ' && str[pos] != '\t') pos++;
+	time.SetRelative(str.Substring(start, pos - start), amount, beh);
 	DEINIT();
-	return Tokens.OF;
+	return Tokens.RELATIVE;
 }
 
 <YYINITIAL>{any} {
-  return Tokens.ERROR;
+  errors++; return Tokens.ERROR;
 }
