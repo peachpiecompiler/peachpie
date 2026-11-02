@@ -6,6 +6,7 @@
     <Version Condition=" '$(APPVEYOR_BUILD_VERSION)'!='' ">$(APPVEYOR_BUILD_VERSION)</Version>
     <Version Condition=" '$(Version)'=='' ">1.2.0-dev</Version>
     <TargetFrameworks>net6.0</TargetFrameworks>
+    <DebugType>portable</DebugType>
     <PackageVersion>$(Version)</PackageVersion>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
 
@@ -42,7 +43,7 @@
     
     <PeachpieLibraryRegularExpressionsVersion>1.7.1</PeachpieLibraryRegularExpressionsVersion>
     <MySqlConnectorVersion>2.0.0</MySqlConnectorVersion>
-    <ParserVersion>8.5.18992</ParserVersion>
+    <ParserVersion>8.6.19430</ParserVersion>
     <PeachpieMicrosoftCodeAnalysisVersion>3.7.4</PeachpieMicrosoftCodeAnalysisVersion>
     
   </PropertyGroup>
