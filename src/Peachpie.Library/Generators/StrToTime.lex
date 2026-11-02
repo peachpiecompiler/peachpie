@@ -721,6 +721,10 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	INIT();
 	if (time.have_date!=0) { return Tokens.ERROR; }
 	time.HAVE_DATE();
+	// skip "last day of " prefix
+	DateInfo.ReadToSpace(str, ref pos); pos++;
+	DateInfo.ReadToSpace(str, ref pos); pos++;
+	DateInfo.ReadToSpace(str, ref pos); pos++;
 	time.m = DateInfo.ParseMonth(str, ref pos);
 	time.y = System.DateTime.Now.Year;
 	int daysInMonth = System.DateTime.DaysInMonth(time.y, time.m);
@@ -733,6 +737,8 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	INIT();
 	if (time.have_date!=0) { return Tokens.ERROR; }
 	time.HAVE_DATE();
+	// skip "first " prefix
+	DateInfo.ReadToSpace(str, ref pos); pos++;
 	time.m = DateInfo.ParseMonth(str, ref pos);
 	time.d = 1;
 	time.y = System.DateTime.Now.Year;
@@ -744,6 +750,8 @@ relativetext				{reltextnumber}[ ]*{reltextunit}
 	INIT();
 	if (time.have_date!=0) { return Tokens.ERROR; }
 	time.HAVE_DATE();
+	// skip "last " prefix
+	DateInfo.ReadToSpace(str, ref pos); pos++;
 	time.m = DateInfo.ParseMonth(str, ref pos);
 	time.y = System.DateTime.Now.Year;
 	int daysInMonth = System.DateTime.DaysInMonth(time.y, time.m);
