@@ -1550,10 +1550,10 @@ namespace Pchp.Library.DateTime
             }
 
             //
-            var scanner = new Scanner(new StringReader(time.ToLowerInvariant()));
+            var scanner = new Scanner(time.ToLowerInvariant());
             while (true)
             {
-                var token = scanner.GetNextToken();
+                var token = scanner.Next();
                 if (token == Tokens.ERROR || scanner.Errors > 0)
                 {
                     DateTimeErrors.AddError(ref errors, string.Format(Resources.LibResources.parse_error, scanner.Position.ToString(), time.Substring(scanner.Position)));

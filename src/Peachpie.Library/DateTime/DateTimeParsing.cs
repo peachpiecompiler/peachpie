@@ -134,10 +134,10 @@ namespace Pchp.Library.DateTime
         {
             Debug.Assert(datestr != null);
 
-            var scanner = new Scanner(new StringReader(datestr.ToLowerInvariant()));
+            var scanner = new Scanner(datestr.ToLowerInvariant());
             for (; ; )
             {
-                var token = scanner.GetNextToken();
+                var token = scanner.Next();
                 if (token == Tokens.ERROR || scanner.Errors != 0)
                 {
                     error = string.Format(LibResources.parse_error, scanner.Position, datestr.Substring(scanner.Position));
