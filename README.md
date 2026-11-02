@@ -53,47 +53,7 @@ The generated script does not call `exit(0)`, so the process exit code is 1. If 
 
 The same install also adds the `web`, `classlib`, `blazorwasm`, and `phpwasm` templates. The web layout is described in [Get started](https://docs.peachpie.io/get-started/). When that page and the NuGet page disagree about the .NET requirement, follow NuGet.
 
-### Hand-written project
-
-The template writes a `.msbuildproj` file (that extension matters) and fills in the current SDK version. An `Sdk` reference needs a version. To write the project yourself, put the version from the NuGet badge in `global.json` (`x.y.z` below is that number, not a literal) and leave the version off the project. Set `TargetFramework` to a framework listed for the package on NuGet, or copy the framework the template wrote (`netX.Y` below is that placeholder).
-
-`global.json`:
-
-```json
-{
-  "msbuild-sdks": {
-    "Peachpie.NET.Sdk": "x.y.z"
-  }
-}
-```
-
-`hello.msbuildproj`:
-
-```xml
-<Project Sdk="Peachpie.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netX.Y</TargetFramework>
-    <StartupObject>program.php</StartupObject>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="**/*.php" />
-  </ItemGroup>
-</Project>
-```
-
-The inline form `<Project Sdk="Peachpie.NET.Sdk/x.y.z">` is the same choice without `global.json`.
-
-`program.php`:
-
-```php
-<?php
-
-echo "Hello from PeachPie\n";
-exit(0);
-```
-
-With the two placeholders replaced, `dotnet run` prints `Hello from PeachPie` and exits 0. More project properties are in the [project file reference](https://docs.peachpie.io/php/msbuild/).
+A sample project file is in the documentation: [Sample project file](https://docs.peachpie.io/php/msbuild/#sample-project-file).
 
 ## What is PeachPie?
 
