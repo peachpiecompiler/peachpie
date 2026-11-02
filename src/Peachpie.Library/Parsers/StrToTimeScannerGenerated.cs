@@ -129,7 +129,7 @@ using System.Collections.Generic;
 					break;
 					
 				case 3:
-					// #line 769
+					// #line 777
 					{
 					  return Tokens.ERROR;
 					}
@@ -477,11 +477,13 @@ using System.Collections.Generic;
 					break;
 					
 				case 25:
-					// #line 743
+					// #line 749
 					{
 						INIT();
 						if (time.have_date!=0) { return Tokens.ERROR; }
 						time.HAVE_DATE();
+						// skip "last " prefix
+						DateInfo.ReadToSpace(str, ref pos); pos++;
 						time.m = DateInfo.ParseMonth(str, ref pos);
 						time.y = System.DateTime.Now.Year;
 						int daysInMonth = System.DateTime.DaysInMonth(time.y, time.m);
@@ -492,7 +494,7 @@ using System.Collections.Generic;
 					break;
 					
 				case 26:
-					// #line 755
+					// #line 763
 					{
 						INIT();
 						time.HAVE_RELATIVE();
@@ -503,11 +505,13 @@ using System.Collections.Generic;
 					break;
 					
 				case 27:
-					// #line 732
+					// #line 736
 					{
 						INIT();
 						if (time.have_date!=0) { return Tokens.ERROR; }
 						time.HAVE_DATE();
+						// skip "first " prefix
+						DateInfo.ReadToSpace(str, ref pos); pos++;
 						time.m = DateInfo.ParseMonth(str, ref pos);
 						time.d = 1;
 						time.y = System.DateTime.Now.Year;
@@ -704,6 +708,10 @@ using System.Collections.Generic;
 						INIT();
 						if (time.have_date!=0) { return Tokens.ERROR; }
 						time.HAVE_DATE();
+						// skip "last day of " prefix
+						DateInfo.ReadToSpace(str, ref pos); pos++;
+						DateInfo.ReadToSpace(str, ref pos); pos++;
+						DateInfo.ReadToSpace(str, ref pos); pos++;
 						time.m = DateInfo.ParseMonth(str, ref pos);
 						time.y = System.DateTime.Now.Year;
 						int daysInMonth = System.DateTime.DaysInMonth(time.y, time.m);
@@ -3920,6 +3928,13 @@ using System.Collections.Generic;
 			while (true)
 			{
 				char lookahead = (is_initial_state && yy_at_bol) ? BOL : Advance();
+
+				// EOF reached with no pending token => end of input
+				if (lookahead == EOF && last_accept_state == NoState)
+				{
+					return Tokens.EOF;
+				}
+
 				int next_state = nextState[rowMap[current_state], colMap[lookahead]];
 				
 				if (next_state != -1)
