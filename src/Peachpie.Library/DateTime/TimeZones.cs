@@ -259,10 +259,15 @@ namespace Pchp.Library.DateTime
                 {
                     if (tzdict.TryGetValue(names[i], out var tz) && tz != null)
                     {
-                        // update the map of known time zones:
+                        // Share this zone with names that the OS does not have
+                        // (Windows IDs on Linux, or IANA names on Windows).
+                        // Do not replace a zone the OS already knows: Europe/Prague
+                        // and Europe/Budapest share a Windows ID but not local-mean
+                        // time, so year 999 must keep Prague's own offset.
                         foreach (var n in names)
                         {
-                            tzdict[n] = tz;
+                            if (!tzdict.ContainsKey(n))
+                                tzdict[n] = tz;
                         }
 
                         break;

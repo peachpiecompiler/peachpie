@@ -137,6 +137,15 @@ function test() {
         }
     }
 
+    // Years before 1901. 0999 is a real 4-digit year (not 1999).
+    // 1900 is not a Gregorian leap year, so February ends on the 28th.
+    // Both are outside the old 32-bit Unix range; the values below are UTC.
+    foreach (array('0999-12', 'last day of february 1900') as $input) {
+        $result = strtotime($input, $base);
+        echo "ts ", $input, " => ", $result, PHP_EOL;
+        echo "c ", $input, " => ", date('c', $result), PHP_EOL;
+    }
+
     echo "Done.", PHP_EOL;
 }
 

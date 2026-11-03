@@ -427,6 +427,22 @@ namespace Pchp.Library.DateTime
             }
         }
 
+        /// <summary>
+        /// PHP <c>P</c>/<c>O</c>/<c>c</c> offset. Seconds of a local-mean-time
+        /// offset are dropped (toward zero). The sign applies to the whole
+        /// offset, so <c>-10:30</c> is not printed as <c>-10:-30</c>.
+        /// </summary>
+        static void AppendIsoOffset(System.Text.StringBuilder result, TimeSpan offset, bool withColon)
+        {
+            long minutes = offset.Ticks / TimeSpan.TicksPerMinute;
+            char sign = minutes < 0 ? '-' : '+';
+            long abs = Math.Abs(minutes);
+            if (withColon)
+                result.AppendFormat(CultureInfo.InvariantCulture, "{0}{1:00}:{2:00}", sign, abs / 60, abs % 60);
+            else
+                result.AppendFormat(CultureInfo.InvariantCulture, "{0}{1:00}{2:00}", sign, abs / 60, abs % 60);
+        }
+
         internal static string FormatDate(string format, System_DateTime local, TimeZoneInfo zone)
         {
             Debug.Assert(zone != null);
@@ -473,8 +489,7 @@ namespace Pchp.Library.DateTime
                             // ISO 8601 date (added in PHP 5) 2004-02-12T15:19:21+00:00
                             result.Append(local.ToString("yyyy-MM-dd'T'HH:mm:ss", DateTimeFormatInfo.InvariantInfo));
 
-                            TimeSpan offset = zone.GetUtcOffset(local);
-                            result.AppendFormat("{0}{1:00}:{2:00}", (offset.Ticks < 0) ? ""/*offset.Hours already < 0*/ : "+", offset.Hours, offset.Minutes);
+                            AppendIsoOffset(result, zone.GetUtcOffset(local), withColon: true);
                             break;
                         }
 
@@ -578,9 +593,7 @@ namespace Pchp.Library.DateTime
                     case 'O':
                         {
                             // Difference to Greenwich time (GMT) in hours Example: +0200
-                            TimeSpan offset = zone.GetUtcOffset(local);
-                            string sign = (offset.Ticks < 0) ? ((offset.Hours < 0) ? string.Empty : "-") : "+";
-                            result.AppendFormat("{0}{1:00}{2:00}", sign, offset.Hours, offset.Minutes);
+                            AppendIsoOffset(result, zone.GetUtcOffset(local), withColon: false);
                             break;
                         }
 
@@ -588,9 +601,7 @@ namespace Pchp.Library.DateTime
                         {
                             // same as 'O' but with the extra colon between hours and minutes
                             // Difference to Greenwich time (GMT) in hours Example: +02:00
-                            TimeSpan offset = zone.GetUtcOffset(local);
-                            string sign = (offset.Ticks < 0) ? ((offset.Hours < 0) ? string.Empty : "-") : "+";
-                            result.AppendFormat("{0}{1:00}:{2:00}", sign, offset.Hours, offset.Minutes);
+                            AppendIsoOffset(result, zone.GetUtcOffset(local), withColon: true);
                             break;
                         }
 
