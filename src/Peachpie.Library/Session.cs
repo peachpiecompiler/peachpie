@@ -773,7 +773,33 @@ namespace Pchp.Library
         /// <summary>
         /// Update the current session id with a newly generated one
         /// </summary>
-        public static void session_regenerate_id() { throw new NotImplementedException(); }
+        /// <param name="deleteOldSession">Whether to delete the old session. Default is true.</param>
+        public static void session_regenerate_id(bool deleteOldSession = true)
+        {
+            var ctx = Context;
+            var webctx = GetHttpPhpContext(ctx);
+            if (webctx == null || webctx.SessionHandler == null)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.web_server_not_available);
+                return;
+            }
+
+            if (webctx.SessionHandler.IsEnabled(webctx) && webctx.SessionState != PhpSessionState.Started)
+            {
+                // Session already exists, proceed with regeneration
+                webctx.SessionHandler.CloseSession(ctx, webctx, abandon: false);
+            }
+
+            // Regenerate the session ID
+            string newId = Session.session_create_id();
+            webctx.SessionHandler.SetSessionId(webctx, newId);
+
+            // Optionally destroy the old session data
+            if (deleteOldSession)
+            {
+                webctx.SessionHandler.CloseSession(ctx, webctx, abandon: true);
+            }
+        }
 
         /// <summary>
         /// Session shutdown function,
