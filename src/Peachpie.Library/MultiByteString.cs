@@ -983,16 +983,20 @@ namespace Pchp.Library
             }
 
             // target encoding:
-            // only convert non-unicode encodings, otherwise keep the `System.String`
+            // UTF-8 is the internal encoding, the .NET string already represents it correctly.
+            // Other encodings (incl. UTF-16LE/UTF-16BE) are converted to their byte representation.
             var target_enc = GetEncoding(to_encoding);
-            if (target_enc == null || PhpEncodingProvider.IsUtfEncoding(target_enc))
+            if (target_enc == null)
             {
                 return new PhpString(decoded);
             }
-            else
+
+            if (target_enc == Encoding.UTF8)
             {
-                return new PhpString(target_enc.GetBytes(decoded));
+                return new PhpString(decoded);
             }
+
+            return new PhpString(target_enc.GetBytes(decoded));
         }
 
         static PhpValue convert_variable(PhpValue value, PhpValue from_encoding, ref Encoding from_enc, ref Encoding[] from_encs, Encoding to_enc, ref HashSet<object> visited)
