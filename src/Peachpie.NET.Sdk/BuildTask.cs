@@ -432,7 +432,34 @@ namespace Peachpie.NET.Sdk.Tools
                     process.WaitForExit();
 
                     //
-                    return process.ExitCode == 0;
+                    var exitCode = process.ExitCode;
+                    if (exitCode != 0 && !cancellation.IsCancellationRequested)
+                    {
+                        // The compiler process exited with a non-zero code but did
+                        // not log an error itself (e.g. it was OOM-killed or
+                        // crashed). Surface a meaningful error instead of letting
+                        // MSBuild report the silent MSB4181.
+                        var detail = "";
+                        if (Environment.OSVersion.Platform != PlatformID.Win32NT && exitCode >= 128)
+                        {
+                            // On Unix, exit code = 128 + signal number when a
+                            // process is terminated by a signal.
+                            var signal = exitCode - 128;
+                            detail = $" (killed by signal {signal})";
+                            if (signal == 9) // SIGKILL - typically out of memory
+                            {
+                                detail = $" (killed by signal {signal} (SIGKILL, possibly out of memory))";
+                            }
+                        }
+                        else
+                        {
+                            detail = $" (exit code {exitCode})";
+                        }
+
+                        this.Log.LogError($"PeachPie compiler exited with a non-zero exit code{detail}.");
+                    }
+
+                    return exitCode == 0;
                 }
             }
         }
