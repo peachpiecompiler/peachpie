@@ -313,6 +313,15 @@ namespace Pchp.Library
         /// <summary>
         /// Generates a backtrace.
         /// </summary>
+        /// <remarks>
+        /// Each frame entry contains the caller information (file, line, function) but not the
+        /// argument values of the invoked routine. See
+        /// <see href="https://github.com/peachpiecompiler/peachpie/issues/1083">issue #1083</see>:
+        /// including argument values in <c>debug_backtrace()</c> is currently not feasible because
+        /// the underlying runtime stack only provides CLR frame metadata (parameter names), not
+        /// runtime argument values. Capturing argument values would require instrumentation of every
+        /// PHP call site during compilation.
+        /// </remarks>
         public static PhpArray debug_backtrace(int options = 0, int limit = 0)
         {
             // TODO: debug_backtrace: options
@@ -322,6 +331,11 @@ namespace Pchp.Library
         /// <summary>
         /// Prints a backtrace.
         /// </summary>
+        /// <remarks>
+        /// Each frame line contains the caller information (file, line, function) but not the
+        /// argument values of the invoked routine. See
+        /// <see href="https://github.com/peachpiecompiler/peachpie/issues/1083">issue #1083</see>.
+        /// </remarks>
         public static void debug_print_backtrace(Context ctx, int options = 0, int limit = 0)
         {
             // TODO: debug_backtrace: options, limit
