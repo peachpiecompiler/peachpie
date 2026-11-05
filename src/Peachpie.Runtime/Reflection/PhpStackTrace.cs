@@ -73,6 +73,9 @@ namespace Pchp.Core.Reflection
                 }
 
                 //args array   If inside a function, this lists the functions arguments.If inside an included file, this lists the included file name(s).
+                // NOTE: argument values are not collected here. See https://github.com/peachpiecompiler/peachpie/issues/1083:
+                // the runtime stack only exposes CLR frame metadata (parameter names), not runtime argument values.
+                // Including argument values would require instrumentation of every PHP call site.
 
                 return item;
             }
@@ -382,7 +385,9 @@ namespace Pchp.Core.Reflection
                     return string.Empty;
                 }
 
-                // note: parameter values not supported, user should use debugger
+                // note: parameter values not supported, runtime argument values are not exposed by the CLR stack frame.
+                // See https://github.com/peachpiecompiler/peachpie/issues/1083 : collecting argument values would require
+                // instrumentation of every PHP call site during compilation.
                 var str = new StringBuilder();
 
                 str.Append('(');
