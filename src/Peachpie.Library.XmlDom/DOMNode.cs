@@ -632,7 +632,7 @@ namespace Peachpie.Library.XmlDom
             PhpArray ns_prefixes = null)
         {
             var transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
-            transform.LoadInput(XmlNode.GetXmlDocument());
+            transform.LoadInput(XmlNode);
             var stream = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
 
             return new PhpString(stream.ToArray());
@@ -663,7 +663,7 @@ namespace Peachpie.Library.XmlDom
             if (stream != null)
             {
                 var transform = new System.Security.Cryptography.Xml.XmlDsigC14NTransform();
-                transform.LoadInput(XmlNode.GetXmlDocument());
+                transform.LoadInput(XmlNode);
                 var output = (System.IO.MemoryStream)transform.GetOutput(typeof(System.IO.Stream));
 
                 output.CopyTo(stream.RawStream);
