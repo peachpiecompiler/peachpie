@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis;
 using Pchp.Core;
 using Pchp.Core.Utilities;
+using Pchp.Library.Spl;
 
 namespace Peachpie.Library.Scripting
 {
@@ -307,19 +308,29 @@ namespace Peachpie.Library.Scripting
             }
 
             //
-            return CreateInvalid(diagnostics);
+            return CreateInvalid(diagnostics, isParseError: true);
         }
 
         /// <summary>
         /// Initializes an invalid script that throws diagnostics upon invoking.
         /// </summary>
-        private static Script CreateInvalid(ImmutableArray<Diagnostic> diagnostics)
+        /// <param name="diagnostics">Diagnostics reported while parsing/compiling the script.</param>
+        /// <param name="isParseError"><c>true</c> when the diagnostics are syntax (parse) errors and should be
+        /// reported as a catchable <see cref="ParseError"/>, <c>false</c> when they are fatal compile errors.</param>
+        private static Script CreateInvalid(ImmutableArray<Diagnostic> diagnostics, bool isParseError)
         {
+            var first = diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
+            var message = first?.GetMessage() ?? "syntax error";
             var errors = string.Join(Environment.NewLine, diagnostics.Select(d => $"{d.Severity} {d.Id}: {d.GetMessage()}"));
 
             return new Script((ctx, locals, @this, self) =>
             {
-                // TODO: throw new \ParseError( ... )
+                if (isParseError)
+                {
+                    // syntax errors are thrown as ParseError so they can be caught via catch (ParseError $e)
+                    // or catch (Throwable $e), matching PHP behavior.
+                    throw new ParseError(message);
+                }
 
                 PhpException.Throw(PhpError.Error, $"The script cannot be compiled due to following errors:\n{errors}");
 
